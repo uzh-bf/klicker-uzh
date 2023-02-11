@@ -1,4 +1,4 @@
-import { Context } from '../lib/context'
+import { ContextWithUser } from 'src/lib/context'
 
 interface SubscriptionObjectInput {
   endpoint: string
@@ -16,18 +16,18 @@ interface SubscribeToPushArgs {
 
 export async function subscribeToPush(
   { subscriptionObject, courseId }: SubscribeToPushArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   return ctx.prisma.participation.update({
     where: {
-      courseId_participantId: { courseId, participantId: ctx.user!.sub },
+      courseId_participantId: { courseId, participantId: ctx.user.sub },
     },
     data: {
       subscriptions: {
         upsert: {
           where: {
             participantId_courseId_endpoint: {
-              participantId: ctx.user!.sub,
+              participantId: ctx.user.sub,
               courseId,
               endpoint: subscriptionObject.endpoint,
             },
@@ -38,7 +38,7 @@ export async function subscribeToPush(
             p256dh: subscriptionObject.keys.p256dh,
             auth: subscriptionObject.keys.auth,
             course: { connect: { id: courseId } },
-            participant: { connect: { id: ctx.user!.sub } },
+            participant: { connect: { id: ctx.user.sub } },
           },
           update: {},
         },

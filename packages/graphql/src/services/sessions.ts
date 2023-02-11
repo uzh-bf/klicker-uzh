@@ -11,11 +11,7 @@ import {
 import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
-import {
-  Context,
-  ContextWithOptionalUser,
-  ContextWithUser,
-} from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 // TODO: rework scheduling for serverless
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
@@ -125,7 +121,7 @@ export async function createSession(
     multiplier,
     isGamificationEnabled,
   }: CreateSessionArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const questionMap = await getQuestionMap(blocks, ctx)
 
@@ -214,7 +210,7 @@ export async function editSession(
     multiplier,
     isGamificationEnabled,
   }: EditSessionArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   // find all instances belonging to the old session and delete them as the content of the questions might have changed
   const oldSession = await ctx.prisma.session.findUnique({
@@ -355,7 +351,10 @@ interface StartSessionArgs {
   id: string
 }
 
-export async function startSession({ id }: StartSessionArgs, ctx: Context) {
+export async function startSession(
+  { id }: StartSessionArgs,
+  ctx: ContextWithUser
+) {
   const session = await ctx.prisma.session.findFirst({
     where: {
       id,
@@ -421,7 +420,7 @@ interface EndSessionArgs {
   id: string
 }
 
-export async function endSession({ id }: EndSessionArgs, ctx: Context) {
+export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
   const session = await ctx.prisma.session.findFirst({
     where: {
       id,
@@ -520,7 +519,7 @@ interface ActivateSessionBlockArgs {
 
 export async function activateSessionBlock(
   { sessionId, sessionBlockId }: ActivateSessionBlockArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const session = await ctx.prisma.session.findUnique({
     where: { id: sessionId },
@@ -533,7 +532,7 @@ export async function activateSessionBlock(
     },
   })
 
-  if (!session || session.ownerId !== ctx.user!.sub) return null
+  if (!session || session.ownerId !== ctx.user.sub) return null
 
   const newBlock = session.blocks.find((block) => block.id === sessionBlockId)
 
@@ -773,7 +772,7 @@ async function processCachedData({ cachedResults, activeBlock }) {
 
 export async function deactivateSessionBlock(
   { sessionId, sessionBlockId }: ActivateSessionBlockArgs,
-  ctx: Context,
+  ctx: ContextWithUser,
   isScheduled?: boolean
 ) {
   const session = await ctx.prisma.session.findUnique({
@@ -798,7 +797,7 @@ export async function deactivateSessionBlock(
     },
   })
 
-  if (!session || session.ownerId !== ctx.user!.sub || !session.activeBlock)
+  if (!session || session.ownerId !== ctx.user.sub || !session.activeBlock)
     return null
 
   // if the block is not the active one, return early
@@ -1140,7 +1139,7 @@ interface GetRunningSessionsArgs {
 
 export async function getRunningSessions(
   { shortname }: GetRunningSessionsArgs,
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   const userWithSessions = await ctx.prisma.user.findUnique({
     where: {
@@ -1208,10 +1207,10 @@ export async function getUserSessions(
   }))
 }
 
-export async function getUnassignedSessions(ctx: Context) {
+export async function getUnassignedSessions(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {
-      id: ctx.user!.sub,
+      id: ctx.user.sub,
     },
     include: {
       sessions: {

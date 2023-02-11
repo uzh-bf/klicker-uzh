@@ -26,7 +26,7 @@ export async function createParticipantGroup(
       },
       participants: {
         connect: {
-          id: ctx.user!.sub,
+          id: ctx.user.sub,
         },
       },
     },
@@ -110,7 +110,7 @@ interface LeaveParticipantGroupArgs {
 
 export async function leaveParticipantGroup(
   { groupId, courseId }: LeaveParticipantGroupArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   // find participantgroup with corresponding id
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
@@ -524,7 +524,7 @@ interface SubmitGroupActivityDecisionsArgs {
 
 export async function submitGroupActivityDecisions(
   { activityInstanceId, decisions }: SubmitGroupActivityDecisionsArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const groupActivityInstance =
     await ctx.prisma.groupActivityInstance.findUnique({
@@ -534,7 +534,7 @@ export async function submitGroupActivityDecisions(
           include: {
             participants: {
               where: {
-                id: ctx.user!.sub,
+                id: ctx.user.sub,
               },
             },
           },

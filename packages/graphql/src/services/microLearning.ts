@@ -130,7 +130,7 @@ export async function markMicroSessionCompleted(
     where: {
       courseId_participantId: {
         courseId,
-        participantId: ctx.user!.sub,
+        participantId: ctx.user.sub,
       },
     },
     data: {
@@ -146,7 +146,7 @@ interface CreateMicroSessionArgs {
   displayName: string
   description?: string | null
   questions: number[]
-  courseId?: string | null
+  courseId: string
   multiplier: number
   startDate: Date
   endDate: Date
@@ -163,7 +163,7 @@ export async function createMicroSession(
     startDate,
     endDate,
   }: CreateMicroSessionArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const questionMap = await getQuestionMap(questions, ctx)
 
@@ -222,7 +222,7 @@ interface EditMicroSessionArgs {
   displayName: string
   description?: string | null
   questions: number[]
-  courseId?: string | null
+  courseId: string
   multiplier: number
   startDate: Date
   endDate: Date
@@ -240,7 +240,7 @@ export async function editMicroSession(
     startDate,
     endDate,
   }: EditMicroSessionArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   // find all instances belonging to the old micro session and delete them as the content of the questions might have changed
   const oldSession = await ctx.prisma.microSession.findUnique({

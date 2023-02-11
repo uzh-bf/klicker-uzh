@@ -15,7 +15,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { pick } from 'ramda'
-import { Context, ContextWithOptionalUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 import { shuffle } from '../util'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
@@ -111,7 +111,7 @@ interface RespondToQuestionInstanceArgs {
 
 export async function respondToQuestionInstance(
   { courseId, id, response }: RespondToQuestionInstanceArgs,
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   const {
     instance,
@@ -388,7 +388,7 @@ interface GetLearningElementDataArgs {
 
 export async function getLearningElementData(
   { id }: GetLearningElementDataArgs,
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   const element = await ctx.prisma.learningElement.findUnique({
     where: { id },
@@ -516,7 +516,7 @@ interface CreateLearningElementArgs {
   displayName: string
   description?: string | null
   questions: number[]
-  courseId?: string | null
+  courseId: string
   multiplier: number
   order: OrderType
   resetTimeDays: number
@@ -533,12 +533,12 @@ export async function createLearningElement(
     order,
     resetTimeDays,
   }: CreateLearningElementArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const dbQuestions = await ctx.prisma.question.findMany({
     where: {
       id: { in: questions },
-      ownerId: ctx.user!.sub,
+      ownerId: ctx.user.sub,
     },
     include: {
       attachments: true,
@@ -578,7 +578,7 @@ export async function createLearningElement(
               connect: { id: questionId },
             },
             owner: {
-              connect: { id: ctx.user!.sub },
+              connect: { id: ctx.user.sub },
             },
             attachments: {
               create: questionAttachmentInstances,
@@ -587,7 +587,7 @@ export async function createLearningElement(
         }),
       },
       owner: {
-        connect: { id: ctx.user!.sub },
+        connect: { id: ctx.user.sub },
       },
       course: {
         connect: { id: courseId },

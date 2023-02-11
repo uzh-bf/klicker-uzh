@@ -1,9 +1,5 @@
 import * as R from 'ramda'
-import {
-  Context,
-  ContextWithOptionalUser,
-  ContextWithUser,
-} from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -21,7 +17,7 @@ export async function getBasicCourseInformation(
 
 export async function joinCourseWithPin(
   { courseId, pin }: { courseId: string; pin: number },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
@@ -92,12 +88,15 @@ interface LeaveCourseArgs {
   courseId: string
 }
 
-export async function leaveCourse({ courseId }: LeaveCourseArgs, ctx: Context) {
+export async function leaveCourse(
+  { courseId }: LeaveCourseArgs,
+  ctx: ContextWithUser
+) {
   const participation = ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
         courseId,
-        participantId: ctx.user!.sub,
+        participantId: ctx.user.sub,
       },
     },
     data: {
@@ -106,7 +105,7 @@ export async function leaveCourse({ courseId }: LeaveCourseArgs, ctx: Context) {
   })
 
   return {
-    id: `${courseId}-${ctx.user!.sub}`,
+    id: `${courseId}-${ctx.user.sub}`,
     participation,
   }
 }
@@ -117,7 +116,7 @@ interface GetCourseOverviewDataArgs {
 
 export async function getCourseOverviewData(
   { courseId }: GetCourseOverviewDataArgs,
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   if (ctx.user?.sub) {
     const participation = await ctx.prisma.participation.findUnique({
@@ -303,10 +302,10 @@ export async function createCourse(
   })
 }
 
-export async function getUserCourses(ctx: Context) {
+export async function getUserCourses(ctx: ContextWithUser) {
   const userCourses = await ctx.prisma.user.findUnique({
     where: {
-      id: ctx.user!.sub,
+      id: ctx.user.sub,
     },
     include: {
       courses: {
@@ -320,10 +319,10 @@ export async function getUserCourses(ctx: Context) {
   return userCourses?.courses ?? []
 }
 
-export async function getControlCourses(ctx: Context) {
+export async function getControlCourses(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {
-      id: ctx.user!.sub,
+      id: ctx.user.sub,
     },
     include: {
       courses: {

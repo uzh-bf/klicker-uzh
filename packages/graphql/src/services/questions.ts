@@ -1,10 +1,10 @@
 import { QuestionType } from '@klicker-uzh/prisma'
 import { Context, ContextWithUser } from '../lib/context'
 
-export async function getUserQuestions(ctx: Context) {
+export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
     where: {
-      id: ctx.user!.sub,
+      id: ctx.user.sub,
     },
     include: {
       questions: {
@@ -194,7 +194,7 @@ export async function deleteQuestion({ id }: { id: number }, ctx: Context) {
   return question
 }
 
-export async function getUserTags(ctx: Context) {
+export async function getUserTags(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {
       id: ctx.user.sub,
