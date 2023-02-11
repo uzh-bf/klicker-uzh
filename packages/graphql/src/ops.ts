@@ -61,6 +61,29 @@ export type BlockInput = {
   timeLimit?: InputMaybe<Scalars['Int']>;
 };
 
+export type Choice = {
+  __typename?: 'Choice';
+  correct?: Maybe<Scalars['Boolean']>;
+  feedback?: Maybe<Scalars['String']>;
+  ix: Scalars['Int'];
+  value: Scalars['String'];
+};
+
+export type ChoiceQuestionOptions = {
+  __typename?: 'ChoiceQuestionOptions';
+  choices: Array<Choice>;
+};
+
+export type ChoicesQuestionData = QuestionData & {
+  __typename?: 'ChoicesQuestionData';
+  content: Scalars['String'];
+  id: Scalars['String'];
+  name: Scalars['String'];
+  options: ChoiceQuestionOptions;
+  pointsMultiplier: Scalars['Int'];
+  type: Scalars['String'];
+};
+
 export type ClassAchievementInstance = {
   __typename?: 'ClassAchievementInstance';
   id: Scalars['Int'];
@@ -106,6 +129,27 @@ export type FeedbackResponse = {
   id: Scalars['Int'];
   negativeReactions: Scalars['Int'];
   positiveReactions: Scalars['Int'];
+};
+
+export type FreeTextQuestionData = QuestionData & {
+  __typename?: 'FreeTextQuestionData';
+  content: Scalars['String'];
+  id: Scalars['String'];
+  name: Scalars['String'];
+  options: FreeTextQuestionOptions;
+  pointsMultiplier: Scalars['Int'];
+  type: Scalars['String'];
+};
+
+export type FreeTextQuestionOptions = {
+  __typename?: 'FreeTextQuestionOptions';
+  restrictions: FreeTextRestrictions;
+  solutions: Array<Scalars['String']>;
+};
+
+export type FreeTextRestrictions = {
+  __typename?: 'FreeTextRestrictions';
+  maxLength?: Maybe<Scalars['Int']>;
 };
 
 export type GroupAchievementInstance = {
@@ -487,6 +531,37 @@ export type MutationVoteFeedbackResponseArgs = {
   incrementUpvote: Scalars['Int'];
 };
 
+export type NumericalQuestionData = QuestionData & {
+  __typename?: 'NumericalQuestionData';
+  content: Scalars['String'];
+  id: Scalars['String'];
+  name: Scalars['String'];
+  options: NumericalQuestionOptions;
+  pointsMultiplier: Scalars['Int'];
+  type: Scalars['String'];
+};
+
+export type NumericalQuestionOptions = {
+  __typename?: 'NumericalQuestionOptions';
+  accuracy?: Maybe<Scalars['Int']>;
+  placeholder?: Maybe<Scalars['String']>;
+  restrictions: NumericalRestrictions;
+  solutionRanges: Array<NumericalSolutionRange>;
+  unit?: Maybe<Scalars['String']>;
+};
+
+export type NumericalRestrictions = {
+  __typename?: 'NumericalRestrictions';
+  max?: Maybe<Scalars['Int']>;
+  min?: Maybe<Scalars['Int']>;
+};
+
+export type NumericalSolutionRange = {
+  __typename?: 'NumericalSolutionRange';
+  max?: Maybe<Scalars['Int']>;
+  min?: Maybe<Scalars['Int']>;
+};
+
 export type Participant = {
   __typename?: 'Participant';
   achievements: Array<ParticipantAchievementInstance>;
@@ -548,6 +623,7 @@ export type Query = {
   userCourses?: Maybe<Array<Course>>;
   userProfile?: Maybe<User>;
   userQuestions?: Maybe<Array<Question>>;
+  userSessions?: Maybe<Array<Session>>;
   userTags?: Maybe<Array<Tag>>;
 };
 
@@ -588,9 +664,18 @@ export type Question = {
   updatedAt: Scalars['Date'];
 };
 
+export type QuestionData = {
+  content: Scalars['String'];
+  id: Scalars['String'];
+  name: Scalars['String'];
+  pointsMultiplier: Scalars['Int'];
+  type: Scalars['String'];
+};
+
 export type QuestionInstance = {
   __typename?: 'QuestionInstance';
   id: Scalars['Int'];
+  questionData: QuestionData;
 };
 
 export type QuestionResponse = {
@@ -624,6 +709,8 @@ export type Session = {
   linkToJoin?: Maybe<Scalars['String']>;
   name: Scalars['String'];
   namespace: Scalars['String'];
+  numOfBlocks?: Maybe<Scalars['Int']>;
+  numOfQuestions?: Maybe<Scalars['Int']>;
   pinCode?: Maybe<Scalars['Int']>;
   pointsMultiplier: Scalars['Int'];
   startedAt?: Maybe<Scalars['Date']>;
@@ -639,6 +726,7 @@ export enum SessionAccessMode {
 export type SessionBlock = {
   __typename?: 'SessionBlock';
   id: Scalars['Int'];
+  instances: Array<QuestionInstance>;
   status: SessionBlockStatus;
 };
 
@@ -1098,6 +1186,11 @@ export type GetUserQuestionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetUserQuestionsQuery = { __typename?: 'Query', userQuestions?: Array<{ __typename?: 'Question', id: number, name: string, type: string, content: string, isArchived: boolean, isDeleted: boolean, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, createdAt: any, updatedAt: any, tags: Array<{ __typename?: 'Tag', id: number, name: string }> }> | null };
 
+export type GetUserSessionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetUserSessionsQuery = { __typename?: 'Query', userSessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, accessMode: SessionAccessMode, status: SessionStatus, createdAt: any, updatedAt?: any | null, startedAt?: any | null, numOfBlocks?: number | null, numOfQuestions?: number | null, blocks: Array<{ __typename?: 'SessionBlock', id: number, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: string, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: string, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: string, name: string, type: string, content: string } }> }>, course: { __typename?: 'Course', id: string, name: string, displayName: string } }> | null };
+
 export type GetUserTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1189,12 +1282,18 @@ export type ResolversTypes = {
   AwardEntry: ResolverTypeWrapper<AwardEntry>;
   BlockInput: BlockInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
+  Choice: ResolverTypeWrapper<Choice>;
+  ChoiceQuestionOptions: ResolverTypeWrapper<ChoiceQuestionOptions>;
+  ChoicesQuestionData: ResolverTypeWrapper<ChoicesQuestionData>;
   ClassAchievementInstance: ResolverTypeWrapper<ClassAchievementInstance>;
   ConfusionTimestep: ResolverTypeWrapper<ConfusionTimestep>;
   Course: ResolverTypeWrapper<Course>;
   Date: ResolverTypeWrapper<Scalars['Date']>;
   Feedback: ResolverTypeWrapper<Feedback>;
   FeedbackResponse: ResolverTypeWrapper<FeedbackResponse>;
+  FreeTextQuestionData: ResolverTypeWrapper<FreeTextQuestionData>;
+  FreeTextQuestionOptions: ResolverTypeWrapper<FreeTextQuestionOptions>;
+  FreeTextRestrictions: ResolverTypeWrapper<FreeTextRestrictions>;
   GroupAchievementInstance: ResolverTypeWrapper<GroupAchievementInstance>;
   GroupActivity: ResolverTypeWrapper<GroupActivity>;
   GroupActivityClue: ResolverTypeWrapper<GroupActivityClue>;
@@ -1212,6 +1311,10 @@ export type ResolversTypes = {
   LeaveCourseParticipation: ResolverTypeWrapper<LeaveCourseParticipation>;
   MicroSession: ResolverTypeWrapper<MicroSession>;
   Mutation: ResolverTypeWrapper<{}>;
+  NumericalQuestionData: ResolverTypeWrapper<NumericalQuestionData>;
+  NumericalQuestionOptions: ResolverTypeWrapper<NumericalQuestionOptions>;
+  NumericalRestrictions: ResolverTypeWrapper<NumericalRestrictions>;
+  NumericalSolutionRange: ResolverTypeWrapper<NumericalSolutionRange>;
   Participant: ResolverTypeWrapper<Participant>;
   ParticipantAchievementInstance: ResolverTypeWrapper<ParticipantAchievementInstance>;
   ParticipantGroup: ResolverTypeWrapper<ParticipantGroup>;
@@ -1220,6 +1323,7 @@ export type ResolversTypes = {
   PushSubscription: ResolverTypeWrapper<PushSubscription>;
   Query: ResolverTypeWrapper<{}>;
   Question: ResolverTypeWrapper<Question>;
+  QuestionData: ResolversTypes['ChoicesQuestionData'] | ResolversTypes['FreeTextQuestionData'] | ResolversTypes['NumericalQuestionData'];
   QuestionInstance: ResolverTypeWrapper<QuestionInstance>;
   QuestionResponse: ResolverTypeWrapper<QuestionResponse>;
   QuestionResponseDetail: ResolverTypeWrapper<QuestionResponseDetail>;
@@ -1245,12 +1349,18 @@ export type ResolversParentTypes = {
   AwardEntry: AwardEntry;
   BlockInput: BlockInput;
   Boolean: Scalars['Boolean'];
+  Choice: Choice;
+  ChoiceQuestionOptions: ChoiceQuestionOptions;
+  ChoicesQuestionData: ChoicesQuestionData;
   ClassAchievementInstance: ClassAchievementInstance;
   ConfusionTimestep: ConfusionTimestep;
   Course: Course;
   Date: Scalars['Date'];
   Feedback: Feedback;
   FeedbackResponse: FeedbackResponse;
+  FreeTextQuestionData: FreeTextQuestionData;
+  FreeTextQuestionOptions: FreeTextQuestionOptions;
+  FreeTextRestrictions: FreeTextRestrictions;
   GroupAchievementInstance: GroupAchievementInstance;
   GroupActivity: GroupActivity;
   GroupActivityClue: GroupActivityClue;
@@ -1267,6 +1377,10 @@ export type ResolversParentTypes = {
   LeaveCourseParticipation: LeaveCourseParticipation;
   MicroSession: MicroSession;
   Mutation: {};
+  NumericalQuestionData: NumericalQuestionData;
+  NumericalQuestionOptions: NumericalQuestionOptions;
+  NumericalRestrictions: NumericalRestrictions;
+  NumericalSolutionRange: NumericalSolutionRange;
   Participant: Participant;
   ParticipantAchievementInstance: ParticipantAchievementInstance;
   ParticipantGroup: ParticipantGroup;
@@ -1275,6 +1389,7 @@ export type ResolversParentTypes = {
   PushSubscription: PushSubscription;
   Query: {};
   Question: Question;
+  QuestionData: ResolversParentTypes['ChoicesQuestionData'] | ResolversParentTypes['FreeTextQuestionData'] | ResolversParentTypes['NumericalQuestionData'];
   QuestionInstance: QuestionInstance;
   QuestionResponse: QuestionResponse;
   QuestionResponseDetail: QuestionResponseDetail;
@@ -1309,6 +1424,29 @@ export type AttachmentInstanceResolvers<ContextType = any, ParentType extends Re
 
 export type AwardEntryResolvers<ContextType = any, ParentType extends ResolversParentTypes['AwardEntry'] = ResolversParentTypes['AwardEntry']> = {
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ChoiceResolvers<ContextType = any, ParentType extends ResolversParentTypes['Choice'] = ResolversParentTypes['Choice']> = {
+  correct?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
+  feedback?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  ix?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  value?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ChoiceQuestionOptionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['ChoiceQuestionOptions'] = ResolversParentTypes['ChoiceQuestionOptions']> = {
+  choices?: Resolver<Array<ResolversTypes['Choice']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ChoicesQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['ChoicesQuestionData'] = ResolversParentTypes['ChoicesQuestionData']> = {
+  content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  options?: Resolver<ResolversTypes['ChoiceQuestionOptions'], ParentType, ContextType>;
+  pointsMultiplier?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1360,6 +1498,27 @@ export type FeedbackResponseResolvers<ContextType = any, ParentType extends Reso
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   negativeReactions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   positiveReactions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type FreeTextQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextQuestionData'] = ResolversParentTypes['FreeTextQuestionData']> = {
+  content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  options?: Resolver<ResolversTypes['FreeTextQuestionOptions'], ParentType, ContextType>;
+  pointsMultiplier?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type FreeTextQuestionOptionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextQuestionOptions'] = ResolversParentTypes['FreeTextQuestionOptions']> = {
+  restrictions?: Resolver<ResolversTypes['FreeTextRestrictions'], ParentType, ContextType>;
+  solutions?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type FreeTextRestrictionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextRestrictions'] = ResolversParentTypes['FreeTextRestrictions']> = {
+  maxLength?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1468,6 +1627,37 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   voteFeedbackResponse?: Resolver<Maybe<ResolversTypes['FeedbackResponse']>, ParentType, ContextType, RequireFields<MutationVoteFeedbackResponseArgs, 'id' | 'incrementDownvote' | 'incrementUpvote'>>;
 };
 
+export type NumericalQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalQuestionData'] = ResolversParentTypes['NumericalQuestionData']> = {
+  content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  options?: Resolver<ResolversTypes['NumericalQuestionOptions'], ParentType, ContextType>;
+  pointsMultiplier?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NumericalQuestionOptionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalQuestionOptions'] = ResolversParentTypes['NumericalQuestionOptions']> = {
+  accuracy?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  placeholder?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  restrictions?: Resolver<ResolversTypes['NumericalRestrictions'], ParentType, ContextType>;
+  solutionRanges?: Resolver<Array<ResolversTypes['NumericalSolutionRange']>, ParentType, ContextType>;
+  unit?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NumericalRestrictionsResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalRestrictions'] = ResolversParentTypes['NumericalRestrictions']> = {
+  max?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  min?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NumericalSolutionRangeResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalSolutionRange'] = ResolversParentTypes['NumericalSolutionRange']> = {
+  max?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  min?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type ParticipantResolvers<ContextType = any, ParentType extends ResolversParentTypes['Participant'] = ResolversParentTypes['Participant']> = {
   achievements?: Resolver<Array<ResolversTypes['ParticipantAchievementInstance']>, ParentType, ContextType>;
   avatar?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
@@ -1528,6 +1718,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   userCourses?: Resolver<Maybe<Array<ResolversTypes['Course']>>, ParentType, ContextType>;
   userProfile?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   userQuestions?: Resolver<Maybe<Array<ResolversTypes['Question']>>, ParentType, ContextType>;
+  userSessions?: Resolver<Maybe<Array<ResolversTypes['Session']>>, ParentType, ContextType>;
   userTags?: Resolver<Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
 };
 
@@ -1548,8 +1739,18 @@ export type QuestionResolvers<ContextType = any, ParentType extends ResolversPar
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type QuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['QuestionData'] = ResolversParentTypes['QuestionData']> = {
+  __resolveType: TypeResolveFn<'ChoicesQuestionData' | 'FreeTextQuestionData' | 'NumericalQuestionData', ParentType, ContextType>;
+  content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  pointsMultiplier?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+};
+
 export type QuestionInstanceResolvers<ContextType = any, ParentType extends ResolversParentTypes['QuestionInstance'] = ResolversParentTypes['QuestionInstance']> = {
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  questionData?: Resolver<ResolversTypes['QuestionData'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1583,6 +1784,8 @@ export type SessionResolvers<ContextType = any, ParentType extends ResolversPare
   linkToJoin?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   namespace?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  numOfBlocks?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  numOfQuestions?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   pinCode?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
   pointsMultiplier?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   startedAt?: Resolver<Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
@@ -1593,6 +1796,7 @@ export type SessionResolvers<ContextType = any, ParentType extends ResolversPare
 
 export type SessionBlockResolvers<ContextType = any, ParentType extends ResolversParentTypes['SessionBlock'] = ResolversParentTypes['SessionBlock']> = {
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  instances?: Resolver<Array<ResolversTypes['QuestionInstance']>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes['SessionBlockStatus'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -1623,12 +1827,18 @@ export type Resolvers<ContextType = any> = {
   Attachment?: AttachmentResolvers<ContextType>;
   AttachmentInstance?: AttachmentInstanceResolvers<ContextType>;
   AwardEntry?: AwardEntryResolvers<ContextType>;
+  Choice?: ChoiceResolvers<ContextType>;
+  ChoiceQuestionOptions?: ChoiceQuestionOptionsResolvers<ContextType>;
+  ChoicesQuestionData?: ChoicesQuestionDataResolvers<ContextType>;
   ClassAchievementInstance?: ClassAchievementInstanceResolvers<ContextType>;
   ConfusionTimestep?: ConfusionTimestepResolvers<ContextType>;
   Course?: CourseResolvers<ContextType>;
   Date?: GraphQLScalarType;
   Feedback?: FeedbackResolvers<ContextType>;
   FeedbackResponse?: FeedbackResponseResolvers<ContextType>;
+  FreeTextQuestionData?: FreeTextQuestionDataResolvers<ContextType>;
+  FreeTextQuestionOptions?: FreeTextQuestionOptionsResolvers<ContextType>;
+  FreeTextRestrictions?: FreeTextRestrictionsResolvers<ContextType>;
   GroupAchievementInstance?: GroupAchievementInstanceResolvers<ContextType>;
   GroupActivity?: GroupActivityResolvers<ContextType>;
   GroupActivityClue?: GroupActivityClueResolvers<ContextType>;
@@ -1642,6 +1852,10 @@ export type Resolvers<ContextType = any> = {
   LeaveCourseParticipation?: LeaveCourseParticipationResolvers<ContextType>;
   MicroSession?: MicroSessionResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  NumericalQuestionData?: NumericalQuestionDataResolvers<ContextType>;
+  NumericalQuestionOptions?: NumericalQuestionOptionsResolvers<ContextType>;
+  NumericalRestrictions?: NumericalRestrictionsResolvers<ContextType>;
+  NumericalSolutionRange?: NumericalSolutionRangeResolvers<ContextType>;
   Participant?: ParticipantResolvers<ContextType>;
   ParticipantAchievementInstance?: ParticipantAchievementInstanceResolvers<ContextType>;
   ParticipantGroup?: ParticipantGroupResolvers<ContextType>;
@@ -1650,6 +1864,7 @@ export type Resolvers<ContextType = any> = {
   PushSubscription?: PushSubscriptionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Question?: QuestionResolvers<ContextType>;
+  QuestionData?: QuestionDataResolvers<ContextType>;
   QuestionInstance?: QuestionInstanceResolvers<ContextType>;
   QuestionResponse?: QuestionResponseResolvers<ContextType>;
   QuestionResponseDetail?: QuestionResponseDetailResolvers<ContextType>;
@@ -1713,6 +1928,7 @@ export const GetRunningSessionsDocument = {"kind":"Document","definitions":[{"ki
 export const GetUnassignedSessionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUnassignedSessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"unassignedSessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<GetUnassignedSessionsQuery, GetUnassignedSessionsQueryVariables>;
 export const GetUserCoursesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserCourses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userCourses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isArchived"}},{"kind":"Field","name":{"kind":"Name","value":"pinCode"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetUserCoursesQuery, GetUserCoursesQueryVariables>;
 export const GetUserQuestionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserQuestions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userQuestions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"isArchived"}},{"kind":"Field","name":{"kind":"Name","value":"isDeleted"}},{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"hasAnswerFeedbacks"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"tags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<GetUserQuestionsQuery, GetUserQuestionsQueryVariables>;
+export const GetUserSessionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserSessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userSessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"accessMode"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}},{"kind":"Field","name":{"kind":"Name","value":"numOfBlocks"}},{"kind":"Field","name":{"kind":"Name","value":"numOfQuestions"}},{"kind":"Field","name":{"kind":"Name","value":"blocks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]}}]} as unknown as DocumentNode<GetUserSessionsQuery, GetUserSessionsQueryVariables>;
 export const GetUserTagsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserTags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userTags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<GetUserTagsQuery, GetUserTagsQueryVariables>;
 export const SelfDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Self"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"self"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"avatarSettings"}},{"kind":"Field","name":{"kind":"Name","value":"achievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"achievedAt"}},{"kind":"Field","name":{"kind":"Name","value":"achievedCount"}},{"kind":"Field","name":{"kind":"Name","value":"achievement"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"iconColor"}}]}}]}}]}}]}}]} as unknown as DocumentNode<SelfQuery, SelfQueryVariables>;
 export const UserProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"UserProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"shortname"}}]}}]}}]} as unknown as DocumentNode<UserProfileQuery, UserProfileQueryVariables>;
@@ -1723,7 +1939,13 @@ export const UserProfileDocument = {"kind":"Document","definitions":[{"kind":"Op
         }
       }
       const result: PossibleTypesResultData = {
-  "possibleTypes": {}
+  "possibleTypes": {
+    "QuestionData": [
+      "ChoicesQuestionData",
+      "FreeTextQuestionData",
+      "NumericalQuestionData"
+    ]
+  }
 };
       export default result;
     

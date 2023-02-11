@@ -1,8 +1,5 @@
 import builder from '../builder'
-
-builder.interfaceRef('QuestionData'. {
-
-})
+import { QuestionData } from './questionData'
 
 export const Question = builder.prismaObject('Question', {
   fields: (t) => ({
@@ -32,7 +29,8 @@ export const QuestionInstance = builder.prismaObject('QuestionInstance', {
   fields: (t) => ({
     id: t.exposeInt('id'),
 
-    questionData: t.expose('questionData', { type: 'Json' }),
+    // HACK: as any fixes a weird TS error that only occurs in console
+    questionData: t.expose('questionData', { type: QuestionData as any }),
   }),
 })
 

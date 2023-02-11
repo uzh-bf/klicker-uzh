@@ -36,6 +36,26 @@ input BlockInput {
   timeLimit: Int
 }
 
+type Choice {
+  correct: Boolean
+  feedback: String
+  ix: Int!
+  value: String!
+}
+
+type ChoiceQuestionOptions {
+  choices: [Choice!]!
+}
+
+type ChoicesQuestionData implements QuestionData {
+  content: String!
+  id: String!
+  name: String!
+  options: ChoiceQuestionOptions!
+  pointsMultiplier: Int!
+  type: String!
+}
+
 type ClassAchievementInstance {
   id: Int!
 }
@@ -81,6 +101,24 @@ type FeedbackResponse {
   id: Int!
   negativeReactions: Int!
   positiveReactions: Int!
+}
+
+type FreeTextQuestionData implements QuestionData {
+  content: String!
+  id: String!
+  name: String!
+  options: FreeTextQuestionOptions!
+  pointsMultiplier: Int!
+  type: String!
+}
+
+type FreeTextQuestionOptions {
+  restrictions: FreeTextRestrictions!
+  solutions: [String!]!
+}
+
+type FreeTextRestrictions {
+  maxLength: Int
 }
 
 type GroupAchievementInstance {
@@ -190,6 +228,33 @@ type Mutation {
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
+type NumericalQuestionData implements QuestionData {
+  content: String!
+  id: String!
+  name: String!
+  options: NumericalQuestionOptions!
+  pointsMultiplier: Int!
+  type: String!
+}
+
+type NumericalQuestionOptions {
+  accuracy: Int
+  placeholder: String
+  restrictions: NumericalRestrictions!
+  solutionRanges: [NumericalSolutionRange!]!
+  unit: String
+}
+
+type NumericalRestrictions {
+  max: Int
+  min: Int
+}
+
+type NumericalSolutionRange {
+  max: Int
+  min: Int
+}
+
 type Participant {
   achievements: [ParticipantAchievementInstance!]!
   avatar: String
@@ -244,6 +309,7 @@ type Query {
   userCourses: [Course!]
   userProfile: User
   userQuestions: [Question!]
+  userSessions: [Session!]
   userTags: [Tag!]
 }
 
@@ -263,8 +329,17 @@ type Question {
   updatedAt: Date!
 }
 
+interface QuestionData {
+  content: String!
+  id: String!
+  name: String!
+  pointsMultiplier: Int!
+  type: String!
+}
+
 type QuestionInstance {
   id: Int!
+  questionData: QuestionData!
 }
 
 type QuestionResponse {
@@ -295,6 +370,8 @@ type Session {
   linkToJoin: String
   name: String!
   namespace: String!
+  numOfBlocks: Int
+  numOfQuestions: Int
   pinCode: Int
   pointsMultiplier: Int!
   startedAt: Date
@@ -309,6 +386,7 @@ enum SessionAccessMode {
 
 type SessionBlock {
   id: Int!
+  instances: [QuestionInstance!]!
   status: SessionBlockStatus!
 }
 
