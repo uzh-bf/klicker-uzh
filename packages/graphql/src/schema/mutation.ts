@@ -27,7 +27,17 @@ import {
   Participation,
   SubscriptionObjectInput,
 } from './participant'
-import { Question, QuestionInstance, ResponseInput, Tag } from './question'
+import {
+  AttachmentInput,
+  OptionsChoicesInput,
+  OptionsFreeTextInput,
+  OptionsNumericalInput,
+  Question,
+  QuestionInstance,
+  QuestionType,
+  ResponseInput,
+  Tag,
+} from './question'
 import {
   BlockInput,
   ConfusionTimestep,
@@ -639,6 +649,75 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ParticipantGroupService.startGroupActivity(args, ctx)
+        },
+      }),
+
+      manipulateChoicesQuestion: asUser.prismaField({
+        nullable: true,
+        type: Question,
+        args: {
+          id: t.arg.int({ required: false }),
+          type: t.arg({ required: true, type: QuestionType }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          hasSampleSolution: t.arg.boolean({ required: false }),
+          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+          tags: t.arg.stringList({ required: false }),
+          options: t.arg({
+            type: OptionsChoicesInput,
+          }),
+          attachments: t.arg({
+            type: [AttachmentInput],
+          }),
+        },
+        resolve(_, __, args, ctx) {
+          return QuestionService.manipulateQuestion(args, ctx)
+        },
+      }),
+
+      manipulateNumericalQuestion: asUser.prismaField({
+        nullable: true,
+        type: Question,
+        args: {
+          id: t.arg.int({ required: false }),
+          type: t.arg({ required: true, type: QuestionType }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          hasSampleSolution: t.arg.boolean({ required: false }),
+          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+          tags: t.arg.stringList({ required: false }),
+          options: t.arg({
+            type: OptionsNumericalInput,
+          }),
+          attachments: t.arg({
+            type: [AttachmentInput],
+          }),
+        },
+        resolve(_, __, args, ctx) {
+          return QuestionService.manipulateQuestion(args, ctx)
+        },
+      }),
+
+      manipulateFreeTextQuestion: asUser.prismaField({
+        nullable: true,
+        type: Question,
+        args: {
+          id: t.arg.int({ required: false }),
+          type: t.arg({ required: true, type: QuestionType }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          hasSampleSolution: t.arg.boolean({ required: false }),
+          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+          tags: t.arg.stringList({ required: false }),
+          options: t.arg({
+            type: OptionsFreeTextInput,
+          }),
+          attachments: t.arg({
+            type: [AttachmentInput],
+          }),
+        },
+        resolve(_, __, args, ctx) {
+          return QuestionService.manipulateQuestion(args, ctx)
         },
       }),
     }

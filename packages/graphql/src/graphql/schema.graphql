@@ -15,6 +15,10 @@ type Attachment {
   type: String!
 }
 
+input AttachmentInput {
+  id: String!
+}
+
 type AttachmentInstance {
   description: String
   href: String!
@@ -54,6 +58,13 @@ input BlockInput {
 }
 
 type Choice {
+  correct: Boolean
+  feedback: String
+  ix: Int!
+  value: String!
+}
+
+input ChoiceInput {
   correct: Boolean
   feedback: String
   ix: Int!
@@ -153,6 +164,12 @@ type FreeTextQuestionOptions {
 
 type FreeTextRestrictions {
   maxLength: Int
+}
+
+input FreeTextRestrictionsInput {
+  maxLength: Int
+  minLength: Int
+  pattern: String
 }
 
 type GroupAchievementInstance {
@@ -340,6 +357,9 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
+  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
+  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String!], type: QuestionType!): Question
+  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String!], type: QuestionType!): Question
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -378,9 +398,31 @@ type NumericalRestrictions {
   min: Int
 }
 
+input NumericalRestrictionsInput {
+  max: Float
+  min: Float
+}
+
 type NumericalSolutionRange {
   max: Int
   min: Int
+}
+
+input OptionsChoicesInput {
+  choices: [ChoiceInput!]
+}
+
+input OptionsFreeTextInput {
+  feedback: String
+  restrictions: FreeTextRestrictionsInput
+  solutions: [String!]
+}
+
+input OptionsNumericalInput {
+  accuracy: Int
+  feedback: String
+  restrictions: NumericalRestrictionsInput
+  solutionRanges: [SolutionRangeInput!]
 }
 
 enum ParameterType {
@@ -527,6 +569,14 @@ type QuestionResponseDetail {
   id: Int!
 }
 
+enum QuestionType {
+  FREE_TEXT
+  KPRIM
+  MC
+  NUMERICAL
+  SC
+}
+
 input ResponseInput {
   choices: [Int!]
   value: String
@@ -600,6 +650,11 @@ enum SessionStatus {
   SCHEDULED
 }
 
+input SolutionRangeInput {
+  max: Float
+  min: Float
+}
+
 type Statistics {
   max: Float!
   mean: Float!
@@ -625,7 +680,7 @@ type TabData {
   id: String!
   name: String!
   questionIx: Int
-  status: String!
+  status: String
 }
 
 type Tag {

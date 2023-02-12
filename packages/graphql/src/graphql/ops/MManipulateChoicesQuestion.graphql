@@ -1,16 +1,17 @@
-mutation ManipulateNUMERICALQuestion(
+mutation ManipulateChoicesQuestion(
   $id: Int
+  $type: QuestionType!
   $name: String
   $content: String
-  $options: OptionsNumericalInput
+  $options: OptionsChoicesInput
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
-  $attachments: [AttachmentInput]
-  $tags: [String]
+  $attachments: [AttachmentInput!]
+  $tags: [String!]
 ) {
-  manipulateNUMERICALQuestion(
+  manipulateChoicesQuestion(
     id: $id
-    type: "NUMERICAL"
+    type: $type
     name: $name
     content: $content
     options: $options

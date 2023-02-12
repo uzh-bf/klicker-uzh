@@ -203,7 +203,7 @@ const TabData = builder.objectRef<TabData>('TabData').implement({
     id: t.exposeString('id'),
     questionIx: t.exposeInt('questionIx', { nullable: true }),
     name: t.exposeString('name'),
-    status: t.exposeString('status'),
+    status: t.exposeString('status', { nullable: true }),
   }),
 })
 

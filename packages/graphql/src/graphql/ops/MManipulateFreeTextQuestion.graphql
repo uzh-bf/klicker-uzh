@@ -1,16 +1,16 @@
-mutation ManipulateFREETEXTQuestion(
+mutation ManipulateFreeTextQuestion(
   $id: Int
   $name: String
   $content: String
   $options: OptionsFreeTextInput
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
-  $attachments: [AttachmentInput]
-  $tags: [String]
+  $attachments: [AttachmentInput!]
+  $tags: [String!]
 ) {
-  manipulateFREETEXTQuestion(
+  manipulateFreeTextQuestion(
     id: $id
-    type: "FREE_TEXT"
+    type: FREE_TEXT
     name: $name
     content: $content
     options: $options

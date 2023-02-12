@@ -1,5 +1,80 @@
+import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import { QuestionData } from './questionData'
+
+export const ChoiceInput = builder.inputType('ChoiceInput', {
+  fields: (t) => ({
+    ix: t.int({ required: true }),
+    value: t.string({ required: true }),
+    correct: t.boolean({ required: false }),
+    feedback: t.string({ required: false }),
+  }),
+})
+
+export const OptionsChoicesInput = builder.inputType('OptionsChoicesInput', {
+  fields: (t) => ({
+    choices: t.field({
+      type: [ChoiceInput],
+    }),
+  }),
+})
+
+export const NumericalRestrictionsInput = builder.inputType(
+  'NumericalRestrictionsInput',
+  {
+    fields: (t) => ({
+      min: t.float({ required: false }),
+      max: t.float({ required: false }),
+    }),
+  }
+)
+
+export const SolutionRangeInput = builder.inputType('SolutionRangeInput', {
+  fields: (t) => ({
+    min: t.float({ required: false }),
+    max: t.float({ required: false }),
+  }),
+})
+
+export const OptionsNumericalInput = builder.inputType(
+  'OptionsNumericalInput',
+  {
+    fields: (t) => ({
+      accuracy: t.int({ required: false }),
+      restrictions: t.field({
+        type: NumericalRestrictionsInput,
+        required: false,
+      }),
+      solutionRanges: t.field({
+        type: [SolutionRangeInput],
+        required: false,
+      }),
+      feedback: t.string({ required: false }),
+    }),
+  }
+)
+
+export const FreeTextRestrictionsInput = builder.inputType(
+  'FreeTextRestrictionsInput',
+  {
+    fields: (t) => ({
+      maxLength: t.int({ required: false }),
+      minLength: t.int({ required: false }),
+      pattern: t.string({ required: false }),
+    }),
+  }
+)
+
+export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
+  fields: (t) => ({
+    restrictions: t.field({
+      type: FreeTextRestrictionsInput,
+      required: false,
+    }),
+    solutions: t.stringList({ required: false }),
+    feedback: t.string({ required: false }),
+  }),
+})
 
 export const ResponseInput = builder.inputType('ResponseInput', {
   fields: (t) => ({
@@ -53,6 +128,10 @@ export const InstanceEvaluation = builder
       }),
     }),
   })
+
+export const QuestionType = builder.enumType('QuestionType', {
+  values: Object.values(DB.QuestionType),
+})
 
 export const Question = builder.prismaObject('Question', {
   fields: (t) => ({
@@ -128,5 +207,11 @@ export const AttachmentInstance = builder.prismaObject('AttachmentInstance', {
     originalName: t.exposeString('originalName', { nullable: true }),
     type: t.exposeString('type'),
     description: t.exposeString('description', { nullable: true }),
+  }),
+})
+
+export const AttachmentInput = builder.inputType('AttachmentInput', {
+  fields: (t) => ({
+    id: t.string({ required: true }),
   }),
 })

@@ -57,12 +57,19 @@ export async function manipulateQuestion(
     attachments,
     tags,
   }: {
-    id?: number
+    id?: number | null
     type: QuestionType
-    name?: string
-    content?: string
+    name?: string | null
+    content?: string | null
     options?: {
-      restrictions?: { maxLength?: number; min?: number; max?: number }
+      restrictions?: {
+        maxLength?: number
+        minLength?: number
+        pattern?: string
+        min?: number
+        max?: number
+      }
+      feedback?: string
       solutionRanges?: { min?: number; max?: number }[]
       solutions?: string[]
       choices?: {
@@ -71,17 +78,17 @@ export async function manipulateQuestion(
         correct?: boolean
         feedback?: string
       }[]
-    }
-    hasSampleSolution?: boolean
-    hasAnswerFeedbacks?: boolean
-    attachments?: { id: string }[]
-    tags?: string[]
+    } | null
+    hasSampleSolution?: boolean | null
+    hasAnswerFeedbacks?: boolean | null
+    attachments?: { id: string }[] | null
+    tags?: string[] | null
   },
   ctx: ContextWithUser
 ) {
   let tagsToDelete: string[] = []
 
-  const questionOLD = id
+  const questionPrev = id
     ? await ctx.prisma.question.findUnique({
         where: {
           id: id,
@@ -93,8 +100,8 @@ export async function manipulateQuestion(
       })
     : undefined
 
-  if (questionOLD && questionOLD?.tags) {
-    tagsToDelete = questionOLD.tags
+  if (questionPrev && questionPrev?.tags) {
+    tagsToDelete = questionPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
   }
@@ -133,11 +140,11 @@ export async function manipulateQuestion(
       // TODO: create / connect attachments
     },
     update: {
-      name: name,
-      content: content,
-      hasSampleSolution: hasSampleSolution || false,
-      hasAnswerFeedbacks: hasAnswerFeedbacks || false,
-      options: options,
+      name: name ?? undefined,
+      content: content ?? undefined,
+      hasSampleSolution: hasSampleSolution ?? false,
+      hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
+      options: options ?? undefined,
       tags: {
         connectOrCreate: tags
           ?.filter((tag: string) => tag !== '')
