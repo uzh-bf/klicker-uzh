@@ -1167,6 +1167,40 @@ export type Statistics = {
   sd: Scalars['Float'];
 };
 
+export type Subscription = {
+  __typename?: 'Subscription';
+  feedbackAdded: Feedback;
+  feedbackCreated: Feedback;
+  feedbackRemoved: Scalars['String'];
+  feedbackUpdated: Feedback;
+  runningSessionUpdated: SessionBlock;
+};
+
+
+export type SubscriptionFeedbackAddedArgs = {
+  sessionId: Scalars['String'];
+};
+
+
+export type SubscriptionFeedbackCreatedArgs = {
+  sessionId: Scalars['String'];
+};
+
+
+export type SubscriptionFeedbackRemovedArgs = {
+  sessionId: Scalars['String'];
+};
+
+
+export type SubscriptionFeedbackUpdatedArgs = {
+  sessionId: Scalars['String'];
+};
+
+
+export type SubscriptionRunningSessionUpdatedArgs = {
+  sessionId: Scalars['String'];
+};
+
 export type SubscriptionKeysInput = {
   auth: Scalars['String'];
   p256dh: Scalars['String'];
@@ -1837,6 +1871,41 @@ export type UserProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type UserProfileQuery = { __typename?: 'Query', userProfile?: { __typename?: 'User', id: string, isActive: boolean, email: string, shortname: string } | null };
 
+export type FeedbackAddedSubscriptionVariables = Exact<{
+  sessionId: Scalars['String'];
+}>;
+
+
+export type FeedbackAddedSubscription = { __typename?: 'Subscription', feedbackAdded: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> } };
+
+export type FeedbackCreatedSubscriptionVariables = Exact<{
+  sessionId: Scalars['String'];
+}>;
+
+
+export type FeedbackCreatedSubscription = { __typename?: 'Subscription', feedbackCreated: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> } };
+
+export type FeedbackRemovedSubscriptionVariables = Exact<{
+  sessionId: Scalars['String'];
+}>;
+
+
+export type FeedbackRemovedSubscription = { __typename?: 'Subscription', feedbackRemoved: string };
+
+export type FeedbackUpdatedSubscriptionVariables = Exact<{
+  sessionId: Scalars['String'];
+}>;
+
+
+export type FeedbackUpdatedSubscription = { __typename?: 'Subscription', feedbackUpdated: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> } };
+
+export type RunningSessionUpdatedSubscriptionVariables = Exact<{
+  sessionId: Scalars['String'];
+}>;
+
+
+export type RunningSessionUpdatedSubscription = { __typename?: 'Subscription', runningSessionUpdated: { __typename?: 'SessionBlock', id: number, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, attachments: Array<{ __typename?: 'AttachmentInstance', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: string }>, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } } } }> } };
+
 
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -1986,6 +2055,7 @@ export type ResolversTypes = {
   SolutionRangeInput: SolutionRangeInput;
   Statistics: ResolverTypeWrapper<Statistics>;
   String: ResolverTypeWrapper<Scalars['String']>;
+  Subscription: ResolverTypeWrapper<{}>;
   SubscriptionKeysInput: SubscriptionKeysInput;
   SubscriptionObjectInput: SubscriptionObjectInput;
   TabData: ResolverTypeWrapper<TabData>;
@@ -2069,6 +2139,7 @@ export type ResolversParentTypes = {
   SolutionRangeInput: SolutionRangeInput;
   Statistics: Statistics;
   String: Scalars['String'];
+  Subscription: {};
   SubscriptionKeysInput: SubscriptionKeysInput;
   SubscriptionObjectInput: SubscriptionObjectInput;
   TabData: TabData;
@@ -2684,6 +2755,14 @@ export type StatisticsResolvers<ContextType = any, ParentType extends ResolversP
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type SubscriptionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Subscription'] = ResolversParentTypes['Subscription']> = {
+  feedbackAdded?: SubscriptionResolver<ResolversTypes['Feedback'], "feedbackAdded", ParentType, ContextType, RequireFields<SubscriptionFeedbackAddedArgs, 'sessionId'>>;
+  feedbackCreated?: SubscriptionResolver<ResolversTypes['Feedback'], "feedbackCreated", ParentType, ContextType, RequireFields<SubscriptionFeedbackCreatedArgs, 'sessionId'>>;
+  feedbackRemoved?: SubscriptionResolver<ResolversTypes['String'], "feedbackRemoved", ParentType, ContextType, RequireFields<SubscriptionFeedbackRemovedArgs, 'sessionId'>>;
+  feedbackUpdated?: SubscriptionResolver<ResolversTypes['Feedback'], "feedbackUpdated", ParentType, ContextType, RequireFields<SubscriptionFeedbackUpdatedArgs, 'sessionId'>>;
+  runningSessionUpdated?: SubscriptionResolver<ResolversTypes['SessionBlock'], "runningSessionUpdated", ParentType, ContextType, RequireFields<SubscriptionRunningSessionUpdatedArgs, 'sessionId'>>;
+};
+
 export type TabDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['TabData'] = ResolversParentTypes['TabData']> = {
   id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2770,6 +2849,7 @@ export type Resolvers<ContextType = any> = {
   SessionBlock?: SessionBlockResolvers<ContextType>;
   SessionEvaluation?: SessionEvaluationResolvers<ContextType>;
   Statistics?: StatisticsResolvers<ContextType>;
+  Subscription?: SubscriptionResolvers<ContextType>;
   TabData?: TabDataResolvers<ContextType>;
   Tag?: TagResolvers<ContextType>;
   Title?: TitleResolvers<ContextType>;
@@ -2859,6 +2939,11 @@ export const GroupActivityDetailsDocument = {"kind":"Document","definitions":[{"
 export const ParticipationsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Participations"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"endpoint"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participations"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"endpoint"},"value":{"kind":"Variable","name":{"kind":"Name","value":"endpoint"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"completedMicroSessions"}},{"kind":"Field","name":{"kind":"Name","value":"subscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"endpoint"}}]}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"microSessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledStartAt"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledEndAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"sessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"linkTo"}}]}}]}}]}}]}}]} as unknown as DocumentNode<ParticipationsQuery, ParticipationsQueryVariables>;
 export const SelfDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Self"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"self"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"avatarSettings"}},{"kind":"Field","name":{"kind":"Name","value":"achievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"achievedAt"}},{"kind":"Field","name":{"kind":"Name","value":"achievedCount"}},{"kind":"Field","name":{"kind":"Name","value":"achievement"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"iconColor"}}]}}]}}]}}]}}]} as unknown as DocumentNode<SelfQuery, SelfQueryVariables>;
 export const UserProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"UserProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"shortname"}}]}}]}}]} as unknown as DocumentNode<UserProfileQuery, UserProfileQueryVariables>;
+export const FeedbackAddedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackAdded"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackAdded"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"FeedbackData"}}]}}]}},...FeedbackDataFragmentDoc.definitions]} as unknown as DocumentNode<FeedbackAddedSubscription, FeedbackAddedSubscriptionVariables>;
+export const FeedbackCreatedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackCreated"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackCreated"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"FeedbackData"}}]}}]}},...FeedbackDataFragmentDoc.definitions]} as unknown as DocumentNode<FeedbackCreatedSubscription, FeedbackCreatedSubscriptionVariables>;
+export const FeedbackRemovedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackRemoved"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackRemoved"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}]}]}}]} as unknown as DocumentNode<FeedbackRemovedSubscription, FeedbackRemovedSubscriptionVariables>;
+export const FeedbackUpdatedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackUpdated"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackUpdated"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"FeedbackData"}}]}}]}},...FeedbackDataFragmentDoc.definitions]} as unknown as DocumentNode<FeedbackUpdatedSubscription, FeedbackUpdatedSubscriptionVariables>;
+export const RunningSessionUpdatedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"RunningSessionUpdated"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"runningSessionUpdated"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"expiresAt"}},{"kind":"Field","name":{"kind":"Name","value":"timeLimit"}},{"kind":"Field","name":{"kind":"Name","value":"randomSelection"}},{"kind":"Field","name":{"kind":"Name","value":"execution"}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"attachments"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"href"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"originalName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"QuestionDataWithoutSolutions"}}]}}]}}]}},...QuestionDataWithoutSolutionsFragmentDoc.definitions]} as unknown as DocumentNode<RunningSessionUpdatedSubscription, RunningSessionUpdatedSubscriptionVariables>;
 
       export interface PossibleTypesResultData {
         possibleTypes: {

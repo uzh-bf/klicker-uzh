@@ -674,6 +674,14 @@ type Statistics {
   sd: Float!
 }
 
+type Subscription {
+  feedbackAdded(sessionId: String!): Feedback!
+  feedbackCreated(sessionId: String!): Feedback!
+  feedbackRemoved(sessionId: String!): String!
+  feedbackUpdated(sessionId: String!): Feedback!
+  runningSessionUpdated(sessionId: String!): SessionBlock!
+}
+
 input SubscriptionKeysInput {
   auth: String!
   p256dh: String!
