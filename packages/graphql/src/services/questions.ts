@@ -29,13 +29,15 @@ export async function getSingleQuestion(
 ) {
   const question = await ctx.prisma.question.findUnique({
     where: {
-      id: id,
+      id,
     },
     include: {
       tags: true,
       attachments: true,
     },
   })
+
+  if (!question) return null
 
   return {
     ...question,

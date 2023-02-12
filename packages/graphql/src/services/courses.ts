@@ -421,6 +421,8 @@ export async function getCourseData(
     },
   })
 
+  if (!course) return null
+
   const reducedSessions = course?.sessions.map((session) => {
     return {
       ...session,

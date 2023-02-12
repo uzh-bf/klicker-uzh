@@ -382,12 +382,8 @@ export async function respondToQuestionInstance(
   }
 }
 
-interface GetLearningElementDataArgs {
-  id: string
-}
-
 export async function getLearningElementData(
-  { id }: GetLearningElementDataArgs,
+  { id }: { id: string },
   ctx: Context
 ) {
   const element = await ctx.prisma.learningElement.findUnique({

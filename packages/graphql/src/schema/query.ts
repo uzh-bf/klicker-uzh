@@ -236,6 +236,16 @@ export const Query = builder.queryType({
           return SessionService.getLiveSessionData(args, ctx)
         },
       }),
+      question: asUser.prismaField({
+        nullable: true,
+        type: Question,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return QuestionService.getSingleQuestion(args, ctx)
+        },
+      }),
     }
   },
 })
