@@ -593,7 +593,7 @@ input ResponseInput {
 
 type Session {
   accessMode: SessionAccessMode!
-  activeBlock: SessionBlock!
+  activeBlock: SessionBlock
   blocks: [SessionBlock!]!
   confusionFeedbacks: [ConfusionTimestep!]!
   course: Course!

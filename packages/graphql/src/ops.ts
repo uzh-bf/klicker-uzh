@@ -1083,7 +1083,7 @@ export type ResponseInput = {
 export type Session = {
   __typename?: 'Session';
   accessMode: SessionAccessMode;
-  activeBlock: SessionBlock;
+  activeBlock?: Maybe<SessionBlock>;
   blocks: Array<SessionBlock>;
   confusionFeedbacks: Array<ConfusionTimestep>;
   course: Course;
@@ -1371,7 +1371,7 @@ export type DeactivateSessionBlockMutationVariables = Exact<{
 }>;
 
 
-export type DeactivateSessionBlockMutation = { __typename?: 'Mutation', deactivateSessionBlock?: { __typename?: 'Session', id: string, status: SessionStatus, activeBlock: { __typename?: 'SessionBlock', id: number }, blocks: Array<{ __typename?: 'SessionBlock', id: number, status: SessionBlockStatus }> } | null };
+export type DeactivateSessionBlockMutation = { __typename?: 'Mutation', deactivateSessionBlock?: { __typename?: 'Session', id: string, status: SessionStatus, activeBlock?: { __typename?: 'SessionBlock', id: number } | null, blocks: Array<{ __typename?: 'SessionBlock', id: number, status: SessionBlockStatus }> } | null };
 
 export type DeleteFeedbackMutationVariables = Exact<{
   id: Scalars['Int'];
@@ -1692,7 +1692,7 @@ export type GetCockpitSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetCockpitSessionQuery = { __typename?: 'Query', cockpitSession?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, namespace: string, name: string, displayName: string, status: SessionStatus, startedAt?: any | null, course: { __typename?: 'Course', id: string, displayName: string }, blocks: Array<{ __typename?: 'SessionBlock', id: number, order?: number | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string } }> }>, activeBlock: { __typename?: 'SessionBlock', id: number }, confusionFeedbacks: Array<{ __typename?: 'ConfusionTimestep', speed: number, difficulty: number, numberOfParticipants?: number | null }>, feedbacks: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, createdAt: any, resolvedAt?: any | null, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> }> } | null };
+export type GetCockpitSessionQuery = { __typename?: 'Query', cockpitSession?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, namespace: string, name: string, displayName: string, status: SessionStatus, startedAt?: any | null, course: { __typename?: 'Course', id: string, displayName: string }, blocks: Array<{ __typename?: 'SessionBlock', id: number, order?: number | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string } }> }>, activeBlock?: { __typename?: 'SessionBlock', id: number } | null, confusionFeedbacks: Array<{ __typename?: 'ConfusionTimestep', speed: number, difficulty: number, numberOfParticipants?: number | null }>, feedbacks: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, createdAt: any, resolvedAt?: any | null, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> }> } | null };
 
 export type GetControlCourseQueryVariables = Exact<{
   courseId: Scalars['String'];
@@ -1711,7 +1711,7 @@ export type GetControlSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetControlSessionQuery = { __typename?: 'Query', controlSession?: { __typename?: 'Session', id: string, name: string, displayName: string, course: { __typename?: 'Course', id: string, displayName: string }, blocks: Array<{ __typename?: 'SessionBlock', id: number, order?: number | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string } }> }>, activeBlock: { __typename?: 'SessionBlock', id: number, order?: number | null } } | null };
+export type GetControlSessionQuery = { __typename?: 'Query', controlSession?: { __typename?: 'Session', id: string, name: string, displayName: string, course: { __typename?: 'Course', id: string, displayName: string }, blocks: Array<{ __typename?: 'SessionBlock', id: number, order?: number | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string } }> }>, activeBlock?: { __typename?: 'SessionBlock', id: number, order?: number | null } | null } | null };
 
 export type GetCourseOverviewDataQueryVariables = Exact<{
   courseId: Scalars['String'];
@@ -1770,7 +1770,7 @@ export type GetRunningSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetRunningSessionQuery = { __typename?: 'Query', session?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, namespace: string, name: string, displayName: string, status: SessionStatus, course: { __typename?: 'Course', id: string, displayName: string, color?: string | null }, activeBlock: { __typename?: 'SessionBlock', id: number, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, attachments: Array<{ __typename?: 'AttachmentInstance', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: string }>, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } } } }> } } | null };
+export type GetRunningSessionQuery = { __typename?: 'Query', session?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, namespace: string, name: string, displayName: string, status: SessionStatus, course: { __typename?: 'Course', id: string, displayName: string, color?: string | null }, activeBlock?: { __typename?: 'SessionBlock', id: number, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, attachments: Array<{ __typename?: 'AttachmentInstance', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: string }>, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } } } }> } | null } | null };
 
 export type GetRunningSessionsQueryVariables = Exact<{
   shortname: Scalars['String'];
@@ -2693,7 +2693,7 @@ export type QuestionResponseDetailResolvers<ContextType = any, ParentType extend
 
 export type SessionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Session'] = ResolversParentTypes['Session']> = {
   accessMode?: Resolver<ResolversTypes['SessionAccessMode'], ParentType, ContextType>;
-  activeBlock?: Resolver<ResolversTypes['SessionBlock'], ParentType, ContextType>;
+  activeBlock?: Resolver<Maybe<ResolversTypes['SessionBlock']>, ParentType, ContextType>;
   blocks?: Resolver<Array<ResolversTypes['SessionBlock']>, ParentType, ContextType>;
   confusionFeedbacks?: Resolver<Array<ResolversTypes['ConfusionTimestep']>, ParentType, ContextType>;
   course?: Resolver<ResolversTypes['Course'], ParentType, ContextType>;

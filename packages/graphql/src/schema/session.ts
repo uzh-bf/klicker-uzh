@@ -53,7 +53,7 @@ export const Session = builder.prismaObject('Session', {
       nullable: true,
     }),
 
-    activeBlock: t.relation('activeBlock'),
+    activeBlock: t.relation('activeBlock', { nullable: true }),
     blocks: t.relation('blocks'),
     feedbacks: t.relation('feedbacks'),
     confusionFeedbacks: t.relation('confusionFeedbacks'),
