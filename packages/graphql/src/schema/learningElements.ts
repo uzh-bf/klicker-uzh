@@ -1,6 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
 
 import builder from '../builder'
+import type { ICourse } from './course'
+import { Course } from './course'
+import type { IQuestionInstance } from './question'
+import { QuestionInstance } from './question'
 
 export const LearningElementOrderType = builder.enumType(
   'LearningElementOrderType',
@@ -9,7 +13,18 @@ export const LearningElementOrderType = builder.enumType(
   }
 )
 
-export const LearningElement = builder.prismaObject('LearningElement', {
+export interface ILearningElement extends DB.LearningElement {
+  previouslyAnswered?: number
+  previousScore?: number
+  previousPointsAwarded?: number
+  totalTrials?: number
+  instances?: IQuestionInstance[]
+  numOfInstances?: number
+  course?: ICourse | null
+}
+export const LearningElement =
+  builder.objectRef<ILearningElement>('LearningElement')
+LearningElement.implement({
   fields: (t) => ({
     id: t.exposeString('id'),
 
@@ -19,31 +34,23 @@ export const LearningElement = builder.prismaObject('LearningElement', {
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     resetTimeDays: t.exposeInt('resetTimeDays', { nullable: true }),
     orderType: t.expose('orderType', { type: LearningElementOrderType }),
-
-    previouslyAnswered: t.int({
-      resolve: (elem) => elem.previouslyAnswered,
+    previouslyAnswered: t.exposeInt('previouslyAnswered', { nullable: true }),
+    previousScore: t.exposeFloat('previousScore', { nullable: true }),
+    previousPointsAwarded: t.exposeFloat('previousPointsAwarded', {
+      nullable: true,
     }),
+    totalTrials: t.exposeInt('totalTrials', { nullable: true }),
 
-    previousScore: t.float({
-      resolve: (elem) => elem.previousScore,
+    instances: t.expose('instances', {
+      type: [QuestionInstance],
+      nullable: true,
     }),
+    numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),
 
-    previousPointsAwarded: t.float({
-      resolve: (elem) => elem.previousPointsAwarded,
+    course: t.expose('course', {
+      type: Course,
+      nullable: true,
     }),
-
-    totalTrials: t.int({
-      resolve: (elem) => elem.totalTrials,
-    }),
-
-    instances: t.relation('instances', {}),
-    numOfInstances: t.int({
-      resolve: (elem) => elem.numOfInstances,
-    }),
-
-    course: t.relation('course', {}),
-    courseId: t.string({
-      resolve: (elem) => elem.courseId,
-    }),
+    courseId: t.exposeString('courseId', { nullable: true }),
   }),
 })

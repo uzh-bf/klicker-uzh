@@ -1,6 +1,17 @@
+import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
+import type { ICourse } from './course'
+import { Course } from './course'
+import type { IQuestionInstance } from './question'
+import { QuestionInstance } from './question'
 
-export const MicroSession = builder.prismaObject('MicroSession', {
+export interface IMicroSession extends DB.MicroSession {
+  numOfInstances?: number
+  course?: ICourse | null
+  instances?: IQuestionInstance[]
+}
+export const MicroSession = builder.objectRef<IMicroSession>('MicroSession')
+MicroSession.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
@@ -11,13 +22,15 @@ export const MicroSession = builder.prismaObject('MicroSession', {
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
+    numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),
 
-    numOfInstances: t.int({
-      resolve: (microSession) => microSession.numOfInstances,
+    course: t.expose('course', {
+      type: Course,
       nullable: true,
     }),
-
-    course: t.relation('course', {}),
-    instances: t.relation('instances', {}),
+    instances: t.expose('instances', {
+      type: [QuestionInstance],
+      nullable: true,
+    }),
   }),
 })

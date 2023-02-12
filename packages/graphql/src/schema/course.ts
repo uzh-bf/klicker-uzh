@@ -1,6 +1,28 @@
+import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
+import type { ILearningElement } from './learningElements'
+import { LearningElement } from './learningElements'
+import type { IMicroSession } from './microSession'
+import { MicroSession } from './microSession'
+import type { IParticipant } from './participant'
+import { Participant, Participation } from './participant'
+import type { ISession } from './session'
+import { Session } from './session'
 
-export const Course = builder.prismaObject('Course', {
+export interface ICourse extends DB.Course {
+  numOfParticipants?: number
+  numOfActiveParticipants?: number
+  averageScore?: number
+  averageActiveScore?: number
+
+  sessions?: ISession[]
+  learningElements?: ILearningElement[]
+  microSessions?: IMicroSession[]
+  leaderboard?: ILeaderboardEntry[]
+  awards?: DB.AwardEntry[]
+}
+export const Course = builder.objectRef<ICourse>('Course')
+Course.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
@@ -12,107 +34,114 @@ export const Course = builder.prismaObject('Course', {
     description: t.exposeString('description', { nullable: true }),
     isArchived: t.exposeBoolean('isArchived', { nullable: true }),
 
-    numOfParticipants: t.int({
-      resolve: (course) => course.numOfParticipants,
+    numOfParticipants: t.exposeInt('numOfParticipants', {
       nullable: true,
     }),
-    numOfActiveParticipants: t.int({
-      resolve: (course) => course.numOfActiveParticipants,
-      nullable: true,
-    }),
-
-    averageScore: t.float({
-      resolve: (course) => course.averageScore,
+    numOfActiveParticipants: t.exposeInt('numOfActiveParticipants', {
       nullable: true,
     }),
 
-    averageActiveScore: t.float({
-      resolve: (course) => course.averageActiveScore,
+    averageScore: t.exposeFloat('averageScore', {
+      nullable: true,
+    }),
+
+    averageActiveScore: t.exposeFloat('averageActiveScore', {
       nullable: true,
     }),
 
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
 
-    sessions: t.relation('sessions'),
-    learningElements: t.relation('learningElements'),
-    microSessions: t.relation('microSessions'),
-    leaderboard: t.relation('leaderboard'),
-    awards: t.relation('awards'),
+    sessions: t.expose('sessions', {
+      type: [Session],
+      nullable: true,
+    }),
+    learningElements: t.expose('learningElements', {
+      type: [LearningElement],
+      nullable: true,
+    }),
+    microSessions: t.expose('microSessions', {
+      type: [MicroSession],
+      nullable: true,
+    }),
+    leaderboard: t.expose('leaderboard', {
+      type: [LeaderboardEntry],
+      nullable: true,
+    }),
+    awards: t.expose('awards', {
+      type: [AwardEntry],
+      nullable: true,
+    }),
   }),
 })
 
-export const LeaderboardEntry = builder.prismaObject('LeaderboardEntry', {
+export interface ILeaderboardEntry extends DB.LeaderboardEntry {
+  username: string
+  avatar?: string | null
+  rank: number
+  lastBlockOrder: number
+  isSelf: boolean
+  participant: IParticipant
+  participation: DB.Participation
+}
+export const LeaderboardEntry =
+  builder.objectRef<ILeaderboardEntry>('LeaderboardEntry')
+LeaderboardEntry.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
     score: t.exposeFloat('score'),
+    username: t.exposeString('username'),
+    avatar: t.exposeString('avatar', { nullable: true }),
+    rank: t.exposeInt('rank'),
+    lastBlockOrder: t.exposeInt('lastBlockOrder'),
+    isSelf: t.exposeBoolean('isSelf'),
 
-    username: t.string({
-      resolve: (entry) => entry.username,
+    participant: t.expose('participant', {
+      type: Participant,
+      nullable: true,
     }),
-    avatar: t.string({
-      resolve: (entry) => entry.avatar,
-    }),
-    rank: t.int({
-      resolve: (entry) => entry.rank,
-    }),
-    lastBlockOrder: t.int({
-      resolve: (entry) => entry.lastBlockOrder,
-    }),
-
-    isSelf: t.boolean({
-      resolve: (entry, args, ctx) => {
-        return entry.participantId === ctx.user?.sub
-      },
-    }),
-
-    participant: t.relation('participant'),
     participantId: t.exposeString('participantId'),
 
-    participation: t.relation('participation'),
+    participation: t.expose('participation', {
+      type: Participation,
+    }),
   }),
 })
 
-interface LeaderboardStatistics {
+export interface ILeaderboardStatistics {
   participantCount: number
   averageScore: number
 }
+export const LeaderboardStatistics = builder.objectRef<ILeaderboardStatistics>(
+  'LeaderboardStatistics'
+)
+LeaderboardStatistics.implement({
+  fields: (t) => ({
+    participantCount: t.exposeInt('participantCount'),
+    averageScore: t.exposeFloat('averageScore'),
+  }),
+})
 
-export const LeaderboardStatistics = builder
-  .objectRef<LeaderboardStatistics>('LeaderboardStatistics')
-  .implement({
-    fields: (t) => ({
-      participantCount: t.int({
-        nullable: false,
-        resolve: (stats) => stats.participantCount,
-      }),
-      averageScore: t.float({
-        nullable: false,
-        resolve: (stats) => stats.averageScore,
-      }),
-    }),
-  })
-
-interface GroupLeaderboardEntry {
+export interface IGroupLeaderboardEntry {
   id: string
   name: string
   score: number
   rank: number
   isMember?: boolean
 }
-
-export const GroupLeaderboardEntry = builder
-  .objectRef<GroupLeaderboardEntry>('GroupLeaderboardEntry')
-  .implement({
-    fields: (t) => ({
-      id: t.exposeID('id'),
-      name: t.exposeString('name'),
-      score: t.exposeFloat('score'),
-      rank: t.exposeInt('rank'),
-      isMember: t.exposeBoolean('isMember', { nullable: true }),
-    }),
-  })
+export const GroupLeaderboardEntry = builder.objectRef<IGroupLeaderboardEntry>(
+  'GroupLeaderboardEntry'
+)
+GroupLeaderboardEntry.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name'),
+    score: t.exposeFloat('score'),
+    rank: t.exposeInt('rank'),
+    isMember: t.exposeBoolean('isMember', { nullable: true }),
+  }),
+})
 
 export const AwardEntry = builder.prismaObject('AwardEntry', {
   fields: (t) => ({

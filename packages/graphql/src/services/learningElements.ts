@@ -411,7 +411,13 @@ export async function getLearningElementData(
 
   if (!element) return null
 
-  const instancesWithoutSolution = element.instances.reduce(
+  const instancesWithoutSolution = element.instances.reduce<{
+    instances: QuestionInstance[]
+    previouslyAnswered: number
+    previousScore: number
+    previousPointsAwarded: number
+    totalTrials: number
+  }>(
     (acc, instance) => {
       const questionData =
         instance.questionData?.valueOf() as AllQuestionTypeData
@@ -488,7 +494,6 @@ export async function getLearningElementData(
       ...element,
       ...instancesWithoutSolution,
       instances: orderedInstances,
-      id: element.id,
     }
   }
 
@@ -497,14 +502,12 @@ export async function getLearningElementData(
       ...element,
       ...instancesWithoutSolution,
       instances: shuffle(instancesWithoutSolution.instances),
-      id: element.id,
     }
   }
 
   return {
     ...element,
     ...instancesWithoutSolution,
-    id: element.id,
   }
 }
 

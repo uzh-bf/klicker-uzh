@@ -1296,11 +1296,7 @@ export async function getCockpitSession(
   // recude session to only contain what is required for the lecturer cockpit
   const reducedSession = {
     ...session,
-    activeBlock: session.activeBlock
-      ? {
-          id: session.activeBlock.id,
-        }
-      : null,
+    activeBlock: session.activeBlock,
     blocks: session.blocks.map((block) => {
       return {
         ...block,
@@ -1325,7 +1321,7 @@ export async function getCockpitSession(
         }),
       }
     }),
-    confusionFeedbacks: [aggregateFeedbacks(session.confusionFeedbacks)],
+    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
   }
 
   return reducedSession
@@ -1385,7 +1381,7 @@ export async function getPinnedFeedbacks(
   // recude session to only contain what is required for the lecturer cockpit
   const reducedSession = {
     ...session,
-    confusionFeedbacks: [aggregateFeedbacks(session.confusionFeedbacks)],
+    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
   }
 
   return reducedSession

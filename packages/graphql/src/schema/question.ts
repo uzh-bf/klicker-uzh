@@ -83,51 +83,49 @@ export const ResponseInput = builder.inputType('ResponseInput', {
   }),
 })
 
-interface QuestionFeedback {
+export interface IQuestionFeedback {
   ix: number
   feedback: string
   correct: boolean
   value: string
 }
+export const QuestionFeedback =
+  builder.objectRef<IQuestionFeedback>('QuestionFeedback')
+QuestionFeedback.implement({
+  fields: (t) => ({
+    ix: t.exposeInt('ix'),
+    feedback: t.exposeString('feedback'),
+    correct: t.exposeBoolean('correct'),
+    value: t.exposeString('value'),
+  }),
+})
 
-export const QuestionFeedback = builder
-  .objectRef<QuestionFeedback>('QuestionFeedback')
-  .implement({
-    fields: (t) => ({
-      ix: t.exposeInt('ix'),
-      feedback: t.exposeString('feedback'),
-      correct: t.exposeBoolean('correct'),
-      value: t.exposeString('value'),
-    }),
-  })
-
-interface InstanceEvaluation {
-  feedbacks?: QuestionFeedback[]
+export interface IInstanceEvaluation {
+  feedbacks?: IQuestionFeedback[]
   choices: object[]
   score: number
   pointsAwarded?: number
   percentile?: number
   newPointsFrom?: Date
 }
-
-export const InstanceEvaluation = builder
-  .objectRef<InstanceEvaluation>('InstanceEvaluation')
-  .implement({
-    fields: (t) => ({
-      feedbacks: t.expose('feedbacks', {
-        type: [QuestionFeedback],
-        nullable: true,
-      }),
-      choices: t.expose('choices', { type: 'Json' }),
-      score: t.exposeFloat('score'),
-      pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
-      percentile: t.exposeFloat('percentile', { nullable: true }),
-      newPointsFrom: t.expose('newPointsFrom', {
-        type: 'Date',
-        nullable: true,
-      }),
+export const InstanceEvaluation =
+  builder.objectRef<IInstanceEvaluation>('InstanceEvaluation')
+InstanceEvaluation.implement({
+  fields: (t) => ({
+    feedbacks: t.expose('feedbacks', {
+      type: [QuestionFeedback],
+      nullable: true,
     }),
-  })
+    choices: t.expose('choices', { type: 'Json' }),
+    score: t.exposeFloat('score'),
+    pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
+    percentile: t.exposeFloat('percentile', { nullable: true }),
+    newPointsFrom: t.expose('newPointsFrom', {
+      type: 'Date',
+      nullable: true,
+    }),
+  }),
+})
 
 export const QuestionType = builder.enumType('QuestionType', {
   values: Object.values(DB.QuestionType),
@@ -144,7 +142,10 @@ export const Question = builder.prismaObject('Question', {
     options: t.expose('options', { type: 'Json' }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
-    questionData: t.field({ type: QuestionData, resolve: (q) => q }),
+    questionData: t.field({
+      type: QuestionData,
+      resolve: (q) => q,
+    }),
 
     isArchived: t.exposeBoolean('isArchived'),
     isDeleted: t.exposeBoolean('isDeleted'),
@@ -161,21 +162,32 @@ export const Question = builder.prismaObject('Question', {
   }),
 })
 
-export const QuestionInstance = builder.prismaObject('QuestionInstance', {
+export interface IQuestionInstance extends DB.QuestionInstance {
+  evaluation?: IInstanceEvaluation
+  attachments?: DB.Attachment[]
+}
+export const QuestionInstance =
+  builder.objectRef<IQuestionInstance>('QuestionInstance')
+QuestionInstance.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
-    evaluation: t.field({
+    evaluation: t.expose('evaluation', {
       type: InstanceEvaluation,
-      resolve: (instance) => instance.evaluation,
       nullable: true,
     }),
 
-    // HACK: as any fixes a weird TS error that only occurs in console
-    questionData: t.expose('questionData', { type: QuestionData as any }),
+    questionData: t.field({
+      type: QuestionData,
+      // FIXME: can we get rid of any?
+      resolve: (q) => q.questionData as any as AllQuestionTypeData,
+    }),
 
-    attachments: t.relation('attachments'),
+    attachments: t.expose('attachments', {
+      type: [Attachment],
+      nullable: true,
+    }),
   }),
 })
 

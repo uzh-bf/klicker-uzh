@@ -1,4 +1,12 @@
+import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
+import { Achievement } from './achievement'
+import type {
+  ICourse,
+  IGroupLeaderboardEntry,
+  ILeaderboardEntry,
+  ILeaderboardStatistics,
+} from './course'
 import {
   Course,
   GroupLeaderboardEntry,
@@ -44,7 +52,15 @@ export const SubscriptionObjectInput = builder.inputType(
   }
 )
 
-export const Participant = builder.prismaObject('Participant', {
+export interface IParticipant extends DB.Participant {
+  rank?: number
+  score?: number
+  isSelf?: boolean
+  achievements?: DB.Achievement[]
+  participantGroups?: IParticipantGroup[]
+}
+export const Participant = builder.objectRef<IParticipant>('Participant')
+Participant.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
@@ -55,39 +71,43 @@ export const Participant = builder.prismaObject('Participant', {
     xp: t.exposeInt('xp'),
     level: t.exposeInt('level'),
 
-    participantGroups: t.relation('participantGroups'),
-    achievements: t.relation('achievements'),
+    participantGroups: t.expose('participantGroups', {
+      type: [ParticipantGroup],
+      nullable: true,
+    }),
+    achievements: t.expose('achievements', {
+      type: [Achievement],
+      nullable: true,
+    }),
 
     lastLoginAt: t.expose('lastLoginAt', { type: 'Date', nullable: true }),
 
-    rank: t.int({
-      resolve: (participant) => participant.rank,
-    }),
-    score: t.float({
-      resolve: (participant) => participant.score,
-    }),
-    isSelf: t.boolean({
-      resolve: (participant, args, ctx) => {
-        return participant.id === ctx.user?.sub
-      },
-    }),
+    rank: t.exposeInt('rank', { nullable: true }),
+    score: t.exposeFloat('score', { nullable: true }),
+    isSelf: t.exposeBoolean('isSelf', { nullable: true }),
   }),
 })
 
-export const ParticipantGroup = builder.prismaObject('ParticipantGroup', {
+export interface IParticipantGroup extends DB.ParticipantGroup {
+  score?: number
+  participants: IParticipant[]
+}
+export const ParticipantGroup =
+  builder.objectRef<IParticipantGroup>('ParticipantGroup')
+ParticipantGroup.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
-    participants: t.relation('participants'),
+    participants: t.expose('participants', {
+      type: [Participant],
+    }),
 
     name: t.exposeString('name'),
     code: t.exposeInt('code'),
 
     averageMemberScore: t.exposeFloat('averageMemberScore'),
     groupActivityScore: t.exposeFloat('groupActivityScore'),
-    score: t.float({
-      resolve: (group) => group.score
-    }),
+    score: t.exposeFloat('score', { nullable: true }),
   }),
 })
 
@@ -102,6 +122,8 @@ export const Participation = builder.prismaObject('Participation', {
     completedMicroSessions: t.exposeStringList('completedMicroSessions'),
 
     course: t.relation('course'),
+
+    participant: t.relation('participant'),
   }),
 })
 
@@ -113,100 +135,74 @@ export const PushSubscription = builder.prismaObject('PushSubscription', {
   }),
 })
 
-interface ParticipantLearningData {
+export interface IParticipantLearningData {
   id: string
   participantToken?: string
-  participant?: any // FIXME
-  participation?: any // FIXME
-  course?: any // FIXME
-  leaderboard?: any[] // FIXME
-  leaderboardStatistics?: any // FIXME
-  groupLeaderboard?: any[] // FIXME
-  groupLeaderboardStatistics?: any // FIXME
+  participant?: IParticipant
+  participation?: DB.Participation | null
+  course?: ICourse | null
+  leaderboard?: ILeaderboardEntry[]
+  leaderboardStatistics?: ILeaderboardStatistics
+  groupLeaderboard?: IGroupLeaderboardEntry[]
+  groupLeaderboardStatistics?: ILeaderboardStatistics
 }
+export const ParticipantLearningData =
+  builder.objectRef<IParticipantLearningData>('ParticipantLearningData')
+ParticipantLearningData.implement({
+  fields: (t) => ({
+    id: t.exposeString('id'),
 
-export const ParticipantLearningData = builder
-  .objectRef<ParticipantLearningData>('ParticipantLearningData')
-  .implement({
-    fields: (t) => ({
-      id: t.exposeString('id'),
+    participantToken: t.exposeString('participantToken', { nullable: true }),
 
-      participantToken: t.exposeString('participantToken', { nullable: true }),
-
-      participant: t.field({
-        type: Participant,
-        resolve: (root, args, ctx) => {
-          return root.participant
-        },
-        nullable: true,
-      }),
-
-      participation: t.field({
-        type: Participation,
-        resolve: (root, args, ctx) => {
-          return root.participation
-        },
-        nullable: true,
-      }),
-
-      course: t.field({
-        type: Course,
-        resolve: (root, args, ctx) => {
-          return root.course
-        },
-        nullable: true,
-      }),
-
-      leaderboard: t.field({
-        type: [LeaderboardEntry],
-        resolve: (root, args, ctx) => {
-          return root.leaderboard
-        },
-        nullable: true,
-      }),
-
-      leaderboardStatistics: t.field({
-        type: LeaderboardStatistics,
-        resolve: (root, args, ctx) => {
-          return root.leaderboardStatistics
-        },
-        nullable: true,
-      }),
-
-      groupLeaderboard: t.field({
-        type: [GroupLeaderboardEntry],
-        resolve: (root, args, ctx) => {
-          return root.groupLeaderboard
-        },
-        nullable: true,
-      }),
-
-      groupLeaderboardStatistics: t.field({
-        type: LeaderboardStatistics,
-        resolve: (root, args, ctx) => {
-          return root.groupLeaderboardStatistics
-        },
-        nullable: true,
-      }),
+    participant: t.expose('participant', {
+      type: Participant,
+      nullable: true,
     }),
-  })
 
-interface LeaveCourseParticipation {
+    participation: t.expose('participation', {
+      type: Participation,
+      nullable: true,
+    }),
+
+    course: t.expose('course', {
+      type: Course,
+      nullable: true,
+    }),
+
+    leaderboard: t.expose('leaderboard', {
+      type: [LeaderboardEntry],
+      nullable: true,
+    }),
+
+    leaderboardStatistics: t.expose('leaderboardStatistics', {
+      type: LeaderboardStatistics,
+      nullable: true,
+    }),
+
+    groupLeaderboard: t.expose('groupLeaderboard', {
+      type: [GroupLeaderboardEntry],
+      nullable: true,
+    }),
+
+    groupLeaderboardStatistics: t.expose('groupLeaderboardStatistics', {
+      type: LeaderboardStatistics,
+      nullable: true,
+    }),
+  }),
+})
+
+export interface ILeaveCourseParticipation {
   id: string
-  participation: any // FIXME
+  participation: DB.Participation
 }
+export const LeaveCourseParticipation =
+  builder.objectRef<ILeaveCourseParticipation>('LeaveCourseParticipation')
+LeaveCourseParticipation.implement({
+  fields: (t) => ({
+    id: t.exposeString('id'),
 
-export const LeaveCourseParticipation = builder
-  .objectRef<LeaveCourseParticipation>('LeaveCourseParticipation')
-  .implement({
-    fields: (t) => ({
-      id: t.exposeString('id'),
-
-      participation: t.field({
-        type: Participation,
-        resolve: (root, args, ctx) => {
-          return root.participation
-        },
-      }),
+    participation: t.expose('participation', {
+      type: Participation,
     }),
-  })
+  }),
+})

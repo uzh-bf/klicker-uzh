@@ -21,7 +21,7 @@ export const Subscription = builder.subscriptionType({
     })
 
     return {
-      runningSessionUpdated: asUser.prismaField({
+      runningSessionUpdated: asUser.field({
         type: SessionBlock,
         args: {
           sessionId: t.arg.string({ required: true }),
@@ -33,7 +33,7 @@ export const Subscription = builder.subscriptionType({
           ),
         resolve: (payload) => payload.block,
       }),
-      feedbackCreated: t.prismaField({
+      feedbackCreated: t.field({
         type: Feedback,
         args: {
           sessionId: t.arg.string({ required: true }),
@@ -45,7 +45,7 @@ export const Subscription = builder.subscriptionType({
           ),
         resolve: (payload) => payload,
       }),
-      feedbackAdded: t.prismaField({
+      feedbackAdded: t.field({
         type: Feedback,
         args: {
           sessionId: t.arg.string({ required: true }),
@@ -68,7 +68,7 @@ export const Subscription = builder.subscriptionType({
           ),
         resolve: (payload) => payload.id,
       }),
-      feedbackUpdated: t.prismaField({
+      feedbackUpdated: t.field({
         type: Feedback,
         args: {
           sessionId: t.arg.string({ required: true }),

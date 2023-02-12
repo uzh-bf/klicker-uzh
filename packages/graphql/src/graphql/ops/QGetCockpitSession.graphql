@@ -37,7 +37,7 @@ query GetCockpitSession($id: String!) {
     activeBlock {
       id
     }
-    confusionFeedbacks {
+    confusionSummary {
       speed
       difficulty
       numberOfParticipants

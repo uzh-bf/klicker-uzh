@@ -2,17 +2,16 @@ import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 
 // ----- QUESTION DATA INTERFACE -----
-interface BaseQuestionData {
+export interface BaseQuestionData {
   id: number
   name: string
   type: string
   content: string
   pointsMultiplier: number
 }
-
-const QuestionDataRef = builder.interfaceRef<BaseQuestionData>('QuestionData')
-
-export const QuestionData = builder.interfaceType(QuestionDataRef, {
+export const QuestionData =
+  builder.interfaceRef<BaseQuestionData>('QuestionData')
+QuestionData.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     name: t.exposeString('name'),
@@ -37,16 +36,14 @@ export const QuestionData = builder.interfaceType(QuestionDataRef, {
 })
 
 // ----- CHOICE QUESTIONS -----
-interface Choice {
+export interface IChoice {
   ix: number
   correct?: boolean
   feedback?: string
   value: string
 }
-
-const ChoiceRef = builder.objectRef<Choice>('Choice')
-
-const Choice = builder.objectType(ChoiceRef, {
+export const Choice = builder.objectRef<IChoice>('Choice')
+Choice.implement({
   fields: (t) => ({
     ix: t.exposeInt('ix'),
     correct: t.exposeBoolean('correct', { nullable: true }),
@@ -55,152 +52,130 @@ const Choice = builder.objectType(ChoiceRef, {
   }),
 })
 
-interface ChoiceQuestionOptions {
-  choices: Choice[]
+export interface IChoiceQuestionOptions {
+  choices: IChoice[]
 }
-
-const ChoiceQuestionOptionsRef = builder.objectRef<ChoiceQuestionOptions>(
+export const ChoiceQuestionOptions = builder.objectRef<IChoiceQuestionOptions>(
   'ChoiceQuestionOptions'
 )
-
-const ChoiceQuestionOptions = builder.objectType(ChoiceQuestionOptionsRef, {
+ChoiceQuestionOptions.implement({
   fields: (t) => ({
     choices: t.expose('choices', { type: [Choice] }),
   }),
 })
 
-interface ChoicesQuestionData extends BaseQuestionData {
-  options: ChoiceQuestionOptions
+export interface IChoicesQuestionData extends BaseQuestionData {
+  options: IChoiceQuestionOptions
 }
-
-const ChoicesQuestionDataRef = builder.objectRef<ChoicesQuestionData>(
+export const ChoicesQuestionData = builder.objectRef<IChoicesQuestionData>(
   'ChoicesQuestionData'
 )
-
-const ChoicesQuestionData = builder.objectType(ChoicesQuestionDataRef, {
+ChoicesQuestionData.implement({
   interfaces: [QuestionData],
   fields: (t) => ({
-    options: t.expose('options', { type: ChoiceQuestionOptionsRef }),
+    options: t.expose('options', { type: ChoiceQuestionOptions }),
   }),
 })
 
 // ----- NUMERICAL QUESTIONS -----
-interface NumericalRestrictions {
+export interface INumericalRestrictions {
   min?: number
   max?: number
 }
-
-const NumericalRestrictionsRef = builder.objectRef<NumericalRestrictions>(
+export const NumericalRestrictions = builder.objectRef<INumericalRestrictions>(
   'NumericalRestrictions'
 )
-
-const NumericalRestrictions = builder.objectType(NumericalRestrictionsRef, {
+NumericalRestrictions.implement({
   fields: (t) => ({
     min: t.exposeInt('min', { nullable: true }),
     max: t.exposeInt('max', { nullable: true }),
   }),
 })
 
-interface NumericalSolutionRange {
+export interface INumericalSolutionRange {
   min?: number
   max?: number
 }
-
-const NumericalSolutionRangeRef = builder.objectRef<NumericalSolutionRange>(
-  'NumericalSolutionRange'
-)
-
-const NumericalSolutionRange = builder.objectType(NumericalSolutionRangeRef, {
+export const NumericalSolutionRange =
+  builder.objectRef<INumericalSolutionRange>('NumericalSolutionRange')
+NumericalSolutionRange.implement({
   fields: (t) => ({
     min: t.exposeInt('min', { nullable: true }),
     max: t.exposeInt('max', { nullable: true }),
   }),
 })
 
-interface NumericalQuestionOptions {
+export interface INumericalQuestionOptions {
   accuracy?: number
   placeholder?: string
   unit?: string
-  restrictions: NumericalRestrictions
-  solutionRanges: NumericalSolutionRange[]
+  restrictions: INumericalRestrictions
+  solutionRanges: INumericalSolutionRange[]
 }
-
-const NumericalQuestionOptionsRef = builder.objectRef<NumericalQuestionOptions>(
-  'NumericalQuestionOptions'
-)
-
-const NumericalQuestionOptions = builder.objectType(
-  NumericalQuestionOptionsRef,
-  {
-    fields: (t) => ({
-      accuracy: t.exposeInt('accuracy', { nullable: true }),
-      placeholder: t.exposeString('placeholder', { nullable: true }),
-      unit: t.exposeString('unit', { nullable: true }),
-      restrictions: t.expose('restrictions', { type: NumericalRestrictions }),
-      solutionRanges: t.expose('solutionRanges', {
-        type: [NumericalSolutionRange],
-      }),
+export const NumericalQuestionOptions =
+  builder.objectRef<INumericalQuestionOptions>('NumericalQuestionOptions')
+NumericalQuestionOptions.implement({
+  fields: (t) => ({
+    accuracy: t.exposeInt('accuracy', { nullable: true }),
+    placeholder: t.exposeString('placeholder', { nullable: true }),
+    unit: t.exposeString('unit', { nullable: true }),
+    restrictions: t.expose('restrictions', {
+      type: NumericalRestrictions,
     }),
-  }
-)
+    solutionRanges: t.expose('solutionRanges', {
+      type: [NumericalSolutionRange],
+    }),
+  }),
+})
 
-interface NumericalQuestionData extends BaseQuestionData {
-  options: NumericalQuestionOptions
+export interface INumericalQuestionData extends BaseQuestionData {
+  options: INumericalQuestionOptions
 }
-
-const NumericalQuestionDataRef = builder.objectRef<NumericalQuestionData>(
+export const NumericalQuestionData = builder.objectRef<INumericalQuestionData>(
   'NumericalQuestionData'
 )
-
-const NumericalQuestionData = builder.objectType(NumericalQuestionDataRef, {
+NumericalQuestionData.implement({
   interfaces: [QuestionData],
   fields: (t) => ({
-    options: t.expose('options', { type: NumericalQuestionOptionsRef }),
+    options: t.expose('options', { type: NumericalQuestionOptions }),
   }),
 })
 
 // ----- FREE-TEXT QUESTIONS -----
-interface FreeTextRestrictions {
+export interface IFreeTextRestrictions {
   maxLength?: number
 }
-
-const FreeTextRestrictionsRef = builder.objectRef<FreeTextRestrictions>(
+export const FreeTextRestrictions = builder.objectRef<IFreeTextRestrictions>(
   'FreeTextRestrictions'
 )
-
-const FreeTextRestrictions = builder.objectType(FreeTextRestrictionsRef, {
+FreeTextRestrictions.implement({
   fields: (t) => ({
     maxLength: t.exposeInt('maxLength', { nullable: true }),
   }),
 })
 
-interface FreeTextQuestionOptions {
-  restrictions: FreeTextRestrictions
+export interface IFreeTextQuestionOptions {
+  restrictions: IFreeTextRestrictions
   solutions: string[]
 }
-
-const FreeTextQuestionOptionsRef = builder.objectRef<FreeTextQuestionOptions>(
-  'FreeTextQuestionOptions'
-)
-
-const FreeTextQuestionOptions = builder.objectType(FreeTextQuestionOptionsRef, {
+export const FreeTextQuestionOptions =
+  builder.objectRef<IFreeTextQuestionOptions>('FreeTextQuestionOptions')
+FreeTextQuestionOptions.implement({
   fields: (t) => ({
     restrictions: t.expose('restrictions', { type: FreeTextRestrictions }),
     solutions: t.exposeStringList('solutions'),
   }),
 })
 
-interface FreeTextQuestionData extends BaseQuestionData {
-  options: FreeTextQuestionOptions
+export interface IFreeTextQuestionData extends BaseQuestionData {
+  options: IFreeTextQuestionOptions
 }
-
-const FreeTextQuestionDataRef = builder.objectRef<FreeTextQuestionData>(
+export const FreeTextQuestionData = builder.objectRef<IFreeTextQuestionData>(
   'FreeTextQuestionData'
 )
-
-const FreeTextQuestionData = builder.objectType(FreeTextQuestionDataRef, {
+FreeTextQuestionData.implement({
   interfaces: [QuestionData],
   fields: (t) => ({
-    options: t.expose('options', { type: FreeTextQuestionOptionsRef }),
+    options: t.expose('options', { type: FreeTextQuestionOptions }),
   }),
 })

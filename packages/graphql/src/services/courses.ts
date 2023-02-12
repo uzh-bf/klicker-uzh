@@ -1,5 +1,6 @@
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
+import { GroupLeaderboardEntry, LeaderboardEntry } from '../schema/course'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -53,7 +54,7 @@ export async function joinCourse(
   { courseId }: JoinCourseArgs,
   ctx: ContextWithUser
 ) {
-  const participation = ctx.prisma.participation.upsert({
+  const participation = await ctx.prisma.participation.upsert({
     where: {
       courseId_participantId: {
         courseId,
@@ -78,6 +79,8 @@ export async function joinCourse(
     },
   })
 
+  if (!participation) return null
+
   return {
     id: `${courseId}-${ctx.user.sub}`,
     participation,
@@ -92,7 +95,7 @@ export async function leaveCourse(
   { courseId }: LeaveCourseArgs,
   ctx: ContextWithUser
 ) {
-  const participation = ctx.prisma.participation.update({
+  const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
         courseId,
@@ -103,6 +106,8 @@ export async function leaveCourse(
       isActive: false,
     },
   })
+
+  if (!participation) return null
 
   return {
     id: `${courseId}-${ctx.user.sub}`,
@@ -146,18 +151,23 @@ export async function getCourseOverviewData(
       where: { id: courseId },
     })
 
-    const lbEntries = await course.participations({
-      where: {
-        isActive: true,
-      },
-      include: {
-        courseLeaderboard: true,
-        participant: true,
-      },
-    })
+    const lbEntries =
+      (await course.participations({
+        where: {
+          isActive: true,
+        },
+        include: {
+          courseLeaderboard: true,
+          participant: true,
+        },
+      })) ?? []
 
     if (participation) {
-      const allEntries = lbEntries?.reduce(
+      const allEntries = lbEntries.reduce<{
+        mapped: Partial<LeaderboardEntry>[]
+        sum: number
+        count: number
+      }>(
         (acc, entry) => {
           return {
             mapped: [
@@ -182,7 +192,11 @@ export async function getCourseOverviewData(
         }
       )
 
-      const allGroupEntries = participation.course.participantGroups.reduce(
+      const allGroupEntries = participation.course.participantGroups.reduce<{
+        mapped: Partial<GroupLeaderboardEntry>[]
+        sum: number
+        count: number
+      }>(
         (acc, group, ix) => {
           const score = group.averageMemberScore + group.groupActivityScore
           return {

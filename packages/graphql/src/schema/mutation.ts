@@ -34,7 +34,6 @@ import {
   OptionsNumericalInput,
   Question,
   QuestionInstance,
-  QuestionType,
   ResponseInput,
   Tag,
 } from './question'
@@ -60,9 +59,8 @@ export const Mutation = builder.mutationType({
     })
 
     return {
-      loginUser: t.field({
+      loginUser: t.string({
         nullable: true,
-        type: 'String',
         args: {
           email: t.arg.string({ required: true, validate: { email: true } }),
           password: t.arg.string({ required: true }),
@@ -353,17 +351,15 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      logoutUser: asUser.field({
+      logoutUser: asUser.id({
         nullable: true,
-        type: 'ID',
         resolve(_, args, ctx) {
           return AccountService.logoutUser(args, ctx)
         },
       }),
 
-      logoutParticipant: asParticipant.field({
+      logoutParticipant: asParticipant.id({
         nullable: true,
-        type: 'ID',
         resolve(_, args, ctx) {
           return AccountService.logoutParticipant(args, ctx)
         },
@@ -392,9 +388,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      loginUserToken: t.field({
+      loginUserToken: t.id({
         nullable: true,
-        type: 'ID',
         args: {
           email: t.arg.string({ required: true }),
           token: t.arg.string({ required: true }),
@@ -404,9 +399,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      loginParticipant: t.field({
+      loginParticipant: t.id({
         nullable: true,
-        type: 'ID',
         args: {
           username: t.arg.string({ required: true }),
           password: t.arg.string({ required: true }),
@@ -657,7 +651,7 @@ export const Mutation = builder.mutationType({
         type: Question,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: DB.QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
@@ -680,7 +674,7 @@ export const Mutation = builder.mutationType({
         type: Question,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: DB.QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
@@ -703,7 +697,7 @@ export const Mutation = builder.mutationType({
         type: Question,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: DB.QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
