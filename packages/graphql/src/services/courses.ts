@@ -1,6 +1,5 @@
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
-import { GroupLeaderboardEntry, LeaderboardEntry } from '../schema/course'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
