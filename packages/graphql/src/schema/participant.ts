@@ -83,8 +83,10 @@ export const ParticipantGroup = builder.prismaObject('ParticipantGroup', {
     name: t.exposeString('name'),
     code: t.exposeInt('code'),
 
+    averageMemberScore: t.exposeFloat('averageMemberScore'),
+    groupActivityScore: t.exposeFloat('groupActivityScore'),
     score: t.float({
-      resolve: (group) => group.score,
+      resolve: (group) => group.score
     }),
   }),
 })

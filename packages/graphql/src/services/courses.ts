@@ -110,12 +110,8 @@ export async function leaveCourse(
   }
 }
 
-interface GetCourseOverviewDataArgs {
-  courseId: string
-}
-
 export async function getCourseOverviewData(
-  { courseId }: GetCourseOverviewDataArgs,
+  { courseId }: { courseId: string },
   ctx: Context
 ) {
   if (ctx.user?.sub) {

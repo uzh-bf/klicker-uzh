@@ -12,7 +12,12 @@ import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
 import { LearningElement } from './learningElements'
 import { MicroSession } from './microSession'
-import { Participant, ParticipantGroup, Participation } from './participant'
+import {
+  Participant,
+  ParticipantGroup,
+  ParticipantLearningData,
+  Participation,
+} from './participant'
 import { Question, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
 import { User } from './user'
@@ -285,6 +290,16 @@ export const Query = builder.queryType({
         },
         resolve(_, __, args, ctx) {
           return ParticipantService.getParticipations(args, ctx)
+        },
+      }),
+      getCourseOverviewData: asAuthenticated.field({
+        nullable: true,
+        type: ParticipantLearningData,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCourseOverviewData(args, ctx)
         },
       }),
     }

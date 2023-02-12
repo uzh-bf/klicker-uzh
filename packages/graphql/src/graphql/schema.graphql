@@ -37,7 +37,14 @@ input AvatarSettingsInput {
 }
 
 type AwardEntry {
+  description: String!
+  displayName: String!
   id: Int!
+  name: String!
+  order: Int!
+  participant: Participant!
+  participantGroup: ParticipantGroup!
+  type: String!
 }
 
 input BlockInput {
@@ -81,6 +88,7 @@ type ConfusionTimestep {
 type Course {
   averageActiveScore: Float
   averageScore: Float
+  awards: [AwardEntry!]!
   color: String
   createdAt: Date!
   description: String
@@ -371,7 +379,9 @@ type ParticipantAchievementInstance {
 }
 
 type ParticipantGroup {
+  averageMemberScore: Float!
   code: Int!
+  groupActivityScore: Float!
   id: ID!
   name: String!
   participants: [Participant!]!
@@ -411,6 +421,7 @@ type Query {
   controlSession(id: String!): Session
   course(id: String!): Course
   feedbacks(id: String!): [Feedback!]
+  getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   learningElement(id: String!): LearningElement
   learningElements: [LearningElement!]

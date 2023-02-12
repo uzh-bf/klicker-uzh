@@ -38,6 +38,7 @@ export const Course = builder.prismaObject('Course', {
     learningElements: t.relation('learningElements'),
     microSessions: t.relation('microSessions'),
     leaderboard: t.relation('leaderboard'),
+    awards: t.relation('awards'),
   }),
 })
 
@@ -116,5 +117,14 @@ export const GroupLeaderboardEntry = builder
 export const AwardEntry = builder.prismaObject('AwardEntry', {
   fields: (t) => ({
     id: t.exposeInt('id'),
+
+    order: t.exposeInt('order'),
+    type: t.exposeString('type'),
+    name: t.exposeString('name'),
+    displayName: t.exposeString('displayName'),
+    description: t.exposeString('description'),
+
+    participant: t.relation('participant'),
+    participantGroup: t.relation('participantGroup'),
   }),
 })
