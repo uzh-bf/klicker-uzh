@@ -73,13 +73,20 @@ type ConfusionTimestep {
 }
 
 type Course {
+  averageActiveScore: Float
+  averageScore: Float
   color: String
   createdAt: Date!
   description: String
   displayName: String!
   id: ID!
   isArchived: Boolean
+  leaderboard: [LeaderboardEntry!]!
+  learningElements: [LearningElement!]!
+  microSessions: [MicroSession!]!
   name: String!
+  numOfActiveParticipants: Int
+  numOfParticipants: Int
   pinCode: Int
   sessions: [Session!]!
   updatedAt: Date!
@@ -184,7 +191,13 @@ The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](
 scalar Json
 
 type LeaderboardEntry {
+  avatar: String!
   id: Int!
+  participant: Participant!
+  participation: Participation!
+  rank: Int!
+  score: Float!
+  username: String!
 }
 
 type LeaderboardStatistics {
@@ -197,7 +210,7 @@ type LearningElement {
   courseId: String!
   description: String
   displayName: String!
-  id: String!
+  id: ID!
   instances: [QuestionInstance!]!
   name: String!
   numOfInstances: Int!
@@ -228,6 +241,9 @@ type MicroSession {
   id: ID!
   instances: [QuestionInstance!]!
   name: String!
+  numOfInstances: Int
+  scheduledEndAt: Date!
+  scheduledStartAt: Date!
 }
 
 type Mutation {
@@ -364,10 +380,12 @@ type Query {
   controlCourse(id: String!): Course
   controlCourses: [Course!]
   controlSession(id: String!): Session
+  course(id: String!): Course
   feedbacks(id: String!): [Feedback!]
   getLoginToken: User
   learningElement(id: String!): LearningElement
   learningElements: [LearningElement!]
+  liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantGroups(courseId: String!): [ParticipantGroup!]
   pinnedFeedbacks(id: String!): Session

@@ -321,7 +321,7 @@ interface GetLiveSessionDataArgs {
 
 export async function getLiveSessionData(
   { id }: GetLiveSessionDataArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   if (!id) {
     return null

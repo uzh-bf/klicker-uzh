@@ -224,7 +224,17 @@ export const Query = builder.queryType({
         },
         resolve(_, __, args, ctx) {
           return CourseService.getCourseData(args, ctx)
-        }
+        },
+      }),
+      liveSession: t.prismaField({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return SessionService.getLiveSessionData(args, ctx)
+        },
       }),
     }
   },

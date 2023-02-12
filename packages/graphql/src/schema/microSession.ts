@@ -8,6 +8,14 @@ export const MicroSession = builder.prismaObject('MicroSession', {
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
 
+    scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
+    scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
+
+    numOfInstances: t.int({
+      resolve: (microSession) => microSession.numOfInstances,
+      nullable: true,
+    }),
+
     course: t.relation('course', {}),
     instances: t.relation('instances', {}),
   }),
