@@ -51,10 +51,19 @@ export const LeaderboardEntry = builder.prismaObject('LeaderboardEntry', {
       resolve: (entry) => entry.username,
     }),
     avatar: t.string({
-      resolve: (entry) => entry.avatar!,
+      resolve: (entry) => entry.avatar,
     }),
     rank: t.int({
-      resolve: (entry) => entry.rank!,
+      resolve: (entry) => entry.rank,
+    }),
+    lastBlockOrder: t.int({
+      resolve: (entry) => entry.lastBlockOrder,
+    }),
+
+    isSelf: t.boolean({
+      resolve: (entry, args, ctx) => {
+        return entry.participantId === ctx.user?.sub
+      },
     }),
 
     participant: t.relation('participant'),

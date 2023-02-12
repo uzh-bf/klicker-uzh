@@ -490,6 +490,7 @@ export async function getLearningElementData(
       ...element,
       ...instancesWithoutSolution,
       instances: orderedInstances,
+      id: element.id,
     }
   }
 
@@ -498,12 +499,14 @@ export async function getLearningElementData(
       ...element,
       ...instancesWithoutSolution,
       instances: shuffle(instancesWithoutSolution.instances),
+      id: element.id,
     }
   }
 
   return {
     ...element,
     ...instancesWithoutSolution,
+    id: element.id,
   }
 }
 
