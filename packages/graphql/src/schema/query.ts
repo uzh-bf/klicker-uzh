@@ -246,6 +246,16 @@ export const Query = builder.queryType({
           return QuestionService.getSingleQuestion(args, ctx)
         },
       }),
+      singleMicroSession: asAuthenticated.prismaField({
+        nullable: true,
+        type: MicroSession,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return MicroSessionService.getSingleMicroSession(args, ctx)
+        },
+      }),
     }
   },
 })
