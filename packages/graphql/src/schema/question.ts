@@ -186,6 +186,10 @@ export const Tag = builder.prismaObject('Tag', {
   }),
 })
 
+export const AttachmentType = builder.enumType('AttachmentType', {
+  values: Object.values(DB.AttachmentType),
+})
+
 export const Attachment = builder.prismaObject('Attachment', {
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -193,7 +197,9 @@ export const Attachment = builder.prismaObject('Attachment', {
     href: t.exposeString('href'),
     name: t.exposeString('name'),
     originalName: t.exposeString('originalName', { nullable: true }),
-    type: t.exposeString('type'),
+    type: t.expose('type', {
+      type: AttachmentType,
+    }),
     description: t.exposeString('description', { nullable: true }),
   }),
 })

@@ -12,7 +12,7 @@ type Attachment {
   id: ID!
   name: String!
   originalName: String
-  type: String!
+  type: AttachmentType!
 }
 
 input AttachmentInput {
@@ -26,6 +26,15 @@ type AttachmentInstance {
   name: String!
   originalName: String
   type: String!
+}
+
+enum AttachmentType {
+  GIF
+  JPEG
+  LINK
+  PNG
+  SVG
+  WEBP
 }
 
 input AvatarSettingsInput {
