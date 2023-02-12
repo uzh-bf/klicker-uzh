@@ -3,7 +3,7 @@ import builder from '../builder'
 
 // ----- QUESTION DATA INTERFACE -----
 interface BaseQuestionData {
-  id: string
+  id: number
   name: string
   type: string
   content: string
@@ -14,7 +14,7 @@ const QuestionDataRef = builder.interfaceRef<BaseQuestionData>('QuestionData')
 
 export const QuestionData = builder.interfaceType(QuestionDataRef, {
   fields: (t) => ({
-    id: t.exposeString('id'),
+    id: t.exposeInt('id'),
     name: t.exposeString('name'),
     type: t.exposeString('type'),
     content: t.exposeString('content'),

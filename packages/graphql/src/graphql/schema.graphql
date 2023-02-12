@@ -7,7 +7,12 @@ type Achievement {
 }
 
 type Attachment {
+  description: String
+  href: String!
   id: ID!
+  name: String!
+  originalName: String
+  type: String!
 }
 
 type AttachmentInstance {
@@ -54,7 +59,7 @@ type ChoiceQuestionOptions {
 
 type ChoicesQuestionData implements QuestionData {
   content: String!
-  id: String!
+  id: Int!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
@@ -66,6 +71,7 @@ type ClassAchievementInstance {
 }
 
 type ConfusionTimestep {
+  createdAt: Date!
   difficulty: Int!
   id: Int!
   numberOfParticipants: Int
@@ -97,6 +103,12 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar Date
 
+type EvaluationBlock {
+  blockIx: Int!
+  blockStatus: SessionBlockStatus!
+  tabData: [TabData!]!
+}
+
 type Feedback {
   content: String!
   createdAt: Date!
@@ -111,6 +123,7 @@ type Feedback {
 
 type FeedbackResponse {
   content: String!
+  createdAt: Date!
   id: Int!
   negativeReactions: Int!
   positiveReactions: Int!
@@ -118,7 +131,7 @@ type FeedbackResponse {
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
-  id: String!
+  id: Int!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
@@ -185,6 +198,17 @@ type InstanceEvaluation {
   score: Float!
 }
 
+type InstanceResult {
+  blockIx: Int
+  id: String!
+  instanceIx: Int!
+  participants: Int!
+  questionData: QuestionData!
+  results: Json!
+  statistics: Statistics!
+  status: SessionBlockStatus!
+}
+
 """
 The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -194,6 +218,7 @@ type LeaderboardEntry {
   avatar: String!
   id: Int!
   participant: Participant!
+  participantId: String!
   participation: Participation!
   rank: Int!
   score: Float!
@@ -242,6 +267,7 @@ type MicroSession {
   instances: [QuestionInstance!]!
   name: String!
   numOfInstances: Int
+  pointsMultiplier: Float!
   scheduledEndAt: Date!
   scheduledStartAt: Date!
 }
@@ -295,7 +321,7 @@ type Mutation {
 
 type NumericalQuestionData implements QuestionData {
   content: String!
-  id: String!
+  id: Int!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
@@ -389,9 +415,13 @@ type Query {
   microSession(id: String!): MicroSession
   participantGroups(courseId: String!): [ParticipantGroup!]
   pinnedFeedbacks(id: String!): Session
+  question(id: Int!): Question
   runningSessions(shortname: String!): [Session!]
   self: Participant
   session(id: String!): Session
+  sessionEvaluation(id: String!): SessionEvaluation
+  sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
+  singleMicroSession(id: String!): MicroSession
   unassignedSessions: [Session!]
   userCourses: [Course!]
   userProfile: User
@@ -401,6 +431,7 @@ type Query {
 }
 
 type Question {
+  attachments: [Attachment!]!
   content: String!
   createdAt: Date!
   hasAnswerFeedbacks: Boolean!
@@ -411,6 +442,7 @@ type Question {
   name: String!
   options: Json!
   pointsMultiplier: Int!
+  questionData: QuestionData!
   tags: [Tag!]!
   type: String!
   updatedAt: Date!
@@ -418,7 +450,7 @@ type Question {
 
 interface QuestionData {
   content: String!
-  id: String!
+  id: Int!
   name: String!
   pointsMultiplier: Int!
   type: String!
@@ -498,11 +530,31 @@ enum SessionBlockStatus {
   SCHEDULED
 }
 
+type SessionEvaluation {
+  blocks: [EvaluationBlock!]!
+  confusionFeedbacks: [ConfusionTimestep!]!
+  feedbacks: [Feedback!]!
+  id: String!
+  instanceResults: [InstanceResult!]!
+  isGamificationEnabled: Boolean!
+  status: SessionStatus!
+}
+
 enum SessionStatus {
   COMPLETED
   PREPARED
   RUNNING
   SCHEDULED
+}
+
+type Statistics {
+  max: Float!
+  mean: Float!
+  median: Float!
+  min: Float!
+  q1: Float!
+  q3: Float!
+  sd: Float!
 }
 
 input SubscriptionKeysInput {
@@ -514,6 +566,13 @@ input SubscriptionObjectInput {
   endpoint: String!
   expirationTime: Int
   keys: SubscriptionKeysInput!
+}
+
+type TabData {
+  id: String!
+  name: String!
+  questionIx: Int!
+  status: String!
 }
 
 type Tag {

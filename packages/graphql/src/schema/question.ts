@@ -58,6 +58,8 @@ export const Question = builder.prismaObject('Question', {
     options: t.expose('options', { type: 'Json' }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
+    questionData: t.field({ type: QuestionData, resolve: (q) => q }),
+
     isArchived: t.exposeBoolean('isArchived'),
     isDeleted: t.exposeBoolean('isDeleted'),
 
@@ -66,6 +68,8 @@ export const Question = builder.prismaObject('Question', {
 
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
+
+    attachments: t.relation('attachments'),
 
     tags: t.relation('tags'),
   }),
@@ -99,6 +103,12 @@ export const Tag = builder.prismaObject('Tag', {
 export const Attachment = builder.prismaObject('Attachment', {
   fields: (t) => ({
     id: t.exposeID('id'),
+
+    href: t.exposeString('href'),
+    name: t.exposeString('name'),
+    originalName: t.exposeString('originalName', { nullable: true }),
+    type: t.exposeString('type'),
+    description: t.exposeString('description', { nullable: true }),
   }),
 })
 

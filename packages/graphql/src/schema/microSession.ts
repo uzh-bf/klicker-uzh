@@ -7,6 +7,7 @@ export const MicroSession = builder.prismaObject('MicroSession', {
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
+    pointsMultiplier: t.exposeFloat('pointsMultiplier'),
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),

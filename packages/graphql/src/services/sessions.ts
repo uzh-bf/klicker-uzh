@@ -1036,12 +1036,8 @@ export async function getRunningSession(
   return null
 }
 
-interface GetLeaderboardArgs {
-  sessionId: string
-}
-
 export async function getLeaderboard(
-  { sessionId }: GetLeaderboardArgs,
+  { sessionId }: { sessionId: string },
   ctx: ContextWithUser
 ) {
   const session = await ctx.prisma.session.findUnique({
@@ -1061,6 +1057,8 @@ export async function getLeaderboard(
       blocks: true,
     },
   })
+
+  if (!session) return null
 
   // find the order attribute of the last exectued block
   const executedBlockOrders = session?.blocks
@@ -1552,7 +1550,7 @@ export async function getSessionEvaluation(
 
         return {
           id: `${instance?.id}-eval`,
-          blockIx: session.activeBlock?.order,
+          blockIx: session.activeBlock!.order,
           instanceIx: instance?.order,
           status: session.activeBlock!.status,
           questionData: instance?.questionData,

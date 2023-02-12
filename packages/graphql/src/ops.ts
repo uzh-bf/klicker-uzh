@@ -30,7 +30,12 @@ export type Achievement = {
 
 export type Attachment = {
   __typename?: 'Attachment';
+  description?: Maybe<Scalars['String']>;
+  href: Scalars['String'];
   id: Scalars['ID'];
+  name: Scalars['String'];
+  originalName?: Maybe<Scalars['String']>;
+  type: Scalars['String'];
 };
 
 export type AttachmentInstance = {
@@ -82,7 +87,7 @@ export type ChoiceQuestionOptions = {
 export type ChoicesQuestionData = QuestionData & {
   __typename?: 'ChoicesQuestionData';
   content: Scalars['String'];
-  id: Scalars['String'];
+  id: Scalars['Int'];
   name: Scalars['String'];
   options: ChoiceQuestionOptions;
   pointsMultiplier: Scalars['Int'];
@@ -96,6 +101,7 @@ export type ClassAchievementInstance = {
 
 export type ConfusionTimestep = {
   __typename?: 'ConfusionTimestep';
+  createdAt: Scalars['Date'];
   difficulty: Scalars['Int'];
   id: Scalars['Int'];
   numberOfParticipants?: Maybe<Scalars['Int']>;
@@ -123,6 +129,13 @@ export type Course = {
   updatedAt: Scalars['Date'];
 };
 
+export type EvaluationBlock = {
+  __typename?: 'EvaluationBlock';
+  blockIx: Scalars['Int'];
+  blockStatus: SessionBlockStatus;
+  tabData: Array<TabData>;
+};
+
 export type Feedback = {
   __typename?: 'Feedback';
   content: Scalars['String'];
@@ -139,6 +152,7 @@ export type Feedback = {
 export type FeedbackResponse = {
   __typename?: 'FeedbackResponse';
   content: Scalars['String'];
+  createdAt: Scalars['Date'];
   id: Scalars['Int'];
   negativeReactions: Scalars['Int'];
   positiveReactions: Scalars['Int'];
@@ -147,7 +161,7 @@ export type FeedbackResponse = {
 export type FreeTextQuestionData = QuestionData & {
   __typename?: 'FreeTextQuestionData';
   content: Scalars['String'];
-  id: Scalars['String'];
+  id: Scalars['Int'];
   name: Scalars['String'];
   options: FreeTextQuestionOptions;
   pointsMultiplier: Scalars['Int'];
@@ -225,11 +239,24 @@ export type InstanceEvaluation = {
   score: Scalars['Float'];
 };
 
+export type InstanceResult = {
+  __typename?: 'InstanceResult';
+  blockIx?: Maybe<Scalars['Int']>;
+  id: Scalars['String'];
+  instanceIx: Scalars['Int'];
+  participants: Scalars['Int'];
+  questionData: QuestionData;
+  results: Scalars['Json'];
+  statistics: Statistics;
+  status: SessionBlockStatus;
+};
+
 export type LeaderboardEntry = {
   __typename?: 'LeaderboardEntry';
   avatar: Scalars['String'];
   id: Scalars['Int'];
   participant: Participant;
+  participantId: Scalars['String'];
   participation: Participation;
   rank: Scalars['Int'];
   score: Scalars['Float'];
@@ -282,6 +309,7 @@ export type MicroSession = {
   instances: Array<QuestionInstance>;
   name: Scalars['String'];
   numOfInstances?: Maybe<Scalars['Int']>;
+  pointsMultiplier: Scalars['Float'];
   scheduledEndAt: Scalars['Date'];
   scheduledStartAt: Scalars['Date'];
 };
@@ -613,7 +641,7 @@ export type MutationVoteFeedbackResponseArgs = {
 export type NumericalQuestionData = QuestionData & {
   __typename?: 'NumericalQuestionData';
   content: Scalars['String'];
-  id: Scalars['String'];
+  id: Scalars['Int'];
   name: Scalars['String'];
   options: NumericalQuestionOptions;
   pointsMultiplier: Scalars['Int'];
@@ -717,9 +745,13 @@ export type Query = {
   microSession?: Maybe<MicroSession>;
   participantGroups?: Maybe<Array<ParticipantGroup>>;
   pinnedFeedbacks?: Maybe<Session>;
+  question?: Maybe<Question>;
   runningSessions?: Maybe<Array<Session>>;
   self?: Maybe<Participant>;
   session?: Maybe<Session>;
+  sessionEvaluation?: Maybe<SessionEvaluation>;
+  sessionLeaderboard?: Maybe<Array<LeaderboardEntry>>;
+  singleMicroSession?: Maybe<MicroSession>;
   unassignedSessions?: Maybe<Array<Session>>;
   userCourses?: Maybe<Array<Course>>;
   userProfile?: Maybe<User>;
@@ -784,6 +816,11 @@ export type QueryPinnedFeedbacksArgs = {
 };
 
 
+export type QueryQuestionArgs = {
+  id: Scalars['Int'];
+};
+
+
 export type QueryRunningSessionsArgs = {
   shortname: Scalars['String'];
 };
@@ -793,8 +830,24 @@ export type QuerySessionArgs = {
   id: Scalars['String'];
 };
 
+
+export type QuerySessionEvaluationArgs = {
+  id: Scalars['String'];
+};
+
+
+export type QuerySessionLeaderboardArgs = {
+  sessionId: Scalars['String'];
+};
+
+
+export type QuerySingleMicroSessionArgs = {
+  id: Scalars['String'];
+};
+
 export type Question = {
   __typename?: 'Question';
+  attachments: Array<Attachment>;
   content: Scalars['String'];
   createdAt: Scalars['Date'];
   hasAnswerFeedbacks: Scalars['Boolean'];
@@ -805,6 +858,7 @@ export type Question = {
   name: Scalars['String'];
   options: Scalars['Json'];
   pointsMultiplier: Scalars['Int'];
+  questionData: QuestionData;
   tags: Array<Tag>;
   type: Scalars['String'];
   updatedAt: Scalars['Date'];
@@ -812,7 +866,7 @@ export type Question = {
 
 export type QuestionData = {
   content: Scalars['String'];
-  id: Scalars['String'];
+  id: Scalars['Int'];
   name: Scalars['String'];
   pointsMultiplier: Scalars['Int'];
   type: Scalars['String'];
@@ -898,12 +952,34 @@ export enum SessionBlockStatus {
   Scheduled = 'SCHEDULED'
 }
 
+export type SessionEvaluation = {
+  __typename?: 'SessionEvaluation';
+  blocks: Array<EvaluationBlock>;
+  confusionFeedbacks: Array<ConfusionTimestep>;
+  feedbacks: Array<Feedback>;
+  id: Scalars['String'];
+  instanceResults: Array<InstanceResult>;
+  isGamificationEnabled: Scalars['Boolean'];
+  status: SessionStatus;
+};
+
 export enum SessionStatus {
   Completed = 'COMPLETED',
   Prepared = 'PREPARED',
   Running = 'RUNNING',
   Scheduled = 'SCHEDULED'
 }
+
+export type Statistics = {
+  __typename?: 'Statistics';
+  max: Scalars['Float'];
+  mean: Scalars['Float'];
+  median: Scalars['Float'];
+  min: Scalars['Float'];
+  q1: Scalars['Float'];
+  q3: Scalars['Float'];
+  sd: Scalars['Float'];
+};
 
 export type SubscriptionKeysInput = {
   auth: Scalars['String'];
@@ -914,6 +990,14 @@ export type SubscriptionObjectInput = {
   endpoint: Scalars['String'];
   expirationTime?: InputMaybe<Scalars['Int']>;
   keys: SubscriptionKeysInput;
+};
+
+export type TabData = {
+  __typename?: 'TabData';
+  id: Scalars['String'];
+  name: Scalars['String'];
+  questionIx: Scalars['Int'];
+  status: Scalars['String'];
 };
 
 export type Tag = {
@@ -937,9 +1021,9 @@ export type User = {
   shortname: Scalars['String'];
 };
 
-export type QuestionDataFragment = { __typename?: 'QuestionInstance', questionData: { __typename?: 'ChoicesQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } } };
+export type QuestionDataFragment = { __typename?: 'QuestionInstance', questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } } };
 
-export type QuestionDataWithoutSolutionsFragment = { __typename?: 'QuestionInstance', questionData: { __typename?: 'ChoicesQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } } } };
+export type QuestionDataWithoutSolutionsFragment = { __typename?: 'QuestionInstance', questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } } } };
 
 export type ActivateSessionBlockMutationVariables = Exact<{
   sessionId: Scalars['String'];
@@ -1326,7 +1410,7 @@ export type GetCockpitSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetCockpitSessionQuery = { __typename?: 'Query', cockpitSession?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, namespace: string, name: string, displayName: string, status: SessionStatus, startedAt?: any | null, course: { __typename?: 'Course', id: string, displayName: string }, blocks: Array<{ __typename?: 'SessionBlock', id: number, order?: number | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: string, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: string, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: string, name: string, type: string, content: string } }> }>, activeBlock: { __typename?: 'SessionBlock', id: number }, confusionFeedbacks: Array<{ __typename?: 'ConfusionTimestep', speed: number, difficulty: number, numberOfParticipants?: number | null }>, feedbacks: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, createdAt: any, resolvedAt?: any | null, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> }> } | null };
+export type GetCockpitSessionQuery = { __typename?: 'Query', cockpitSession?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, namespace: string, name: string, displayName: string, status: SessionStatus, startedAt?: any | null, course: { __typename?: 'Course', id: string, displayName: string }, blocks: Array<{ __typename?: 'SessionBlock', id: number, order?: number | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string } }> }>, activeBlock: { __typename?: 'SessionBlock', id: number }, confusionFeedbacks: Array<{ __typename?: 'ConfusionTimestep', speed: number, difficulty: number, numberOfParticipants?: number | null }>, feedbacks: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, createdAt: any, resolvedAt?: any | null, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> }> } | null };
 
 export type GetControlCourseQueryVariables = Exact<{
   courseId: Scalars['String'];
@@ -1345,7 +1429,7 @@ export type GetControlSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetControlSessionQuery = { __typename?: 'Query', controlSession?: { __typename?: 'Session', id: string, name: string, displayName: string, course: { __typename?: 'Course', id: string, displayName: string }, blocks: Array<{ __typename?: 'SessionBlock', id: number, order?: number | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: string, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: string, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: string, name: string, type: string, content: string } }> }>, activeBlock: { __typename?: 'SessionBlock', id: number, order?: number | null } } | null };
+export type GetControlSessionQuery = { __typename?: 'Query', controlSession?: { __typename?: 'Session', id: string, name: string, displayName: string, course: { __typename?: 'Course', id: string, displayName: string }, blocks: Array<{ __typename?: 'SessionBlock', id: number, order?: number | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string } }> }>, activeBlock: { __typename?: 'SessionBlock', id: number, order?: number | null } } | null };
 
 export type GetFeedbacksQueryVariables = Exact<{
   sessionId: Scalars['String'];
@@ -1359,7 +1443,7 @@ export type GetLearningElementQueryVariables = Exact<{
 }>;
 
 
-export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays: number, orderType: LearningElementOrderType, previouslyAnswered: number, previousScore: number, previousPointsAwarded: number, totalTrials: number, course: { __typename?: 'Course', id: string, displayName: string, color?: string | null }, instances: Array<{ __typename?: 'QuestionInstance', id: number, pointsMultiplier: number, evaluation?: { __typename?: 'InstanceEvaluation', choices: any, score: number, pointsAwarded?: number | null, percentile?: number | null, newPointsFrom?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix: number, feedback: string, correct: boolean, value: string }> | null } | null, questionData: { __typename?: 'ChoicesQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } } }> } | null };
+export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays: number, orderType: LearningElementOrderType, previouslyAnswered: number, previousScore: number, previousPointsAwarded: number, totalTrials: number, course: { __typename?: 'Course', id: string, displayName: string, color?: string | null }, instances: Array<{ __typename?: 'QuestionInstance', id: number, pointsMultiplier: number, evaluation?: { __typename?: 'InstanceEvaluation', choices: any, score: number, pointsAwarded?: number | null, percentile?: number | null, newPointsFrom?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix: number, feedback: string, correct: boolean, value: string }> | null } | null, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } } }> } | null };
 
 export type GetLearningElementsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1376,7 +1460,7 @@ export type GetMicroSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetMicroSessionQuery = { __typename?: 'Query', microSession?: { __typename?: 'MicroSession', id: string, displayName: string, description?: string | null, course: { __typename?: 'Course', id: string, displayName: string, color?: string | null }, instances: Array<{ __typename?: 'QuestionInstance', id: number, evaluation?: { __typename?: 'InstanceEvaluation', choices: any, score: number, pointsAwarded?: number | null, percentile?: number | null, newPointsFrom?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix: number, feedback: string, correct: boolean, value: string }> | null } | null, questionData: { __typename?: 'ChoicesQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } } }> } | null };
+export type GetMicroSessionQuery = { __typename?: 'Query', microSession?: { __typename?: 'MicroSession', id: string, displayName: string, description?: string | null, course: { __typename?: 'Course', id: string, displayName: string, color?: string | null }, instances: Array<{ __typename?: 'QuestionInstance', id: number, evaluation?: { __typename?: 'InstanceEvaluation', choices: any, score: number, pointsAwarded?: number | null, percentile?: number | null, newPointsFrom?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix: number, feedback: string, correct: boolean, value: string }> | null } | null, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } } }> } | null };
 
 export type GetParticipantGroupsQueryVariables = Exact<{
   courseId: Scalars['String'];
@@ -1397,7 +1481,7 @@ export type GetRunningSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetRunningSessionQuery = { __typename?: 'Query', session?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, namespace: string, name: string, displayName: string, status: SessionStatus, course: { __typename?: 'Course', id: string, displayName: string, color?: string | null }, activeBlock: { __typename?: 'SessionBlock', id: number, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, attachments: Array<{ __typename?: 'AttachmentInstance', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: string }>, questionData: { __typename?: 'ChoicesQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: string, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } } } }> } } | null };
+export type GetRunningSessionQuery = { __typename?: 'Query', session?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, namespace: string, name: string, displayName: string, status: SessionStatus, course: { __typename?: 'Course', id: string, displayName: string, color?: string | null }, activeBlock: { __typename?: 'SessionBlock', id: number, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, attachments: Array<{ __typename?: 'AttachmentInstance', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: string }>, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'FreeTextQuestionOptions', restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, pointsMultiplier: number, options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } } } }> } } | null };
 
 export type GetRunningSessionsQueryVariables = Exact<{
   shortname: Scalars['String'];
@@ -1405,6 +1489,13 @@ export type GetRunningSessionsQueryVariables = Exact<{
 
 
 export type GetRunningSessionsQuery = { __typename?: 'Query', runningSessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, linkTo?: string | null }> | null };
+
+export type GetSessionEvaluationQueryVariables = Exact<{
+  id: Scalars['String'];
+}>;
+
+
+export type GetSessionEvaluationQuery = { __typename?: 'Query', sessionEvaluation?: { __typename?: 'SessionEvaluation', id: string, status: SessionStatus, isGamificationEnabled: boolean, blocks: Array<{ __typename?: 'EvaluationBlock', blockIx: number, blockStatus: SessionBlockStatus, tabData: Array<{ __typename?: 'TabData', id: string, questionIx: number, name: string, status: string }> }>, instanceResults: Array<{ __typename?: 'InstanceResult', id: string, blockIx?: number | null, instanceIx: number, status: SessionBlockStatus, participants: number, results: any, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string, options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } }, statistics: { __typename?: 'Statistics', max: number, mean: number, median: number, min: number, q1: number, q3: number, sd: number } }>, feedbacks: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, createdAt: any, content: string, positiveReactions: number, negativeReactions: number }> }>, confusionFeedbacks: Array<{ __typename?: 'ConfusionTimestep', id: number, speed: number, difficulty: number, createdAt: any }> } | null, sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, participantId: string, rank: number, username: string, avatar: string, score: number }> | null };
 
 export type GetSingleCourseQueryVariables = Exact<{
   courseId: Scalars['String'];
@@ -1418,7 +1509,21 @@ export type GetSingleLiveSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetSingleLiveSessionQuery = { __typename?: 'Query', liveSession?: { __typename?: 'Session', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, isGamificationEnabled: boolean, blocks: Array<{ __typename?: 'SessionBlock', id: number, status: SessionBlockStatus, timeLimit?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: string, name: string } | { __typename?: 'FreeTextQuestionData', id: string, name: string } | { __typename?: 'NumericalQuestionData', id: string, name: string } }> }>, course: { __typename?: 'Course', id: string } } | null };
+export type GetSingleLiveSessionQuery = { __typename?: 'Query', liveSession?: { __typename?: 'Session', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, isGamificationEnabled: boolean, blocks: Array<{ __typename?: 'SessionBlock', id: number, status: SessionBlockStatus, timeLimit?: number | null, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string } | { __typename?: 'NumericalQuestionData', id: number, name: string } }> }>, course: { __typename?: 'Course', id: string } } | null };
+
+export type GetSingleMicroSessionQueryVariables = Exact<{
+  id: Scalars['String'];
+}>;
+
+
+export type GetSingleMicroSessionQuery = { __typename?: 'Query', singleMicroSession?: { __typename?: 'MicroSession', id: string, name: string, displayName: string, description?: string | null, scheduledStartAt: any, scheduledEndAt: any, pointsMultiplier: number, course: { __typename?: 'Course', id: string }, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string } | { __typename?: 'NumericalQuestionData', id: number, name: string } }> } | null };
+
+export type GetSingleQuestionQueryVariables = Exact<{
+  id: Scalars['Int'];
+}>;
+
+
+export type GetSingleQuestionQuery = { __typename?: 'Query', question?: { __typename?: 'Question', id: number, name: string, type: string, content: string, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, questionData: { __typename?: 'ChoicesQuestionData', options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } }, tags: Array<{ __typename?: 'Tag', id: number, name: string }>, attachments: Array<{ __typename?: 'Attachment', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: string }> } | null };
 
 export type GetUnassignedSessionsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1438,7 +1543,7 @@ export type GetUserQuestionsQuery = { __typename?: 'Query', userQuestions?: Arra
 export type GetUserSessionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetUserSessionsQuery = { __typename?: 'Query', userSessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, accessMode: SessionAccessMode, status: SessionStatus, createdAt: any, updatedAt?: any | null, startedAt?: any | null, numOfBlocks?: number | null, numOfQuestions?: number | null, blocks: Array<{ __typename?: 'SessionBlock', id: number, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: string, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: string, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: string, name: string, type: string, content: string } }> }>, course: { __typename?: 'Course', id: string, name: string, displayName: string } }> | null };
+export type GetUserSessionsQuery = { __typename?: 'Query', userSessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, accessMode: SessionAccessMode, status: SessionStatus, createdAt: any, updatedAt?: any | null, startedAt?: any | null, numOfBlocks?: number | null, numOfQuestions?: number | null, blocks: Array<{ __typename?: 'SessionBlock', id: number, instances: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: string, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: string, content: string } }> }>, course: { __typename?: 'Course', id: string, name: string, displayName: string } }> | null };
 
 export type GetUserTagsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1538,6 +1643,7 @@ export type ResolversTypes = {
   ConfusionTimestep: ResolverTypeWrapper<ConfusionTimestep>;
   Course: ResolverTypeWrapper<Course>;
   Date: ResolverTypeWrapper<Scalars['Date']>;
+  EvaluationBlock: ResolverTypeWrapper<EvaluationBlock>;
   Feedback: ResolverTypeWrapper<Feedback>;
   FeedbackResponse: ResolverTypeWrapper<FeedbackResponse>;
   Float: ResolverTypeWrapper<Scalars['Float']>;
@@ -1555,6 +1661,7 @@ export type ResolversTypes = {
   GroupLeaderboardEntry: ResolverTypeWrapper<GroupLeaderboardEntry>;
   ID: ResolverTypeWrapper<Scalars['ID']>;
   InstanceEvaluation: ResolverTypeWrapper<InstanceEvaluation>;
+  InstanceResult: ResolverTypeWrapper<InstanceResult>;
   Int: ResolverTypeWrapper<Scalars['Int']>;
   Json: ResolverTypeWrapper<Scalars['Json']>;
   LeaderboardEntry: ResolverTypeWrapper<LeaderboardEntry>;
@@ -1585,10 +1692,13 @@ export type ResolversTypes = {
   SessionAccessMode: SessionAccessMode;
   SessionBlock: ResolverTypeWrapper<SessionBlock>;
   SessionBlockStatus: SessionBlockStatus;
+  SessionEvaluation: ResolverTypeWrapper<SessionEvaluation>;
   SessionStatus: SessionStatus;
+  Statistics: ResolverTypeWrapper<Statistics>;
   String: ResolverTypeWrapper<Scalars['String']>;
   SubscriptionKeysInput: SubscriptionKeysInput;
   SubscriptionObjectInput: SubscriptionObjectInput;
+  TabData: ResolverTypeWrapper<TabData>;
   Tag: ResolverTypeWrapper<Tag>;
   Title: ResolverTypeWrapper<Title>;
   User: ResolverTypeWrapper<User>;
@@ -1610,6 +1720,7 @@ export type ResolversParentTypes = {
   ConfusionTimestep: ConfusionTimestep;
   Course: Course;
   Date: Scalars['Date'];
+  EvaluationBlock: EvaluationBlock;
   Feedback: Feedback;
   FeedbackResponse: FeedbackResponse;
   Float: Scalars['Float'];
@@ -1627,6 +1738,7 @@ export type ResolversParentTypes = {
   GroupLeaderboardEntry: GroupLeaderboardEntry;
   ID: Scalars['ID'];
   InstanceEvaluation: InstanceEvaluation;
+  InstanceResult: InstanceResult;
   Int: Scalars['Int'];
   Json: Scalars['Json'];
   LeaderboardEntry: LeaderboardEntry;
@@ -1654,9 +1766,12 @@ export type ResolversParentTypes = {
   QuestionResponseDetail: QuestionResponseDetail;
   Session: Session;
   SessionBlock: SessionBlock;
+  SessionEvaluation: SessionEvaluation;
+  Statistics: Statistics;
   String: Scalars['String'];
   SubscriptionKeysInput: SubscriptionKeysInput;
   SubscriptionObjectInput: SubscriptionObjectInput;
+  TabData: TabData;
   Tag: Tag;
   Title: Title;
   User: User;
@@ -1672,7 +1787,12 @@ export type AchievementResolvers<ContextType = any, ParentType extends Resolvers
 };
 
 export type AttachmentResolvers<ContextType = any, ParentType extends ResolversParentTypes['Attachment'] = ResolversParentTypes['Attachment']> = {
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  href?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  originalName?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1706,7 +1826,7 @@ export type ChoiceQuestionOptionsResolvers<ContextType = any, ParentType extends
 
 export type ChoicesQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['ChoicesQuestionData'] = ResolversParentTypes['ChoicesQuestionData']> = {
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   options?: Resolver<ResolversTypes['ChoiceQuestionOptions'], ParentType, ContextType>;
   pointsMultiplier?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1720,6 +1840,7 @@ export type ClassAchievementInstanceResolvers<ContextType = any, ParentType exte
 };
 
 export type ConfusionTimestepResolvers<ContextType = any, ParentType extends ResolversParentTypes['ConfusionTimestep'] = ResolversParentTypes['ConfusionTimestep']> = {
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   difficulty?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   numberOfParticipants?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
@@ -1752,6 +1873,13 @@ export interface DateScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes
   name: 'Date';
 }
 
+export type EvaluationBlockResolvers<ContextType = any, ParentType extends ResolversParentTypes['EvaluationBlock'] = ResolversParentTypes['EvaluationBlock']> = {
+  blockIx?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  blockStatus?: Resolver<ResolversTypes['SessionBlockStatus'], ParentType, ContextType>;
+  tabData?: Resolver<Array<ResolversTypes['TabData']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type FeedbackResolvers<ContextType = any, ParentType extends ResolversParentTypes['Feedback'] = ResolversParentTypes['Feedback']> = {
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -1767,6 +1895,7 @@ export type FeedbackResolvers<ContextType = any, ParentType extends ResolversPar
 
 export type FeedbackResponseResolvers<ContextType = any, ParentType extends ResolversParentTypes['FeedbackResponse'] = ResolversParentTypes['FeedbackResponse']> = {
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   negativeReactions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   positiveReactions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1775,7 +1904,7 @@ export type FeedbackResponseResolvers<ContextType = any, ParentType extends Reso
 
 export type FreeTextQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['FreeTextQuestionData'] = ResolversParentTypes['FreeTextQuestionData']> = {
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   options?: Resolver<ResolversTypes['FreeTextQuestionOptions'], ParentType, ContextType>;
   pointsMultiplier?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1848,6 +1977,18 @@ export type InstanceEvaluationResolvers<ContextType = any, ParentType extends Re
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type InstanceResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['InstanceResult'] = ResolversParentTypes['InstanceResult']> = {
+  blockIx?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  instanceIx?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  participants?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  questionData?: Resolver<ResolversTypes['QuestionData'], ParentType, ContextType>;
+  results?: Resolver<ResolversTypes['Json'], ParentType, ContextType>;
+  statistics?: Resolver<ResolversTypes['Statistics'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['SessionBlockStatus'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export interface JsonScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['Json'], any> {
   name: 'Json';
 }
@@ -1856,6 +1997,7 @@ export type LeaderboardEntryResolvers<ContextType = any, ParentType extends Reso
   avatar?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   participant?: Resolver<ResolversTypes['Participant'], ParentType, ContextType>;
+  participantId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   participation?: Resolver<ResolversTypes['Participation'], ParentType, ContextType>;
   rank?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   score?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
@@ -1902,6 +2044,7 @@ export type MicroSessionResolvers<ContextType = any, ParentType extends Resolver
   instances?: Resolver<Array<ResolversTypes['QuestionInstance']>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   numOfInstances?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  pointsMultiplier?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   scheduledEndAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   scheduledStartAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1956,7 +2099,7 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
 
 export type NumericalQuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['NumericalQuestionData'] = ResolversParentTypes['NumericalQuestionData']> = {
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   options?: Resolver<ResolversTypes['NumericalQuestionOptions'], ParentType, ContextType>;
   pointsMultiplier?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -2060,9 +2203,13 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
   microSession?: Resolver<Maybe<ResolversTypes['MicroSession']>, ParentType, ContextType, RequireFields<QueryMicroSessionArgs, 'id'>>;
   participantGroups?: Resolver<Maybe<Array<ResolversTypes['ParticipantGroup']>>, ParentType, ContextType, RequireFields<QueryParticipantGroupsArgs, 'courseId'>>;
   pinnedFeedbacks?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<QueryPinnedFeedbacksArgs, 'id'>>;
+  question?: Resolver<Maybe<ResolversTypes['Question']>, ParentType, ContextType, RequireFields<QueryQuestionArgs, 'id'>>;
   runningSessions?: Resolver<Maybe<Array<ResolversTypes['Session']>>, ParentType, ContextType, RequireFields<QueryRunningSessionsArgs, 'shortname'>>;
   self?: Resolver<Maybe<ResolversTypes['Participant']>, ParentType, ContextType>;
   session?: Resolver<Maybe<ResolversTypes['Session']>, ParentType, ContextType, RequireFields<QuerySessionArgs, 'id'>>;
+  sessionEvaluation?: Resolver<Maybe<ResolversTypes['SessionEvaluation']>, ParentType, ContextType, RequireFields<QuerySessionEvaluationArgs, 'id'>>;
+  sessionLeaderboard?: Resolver<Maybe<Array<ResolversTypes['LeaderboardEntry']>>, ParentType, ContextType, RequireFields<QuerySessionLeaderboardArgs, 'sessionId'>>;
+  singleMicroSession?: Resolver<Maybe<ResolversTypes['MicroSession']>, ParentType, ContextType, RequireFields<QuerySingleMicroSessionArgs, 'id'>>;
   unassignedSessions?: Resolver<Maybe<Array<ResolversTypes['Session']>>, ParentType, ContextType>;
   userCourses?: Resolver<Maybe<Array<ResolversTypes['Course']>>, ParentType, ContextType>;
   userProfile?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
@@ -2072,6 +2219,7 @@ export type QueryResolvers<ContextType = any, ParentType extends ResolversParent
 };
 
 export type QuestionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Question'] = ResolversParentTypes['Question']> = {
+  attachments?: Resolver<Array<ResolversTypes['Attachment']>, ParentType, ContextType>;
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   hasAnswerFeedbacks?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -2082,6 +2230,7 @@ export type QuestionResolvers<ContextType = any, ParentType extends ResolversPar
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   options?: Resolver<ResolversTypes['Json'], ParentType, ContextType>;
   pointsMultiplier?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  questionData?: Resolver<ResolversTypes['QuestionData'], ParentType, ContextType>;
   tags?: Resolver<Array<ResolversTypes['Tag']>, ParentType, ContextType>;
   type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -2091,7 +2240,7 @@ export type QuestionResolvers<ContextType = any, ParentType extends ResolversPar
 export type QuestionDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['QuestionData'] = ResolversParentTypes['QuestionData']> = {
   __resolveType: TypeResolveFn<'ChoicesQuestionData' | 'FreeTextQuestionData' | 'NumericalQuestionData', ParentType, ContextType>;
   content?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   pointsMultiplier?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   type?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2166,6 +2315,36 @@ export type SessionBlockResolvers<ContextType = any, ParentType extends Resolver
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type SessionEvaluationResolvers<ContextType = any, ParentType extends ResolversParentTypes['SessionEvaluation'] = ResolversParentTypes['SessionEvaluation']> = {
+  blocks?: Resolver<Array<ResolversTypes['EvaluationBlock']>, ParentType, ContextType>;
+  confusionFeedbacks?: Resolver<Array<ResolversTypes['ConfusionTimestep']>, ParentType, ContextType>;
+  feedbacks?: Resolver<Array<ResolversTypes['Feedback']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  instanceResults?: Resolver<Array<ResolversTypes['InstanceResult']>, ParentType, ContextType>;
+  isGamificationEnabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['SessionStatus'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type StatisticsResolvers<ContextType = any, ParentType extends ResolversParentTypes['Statistics'] = ResolversParentTypes['Statistics']> = {
+  max?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  mean?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  median?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  min?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  q1?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  q3?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  sd?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TabDataResolvers<ContextType = any, ParentType extends ResolversParentTypes['TabData'] = ResolversParentTypes['TabData']> = {
+  id?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  questionIx?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type TagResolvers<ContextType = any, ParentType extends ResolversParentTypes['Tag'] = ResolversParentTypes['Tag']> = {
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2199,6 +2378,7 @@ export type Resolvers<ContextType = any> = {
   ConfusionTimestep?: ConfusionTimestepResolvers<ContextType>;
   Course?: CourseResolvers<ContextType>;
   Date?: GraphQLScalarType;
+  EvaluationBlock?: EvaluationBlockResolvers<ContextType>;
   Feedback?: FeedbackResolvers<ContextType>;
   FeedbackResponse?: FeedbackResponseResolvers<ContextType>;
   FreeTextQuestionData?: FreeTextQuestionDataResolvers<ContextType>;
@@ -2213,6 +2393,7 @@ export type Resolvers<ContextType = any> = {
   GroupActivityParameter?: GroupActivityParameterResolvers<ContextType>;
   GroupLeaderboardEntry?: GroupLeaderboardEntryResolvers<ContextType>;
   InstanceEvaluation?: InstanceEvaluationResolvers<ContextType>;
+  InstanceResult?: InstanceResultResolvers<ContextType>;
   Json?: GraphQLScalarType;
   LeaderboardEntry?: LeaderboardEntryResolvers<ContextType>;
   LeaderboardStatistics?: LeaderboardStatisticsResolvers<ContextType>;
@@ -2239,6 +2420,9 @@ export type Resolvers<ContextType = any> = {
   QuestionResponseDetail?: QuestionResponseDetailResolvers<ContextType>;
   Session?: SessionResolvers<ContextType>;
   SessionBlock?: SessionBlockResolvers<ContextType>;
+  SessionEvaluation?: SessionEvaluationResolvers<ContextType>;
+  Statistics?: StatisticsResolvers<ContextType>;
+  TabData?: TabDataResolvers<ContextType>;
   Tag?: TagResolvers<ContextType>;
   Title?: TitleResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
@@ -2305,8 +2489,11 @@ export const GetParticipantGroupsDocument = {"kind":"Document","definitions":[{"
 export const GetPinnedFeedbacksDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPinnedFeedbacks"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"pinnedFeedbacks"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isLiveQAEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isConfusionFeedbackEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isModerationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"confusionFeedbacks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"speed"}},{"kind":"Field","name":{"kind":"Name","value":"difficulty"}},{"kind":"Field","name":{"kind":"Name","value":"numberOfParticipants"}}]}},{"kind":"Field","name":{"kind":"Name","value":"feedbacks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isPublished"}},{"kind":"Field","name":{"kind":"Name","value":"isPinned"}},{"kind":"Field","name":{"kind":"Name","value":"isResolved"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"votes"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"resolvedAt"}},{"kind":"Field","name":{"kind":"Name","value":"responses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"positiveReactions"}},{"kind":"Field","name":{"kind":"Name","value":"negativeReactions"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetPinnedFeedbacksQuery, GetPinnedFeedbacksQueryVariables>;
 export const GetRunningSessionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetRunningSession"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"session"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isLiveQAEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isConfusionFeedbackEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isModerationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"namespace"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}},{"kind":"Field","name":{"kind":"Name","value":"activeBlock"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"expiresAt"}},{"kind":"Field","name":{"kind":"Name","value":"timeLimit"}},{"kind":"Field","name":{"kind":"Name","value":"randomSelection"}},{"kind":"Field","name":{"kind":"Name","value":"execution"}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"attachments"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"href"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"originalName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"QuestionDataWithoutSolutions"}}]}}]}}]}}]}},...QuestionDataWithoutSolutionsFragmentDoc.definitions]} as unknown as DocumentNode<GetRunningSessionQuery, GetRunningSessionQueryVariables>;
 export const GetRunningSessionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetRunningSessions"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"shortname"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"runningSessions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"shortname"},"value":{"kind":"Variable","name":{"kind":"Name","value":"shortname"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"linkTo"}}]}}]}}]} as unknown as DocumentNode<GetRunningSessionsQuery, GetRunningSessionsQueryVariables>;
+export const GetSessionEvaluationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSessionEvaluation"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"sessionEvaluation"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"blocks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"blockIx"}},{"kind":"Field","name":{"kind":"Name","value":"blockStatus"}},{"kind":"Field","name":{"kind":"Name","value":"tabData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionIx"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"instanceResults"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"blockIx"}},{"kind":"Field","name":{"kind":"Name","value":"instanceIx"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"questionData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ChoicesQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"choices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ix"}},{"kind":"Field","name":{"kind":"Name","value":"correct"}},{"kind":"Field","name":{"kind":"Name","value":"feedback"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NumericalQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}},{"kind":"Field","name":{"kind":"Name","value":"solutionRanges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FreeTextQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"maxLength"}}]}},{"kind":"Field","name":{"kind":"Name","value":"solutions"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"participants"}},{"kind":"Field","name":{"kind":"Name","value":"results"}},{"kind":"Field","name":{"kind":"Name","value":"statistics"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"max"}},{"kind":"Field","name":{"kind":"Name","value":"mean"}},{"kind":"Field","name":{"kind":"Name","value":"median"}},{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"q1"}},{"kind":"Field","name":{"kind":"Name","value":"q3"}},{"kind":"Field","name":{"kind":"Name","value":"sd"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"feedbacks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isPublished"}},{"kind":"Field","name":{"kind":"Name","value":"isPinned"}},{"kind":"Field","name":{"kind":"Name","value":"isResolved"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"votes"}},{"kind":"Field","name":{"kind":"Name","value":"resolvedAt"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"responses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"positiveReactions"}},{"kind":"Field","name":{"kind":"Name","value":"negativeReactions"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"confusionFeedbacks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"speed"}},{"kind":"Field","name":{"kind":"Name","value":"difficulty"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"sessionLeaderboard"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"participantId"}},{"kind":"Field","name":{"kind":"Name","value":"rank"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"score"}}]}}]}}]} as unknown as DocumentNode<GetSessionEvaluationQuery, GetSessionEvaluationQueryVariables>;
 export const GetSingleCourseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSingleCourse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"course"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isArchived"}},{"kind":"Field","name":{"kind":"Name","value":"pinCode"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"numOfParticipants"}},{"kind":"Field","name":{"kind":"Name","value":"numOfActiveParticipants"}},{"kind":"Field","name":{"kind":"Name","value":"averageScore"}},{"kind":"Field","name":{"kind":"Name","value":"averageActiveScore"}},{"kind":"Field","name":{"kind":"Name","value":"sessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"pinCode"}},{"kind":"Field","name":{"kind":"Name","value":"accessMode"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"numOfBlocks"}},{"kind":"Field","name":{"kind":"Name","value":"numOfQuestions"}}]}},{"kind":"Field","name":{"kind":"Name","value":"learningElements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"numOfInstances"}}]}},{"kind":"Field","name":{"kind":"Name","value":"microSessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledStartAt"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledEndAt"}},{"kind":"Field","name":{"kind":"Name","value":"numOfInstances"}}]}},{"kind":"Field","name":{"kind":"Name","value":"leaderboard"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"score"}},{"kind":"Field","name":{"kind":"Name","value":"rank"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"participation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"isActive"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetSingleCourseQuery, GetSingleCourseQueryVariables>;
 export const GetSingleLiveSessionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSingleLiveSession"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"liveSession"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"blocks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"timeLimit"}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}}]}}]}}]} as unknown as DocumentNode<GetSingleLiveSessionQuery, GetSingleLiveSessionQueryVariables>;
+export const GetSingleMicroSessionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSingleMicroSession"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"singleMicroSession"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledStartAt"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledEndAt"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"instances"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"questionData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]}}]} as unknown as DocumentNode<GetSingleMicroSessionQuery, GetSingleMicroSessionQueryVariables>;
+export const GetSingleQuestionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSingleQuestion"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"question"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"hasAnswerFeedbacks"}},{"kind":"Field","name":{"kind":"Name","value":"questionData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ChoicesQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"choices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ix"}},{"kind":"Field","name":{"kind":"Name","value":"correct"}},{"kind":"Field","name":{"kind":"Name","value":"feedback"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NumericalQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}},{"kind":"Field","name":{"kind":"Name","value":"solutionRanges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FreeTextQuestionData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"maxLength"}}]}},{"kind":"Field","name":{"kind":"Name","value":"solutions"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"tags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"attachments"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"href"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"originalName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"type"}}]}}]}}]}}]} as unknown as DocumentNode<GetSingleQuestionQuery, GetSingleQuestionQueryVariables>;
 export const GetUnassignedSessionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUnassignedSessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"unassignedSessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<GetUnassignedSessionsQuery, GetUnassignedSessionsQueryVariables>;
 export const GetUserCoursesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserCourses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userCourses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isArchived"}},{"kind":"Field","name":{"kind":"Name","value":"pinCode"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetUserCoursesQuery, GetUserCoursesQueryVariables>;
 export const GetUserQuestionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserQuestions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userQuestions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"isArchived"}},{"kind":"Field","name":{"kind":"Name","value":"isDeleted"}},{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"hasAnswerFeedbacks"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}},{"kind":"Field","name":{"kind":"Name","value":"tags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]} as unknown as DocumentNode<GetUserQuestionsQuery, GetUserQuestionsQueryVariables>;

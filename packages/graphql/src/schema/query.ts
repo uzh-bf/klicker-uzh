@@ -8,12 +8,12 @@ import * as LearningElementService from '../services/learningElements'
 import * as MicroSessionService from '../services/microLearning'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
-import { Course } from './course'
+import { Course, LeaderboardEntry } from './course'
 import { LearningElement } from './learningElements'
 import { MicroSession } from './microSession'
 import { Participant, ParticipantGroup } from './participant'
 import { Question, Tag } from './question'
-import { Feedback, Session } from './session'
+import { Feedback, Session, SessionEvaluation } from './session'
 import { User } from './user'
 
 export const Query = builder.queryType({
@@ -254,6 +254,26 @@ export const Query = builder.queryType({
         },
         resolve(_, __, args, ctx) {
           return MicroSessionService.getSingleMicroSession(args, ctx)
+        },
+      }),
+      sessionEvaluation: asUser.field({
+        nullable: true,
+        type: SessionEvaluation,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.getSessionEvaluation(args, ctx)
+        },
+      }),
+      sessionLeaderboard: asAuthenticated.prismaField({
+        nullable: true,
+        type: [LeaderboardEntry],
+        args: {
+          sessionId: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return SessionService.getLeaderboard(args, ctx)
         },
       }),
     }

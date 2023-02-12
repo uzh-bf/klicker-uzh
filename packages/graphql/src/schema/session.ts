@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 
 import builder from '../builder'
+import { QuestionData } from './questionData'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),
@@ -43,6 +44,15 @@ export const Session = builder.prismaObject('Session', {
     status: t.expose('status', { type: SessionStatus }),
     accessMode: t.expose('accessMode', { type: SessionAccessMode }),
 
+    numOfBlocks: t.int({
+      resolve: (session) => session.numOfBlocks,
+      nullable: true,
+    }),
+    numOfQuestions: t.int({
+      resolve: (session) => session.numOfQuestions,
+      nullable: true,
+    }),
+
     activeBlock: t.relation('activeBlock'),
     blocks: t.relation('blocks'),
     feedbacks: t.relation('feedbacks'),
@@ -57,17 +67,6 @@ export const Session = builder.prismaObject('Session', {
     finishedAt: t.expose('finishedAt', { type: 'Date', nullable: true }),
   }),
 })
-
-builder.prismaObjectFields(Session, (t) => ({
-  numOfBlocks: t.int({
-    resolve: (session) => session.numOfBlocks,
-    nullable: true,
-  }),
-  numOfQuestions: t.int({
-    resolve: (session) => session.numOfQuestions,
-    nullable: true,
-  }),
-}))
 
 export const SessionBlock = builder.prismaObject('SessionBlock', {
   fields: (t) => ({
@@ -104,6 +103,8 @@ export const FeedbackResponse = builder.prismaObject('FeedbackResponse', {
     content: t.exposeString('content'),
     positiveReactions: t.exposeInt('positiveReactions'),
     negativeReactions: t.exposeInt('negativeReactions'),
+
+    createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
 })
 
@@ -118,8 +119,62 @@ export const ConfusionTimestep = builder.prismaObject('ConfusionTimestep', {
       resolve: (block) => block.numberOfParticipants,
       nullable: true,
     }),
+
+    createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
 })
+
+interface Statistics {
+  max: number
+  min: number
+  mean: number
+  median: number
+  q1: number
+  q3: number
+  sd: number
+}
+
+const Statistics = builder.objectRef<Statistics>('Statistics').implement({
+  fields: (t) => ({
+    max: t.exposeFloat('max'),
+    min: t.exposeFloat('min'),
+    mean: t.exposeFloat('mean'),
+    median: t.exposeFloat('median'),
+    q1: t.exposeFloat('q1'),
+    q3: t.exposeFloat('q3'),
+    sd: t.exposeFloat('sd'),
+  }),
+})
+
+interface InstanceResult {
+  id: string
+
+  blockIx?: number
+  instanceIx: number
+  participants: number
+  results: object
+  status: DB.SessionBlockStatus
+
+  questionData: any
+  statistics: Statistics
+}
+
+export const InstanceResult = builder
+  .objectRef<InstanceResult>('InstanceResult')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+
+      blockIx: t.exposeInt('blockIx', { nullable: true }),
+      instanceIx: t.exposeInt('instanceIx'),
+      participants: t.exposeInt('participants'),
+      results: t.expose('results', { type: 'Json' }),
+      status: t.expose('status', { type: SessionBlockStatus }),
+
+      questionData: t.expose('questionData', { type: QuestionData }),
+      statistics: t.expose('statistics', { type: Statistics }),
+    }),
+  })
 
 export const QuestionResponse = builder.prismaObject('QuestionResponse', {
   fields: (t) => ({
@@ -135,3 +190,74 @@ export const QuestionResponseDetail = builder.prismaObject(
     }),
   }
 )
+
+interface TabData {
+  id: string
+  questionIx?: number | null
+  name: string
+  status?: string | null
+}
+
+const TabData = builder.objectRef<TabData>('TabData').implement({
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    questionIx: t.exposeInt('questionIx', { nullable: true }),
+    name: t.exposeString('name'),
+    status: t.exposeString('status'),
+  }),
+})
+
+interface EvaluationBlock {
+  blockIx?: number | null
+  blockStatus: DB.SessionBlockStatus
+  tabData: TabData[]
+}
+
+const EvaluationBlock = builder
+  .objectRef<EvaluationBlock>('EvaluationBlock')
+  .implement({
+    fields: (t) => ({
+      blockIx: t.exposeInt('blockIx', { nullable: true }),
+      blockStatus: t.expose('blockStatus', { type: SessionBlockStatus }),
+      tabData: t.expose('tabData', { type: [TabData] }),
+    }),
+  })
+
+interface SessionEvaluation {
+  id: string
+  status: DB.SessionStatus
+  isGamificationEnabled: boolean
+  blocks: EvaluationBlock[]
+  instanceResults: InstanceResult[]
+  feedbacks: DB.Feedback[]
+  confusionFeedbacks: DB.ConfusionTimestep[]
+}
+
+export const SessionEvaluation = builder
+  .objectRef<SessionEvaluation>('SessionEvaluation')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      status: t.field({
+        type: SessionStatus,
+        resolve: (evaluation) => evaluation.status,
+      }),
+      isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
+      blocks: t.field({
+        type: [EvaluationBlock],
+        resolve: (evaluation) => evaluation.blocks,
+      }),
+      instanceResults: t.field({
+        type: [InstanceResult],
+        resolve: (evaluation) => evaluation.instanceResults,
+      }),
+      feedbacks: t.field({
+        type: [Feedback],
+        resolve: (evaluation) => evaluation.feedbacks,
+      }),
+      confusionFeedbacks: t.field({
+        type: [ConfusionTimestep],
+        resolve: (evaluation) => evaluation.confusionFeedbacks,
+      }),
+    }),
+  })

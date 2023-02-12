@@ -58,6 +58,8 @@ export const LeaderboardEntry = builder.prismaObject('LeaderboardEntry', {
     }),
 
     participant: t.relation('participant'),
+    participantId: t.exposeString('participantId'),
+
     participation: t.relation('participation'),
   }),
 })
