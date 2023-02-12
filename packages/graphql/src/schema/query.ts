@@ -10,6 +10,7 @@ import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
+import { GroupActivityDetails } from './groupActivity'
 import { LearningElement } from './learningElements'
 import { MicroSession } from './microSession'
 import {
@@ -300,6 +301,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return CourseService.getCourseOverviewData(args, ctx)
+        },
+      }),
+      groupActivityDetails: asParticipant.field({
+        nullable: true,
+        type: GroupActivityDetails,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          groupId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantGroupService.getGroupActivityDetails(args, ctx)
         },
       }),
     }

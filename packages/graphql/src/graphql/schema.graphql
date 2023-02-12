@@ -164,7 +164,9 @@ type GroupActivity {
 }
 
 type GroupActivityClue {
+  displayName: String!
   id: Int!
+  name: String!
 }
 
 type GroupActivityClueAssignment {
@@ -172,7 +174,13 @@ type GroupActivityClueAssignment {
 }
 
 type GroupActivityClueInstance {
+  displayName: String!
   id: Int!
+  name: String!
+  participant: Participant!
+  type: ParameterType!
+  unit: String
+  value: String
 }
 
 input GroupActivityDecisionInput {
@@ -181,7 +189,24 @@ input GroupActivityDecisionInput {
   selectedOptions: [Int!]!
 }
 
+type GroupActivityDetails {
+  activityInstance: GroupActivityInstance
+  clues: [GroupActivityClue!]!
+  course: Course!
+  description: String
+  displayName: String!
+  group: ParticipantGroup!
+  id: String!
+  instances: [QuestionInstance!]!
+  name: String!
+  scheduledEndAt: Date
+  scheduledStartAt: Date
+}
+
 type GroupActivityInstance {
+  clues: [GroupActivityClueInstance!]!
+  decisions: Json
+  decisionsSubmittedAt: Date
   id: Int!
 }
 
@@ -356,6 +381,11 @@ type NumericalSolutionRange {
   min: Int
 }
 
+enum ParameterType {
+  NUMBER
+  STRING
+}
+
 type Participant {
   achievements: [ParticipantAchievementInstance!]!
   avatar: String
@@ -423,6 +453,7 @@ type Query {
   feedbacks(id: String!): [Feedback!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
+  groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   learningElement(id: String!): LearningElement
   learningElements: [LearningElement!]
   liveSession(id: String!): Session

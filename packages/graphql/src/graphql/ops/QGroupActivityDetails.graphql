@@ -1,6 +1,6 @@
 #import "./FQuestionData.graphql"
 
-query GroupActivityDetails($activityId: ID!, $groupId: ID!) {
+query GroupActivityDetails($activityId: String!, $groupId: String!) {
   groupActivityDetails(activityId: $activityId, groupId: $groupId) {
     id
 
