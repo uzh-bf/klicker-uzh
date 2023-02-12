@@ -1,6 +1,13 @@
 import builder from '../builder'
 import { QuestionData } from './questionData'
 
+export const ResponseInput = builder.inputType('ResponseInput', {
+  fields: (t) => ({
+    choices: t.intList({ required: false }),
+    value: t.string({ required: false }),
+  }),
+})
+
 interface QuestionFeedback {
   ix: number
   feedback: string

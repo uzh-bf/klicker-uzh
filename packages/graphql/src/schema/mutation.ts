@@ -26,7 +26,7 @@ import {
   Participation,
   SubscriptionObjectInput,
 } from './participant'
-import { Question, Tag } from './question'
+import { Question, QuestionInstance, ResponseInput, Tag } from './question'
 import {
   BlockInput,
   ConfusionTimestep,
@@ -610,6 +610,22 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ParticipantService.registerParticipantFromLTI(args, ctx)
+        },
+      }),
+
+      respondToQuestionInstance: t.field({
+        nullable: true,
+        type: QuestionInstance,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          id: t.arg.int({ required: true }),
+          response: t.arg({
+            type: ResponseInput,
+            required: true,
+          }),
+        },
+        resolve: (_, args, ctx) => {
+          return LearningElementService.respondToQuestionInstance(args, ctx)
         },
       }),
     }

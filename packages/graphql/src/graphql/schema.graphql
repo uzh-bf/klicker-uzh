@@ -346,6 +346,7 @@ type Mutation {
   registerParticipantFromLTI(courseId: String!, participantId: String!): ParticipantLearningData
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
+  respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
@@ -523,6 +524,11 @@ type QuestionResponse {
 
 type QuestionResponseDetail {
   id: Int!
+}
+
+input ResponseInput {
+  choices: [Int!]
+  value: String
 }
 
 type Session {

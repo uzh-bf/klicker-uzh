@@ -22,8 +22,8 @@ import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 
 type QuestionResponse = {
-  choices?: number[]
-  value?: string
+  choices?: number[] | null
+  value?: string | null
 }
 
 function round(value: number) {
@@ -103,14 +103,12 @@ function evaluateQuestionResponse(
   }
 }
 
-interface RespondToQuestionInstanceArgs {
-  courseId: string
-  id: number
-  response: QuestionResponse
-}
-
 export async function respondToQuestionInstance(
-  { courseId, id, response }: RespondToQuestionInstanceArgs,
+  {
+    courseId,
+    id,
+    response,
+  }: { courseId: string; id: number; response: QuestionResponse },
   ctx: Context
 ) {
   const {
