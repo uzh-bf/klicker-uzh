@@ -347,6 +347,7 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
+  startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation

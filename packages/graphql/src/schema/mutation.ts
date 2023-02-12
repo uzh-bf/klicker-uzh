@@ -13,6 +13,7 @@ import * as SessionService from '../services/sessions'
 import { Course } from './course'
 import {
   GroupActivityDecisionInput,
+  GroupActivityDetails,
   GroupActivityInstance,
 } from './groupActivity'
 import { LearningElement, LearningElementOrderType } from './learningElements'
@@ -626,6 +627,18 @@ export const Mutation = builder.mutationType({
         },
         resolve: (_, args, ctx) => {
           return LearningElementService.respondToQuestionInstance(args, ctx)
+        },
+      }),
+
+      startGroupActivity: asParticipant.field({
+        nullable: true,
+        type: GroupActivityDetails,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          groupId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantGroupService.startGroupActivity(args, ctx)
         },
       }),
     }
