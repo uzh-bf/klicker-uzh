@@ -1,4 +1,4 @@
-import { ContextWithUser } from 'src/lib/context'
+import { ContextWithUser } from '../lib/context'
 
 interface SubscriptionObjectInput {
   endpoint: string
