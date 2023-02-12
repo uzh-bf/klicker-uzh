@@ -216,6 +216,16 @@ export const Query = builder.queryType({
           return SessionService.getPinnedFeedbacks(args, ctx)
         },
       }),
+      course: asAuthenticated.prismaField({
+        nullable: true,
+        type: Course,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, __, args, ctx) {
+          return CourseService.getCourseData(args, ctx)
+        }
+      }),
     }
   },
 })

@@ -421,58 +421,32 @@ export async function getCourseData(
     },
   })
 
-  const reducedSessions = course?.sessions
-    .map((session) => {
-      return {
-        ...session,
-        numOfBlocks: session.blocks.length,
-        numOfQuestions: session.blocks.reduce(
-          (acc, block) => acc + block._count.instances,
-          0
-        ),
-      }
-    })
-    .map(
-      R.pick([
-        'id',
-        'name',
-        'displayName',
-        'pinCode',
-        'status',
-        'createdAt',
-        'isGamificationEnabled',
-        'accessMode',
-        'numOfBlocks',
-        'numOfQuestions',
-      ])
-    )
+  const reducedSessions = course?.sessions.map((session) => {
+    return {
+      ...session,
+      numOfBlocks: session.blocks.length,
+      numOfQuestions: session.blocks.reduce(
+        (acc, block) => acc + block._count.instances,
+        0
+      ),
+    }
+  })
 
-  const reducedLearningElements = course?.learningElements
-    .map((learningElement) => {
+  const reducedLearningElements = course?.learningElements.map(
+    (learningElement) => {
       return {
         ...learningElement,
         numOfInstances: learningElement._count.instances,
       }
-    })
-    .map(R.pick(['id', 'name', 'displayName', 'numOfInstances']))
+    }
+  )
 
-  const reducedMicroSessions = course?.microSessions
-    .map((microSession) => {
-      return {
-        ...microSession,
-        numOfInstances: microSession._count.instances,
-      }
-    })
-    .map(
-      R.pick([
-        'id',
-        'name',
-        'displayName',
-        'scheduledStartAt',
-        'scheduledEndAt',
-        'numOfInstances',
-      ])
-    )
+  const reducedMicroSessions = course?.microSessions.map((microSession) => {
+    return {
+      ...microSession,
+      numOfInstances: microSession._count.instances,
+    }
+  })
 
   const { activeLBEntries, totalSum, activeSum, activeCount } =
     course?.leaderboard.reduce(

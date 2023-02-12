@@ -11,7 +11,7 @@ export const LearningElementOrderType = builder.enumType(
 
 export const LearningElement = builder.prismaObject('LearningElement', {
   fields: (t) => ({
-    id: t.exposeString('id'),
+    id: t.exposeID('id'),
 
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),

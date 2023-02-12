@@ -1,4 +1,4 @@
-query GetSingleCourse($courseId: ID!) {
+query GetSingleCourse($courseId: String!) {
   course(id: $courseId) {
     id
     isArchived
