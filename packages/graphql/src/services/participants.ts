@@ -1,7 +1,6 @@
 import { SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
-import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 import { createParticipantToken } from './accounts'
@@ -52,19 +51,10 @@ export async function updateParticipantProfile(
   return participant
 }
 
-interface GetParticipationsArgs {
-  endpoint?: string
-}
-
 export async function getParticipations(
-  { endpoint }: GetParticipationsArgs,
+  { endpoint }: { endpoint?: string | null },
   ctx: ContextWithUser
 ) {
-  // HACK: ensure that the PWA redirects to login, remove when Pothos is done
-  if (!ctx.user?.sub) {
-    throw new GraphQLError('Unauthorized!')
-  }
-
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {

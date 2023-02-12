@@ -98,6 +98,8 @@ export const Participation = builder.prismaObject('Participation', {
     subscriptions: t.relation('subscriptions'),
 
     completedMicroSessions: t.exposeStringList('completedMicroSessions'),
+
+    course: t.relation('course'),
   }),
 })
 

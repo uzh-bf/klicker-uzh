@@ -6,12 +6,13 @@ import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
 import * as LearningElementService from '../services/learningElements'
 import * as MicroSessionService from '../services/microLearning'
+import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
 import { LearningElement } from './learningElements'
 import { MicroSession } from './microSession'
-import { Participant, ParticipantGroup } from './participant'
+import { Participant, ParticipantGroup, Participation } from './participant'
 import { Question, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
 import { User } from './user'
@@ -274,6 +275,16 @@ export const Query = builder.queryType({
         },
         resolve(_, __, args, ctx) {
           return SessionService.getLeaderboard(args, ctx)
+        },
+      }),
+      participations: asParticipant.prismaField({
+        nullable: true,
+        type: [Participation],
+        args: {
+          endpoint: t.arg.string({ required: false }),
+        },
+        resolve(_, __, args, ctx) {
+          return ParticipantService.getParticipations(args, ctx)
         },
       }),
     }
