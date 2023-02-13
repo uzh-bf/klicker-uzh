@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.25...v3.0.0-alpha.26) (2023-02-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** ensure that Unauthorized error matches what is sent by the backend ([cd7db32](https://github.com/uzh-bf/klicker-uzh/commit/cd7db32d0edbe912384707ab1b56b2e0d7984d65))
+
+
+### Deployment
+
+* latest alpha ([d72061c](https://github.com/uzh-bf/klicker-uzh/commit/d72061cf8b864f8db410e41414b58f45abe62cc4))
+
 ## [3.0.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.24...v3.0.0-alpha.25) (2023-02-13)
 
 
