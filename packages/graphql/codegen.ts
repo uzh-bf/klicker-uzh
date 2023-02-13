@@ -19,7 +19,7 @@ const config: CodegenConfig = {
     './src/ops.schema.json': {
       plugins: ['introspection'],
     },
-    './src/graphql/schema.graphql': {
+    './src/public/schema.graphql': {
       plugins: ['schema-ast'],
     },
     // './src/persisted-queries/client.json': {
