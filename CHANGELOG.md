@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.28...v3.0.0-alpha.29) (2023-02-13)
+
+
+### Enhancements
+
+* basic handling for images within question contents and answer options ([280ef2f](https://github.com/uzh-bf/klicker-uzh/commit/280ef2f92129b1cdaa0c3765c8d785a492bf6d27))
+
 ## [3.0.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.27...v3.0.0-alpha.28) (2023-02-13)
 
 
