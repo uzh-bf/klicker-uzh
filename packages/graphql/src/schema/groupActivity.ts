@@ -2,8 +2,12 @@ import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import type { ICourse } from './course'
 import { Course } from './course'
-import type { IParticipant, IParticipantGroup } from './participant'
-import { Participant, ParticipantGroup } from './participant'
+import {
+  IParticipant,
+  IParticipantGroup,
+  ParticipantGroup,
+  ParticipantRef,
+} from './participant'
 import type { IQuestionInstance } from './question'
 import { QuestionInstance } from './question'
 
@@ -29,24 +33,25 @@ export const GroupActivity = builder.prismaObject('GroupActivity', {
   }),
 })
 
-export const GroupActivityInstance = builder.prismaObject(
-  'GroupActivityInstance',
-  {
-    fields: (t) => ({
-      id: t.exposeInt('id'),
-      // FIXME
-      // clues: t.field({
-      //   type: [GroupActivityClueInstance],
-      //   resolve: (activity) => activity.clues,
-      // }),
-      decisions: t.expose('decisions', { type: 'Json', nullable: true }),
-      decisionsSubmittedAt: t.expose('decisionsSubmittedAt', {
-        type: 'Date',
-        nullable: true,
-      }),
+export interface IGroupActivityInstance extends DB.GroupActivityInstance {
+  clues?: IGroupActivityClueInstance[]
+}
+export const GroupActivityInstanceRef =
+  builder.objectRef<IGroupActivityInstance>('GroupActivityInstance')
+export const GroupActivityInstance = GroupActivityInstanceRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    decisions: t.expose('decisions', { type: 'Json', nullable: true }),
+    decisionsSubmittedAt: t.expose('decisionsSubmittedAt', {
+      type: 'Date',
+      nullable: true,
     }),
-  }
-)
+    clues: t.expose('clues', {
+      type: [GroupActivityClueInstanceRef],
+      nullable: true,
+    }),
+  }),
+})
 
 export const GroupActivityClue = builder.prismaObject('GroupActivityClue', {
   fields: (t) => ({
@@ -75,7 +80,7 @@ export const GroupActivityClueInstance = GroupActivityClueInstanceRef.implement(
       value: t.exposeString('value', { nullable: true }),
 
       participant: t.expose('participant', {
-        type: Participant,
+        type: ParticipantRef,
       }),
     }),
   }

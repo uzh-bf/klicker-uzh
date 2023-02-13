@@ -8,7 +8,6 @@ mutation AddConfusionTimestep(
     difficulty: $difficulty
     speed: $speed
   ) {
-    id
     difficulty
     speed
   }

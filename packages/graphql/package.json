@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "analyze": "size-limit --why",
-    "//prebuild": "npm run generate",
+    "prebuild": "npm run generate",
     "build": "NODE_ENV=production tsup --dts",
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
     "dev:ts": "NODE_ENV=development doppler run --config dev -- tsup --watch --dts",

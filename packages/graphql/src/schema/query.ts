@@ -283,13 +283,13 @@ export const Query = builder.queryType({
           return SessionService.getLeaderboard(args, ctx)
         },
       }),
-      participations: asParticipant.prismaField({
+      participations: asParticipant.field({
         nullable: true,
         type: [Participation],
         args: {
           endpoint: t.arg.string({ required: false }),
         },
-        resolve(_, __, args, ctx) {
+        resolve(_, args, ctx) {
           return ParticipantService.getParticipations(args, ctx)
         },
       }),
@@ -300,7 +300,6 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME
           return CourseService.getCourseOverviewData(args, ctx) as any
         },
       }),

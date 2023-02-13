@@ -55,8 +55,8 @@ type AwardEntry {
   id: Int!
   name: String!
   order: Int!
-  participant: Participant!
-  participantGroup: ParticipantGroup!
+  participant: Participant
+  participantGroup: ParticipantGroup
   type: String!
 }
 
@@ -97,32 +97,36 @@ type ClassAchievementInstance {
   id: Int!
 }
 
+type ConfusionSummary {
+  difficulty: Int!
+  numberOfParticipants: Int
+  speed: Int!
+}
+
 type ConfusionTimestep {
   createdAt: Date!
   difficulty: Int!
-  id: Int!
-  numberOfParticipants: Int
   speed: Int!
 }
 
 type Course {
   averageActiveScore: Float
   averageScore: Float
-  awards: [AwardEntry!]!
+  awards: [AwardEntry!]
   color: String
   createdAt: Date!
   description: String
   displayName: String!
   id: ID!
   isArchived: Boolean
-  leaderboard: [LeaderboardEntry!]!
-  learningElements: [LearningElement!]!
-  microSessions: [MicroSession!]!
+  leaderboard: [LeaderboardEntry!]
+  learningElements: [LearningElement!]
+  microSessions: [MicroSession!]
   name: String!
   numOfActiveParticipants: Int
   numOfParticipants: Int
   pinCode: Int
-  sessions: [Session!]!
+  sessions: [Session!]
   updatedAt: Date!
 }
 
@@ -230,7 +234,7 @@ type GroupActivityDetails {
 }
 
 type GroupActivityInstance {
-  clues: [GroupActivityClueInstance!]!
+  clues: [GroupActivityClueInstance!]
   decisions: Json
   decisionsSubmittedAt: Date
   id: Int!
@@ -274,11 +278,11 @@ The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](
 scalar Json
 
 type LeaderboardEntry {
-  avatar: String!
+  avatar: String
   id: Int!
   isSelf: Boolean!
   lastBlockOrder: Int!
-  participant: Participant!
+  participant: Participant
   participantId: String!
   participation: Participation!
   rank: Int!
@@ -292,21 +296,21 @@ type LeaderboardStatistics {
 }
 
 type LearningElement {
-  course: Course!
-  courseId: String!
+  course: Course
+  courseId: String
   description: String
   displayName: String!
   id: String!
-  instances: [QuestionInstance!]!
+  instances: [QuestionInstance!]
   name: String!
-  numOfInstances: Int!
+  numOfInstances: Int
   orderType: LearningElementOrderType!
   pointsMultiplier: Int!
-  previousPointsAwarded: Float!
-  previousScore: Float!
-  previouslyAnswered: Int!
+  previousPointsAwarded: Float
+  previousScore: Float
+  previouslyAnswered: Int
   resetTimeDays: Int
-  totalTrials: Int!
+  totalTrials: Int
 }
 
 enum LearningElementOrderType {
@@ -321,11 +325,11 @@ type LeaveCourseParticipation {
 }
 
 type MicroSession {
-  course: Course!
+  course: Course
   description: String
   displayName: String!
   id: ID!
-  instances: [QuestionInstance!]!
+  instances: [QuestionInstance!]
   name: String!
   numOfInstances: Int
   pointsMultiplier: Float!
@@ -440,16 +444,16 @@ enum ParameterType {
 }
 
 type Participant {
-  achievements: [ParticipantAchievementInstance!]!
+  achievements: [ParticipantAchievementInstance!]
   avatar: String
   avatarSettings: Json!
   id: ID!
-  isSelf: Boolean!
+  isSelf: Boolean
   lastLoginAt: Date
   level: Int!
-  participantGroups: [ParticipantGroup!]!
-  rank: Int!
-  score: Float!
+  participantGroups: [ParticipantGroup!]
+  rank: Int
+  score: Float
   username: String!
   xp: Int!
 }
@@ -468,7 +472,7 @@ type ParticipantGroup {
   id: ID!
   name: String!
   participants: [Participant!]!
-  score: Float!
+  score: Float
 }
 
 type ParticipantLearningData {
@@ -485,10 +489,11 @@ type ParticipantLearningData {
 
 type Participation {
   completedMicroSessions: [String!]!
-  course: Course!
+  course: Course
   id: Int!
   isActive: Boolean!
-  subscriptions: [PushSubscription!]!
+  participant: Participant
+  subscriptions: [PushSubscription!]
 }
 
 type PushSubscription {
@@ -563,7 +568,7 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  attachments: [AttachmentInstance!]!
+  attachments: [Attachment!]
   evaluation: InstanceEvaluation
   id: Int!
   pointsMultiplier: Int!
@@ -594,13 +599,14 @@ input ResponseInput {
 type Session {
   accessMode: SessionAccessMode!
   activeBlock: SessionBlock
-  blocks: [SessionBlock!]!
-  confusionFeedbacks: [ConfusionTimestep!]!
-  course: Course!
+  blocks: [SessionBlock!]
+  confusionFeedbacks: [ConfusionTimestep!]
+  confusionSummary: ConfusionSummary
+  course: Course
   createdAt: Date!
   description: String
   displayName: String!
-  feedbacks: [Feedback!]!
+  feedbacks: [Feedback!]
   finishedAt: Date
   id: ID!
   isConfusionFeedbackEnabled: Boolean!
@@ -629,7 +635,7 @@ type SessionBlock {
   execution: Int
   expiresAt: Date
   id: Int!
-  instances: [QuestionInstance!]!
+  instances: [QuestionInstance!]
   order: Int
   randomSelection: Int
   status: SessionBlockStatus!

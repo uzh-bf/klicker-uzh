@@ -1,15 +1,13 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import { Achievement } from './achievement'
-import type {
+import { ParticipantAchievementInstance } from './achievement'
+import {
+  CourseRef,
+  GroupLeaderboardEntry,
   ICourse,
   IGroupLeaderboardEntry,
   ILeaderboardEntry,
   ILeaderboardStatistics,
-} from './course'
-import {
-  Course,
-  GroupLeaderboardEntry,
   LeaderboardEntry,
   LeaderboardStatistics,
 } from './course'
@@ -56,7 +54,7 @@ export interface IParticipant extends DB.Participant {
   rank?: number
   score?: number
   isSelf?: boolean
-  achievements?: DB.Achievement[]
+  achievements?: DB.ParticipantAchievementInstance[]
   participantGroups?: IParticipantGroup[]
 }
 export const ParticipantRef = builder.objectRef<IParticipant>('Participant')
@@ -76,7 +74,7 @@ export const Participant = ParticipantRef.implement({
       nullable: true,
     }),
     achievements: t.expose('achievements', {
-      type: [Achievement],
+      type: [ParticipantAchievementInstance],
       nullable: true,
     }),
 
@@ -111,20 +109,35 @@ export const ParticipantGroup = ParticipantGroupRef.implement({
   }),
 })
 
-export const Participation = builder.prismaObject('Participation', {
+export interface IParticipation extends DB.Participation {
+  subscriptions?: DB.PushSubscription[]
+  course?: ICourse
+  participant?: IParticipant
+}
+export const ParticipationRef =
+  builder.objectRef<IParticipation>('Participation')
+export const Participation = ParticipationRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
     isActive: t.exposeBoolean('isActive'),
 
-    subscriptions: t.relation('subscriptions'),
+    subscriptions: t.expose('subscriptions', {
+      type: [PushSubscription],
+      nullable: true,
+    }),
 
     completedMicroSessions: t.exposeStringList('completedMicroSessions'),
 
-    // FIXME
-    // course: t.relation('course'),
+    course: t.expose('course', {
+      type: CourseRef,
+      nullable: true,
+    }),
 
-    // participant: t.relation('participant'),
+    participant: t.expose('participant', {
+      type: ParticipantRef,
+      nullable: true,
+    }),
   }),
 })
 
@@ -140,7 +153,7 @@ export interface IParticipantLearningData {
   id: string
   participantToken?: string
   participant?: IParticipant
-  participation?: DB.Participation | null
+  participation?: IParticipation | null
   course?: ICourse | null
   leaderboard?: ILeaderboardEntry[]
   leaderboardStatistics?: ILeaderboardStatistics
@@ -166,7 +179,7 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
     }),
 
     course: t.expose('course', {
-      type: Course,
+      type: CourseRef,
       nullable: true,
     }),
 
@@ -194,7 +207,7 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
 
 export interface ILeaveCourseParticipation {
   id: string
-  participation: DB.Participation
+  participation: IParticipation
 }
 export const LeaveCourseParticipationRef =
   builder.objectRef<ILeaveCourseParticipation>('LeaveCourseParticipation')

@@ -3,6 +3,7 @@ import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import type { ICourse } from './course'
 import { Course } from './course'
+import { IQuestionInstance, QuestionInstance } from './question'
 import { QuestionData } from './questionData'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
@@ -94,7 +95,11 @@ export const Session = SessionRef.implement({
   }),
 })
 
-export const SessionBlock = builder.prismaObject('SessionBlock', {
+export interface ISessionBlock extends DB.SessionBlock {
+  instances?: IQuestionInstance[]
+}
+export const SessionBlockRef = builder.objectRef<ISessionBlock>('SessionBlock')
+export const SessionBlock = SessionBlockRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
@@ -105,7 +110,10 @@ export const SessionBlock = builder.prismaObject('SessionBlock', {
     randomSelection: t.exposeInt('randomSelection', { nullable: true }),
     execution: t.exposeInt('execution', { nullable: true }),
 
-    // instances: t.relation('instances'),
+    instances: t.expose('instances', {
+      type: [QuestionInstance],
+      nullable: true,
+    }),
   }),
 })
 
@@ -138,6 +146,7 @@ export const ConfusionTimestep = builder.prismaObject('ConfusionTimestep', {
   fields: (t) => ({
     speed: t.exposeInt('speed'),
     difficulty: t.exposeInt('difficulty'),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
 })
 

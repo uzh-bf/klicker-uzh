@@ -1,13 +1,13 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import { ILearningElement, LearningElementRef } from './learningElements'
-// import { LearningElementRef } from './learningElements'
-import { IMicroSession, MicroSessionRef } from './microSession'
-// import { MicroSessionRef } from './microSession'
-import type { IParticipant } from './participant'
-import { Participant, Participation } from './participant'
-import { ISession, SessionRef } from './session'
-// import { SessionRef } from './session'
+import type { ILearningElement } from './learningElements'
+import { LearningElementRef } from './learningElements'
+import type { IMicroSession } from './microSession'
+import { MicroSessionRef } from './microSession'
+import type { IParticipant, IParticipantGroup } from './participant'
+import { Participant, ParticipantGroup, Participation } from './participant'
+import type { ISession } from './session'
+import { SessionRef } from './session'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -65,11 +65,11 @@ export const Course = builder.objectType(CourseRef, {
       nullable: true,
     }),
     leaderboard: t.expose('leaderboard', {
-      type: [LeaderboardEntry],
+      type: [LeaderboardEntryRef],
       nullable: true,
     }),
     awards: t.expose('awards', {
-      type: [AwardEntry],
+      type: [AwardEntryRef],
       nullable: true,
     }),
   }),
@@ -141,7 +141,12 @@ export const GroupLeaderboardEntry = builder
     }),
   })
 
-export const AwardEntry = builder.prismaObject('AwardEntry', {
+export interface IAwardEntry extends DB.AwardEntry {
+  participant?: IParticipant
+  participantGroup?: IParticipantGroup
+}
+export const AwardEntryRef = builder.objectRef<IAwardEntry>('AwardEntry')
+export const AwardEntry = AwardEntryRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
@@ -151,8 +156,14 @@ export const AwardEntry = builder.prismaObject('AwardEntry', {
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description'),
 
-    // FIXME
-    // participant: t.relation('participant'),
-    // participantGroup: t.relation('participantGroup'),
+    participant: t.expose('participant', {
+      type: Participant,
+      nullable: true,
+    }),
+
+    participantGroup: t.expose('participantGroup', {
+      type: ParticipantGroup,
+      nullable: true,
+    }),
   }),
 })

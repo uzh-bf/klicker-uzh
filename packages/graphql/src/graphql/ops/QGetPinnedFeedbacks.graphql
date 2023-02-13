@@ -5,7 +5,7 @@ query GetPinnedFeedbacks($id: String!) {
     isConfusionFeedbackEnabled
     isModerationEnabled
     isGamificationEnabled
-    confusionFeedbacks {
+    confusionSummary {
       speed
       difficulty
       numberOfParticipants
