@@ -1,10 +1,11 @@
-query GetPinnedFeedbacks($id: ID!) {
+query GetPinnedFeedbacks($id: String!) {
   pinnedFeedbacks(id: $id) {
     id
-    isAudienceInteractionActive
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
     isModerationEnabled
     isGamificationEnabled
-    confusionFeedbacks {
+    confusionSummary {
       speed
       difficulty
       numberOfParticipants

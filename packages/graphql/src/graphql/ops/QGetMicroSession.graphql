@@ -1,6 +1,6 @@
 #import "./FQuestionData.graphql"
 
-query GetMicroSession($id: ID!) {
+query GetMicroSession($id: String!) {
   microSession(id: $id) {
     id
     displayName

@@ -1,4 +1,4 @@
-mutation JoinParticipantGroup($courseId: ID!, $code: Int!) {
+mutation JoinParticipantGroup($courseId: String!, $code: Int!) {
   joinParticipantGroup(courseId: $courseId, code: $code) {
     id
     name

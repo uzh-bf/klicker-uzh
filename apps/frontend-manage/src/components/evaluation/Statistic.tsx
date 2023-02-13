@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface StatisticProps {
   statisticName: string
-  value: unknown
+  value: string
   hasCheckbox: boolean
   checked: boolean
   onCheck: () => void

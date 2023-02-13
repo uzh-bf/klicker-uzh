@@ -14,6 +14,7 @@ import {
   Modal,
   ThemeContext,
 } from '@uzh-bf/design-system'
+import { move as RamdaMove } from 'ramda'
 import { useContext, useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
@@ -23,21 +24,22 @@ interface SessionCreationBlockProps {
   index: number
   block: { questionIds: number[]; titles: string[]; timeLimit: string }
   numOfBlocks: number
-  setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void
   remove: (index: number) => void
   move: (from: number, to: number) => void
+  replace: (index: number, value: any) => void
 }
 
 function SessionCreationBlock({
   index,
   block,
   numOfBlocks,
-  setFieldValue,
   remove,
   move,
+  replace,
 }: SessionCreationBlockProps): React.ReactElement {
   const theme = useContext(ThemeContext)
   const [openSettings, setOpenSettings] = useState(false)
+  console.log('SessionCreationBlock - block: ', block)
 
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -49,11 +51,18 @@ function SessionCreationBlock({
         title: string
         content: string
       }) => {
-        setFieldValue(`blocks[${index}][questionIds]`, [
-          ...block.questionIds,
-          item.id,
-        ])
-        setFieldValue(`blocks[${index}][titles]`, [...block.titles, item.title])
+        console.log('useDrop item: ', item)
+        console.log('block - questionIds: ', block.questionIds)
+        console.log('block - titles: ', block.titles)
+
+        replace(index, {
+          ...block,
+          questionIds: [...block.questionIds, item.id],
+          titles: [...block.titles, item.title],
+        })
+
+        console.log('updated block - questionIds: ', block.questionIds)
+        console.log('updated block - titles: ', block.titles)
       },
       collect: (monitor) => ({
         isOver: !!monitor.isOver(),
@@ -61,6 +70,7 @@ function SessionCreationBlock({
     }),
     []
   )
+  console.log('block - questionIds: ', block.questionIds)
 
   return (
     <div
@@ -74,7 +84,8 @@ function SessionCreationBlock({
         <div className="flex flex-row gap-1 ml-2">
           <Button
             basic
-            className={{ root: 'mx-1' }}
+            className={{ root: 'mx-1 disabled:hidden' }}
+            disabled={numOfBlocks === 1}
             onClick={() => move(index, index !== 0 ? index - 1 : index)}
           >
             <Button.Icon>
@@ -83,7 +94,8 @@ function SessionCreationBlock({
           </Button>
           <Button
             basic
-            className={{ root: 'ml-1 mr-2' }}
+            className={{ root: 'ml-1 mr-2 disabled:hidden' }}
+            disabled={numOfBlocks === 1}
             onClick={() =>
               move(index, index !== numOfBlocks ? index + 1 : index)
             }
@@ -125,31 +137,26 @@ function SessionCreationBlock({
                 basic
                 className={{
                   root: twMerge(
-                    'flex flex-col justify-center h-1/2 px-2',
+                    'flex flex-col justify-center h-1/2 px-2 disabled:hidden',
                     theme.primaryBgHover
                   ),
                 }}
+                disabled={block.questionIds.length === 1}
                 onClick={() => {
                   if (!(questionIdx === 0 || block.questionIds.length === 1)) {
-                    const tempId = block.questionIds[questionIdx]
-                    const tempTitle = block.titles[questionIdx]
-
-                    setFieldValue(
-                      `blocks[${index}][questionIds][${questionIdx}]`,
-                      block.questionIds[questionIdx - 1]
-                    )
-                    setFieldValue(
-                      `blocks[${index}][titles][${questionIdx}]`,
-                      block.titles[questionIdx - 1]
-                    )
-                    setFieldValue(
-                      `blocks[${index}][questionIds][${questionIdx - 1}]`,
-                      tempId
-                    )
-                    setFieldValue(
-                      `blocks[${index}][titles][${questionIdx - 1}]`,
-                      tempTitle
-                    )
+                    replace(index, {
+                      ...block,
+                      questionIds: RamdaMove(
+                        questionIdx,
+                        questionIdx - 1,
+                        block.questionIds
+                      ),
+                      titles: RamdaMove(
+                        questionIdx,
+                        questionIdx - 1,
+                        block.titles
+                      ),
+                    })
                   }
                 }}
               >
@@ -159,10 +166,11 @@ function SessionCreationBlock({
                 basic
                 className={{
                   root: twMerge(
-                    'flex flex-col justify-center h-1/2 px-2',
+                    'flex flex-col justify-center h-1/2 px-2 disabled:hidden',
                     theme.primaryBgHover
                   ),
                 }}
+                disabled={block.questionIds.length === 1}
                 onClick={() => {
                   if (
                     !(
@@ -170,25 +178,19 @@ function SessionCreationBlock({
                       block.questionIds.length === 1
                     )
                   ) {
-                    const tempId = block.questionIds[questionIdx]
-                    const tempTitle = block.titles[questionIdx]
-
-                    setFieldValue(
-                      `blocks[${index}][questionIds][${questionIdx}]`,
-                      block.questionIds[questionIdx + 1]
-                    )
-                    setFieldValue(
-                      `blocks[${index}][titles][${questionIdx}]`,
-                      block.titles[questionIdx + 1]
-                    )
-                    setFieldValue(
-                      `blocks[${index}][questionIds][${questionIdx + 1}]`,
-                      tempId
-                    )
-                    setFieldValue(
-                      `blocks[${index}][titles][${questionIdx + 1}]`,
-                      tempTitle
-                    )
+                    replace(index, {
+                      ...block,
+                      questionIds: RamdaMove(
+                        questionIdx,
+                        questionIdx + 1,
+                        block.questionIds
+                      ),
+                      titles: RamdaMove(
+                        questionIdx,
+                        questionIdx + 1,
+                        block.titles
+                      ),
+                    })
                   }
                 }}
               >
@@ -198,18 +200,15 @@ function SessionCreationBlock({
             <div
               className={`flex items-center px-2 text-white ${theme.primaryTextHover} bg-red-500 hover:bg-red-600 rounded-r`}
               onClick={() => {
-                setFieldValue(
-                  `blocks[${index}][questionIds]`,
-                  block.questionIds
+                replace(index, {
+                  ...block,
+                  questionIds: block.questionIds
                     .slice(0, questionIdx)
-                    .concat(block.questionIds.slice(questionIdx + 1))
-                )
-                setFieldValue(
-                  `blocks[${index}][titles]`,
-                  block.titles
+                    .concat(block.questionIds.slice(questionIdx + 1)),
+                  titles: block.titles
                     .slice(0, questionIdx)
-                    .concat(block.titles.slice(questionIdx + 1))
-                )
+                    .concat(block.titles.slice(questionIdx + 1)),
+                })
               }}
             >
               <FontAwesomeIcon icon={faTrash} />
@@ -234,10 +233,10 @@ function SessionCreationBlock({
           id={`timeLimits.${index}`}
           value={block.timeLimit || ''}
           onChange={(newValue: string) => {
-            setFieldValue(
-              `blocks[${index}][timeLimit]`,
-              newValue === '' ? undefined : parseInt(newValue)
-            )
+            replace(index, {
+              ...block,
+              timeLimit: newValue === '' ? undefined : parseInt(newValue),
+            })
           }}
           placeholder={`optionales Zeit-Limit`}
         />

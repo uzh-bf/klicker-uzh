@@ -32,3 +32,7 @@ fs.copyFileSync(
     '../dist/libquery_engine-linux-musl-openssl-3.0.x.so.node'
   )
 )
+fs.copyFileSync(
+  path.resolve(__dirname, './client/pothos.d.ts'),
+  path.resolve(__dirname, '../dist/pothos.d.ts')
+)

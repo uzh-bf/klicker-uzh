@@ -35,7 +35,7 @@ function useEvaluationInitialization({
     if (instanceResults?.[selectedInstanceIndex]) {
       const selectedInstance = instanceResults[selectedInstanceIndex].id
       setSelectedInstance(selectedInstance)
-      setSelectedBlockIndex(instanceResults[selectedInstanceIndex].blockIx)
+      setSelectedBlockIndex(instanceResults[selectedInstanceIndex].blockIx ?? 0)
 
       const currInstance = instanceResults?.find(
         (instance) => instance.id === selectedInstance

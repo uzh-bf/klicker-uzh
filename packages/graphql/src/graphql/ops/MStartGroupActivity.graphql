@@ -1,4 +1,4 @@
-mutation StartGroupActivity($activityId: ID!, $groupId: ID!) {
+mutation StartGroupActivity($activityId: String!, $groupId: String!) {
   startGroupActivity(activityId: $activityId, groupId: $groupId) {
     id
   }

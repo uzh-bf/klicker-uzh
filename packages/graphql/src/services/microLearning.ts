@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
 import { pick } from 'ramda'
-import { ContextWithUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
 export async function getQuestionMap(
@@ -98,7 +98,7 @@ export async function getMicroSessionData(
 
 export async function getSingleMicroSession(
   { id }: GetMicroSessionDataArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const microSession = await ctx.prisma.microSession.findUnique({
     where: { id },
@@ -144,9 +144,9 @@ export async function markMicroSessionCompleted(
 interface CreateMicroSessionArgs {
   name: string
   displayName: string
-  description?: string
+  description?: string | null
   questions: number[]
-  courseId?: string
+  courseId?: string | null
   multiplier: number
   startDate: Date
   endDate: Date
@@ -202,9 +202,11 @@ export async function createMicroSession(
       owner: {
         connect: { id: ctx.user.sub },
       },
-      course: {
-        connect: { id: courseId },
-      },
+      course: courseId
+        ? {
+            connect: { id: courseId },
+          }
+        : undefined,
     },
     include: {
       instances: true,
@@ -220,9 +222,9 @@ interface EditMicroSessionArgs {
   id: string
   name: string
   displayName: string
-  description?: string
+  description?: string | null
   questions: number[]
-  courseId?: string
+  courseId?: string | null
   multiplier: number
   startDate: Date
   endDate: Date
@@ -309,9 +311,11 @@ export async function editMicroSession(
       owner: {
         connect: { id: ctx.user.sub },
       },
-      course: {
-        connect: { id: courseId },
-      },
+      course: courseId
+        ? {
+            connect: { id: courseId },
+          }
+        : undefined,
     },
     include: {
       instances: true,

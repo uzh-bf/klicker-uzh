@@ -4,6 +4,5 @@ query UserProfile {
     isActive
     email
     shortname
-    description
   }
 }

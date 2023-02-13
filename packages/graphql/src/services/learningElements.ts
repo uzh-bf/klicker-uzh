@@ -15,15 +15,15 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { pick } from 'ramda'
-import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 import { shuffle } from '../util'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 
 type QuestionResponse = {
-  choices?: number[]
-  value?: string
+  choices?: number[] | null
+  value?: string | null
 }
 
 function round(value: number) {
@@ -103,15 +103,13 @@ function evaluateQuestionResponse(
   }
 }
 
-interface RespondToQuestionInstanceArgs {
-  courseId: string
-  id: number
-  response: QuestionResponse
-}
-
 export async function respondToQuestionInstance(
-  { courseId, id, response }: RespondToQuestionInstanceArgs,
-  ctx: ContextWithOptionalUser
+  {
+    courseId,
+    id,
+    response,
+  }: { courseId: string; id: number; response: QuestionResponse },
+  ctx: Context
 ) {
   const {
     instance,
@@ -382,13 +380,9 @@ export async function respondToQuestionInstance(
   }
 }
 
-interface GetLearningElementDataArgs {
-  id: string
-}
-
 export async function getLearningElementData(
-  { id }: GetLearningElementDataArgs,
-  ctx: ContextWithOptionalUser
+  { id }: { id: string },
+  ctx: Context
 ) {
   const element = await ctx.prisma.learningElement.findUnique({
     where: { id },
@@ -417,7 +411,13 @@ export async function getLearningElementData(
 
   if (!element) return null
 
-  const instancesWithoutSolution = element.instances.reduce(
+  const instancesWithoutSolution = element.instances.reduce<{
+    instances: QuestionInstance[]
+    previouslyAnswered: number
+    previousScore: number
+    previousPointsAwarded: number
+    totalTrials: number
+  }>(
     (acc, instance) => {
       const questionData =
         instance.questionData?.valueOf() as AllQuestionTypeData
@@ -514,9 +514,9 @@ export async function getLearningElementData(
 interface CreateLearningElementArgs {
   name: string
   displayName: string
-  description?: string
+  description?: string | null
   questions: number[]
-  courseId?: string
+  courseId?: string | null
   multiplier: number
   order: OrderType
   resetTimeDays: number
@@ -589,9 +589,11 @@ export async function createLearningElement(
       owner: {
         connect: { id: ctx.user.sub },
       },
-      course: {
-        connect: { id: courseId },
-      },
+      course: courseId
+        ? {
+            connect: { id: courseId },
+          }
+        : undefined,
     },
     include: {
       instances: true,

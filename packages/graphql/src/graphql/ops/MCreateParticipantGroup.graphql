@@ -1,4 +1,4 @@
-mutation CreateParticipantGroup($courseId: ID!, $name: String!) {
+mutation CreateParticipantGroup($courseId: String!, $name: String!) {
   createParticipantGroup(courseId: $courseId, name: $name) {
     id
     name

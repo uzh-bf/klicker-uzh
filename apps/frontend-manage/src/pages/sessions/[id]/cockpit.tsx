@@ -1,13 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   ActivateSessionBlockDocument,
-  AggregatedConfusionFeedbacks,
   DeactivateSessionBlockDocument,
   EndSessionDocument,
   Feedback,
   GetCockpitSessionDocument,
   GetRunningSessionsDocument,
-  LecturerSession,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -90,7 +88,8 @@ function Cockpit() {
 
   const {
     id,
-    isAudienceInteractionActive,
+    isLiveQAEnabled,
+    isConfusionFeedbackEnabled,
     isModerationEnabled,
     isGamificationEnabled,
     namespace,
@@ -101,9 +100,9 @@ function Cockpit() {
     course,
     activeBlock,
     blocks,
-    confusionFeedbacks,
+    confusionSummary,
     feedbacks,
-  } = cockpitData.cockpitSession as LecturerSession
+  } = cockpitData.cockpitSession
 
   // TODO: add gamification leaderboard button
   return (
@@ -111,7 +110,7 @@ function Cockpit() {
       <div className="mb-8 print:hidden">
         {/* // TODO: readd all removed features like authenticated sessions, etc. */}
         <SessionTimeline
-          blocks={blocks}
+          blocks={blocks ?? []}
           sessionName={name}
           handleEndSession={() => {
             endSession({ variables: { id: id } })
@@ -138,13 +137,10 @@ function Cockpit() {
 
       <AudienceInteraction
         subscribeToMore={subscribeToMore}
-        confusionValues={
-          confusionFeedbacks
-            ? (confusionFeedbacks[0] as AggregatedConfusionFeedbacks)
-            : undefined
-        }
+        confusionValues={confusionSummary ?? undefined}
         feedbacks={feedbacks as Feedback[]}
-        isAudienceInteractionActive={isAudienceInteractionActive}
+        isLiveQAEnabled={isLiveQAEnabled}
+        isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
         isModerationEnabled={isModerationEnabled}
         isGamificationEnabled={isGamificationEnabled}
         sessionId={id}

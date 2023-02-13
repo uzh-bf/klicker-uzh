@@ -216,7 +216,8 @@ export const SESSIONS = [
     name: 'Test Session',
     displayName: 'Test Session',
     isModerationEnabled: false,
-    isAudienceInteractionActive: true,
+    isLiveQAEnabled: true,
+    isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
     status: SessionStatus.PREPARED,
     blocks: [
@@ -233,7 +234,8 @@ export const SESSIONS = [
     name: 'Test Session 2',
     displayName: 'Test Session 2',
     isModerationEnabled: false,
-    isAudienceInteractionActive: true,
+    isLiveQAEnabled: true,
+    isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
     status: SessionStatus.PREPARED,
     blocks: [
@@ -250,7 +252,8 @@ export const SESSIONS = [
     name: 'Test Session 3',
     displayName: 'Test Session 3',
     isModerationEnabled: false,
-    isAudienceInteractionActive: true,
+    isLiveQAEnabled: true,
+    isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
     status: SessionStatus.PREPARED,
     blocks: [

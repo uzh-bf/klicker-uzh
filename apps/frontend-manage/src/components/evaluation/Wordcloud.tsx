@@ -1,4 +1,8 @@
-import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import {
+  FreeTextQuestionData,
+  InstanceResult,
+  NumericalQuestionData,
+} from '@klicker-uzh/graphql/dist/ops'
 import React, { useMemo } from 'react'
 import { TagCloud } from 'react-tagcloud'
 
@@ -14,7 +18,9 @@ function Wordcloud({
   textSize,
 }: WordcloudProps): React.ReactElement {
   const tags = useMemo(() => {
-    return Object.values(data.results).map((result) => {
+    return Object.values(
+      data.results as NumericalQuestionData | FreeTextQuestionData
+    ).map((result) => {
       return {
         count: result.count,
         value: result.value,

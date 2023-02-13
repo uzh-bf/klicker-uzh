@@ -8,6 +8,7 @@ interface QuestionData<Type, Options> {
   isArchived: boolean
   createdAt: string | Date
   updatedAt: string | Date
+  pointsMultiplier: number
 
   options: Options
 }
@@ -30,8 +31,11 @@ type FreeTextQuestionData = QuestionData<
   {
     restrictions?: {
       maxLength?: number
+      minLength?: number
+      pattern?: string
     }
     solutions?: string[]
+    feedback?: string
   }
 >
 type NumericalQuestionData = QuestionData<
@@ -46,6 +50,7 @@ type NumericalQuestionData = QuestionData<
       min: number
       max?: number
     }[]
+    feedback?: string
   }
 >
 

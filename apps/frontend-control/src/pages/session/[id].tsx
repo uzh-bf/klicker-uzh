@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faArrowDown, faEllipsis } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivateSessionBlockDocument,
   DeactivateSessionBlockDocument,
   EndSessionDocument,
-  GetCockpitSessionDocument,
+  GetControlSessionDocument,
   GetRunningSessionsDocument,
-  Session,
   SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -15,6 +16,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
+import * as R from 'ramda'
 import { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
@@ -23,25 +25,21 @@ import SessionBlock from '../../components/sessions/SessionBlock'
 function RunningSession() {
   const router = useRouter()
   const theme = useContext(ThemeContext)
-  const [nextBlock, setNextBlock] = useState(-1)
-  const [currentBlock, setCurrentBlock] = useState<number | undefined>(
-    undefined
-  )
-
+  const [nextBlockOrder, setNextBlockOrder] = useState(-1)
+  const [currentBlockOrder, setCurrentBlockOrder] = useState<
+    number | undefined
+  >(undefined)
   const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
   const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
   const [endSession] = useMutation(EndSessionDocument, {
-    refetchQueries: [
-      {
-        query: GetRunningSessionsDocument,
-      },
-    ],
+    refetchQueries: [{ query: GetRunningSessionsDocument }],
   })
+
   const {
-    loading: cockpitLoading,
-    error: cockpitError,
-    data: cockpitData,
-  } = useQuery(GetCockpitSessionDocument, {
+    loading: sessionLoading,
+    error: sessionError,
+    data: sessionData,
+  } = useQuery(GetControlSessionDocument, {
     variables: {
       id: router.query.id as string,
     },
@@ -50,26 +48,34 @@ function RunningSession() {
   })
 
   useEffect(() => {
-    if (!cockpitData?.cockpitSession?.activeBlock) {
-      setCurrentBlock(undefined)
-      return
-    }
-    setCurrentBlock(cockpitData?.cockpitSession?.activeBlock.id)
-  }, [cockpitData?.cockpitSession?.activeBlock])
+    setCurrentBlockOrder(sessionData?.controlSession?.activeBlock?.order)
+  }, [
+    sessionData?.controlSession?.id,
+    sessionData?.controlSession?.activeBlock,
+  ])
 
   useEffect(() => {
-    if (!cockpitData?.cockpitSession?.blocks) return
-    const scheduledNext = cockpitData?.cockpitSession?.blocks.findIndex(
+    if (!sessionData?.controlSession?.blocks) return
+
+    const sortedBlocks = R.sort(
+      (a, b) => a.order - b.order,
+      sessionData?.controlSession?.blocks
+    )
+
+    if (!sortedBlocks) return
+    const scheduledNext = sortedBlocks.find(
       (block) => block.status === SessionBlockStatus.Scheduled
     )
-    setNextBlock(typeof scheduledNext === 'undefined' ? -1 : scheduledNext)
-    console.log(scheduledNext)
-  }, [cockpitData?.cockpitSession?.blocks])
+    setNextBlockOrder(
+      typeof scheduledNext === 'undefined' ? -1 : scheduledNext.order
+    )
+  }, [sessionData?.controlSession?.blocks])
 
-  if (cockpitLoading) {
+  if (sessionLoading) {
     return <Layout title="Session-Steuerung">Loading...</Layout>
   }
-  if (!cockpitData?.cockpitSession || cockpitError) {
+
+  if (!sessionData?.controlSession || sessionError) {
     return (
       <Layout title="Session-Steuerung">
         <UserNotification
@@ -80,8 +86,7 @@ function RunningSession() {
     )
   }
 
-  const { id, name, course, activeBlock, blocks } =
-    cockpitData?.cockpitSession as Session
+  const { id, name, course, blocks } = sessionData?.controlSession
 
   if (!blocks) {
     return (
@@ -96,23 +101,43 @@ function RunningSession() {
 
   return (
     <Layout title={`Session: ${name}`} sessionId={id}>
-      <div key={`${currentBlock}-${nextBlock}`}>
-        {currentBlock ? (
-          <div key={`${currentBlock}-${nextBlock}`}>
+      <div key={`${currentBlockOrder}-${nextBlockOrder}`}>
+        {typeof currentBlockOrder !== 'undefined' ? (
+          <div key={`${currentBlockOrder}-${nextBlockOrder}-child`}>
             <H3>Aktiver Block:</H3>
 
             <SessionBlock
-              block={blocks.find((block) => block.id === currentBlock)}
+              block={blocks.find((block) => block.order === currentBlockOrder)}
+              active
             />
+            {typeof currentBlockOrder !== 'undefined' &&
+              nextBlockOrder !== -1 &&
+              nextBlockOrder < blocks.length && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <FontAwesomeIcon
+                    icon={faArrowDown}
+                    className="w-full mx-auto"
+                    size="2xl"
+                  />
+
+                  <SessionBlock
+                    block={blocks.find(
+                      (block) => block.order === nextBlockOrder
+                    )}
+                  />
+                </div>
+              )}
             <Button
               onClick={async () => {
                 await deactivateSessionBlock({
                   variables: {
                     sessionId: id,
-                    sessionBlockId: currentBlock,
+                    sessionBlockId:
+                      blocks.find((block) => block.order === currentBlockOrder)
+                        ?.id || -1,
                   },
                 })
-                setCurrentBlock(undefined)
+                setCurrentBlockOrder(undefined)
               }}
               className={{
                 root: 'float-right',
@@ -121,27 +146,46 @@ function RunningSession() {
               Block schliessen
             </Button>
           </div>
-        ) : nextBlock !== -1 ? (
+        ) : nextBlockOrder !== -1 ? (
           <div>
             <H3>Nächster Block:</H3>
-            <SessionBlock block={blocks[nextBlock]} />
+            {nextBlockOrder > 0 && (
+              <FontAwesomeIcon
+                icon={faEllipsis}
+                size="2xl"
+                className="w-full mx-auto"
+              />
+            )}
+            <SessionBlock
+              block={blocks.find((block) => block.order === nextBlockOrder)}
+            />
+            {nextBlockOrder < blocks.length - 1 && (
+              <FontAwesomeIcon
+                icon={faEllipsis}
+                size="2xl"
+                className="w-full mx-auto"
+              />
+            )}
             <Button
               onClick={async () => {
                 {
                   await activateSessionBlock({
                     variables: {
                       sessionId: id,
-                      sessionBlockId: blocks[nextBlock].id,
+                      sessionBlockId:
+                        blocks.find((block) => block.order === nextBlockOrder)
+                          ?.id || -1,
                     },
                   })
-                  setCurrentBlock(blocks[nextBlock].id)
+                  setCurrentBlockOrder(nextBlockOrder)
+                  setNextBlockOrder(nextBlockOrder + 1)
                 }
               }}
               className={{
                 root: twMerge('float-right text-white', theme.primaryBgDark),
               }}
             >
-              Block {nextBlock + 1} aktivieren
+              Block {nextBlockOrder + 1} aktivieren
             </Button>
           </div>
         ) : (
@@ -167,16 +211,7 @@ function RunningSession() {
           </div>
         )}
 
-        {currentBlock && nextBlock !== -1 && nextBlock !== blocks.length && (
-          <div className="mt-14">
-            <H3>Nächster Block:</H3>
-
-            <SessionBlock
-              block={blocks.find((block) => block.order === nextBlock)}
-            />
-          </div>
-        )}
-        {currentBlock && nextBlock == -1 && (
+        {typeof currentBlockOrder !== 'undefined' && nextBlockOrder == -1 && (
           <UserNotification
             message="Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden."
             className={{ root: 'mt-14' }}

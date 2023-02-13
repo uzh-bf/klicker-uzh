@@ -1,4 +1,4 @@
-mutation ActivateSessionBlock($sessionId: ID!, $sessionBlockId: Int!) {
+mutation ActivateSessionBlock($sessionId: String!, $sessionBlockId: Int!) {
   activateSessionBlock(sessionId: $sessionId, sessionBlockId: $sessionBlockId) {
     id
     status

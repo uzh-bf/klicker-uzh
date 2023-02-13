@@ -1,0 +1,11 @@
+query GetControlCourse($courseId: String!) {
+  controlCourse(id: $courseId) {
+    id
+    name
+    sessions {
+      id
+      name
+      status
+    }
+  }
+}
