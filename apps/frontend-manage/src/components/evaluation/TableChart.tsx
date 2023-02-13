@@ -22,13 +22,14 @@ function TableChart({
             count: data.results[index].count,
             value: choice.value,
             correct: choice.correct ? 'T' : 'F',
-            percentage:
-              String(
-                (
-                  (data.results[index].count / data.participants) *
-                  100
-                ).toFixed()
-              ) + ' %',
+            percentage: data.participants
+              ? String(
+                  (
+                    (data.results[index].count / data.participants) *
+                    100
+                  ).toFixed()
+                ) + ' %'
+              : '0 %',
           }
         }
       )
@@ -43,17 +44,21 @@ function TableChart({
               : result.correct === true
               ? 'T'
               : 'F',
-          percentage:
-            String(((result.count / data.participants) * 100).toFixed()) + ' %',
+          percentage: data.participants
+            ? String(((result.count / data.participants) * 100).toFixed()) +
+              ' %'
+            : '0 %',
         }
       })
     }
   }, [data])
+
   const columns = [
     { label: 'Count', accessor: 'count', sortable: true },
     { label: 'Value', accessor: 'value', sortable: true },
     { label: '%', accessor: 'percentage', sortable: true },
   ]
+
   if (showSolution)
     columns.push({ label: 'T/F', accessor: 'correct', sortable: true })
 
