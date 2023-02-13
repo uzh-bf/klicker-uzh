@@ -1,5 +1,6 @@
 import { Attachment } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
+import Image from 'next/image'
 import { without } from 'ramda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -18,6 +19,7 @@ import SessionProgress from './questions/SessionProgress'
 const messages = {
   [QUESTION_TYPES.SC]: <p>Bitte eine einzige Option auswählen:</p>,
   [QUESTION_TYPES.MC]: <p>Bitte eine oder mehrere Optionen auswählen:</p>,
+  [QUESTION_TYPES.KPRIM]: <p>Beurteile die Aussagen auf ihre Richtigkeit:</p>,
   [QUESTION_TYPES.FREE_TEXT]: <p>Bitte eine Antwort eingeben:</p>,
   [QUESTION_TYPES.NUMERICAL]: <p>Bitte eine Zahl eingeben:</p>,
 }
@@ -177,11 +179,17 @@ export const StudentQuestion = ({
 
       <div
         className={twMerge(
-          'flex-initial min-h-[6rem] px-3 bg-primary-10 border border-solid rounded prose leading-6 max-w-none',
-          theme.primaryBorderDark
+          'mt-4 border-slate-300 flex-initial min-h-[6rem] bg-primary-10 border rounded leading-6 prose max-w-none prose-p:m-0 prose-img:m-0 p-4'
         )}
       >
-        <Markdown content={currentQuestion.content} />
+        <Markdown
+          components={{
+            img: ({ src, alt }: any) => (
+              <Image src={src} alt="Image" width={200} height={200} />
+            ),
+          }}
+          content={currentQuestion.content}
+        />
       </div>
 
       {currentQuestion.attachments && (

@@ -64,12 +64,22 @@ export const convertToMd = (slateObj) => {
 }
 
 export const convertToSlate = (mdObj) => {
+  console.log(mdObj)
+
   const result = unified()
     .use(markdown)
     .use(slate)
     .processSync(mdObj.replace(/\\/g, '\\\\')).result as any
 
   return result.map((line: any) => {
+    if (line.type === 'paragraph' && line.children?.[0]?.type === 'image') {
+      return {
+        type: 'paragraph',
+        children: [
+          { text: `![${line.children[0].caption}](${line.children[0].link})` },
+        ],
+      }
+    }
     if (line.type === 'ol_list') {
       return {
         ...line,

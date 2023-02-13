@@ -455,7 +455,7 @@ function QuestionEditModal({
               {JSON.stringify(errors)}
               <div className="z-0 flex flex-row">
                 <Label
-                  label="Fragetyp:"
+                  label="Fragetyp"
                   className={{
                     root: 'my-auto mr-2 text-lg font-bold',
                     tooltip:
@@ -485,7 +485,7 @@ function QuestionEditModal({
               <Form className="w-full" id="question-manipulation-form">
                 <div className="flex flex-row mt-2">
                   <Label
-                    label="Fragetitel:"
+                    label="Fragetitel"
                     className={{
                       root: 'my-auto mr-2 text-lg font-bold',
                       tooltip:
@@ -509,7 +509,7 @@ function QuestionEditModal({
                 <div className="mt-2">
                   <div className="flex flex-row">
                     <Label
-                      label="Tags:"
+                      label="Tags"
                       className={{
                         root: 'my-auto mr-2 text-lg font-bold',
                         tooltip:
@@ -533,13 +533,13 @@ function QuestionEditModal({
                   </div>
                   <div className="italic text-red-600">
                     Temporarily required formatting: Enter tags separated by
-                    commas e.g.: Tag1, Tag2, Tag3
+                    commas e.g.: Tag1,Tag2,Tag3
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <Label
-                    label="Frage:"
+                    label="Frage"
                     className={{
                       root: 'my-auto mr-2 text-lg font-bold',
                       tooltip:
@@ -576,7 +576,6 @@ function QuestionEditModal({
                       )}
                     </FastField>
                   )}
-                  {values.content}
                 </div>
 
                 {/* // TODO: to be released
@@ -594,7 +593,7 @@ function QuestionEditModal({
                   {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                     <div className="flex-1">
                       <Label
-                        label="Antwortmöglichkeiten:"
+                        label="Antwortmöglichkeiten"
                         className={{
                           root: 'my-auto mr-2 text-lg font-bold',
                           tooltip: 'text-base font-normal',
@@ -607,7 +606,7 @@ function QuestionEditModal({
                   {QUESTION_GROUPS.FREE.includes(questionType) && (
                     <div className="flex-1">
                       <Label
-                        label="Einschränkungen:"
+                        label="Einschränkungen"
                         className={{
                           root: 'my-auto mr-2 text-lg font-bold',
                           tooltip: 'text-base font-normal',

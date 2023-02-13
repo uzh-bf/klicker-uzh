@@ -9,6 +9,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { MicroSession } from '@klicker-uzh/graphql/dist/ops'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext } from 'react'
 import Ellipsis from '../common/Ellipsis'
@@ -53,48 +54,58 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   )
 
   return (
-    <div
-      key={microSession.id}
-      className="p-2 border border-solid rounded h-36 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80 flex flex-col justify-between"
+    <Link
+      href={`${process.env.NEXT_PUBLIC_PWA_URL}/micro/${microSession.id}/`}
+      target="_blank"
     >
-      <div>
-        <div className="flex flex-row justify-between">
-          <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
-            {microSession.name || ''}
-          </Ellipsis>
+      <Button
+        key={microSession.id}
+        className={{
+          root: 'p-2 border border-solid rounded h-36 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80 flex flex-col justify-between',
+        }}
+      >
+        <div>
+          <div className="flex flex-row justify-between">
+            <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
+              {microSession.name || ''}
+            </Ellipsis>
 
-          {statusIcon}
+            {statusIcon}
+          </div>
+          <div className="mb-1 italic">
+            {microSession.numOfInstances || '0'} Fragen
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faHourglassStart} />
+            <div>Start: {scheduledStartAtString}</div>
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faHourglassEnd} />
+            <div>Ende: {scheduledEndAtString}</div>
+          </div>
+          {isFuture && (
+            <Button
+              basic
+              className={{ root: theme.primaryText }}
+              onClick={() =>
+                router.push({
+                  pathname: '/',
+                  query: {
+                    sessionId: microSession.id,
+                    editMode: 'microSession',
+                  },
+                })
+              }
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faArrowRight} />
+              </Button.Icon>
+              <Button.Label>Micro-Session bearbeiten</Button.Label>
+            </Button>
+          )}
         </div>
-        <div className="mb-1 italic">
-          {microSession.numOfInstances || '0'} Fragen
-        </div>
-        <div className="flex flex-row items-center gap-2">
-          <FontAwesomeIcon icon={faHourglassStart} />
-          <div>Start: {scheduledStartAtString}</div>
-        </div>
-        <div className="flex flex-row items-center gap-2">
-          <FontAwesomeIcon icon={faHourglassEnd} />
-          <div>Ende: {scheduledEndAtString}</div>
-        </div>
-        {isFuture && (
-          <Button
-            basic
-            className={{ root: theme.primaryText }}
-            onClick={() =>
-              router.push({
-                pathname: '/',
-                query: { sessionId: microSession.id, editMode: 'microSession' },
-              })
-            }
-          >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faArrowRight} />
-            </Button.Icon>
-            <Button.Label>Micro-Session bearbeiten</Button.Label>
-          </Button>
-        )}
-      </div>
-    </div>
+      </Button>
+    </Link>
   )
 }
 

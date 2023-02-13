@@ -31,7 +31,7 @@ const nextConfig = withPWA({
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['127.0.0.1', process.env.S3_HOSTNAME],
+    domains: ['127.0.0.1', process.env.S3_HOSTNAME, 'upload.wikimedia.org'],
     remotePatterns: [
       {
         protocol: 'https',

@@ -1,5 +1,6 @@
 import Markdown from '@klicker-uzh/markdown'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
+import Image from 'next/image'
 import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -24,10 +25,7 @@ export function SCAnswerOptions({
           <Button
             fluid
             className={{
-              root: twMerge(
-                'border border-solid min-h-[2.5rem]',
-                theme.primaryBorderDark
-              ),
+              root: twMerge('min-h-[2.5rem]'),
             }}
             onClick={onChange(index)}
             key={choice.value}
@@ -35,7 +33,15 @@ export function SCAnswerOptions({
             data={{ cy: 'sc-answer-options' }}
           >
             <Button.Label>
-              <Markdown content={choice.value} />
+              <Markdown
+                content={choice.value}
+                components={{
+                  img: ({ src, alt }: any) => (
+                    <Image src={src} alt="Image" width={150} height={150} />
+                  ),
+                }}
+                className="p-2 prose prose-img:m-0 max-w-none prose-p:m-0"
+              />
             </Button.Label>
           </Button>
         )
