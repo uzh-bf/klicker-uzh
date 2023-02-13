@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.27...v3.0.0-alpha.28) (2023-02-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** update SSR api url, reduce editor height ([5d5ae72](https://github.com/uzh-bf/klicker-uzh/commit/5d5ae72643adc1fb8533254202433d95bc07651e))
+
+
+### Deployment
+
+* use dynamic APP_VERSION to prevent commits ([0069ca6](https://github.com/uzh-bf/klicker-uzh/commit/0069ca631e4c19a7cb94f4a69efe71e35f1bfcb4))
+
 ## [3.0.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.26...v3.0.0-alpha.27) (2023-02-13)
 
 
