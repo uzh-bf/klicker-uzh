@@ -17,7 +17,7 @@ releases:
         frontendPWA:
           replicaCount: 1
           image:
-            tag: v3.0.0-alpha.25
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN_PWA" }}'
@@ -25,7 +25,7 @@ releases:
         frontendManage:
           replicaCount: 1
           image:
-            tag: v3.0.0-alpha.25
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN_MANAGE" }}'
@@ -33,7 +33,7 @@ releases:
         frontendControl:
           replicaCount: 1
           image:
-            tag: v3.0.0-alpha.25
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN_CONTROL" }}'
@@ -42,7 +42,7 @@ releases:
         backendGraphql:
           replicaCount: 1
           image:
-            tag: v3.0.0-alpha.25
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
           apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
