@@ -54,7 +54,18 @@ function BarChart({
   return (
     <ResponsiveContainer className="pb-2" height="99%" width="99%">
       <BarChartRecharts
-        data={dataWithLabels}
+        data={
+          dataWithLabels.length > 0
+            ? dataWithLabels
+            : [
+                {
+                  count: 0,
+                  labelIn: undefined,
+                  labelOut: undefined,
+                  xLabel: '0',
+                },
+              ]
+        }
         margin={{
           bottom: 20,
           left: 20,
