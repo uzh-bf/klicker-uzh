@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.23...v3.0.0-alpha.24) (2023-02-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** update overrides for next apps ([f533035](https://github.com/uzh-bf/klicker-uzh/commit/f533035e126b9ebaf5b5b3f39ddd17385d6489ec))
+
 ## [3.0.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.22...v3.0.0-alpha.23) (2023-02-13)
 
 
