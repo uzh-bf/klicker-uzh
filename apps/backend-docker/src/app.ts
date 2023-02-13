@@ -13,7 +13,11 @@ import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
 
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
-  const armor = new EnvelopArmor()
+  const armor = new EnvelopArmor({
+    maxDepth: {
+      enabled: false,
+    },
+  })
   const enhancements = armor.protect()
 
   const app = express()
