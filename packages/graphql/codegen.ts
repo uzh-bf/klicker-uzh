@@ -22,33 +22,47 @@ const config: CodegenConfig = {
     './src/graphql/schema.graphql': {
       plugins: ['schema-ast'],
     },
+    // './src/persisted-queries/client.json': {
+    //   plugins: [
+    //     {
+    //       'graphql-codegen-persisted-query-ids': {
+    //         output: 'client',
+    //         algorithm: 'sha256',
+    //       },
+    //     },
+    //   ],
+    // },
+    // './src/persisted-queries/server.json': {
+    //   plugins: [
+    //     {
+    //       'graphql-codegen-persisted-query-ids': {
+    //         output: 'server',
+    //         algorithm: 'sha256',
+    //       },
+    //     },
+    //   ],
+    // },
+    './src/public/client.json': {
+      plugins: [
+        {
+          'graphql-codegen-persisted-query-ids': {
+            output: 'client',
+            algorithm: 'sha256',
+          },
+        },
+      ],
+    },
+    './src/public/server.json': {
+      plugins: [
+        {
+          'graphql-codegen-persisted-query-ids': {
+            output: 'server',
+            algorithm: 'sha256',
+          },
+        },
+      ],
+    },
   },
 }
 
 export default config
-
-// ./src/persisted-queries/client.json:
-// plugins:
-//   - graphql-codegen-persisted-query-ids:
-//       output: client
-//       algorithm: sha256
-
-// ./src/persisted-queries/server.json:
-// plugins:
-//   - graphql-codegen-persisted-query-ids:
-//       output: server
-//       algorithm: sha256
-// ./src/ops.schema.json:
-// plugins:
-//   - 'introspection'
-// ./src/public/client.json:
-// plugins:
-//   - graphql-codegen-persisted-query-ids:
-//       output: client
-//       algorithm: sha256
-
-// ./src/public/server.json:
-// plugins:
-//   - graphql-codegen-persisted-query-ids:
-//       output: server
-//       algorithm: sha256
