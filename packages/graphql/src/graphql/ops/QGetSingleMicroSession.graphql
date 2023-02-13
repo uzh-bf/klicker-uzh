@@ -1,4 +1,4 @@
-query GetSingleMicroSession($id: ID!) {
+query GetSingleMicroSession($id: String!) {
   singleMicroSession(id: $id) {
     id
     name

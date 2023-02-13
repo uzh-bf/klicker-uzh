@@ -1,4 +1,4 @@
-mutation JoinCourse($courseId: ID!) {
+mutation JoinCourse($courseId: String!) {
   joinCourse(courseId: $courseId) {
     id
     participation {

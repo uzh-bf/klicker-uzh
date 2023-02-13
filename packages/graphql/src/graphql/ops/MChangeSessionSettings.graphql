@@ -1,5 +1,5 @@
 mutation ChangeSessionSettings(
-  $id: ID!
+  $id: String!
   $isLiveQAEnabled: Boolean
   $isConfusionFeedbackEnabled: Boolean
   $isModerationEnabled: Boolean

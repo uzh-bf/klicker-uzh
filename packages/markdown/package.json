@@ -29,16 +29,16 @@
     "react": "^18.2.0"
   },
   "devDependencies": {
-    "@size-limit/preset-small-lib": "8.1.0",
-    "@tsconfig/node18": "1.0.1",
-    "@tsconfig/recommended": "1.0.1",
-    "size-limit": "8.1.0",
-    "tsup": "6.5.0",
-    "typescript": "4.9.4"
+    "@size-limit/preset-small-lib": "8.2.4",
+    "@tsconfig/node18": "^1.0.1",
+    "@tsconfig/recommended": "^1.0.2",
+    "size-limit": "8.2.4",
+    "tsup": "6.6.2",
+    "typescript": "4.9.5"
   },
   "dependencies": {
     "rehype-katex": "6.0.2",
-    "rehype-react": "7.1.1",
+    "rehype-react": "7.1.2",
     "rehype-sanitize": "5.0.1",
     "remark-math": "5.1.1",
     "remark-parse": "10.0.1",

@@ -14,7 +14,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import durationPlugin from 'dayjs/plugin/duration'
 
 import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
-import { SessionBlock as SessionBlockType } from '@klicker-uzh/graphql/dist/ops'
+import { SessionBlock as ISessionBlock } from '@klicker-uzh/graphql/dist/ops'
 import { twMerge } from 'tailwind-merge'
 import CancelSessionModal from './CancelSessionModal'
 import QRPopup from './QRPopup'
@@ -38,7 +38,7 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
 }
 
 interface Props {
-  blocks?: SessionBlockType[]
+  blocks?: ISessionBlock[]
   sessionName: string
   handleEndSession: () => void
   handleTogglePublicEvaluation: () => void

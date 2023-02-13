@@ -1,4 +1,4 @@
-mutation ChangeCourseDescription($input: String!, $courseId: ID!) {
+mutation ChangeCourseDescription($input: String!, $courseId: String!) {
   changeCourseDescription(input: $input, courseId: $courseId) {
     id
     description

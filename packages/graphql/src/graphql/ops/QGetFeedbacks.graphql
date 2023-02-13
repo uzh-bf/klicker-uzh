@@ -1,4 +1,4 @@
-query GetFeedbacks($sessionId: ID!) {
+query GetFeedbacks($sessionId: String!) {
   feedbacks(id: $sessionId) {
     id
     isPublished

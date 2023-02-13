@@ -1,4 +1,4 @@
-query GetControlCourse($courseId: ID!) {
+query GetControlCourse($courseId: String!) {
   controlCourse(id: $courseId) {
     id
     name

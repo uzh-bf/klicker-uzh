@@ -1,14 +1,10 @@
 import { QuestionType } from '@klicker-uzh/prisma'
-import { pick } from 'ramda'
-import { ContextWithUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 
-export async function getUserQuestions(
-  { userId }: { userId: string },
-  ctx: ContextWithUser
-) {
+export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
     where: {
-      id: userId,
+      id: ctx.user.sub,
     },
     include: {
       questions: {
@@ -24,26 +20,7 @@ export async function getUserQuestions(
     },
   })
 
-  return userQuestions?.questions.map((question) => {
-    return {
-      ...pick(
-        [
-          'id',
-          'name',
-          'type',
-          'content',
-          'isArchived',
-          'isDeleted',
-          'hasSampleSolution',
-          'hasAnswerFeedbacks',
-          'createdAt',
-          'updatedAt',
-        ],
-        question
-      ),
-      tags: question.tags.map(pick(['id', 'name'])),
-    }
-  })
+  return userQuestions?.questions
 }
 
 export async function getSingleQuestion(
@@ -52,13 +29,15 @@ export async function getSingleQuestion(
 ) {
   const question = await ctx.prisma.question.findUnique({
     where: {
-      id: id,
+      id,
     },
     include: {
       tags: true,
       attachments: true,
     },
   })
+
+  if (!question) return null
 
   return {
     ...question,
@@ -78,12 +57,19 @@ export async function manipulateQuestion(
     attachments,
     tags,
   }: {
-    id?: number
+    id?: number | null
     type: QuestionType
-    name?: string
-    content?: string
+    name?: string | null
+    content?: string | null
     options?: {
-      restrictions?: { maxLength?: number; min?: number; max?: number }
+      restrictions?: {
+        maxLength?: number
+        minLength?: number
+        pattern?: string
+        min?: number
+        max?: number
+      }
+      feedback?: string
       solutionRanges?: { min?: number; max?: number }[]
       solutions?: string[]
       choices?: {
@@ -92,17 +78,17 @@ export async function manipulateQuestion(
         correct?: boolean
         feedback?: string
       }[]
-    }
-    hasSampleSolution?: boolean
-    hasAnswerFeedbacks?: boolean
-    attachments?: { id: string }[]
-    tags?: string[]
+    } | null
+    hasSampleSolution?: boolean | null
+    hasAnswerFeedbacks?: boolean | null
+    attachments?: { id: string }[] | null
+    tags?: string[] | null
   },
   ctx: ContextWithUser
 ) {
   let tagsToDelete: string[] = []
 
-  const questionOLD = id
+  const questionPrev = id
     ? await ctx.prisma.question.findUnique({
         where: {
           id: id,
@@ -114,8 +100,8 @@ export async function manipulateQuestion(
       })
     : undefined
 
-  if (questionOLD && questionOLD?.tags) {
-    tagsToDelete = questionOLD.tags
+  if (questionPrev && questionPrev?.tags) {
+    tagsToDelete = questionPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
   }
@@ -154,11 +140,11 @@ export async function manipulateQuestion(
       // TODO: create / connect attachments
     },
     update: {
-      name: name,
-      content: content,
-      hasSampleSolution: hasSampleSolution || false,
-      hasAnswerFeedbacks: hasAnswerFeedbacks || false,
-      options: options,
+      name: name ?? undefined,
+      content: content ?? undefined,
+      hasSampleSolution: hasSampleSolution ?? false,
+      hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
+      options: options ?? undefined,
       tags: {
         connectOrCreate: tags
           ?.filter((tag: string) => tag !== '')
@@ -202,10 +188,7 @@ export async function manipulateQuestion(
   }
 }
 
-export async function deleteQuestion(
-  { id }: { id: number },
-  ctx: ContextWithUser
-) {
+export async function deleteQuestion({ id }: { id: number }, ctx: Context) {
   const question = await ctx.prisma.question.delete({
     where: {
       id: id,
@@ -239,7 +222,7 @@ export async function getUserTags(ctx: ContextWithUser) {
 
 export async function editTag(
   { id, name }: { id: number; name: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const tag = await ctx.prisma.tag.update({
     where: {
@@ -253,7 +236,7 @@ export async function editTag(
   return tag
 }
 
-export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
+export async function deleteTag({ id }: { id: number }, ctx: Context) {
   const tag = await ctx.prisma.tag.delete({
     where: {
       id: id,
@@ -264,4 +247,6 @@ export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
     typename: 'Tag',
     id: tag.id,
   })
+
+  return tag
 }

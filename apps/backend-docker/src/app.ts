@@ -1,7 +1,5 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 import { useSentry } from '@envelop/sentry'
-// import { EnvelopArmor } from '@escape.tech/graphql-armor'
-// import { authZEnvelopPlugin } from '@graphql-authz/envelop-plugin'
+import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
@@ -15,8 +13,12 @@ import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
 
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
-  // const armor = new EnvelopArmor()
-  // const enhancements = armor.protect()
+  const armor = new EnvelopArmor({
+    maxDepth: {
+      enabled: false,
+    },
+  })
+  const enhancements = armor.protect()
 
   const app = express()
 
@@ -65,10 +67,6 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const yogaApp = createYoga({
     schema,
     plugins: [
-      // authZEnvelopPlugin({
-      //   rules: Rules,
-      //   authSchema: AuthSchema,
-      // }),
       useResponseCache({
         // set the TTL to 0 to disable response caching by default
         ttl: 0,
@@ -113,7 +111,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           // },
         }),
       // useGraphQlJit(),
-      // ...enhancements.plugins,
+      ...enhancements.plugins,
     ].filter(Boolean) as Plugin[],
     context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
     logging: true,

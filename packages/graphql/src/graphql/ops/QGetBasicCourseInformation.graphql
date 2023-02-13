@@ -1,4 +1,4 @@
-query GetBasicCourseInformation($courseId: ID!) {
+query GetBasicCourseInformation($courseId: String!) {
   basicCourseInformation(courseId: $courseId) {
     id
     name

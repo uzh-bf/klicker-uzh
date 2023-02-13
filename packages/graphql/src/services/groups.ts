@@ -11,7 +11,7 @@ interface CreateParticipantGroupArgs {
 
 export async function createParticipantGroup(
   { courseId, name }: CreateParticipantGroupArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const code = 100000 + Math.floor(Math.random() * 900000)
 
@@ -56,7 +56,7 @@ interface JoinParticipantGroupArgs {
 
 export async function joinParticipantGroup(
   { courseId, code }: JoinParticipantGroupArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   // find participantgroup with code
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
@@ -517,7 +517,7 @@ interface SubmitGroupActivityDecisionsArgs {
   activityInstanceId: number
   decisions: {
     id: number
-    response?: string
+    response?: string | null
     selectedOptions?: number[]
   }[]
 }
@@ -562,7 +562,5 @@ export async function submitGroupActivityDecisions(
     }
   )
 
-  return {
-    id: groupActivityInstance.groupActivityId,
-  }
+  return updatedActivityInstance
 }

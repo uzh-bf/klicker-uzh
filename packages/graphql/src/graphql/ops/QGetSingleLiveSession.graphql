@@ -1,4 +1,4 @@
-query GetSingleLiveSession($sessionId: ID!) {
+query GetSingleLiveSession($sessionId: String!) {
   liveSession(id: $sessionId) {
     id
     name

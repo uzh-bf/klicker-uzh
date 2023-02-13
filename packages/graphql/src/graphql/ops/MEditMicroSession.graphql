@@ -1,13 +1,13 @@
 mutation EditMicroSession(
-  $id: ID!
+  $id: String!
   $name: String!
   $displayName: String!
   $description: String
-  $questions: [Int]!
+  $questions: [Int!]!
   $courseId: String
   $multiplier: Int!
-  $startDate: String!
-  $endDate: String!
+  $startDate: Date!
+  $endDate: Date!
 ) {
   editMicroSession(
     id: $id

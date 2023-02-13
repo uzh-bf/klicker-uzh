@@ -1,6 +1,6 @@
 # import "./FQuestionDataWithoutSolutions.graphql"
 
-query GetCockpitSession($id: ID!) {
+query GetCockpitSession($id: String!) {
   cockpitSession(id: $id) {
     id
     isLiveQAEnabled
@@ -37,7 +37,7 @@ query GetCockpitSession($id: ID!) {
     activeBlock {
       id
     }
-    confusionFeedbacks {
+    confusionSummary {
       speed
       difficulty
       numberOfParticipants

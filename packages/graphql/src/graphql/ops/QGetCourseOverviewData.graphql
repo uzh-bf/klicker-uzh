@@ -1,4 +1,4 @@
-query GetCourseOverviewData($courseId: ID!) {
+query GetCourseOverviewData($courseId: String!) {
   getCourseOverviewData(courseId: $courseId) {
     id
     participant {

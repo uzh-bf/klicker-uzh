@@ -14,9 +14,6 @@ export interface Context extends BaseContext {
   redisExec: Redis
   pubSub: PubSub<any>
   emitter: EventEmitter
-}
-
-export interface ContextWithOptionalUser extends Context {
   user?: {
     sub: string
     role: UserRole

@@ -4,7 +4,7 @@ import {
   GetUserQuestionsDocument,
   GetUserTagsDocument,
   ManipulateChoicesQuestionDocument,
-  ManipulateFreetextQuestionDocument,
+  ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -212,7 +212,7 @@ function QuestionEditModal({
     ManipulateNumericalQuestionDocument
   )
   const [manipulateFreeTextQuestion] = useMutation(
-    ManipulateFreetextQuestionDocument
+    ManipulateFreeTextQuestionDocument
   )
 
   const dropdownOptions = useMemo(() => {

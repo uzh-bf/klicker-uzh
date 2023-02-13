@@ -2,8 +2,8 @@ import { SubscribeToMoreOptions, useMutation } from '@apollo/client'
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  AggregatedConfusionFeedbacks,
   ChangeSessionSettingsDocument,
+  ConfusionSummary,
   DeleteFeedbackDocument,
   DeleteFeedbackResponseDocument,
   Feedback,
@@ -24,7 +24,7 @@ import FeedbackChannel from './feedbacks/FeedbackChannel'
 interface Props {
   sessionId: string
   sessionName: string
-  confusionValues?: AggregatedConfusionFeedbacks
+  confusionValues?: ConfusionSummary
   feedbacks?: Feedback[]
   isLiveQAEnabled: boolean
   isConfusionFeedbackEnabled: boolean
