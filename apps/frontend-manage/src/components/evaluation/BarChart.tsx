@@ -29,7 +29,7 @@ function BarChart({
   textSize,
 }: BarChartProps): React.ReactElement {
   // add labelIn and labelOut attributes to data, set labelIn to votes if votes/totalResponses > SMALL_BAR_THRESHOLD and set labelOut to votes otherwise
-  const dataWithLabels = Object.values(data.results).map((result, idx) => {
+  let dataWithLabels = Object.values(data.results).map((result, idx) => {
     const labelIn =
       result.count / data.participants > SMALL_BAR_THRESHOLD
         ? result.count
@@ -44,6 +44,21 @@ function BarChart({
         : String.fromCharCode(Number(idx) + 65)
     return { count: result.count, labelIn, labelOut, xLabel }
   })
+
+  if (
+    Object.keys(data.results).length === 0 &&
+    data.questionData.type === 'NUMERICAL'
+  ) {
+    console.log('inside if-statement of BarChart.tsx')
+    dataWithLabels = [
+      {
+        count: 0,
+        labelIn: undefined,
+        labelOut: undefined,
+        xLabel: '0',
+      },
+    ]
+  }
 
   return (
     <ResponsiveContainer className="pb-2" height="99%" width="99%">
