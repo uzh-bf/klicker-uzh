@@ -91,7 +91,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
             dropdown: 'p-1.5 gap-0',
           }}
         >
-          <Navigation.DropdownItem
+          {/* <Navigation.DropdownItem
             title="Settings"
             href="/settings"
             className={{ title: 'text-base font-bold', root: 'p-2' }}
@@ -100,7 +100,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
             title="Support"
             href="/support"
             className={{ title: 'text-base font-bold', root: 'p-2' }}
-          />
+          /> */}
           <Navigation.DropdownItem
             title="Login-Token generieren"
             href="/token"
