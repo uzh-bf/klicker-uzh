@@ -66,7 +66,7 @@ function createIsomorphLink() {
           )
 
           // redirect the user to the login page on errors
-          if (isBrowser && message === 'Unauthorized!') {
+          if (isBrowser && message === 'Unauthorized') {
             Router.push(
               `/login?expired=true&redirect_to=${
                 encodeURIComponent(
