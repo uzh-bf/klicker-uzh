@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.22...v3.0.0-alpha.23) (2023-02-13)
+
+
+### Bug Fixes
+
+* **frontend-manage:** fix NaN values in tables and bar charts ([#3327](https://github.com/uzh-bf/klicker-uzh/issues/3327)) ([418f01e](https://github.com/uzh-bf/klicker-uzh/commit/418f01eb05dd6ac61275f5e2e580f365c7279e11))
+
+
+### Enhancements
+
+* **frontend-manage:** separate toggle functionality for live Q&A and confusion feedback ([#3325](https://github.com/uzh-bf/klicker-uzh/issues/3325)) ([d8f8c5f](https://github.com/uzh-bf/klicker-uzh/commit/d8f8c5f453911d7c102417a174f44fb62b2ccd22))
+
+
+### Refactors
+
+* move from nexus to pothos with prisma integration and plugins ([#3189](https://github.com/uzh-bf/klicker-uzh/issues/3189)) ([b525faf](https://github.com/uzh-bf/klicker-uzh/commit/b525faffd6aeb98fa507325f4040f93e6f3be009))
+
 ## [3.0.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.21...v3.0.0-alpha.22) (2023-02-09)
 
 
