@@ -1,4 +1,3 @@
-import * as DB from '@klicker-uzh/prisma'
 import { filter, pipe } from 'graphql-yoga'
 
 import builder from '../builder'
@@ -6,22 +5,23 @@ import { Feedback, SessionBlock } from './session'
 
 export const Subscription = builder.subscriptionType({
   fields(t) {
-    const asAuthenticated = t.withAuth({
-      authenticated: true,
-    })
+    // const asAuthenticated = t.withAuth({
+    //   authenticated: true,
+    // })
 
-    const asParticipant = t.withAuth({
-      authenticated: true,
-      role: DB.UserRole.PARTICIPANT,
-    })
+    // const asParticipant = t.withAuth({
+    //   authenticated: true,
+    //   role: DB.UserRole.PARTICIPANT,
+    // })
 
-    const asUser = t.withAuth({
-      authenticated: true,
-      role: DB.UserRole.USER,
-    })
+    // const asUser = t.withAuth({
+    //   authenticated: true,
+    //   role: DB.UserRole.USER,
+    // })
 
     return {
-      runningSessionUpdated: asUser.field({
+      runningSessionUpdated: t.field({
+        nullable: true,
         type: SessionBlock,
         args: {
           sessionId: t.arg.string({ required: true }),

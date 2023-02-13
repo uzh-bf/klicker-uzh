@@ -183,7 +183,7 @@ export const Query = builder.queryType({
           return CourseService.getUserLearningElements(ctx)
         },
       }),
-      microSession: asAuthenticated.field({
+      microSession: t.field({
         nullable: true,
         type: MicroSession,
         args: {
@@ -203,7 +203,7 @@ export const Query = builder.queryType({
           return ParticipantGroupService.getParticipantGroups(args, ctx)
         },
       }),
-      session: asUser.field({
+      session: t.field({
         nullable: true,
         type: Session,
         args: {
@@ -273,7 +273,7 @@ export const Query = builder.queryType({
           return SessionService.getSessionEvaluation(args, ctx)
         },
       }),
-      sessionLeaderboard: asAuthenticated.field({
+      sessionLeaderboard: t.field({
         nullable: true,
         type: [LeaderboardEntry],
         args: {

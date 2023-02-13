@@ -199,8 +199,8 @@ export interface IInstanceResult {
   results: object
   status: DB.SessionBlockStatus
 
-  questionData: any
-  statistics: IStatistics
+  questionData: AllQuestionTypeData
+  statistics?: IStatistics
 }
 export const InstanceResultRef =
   builder.objectRef<IInstanceResult>('InstanceResult')
@@ -217,7 +217,7 @@ export const InstanceResult = InstanceResultRef.implement({
     questionData: t.expose('questionData', {
       type: QuestionData,
     }),
-    statistics: t.expose('statistics', { type: Statistics }),
+    statistics: t.expose('statistics', { type: Statistics, nullable: true }),
   }),
 })
 

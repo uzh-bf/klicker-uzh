@@ -64,7 +64,7 @@ export const Participant = ParticipantRef.implement({
 
     username: t.exposeString('username', { nullable: false }),
     avatar: t.exposeString('avatar', { nullable: true }),
-    avatarSettings: t.expose('avatarSettings', { type: 'Json' }),
+    avatarSettings: t.expose('avatarSettings', { type: 'Json', nullable: true }),
 
     xp: t.exposeInt('xp'),
     level: t.exposeInt('level'),
