@@ -216,7 +216,7 @@ export const SESSIONS = [
     name: 'Test Session',
     displayName: 'Test Session',
     isModerationEnabled: false,
-    'isLiveQAEnabled': true,
+    isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
     status: SessionStatus.PREPARED,
