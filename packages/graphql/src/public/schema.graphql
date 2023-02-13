@@ -268,7 +268,7 @@ type InstanceResult {
   participants: Int!
   questionData: QuestionData!
   results: Json!
-  statistics: Statistics!
+  statistics: Statistics
   status: SessionBlockStatus!
 }
 
@@ -446,7 +446,7 @@ enum ParameterType {
 type Participant {
   achievements: [ParticipantAchievementInstance!]
   avatar: String
-  avatarSettings: Json!
+  avatarSettings: Json
   id: ID!
   isSelf: Boolean
   lastLoginAt: Date
@@ -685,7 +685,7 @@ type Subscription {
   feedbackCreated(sessionId: String!): Feedback!
   feedbackRemoved(sessionId: String!): String!
   feedbackUpdated(sessionId: String!): Feedback!
-  runningSessionUpdated(sessionId: String!): SessionBlock!
+  runningSessionUpdated(sessionId: String!): SessionBlock
 }
 
 input SubscriptionKeysInput {

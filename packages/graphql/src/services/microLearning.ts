@@ -98,7 +98,7 @@ export async function getMicroSessionData(
 
 export async function getSingleMicroSession(
   { id }: GetMicroSessionDataArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const microSession = await ctx.prisma.microSession.findUnique({
     where: { id },
@@ -124,7 +124,7 @@ interface MarkMicroSessionCompletedArgs {
 
 export async function markMicroSessionCompleted(
   { courseId, id }: MarkMicroSessionCompletedArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   return ctx.prisma.participation.update({
     where: {

@@ -2902,13 +2902,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "Statistics",
-                "ofType": null
-              }
+              "kind": "OBJECT",
+              "name": "Statistics",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -7007,13 +7003,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Json",
-                "ofType": null
-              }
+              "kind": "SCALAR",
+              "name": "Json",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -10247,13 +10239,9 @@
               }
             ],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "SessionBlock",
-                "ofType": null
-              }
+              "kind": "OBJECT",
+              "name": "SessionBlock",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null

@@ -1035,7 +1035,7 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
 
 export async function getLeaderboard(
   { sessionId }: { sessionId: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const session = await ctx.prisma.session.findUnique({
     where: {
