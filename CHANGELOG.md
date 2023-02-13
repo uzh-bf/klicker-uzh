@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.24...v3.0.0-alpha.25) (2023-02-13)
+
+
+### Deployment
+
+* ensure that tag still matches current v2 naming, fix checksum generation, add control frontend ([d37fb4c](https://github.com/uzh-bf/klicker-uzh/commit/d37fb4c7644e02ae8258ab798588b871cc3adf60))
+
 ## [3.0.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.23...v3.0.0-alpha.24) (2023-02-13)
 
 
