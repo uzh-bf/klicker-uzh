@@ -407,8 +407,8 @@ type NumericalQuestionOptions {
 }
 
 type NumericalRestrictions {
-  max: Int
-  min: Int
+  max: Float
+  min: Float
 }
 
 input NumericalRestrictionsInput {
@@ -417,8 +417,8 @@ input NumericalRestrictionsInput {
 }
 
 type NumericalSolutionRange {
-  max: Int
-  min: Int
+  max: Float
+  min: Float
 }
 
 input OptionsChoicesInput {

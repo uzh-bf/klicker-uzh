@@ -83,8 +83,8 @@ export const NumericalRestrictions = builder
   .objectRef<INumericalRestrictions>('NumericalRestrictions')
   .implement({
     fields: (t) => ({
-      min: t.exposeInt('min', { nullable: true }),
-      max: t.exposeInt('max', { nullable: true }),
+      min: t.exposeFloat('min', { nullable: true }),
+      max: t.exposeFloat('max', { nullable: true }),
     }),
   })
 
@@ -96,8 +96,8 @@ export const NumericalSolutionRange = builder
   .objectRef<INumericalSolutionRange>('NumericalSolutionRange')
   .implement({
     fields: (t) => ({
-      min: t.exposeInt('min', { nullable: true }),
-      max: t.exposeInt('max', { nullable: true }),
+      min: t.exposeFloat('min', { nullable: true }),
+      max: t.exposeFloat('max', { nullable: true }),
     }),
   })
 

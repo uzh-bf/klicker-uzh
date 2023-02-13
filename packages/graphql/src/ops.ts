@@ -781,8 +781,8 @@ export type NumericalQuestionOptions = {
 
 export type NumericalRestrictions = {
   __typename?: 'NumericalRestrictions';
-  max?: Maybe<Scalars['Int']>;
-  min?: Maybe<Scalars['Int']>;
+  max?: Maybe<Scalars['Float']>;
+  min?: Maybe<Scalars['Float']>;
 };
 
 export type NumericalRestrictionsInput = {
@@ -792,8 +792,8 @@ export type NumericalRestrictionsInput = {
 
 export type NumericalSolutionRange = {
   __typename?: 'NumericalSolutionRange';
-  max?: Maybe<Scalars['Int']>;
-  min?: Maybe<Scalars['Int']>;
+  max?: Maybe<Scalars['Float']>;
+  min?: Maybe<Scalars['Float']>;
 };
 
 export type OptionsChoicesInput = {
