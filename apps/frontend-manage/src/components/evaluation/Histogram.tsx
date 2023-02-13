@@ -1,4 +1,7 @@
-import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import {
+  InstanceResult,
+  NumericalQuestionData,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ThemeContext } from '@uzh-bf/design-system'
 import { maxBy, minBy, round, sumBy } from 'lodash'
 import React, { useContext, useMemo, useState } from 'react'
@@ -48,21 +51,25 @@ function Histogram({
   const theme = useContext(ThemeContext)
   const [numBins, setNumBins] = useState(20)
 
+  const questionData = data.questionData as NumericalQuestionData
+
   const processedData = useMemo(() => {
-    const mappedData = Object.values(data.results).map((result) => ({
+    const mappedData = Object.values(
+      data.results as Record<string, { count: number; value: string }>
+    ).map((result) => ({
       value: +result.value,
       count: result.count,
     }))
 
     const min: number =
-      data.questionData.options.restrictions &&
-      typeof data.questionData.options.restrictions['min'] === 'number'
-        ? data.questionData.options.restrictions['min']
+      questionData.options.restrictions &&
+      typeof questionData.options.restrictions['min'] === 'number'
+        ? questionData.options.restrictions['min']
         : (minBy(mappedData, 'value')?.value || 0) - 10
     const max: number =
-      data.questionData.options.restrictions &&
-      typeof data.questionData.options.restrictions['max'] === 'number'
-        ? data.questionData.options.restrictions['max']
+      questionData.options.restrictions &&
+      typeof questionData.options.restrictions['max'] === 'number'
+        ? questionData.options.restrictions['max']
         : (maxBy(mappedData, 'value')?.value || 0) + 10
 
     let dataArray = Array.from({ length: numBins }, (_, i) => ({
@@ -221,16 +228,16 @@ function Histogram({
           )}
 
           {showSolution.general &&
-            data.questionData.options.solutionRanges &&
-            data.questionData.options.solutionRanges.map(
+            questionData.options.solutionRanges &&
+            questionData.options.solutionRanges.map(
               (
-                solutionRange: { min?: number; max?: number },
+                solutionRange: { min?: number | null; max?: number | null },
                 index: number
               ) => (
                 <ReferenceArea
                   key={index}
-                  x1={solutionRange.min}
-                  x2={solutionRange.max}
+                  x1={solutionRange.min ?? undefined}
+                  x2={solutionRange.max ?? undefined}
                   stroke="green"
                   fill="green"
                   enableBackground="#FFFFFF"

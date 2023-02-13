@@ -1,4 +1,10 @@
-import { Choice, InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Choice,
+  ChoicesQuestionData,
+  FreeTextQuestionData,
+  InstanceResult,
+  NumericalQuestionData,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Table } from '@uzh-bf/design-system'
 import React, { useMemo } from 'react'
 import { QUESTION_GROUPS } from 'shared-components/src/constants'
@@ -16,7 +22,7 @@ function TableChart({
 }: TableChartProps): React.ReactElement {
   const tableData = useMemo(() => {
     if (QUESTION_GROUPS.CHOICES.includes(data.questionData.type)) {
-      return data.questionData.options.choices.map(
+      return (data.questionData as ChoicesQuestionData).options.choices.map(
         (choice: Choice, index: number) => {
           return {
             count: data.results[index].count,
@@ -33,7 +39,9 @@ function TableChart({
         }
       )
     } else {
-      return Object.values(data.results).map((result) => {
+      return Object.values(
+        data.results as FreeTextQuestionData | NumericalQuestionData
+      ).map((result) => {
         return {
           count: result.count,
           value: result.value,
