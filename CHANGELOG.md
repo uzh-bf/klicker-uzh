@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.26...v3.0.0-alpha.27) (2023-02-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** update SSR domain for continued v2 naming ([3c4e360](https://github.com/uzh-bf/klicker-uzh/commit/3c4e360c0f71bf4d57956e93921e06931e3a6696))
+
 ## [3.0.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.25...v3.0.0-alpha.26) (2023-02-13)
 
 
