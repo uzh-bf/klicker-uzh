@@ -160,15 +160,15 @@ function Home() {
             KlickerUZH v3.0 - Concept and Request for Feedback
           </div>
           <div>
-            We have just published our{' '}
+            We have published our{' '}
             <a
               href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79"
               target="_blank"
             >
               new concept and ideas
             </a>{' '}
-            for the upcoming KlickerUZH v3.0, which will be released in beta
-            next February. Please have a look and let us know what you think!
+            for the upcoming KlickerUZH v3.0. Please have a look and let us know
+            what you think!
           </div>
         </div>
       </div>

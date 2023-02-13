@@ -37,5 +37,6 @@ module.exports = {
       'contributing/contributing_setup',
     ],
     FAQ: ['faq/faq'],
+    'v3.0 Beta': ['beta/v3_getting_started'],
   },
 }
