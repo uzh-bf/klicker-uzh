@@ -172,7 +172,7 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME
+          // FIXME by fixing type issues in LearningElementService
           return LearningElementService.getLearningElementData(args, ctx) as any
         },
       }),
@@ -300,6 +300,7 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // FIXME by fixing type issues in CourseService
           return CourseService.getCourseOverviewData(args, ctx) as any
         },
       }),
