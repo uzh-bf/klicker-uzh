@@ -16,7 +16,7 @@ function useEvaluationTabs({
   const tabs = useMemo(() => {
     const tabs = blocks.map((block) => {
       return {
-        label: 'Block ' + String(block.blockIx ?? 0 + 1),
+        label: 'Block ' + String((block.blockIx ?? 0) + 1),
         value: block.blockIx,
       }
     })
