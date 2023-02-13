@@ -1,6 +1,6 @@
 #import "./FQuestionData.graphql"
 
-query GetLearningElement($id: ID!) {
+query GetLearningElement($id: String!) {
   learningElement(id: $id) {
     id
     displayName

@@ -1,4 +1,4 @@
-import { AggregatedConfusionFeedbacks } from '@klicker-uzh/graphql/dist/ops'
+import { ConfusionSummary } from '@klicker-uzh/graphql/dist/ops'
 import { H3 } from '@uzh-bf/design-system'
 import React from 'react'
 // import { Icon } from 'semantic-ui-react'
@@ -7,7 +7,7 @@ import React from 'react'
 import ConfusionSection from './ConfusionSection'
 
 interface Props {
-  confusionValues?: AggregatedConfusionFeedbacks
+  confusionValues?: ConfusionSummary
 }
 
 function ConfusionCharts({ confusionValues }: Props): React.ReactElement {

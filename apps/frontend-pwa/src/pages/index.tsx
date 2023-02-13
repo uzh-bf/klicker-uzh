@@ -90,7 +90,7 @@ const Index = function () {
         ],
         activeMicrolearning: [
           ...acc.activeMicrolearning,
-          ...participation.course?.microSessions.map((session) => ({
+          ...participation.course?.microSessions?.map((session) => ({
             ...session,
             courseName: participation.course.displayName,
             isCompleted: participation.completedMicroSessions?.includes(
@@ -226,8 +226,9 @@ const Index = function () {
             <div>Kein aktives Microlearning.</div>
           )}
           {activeMicrolearning.map((micro) => (
-            <Link href={`/micro/${micro.id}/`} key={micro.id} legacyBehavior>
+            <Link href={`/micro/${micro.id}/`} key={micro.id}>
               <Button
+                fluid
                 disabled={micro.isCompleted}
                 className={{
                   root: twMerge(

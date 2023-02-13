@@ -1,9 +1,9 @@
 import * as R from 'ramda'
-import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
-  ctx: ContextWithOptionalUser
+  ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
@@ -12,7 +12,7 @@ export async function getBasicCourseInformation(
   if (!course) {
     return null
   }
-  return R.pick(['id', 'name', 'displayName', 'description', 'color'], course)
+  return course
 }
 
 export async function joinCourseWithPin(
@@ -53,7 +53,7 @@ export async function joinCourse(
   { courseId }: JoinCourseArgs,
   ctx: ContextWithUser
 ) {
-  const participation = ctx.prisma.participation.upsert({
+  const participation = await ctx.prisma.participation.upsert({
     where: {
       courseId_participantId: {
         courseId,
@@ -78,6 +78,8 @@ export async function joinCourse(
     },
   })
 
+  if (!participation) return null
+
   return {
     id: `${courseId}-${ctx.user.sub}`,
     participation,
@@ -92,7 +94,7 @@ export async function leaveCourse(
   { courseId }: LeaveCourseArgs,
   ctx: ContextWithUser
 ) {
-  const participation = ctx.prisma.participation.update({
+  const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
         courseId,
@@ -104,19 +106,17 @@ export async function leaveCourse(
     },
   })
 
+  if (!participation) return null
+
   return {
     id: `${courseId}-${ctx.user.sub}`,
     participation,
   }
 }
 
-interface GetCourseOverviewDataArgs {
-  courseId: string
-}
-
 export async function getCourseOverviewData(
-  { courseId }: GetCourseOverviewDataArgs,
-  ctx: ContextWithOptionalUser
+  { courseId }: { courseId: string },
+  ctx: Context
 ) {
   if (ctx.user?.sub) {
     const participation = await ctx.prisma.participation.findUnique({
@@ -150,18 +150,23 @@ export async function getCourseOverviewData(
       where: { id: courseId },
     })
 
-    const lbEntries = await course.participations({
-      where: {
-        isActive: true,
-      },
-      include: {
-        courseLeaderboard: true,
-        participant: true,
-      },
-    })
+    const lbEntries =
+      (await course.participations({
+        where: {
+          isActive: true,
+        },
+        include: {
+          courseLeaderboard: true,
+          participant: true,
+        },
+      })) ?? []
 
     if (participation) {
-      const allEntries = lbEntries?.reduce(
+      const allEntries = lbEntries.reduce<{
+        mapped: Partial<LeaderboardEntry>[]
+        sum: number
+        count: number
+      }>(
         (acc, entry) => {
           return {
             mapped: [
@@ -186,7 +191,11 @@ export async function getCourseOverviewData(
         }
       )
 
-      const allGroupEntries = participation.course.participantGroups.reduce(
+      const allGroupEntries = participation.course.participantGroups.reduce<{
+        mapped: Partial<GroupLeaderboardEntry>[]
+        sum: number
+        count: number
+      }>(
         (acc, group, ix) => {
           const score = group.averageMemberScore + group.groupActivityScore
           return {
@@ -302,13 +311,10 @@ export async function createCourse(
   })
 }
 
-export async function getUserCourses(
-  { userId }: { userId: string },
-  ctx: ContextWithOptionalUser
-) {
+export async function getUserCourses(ctx: ContextWithUser) {
   const userCourses = await ctx.prisma.user.findUnique({
     where: {
-      id: userId,
+      id: ctx.user.sub,
     },
     include: {
       courses: {
@@ -322,13 +328,10 @@ export async function getUserCourses(
   return userCourses?.courses ?? []
 }
 
-export async function getControlCourses(
-  { userId }: { userId: string },
-  ctx: ContextWithOptionalUser
-) {
+export async function getControlCourses(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {
-      id: userId,
+      id: ctx.user.sub,
     },
     include: {
       courses: {
@@ -339,11 +342,7 @@ export async function getControlCourses(
     },
   })
 
-  const courses = user?.courses.map(
-    R.pick(['id', 'name', 'displayName', 'isArchived', 'description'])
-  )
-
-  return courses ?? []
+  return user?.courses ?? []
 }
 
 export async function getUserLearningElements(ctx: ContextWithUser) {
@@ -431,58 +430,34 @@ export async function getCourseData(
     },
   })
 
-  const reducedSessions = course?.sessions
-    .map((session) => {
-      return {
-        ...session,
-        numOfBlocks: session.blocks.length,
-        numOfQuestions: session.blocks.reduce(
-          (acc, block) => acc + block._count.instances,
-          0
-        ),
-      }
-    })
-    .map(
-      R.pick([
-        'id',
-        'name',
-        'displayName',
-        'pinCode',
-        'status',
-        'createdAt',
-        'isGamificationEnabled',
-        'accessMode',
-        'numOfBlocks',
-        'numOfQuestions',
-      ])
-    )
+  if (!course) return null
 
-  const reducedLearningElements = course?.learningElements
-    .map((learningElement) => {
+  const reducedSessions = course?.sessions.map((session) => {
+    return {
+      ...session,
+      numOfBlocks: session.blocks.length,
+      numOfQuestions: session.blocks.reduce(
+        (acc, block) => acc + block._count.instances,
+        0
+      ),
+    }
+  })
+
+  const reducedLearningElements = course?.learningElements.map(
+    (learningElement) => {
       return {
         ...learningElement,
         numOfInstances: learningElement._count.instances,
       }
-    })
-    .map(R.pick(['id', 'name', 'displayName', 'numOfInstances']))
+    }
+  )
 
-  const reducedMicroSessions = course?.microSessions
-    .map((microSession) => {
-      return {
-        ...microSession,
-        numOfInstances: microSession._count.instances,
-      }
-    })
-    .map(
-      R.pick([
-        'id',
-        'name',
-        'displayName',
-        'scheduledStartAt',
-        'scheduledEndAt',
-        'numOfInstances',
-      ])
-    )
+  const reducedMicroSessions = course?.microSessions.map((microSession) => {
+    return {
+      ...microSession,
+      numOfInstances: microSession._count.instances,
+    }
+  })
 
   const { activeLBEntries, totalSum, activeSum, activeCount } =
     course?.leaderboard.reduce(
@@ -561,17 +536,12 @@ export async function getControlCourse(
     },
   })
 
-  const reducedSessions = course?.sessions.map(R.pick(['id', 'name', 'status']))
-
-  return {
-    ...course,
-    sessions: reducedSessions,
-  }
+  return course
 }
 
 export async function changeCourseDescription(
   { courseId, input }: { courseId: string; input: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const course = await ctx.prisma.course.update({
     where: { id: courseId },
@@ -585,7 +555,7 @@ export async function changeCourseDescription(
 
 export async function changeCourseColor(
   { courseId, color }: { courseId: string; color: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const course = await ctx.prisma.course.update({
     where: { id: courseId },

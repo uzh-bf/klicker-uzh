@@ -1,6 +1,6 @@
 # import "./FQuestionDataWithoutSolutions.graphql"
 
-subscription RunningSessionUpdated($sessionId: ID!) {
+subscription RunningSessionUpdated($sessionId: String!) {
   runningSessionUpdated(sessionId: $sessionId) {
     id
     status

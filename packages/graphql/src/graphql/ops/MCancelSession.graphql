@@ -1,4 +1,4 @@
-mutation CancelSession($id: ID!) {
+mutation CancelSession($id: String!) {
   cancelSession(id: $id) {
     id
   }

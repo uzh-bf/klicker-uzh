@@ -4,11 +4,7 @@ import dayjs from 'dayjs'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
-import {
-  Context,
-  ContextWithOptionalUser,
-  ContextWithUser,
-} from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 
 interface LoginUserArgs {
   email: string
@@ -132,7 +128,7 @@ export async function loginUserToken(
   return user.id
 }
 
-export async function logoutUser(_, ctx: ContextWithUser) {
+export async function logoutUser(_: any, ctx: ContextWithUser) {
   ctx.res.cookie('user_token', 'logoutString', {
     domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
     path: '/',
@@ -151,12 +147,9 @@ export async function logoutUser(_, ctx: ContextWithUser) {
   return ctx.user.sub
 }
 
-export async function getUserProfile(
-  { id }: { id: string },
-  ctx: ContextWithOptionalUser
-) {
+export async function getUserProfile(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
-    where: { id },
+    where: { id: ctx.user.sub },
   })
 
   return user
@@ -242,7 +235,7 @@ export async function logoutParticipant(_: any, ctx: ContextWithUser) {
   return ctx.user.sub
 }
 
-export async function generateLoginToken(_: any, ctx: ContextWithUser) {
+export async function generateLoginToken(ctx: ContextWithUser) {
   const expirationDate = dayjs().add(10, 'minute').toDate()
   const loginToken = Math.floor(
     100000000 + Math.random() * 900000000

@@ -1,13 +1,13 @@
 mutation ManipulateChoicesQuestion(
   $id: Int
-  $type: String
+  $type: QuestionType!
   $name: String
   $content: String
   $options: OptionsChoicesInput
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
-  $attachments: [AttachmentInput]
-  $tags: [String]
+  $attachments: [AttachmentInput!]
+  $tags: [String!]
 ) {
   manipulateChoicesQuestion(
     id: $id

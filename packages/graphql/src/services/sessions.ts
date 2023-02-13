@@ -11,7 +11,7 @@ import {
 import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
-import { ContextWithOptionalUser, ContextWithUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 // TODO: rework scheduling for serverless
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
@@ -97,8 +97,8 @@ async function getQuestionMap(blocks: BlockArgs[], ctx: ContextWithUser) {
 
 interface BlockArgs {
   questionIds: number[]
-  randomSelection?: number
-  timeLimit?: number
+  randomSelection?: number | null
+  timeLimit?: number | null
 }
 
 interface CreateSessionArgs {
@@ -106,9 +106,9 @@ interface CreateSessionArgs {
   displayName: string
   description?: string | null
   blocks: BlockArgs[]
-  courseId?: string
+  courseId?: string | null
   multiplier: number
-  isGamificationEnabled?: boolean
+  isGamificationEnabled?: boolean | null
 }
 
 export async function createSession(
@@ -194,9 +194,9 @@ interface EditSessionArgs {
   displayName: string
   description?: string | null
   blocks: BlockArgs[]
-  courseId?: string
+  courseId?: string | null
   multiplier: number
-  isGamificationEnabled?: boolean
+  isGamificationEnabled?: boolean | null
 }
 
 export async function editSession(
@@ -321,7 +321,7 @@ interface GetLiveSessionDataArgs {
 
 export async function getLiveSessionData(
   { id }: GetLiveSessionDataArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   if (!id) {
     return null
@@ -952,10 +952,7 @@ export async function deactivateSessionBlock(
   return updatedSession
 }
 
-export async function getRunningSession(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
+export async function getRunningSession({ id }: { id: string }, ctx: Context) {
   const session = await ctx.prisma.session.findUnique({
     where: { id },
     include: {
@@ -1036,13 +1033,9 @@ export async function getRunningSession(
   return null
 }
 
-interface GetLeaderboardArgs {
-  sessionId: string
-}
-
 export async function getLeaderboard(
-  { sessionId }: GetLeaderboardArgs,
-  ctx: ContextWithUser
+  { sessionId }: { sessionId: string },
+  ctx: Context
 ) {
   const session = await ctx.prisma.session.findUnique({
     where: {
@@ -1061,6 +1054,8 @@ export async function getLeaderboard(
       blocks: true,
     },
   })
+
+  if (!session) return null
 
   // find the order attribute of the last exectued block
   const executedBlockOrders = session?.blocks
@@ -1115,11 +1110,11 @@ export async function changeSessionSettings(
   {
     id,
     isLiveQAEnabled,
-    isConfusionFeedbackEnabled ,
+    isConfusionFeedbackEnabled,
     isModerationEnabled,
     isGamificationEnabled,
   }: SessionSettingArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const session = await ctx.prisma.session.update({
     where: { id },
@@ -1139,7 +1134,7 @@ interface GetRunningSessionsArgs {
 
 export async function getRunningSessions(
   { shortname }: GetRunningSessionsArgs,
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   const userWithSessions = await ctx.prisma.user.findUnique({
     where: {
@@ -1162,7 +1157,7 @@ export async function getRunningSessions(
 
 export async function getUserSessions(
   { userId }: { userId: string },
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   const user = await ctx.prisma.user.findUnique({
     where: {
@@ -1181,10 +1176,6 @@ export async function getUserSessions(
                 orderBy: {
                   order: 'asc',
                 },
-                select: {
-                  id: true,
-                  questionData: true,
-                },
               },
               _count: {
                 select: { instances: true },
@@ -1199,32 +1190,22 @@ export async function getUserSessions(
     },
   })
 
-  return user?.sessions.map((session) => {
-    return {
-      ...pick(
-        ['id', 'name', 'displayName', 'accessMode', 'status', 'createdAt'],
-        session
-      ),
-      blocks: session.blocks.map(pick(['id', 'instances'])),
-      course: session.course
-        ? pick(['id', 'name', 'displayName'], session.course)
-        : undefined,
-      numOfBlocks: session._count?.blocks,
-      numOfQuestions: session.blocks.reduce(
-        (acc, block) => acc + block._count?.instances,
-        0
-      ),
-    }
-  })
+  return user?.sessions.map((session) => ({
+    ...session,
+    blocks: session.blocks,
+    course: session.course ? session.course : undefined,
+    numOfBlocks: session._count?.blocks,
+    numOfQuestions: session.blocks.reduce(
+      (acc, block) => acc + block._count?.instances,
+      0
+    ),
+  }))
 }
 
-export async function getUnassignedSessions(
-  { userId }: { userId: string },
-  ctx: ContextWithOptionalUser
-) {
+export async function getUnassignedSessions(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {
-      id: userId,
+      id: ctx.user.sub,
     },
     include: {
       sessions: {
@@ -1243,11 +1224,7 @@ export async function getUnassignedSessions(
     },
   })
 
-  return user?.sessions.map((session) => {
-    return {
-      ...pick(['id', 'name', 'status'], session),
-    }
-  })
+  return user?.sessions
 }
 
 // compute the average of all feedbacks that were given within the last 10 minutes
@@ -1316,11 +1293,7 @@ export async function getCockpitSession(
   // recude session to only contain what is required for the lecturer cockpit
   const reducedSession = {
     ...session,
-    activeBlock: session.activeBlock
-      ? {
-          id: session.activeBlock.id,
-        }
-      : null,
+    activeBlock: session.activeBlock,
     blocks: session.blocks.map((block) => {
       return {
         ...block,
@@ -1345,7 +1318,7 @@ export async function getCockpitSession(
         }),
       }
     }),
-    confusionFeedbacks: [aggregateFeedbacks(session.confusionFeedbacks)],
+    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
   }
 
   return reducedSession
@@ -1405,7 +1378,7 @@ export async function getPinnedFeedbacks(
   // recude session to only contain what is required for the lecturer cockpit
   const reducedSession = {
     ...session,
-    confusionFeedbacks: [aggregateFeedbacks(session.confusionFeedbacks)],
+    confusionSummary: aggregateFeedbacks(session.confusionFeedbacks),
   }
 
   return reducedSession
@@ -1570,7 +1543,7 @@ export async function getSessionEvaluation(
 
         return {
           id: `${instance?.id}-eval`,
-          blockIx: session.activeBlock?.order,
+          blockIx: session.activeBlock!.order,
           instanceIx: instance?.order,
           status: session.activeBlock!.status,
           questionData: instance?.questionData,
@@ -1637,10 +1610,7 @@ export async function getSessionEvaluation(
   }
 }
 
-export async function cancelSession(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
+export async function cancelSession({ id }: { id: string }, ctx: Context) {
   const session = await ctx.prisma.session.findUnique({
     where: { id },
     include: {

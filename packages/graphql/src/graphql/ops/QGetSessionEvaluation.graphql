@@ -1,4 +1,4 @@
-query GetSessionEvaluation($id: ID!) {
+query GetSessionEvaluation($id: String!) {
   sessionEvaluation(id: $id) {
     id
     status
@@ -26,7 +26,7 @@ query GetSessionEvaluation($id: ID!) {
         type
         content
 
-        ... on ChoicesEvaluationData {
+        ... on ChoicesQuestionData {
           options {
             choices {
               ix
@@ -37,7 +37,7 @@ query GetSessionEvaluation($id: ID!) {
           }
         }
 
-        ... on NumericalEvaluationData {
+        ... on NumericalQuestionData {
           options {
             restrictions {
               min
@@ -50,7 +50,7 @@ query GetSessionEvaluation($id: ID!) {
           }
         }
 
-        ... on FreeTextEvaluationData {
+        ... on FreeTextQuestionData {
           options {
             restrictions {
               maxLength
@@ -90,7 +90,6 @@ query GetSessionEvaluation($id: ID!) {
       }
     }
     confusionFeedbacks {
-      id
       speed
       difficulty
       createdAt

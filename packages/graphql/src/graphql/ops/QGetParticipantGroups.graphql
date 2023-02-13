@@ -1,4 +1,4 @@
-query GetParticipantGroups($courseId: ID!) {
+query GetParticipantGroups($courseId: String!) {
   participantGroups(courseId: $courseId) {
     id
     name

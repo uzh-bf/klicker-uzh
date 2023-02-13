@@ -1,4 +1,7 @@
-mutation RegisterParticipantFromLTI($courseId: ID!, $participantId: ID!) {
+mutation RegisterParticipantFromLTI(
+  $courseId: String!
+  $participantId: String!
+) {
   registerParticipantFromLTI(
     courseId: $courseId
     participantId: $participantId

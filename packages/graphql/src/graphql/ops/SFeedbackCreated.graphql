@@ -1,6 +1,6 @@
 #import "./FFeedbackData.graphql"
 
-subscription FeedbackCreated($sessionId: ID!) {
+subscription FeedbackCreated($sessionId: String!) {
   feedbackCreated(sessionId: $sessionId) {
     ...FeedbackData
   }

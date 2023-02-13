@@ -1,44 +1,14 @@
 import { SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
-import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
-import {
-  Context,
-  ContextWithOptionalUser,
-  ContextWithUser,
-} from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 import { createParticipantToken } from './accounts'
 
-interface GetParticipantProfileArgs {
-  id: string
-}
-
-export async function getParticipantProfile(
-  { id }: GetParticipantProfileArgs,
-  ctx: ContextWithOptionalUser
-) {
-  if (!ctx.user?.sub) return null
-
-  const participant = await ctx.prisma.participant.findUnique({
-    where: { id },
-    include: {
-      achievements: {
-        include: { achievement: true },
-      },
-    },
-  })
-
-  return R.pick(
-    ['id', 'avatar', 'avatarSettings', 'username', 'achievements'],
-    participant
-  )
-}
-
 interface UpdateParticipantProfileArgs {
-  password?: string
-  username?: string
-  avatar?: string
+  password?: string | null
+  username?: string | null
+  avatar?: string | null
   avatarSettings?: any
 }
 
@@ -57,12 +27,11 @@ export async function updateParticipantProfile(
       const hashedPassword = await bcrypt.hash(password, 12)
       return ctx.prisma.participant.update({
         where: { id: ctx.user.sub },
-        data: { password: hashedPassword, username, avatar, avatarSettings },
-        select: {
-          id: true,
-          avatar: true,
-          avatarSettings: true,
-          username: true,
+        data: {
+          password: hashedPassword,
+          username: username ?? undefined,
+          avatar: avatar ?? undefined,
+          avatarSettings: avatarSettings ?? undefined,
         },
       })
     } else {
@@ -72,31 +41,20 @@ export async function updateParticipantProfile(
 
   const participant = await ctx.prisma.participant.update({
     where: { id: ctx.user.sub },
-    data: { username, avatar, avatarSettings },
-    select: {
-      id: true,
-      avatar: true,
-      avatarSettings: true,
-      username: true,
+    data: {
+      username: username ?? undefined,
+      avatar: avatar ?? undefined,
+      avatarSettings: avatarSettings ?? undefined,
     },
   })
 
   return participant
 }
 
-interface GetParticipationsArgs {
-  endpoint?: string
-}
-
 export async function getParticipations(
-  { endpoint }: GetParticipationsArgs,
+  { endpoint }: { endpoint?: string | null },
   ctx: ContextWithUser
 ) {
-  // HACK: ensure that the PWA redirects to login, remove when Pothos is done
-  if (!ctx.user?.sub) {
-    throw new GraphQLError('Unauthorized!')
-  }
-
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
@@ -281,7 +239,7 @@ interface CreateParticipantAndJoinCourseArgs {
 
 export async function createParticipantAndJoinCourse(
   { username, password, courseId, pin }: CreateParticipantAndJoinCourseArgs,
-  ctx: ContextWithOptionalUser
+  ctx: Context
 ) {
   if (typeof username === 'string') {
     if (username.length < 5 || username.length > 10) {

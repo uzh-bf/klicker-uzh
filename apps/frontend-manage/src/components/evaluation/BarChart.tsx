@@ -1,4 +1,8 @@
-import { Choice, InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Choice,
+  ChoicesQuestionData,
+  InstanceResult,
+} from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
 import {
   Bar,
@@ -29,7 +33,9 @@ function BarChart({
   textSize,
 }: BarChartProps): React.ReactElement {
   // add labelIn and labelOut attributes to data, set labelIn to votes if votes/totalResponses > SMALL_BAR_THRESHOLD and set labelOut to votes otherwise
-  const dataWithLabels = Object.values(data.results).map((result, idx) => {
+  const dataWithLabels = Object.values(
+    data.results as Record<string, { count: number; value: string }>
+  ).map((result, idx) => {
     const labelIn =
       result.count / data.participants > SMALL_BAR_THRESHOLD
         ? result.count
@@ -108,7 +114,7 @@ function BarChart({
             id="bar-chart-block"
           />
           {QUESTION_GROUPS.CHOICES.includes(data.questionData.type) &&
-            data.questionData.options.choices.map(
+            (data.questionData as ChoicesQuestionData).options.choices.map(
               (choice: Choice, index: number): React.ReactElement => (
                 <Cell
                   fill={

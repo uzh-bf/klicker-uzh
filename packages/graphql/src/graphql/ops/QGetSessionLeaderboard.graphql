@@ -1,4 +1,4 @@
-query GetSessionLeaderboard($sessionId: ID!) {
+query GetSessionLeaderboard($sessionId: String!) {
   sessionLeaderboard(sessionId: $sessionId) {
     id
     participantId

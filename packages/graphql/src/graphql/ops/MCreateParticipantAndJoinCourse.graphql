@@ -1,7 +1,7 @@
 mutation CreateParticipantAndJoinCourse(
   $username: String!
   $password: String!
-  $courseId: ID!
+  $courseId: String!
   $pin: Int!
 ) {
   createParticipantAndJoinCourse(

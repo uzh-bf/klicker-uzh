@@ -1,6 +1,6 @@
 # import "./FQuestionDataWithoutSolutions.graphql"
 
-query GetRunningSession($id: ID!) {
+query GetRunningSession($id: String!) {
   session(id: $id) {
     id
     isLiveQAEnabled
