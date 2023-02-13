@@ -59,8 +59,8 @@ export interface IParticipant extends DB.Participant {
   achievements?: DB.Achievement[]
   participantGroups?: IParticipantGroup[]
 }
-export const Participant = builder.objectRef<IParticipant>('Participant')
-Participant.implement({
+export const ParticipantRef = builder.objectRef<IParticipant>('Participant')
+export const Participant = ParticipantRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
@@ -72,7 +72,7 @@ Participant.implement({
     level: t.exposeInt('level'),
 
     participantGroups: t.expose('participantGroups', {
-      type: [ParticipantGroup],
+      type: [ParticipantGroupRef],
       nullable: true,
     }),
     achievements: t.expose('achievements', {
@@ -92,14 +92,14 @@ export interface IParticipantGroup extends DB.ParticipantGroup {
   score?: number
   participants: IParticipant[]
 }
-export const ParticipantGroup =
+export const ParticipantGroupRef =
   builder.objectRef<IParticipantGroup>('ParticipantGroup')
-ParticipantGroup.implement({
+export const ParticipantGroup = ParticipantGroupRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
     participants: t.expose('participants', {
-      type: [Participant],
+      type: [ParticipantRef],
     }),
 
     name: t.exposeString('name'),
@@ -121,9 +121,10 @@ export const Participation = builder.prismaObject('Participation', {
 
     completedMicroSessions: t.exposeStringList('completedMicroSessions'),
 
-    course: t.relation('course'),
+    // FIXME
+    // course: t.relation('course'),
 
-    participant: t.relation('participant'),
+    // participant: t.relation('participant'),
   }),
 })
 
@@ -146,9 +147,9 @@ export interface IParticipantLearningData {
   groupLeaderboard?: IGroupLeaderboardEntry[]
   groupLeaderboardStatistics?: ILeaderboardStatistics
 }
-export const ParticipantLearningData =
+export const ParticipantLearningDataRef =
   builder.objectRef<IParticipantLearningData>('ParticipantLearningData')
-ParticipantLearningData.implement({
+export const ParticipantLearningData = ParticipantLearningDataRef.implement({
   fields: (t) => ({
     id: t.exposeString('id'),
 
@@ -195,9 +196,9 @@ export interface ILeaveCourseParticipation {
   id: string
   participation: DB.Participation
 }
-export const LeaveCourseParticipation =
+export const LeaveCourseParticipationRef =
   builder.objectRef<ILeaveCourseParticipation>('LeaveCourseParticipation')
-LeaveCourseParticipation.implement({
+export const LeaveCourseParticipation = LeaveCourseParticipationRef.implement({
   fields: (t) => ({
     id: t.exposeString('id'),
 

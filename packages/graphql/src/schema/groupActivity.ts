@@ -34,8 +34,11 @@ export const GroupActivityInstance = builder.prismaObject(
   {
     fields: (t) => ({
       id: t.exposeInt('id'),
-
-      clues: t.relation('clues', {}),
+      // FIXME
+      // clues: t.field({
+      //   type: [GroupActivityClueInstance],
+      //   resolve: (activity) => activity.clues,
+      // }),
       decisions: t.expose('decisions', { type: 'Json', nullable: true }),
       decisionsSubmittedAt: t.expose('decisionsSubmittedAt', {
         type: 'Date',
@@ -58,23 +61,25 @@ export interface IGroupActivityClueInstance
   extends DB.GroupActivityClueInstance {
   participant: IParticipant
 }
-export const GroupActivityClueInstance =
+export const GroupActivityClueInstanceRef =
   builder.objectRef<IGroupActivityClueInstance>('GroupActivityClueInstance')
-GroupActivityClueInstance.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
+export const GroupActivityClueInstance = GroupActivityClueInstanceRef.implement(
+  {
+    fields: (t) => ({
+      id: t.exposeInt('id'),
 
-    name: t.exposeString('name'),
-    displayName: t.exposeString('displayName'),
-    type: t.expose('type', { type: ParameterType }),
-    unit: t.exposeString('unit', { nullable: true }),
-    value: t.exposeString('value', { nullable: true }),
+      name: t.exposeString('name'),
+      displayName: t.exposeString('displayName'),
+      type: t.expose('type', { type: ParameterType }),
+      unit: t.exposeString('unit', { nullable: true }),
+      value: t.exposeString('value', { nullable: true }),
 
-    participant: t.expose('participant', {
-      type: Participant,
+      participant: t.expose('participant', {
+        type: Participant,
+      }),
     }),
-  }),
-})
+  }
+)
 
 export const GroupActivityClueAssignment = builder.prismaObject(
   'GroupActivityClueAssignment',
@@ -107,10 +112,10 @@ export interface IGroupActivityDetails {
   clues: DB.GroupActivityClue[]
   instances: IQuestionInstance[]
 }
-export const GroupActivityDetails = builder.objectRef<IGroupActivityDetails>(
+export const GroupActivityDetailsRef = builder.objectRef<IGroupActivityDetails>(
   'GroupActivityDetails'
 )
-GroupActivityDetails.implement({
+export const GroupActivityDetails = GroupActivityDetailsRef.implement({
   fields: (t) => ({
     id: t.exposeString('id'),
 

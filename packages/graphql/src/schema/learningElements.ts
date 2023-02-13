@@ -22,9 +22,9 @@ export interface ILearningElement extends DB.LearningElement {
   numOfInstances?: number
   course?: ICourse | null
 }
-export const LearningElement =
+export const LearningElementRef =
   builder.objectRef<ILearningElement>('LearningElement')
-LearningElement.implement({
+export const LearningElement = LearningElementRef.implement({
   fields: (t) => ({
     id: t.exposeString('id'),
 

@@ -10,8 +10,8 @@ export interface IMicroSession extends DB.MicroSession {
   course?: ICourse | null
   instances?: IQuestionInstance[]
 }
-export const MicroSession = builder.objectRef<IMicroSession>('MicroSession')
-MicroSession.implement({
+export const MicroSessionRef = builder.objectRef<IMicroSession>('MicroSession')
+export const MicroSession = MicroSessionRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 

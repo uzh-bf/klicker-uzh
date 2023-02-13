@@ -89,16 +89,16 @@ export interface IQuestionFeedback {
   correct: boolean
   value: string
 }
-export const QuestionFeedback =
-  builder.objectRef<IQuestionFeedback>('QuestionFeedback')
-QuestionFeedback.implement({
-  fields: (t) => ({
-    ix: t.exposeInt('ix'),
-    feedback: t.exposeString('feedback'),
-    correct: t.exposeBoolean('correct'),
-    value: t.exposeString('value'),
-  }),
-})
+export const QuestionFeedback = builder
+  .objectRef<IQuestionFeedback>('QuestionFeedback')
+  .implement({
+    fields: (t) => ({
+      ix: t.exposeInt('ix'),
+      feedback: t.exposeString('feedback'),
+      correct: t.exposeBoolean('correct'),
+      value: t.exposeString('value'),
+    }),
+  })
 
 export interface IInstanceEvaluation {
   feedbacks?: IQuestionFeedback[]
@@ -108,24 +108,24 @@ export interface IInstanceEvaluation {
   percentile?: number
   newPointsFrom?: Date
 }
-export const InstanceEvaluation =
-  builder.objectRef<IInstanceEvaluation>('InstanceEvaluation')
-InstanceEvaluation.implement({
-  fields: (t) => ({
-    feedbacks: t.expose('feedbacks', {
-      type: [QuestionFeedback],
-      nullable: true,
+export const InstanceEvaluation = builder
+  .objectRef<IInstanceEvaluation>('InstanceEvaluation')
+  .implement({
+    fields: (t) => ({
+      feedbacks: t.expose('feedbacks', {
+        type: [QuestionFeedback],
+        nullable: true,
+      }),
+      choices: t.expose('choices', { type: 'Json' }),
+      score: t.exposeFloat('score'),
+      pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
+      percentile: t.exposeFloat('percentile', { nullable: true }),
+      newPointsFrom: t.expose('newPointsFrom', {
+        type: 'Date',
+        nullable: true,
+      }),
     }),
-    choices: t.expose('choices', { type: 'Json' }),
-    score: t.exposeFloat('score'),
-    pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
-    percentile: t.exposeFloat('percentile', { nullable: true }),
-    newPointsFrom: t.expose('newPointsFrom', {
-      type: 'Date',
-      nullable: true,
-    }),
-  }),
-})
+  })
 
 export const QuestionType = builder.enumType('QuestionType', {
   values: Object.values(DB.QuestionType),
@@ -166,9 +166,9 @@ export interface IQuestionInstance extends DB.QuestionInstance {
   evaluation?: IInstanceEvaluation
   attachments?: DB.Attachment[]
 }
-export const QuestionInstance =
+export const QuestionInstanceRef =
   builder.objectRef<IQuestionInstance>('QuestionInstance')
-QuestionInstance.implement({
+export const QuestionInstance = QuestionInstanceRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 

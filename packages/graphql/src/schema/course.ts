@@ -1,13 +1,13 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import type { ILearningElement } from './learningElements'
-import { LearningElement } from './learningElements'
-import type { IMicroSession } from './microSession'
-import { MicroSession } from './microSession'
+import { ILearningElement, LearningElementRef } from './learningElements'
+// import { LearningElementRef } from './learningElements'
+import { IMicroSession, MicroSessionRef } from './microSession'
+// import { MicroSessionRef } from './microSession'
 import type { IParticipant } from './participant'
 import { Participant, Participation } from './participant'
-import type { ISession } from './session'
-import { Session } from './session'
+import { ISession, SessionRef } from './session'
+// import { SessionRef } from './session'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -21,8 +21,8 @@ export interface ICourse extends DB.Course {
   leaderboard?: ILeaderboardEntry[]
   awards?: DB.AwardEntry[]
 }
-export const Course = builder.objectRef<ICourse>('Course')
-Course.implement({
+export const CourseRef = builder.objectRef<ICourse>('Course')
+export const Course = builder.objectType(CourseRef, {
   fields: (t) => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
@@ -53,15 +53,15 @@ Course.implement({
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
 
     sessions: t.expose('sessions', {
-      type: [Session],
+      type: [SessionRef],
       nullable: true,
     }),
     learningElements: t.expose('learningElements', {
-      type: [LearningElement],
+      type: [LearningElementRef],
       nullable: true,
     }),
     microSessions: t.expose('microSessions', {
-      type: [MicroSession],
+      type: [MicroSessionRef],
       nullable: true,
     }),
     leaderboard: t.expose('leaderboard', {
@@ -84,9 +84,9 @@ export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   participant: IParticipant
   participation: DB.Participation
 }
-export const LeaderboardEntry =
+export const LeaderboardEntryRef =
   builder.objectRef<ILeaderboardEntry>('LeaderboardEntry')
-LeaderboardEntry.implement({
+export const LeaderboardEntry = LeaderboardEntryRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
@@ -113,15 +113,14 @@ export interface ILeaderboardStatistics {
   participantCount: number
   averageScore: number
 }
-export const LeaderboardStatistics = builder.objectRef<ILeaderboardStatistics>(
-  'LeaderboardStatistics'
-)
-LeaderboardStatistics.implement({
-  fields: (t) => ({
-    participantCount: t.exposeInt('participantCount'),
-    averageScore: t.exposeFloat('averageScore'),
-  }),
-})
+export const LeaderboardStatistics = builder
+  .objectRef<ILeaderboardStatistics>('LeaderboardStatistics')
+  .implement({
+    fields: (t) => ({
+      participantCount: t.exposeInt('participantCount'),
+      averageScore: t.exposeFloat('averageScore'),
+    }),
+  })
 
 export interface IGroupLeaderboardEntry {
   id: string
@@ -130,18 +129,17 @@ export interface IGroupLeaderboardEntry {
   rank: number
   isMember?: boolean
 }
-export const GroupLeaderboardEntry = builder.objectRef<IGroupLeaderboardEntry>(
-  'GroupLeaderboardEntry'
-)
-GroupLeaderboardEntry.implement({
-  fields: (t) => ({
-    id: t.exposeID('id'),
-    name: t.exposeString('name'),
-    score: t.exposeFloat('score'),
-    rank: t.exposeInt('rank'),
-    isMember: t.exposeBoolean('isMember', { nullable: true }),
-  }),
-})
+export const GroupLeaderboardEntry = builder
+  .objectRef<IGroupLeaderboardEntry>('GroupLeaderboardEntry')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      name: t.exposeString('name'),
+      score: t.exposeFloat('score'),
+      rank: t.exposeInt('rank'),
+      isMember: t.exposeBoolean('isMember', { nullable: true }),
+    }),
+  })
 
 export const AwardEntry = builder.prismaObject('AwardEntry', {
   fields: (t) => ({
@@ -153,7 +151,8 @@ export const AwardEntry = builder.prismaObject('AwardEntry', {
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description'),
 
-    participant: t.relation('participant'),
-    participantGroup: t.relation('participantGroup'),
+    // FIXME
+    // participant: t.relation('participant'),
+    // participantGroup: t.relation('participantGroup'),
   }),
 })

@@ -34,6 +34,7 @@ import {
   OptionsNumericalInput,
   Question,
   QuestionInstance,
+  QuestionType,
   ResponseInput,
   Tag,
 } from './question'
@@ -651,7 +652,7 @@ export const Mutation = builder.mutationType({
         type: Question,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: DB.QuestionType }),
+          type: t.arg({ required: true, type: QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
@@ -674,7 +675,7 @@ export const Mutation = builder.mutationType({
         type: Question,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: DB.QuestionType }),
+          type: t.arg({ required: true, type: QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
@@ -697,7 +698,7 @@ export const Mutation = builder.mutationType({
         type: Question,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: DB.QuestionType }),
+          type: t.arg({ required: true, type: QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),

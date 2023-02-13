@@ -35,8 +35,8 @@ export interface ISession extends DB.Session {
   confusionSummary?: IConfusionSummary
   course?: ICourse | null
 }
-export const Session = builder.objectRef<ISession>('Session')
-Session.implement({
+export const SessionRef = builder.objectRef<ISession>('Session')
+export const Session = SessionRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
@@ -105,7 +105,7 @@ export const SessionBlock = builder.prismaObject('SessionBlock', {
     randomSelection: t.exposeInt('randomSelection', { nullable: true }),
     execution: t.exposeInt('execution', { nullable: true }),
 
-    instances: t.relation('instances'),
+    // instances: t.relation('instances'),
   }),
 })
 
@@ -146,17 +146,17 @@ export interface IConfusionSummary {
   difficulty: number
   numberOfParticipants: number
 }
-export const ConfusionSummary =
-  builder.objectRef<IConfusionSummary>('ConfusionSummary')
-ConfusionSummary.implement({
-  fields: (t) => ({
-    speed: t.exposeInt('speed'),
-    difficulty: t.exposeInt('difficulty'),
-    numberOfParticipants: t.exposeInt('numberOfParticipants', {
-      nullable: true,
+export const ConfusionSummary = builder
+  .objectRef<IConfusionSummary>('ConfusionSummary')
+  .implement({
+    fields: (t) => ({
+      speed: t.exposeInt('speed'),
+      difficulty: t.exposeInt('difficulty'),
+      numberOfParticipants: t.exposeInt('numberOfParticipants', {
+        nullable: true,
+      }),
     }),
-  }),
-})
+  })
 
 export interface IStatistics {
   max: number
@@ -167,18 +167,19 @@ export interface IStatistics {
   q3: number
   sd: number
 }
-export const Statistics = builder.objectRef<IStatistics>('Statistics')
-Statistics.implement({
-  fields: (t) => ({
-    max: t.exposeFloat('max'),
-    min: t.exposeFloat('min'),
-    mean: t.exposeFloat('mean'),
-    median: t.exposeFloat('median'),
-    q1: t.exposeFloat('q1'),
-    q3: t.exposeFloat('q3'),
-    sd: t.exposeFloat('sd'),
-  }),
-})
+export const Statistics = builder
+  .objectRef<IStatistics>('Statistics')
+  .implement({
+    fields: (t) => ({
+      max: t.exposeFloat('max'),
+      min: t.exposeFloat('min'),
+      mean: t.exposeFloat('mean'),
+      median: t.exposeFloat('median'),
+      q1: t.exposeFloat('q1'),
+      q3: t.exposeFloat('q3'),
+      sd: t.exposeFloat('sd'),
+    }),
+  })
 
 export interface IInstanceResult {
   id: string
@@ -192,9 +193,9 @@ export interface IInstanceResult {
   questionData: any
   statistics: IStatistics
 }
-export const InstanceResult =
+export const InstanceResultRef =
   builder.objectRef<IInstanceResult>('InstanceResult')
-InstanceResult.implement({
+export const InstanceResult = InstanceResultRef.implement({
   fields: (t) => ({
     id: t.exposeString('id'),
 
@@ -232,8 +233,7 @@ export interface ITabData {
   name: string
   status?: string | null
 }
-export const TabData = builder.objectRef<ITabData>('TabData')
-TabData.implement({
+export const TabData = builder.objectRef<ITabData>('TabData').implement({
   fields: (t) => ({
     id: t.exposeString('id'),
     questionIx: t.exposeInt('questionIx', { nullable: true }),
@@ -247,15 +247,15 @@ export interface IEvaluationBlock {
   blockStatus: DB.SessionBlockStatus
   tabData: ITabData[]
 }
-export const EvaluationBlock =
-  builder.objectRef<IEvaluationBlock>('EvaluationBlock')
-EvaluationBlock.implement({
-  fields: (t) => ({
-    blockIx: t.exposeInt('blockIx', { nullable: true }),
-    blockStatus: t.expose('blockStatus', { type: SessionBlockStatus }),
-    tabData: t.expose('tabData', { type: [TabData] }),
-  }),
-})
+export const EvaluationBlock = builder
+  .objectRef<IEvaluationBlock>('EvaluationBlock')
+  .implement({
+    fields: (t) => ({
+      blockIx: t.exposeInt('blockIx', { nullable: true }),
+      blockStatus: t.expose('blockStatus', { type: SessionBlockStatus }),
+      tabData: t.expose('tabData', { type: [TabData] }),
+    }),
+  })
 
 export interface ISessionEvaluation {
   id: string
@@ -266,9 +266,9 @@ export interface ISessionEvaluation {
   feedbacks: DB.Feedback[]
   confusionFeedbacks: DB.ConfusionTimestep[]
 }
-export const SessionEvaluation =
+export const SessionEvaluationRef =
   builder.objectRef<ISessionEvaluation>('SessionEvaluation')
-SessionEvaluation.implement({
+export const SessionEvaluation = SessionEvaluationRef.implement({
   fields: (t) => ({
     id: t.exposeString('id'),
     status: t.field({

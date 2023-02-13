@@ -1,4 +1,6 @@
 export { default as enhanceContext } from './lib/context'
+// import { writeFileSync } from 'fs'
+// import { lexicographicSortSchema, printSchema } from 'graphql'
 
 import builder from './builder'
 
@@ -18,3 +20,6 @@ import './schema/query'
 import './schema/subscription'
 
 export const schema = builder.toSchema()
+// const schemaAsString = printSchema(lexicographicSortSchema(schema))
+
+// writeFileSync('./graphql/schema.graphql', schemaAsString)
