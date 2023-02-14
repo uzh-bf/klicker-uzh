@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.29...v3.0.0-alpha.30) (2023-02-14)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** misc. layout improvements on the question pool ([c0dea69](https://github.com/uzh-bf/klicker-uzh/commit/c0dea696b0b181c91d4f801a0f8ea5e05f8d8395))
+
 ## [3.0.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.28...v3.0.0-alpha.29) (2023-02-13)
 
 

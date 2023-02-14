@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.0.0-alpha.29",
+  "version": "3.0.0-alpha.30",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3003",
