@@ -59,7 +59,7 @@ export const Query = builder.queryType({
           return CourseService.getControlCourse(args, ctx)
         },
       }),
-      basicCourseInformation: asUser.field({
+      basicCourseInformation: t.field({
         nullable: true,
         type: Course,
         args: {
