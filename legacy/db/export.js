@@ -28,17 +28,38 @@ mongoose.connection.once('open', async () => {
   }).populate([
     {
       path: 'tags',
-      select: {
-        name: 1,
-      },
     },
-    { path: 'files' },
+    { path: 'versions.files' },
   ])
 
-  console.log(user)
-  console.log(questions)
+  const mappedQuestions = questions.map((q) => {
+    const lastVersion = q.versions[q.versions.length - 1]
+    return {
+      id: q.id,
+      title: q.title,
+      type: q.type,
+      tags: q.tags.map((t) => t.name),
+      version: {
+        content:
+          lastVersion.content +
+          (lastVersion.files?.length > 0
+            ? '\n' +
+              lastVersion.files
+                .map(
+                  (f) =>
+                    `![${f.originalName}](https://tc-klicker-prod.s3.amazonaws.com/images/${f.name})`
+                )
+                .join('\n')
+            : ''),
+        options: lastVersion.options,
+      },
+    }
+  })
 
-  const myData = JSON.stringify(questions)
+  console.log(user)
+  console.log(mappedQuestions)
+
+  const myData = JSON.stringify(mappedQuestions)
 
   fs.writeFile('exported_questions.json', myData, function (err) {
     if (err) {
