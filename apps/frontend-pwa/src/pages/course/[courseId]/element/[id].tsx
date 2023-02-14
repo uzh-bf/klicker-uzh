@@ -55,11 +55,11 @@ function LearningElement({ courseId, id }: Props) {
   useEffect(() => {
     if (questionData?.type) {
       if (
-        questionData.type === QuestionType.SC ||
-        questionData.type === QuestionType.MC
+        questionData.type === QuestionType.Sc ||
+        questionData.type === QuestionType.Mc
       ) {
         setResponse([])
-      } else if (questionData.type === QuestionType.KPRIM) {
+      } else if (questionData.type === QuestionType.Kprim) {
         setResponse({})
       } else {
         setResponse('')
@@ -352,9 +352,9 @@ const formatResponse = (
     return { choices: response as number[] }
   } else if (questionData?.type === QuestionType.Kprim) {
     return {
-      choices: Object.keys(response).flatMap((key) =>
+      choices: Object.keys(response).flatMap<number[]>((key) =>
         response[key] === true ? [parseInt(key)] : []
-      ) as number[],
+      ),
     }
   } else {
     return { value: response as string }
