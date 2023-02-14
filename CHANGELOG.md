@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.34...v3.0.0-alpha.35) (2023-02-14)
+
+
+### Features
+
+* add displayMode for choice-based questions (as a list or as a grid) ([#3345](https://github.com/uzh-bf/klicker-uzh/issues/3345)) ([3874f10](https://github.com/uzh-bf/klicker-uzh/commit/3874f10e8d251eea558b347205739407d3f108f7))
+
+
+### Bug Fixes
+
+* **packages/prisma:** add migration for question display mode ([378424c](https://github.com/uzh-bf/klicker-uzh/commit/378424caabacaeb2006fc886f926cb1d0b4bb92e))
+
 ## [3.0.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.33...v3.0.0-alpha.34) (2023-02-14)
 
 
