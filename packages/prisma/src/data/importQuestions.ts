@@ -38,8 +38,6 @@ async function importQuestions(prisma: Prisma.PrismaClient) {
     await readFile(new URL('./exported_questions.json', import.meta.url))
   )
 
-  console.log(questionData)
-
   const tags = [...new Set(questionData.flatMap((q) => q.tags))]
 
   await prisma.$transaction(
@@ -53,13 +51,37 @@ async function importQuestions(prisma: Prisma.PrismaClient) {
   )
 
   await prisma.$transaction(
-    questionData.map((question) =>
-      prisma.question.create({
+    questionData.map((question) => {
+      console.log(question)
+
+      let hasSampleSolution = false
+      let options = {}
+      if (['SC', 'MC'].includes(question.type)) {
+        options = {
+          choices: question.version.options[question.type].choices.map(
+            (choice, ix) => {
+              if (choice.correct) hasSampleSolution = true
+              return {
+                ix,
+                value: choice.name,
+                correct: choice.correct,
+                feedback: '<br>',
+              }
+            }
+          ),
+        }
+      } else if (question.type === 'NR') {
+      } else if (question.type === 'FT') {
+      } else {
+        throw new Error('Unknown question type')
+      }
+      return prisma.question.create({
         data: {
           name: question.title,
           type: QuestionTypeMap[question.type],
           content: question.version.content,
-          options: question.version.options[question.type],
+          options,
+          hasSampleSolution,
           tags: {
             connect: question.tags.map((tag) => ({
               ownerId_name: { ownerId: user.id, name: tag },
@@ -70,7 +92,7 @@ async function importQuestions(prisma: Prisma.PrismaClient) {
           },
         },
       })
-    )
+    })
   )
 }
 
