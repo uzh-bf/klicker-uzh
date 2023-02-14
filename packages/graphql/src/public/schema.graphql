@@ -86,11 +86,12 @@ type ChoiceQuestionOptions {
 
 type ChoicesQuestionData implements QuestionData {
   content: String!
+  displayMode: QuestionDisplayMode!
   id: Int!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int
-  type: String!
+  type: QuestionType!
 }
 
 type ClassAchievementInstance {
@@ -163,11 +164,12 @@ type FeedbackResponse {
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
+  displayMode: QuestionDisplayMode!
   id: Int!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int
-  type: String!
+  type: QuestionType!
 }
 
 type FreeTextQuestionOptions {
@@ -370,7 +372,7 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
+  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
   manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String!], type: QuestionType!): Question
   manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String!], type: QuestionType!): Question
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
@@ -391,11 +393,12 @@ type Mutation {
 
 type NumericalQuestionData implements QuestionData {
   content: String!
+  displayMode: QuestionDisplayMode!
   id: Int!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int
-  type: String!
+  type: QuestionType!
 }
 
 type NumericalQuestionOptions {
@@ -538,6 +541,7 @@ type Question {
   attachments: [Attachment!]!
   content: String!
   createdAt: Date!
+  displayMode: QuestionDisplayMode!
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
   id: Int!
@@ -548,16 +552,22 @@ type Question {
   pointsMultiplier: Int!
   questionData: QuestionData!
   tags: [Tag!]!
-  type: String!
+  type: QuestionType!
   updatedAt: Date!
 }
 
 interface QuestionData {
   content: String!
+  displayMode: QuestionDisplayMode!
   id: Int!
   name: String!
   pointsMultiplier: Int
-  type: String!
+  type: QuestionType!
+}
+
+enum QuestionDisplayMode {
+  GRID
+  LIST
 }
 
 type QuestionFeedback {

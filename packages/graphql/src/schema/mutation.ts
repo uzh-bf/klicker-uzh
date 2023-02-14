@@ -34,10 +34,10 @@ import {
   OptionsNumericalInput,
   Question,
   QuestionInstance,
-  QuestionType,
   ResponseInput,
   Tag,
 } from './question'
+import { QuestionDisplayMode, QuestionType } from './questionData'
 import {
   BlockInput,
   ConfusionTimestep,
@@ -655,6 +655,7 @@ export const Mutation = builder.mutationType({
           type: t.arg({ required: true, type: QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
+          displayMode: t.arg({ required: false, type: QuestionDisplayMode }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
           tags: t.arg.stringList({ required: false }),
