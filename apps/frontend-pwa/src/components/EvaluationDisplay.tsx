@@ -77,7 +77,7 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
                       correctIx.includes(+ix) ? 'bg-green-600' : 'bg-gray-400'
                     ),
                   }}
-                  value={(value / sum) * 100}
+                  value={value ? (value / sum) * 100 : 0}
                   max={100}
                   formatter={(v) => v.toFixed() + '%'}
                 />
