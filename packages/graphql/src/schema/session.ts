@@ -214,8 +214,10 @@ export const InstanceResult = InstanceResultRef.implement({
     results: t.expose('results', { type: 'Json' }),
     status: t.expose('status', { type: SessionBlockStatus }),
 
-    questionData: t.expose('questionData', {
+    questionData: t.field({
       type: QuestionData,
+      // FIXME: can we get rid of casting here?
+      resolve: (q) => q.questionData as unknown as AllQuestionTypeData,
     }),
     statistics: t.expose('statistics', { type: Statistics, nullable: true }),
   }),

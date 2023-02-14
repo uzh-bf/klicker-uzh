@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.34...v3.0.0-alpha.35) (2023-02-14)
+
+
+### Features
+
+* add displayMode for choice-based questions (as a list or as a grid) ([#3345](https://github.com/uzh-bf/klicker-uzh/issues/3345)) ([3874f10](https://github.com/uzh-bf/klicker-uzh/commit/3874f10e8d251eea558b347205739407d3f108f7))
+
+
+### Bug Fixes
+
+* **packages/prisma:** add migration for question display mode ([378424c](https://github.com/uzh-bf/klicker-uzh/commit/378424caabacaeb2006fc886f926cb1d0b4bb92e))
+
+## [3.0.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.33...v3.0.0-alpha.34) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make self query unauthenticated but return null if not logged in ([3525354](https://github.com/uzh-bf/klicker-uzh/commit/352535459ceab0ec29864411e2dbaaf25625006d))
+
+## [3.0.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.32...v3.0.0-alpha.33) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** mismatch in context of basic course info ([4fdede2](https://github.com/uzh-bf/klicker-uzh/commit/4fdede2e8432b1846105f28512dd8ad5f33ce1d4))
+
+## [3.0.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.31...v3.0.0-alpha.32) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make basic course information publicly accessible ([1862b04](https://github.com/uzh-bf/klicker-uzh/commit/1862b047c6c980c221a1da43f2dc8fadefe5fc75))
+
+## [3.0.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.30...v3.0.0-alpha.31) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make pointsMultiplier nullable on questionData ([e07ee0c](https://github.com/uzh-bf/klicker-uzh/commit/e07ee0c956aa99d64905c395e6af223bcb320897))
+
+## [3.0.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.29...v3.0.0-alpha.30) (2023-02-14)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** misc. layout improvements on the question pool ([c0dea69](https://github.com/uzh-bf/klicker-uzh/commit/c0dea696b0b181c91d4f801a0f8ea5e05f8d8395))
+
 ## [3.0.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.28...v3.0.0-alpha.29) (2023-02-13)
 
 

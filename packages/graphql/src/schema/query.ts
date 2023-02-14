@@ -40,10 +40,11 @@ export const Query = builder.queryType({
     })
 
     return {
-      self: asParticipant.field({
+      self: t.field({
         nullable: true,
         type: Participant,
         resolve(_, __, ctx) {
+          if (!ctx.user?.sub) return null
           return ctx.prisma.participant.findUnique({
             where: { id: ctx.user.sub },
           })
@@ -59,7 +60,7 @@ export const Query = builder.queryType({
           return CourseService.getControlCourse(args, ctx)
         },
       }),
-      basicCourseInformation: asUser.field({
+      basicCourseInformation: t.field({
         nullable: true,
         type: Course,
         args: {

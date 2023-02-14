@@ -11,14 +11,16 @@ interface LayoutProps {
   displayName: string
   children: React.ReactNode
   className?: string
+  scrollable?: boolean
 }
 
 const defaultProps = {
   displayName: 'KlickerUZH',
   className: '',
+  scrollable: true,
 }
 
-function Layout({ displayName, children, className }: LayoutProps) {
+function Layout({ displayName, children, className, scrollable }: LayoutProps) {
   const router = useRouter()
 
   const {
@@ -45,7 +47,14 @@ function Layout({ displayName, children, className }: LayoutProps) {
         <div className="fixed top-0 z-10 w-full print:hidden">
           <Header user={dataUser.userProfile as User} />
         </div>
-        <div className="flex justify-between flex-col mt-14 overflow-y-auto [height:_calc(100%-3.5rem)]">
+        <div
+          className={twMerge(
+            'flex justify-between flex-col mt-14',
+            scrollable
+              ? 'overflow-y-auto [height:_calc(100%-3.5rem)]'
+              : 'overflow-hidden'
+          )}
+        >
           <div className="p-4">{children}</div>
           <Footer className="relative" />
         </div>
