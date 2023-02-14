@@ -7,7 +7,7 @@ export interface BaseQuestionData {
   name: string
   type: string
   content: string
-  pointsMultiplier: number
+  pointsMultiplier?: number
 }
 export const QuestionDataRef =
   builder.interfaceRef<BaseQuestionData>('QuestionData')
@@ -17,7 +17,7 @@ export const QuestionData = QuestionDataRef.implement({
     name: t.exposeString('name'),
     type: t.exposeString('type'),
     content: t.exposeString('content'),
-    pointsMultiplier: t.exposeInt('pointsMultiplier'),
+    pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
   }),
   resolveType(value) {
     switch (value.type) {
