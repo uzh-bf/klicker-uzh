@@ -37,7 +37,7 @@ interface Props {
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
 function LearningElement({ courseId, id }: Props) {
-  const [response, setResponse] = useState<number[] | string | null>(null)
+  const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
 
   const router = useRouter()
@@ -53,10 +53,11 @@ function LearningElement({ courseId, id }: Props) {
     if (questionData?.type) {
       if (
         questionData.type === QuestionType.SC ||
-        questionData.type === QuestionType.MC ||
-        questionData.type === QuestionType.KPRIM
+        questionData.type === QuestionType.MC
       ) {
         setResponse([])
+      } else if (questionData.type === QuestionType.KPRIM) {
+        setResponse({})
       } else {
         setResponse('')
       }
@@ -89,16 +90,26 @@ function LearningElement({ courseId, id }: Props) {
       variables: {
         courseId: router.query.courseId as string,
         id: currentInstance?.id as number,
-        response:
-          questionData?.type === QuestionType.SC ||
-          questionData?.type === QuestionType.MC ||
-          questionData?.type === QuestionType.KPRIM
-            ? {
-                choices: response as number[],
-              }
-            : { value: response as string },
+        response: formatResponse(),
       },
     })
+  }
+
+  const formatResponse = () => {
+    if (
+      questionData?.type === QuestionType.SC ||
+      questionData?.type === QuestionType.MC
+    ) {
+      return { choices: response as number[] }
+    } else if (questionData?.type === QuestionType.KPRIM) {
+      let choicesArray: number[] = []
+      Object.keys(response).map((key) => {
+        if (response[key] === true) choicesArray.push(parseInt(key))
+      })
+      return { choices: choicesArray }
+    } else {
+      return { value: response as string }
+    }
   }
 
   const handleNextQuestion = () => {
