@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.33...v3.0.0-alpha.34) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make self query unauthenticated but return null if not logged in ([3525354](https://github.com/uzh-bf/klicker-uzh/commit/352535459ceab0ec29864411e2dbaaf25625006d))
+
 ## [3.0.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.32...v3.0.0-alpha.33) (2023-02-14)
 
 
