@@ -3,6 +3,7 @@ fragment QuestionData on QuestionInstance {
     id
     name
     type
+    displayMode
     content
     pointsMultiplier
 

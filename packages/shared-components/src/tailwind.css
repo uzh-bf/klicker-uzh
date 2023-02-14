@@ -3019,6 +3019,14 @@ select {
   position: relative;
 }
 
+.z-20 {
+  z-index: 20;
+}
+
+.z-30 {
+  z-index: 30;
+}
+
 .order-1 {
   order: 1;
 }
@@ -3201,6 +3209,10 @@ select {
   gap: 0.5rem;
 }
 
+.gap-3 {
+  gap: 0.75rem;
+}
+
 .gap-4 {
   gap: 1rem;
 }
@@ -3327,8 +3339,8 @@ select {
      object-fit: contain;
 }
 
-.p-2 {
-  padding: 0.5rem;
+.p-1 {
+  padding: 0.25rem;
 }
 
 .p-4 {
@@ -3436,12 +3448,12 @@ select {
   opacity: 0.5;
 }
 
-.prose-p\:m-0 :is(:where(p):not(:where([class~="not-prose"] *))) {
-  margin: 0px;
+.prose-p\:\!m-0 :is(:where(p):not(:where([class~="not-prose"] *))) {
+  margin: 0px !important;
 }
 
-.prose-img\:m-0 :is(:where(img):not(:where([class~="not-prose"] *))) {
-  margin: 0px;
+.prose-img\:\!m-0 :is(:where(img):not(:where([class~="not-prose"] *))) {
+  margin: 0px !important;
 }
 
 @media (min-width: 640px) {

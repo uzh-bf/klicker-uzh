@@ -6,6 +6,8 @@ import {
   ManipulateChoicesQuestionDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
+  QuestionDisplayMode,
+  QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FastField,
@@ -24,6 +26,7 @@ import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Button,
+  FormikSelectField,
   Label,
   Modal,
   Select,
@@ -43,6 +46,7 @@ const questionManipulationSchema = Yup.object().shape({
   type: Yup.string()
     .oneOf(['SC', 'MC', 'KPRIM', 'NUMERICAL', 'KPRIM', 'FREE_TEXT'])
     .required(),
+  displayMode: Yup.string().oneOf(['LIST', 'GRID']),
   content: Yup.string()
     .required('Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu')
     .test({
@@ -234,6 +238,7 @@ function QuestionEditModal({
     if (mode === 'CREATE') {
       const common = {
         type: questionType,
+        displayMode: QuestionDisplayMode.List,
         name: '',
         content: '<br>',
         tags: [],
@@ -283,6 +288,8 @@ function QuestionEditModal({
     return dataQuestion?.question?.questionData
       ? {
           ...dataQuestion.question,
+          displayMode:
+            dataQuestion.question.displayMode ?? QuestionDisplayMode.List,
           tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
           options: dataQuestion.question.questionData.options,
         }
@@ -313,11 +320,12 @@ function QuestionEditModal({
           hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
           tags: values.tags,
+          displayMode: values.displayMode,
         }
         switch (questionType) {
-          case 'SC':
-          case 'MC':
-          case 'KPRIM':
+          case QuestionType.Sc:
+          case QuestionType.Mc:
+          case QuestionType.Kprim:
             await manipulateChoicesQuestion({
               variables: {
                 ...common,
@@ -340,7 +348,7 @@ function QuestionEditModal({
             })
             break
 
-          case 'NUMERICAL':
+          case QuestionType.Numerical:
             await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
@@ -374,7 +382,7 @@ function QuestionEditModal({
             })
             break
 
-          case 'FREE_TEXT':
+          case QuestionType.FreeText:
             await manipulateFreeTextQuestion({
               variables: {
                 ...common,
@@ -640,6 +648,23 @@ function QuestionEditModal({
                       }}
                     />
                   )}
+                  {[QuestionType.Sc, QuestionType.Mc].includes(
+                    questionType
+                  ) && (
+                    <FormikSelectField
+                      name="displayMode"
+                      items={[
+                        {
+                          value: QuestionDisplayMode.List,
+                          label: 'Anzeige als Liste',
+                        },
+                        {
+                          value: QuestionDisplayMode.Grid,
+                          label: 'Anzeige als Grid',
+                        },
+                      ]}
+                    />
+                  )}
                 </div>
 
                 {QUESTION_GROUPS.CHOICES.includes(questionType) && (
@@ -833,7 +858,7 @@ function QuestionEditModal({
                   </FieldArray>
                 )}
 
-                {questionType === 'NUMERICAL' && (
+                {questionType === QuestionType.Numerical && (
                   <div>
                     <div className="w-full">
                       <div className="flex flex-row items-center gap-2">
@@ -928,7 +953,7 @@ function QuestionEditModal({
                   </div>
                 )}
 
-                {questionType === 'FREE_TEXT' && (
+                {questionType === QuestionType.FreeText && (
                   <div className="flex flex-col">
                     <div className="flex flex-row items-center mb-4">
                       <div className="mr-2 font-bold">Maximale Länge:</div>
