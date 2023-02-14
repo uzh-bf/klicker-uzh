@@ -24,6 +24,42 @@ import * as yup from 'yup'
 
 import Layout from '../../../components/Layout'
 
+const joinAndRegisterSchema = yup.object({
+  username: yup
+    .string()
+    .required('Bitte geben Sie einen Benutzernamen ein')
+    .min(5, 'Der Benutzername muss mindestens 5 Zeichen lang sein.')
+    .max(10, 'Der Benutzername darf nicht länger als 10 Zeichen sein.'),
+  password: yup
+    .string()
+    .required('Bitte geben Sie ein Passwort ein')
+    .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.'),
+  passwordRepetition: yup.string().when('password', {
+    is: (val: string) => val && val.length > 0,
+    then: (schema) =>
+      schema
+        .required('Passwörter müssen übereinstimmen.')
+        .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.')
+        .oneOf(
+          [yup.ref('password'), null],
+          'Passwörter müssen übereinstimmen.'
+        ),
+    otherwise: (schema) =>
+      schema.oneOf([''], 'Passwörter müssen übereinstimmen.'),
+  }),
+  pin: yup
+    .number()
+    .typeError('Bitte geben Sie einen numerischen PIN ein.')
+    .required('Bitte geben Sie den Kurs-PIN ein.'),
+})
+
+const joinCourseWithPinSchema = yup.object({
+  pin: yup
+    .number()
+    .typeError('Bitte geben Sie einen numerischen PIN ein.')
+    .required('Bitte geben Sie den Kurs-PIN ein.'),
+})
+
 function JoinCourse({
   courseId,
   displayName,
@@ -65,42 +101,6 @@ function JoinCourse({
   if (loadingParticipant || courseLoading) {
     return <div>Loading...</div>
   }
-
-  const joinAndRegisterSchema = yup.object({
-    username: yup
-      .string()
-      .required('Bitte geben Sie einen Benutzernamen ein')
-      .min(5, 'Der Benutzername muss mindestens 5 Zeichen lang sein.')
-      .max(10, 'Der Benutzername darf nicht länger als 10 Zeichen sein.'),
-    password: yup
-      .string()
-      .required('Bitte geben Sie ein Passwort ein')
-      .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.'),
-    passwordRepetition: yup.string().when('password', {
-      is: (val: string) => val && val.length > 0,
-      then: (schema) =>
-        schema
-          .required('Passwörter müssen übereinstimmen.')
-          .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.')
-          .oneOf(
-            [yup.ref('password'), null],
-            'Passwörter müssen übereinstimmen.'
-          ),
-      otherwise: (schema) =>
-        schema.oneOf([''], 'Passwörter müssen übereinstimmen.'),
-    }),
-    pin: yup
-      .number()
-      .typeError('Bitte geben Sie einen numerischen PIN ein.')
-      .required('Bitte geben Sie den Kurs-PIN ein.'),
-  })
-
-  const joinCourseWithPinSchema = yup.object({
-    pin: yup
-      .number()
-      .typeError('Bitte geben Sie einen numerischen PIN ein.')
-      .required('Bitte geben Sie den Kurs-PIN ein.'),
-  })
 
   return (
     <Layout
