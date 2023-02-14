@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.30...v3.0.0-alpha.31) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make pointsMultiplier nullable on questionData ([e07ee0c](https://github.com/uzh-bf/klicker-uzh/commit/e07ee0c956aa99d64905c395e6af223bcb320897))
+
 ## [3.0.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.29...v3.0.0-alpha.30) (2023-02-14)
 
 
