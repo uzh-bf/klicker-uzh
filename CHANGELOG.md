@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.32...v3.0.0-alpha.33) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** mismatch in context of basic course info ([4fdede2](https://github.com/uzh-bf/klicker-uzh/commit/4fdede2e8432b1846105f28512dd8ad5f33ce1d4))
+
 ## [3.0.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.31...v3.0.0-alpha.32) (2023-02-14)
 
 
