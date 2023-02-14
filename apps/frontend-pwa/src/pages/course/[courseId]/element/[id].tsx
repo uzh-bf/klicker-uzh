@@ -6,13 +6,16 @@ import {
 import { faCheck, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ChoicesQuestionData,
+  FreeTextQuestionData,
   GetLearningElementDocument,
+  NumericalQuestionData,
+  QuestionType,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { QuestionType } from '@type/app'
 import { Button, H3, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
@@ -90,26 +93,9 @@ function LearningElement({ courseId, id }: Props) {
       variables: {
         courseId: router.query.courseId as string,
         id: currentInstance?.id as number,
-        response: formatResponse(),
+        response: formatResponse(questionData, response),
       },
     })
-  }
-
-  const formatResponse = () => {
-    if (
-      questionData?.type === QuestionType.SC ||
-      questionData?.type === QuestionType.MC
-    ) {
-      return { choices: response as number[] }
-    } else if (questionData?.type === QuestionType.KPRIM) {
-      let choicesArray: number[] = []
-      Object.keys(response).map((key) => {
-        if (response[key] === true) choicesArray.push(parseInt(key))
-      })
-      return { choices: choicesArray }
-    } else {
-      return { value: response as string }
-    }
   }
 
   const handleNextQuestion = () => {
@@ -349,6 +335,30 @@ function LearningElement({ courseId, id }: Props) {
       />
     </Layout>
   )
+}
+
+const formatResponse = (
+  questionData:
+    | ChoicesQuestionData
+    | FreeTextQuestionData
+    | NumericalQuestionData
+    | undefined,
+  response: {} | number[] | string
+) => {
+  if (
+    questionData?.type === QuestionType.Sc ||
+    questionData?.type === QuestionType.Mc
+  ) {
+    return { choices: response as number[] }
+  } else if (questionData?.type === QuestionType.Kprim) {
+    return {
+      choices: Object.keys(response).flatMap((key) =>
+        response[key] === true ? [parseInt(key)] : []
+      ) as number[],
+    }
+  } else {
+    return { value: response as string }
+  }
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
