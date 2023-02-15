@@ -1,10 +1,6 @@
-import { useQuery } from '@apollo/client'
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetCourseOverviewDataDocument,
-  Participant,
-} from '@klicker-uzh/graphql/dist/ops'
+import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2 } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -34,19 +30,10 @@ function Header({
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
 
-  const { data } = useQuery(GetCourseOverviewDataDocument, {
-    variables: { courseId: router.query.courseId as string },
-    skip: !router.query?.courseId,
-  })
-
-  if (!data?.getCourseOverviewData) {
-    return <div>Loading...</div>
-  }
-
   const pageInFrame =
     global?.window &&
     global?.window?.location !== global?.window?.parent.location
-  console.log('courseId: ' + courseId)
+
   return (
     <div
       style={{ borderColor: courseColor || undefined }}
@@ -69,18 +56,15 @@ function Header({
       )}
       <div className="flex flex-row items-center gap-4">
         {courseName !== 'KlickerUZH' && (
-          <Button
-            className={{
-              root: 'bg-slate-800 peer-disabled: md:block border-slate-800',
-            }}
-            onClick={() =>
-              router.push(
-                `/course/${data.getCourseOverviewData?.course.id}/docs`
-              )
-            }
-          >
-            <FontAwesomeIcon className="fa-xl" icon={faCircleQuestion} />
-          </Button>
+          <Link href={`/course/${courseId}/docs`}>
+            <Button
+              className={{
+                root: 'bg-slate-800 peer-disabled: md:block border-slate-800',
+              }}
+            >
+              <FontAwesomeIcon className="fa-xl" icon={faCircleQuestion} />
+            </Button>
+          </Link>
         )}
         {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
         {participant ? (
