@@ -49,7 +49,8 @@ mongoose.connection.once('open', async () => {
                   (f) =>
                     `![${f.originalName}](https://tc-klicker-prod.s3.amazonaws.com/images/${f.name})`
                 )
-                .join('\n')
+                .join('\n\n') +
+              '\n'
             : ''),
         options: lastVersion.options,
       },
