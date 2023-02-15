@@ -10,6 +10,7 @@ import {
   QuestionInstance,
   QuestionInstanceType,
   QuestionType,
+  UserRole,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -224,7 +225,7 @@ export async function respondToQuestionInstance(
 
   // if the user is logged in and the last response was not within the past 6 days
   // award points and update the response
-  if (ctx.user?.sub) {
+  if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
     const hasPreviousResponse = instance?.responses?.length > 0
 
     if (hasPreviousResponse) {
@@ -258,75 +259,73 @@ export async function respondToQuestionInstance(
         .toDate()
     }
 
-    if (ctx.user.sub) {
-      promises.push(
-        ctx.prisma.questionResponse.upsert({
-          where: {
-            participantId_questionInstanceId: {
-              participantId: ctx.user.sub,
-              questionInstanceId: id,
-            },
+    promises.push(
+      ctx.prisma.questionResponse.upsert({
+        where: {
+          participantId_questionInstanceId: {
+            participantId: ctx.user.sub,
+            questionInstanceId: id,
           },
-          create: {
-            totalScore: score,
-            totalPointsAwarded: pointsAwarded,
-            trialsCount: 1,
-            lastAwardedAt,
-            response,
-            participant: {
-              connect: { id: ctx.user.sub },
-            },
-            questionInstance: {
-              connect: { id },
-            },
-            participation: {
-              connect: {
-                courseId_participantId: {
-                  courseId,
-                  participantId: ctx.user.sub,
-                },
+        },
+        create: {
+          totalScore: score,
+          totalPointsAwarded: pointsAwarded,
+          trialsCount: 1,
+          lastAwardedAt,
+          response,
+          participant: {
+            connect: { id: ctx.user.sub },
+          },
+          questionInstance: {
+            connect: { id },
+          },
+          participation: {
+            connect: {
+              courseId_participantId: {
+                courseId,
+                participantId: ctx.user.sub,
               },
             },
           },
-          update: {
-            response,
-            lastAwardedAt,
-            trialsCount: {
-              increment: 1,
-            },
-            totalScore: {
-              increment: score,
-            },
-            totalPointsAwarded: {
-              increment: pointsAwarded,
-            },
+        },
+        update: {
+          response,
+          lastAwardedAt,
+          trialsCount: {
+            increment: 1,
           },
-        }),
-        ctx.prisma.questionResponseDetail.create({
-          data: {
-            score,
-            pointsAwarded,
-            response,
-            participant: {
-              connect: { id: ctx.user.sub },
-            },
-            questionInstance: {
-              connect: { id },
-            },
-            participation: {
-              connect: {
-                courseId_participantId: {
-                  courseId,
-                  participantId: ctx.user.sub,
-                },
+          totalScore: {
+            increment: score,
+          },
+          totalPointsAwarded: {
+            increment: pointsAwarded,
+          },
+        },
+      }),
+      ctx.prisma.questionResponseDetail.create({
+        data: {
+          score,
+          pointsAwarded,
+          response,
+          participant: {
+            connect: { id: ctx.user.sub },
+          },
+          questionInstance: {
+            connect: { id },
+          },
+          participation: {
+            connect: {
+              courseId_participantId: {
+                courseId,
+                participantId: ctx.user.sub,
               },
             },
           },
-        })
-      )
-    }
+        },
+      })
+    )
 
-    if (ctx.user.sub && typeof pointsAwarded === 'number') {
+    if (typeof pointsAwarded === 'number') {
       promises.push(
         ctx.prisma.leaderboardEntry.upsert({
           where: {
