@@ -32,6 +32,12 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'tc-klicker-prod.s3.amazonaws.com',
+        port: '443',
+        pathname: '/images/**',
+      },
+      {
+        protocol: 'https',
         hostname: process.env.S3_HOSTNAME,
         port: '443',
         pathname: process.env.S3_PATHNAME,
