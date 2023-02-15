@@ -16,18 +16,18 @@ function CommonDocs() {
   }
   return (
     <div>
-      <div className="m-5 md:m-0 md:w-full md:max-w-xxl md:py-8 md:mx-auto">
+      <div className={'m-5 md:m-0 md:w-full md:max-w-xxl md:py-8 md:mx-auto'}>
         <Navigation
-          // TODO add style to NavBar
-          // style={{
-          //   backgroundColor: `${data.getCourseOverviewData?.course.color}`,
-          // }}
-          className={{
-            root: `w-full`,
+          style={{
+            root: {
+              backgroundColor: `${data.getCourseOverviewData?.course.color}`,
+            },
           }}
+          className={{ root: `w-full` }}
         >
           <Navigation.ButtonItem
             label="Info Page"
+            className={{ root: `text-white` }}
             onClick={() =>
               router.push(
                 `/course/${data.getCourseOverviewData?.course.id}/docs`
@@ -36,6 +36,7 @@ function CommonDocs() {
           ></Navigation.ButtonItem>
           <Navigation.TriggerItem
             label="Getting Started"
+            className={{ root: `text-white` }}
             dropdownWidth="w-[20rem]"
           >
             <Navigation.DropdownItem
@@ -55,7 +56,11 @@ function CommonDocs() {
               }
             />
           </Navigation.TriggerItem>
-          <Navigation.TriggerItem label="Features" dropdownWidth="w-[20rem]">
+          <Navigation.TriggerItem
+            label="Features"
+            className={{ root: `text-white` }}
+            dropdownWidth="w-[20rem]"
+          >
             <Navigation.DropdownItem
               title="Umfragen"
               onClick={() =>
