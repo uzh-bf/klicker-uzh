@@ -1,4 +1,9 @@
-import { faCalendar, faCheck, faSync } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCalendar,
+  faCheck,
+  faExternalLink,
+  faSync,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   QuestionInstance,
@@ -7,9 +12,9 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Countdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Ellipsis from '../../common/Ellipsis'
 
 interface SessionBlockProps {
   className?: string
@@ -44,7 +49,7 @@ function SessionBlock({
     <div
       className={twMerge(
         className,
-        'm-2 bg-uzh-grey-40 p-2 rounded-lg',
+        'bg-uzh-grey-40 p-4 rounded space-y-3',
         active && 'bg-green-300'
       )}
     >
@@ -70,9 +75,15 @@ function SessionBlock({
         )}
       </div>
       {block.instances.map((instance: QuestionInstance) => (
-        <div key={instance.id} className="text-sm">
-          <Ellipsis maxLength={30}>{instance.questionData.content}</Ellipsis>
-        </div>
+        <Link
+          href={`/questions/${instance.questionData.id}`}
+          key={instance.id}
+          className="text-sm hover:text-slate-700"
+          target="_blank"
+        >
+          {instance.questionData.name}{' '}
+          <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
+        </Link>
       ))}
     </div>
   )
