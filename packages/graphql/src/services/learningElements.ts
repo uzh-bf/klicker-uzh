@@ -258,73 +258,75 @@ export async function respondToQuestionInstance(
         .toDate()
     }
 
-    promises.push(
-      ctx.prisma.questionResponse.upsert({
-        where: {
-          participantId_questionInstanceId: {
-            participantId: ctx.user.sub,
-            questionInstanceId: id,
+    if (ctx.user.sub) {
+      promises.push(
+        ctx.prisma.questionResponse.upsert({
+          where: {
+            participantId_questionInstanceId: {
+              participantId: ctx.user.sub,
+              questionInstanceId: id,
+            },
           },
-        },
-        create: {
-          totalScore: score,
-          totalPointsAwarded: pointsAwarded,
-          trialsCount: 1,
-          lastAwardedAt,
-          response,
-          participant: {
-            connect: { id: ctx.user.sub },
-          },
-          questionInstance: {
-            connect: { id },
-          },
-          participation: {
-            connect: {
-              courseId_participantId: {
-                courseId,
-                participantId: ctx.user.sub,
+          create: {
+            totalScore: score,
+            totalPointsAwarded: pointsAwarded,
+            trialsCount: 1,
+            lastAwardedAt,
+            response,
+            participant: {
+              connect: { id: ctx.user.sub },
+            },
+            questionInstance: {
+              connect: { id },
+            },
+            participation: {
+              connect: {
+                courseId_participantId: {
+                  courseId,
+                  participantId: ctx.user.sub,
+                },
               },
             },
           },
-        },
-        update: {
-          response,
-          lastAwardedAt,
-          trialsCount: {
-            increment: 1,
+          update: {
+            response,
+            lastAwardedAt,
+            trialsCount: {
+              increment: 1,
+            },
+            totalScore: {
+              increment: score,
+            },
+            totalPointsAwarded: {
+              increment: pointsAwarded,
+            },
           },
-          totalScore: {
-            increment: score,
-          },
-          totalPointsAwarded: {
-            increment: pointsAwarded,
-          },
-        },
-      }),
-      ctx.prisma.questionResponseDetail.create({
-        data: {
-          score,
-          pointsAwarded,
-          response,
-          participant: {
-            connect: { id: ctx.user.sub },
-          },
-          questionInstance: {
-            connect: { id },
-          },
-          participation: {
-            connect: {
-              courseId_participantId: {
-                courseId,
-                participantId: ctx.user.sub,
+        }),
+        ctx.prisma.questionResponseDetail.create({
+          data: {
+            score,
+            pointsAwarded,
+            response,
+            participant: {
+              connect: { id: ctx.user.sub },
+            },
+            questionInstance: {
+              connect: { id },
+            },
+            participation: {
+              connect: {
+                courseId_participantId: {
+                  courseId,
+                  participantId: ctx.user.sub,
+                },
               },
             },
           },
-        },
-      })
-    )
+        })
+      )
+    }
 
-    if (typeof pointsAwarded === 'number') {
+    if (ctx.user.sub && typeof pointsAwarded === 'number') {
       promises.push(
         ctx.prisma.leaderboardEntry.upsert({
           where: {
