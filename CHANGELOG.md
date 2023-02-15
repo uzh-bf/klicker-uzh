@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.38...v3.0.0-alpha.39) (2023-02-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that question preview works without a value in free text ([3e187cf](https://github.com/uzh-bf/klicker-uzh/commit/3e187cfd072a2a1d0cce603ea43032d05ada02cc))
+
+## [3.0.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.37...v3.0.0-alpha.38) (2023-02-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add default course color to color picker ([7144c9a](https://github.com/uzh-bf/klicker-uzh/commit/7144c9a8c26cd741bfbec9b1f5652b2bcb1a2a47))
+* **apps/frontend-pwa:** extract formatResponse logic and reuse in microlearning for kprim ([f2a8919](https://github.com/uzh-bf/klicker-uzh/commit/f2a8919034dd0b7f30b5391f62457494371c5823))
+* **packages/graphql:** ensure user role is participant before persisting question response ([2ff2944](https://github.com/uzh-bf/klicker-uzh/commit/2ff2944177e32b613b81bdbfeb55e0b855e41a2c))
+* **packages/prisma:** add a default color for courses ([8cd4c96](https://github.com/uzh-bf/klicker-uzh/commit/8cd4c96aea50c7819f2e3a42c8092584f8833caa))
+
+
+### Dependencies
+
+* update design system for tooltip tabindex ([ab043b4](https://github.com/uzh-bf/klicker-uzh/commit/ab043b4d41aa1af624170b56a202f6d0e691fdf2))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add preview of question contents for presentation purpose ([d18c8cc](https://github.com/uzh-bf/klicker-uzh/commit/d18c8cc73de9a89ec3b1330e861b7ede94471848))
+* **apps/frontend-manage:** add wizard completion step to creation wizard ([7fef3d7](https://github.com/uzh-bf/klicker-uzh/commit/7fef3d7a703ce58789786b7516566f2bfd587aea))
+
+## [3.0.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.36...v3.0.0-alpha.37) (2023-02-15)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that learning elements can be responded to anonymously ([e613e5f](https://github.com/uzh-bf/klicker-uzh/commit/e613e5f48b79e33533f879925b354d79520ed870))
+
+## [3.0.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.35...v3.0.0-alpha.36) (2023-02-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** several fixes for kprim questions ([#3346](https://github.com/uzh-bf/klicker-uzh/issues/3346)) ([d31b02c](https://github.com/uzh-bf/klicker-uzh/commit/d31b02c7d6b5eee89859c4531b10bea5552d19e1))
+* **packages/graphql:** make displayMode nullable ([876dd4d](https://github.com/uzh-bf/klicker-uzh/commit/876dd4d7883d38dafed69c5787555deb113d1ff1))
+
 ## [3.0.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.34...v3.0.0-alpha.35) (2023-02-14)
 
 

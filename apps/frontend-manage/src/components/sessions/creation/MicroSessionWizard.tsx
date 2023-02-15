@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import MicroSessionCreationToast from '@components/toasts/MicroSessionCreationToast'
 import SessionCreationErrorToast from '@components/toasts/SessionCreationErrorToast'
 import {
   CreateMicroSessionDocument,
@@ -70,12 +69,11 @@ function MicroSessionWizard({
   courses,
   initialValues,
 }: MicroSessionWizardProps) {
-  const [stepNumber, setStepNumber] = useState(0)
+  const router = useRouter()
 
-  const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
-  const router = useRouter()
+  const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
   const [createMicroSession] = useMutation(CreateMicroSessionDocument)
   const [editMicroSession] = useMutation(EditMicroSessionDocument)
@@ -83,7 +81,7 @@ function MicroSessionWizard({
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
 
-  const onSubmit = async (values, { resetForm }) => {
+  const onSubmit = async (values) => {
     try {
       let success = false
 
@@ -120,10 +118,8 @@ function MicroSessionWizard({
 
       if (success) {
         setSelectedCourseId(values.courseId)
-        router.push('/')
         setEditMode(!!initialValues)
-        setSuccessToastOpen(true)
-        resetForm()
+        setIsWizardCompleted(true)
       }
     } catch (error) {
       console.log(error)
@@ -135,6 +131,12 @@ function MicroSessionWizard({
   return (
     <div>
       <MultistepWizard
+        completionSuccessMessage={(elementName) => (
+          <div>
+            Micro Session <strong>{elementName}</strong> erfolgreich{' '}
+            {editMode ? 'modifiziert' : 'erstellt'}.
+          </div>
+        )}
         initialValues={{
           name: initialValues?.name || '',
           displayName: initialValues?.displayName || '',
@@ -156,17 +158,18 @@ function MicroSessionWizard({
           courseId: initialValues?.course?.id || courses[0].value,
         }}
         onSubmit={onSubmit}
+        isCompleted={isWizardCompleted}
+        onRestartForm={() => {
+          setIsWizardCompleted(false)
+        }}
+        onViewElement={() => {
+          router.push(`/courses/${selectedCourseId}`)
+        }}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
         <StepThree validationSchema={stepThreeValidationSchema} />
       </MultistepWizard>
-      <MicroSessionCreationToast
-        editMode={editMode}
-        open={successToastOpen}
-        setOpen={setSuccessToastOpen}
-        courseId={selectedCourseId}
-      />
       <SessionCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}
@@ -196,6 +199,7 @@ function StepOne(_: StepProps) {
     <>
       <FormikTextField
         required
+        autoComplete="off"
         name="name"
         label="Session-Name"
         tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
@@ -203,6 +207,7 @@ function StepOne(_: StepProps) {
       />
       <FormikTextField
         required
+        autoComplete="off"
         name="displayName"
         label="Anzeigenamen"
         tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."

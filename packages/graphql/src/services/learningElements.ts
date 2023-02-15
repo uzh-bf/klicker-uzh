@@ -10,6 +10,7 @@ import {
   QuestionInstance,
   QuestionInstanceType,
   QuestionType,
+  UserRole,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -224,7 +225,7 @@ export async function respondToQuestionInstance(
 
   // if the user is logged in and the last response was not within the past 6 days
   // award points and update the response
-  if (ctx.user?.sub) {
+  if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
     const hasPreviousResponse = instance?.responses?.length > 0
 
     if (hasPreviousResponse) {

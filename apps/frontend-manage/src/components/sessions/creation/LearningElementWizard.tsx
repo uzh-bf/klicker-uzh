@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import LearningElementCreationToast from '@components/toasts/LearningElementCreationToast'
 import SessionCreationErrorToast from '@components/toasts/SessionCreationErrorToast'
 import {
   CreateLearningElementDocument,
@@ -82,10 +81,10 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
   const router = useRouter()
 
   const [createLearningElement] = useMutation(CreateLearningElementDocument)
-  const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [selectedCourseId, setSelectedCourseId] = useState('')
+  const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
   const initialValues = {
     name: '',
@@ -98,8 +97,7 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
     resetTimeDays: '6',
   }
 
-  const onSubmit = async (values: MicroSessionFormValues, { resetForm }) => {
-    console.log('onSubmit - values: ', values)
+  const onSubmit = async (values: MicroSessionFormValues) => {
     try {
       const result = await createLearningElement({
         variables: {
@@ -115,11 +113,7 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
       })
 
       if (result.data?.createLearningElement) {
-        // TODO: set edit mode value correctly once editing is implemented
-        router.push('/')
-        setEditMode(false)
-        setSuccessToastOpen(true)
-        resetForm()
+        setIsWizardCompleted(true)
       }
       setSelectedCourseId(values.courseId)
     } catch (error) {
@@ -132,17 +126,27 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
 
   return (
     <div>
-      <MultistepWizard initialValues={initialValues} onSubmit={onSubmit}>
+      <MultistepWizard
+        completionSuccessMessage={(elementName) => (
+          <div>
+            Lernelement <strong>{elementName}</strong> erfolgreich{' '}
+            {editMode ? 'modifiziert' : 'erstellt'}.
+          </div>
+        )}
+        initialValues={initialValues}
+        onSubmit={onSubmit}
+        isCompleted={isWizardCompleted}
+        onRestartForm={() => {
+          setIsWizardCompleted(false)
+        }}
+        onViewElement={() => {
+          router.push(`/courses/${selectedCourseId}`)
+        }}
+      >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
         <StepThree validationSchema={stepThreeValidationSchema} />
       </MultistepWizard>
-      <LearningElementCreationToast
-        open={successToastOpen}
-        setOpen={setSuccessToastOpen}
-        courseId={selectedCourseId}
-        editMode={editMode}
-      />
       <SessionCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}
@@ -173,6 +177,7 @@ function StepOne(_: StepProps) {
     <>
       <FormikTextField
         required
+        autoComplete="off"
         name="name"
         label="Session-Name"
         tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
@@ -180,6 +185,7 @@ function StepOne(_: StepProps) {
       />
       <FormikTextField
         required
+        autoComplete="off"
         name="displayName"
         label="Anzeigenamen"
         tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."

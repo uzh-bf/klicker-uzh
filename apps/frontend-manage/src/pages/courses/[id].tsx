@@ -141,14 +141,14 @@ function CourseOverviewPage() {
             className={
               'flex relative w-20 mr-3 rounded-lg align-center justify-end'
             }
-            style={{ backgroundColor: course.color }}
+            style={{ backgroundColor: course.color ?? '#eaa07d' }}
           >
             <Button onClick={toggleColorPicker}>
               <FontAwesomeIcon icon={faPalette} />
             </Button>
             {isColorPickerVisible && (
               <ColorPicker
-                color={course.color}
+                color={course.color ?? '#eaa07d'}
                 onSubmit={handleColorChange}
                 onAbort={toggleColorPicker}
               />

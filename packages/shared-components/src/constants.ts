@@ -31,6 +31,11 @@ export const CHART_COLORS: string[] = [
   'rgb(236, 170, 56)', // 9
 ]
 
+export const CHART_SOLUTION_COLORS = {
+  correct: '#00de0d',
+  incorrect: '#ff0000',
+}
+
 export const QUESTION_TYPES: Record<string, string> = {
   FREE_TEXT: 'FREE_TEXT',
   NUMERICAL: 'NUMERICAL',

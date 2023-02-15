@@ -90,10 +90,11 @@ function QuestionEvaluation({
                       <div
                         // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
                         style={{
-                          backgroundColor:
-                            choice.correct && showSolution
+                          backgroundColor: showSolution
+                            ? choice.correct
                               ? '#00de0d'
-                              : CHART_COLORS[innerIndex % 12],
+                              : '#ff0000'
+                            : CHART_COLORS[innerIndex % 12],
                         }}
                         className={twMerge(
                           'mr-2 items-center flex justify-center rounded-md w-7 h-7 text-white font-bold',

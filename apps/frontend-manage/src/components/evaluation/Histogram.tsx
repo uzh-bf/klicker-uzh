@@ -17,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { CHART_SOLUTION_COLORS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 
 interface HistogramProps {
@@ -238,11 +239,11 @@ function Histogram({
                   key={index}
                   x1={solutionRange.min ?? undefined}
                   x2={solutionRange.max ?? undefined}
-                  stroke="green"
-                  fill="green"
+                  stroke={CHART_SOLUTION_COLORS.correct}
+                  fill={CHART_SOLUTION_COLORS.correct}
                   enableBackground="#FFFFFF"
                   label={{
-                    fill: 'green',
+                    fill: CHART_SOLUTION_COLORS.correct,
                     position: 'top',
                     value: 'Korrekt',
                   }}

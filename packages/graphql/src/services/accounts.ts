@@ -189,11 +189,10 @@ export async function loginParticipant(
 
   if (!isLoginValid) return null
 
-  // TODO: Add back once DB table is updated
-  // ctx.prisma.participant.update({
-  //   where: { id: participant.id },
-  //   data: { lastLoginAt: new Date() },
-  // })
+  ctx.prisma.participant.update({
+    where: { id: participant.id },
+    data: { lastLoginAt: new Date() },
+  })
 
   const jwt = createParticipantToken(participant.id)
 

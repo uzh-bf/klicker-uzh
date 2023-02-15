@@ -7,12 +7,12 @@ import { faCheck, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetLearningElementDocument,
+  QuestionType,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { QuestionType } from '@type/app'
 import { Button, H3, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
@@ -22,6 +22,7 @@ import Footer from '../../../../components/common/Footer'
 import EvaluationDisplay from '../../../../components/EvaluationDisplay'
 import Layout from '../../../../components/Layout'
 import OptionsDisplay from '../../../../components/OptionsDisplay'
+import formatResponse from '../../../../lib/formatResponse'
 
 const ORDER_TYPE_LABEL = {
   LAST_RESPONSE: 'zuletzt beantwortete Fragen am Ende',
@@ -37,7 +38,7 @@ interface Props {
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
 function LearningElement({ courseId, id }: Props) {
-  const [response, setResponse] = useState<number[] | string | null>(null)
+  const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
 
   const router = useRouter()
@@ -52,11 +53,12 @@ function LearningElement({ courseId, id }: Props) {
   useEffect(() => {
     if (questionData?.type) {
       if (
-        questionData.type === QuestionType.SC ||
-        questionData.type === QuestionType.MC ||
-        questionData.type === QuestionType.KPRIM
+        questionData.type === QuestionType.Sc ||
+        questionData.type === QuestionType.Mc
       ) {
         setResponse([])
+      } else if (questionData.type === QuestionType.Kprim) {
+        setResponse({})
       } else {
         setResponse('')
       }
@@ -89,14 +91,7 @@ function LearningElement({ courseId, id }: Props) {
       variables: {
         courseId: router.query.courseId as string,
         id: currentInstance?.id as number,
-        response:
-          questionData?.type === QuestionType.SC ||
-          questionData?.type === QuestionType.MC ||
-          questionData?.type === QuestionType.KPRIM
-            ? {
-                choices: response as number[],
-              }
-            : { value: response as string },
+        response: formatResponse(questionData, response),
       },
     })
   }

@@ -6,7 +6,7 @@ export interface FREETextAnswerOptionsProps {
   placeholder?: string
   maxLength?: number
   onChange: (value: any) => any
-  value: string
+  value?: string
 }
 
 export function FREETextAnswerOptions({
@@ -35,7 +35,7 @@ export function FREETextAnswerOptions({
       />
 
       <div className="text-sm italic text-right">
-        ({value.length} / {maxLength ?? '1500'} Zeichen)
+        ({value?.length ?? 0} / {maxLength ?? '1500'} Zeichen)
       </div>
     </div>
   )
