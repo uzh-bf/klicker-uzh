@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.36...v3.0.0-alpha.37) (2023-02-15)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that learning elements can be responded to anonymously ([e613e5f](https://github.com/uzh-bf/klicker-uzh/commit/e613e5f48b79e33533f879925b354d79520ed870))
+
 ## [3.0.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.35...v3.0.0-alpha.36) (2023-02-15)
 
 
