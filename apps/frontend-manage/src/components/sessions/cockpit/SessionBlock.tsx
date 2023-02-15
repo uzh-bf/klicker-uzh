@@ -49,7 +49,7 @@ function SessionBlock({
     <div
       className={twMerge(
         className,
-        'bg-uzh-grey-40 p-4 rounded space-y-3',
+        'bg-uzh-grey-40 p-4 rounded',
         active && 'bg-green-300'
       )}
     >
@@ -75,15 +75,16 @@ function SessionBlock({
         )}
       </div>
       {block.instances.map((instance: QuestionInstance) => (
-        <Link
-          href={`/questions/${instance.questionData.id}`}
-          key={instance.id}
-          className="text-sm hover:text-slate-700"
-          target="_blank"
-        >
-          {instance.questionData.name}{' '}
-          <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
-        </Link>
+        <div key={instance.id}>
+          <Link
+            href={`/questions/${instance.questionData.id}`}
+            className="text-sm hover:text-slate-700"
+            target="_blank"
+          >
+            {instance.questionData.name}{' '}
+            <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
+          </Link>
+        </div>
       ))}
     </div>
   )
