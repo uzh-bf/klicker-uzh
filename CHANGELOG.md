@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.35...v3.0.0-alpha.36) (2023-02-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** several fixes for kprim questions ([#3346](https://github.com/uzh-bf/klicker-uzh/issues/3346)) ([d31b02c](https://github.com/uzh-bf/klicker-uzh/commit/d31b02c7d6b5eee89859c4531b10bea5552d19e1))
+* **packages/graphql:** make displayMode nullable ([876dd4d](https://github.com/uzh-bf/klicker-uzh/commit/876dd4d7883d38dafed69c5787555deb113d1ff1))
+
 ## [3.0.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.34...v3.0.0-alpha.35) (2023-02-14)
 
 
