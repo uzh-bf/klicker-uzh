@@ -71,7 +71,9 @@ async function importQuestions(prisma: Prisma.PrismaClient) {
           ),
         }
       } else if (question.type === 'NR') {
+        throw new Error('Unsupported question type (NR)')
       } else if (question.type === 'FT') {
+        throw new Error('Unsupported question type (FT)')
       } else {
         throw new Error('Unknown question type')
       }
