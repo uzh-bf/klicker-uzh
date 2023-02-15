@@ -43,6 +43,7 @@
     "seed:prod:ami": "npm run seed:qa:ami",
     "seed:prod:achievements": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedAchievements.ts",
     "seed:prod:user": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedUser.ts",
+    "seed:prod:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/importQuestions.ts",
     "size": "size-limit"
   },
   "prisma": {
