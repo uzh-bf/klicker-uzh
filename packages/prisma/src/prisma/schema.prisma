@@ -240,7 +240,7 @@ model Course {
   name        String
   displayName String
   description String?
-  color       String?
+  color       String? @default("#eaa07d")
 
   sessions          Session[]
   learningElements  LearningElement[]
