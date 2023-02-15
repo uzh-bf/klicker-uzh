@@ -16,7 +16,7 @@ export interface BaseQuestionData {
   type: DB.QuestionType
   content: string
   pointsMultiplier?: number
-  displayMode: DB.QuestionDisplayMode
+  displayMode?: DB.QuestionDisplayMode
 }
 export const QuestionDataRef =
   builder.interfaceRef<BaseQuestionData>('QuestionData')
@@ -27,7 +27,10 @@ export const QuestionData = QuestionDataRef.implement({
     type: t.expose('type', { type: QuestionType }),
     content: t.exposeString('content'),
     pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
-    displayMode: t.expose('displayMode', { type: QuestionDisplayMode }),
+    displayMode: t.expose('displayMode', {
+      type: QuestionDisplayMode,
+      nullable: true,
+    }),
   }),
   resolveType(value) {
     switch (value.type) {
