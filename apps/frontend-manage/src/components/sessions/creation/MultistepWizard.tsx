@@ -1,12 +1,19 @@
+import { faEye } from '@fortawesome/free-regular-svg-icons'
+import { faSync } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Session } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Progress } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import React, { useState } from 'react'
 
 interface FormProps {
+  isCompleted: boolean
+  completionSuccessMessage?: (elementName: string) => React.ReactNode
   children: React.ReactNode[]
   initialValues?: Partial<Session>
   onSubmit: (values: any, bag: any) => void
+  onViewElement: () => void
+  onRestartForm: () => void
 }
 
 export interface LiveSessionFormValues {
@@ -55,7 +62,15 @@ export interface LearningElementFormValues {
   resetTimeDays: string
 }
 
-function MultistepWizard({ children, initialValues, onSubmit }: FormProps) {
+function MultistepWizard({
+  children,
+  initialValues,
+  onSubmit,
+  isCompleted,
+  completionSuccessMessage,
+  onViewElement,
+  onRestartForm,
+}: FormProps) {
   const [stepNumber, setStepNumber] = useState(0)
 
   const steps = React.Children.toArray(children)
@@ -106,8 +121,6 @@ function MultistepWizard({ children, initialValues, onSubmit }: FormProps) {
     }
   }
 
-  console.log(step.props)
-
   return (
     <Formik
       initialValues={snapshot}
@@ -115,36 +128,67 @@ function MultistepWizard({ children, initialValues, onSubmit }: FormProps) {
       validationSchema={step.props.validationSchema}
       isInitialValid={false}
     >
-      {({ values, isSubmitting, isValid }) => (
+      {({ values, isSubmitting, isValid, resetForm }) => (
         <Form className="flex flex-col gap-4 p-4">
-          {step}
-          <div className="flex flex-row items-center gap-4">
-            <div>
-              <Button
-                disabled={stepNumber === 0}
-                onClick={() => previous(values)}
-                type="button"
-              >
-                Zurück
-              </Button>
+          {!isCompleted && step}
+          {isCompleted && (
+            <div className="flex flex-col items-center gap-4 p-4">
+              <div>
+                {completionSuccessMessage
+                  ? completionSuccessMessage(values.name)
+                  : 'Element erfolgreich erstellt/modifiziert.'}
+              </div>
+              <div className="space-x-2">
+                <Button onClick={onViewElement}>
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faEye} />
+                  </Button.Icon>
+                  <Button.Label>Übersicht öffnen</Button.Label>
+                </Button>
+                <Button
+                  onClick={() => {
+                    onRestartForm()
+                    resetForm()
+                    setStepNumber(0)
+                  }}
+                >
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faSync} />
+                  </Button.Icon>
+                  <Button.Label>Weiteres Element erstellen</Button.Label>
+                </Button>
+              </div>
             </div>
+          )}
+          {!isCompleted && (
+            <div className="flex flex-row items-center justify-between gap-4">
+              <div>
+                <Button
+                  disabled={stepNumber === 0}
+                  onClick={() => previous(values)}
+                  type="button"
+                >
+                  Zurück
+                </Button>
+              </div>
 
-            <Progress
-              className={{
-                root: 'flex-1 h-4 text-xs',
-                indicator: 'bg-slate-400 h-4 text-xs',
-              }}
-              value={stepNumber + 1}
-              max={totalSteps}
-              formatter={(step) => `Schritt ${step}`}
-            />
+              <Progress
+                className={{
+                  root: 'flex-1 h-4 text-xs',
+                  indicator: 'bg-slate-400 h-4 text-xs',
+                }}
+                value={stepNumber + 1}
+                max={totalSteps}
+                formatter={(step) => `Schritt ${step}`}
+              />
 
-            <div>
-              <Button disabled={isSubmitting} type="submit">
-                {isLastStep ? 'Erstellen' : 'Weiter'}
-              </Button>
+              <div>
+                <Button disabled={isSubmitting} type="submit">
+                  {isLastStep ? 'Erstellen' : 'Weiter'}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </Form>
       )}
     </Formik>

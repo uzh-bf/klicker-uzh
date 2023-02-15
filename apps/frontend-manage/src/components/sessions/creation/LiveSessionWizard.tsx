@@ -15,7 +15,6 @@ import { ErrorMessage } from 'formik'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
-import LiveSessionCreationToast from '../../toasts/LiveSessionCreationToast'
 import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import EditorField from './EditorField'
 import MultistepWizard, { LiveSessionFormValues } from './MultistepWizard'
@@ -66,10 +65,12 @@ const stepThreeValidationSchema = yup.object().shape({
 })
 
 function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
+  const router = useRouter()
+
   const [editSession] = useMutation(EditSessionDocument)
   const [createSession] = useMutation(CreateSessionDocument)
-  const router = useRouter()
-  const [successToastOpen, setSuccessToastOpen] = useState(false)
+
+  const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
 
@@ -123,8 +124,7 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
       if (success) {
         router.push('/')
         setEditMode(!!initialValues)
-        setSuccessToastOpen(true)
-        resetForm()
+        setIsWizardCompleted(true)
       }
     } catch (error) {
       console.log('error')
@@ -136,6 +136,12 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
   return (
     <div>
       <MultistepWizard
+        completionSuccessMessage={(elementName) => (
+          <div>
+            Live Session <strong>{elementName}</strong> erfolgreich{' '}
+            {editMode ? 'modifiziert' : 'erstellt'}.
+          </div>
+        )}
         initialValues={{
           name: initialValues?.name || '',
           displayName: initialValues?.displayName || '',
@@ -158,16 +164,18 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
           isGamificationEnabled: initialValues?.isGamificationEnabled || false,
         }}
         onSubmit={onSubmit}
+        isCompleted={isWizardCompleted}
+        onRestartForm={() => {
+          setIsWizardCompleted(false)
+        }}
+        onViewElement={() => {
+          router.push(`/sessions`)
+        }}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
         <StepThree validationSchema={stepThreeValidationSchema} />
       </MultistepWizard>
-      <LiveSessionCreationToast
-        open={successToastOpen}
-        setOpen={setSuccessToastOpen}
-        editMode={editMode}
-      />
       <SessionCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}
@@ -197,6 +205,7 @@ function StepOne(_: StepProps) {
     <>
       <FormikTextField
         required
+        autoComplete="off"
         name="name"
         label="Session-Name"
         tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
@@ -206,6 +215,7 @@ function StepOne(_: StepProps) {
       />
       <FormikTextField
         required
+        autoComplete="off"
         name="displayName"
         label="Anzeigenamen"
         tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
