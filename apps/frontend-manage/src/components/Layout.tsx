@@ -49,10 +49,8 @@ function Layout({ displayName, children, className, scrollable }: LayoutProps) {
         </div>
         <div
           className={twMerge(
-            'flex justify-between flex-col mt-14',
-            scrollable
-              ? 'overflow-y-auto [height:_calc(100%-3.5rem)]'
-              : 'overflow-hidden'
+            'flex justify-between flex-col mt-14 [height:_calc(100%-3.5rem)]',
+            scrollable ? 'overflow-y-auto' : ''
           )}
         >
           <div className="p-4">{children}</div>

@@ -58,7 +58,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
 
   return (
     <div className="flex flex-col justify-center print-hidden">
-      <div className="w-full h-full gap-5 border rounded">
+      <div className="w-full h-full border rounded">
         <Tabs
           defaultValue="liveSession"
           value={selectedForm}

@@ -75,7 +75,7 @@ function SessionCreationBlock({
   return (
     <div
       key={index}
-      className="flex flex-col p-2 border border-solid rounded-md w-52"
+      className="flex flex-col p-2 border border-solid rounded w-52"
     >
       <div className="flex flex-row items-center justify-between">
         <div className="font-bold" data-cy="block-container-header">
@@ -127,10 +127,12 @@ function SessionCreationBlock({
         {block.titles.map((title, questionIdx) => (
           <div
             key={title}
-            className="flex flex-row border border-solid rounded bg-uzh-grey-20 border-uzh-grey-100"
+            className="flex flex-row text-xs border border-solid rounded bg-uzh-grey-20 border-uzh-grey-100"
           >
             <div className="p-0.5 flex-1">
-              <Ellipsis maxLines={3}>{title}</Ellipsis>
+              <Ellipsis maxLines={2} className={{ content: 'prose-sm' }}>
+                {title}
+              </Ellipsis>
             </div>
             <div className="h-full">
               <Button

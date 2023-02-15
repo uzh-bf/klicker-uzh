@@ -13,6 +13,7 @@ interface EllipsisProps {
     root?: string
     tooltip?: string
     markdown?: string
+    content?: string
   }
 }
 
@@ -64,10 +65,21 @@ function Ellipsis({
         }}
         withIndicator={false}
       >
-        <div className={twMerge(`line-clamp-${maxLines}`, className?.root)}>
+        <div
+          className={twMerge(
+            'line-clamp-1 line-clamp-2 line-clamp-3',
+            // HACK: dynamic classnames do not work with tailwind
+            // the above ensures classes 1-3 are present
+            `line-clamp-${maxLines}`,
+            className?.root
+          )}
+        >
           <Prose
             className={{
-              root: 'flex-initial max-w-full leading-6 prose-p:m-0 text-black hover:text-black prose-img:m-0',
+              root: twMerge(
+                'flex-initial max-w-full leading-6 prose-p:m-0 text-black hover:text-black prose-img:m-0',
+                className?.content
+              ),
             }}
           >
             {parsedContent}

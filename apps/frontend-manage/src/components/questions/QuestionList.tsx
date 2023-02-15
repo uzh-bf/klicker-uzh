@@ -30,7 +30,7 @@ function QuestionList({
   }
 
   return (
-    <div className="mb-4 overflow-y-auto">
+    <>
       {questions.map((question, index): any => (
         <Question
           checked={selectedQuestions[index]}
@@ -47,7 +47,7 @@ function QuestionList({
           tagfilter={tagfilter}
         />
       ))}
-    </div>
+    </>
   )
 }
 
