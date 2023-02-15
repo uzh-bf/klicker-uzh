@@ -6,10 +6,7 @@ import {
 import { faCheck, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChoicesQuestionData,
-  FreeTextQuestionData,
   GetLearningElementDocument,
-  NumericalQuestionData,
   QuestionType,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -25,6 +22,7 @@ import Footer from '../../../../components/common/Footer'
 import EvaluationDisplay from '../../../../components/EvaluationDisplay'
 import Layout from '../../../../components/Layout'
 import OptionsDisplay from '../../../../components/OptionsDisplay'
+import formatResponse from '../../../../lib/formatResponse'
 
 const ORDER_TYPE_LABEL = {
   LAST_RESPONSE: 'zuletzt beantwortete Fragen am Ende',
@@ -335,30 +333,6 @@ function LearningElement({ courseId, id }: Props) {
       />
     </Layout>
   )
-}
-
-const formatResponse = (
-  questionData:
-    | ChoicesQuestionData
-    | FreeTextQuestionData
-    | NumericalQuestionData
-    | undefined,
-  response: {} | number[] | string
-) => {
-  if (
-    questionData?.type === QuestionType.Sc ||
-    questionData?.type === QuestionType.Mc
-  ) {
-    return { choices: response as number[] }
-  } else if (questionData?.type === QuestionType.Kprim) {
-    return {
-      choices: Object.keys(response).flatMap<number[]>((key) =>
-        response[key] === true ? [parseInt(key)] : []
-      ),
-    }
-  } else {
-    return { value: response as string }
-  }
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {

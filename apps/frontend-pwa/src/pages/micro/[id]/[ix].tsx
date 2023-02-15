@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   GetMicroSessionDocument,
+  QuestionType,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { QuestionType } from '@type/app'
+import formatResponse from '@lib/formatResponse'
 import { H3, Progress } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -13,10 +14,9 @@ import EvaluationDisplay from '../../../components/EvaluationDisplay'
 import Layout from '../../../components/Layout'
 import OptionsDisplay from '../../../components/OptionsDisplay'
 
-// TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
 function MicroSessionInstance() {
-  const [response, setResponse] = useState<number[] | string | null>(null)
+  const [response, setResponse] = useState<{} | number[] | string | null>(null)
 
   const router = useRouter()
 
@@ -34,11 +34,12 @@ function MicroSessionInstance() {
   useEffect(() => {
     if (questionData?.type) {
       if (
-        questionData.type === QuestionType.SC ||
-        questionData.type === QuestionType.MC ||
-        questionData.type === QuestionType.KPRIM
+        questionData.type === QuestionType.Sc ||
+        questionData.type === QuestionType.Mc
       ) {
         setResponse([])
+      } else if (questionData.type === QuestionType.Kprim) {
+        setResponse({})
       } else {
         setResponse('')
       }
@@ -62,14 +63,7 @@ function MicroSessionInstance() {
       variables: {
         courseId: data.microSession!.course.id as string,
         id: currentInstance?.id as number,
-        response:
-          questionData?.type === QuestionType.SC ||
-          questionData?.type === QuestionType.MC ||
-          questionData?.type === QuestionType.KPRIM
-            ? {
-                choices: response as number[],
-              }
-            : { value: response as string },
+        response: formatResponse(questionData, response),
       },
     })
   }
