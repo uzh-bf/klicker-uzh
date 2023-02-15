@@ -2,6 +2,122 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.34...v3.0.0-alpha.35) (2023-02-14)
+
+
+### Features
+
+* add displayMode for choice-based questions (as a list or as a grid) ([#3345](https://github.com/uzh-bf/klicker-uzh/issues/3345)) ([3874f10](https://github.com/uzh-bf/klicker-uzh/commit/3874f10e8d251eea558b347205739407d3f108f7))
+
+
+### Bug Fixes
+
+* **packages/prisma:** add migration for question display mode ([378424c](https://github.com/uzh-bf/klicker-uzh/commit/378424caabacaeb2006fc886f926cb1d0b4bb92e))
+
+## [3.0.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.33...v3.0.0-alpha.34) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make self query unauthenticated but return null if not logged in ([3525354](https://github.com/uzh-bf/klicker-uzh/commit/352535459ceab0ec29864411e2dbaaf25625006d))
+
+## [3.0.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.32...v3.0.0-alpha.33) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** mismatch in context of basic course info ([4fdede2](https://github.com/uzh-bf/klicker-uzh/commit/4fdede2e8432b1846105f28512dd8ad5f33ce1d4))
+
+## [3.0.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.31...v3.0.0-alpha.32) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make basic course information publicly accessible ([1862b04](https://github.com/uzh-bf/klicker-uzh/commit/1862b047c6c980c221a1da43f2dc8fadefe5fc75))
+
+## [3.0.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.30...v3.0.0-alpha.31) (2023-02-14)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make pointsMultiplier nullable on questionData ([e07ee0c](https://github.com/uzh-bf/klicker-uzh/commit/e07ee0c956aa99d64905c395e6af223bcb320897))
+
+## [3.0.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.29...v3.0.0-alpha.30) (2023-02-14)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** misc. layout improvements on the question pool ([c0dea69](https://github.com/uzh-bf/klicker-uzh/commit/c0dea696b0b181c91d4f801a0f8ea5e05f8d8395))
+
+## [3.0.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.28...v3.0.0-alpha.29) (2023-02-13)
+
+
+### Enhancements
+
+* basic handling for images within question contents and answer options ([280ef2f](https://github.com/uzh-bf/klicker-uzh/commit/280ef2f92129b1cdaa0c3765c8d785a492bf6d27))
+
+## [3.0.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.27...v3.0.0-alpha.28) (2023-02-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** update SSR api url, reduce editor height ([5d5ae72](https://github.com/uzh-bf/klicker-uzh/commit/5d5ae72643adc1fb8533254202433d95bc07651e))
+
+
+### Deployment
+
+* use dynamic APP_VERSION to prevent commits ([0069ca6](https://github.com/uzh-bf/klicker-uzh/commit/0069ca631e4c19a7cb94f4a69efe71e35f1bfcb4))
+
+## [3.0.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.26...v3.0.0-alpha.27) (2023-02-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** update SSR domain for continued v2 naming ([3c4e360](https://github.com/uzh-bf/klicker-uzh/commit/3c4e360c0f71bf4d57956e93921e06931e3a6696))
+
+## [3.0.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.25...v3.0.0-alpha.26) (2023-02-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** ensure that Unauthorized error matches what is sent by the backend ([cd7db32](https://github.com/uzh-bf/klicker-uzh/commit/cd7db32d0edbe912384707ab1b56b2e0d7984d65))
+
+
+### Deployment
+
+* latest alpha ([d72061c](https://github.com/uzh-bf/klicker-uzh/commit/d72061cf8b864f8db410e41414b58f45abe62cc4))
+
+## [3.0.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.24...v3.0.0-alpha.25) (2023-02-13)
+
+
+### Deployment
+
+* ensure that tag still matches current v2 naming, fix checksum generation, add control frontend ([d37fb4c](https://github.com/uzh-bf/klicker-uzh/commit/d37fb4c7644e02ae8258ab798588b871cc3adf60))
+
+## [3.0.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.23...v3.0.0-alpha.24) (2023-02-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** update overrides for next apps ([f533035](https://github.com/uzh-bf/klicker-uzh/commit/f533035e126b9ebaf5b5b3f39ddd17385d6489ec))
+
+## [3.0.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.22...v3.0.0-alpha.23) (2023-02-13)
+
+
+### Bug Fixes
+
+* **frontend-manage:** fix NaN values in tables and bar charts ([#3327](https://github.com/uzh-bf/klicker-uzh/issues/3327)) ([418f01e](https://github.com/uzh-bf/klicker-uzh/commit/418f01eb05dd6ac61275f5e2e580f365c7279e11))
+
+
+### Enhancements
+
+* **frontend-manage:** separate toggle functionality for live Q&A and confusion feedback ([#3325](https://github.com/uzh-bf/klicker-uzh/issues/3325)) ([d8f8c5f](https://github.com/uzh-bf/klicker-uzh/commit/d8f8c5f453911d7c102417a174f44fb62b2ccd22))
+
+
+### Refactors
+
+* move from nexus to pothos with prisma integration and plugins ([#3189](https://github.com/uzh-bf/klicker-uzh/issues/3189)) ([b525faf](https://github.com/uzh-bf/klicker-uzh/commit/b525faffd6aeb98fa507325f4040f93e6f3be009))
+
 ## [3.0.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.21...v3.0.0-alpha.22) (2023-02-09)
 
 

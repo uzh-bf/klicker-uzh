@@ -57,8 +57,8 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
   if (!errorCourses && loadingCourses) return <div>Loading...</div>
 
   return (
-    <div className="flex flex-col justify-center mx-5 sm:mx-10 md:mx-20 print-hidden">
-      <div className="max-w-[100rem] h-full w-full mt-6 gap-5 rounded border">
+    <div className="flex flex-col justify-center print-hidden">
+      <div className="w-full h-full gap-5 border rounded">
         <Tabs
           defaultValue="liveSession"
           value={selectedForm}

@@ -6,7 +6,7 @@ releases:
   - name: klicker-v2-prod
     namespace: klicker-v2-prod
     createNamespace: true
-    chart: ../charts/klicker-uzh-v3
+    chart: ../charts/klicker-uzh-v2
     version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
     installed: true
     kubeContext: klicker-k8scbfdbd7c
@@ -17,7 +17,7 @@ releases:
         frontendPWA:
           replicaCount: 1
           image:
-            tag: v2.0.0-alpha.113
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN_PWA" }}'
@@ -25,20 +25,28 @@ releases:
         frontendManage:
           replicaCount: 1
           image:
-            tag: v2.0.0-alpha.113
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
           sentryEnv: production
           sentryDSN: '{{ env "SENTRY_DSN_MANAGE" }}'
 
+        frontendControl:
+          replicaCount: 1
+          image:
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
+          sentryEnv: production
+          sentryDSN: '{{ env "SENTRY_DSN_CONTROL" }}'
+
+
         backendGraphql:
           replicaCount: 1
           image:
-            tag: v2.0.0-alpha.113
+            tag: '{{ requiredEnv "APP_VERSION" }}'
 
           apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
           databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
-          hiveToken: '{{ requiredEnv "HIVE_TOKEN" }}'
 
           redisCache:
             host: klicker-v2-prod-redis-master

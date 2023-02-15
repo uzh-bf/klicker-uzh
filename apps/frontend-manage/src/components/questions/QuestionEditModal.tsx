@@ -6,6 +6,8 @@ import {
   ManipulateChoicesQuestionDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
+  QuestionDisplayMode,
+  QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FastField,
@@ -24,6 +26,7 @@ import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Button,
+  FormikSelectField,
   Label,
   Modal,
   Select,
@@ -43,6 +46,7 @@ const questionManipulationSchema = Yup.object().shape({
   type: Yup.string()
     .oneOf(['SC', 'MC', 'KPRIM', 'NUMERICAL', 'KPRIM', 'FREE_TEXT'])
     .required(),
+  displayMode: Yup.string().oneOf(['LIST', 'GRID']),
   content: Yup.string()
     .required('Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu')
     .test({
@@ -234,6 +238,7 @@ function QuestionEditModal({
     if (mode === 'CREATE') {
       const common = {
         type: questionType,
+        displayMode: QuestionDisplayMode.List,
         name: '',
         content: '<br>',
         tags: [],
@@ -283,6 +288,8 @@ function QuestionEditModal({
     return dataQuestion?.question?.questionData
       ? {
           ...dataQuestion.question,
+          displayMode:
+            dataQuestion.question.displayMode ?? QuestionDisplayMode.List,
           tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
           options: dataQuestion.question.questionData.options,
         }
@@ -313,11 +320,12 @@ function QuestionEditModal({
           hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
           tags: values.tags,
+          displayMode: values.displayMode,
         }
         switch (questionType) {
-          case 'SC':
-          case 'MC':
-          case 'KPRIM':
+          case QuestionType.Sc:
+          case QuestionType.Mc:
+          case QuestionType.Kprim:
             await manipulateChoicesQuestion({
               variables: {
                 ...common,
@@ -340,7 +348,7 @@ function QuestionEditModal({
             })
             break
 
-          case 'NUMERICAL':
+          case QuestionType.Numerical:
             await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
@@ -374,7 +382,7 @@ function QuestionEditModal({
             })
             break
 
-          case 'FREE_TEXT':
+          case QuestionType.FreeText:
             await manipulateFreeTextQuestion({
               variables: {
                 ...common,
@@ -455,7 +463,7 @@ function QuestionEditModal({
               {JSON.stringify(errors)}
               <div className="z-0 flex flex-row">
                 <Label
-                  label="Fragetyp:"
+                  label="Fragetyp"
                   className={{
                     root: 'my-auto mr-2 text-lg font-bold',
                     tooltip:
@@ -485,7 +493,7 @@ function QuestionEditModal({
               <Form className="w-full" id="question-manipulation-form">
                 <div className="flex flex-row mt-2">
                   <Label
-                    label="Fragetitel:"
+                    label="Fragetitel"
                     className={{
                       root: 'my-auto mr-2 text-lg font-bold',
                       tooltip:
@@ -509,7 +517,7 @@ function QuestionEditModal({
                 <div className="mt-2">
                   <div className="flex flex-row">
                     <Label
-                      label="Tags:"
+                      label="Tags"
                       className={{
                         root: 'my-auto mr-2 text-lg font-bold',
                         tooltip:
@@ -533,13 +541,13 @@ function QuestionEditModal({
                   </div>
                   <div className="italic text-red-600">
                     Temporarily required formatting: Enter tags separated by
-                    commas e.g.: Tag1, Tag2, Tag3
+                    commas e.g.: Tag1,Tag2,Tag3
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <Label
-                    label="Frage:"
+                    label="Frage"
                     className={{
                       root: 'my-auto mr-2 text-lg font-bold',
                       tooltip:
@@ -576,7 +584,6 @@ function QuestionEditModal({
                       )}
                     </FastField>
                   )}
-                  {values.content}
                 </div>
 
                 {/* // TODO: to be released
@@ -594,7 +601,7 @@ function QuestionEditModal({
                   {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                     <div className="flex-1">
                       <Label
-                        label="Antwortmöglichkeiten:"
+                        label="Antwortmöglichkeiten"
                         className={{
                           root: 'my-auto mr-2 text-lg font-bold',
                           tooltip: 'text-base font-normal',
@@ -607,7 +614,7 @@ function QuestionEditModal({
                   {QUESTION_GROUPS.FREE.includes(questionType) && (
                     <div className="flex-1">
                       <Label
-                        label="Einschränkungen:"
+                        label="Einschränkungen"
                         className={{
                           root: 'my-auto mr-2 text-lg font-bold',
                           tooltip: 'text-base font-normal',
@@ -639,6 +646,23 @@ function QuestionEditModal({
                           !values.hasSampleSolution && 'opacity-50'
                         ),
                       }}
+                    />
+                  )}
+                  {[QuestionType.Sc, QuestionType.Mc].includes(
+                    questionType
+                  ) && (
+                    <FormikSelectField
+                      name="displayMode"
+                      items={[
+                        {
+                          value: QuestionDisplayMode.List,
+                          label: 'Anzeige als Liste',
+                        },
+                        {
+                          value: QuestionDisplayMode.Grid,
+                          label: 'Anzeige als Grid',
+                        },
+                      ]}
                     />
                   )}
                 </div>
@@ -834,7 +858,7 @@ function QuestionEditModal({
                   </FieldArray>
                 )}
 
-                {questionType === 'NUMERICAL' && (
+                {questionType === QuestionType.Numerical && (
                   <div>
                     <div className="w-full">
                       <div className="flex flex-row items-center gap-2">
@@ -929,7 +953,7 @@ function QuestionEditModal({
                   </div>
                 )}
 
-                {questionType === 'FREE_TEXT' && (
+                {questionType === QuestionType.FreeText && (
                   <div className="flex flex-col">
                     <div className="flex flex-row items-center mb-4">
                       <div className="mr-2 font-bold">Maximale Länge:</div>

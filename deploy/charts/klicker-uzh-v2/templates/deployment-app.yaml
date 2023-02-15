@@ -20,8 +20,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath '/cm-frontend-pwa.yaml') . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath '/secret-frontend-pwa.yaml') . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-pwa.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-pwa.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.frontendPWA.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -97,8 +97,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath '/cm-frontend-manage.yaml') . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath '/secret-frontend-manage.yaml') . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-manage.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-manage.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.frontendManage.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -174,8 +174,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath '/cm-frontend-control.yaml') . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath '/secret-frontend-control.yaml') . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-control.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-control.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.frontendControl.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -251,8 +251,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath '/cm-backend-graphql.yaml') . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath '/secret-backend-graphql.yaml') . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/cm-backend-graphql.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-backend-graphql.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.backendGraphql.podAnnotations }}
         {{- toYaml . | nindent 8 }}

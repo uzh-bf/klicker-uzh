@@ -3,7 +3,7 @@ import { Context, ContextWithUser } from '../lib/context'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },

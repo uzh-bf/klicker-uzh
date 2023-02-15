@@ -72,6 +72,40 @@ frontendManage:
       cpu: 1000m
       memory: 1000Mi
 
+frontendControl:
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: control.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      - host: control.klicker-prod.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-frontend-control-tls-uzh
+        hosts:
+          - control.klicker.uzh.ch
+      - secretName: klicker-prod-frontend-control-tls
+        hosts:
+          - control.klicker-prod.bf-app.ch
+
+  strategy:
+    # type: RollingUpdate
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
 backendGraphql:
   autoscaling:
     enabled: false

@@ -1,3 +1,4 @@
+import { faImage } from '@fortawesome/free-regular-svg-icons'
 import {
   faBold,
   faCode,
@@ -98,7 +99,7 @@ function ContentInput({
         <div className={twMerge('p-3', className?.content)}>
           <Editable
             className={twMerge(
-              'leading-7 prose prose-blockquote:text-gray-500 max-w-none focus:!outline-none',
+              'prose prose-sm leading-3 prose-blockquote:text-gray-500 max-w-none focus:!outline-none',
               className?.editor
             )}
             autoFocus={autoFocus}
@@ -172,7 +173,7 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Diese Option erzeug eine nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
+              tooltip="Diese Option erzeugt eine nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
               className={{
                 tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[50%]',
               }}
@@ -182,13 +183,38 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Diese Option erzeug eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
+              tooltip="Diese Option erzeugt eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
               className={{
                 tooltip: 'text-sm md:text-base max-w-[40%] md:max-w-[50%]',
               }}
               withIndicator={false}
             >
               <BlockButton format="bulleted-list" icon={faListUl} />
+            </Tooltip>
+
+            <Tooltip
+              tooltip="Wählen Sie diese Einstellung, um ein Bild einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
+              className={{
+                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+              }}
+              withIndicator={false}
+            >
+              <Button
+                active={false}
+                editor={editor}
+                format="paragraph"
+                onClick={(e: any) => {
+                  e.preventDefault()
+                  Transforms.insertText(
+                    editor,
+                    '![University of Zurich](https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Lichthof_Uzh.jpg/1920px-Lichthof_Uzh.jpg)'
+                  )
+                }}
+              >
+                <div className="ml-1 mt-0.5">
+                  <FontAwesomeIcon icon={faImage} color="grey" />
+                </div>
+              </Button>
             </Tooltip>
 
             <Tooltip

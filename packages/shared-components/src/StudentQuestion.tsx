@@ -1,25 +1,56 @@
-import { Attachment } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Attachment,
+  QuestionDisplayMode,
+  QuestionType,
+} from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
+import Image from 'next/image'
 import { without } from 'ramda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 // eslint-disable-next-line prettier/prettier
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 
-import { ThemeContext } from '@uzh-bf/design-system'
-import { QUESTION_GROUPS, QUESTION_TYPES } from './constants'
+import { Button, Modal, ThemeContext } from '@uzh-bf/design-system'
+import { QUESTION_GROUPS } from './constants'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
 import { QuestionAttachment } from './questions/QuestionAttachment'
 import { SCAnswerOptions } from './questions/SCAnswerOptions'
 import SessionProgress from './questions/SessionProgress'
 
+function ImgWithModal({ src, alt }: { src: string; alt?: string }) {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <Modal
+      fullScreen
+      className={{
+        overlay: 'z-20',
+        content: 'z-30',
+      }}
+      open={isOpen}
+      trigger={
+        <Button basic onClick={() => setIsOpen(true)}>
+          <Image src={src} alt="Image" width={250} height={250} />
+        </Button>
+      }
+      onClose={() => setIsOpen(false)}
+      title={alt}
+    >
+      <div className="relative w-full h-full">
+        <Image src={src} alt="Image" fill className="object-contain" />
+      </div>
+    </Modal>
+  )
+}
+
 const messages = {
-  [QUESTION_TYPES.SC]: <p>Bitte eine einzige Option auswählen:</p>,
-  [QUESTION_TYPES.MC]: <p>Bitte eine oder mehrere Optionen auswählen:</p>,
-  [QUESTION_TYPES.FREE_TEXT]: <p>Bitte eine Antwort eingeben:</p>,
-  [QUESTION_TYPES.NUMERICAL]: <p>Bitte eine Zahl eingeben:</p>,
+  [QuestionType.Sc]: <p>Bitte eine einzige Option auswählen:</p>,
+  [QuestionType.Mc]: <p>Bitte eine oder mehrere Optionen auswählen:</p>,
+  [QuestionType.Kprim]: <p>Beurteile die Aussagen auf ihre Richtigkeit:</p>,
+  [QuestionType.FreeText]: <p>Bitte eine Antwort eingeben:</p>,
+  [QuestionType.Numerical]: <p>Bitte eine Zahl eingeben:</p>,
 }
 
 export interface StudentQuestionProps {
@@ -31,10 +62,11 @@ export interface StudentQuestionProps {
   onSubmit: () => void
   onExpire: () => void
   currentQuestion: {
+    displayMode?: QuestionDisplayMode
     content: string
     id: number
     name: string
-    type: string
+    type: QuestionType
     options: any
     instanceId: number
     attachments?: Attachment[] | undefined
@@ -65,11 +97,11 @@ export const StudentQuestion = ({
     (choice: any): any =>
     (): void => {
       const validateChoices = (newValue: any): boolean =>
-        type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0
+        type === QuestionType.Sc ? newValue.length === 1 : newValue.length > 0
 
       if (
         inputValue &&
-        (type === QUESTION_TYPES.MC || type === QUESTION_TYPES.KPRIM)
+        (type === QuestionType.Mc || type === QuestionType.Kprim)
       ) {
         // if the choice is already active, remove it
         if (inputValue.includes(choice)) {
@@ -177,11 +209,15 @@ export const StudentQuestion = ({
 
       <div
         className={twMerge(
-          'flex-initial min-h-[6rem] px-3 bg-primary-10 border border-solid rounded prose leading-6 max-w-none',
-          theme.primaryBorderDark
+          'mt-4 border-slate-300 flex-initial min-h-[6rem] bg-primary-10 border rounded leading-6 prose max-w-none prose-p:!m-0 prose-img:!m-0 p-4'
         )}
       >
-        <Markdown content={currentQuestion.content} />
+        <Markdown
+          components={{
+            img: ImgWithModal,
+          }}
+          content={currentQuestion.content}
+        />
       </div>
 
       {currentQuestion.attachments && (
@@ -207,6 +243,7 @@ export const StudentQuestion = ({
 
         {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) && (
           <SCAnswerOptions
+            displayMode={currentQuestion.displayMode}
             choices={currentQuestion.options.choices}
             value={typeof inputValue !== 'string' ? inputValue : undefined}
             onChange={onActiveChoicesChange(currentQuestion.type)}

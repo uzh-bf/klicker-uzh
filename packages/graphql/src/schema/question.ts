@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import { QuestionData } from './questionData'
+import { QuestionData, QuestionDisplayMode, QuestionType } from './questionData'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
   fields: (t) => ({
@@ -127,16 +127,12 @@ export const InstanceEvaluation = builder
     }),
   })
 
-export const QuestionType = builder.enumType('QuestionType', {
-  values: Object.values(DB.QuestionType),
-})
-
 export const Question = builder.prismaObject('Question', {
   fields: (t) => ({
     id: t.exposeInt('id'),
 
     name: t.exposeString('name'),
-    type: t.exposeString('type'),
+    type: t.expose('type', { type: QuestionType }),
     content: t.exposeString('content'),
 
     options: t.expose('options', { type: 'Json' }),
@@ -146,6 +142,7 @@ export const Question = builder.prismaObject('Question', {
       type: QuestionData,
       resolve: (q) => q,
     }),
+    displayMode: t.expose('displayMode', { type: QuestionDisplayMode }),
 
     isArchived: t.exposeBoolean('isArchived'),
     isDeleted: t.exposeBoolean('isDeleted'),

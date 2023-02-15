@@ -118,14 +118,26 @@ function MultistepWizard({ children, initialValues, onSubmit }: FormProps) {
       {({ values, isSubmitting, isValid }) => (
         <Form className="flex flex-col gap-4 p-4">
           {step}
-          <div className="flex flex-row justify-between">
+          <div className="flex flex-row items-center gap-4">
             <div>
-              {stepNumber > 0 && (
-                <Button onClick={() => previous(values)} type="button">
-                  Zurück
-                </Button>
-              )}
+              <Button
+                disabled={stepNumber === 0}
+                onClick={() => previous(values)}
+                type="button"
+              >
+                Zurück
+              </Button>
             </div>
+
+            <Progress
+              className={{
+                root: 'flex-1 h-4 text-xs',
+                indicator: 'bg-slate-400 h-4 text-xs',
+              }}
+              value={stepNumber + 1}
+              max={totalSteps}
+              formatter={(step) => `Schritt ${step}`}
+            />
 
             <div>
               <Button disabled={isSubmitting} type="submit">
@@ -133,15 +145,6 @@ function MultistepWizard({ children, initialValues, onSubmit }: FormProps) {
               </Button>
             </div>
           </div>
-          <Progress
-            className={{
-              root: 'flex-1 h-4 pb-4',
-              indicator: 'bg-slate-400 h-4',
-            }}
-            value={stepNumber + 1}
-            max={totalSteps}
-            formatter={() => null}
-          />
         </Form>
       )}
     </Formik>

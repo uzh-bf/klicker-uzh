@@ -173,10 +173,8 @@ export function Options({
           <div className="space-y-1">
             {options.choices.map((choice: Choice) => {
               const correctAnswer =
-                (response?.includes(choice.ix) &&
-                  feedbacks?.[choice.ix].correct) ||
-                (!response?.includes(choice.ix) &&
-                  !feedbacks?.[choice.ix].correct)
+                (response?.[choice.ix] && feedbacks?.[choice.ix].correct) ||
+                (!response?.[choice.ix] && !feedbacks?.[choice.ix].correct)
 
               return (
                 <div className="flex flex-col" key={choice.ix}>
@@ -189,19 +187,16 @@ export function Options({
                         className={{
                           root:
                             feedbacks &&
-                            response?.includes(choice.ix) &&
+                            response?.[choice.ix] &&
                             (correctAnswer
                               ? 'bg-green-200 text-green-700'
                               : 'bg-red-200 text-red-700'),
                         }}
                         disabled={disabled || isEvaluation}
-                        active={response?.includes(choice.ix)}
+                        active={response?.[choice.ix] === true}
                         onClick={() =>
                           onChangeResponse((prev: any) => {
-                            if (!prev) return [choice.ix]
-                            if (!prev.includes(choice.ix)) {
-                              return [...prev, choice.ix]
-                            }
+                            return { ...prev, [choice.ix]: true }
                           })
                         }
                       >
@@ -213,19 +208,16 @@ export function Options({
                         className={{
                           root:
                             feedbacks &&
-                            !response?.includes(choice.ix) &&
+                            !response?.[choice.ix] &&
                             (correctAnswer
                               ? 'bg-green-200 text-green-700'
                               : 'bg-red-200 text-red-700'),
                         }}
                         disabled={disabled || isEvaluation}
-                        active={!response?.includes(choice.ix)}
+                        active={response?.[choice.ix] === false}
                         onClick={() =>
                           onChangeResponse((prev: any) => {
-                            if (!prev) return [choice.ix]
-                            if (prev.includes(choice.ix)) {
-                              return prev.filter((c: any) => c !== choice.ix)
-                            }
+                            return { ...prev, [choice.ix]: false }
                           })
                         }
                       >
@@ -340,9 +332,12 @@ function OptionsDisplay({
         <Button
           className={{ root: 'text-lg' }}
           disabled={
-            !isEvaluation &&
-            questionType !== QuestionType.KPRIM &&
-            response?.length === 0
+            (!isEvaluation &&
+              questionType !== QuestionType.KPRIM &&
+              response?.length === 0) ||
+            (questionType === QuestionType.KPRIM &&
+              response &&
+              Object.keys(response).length !== options.choices.length)
           }
           onClick={onSubmitResponse}
         >

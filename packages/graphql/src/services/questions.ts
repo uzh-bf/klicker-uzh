@@ -1,4 +1,4 @@
-import { QuestionType } from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma'
 import { Context, ContextWithUser } from '../lib/context'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
@@ -56,9 +56,10 @@ export async function manipulateQuestion(
     hasAnswerFeedbacks,
     attachments,
     tags,
+    displayMode,
   }: {
     id?: number | null
-    type: QuestionType
+    type: DB.QuestionType
     name?: string | null
     content?: string | null
     options?: {
@@ -83,6 +84,7 @@ export async function manipulateQuestion(
     hasAnswerFeedbacks?: boolean | null
     attachments?: { id: string }[] | null
     tags?: string[] | null
+    displayMode?: DB.QuestionDisplayMode | null
   },
   ctx: ContextWithUser
 ) {
@@ -113,10 +115,11 @@ export async function manipulateQuestion(
     },
     create: {
       type: type,
-      name: name || 'Missing Question Title',
-      content: content || 'Missing Question Content',
-      hasSampleSolution: hasSampleSolution || false,
-      hasAnswerFeedbacks: hasAnswerFeedbacks || false,
+      name: name ?? 'Missing Question Title',
+      content: content ?? 'Missing Question Content',
+      hasSampleSolution: hasSampleSolution ?? false,
+      hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
+      displayMode: displayMode ?? undefined,
       options: options || {},
       owner: {
         connect: {
@@ -145,6 +148,7 @@ export async function manipulateQuestion(
       hasSampleSolution: hasSampleSolution ?? false,
       hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
       options: options ?? undefined,
+      displayMode: displayMode ?? undefined,
       tags: {
         connectOrCreate: tags
           ?.filter((tag: string) => tag !== '')

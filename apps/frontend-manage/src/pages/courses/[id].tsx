@@ -181,6 +181,7 @@ function CourseOverviewPage() {
               <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
                 {course.learningElements.map((learningElement) => (
                   <LearningElementTile
+                    courseId={course.id}
                     learningElement={learningElement}
                     key={learningElement.id}
                   />
