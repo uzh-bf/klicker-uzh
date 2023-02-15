@@ -33,7 +33,7 @@ function SessionBlockField({
         />
         <FieldArray name="blocks">
           {({ push, remove, move, replace }: FieldArrayRenderProps) => (
-            <div className="flex flex-row gap-1 overflow-scroll">
+            <div className="flex flex-row gap-1 overflow-auto">
               {field.value.map((block: any, index: number) => (
                 <SessionCreationBlock
                   key={`${index}-${block.questionIds.join('')}`}

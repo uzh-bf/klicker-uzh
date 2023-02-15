@@ -4,6 +4,7 @@ mutation ManipulateChoicesQuestion(
   $name: String
   $content: String
   $options: OptionsChoicesInput
+  $displayMode: QuestionDisplayMode
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
   $attachments: [AttachmentInput!]
@@ -15,6 +16,7 @@ mutation ManipulateChoicesQuestion(
     name: $name
     content: $content
     options: $options
+    displayMode: $displayMode
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
     attachments: $attachments
@@ -24,7 +26,7 @@ mutation ManipulateChoicesQuestion(
     name
     type
     content
-
+    displayMode
     hasSampleSolution
     hasAnswerFeedbacks
 

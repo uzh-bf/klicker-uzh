@@ -134,19 +134,24 @@ enum QuestionType {
   NUMERICAL
 }
 
+enum QuestionDisplayMode {
+  LIST
+  GRID
+}
+
 model Question {
   id Int @id @default(autoincrement())
 
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
 
-  name             String
-  content          String
-  options          Json
-  pointsMultiplier Int    @default(1)
-
-  hasSampleSolution  Boolean @default(false)
-  hasAnswerFeedbacks Boolean @default(false)
+  name               String
+  content            String
+  options            Json
+  pointsMultiplier   Int                 @default(1)
+  displayMode        QuestionDisplayMode @default(LIST)
+  hasSampleSolution  Boolean             @default(false)
+  hasAnswerFeedbacks Boolean             @default(false)
 
   type QuestionType
 

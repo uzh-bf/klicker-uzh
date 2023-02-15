@@ -93,15 +93,15 @@ function Index() {
 
   const [searchInput, setSearchInput] = useState('')
   return (
-    <Layout displayName="Fragepool">
+    <Layout displayName="Fragepool" scrollable={false}>
       <div className="w-full h-full" id="homepage">
         <SessionCreation
           sessionId={router.query.sessionId as string}
           editMode={router.query.editMode as string}
         />
 
-        <div className="flex justify-center mx-5 sm:mx-10 md:mx-20">
-          <div className="flex flex-col md:flex-row max-w-[100rem] w-full mt-6 gap-5 ">
+        <div className="flex justify-center">
+          <div className="flex flex-col w-full gap-5 mt-6 md:flex-row">
             {dataQuestions && dataQuestions.userQuestions && (
               <TagList
                 activeTags={filters.tags}
@@ -148,11 +148,8 @@ function Index() {
                     sortingTypes={QUESTION_SORTINGS}
                   /> */}
 
-                  <div
-                    className="w-full h-full mt-4 md:overflow-y-auto md:mx-auto"
-                    key="question-list"
-                  >
-                    <div className="flex flex-row content-center justify-between w-full h-full pl-8 mt-4">
+                  <div className="w-full h-full" key="question-list">
+                    <div className="flex flex-row content-center justify-between w-full h-full pl-8">
                       <div className="relative flex flex-row pb-6">
                         <TextField
                           placeholder="Suchen.."

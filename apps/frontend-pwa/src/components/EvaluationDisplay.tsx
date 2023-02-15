@@ -74,10 +74,10 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
                     ),
                     indicator: twMerge(
                       'h-8',
-                      correctIx.includes(+ix) ? 'bg-green-600' : 'bg-gray-400'
+                      correctIx.includes(+ix) ? 'bg-green-600' : 'bg-red-400'
                     ),
                   }}
-                  value={(value / sum) * 100}
+                  value={value ? (value / sum) * 100 : 0}
                   max={100}
                   formatter={(v) => v.toFixed() + '%'}
                 />

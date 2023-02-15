@@ -6,7 +6,7 @@ releases:
   - name: klicker-v2-qa
     namespace: klicker-v2-qa
     createNamespace: true
-    chart: ../charts/klicker-uzh-v3
+    chart: ../charts/klicker-uzh-v2
     version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
     installed: true
     kubeContext: klicker-k8scbfdbd7c
@@ -33,7 +33,6 @@ releases:
           apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
           databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
-          hiveToken: '{{ requiredEnv "HIVE_TOKEN" }}'
           debug: true
 
           redisCache:

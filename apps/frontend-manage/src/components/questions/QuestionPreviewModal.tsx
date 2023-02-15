@@ -1,10 +1,9 @@
 import { useQuery } from '@apollo/client'
 import { GetSingleQuestionDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H3 } from '@uzh-bf/design-system'
-import React, { useState } from 'react'
-
 import Markdown from '@klicker-uzh/markdown'
-import { Modal } from '@uzh-bf/design-system'
+import { H3, Modal } from '@uzh-bf/design-system'
+import Image from 'next/image'
+import React, { useState } from 'react'
 import { QUESTION_GROUPS } from 'shared-components/src/constants'
 import StudentQuestion from 'shared-components/src/StudentQuestion'
 
@@ -86,7 +85,15 @@ function QuestionPreviewModal({
                   <H3 className={{ root: 'mt-4' }}>
                     Feedback for Choice {index + 1}
                   </H3>
-                  <Markdown className="mt-2" content={choice.feedback} />
+                  <Markdown
+                    components={{
+                      img: ({ src, alt }: any) => (
+                        <Image src={src} alt="Image" width={200} height={200} />
+                      ),
+                    }}
+                    className="mt-2 prose max-w-none prose-p:m-0 prose-img:m-0"
+                    content={choice.feedback}
+                  />
                 </div>
               )
             }

@@ -1,5 +1,6 @@
 import Markdown from '@klicker-uzh/markdown'
 import { Prose, Tooltip } from '@uzh-bf/design-system'
+import Image from 'next/image'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -33,6 +34,11 @@ function Ellipsis({
 }: EllipsisPropsMaxLength | EllipsisPropsMaxLines): React.ReactElement {
   const parsedContent = (
     <Markdown
+      components={{
+        img: ({ src, alt }: any) => (
+          <Image src={src} alt="Image" width={50} height={50} />
+        ),
+      }}
       content={children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
       className={className?.markdown}
     />
@@ -44,7 +50,7 @@ function Ellipsis({
         tooltip={
           <Prose
             className={{
-              root: 'flex-initial max-w-full leading-6 prose-p:m-0 prose-invert text-white hover:text-white',
+              root: 'flex-initial max-w-full leading-6 prose-p:m-0 prose-invert text-white hover:text-white prose-img:m-0',
             }}
           >
             {parsedContent}
@@ -61,7 +67,7 @@ function Ellipsis({
         <div className={twMerge(`line-clamp-${maxLines}`, className?.root)}>
           <Prose
             className={{
-              root: 'flex-initial max-w-full leading-6 prose-p:m-0 text-black hover:text-black',
+              root: 'flex-initial max-w-full leading-6 prose-p:m-0 text-black hover:text-black prose-img:m-0',
             }}
           >
             {parsedContent}

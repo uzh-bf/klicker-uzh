@@ -16,6 +16,7 @@ import {
 } from 'recharts'
 import {
   CHART_COLORS,
+  CHART_SOLUTION_COLORS,
   QUESTION_GROUPS,
   SMALL_BAR_THRESHOLD,
 } from 'shared-components/src/constants'
@@ -129,8 +130,10 @@ function BarChart({
               (choice: Choice, index: number): React.ReactElement => (
                 <Cell
                   fill={
-                    showSolution && choice.correct
-                      ? '#00de0d'
+                    showSolution
+                      ? choice.correct
+                        ? CHART_SOLUTION_COLORS.correct
+                        : CHART_SOLUTION_COLORS.incorrect
                       : CHART_COLORS[index % 12]
                   }
                   key={index}

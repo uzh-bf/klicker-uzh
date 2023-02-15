@@ -2,6 +2,7 @@ interface QuestionData<Type, Options> {
   id: number
   name: string
   type: Type
+  displayMode: QuestionDisplayMode
   content: string
   ownerId: string
   isDeleted: boolean

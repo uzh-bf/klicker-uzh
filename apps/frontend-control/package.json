@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.0.0-alpha.22",
+  "version": "3.0.0-alpha.35",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3003",
@@ -73,6 +73,6 @@
     "node": ">=16"
   },
   "overrides": {
-    "next": "13.1.1"
+    "next": "13.1.6"
   }
 }

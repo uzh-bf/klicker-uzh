@@ -34,6 +34,7 @@ const nextConfig = withPWA({
     domains: [
       '127.0.0.1',
       process.env.S3_HOSTNAME,
+      'upload.wikimedia.org',
       'course-cms.sos-ch-dk-2.exo.io',
     ],
     remotePatterns: [
