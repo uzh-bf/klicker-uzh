@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.38...v3.0.0-alpha.39) (2023-02-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that question preview works without a value in free text ([3e187cf](https://github.com/uzh-bf/klicker-uzh/commit/3e187cfd072a2a1d0cce603ea43032d05ada02cc))
+
 ## [3.0.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.37...v3.0.0-alpha.38) (2023-02-15)
 
 
