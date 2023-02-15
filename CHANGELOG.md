@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.39...v3.0.0-alpha.40) (2023-02-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** add remote pattern for AWS images ([23cc5e4](https://github.com/uzh-bf/klicker-uzh/commit/23cc5e447e1c266231ca783fbb118c3fbbf28eb2))
+* **packages/shared-components:** display alt text of image in ImgWithModal ([3e98535](https://github.com/uzh-bf/klicker-uzh/commit/3e9853545b2e643ca027f93f02967a5fc9079598))
+
 ## [3.0.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.38...v3.0.0-alpha.39) (2023-02-15)
 
 
