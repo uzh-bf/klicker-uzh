@@ -129,7 +129,7 @@ function MultistepWizard({
       isInitialValid={false}
     >
       {({ values, isSubmitting, isValid, resetForm }) => (
-        <Form className="flex flex-col gap-4 p-4">
+        <Form className="flex flex-col gap-1 p-4">
           {!isCompleted && step}
           {isCompleted && (
             <div className="flex flex-col items-center gap-4 p-4">

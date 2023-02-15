@@ -94,14 +94,16 @@ function Index() {
   const [searchInput, setSearchInput] = useState('')
   return (
     <Layout displayName="Fragepool" scrollable={false}>
-      <div className="w-full h-full" id="homepage">
-        <SessionCreation
-          sessionId={router.query.sessionId as string}
-          editMode={router.query.editMode as string}
-        />
+      <div className="flex flex-col gap-6" id="homepage">
+        <div className="flex-none">
+          <SessionCreation
+            sessionId={router.query.sessionId as string}
+            editMode={router.query.editMode as string}
+          />
+        </div>
 
-        <div className="flex justify-center">
-          <div className="flex flex-col w-full gap-5 mt-6 md:flex-row">
+        <div className="flex flex-col flex-1 gap-5 md:flex-row">
+          <div className="flex-none">
             {dataQuestions && dataQuestions.userQuestions && (
               <TagList
                 activeTags={filters.tags}
@@ -116,13 +118,14 @@ function Index() {
                 // isArchiveActive={filters.archive}
               />
             )}
-            <div className="w-full">
-              {!dataQuestions || loadingQuestions ? (
-                // TODO: replace by nice loader
-                <div>Loading...</div>
-              ) : (
-                <div className="flex flex-col w-full">
-                  {/* // TODO: add action area
+          </div>
+          <div className="flex-1">
+            {!dataQuestions || loadingQuestions ? (
+              // TODO: replace by nice loader
+              <div>Loading...</div>
+            ) : (
+              <div>
+                {/* // TODO: add action area
                    <ActionSearchArea
                     withSorting
                     deletionConfirmation={deletionConfirmation}
@@ -148,86 +151,85 @@ function Index() {
                     sortingTypes={QUESTION_SORTINGS}
                   /> */}
 
-                  <div className="w-full h-full" key="question-list">
-                    <div className="flex flex-row content-center justify-between w-full h-full pl-8">
-                      <div className="relative flex flex-row pb-6">
-                        <TextField
-                          placeholder="Suchen.."
-                          value={searchInput}
-                          onChange={(newValue: string) => {
-                            setSearchInput(newValue)
-                            handleSearch(newValue)
-                          }}
-                          icon={faMagnifyingGlass}
-                          className={{
-                            input: 'h-10',
-                            field: 'w-30 pr-3',
-                          }}
-                        />
-                        <Button
-                          disabled={!sortBy}
-                          onClick={() => {
-                            handleSortOrderToggle()
-                          }}
-                          className={{
-                            root: 'h-10 mr-1',
-                          }}
-                        >
-                          <Button.Icon>
-                            <FontAwesomeIcon icon={sortIcon} />
-                          </Button.Icon>
-                        </Button>
-                        <Select
-                          className={{
-                            root: 'min-w-30',
-                            trigger: 'h-10',
-                          }}
-                          placeholder="Sortieren nach.."
-                          items={dropdownItems}
-                          onChange={(newSortBy: string) => {
-                            setSortBy(newSortBy)
-                            handleSortByChange(newSortBy)
-                          }}
-                        />
-                      </div>
-                      <Button
-                        onClick={() =>
-                          setIsQuestionCreationModalOpen(
-                            !isQuestionCreationModalOpen
-                          )
-                        }
-                        className={{
-                          root: twMerge(
-                            'h-10 font-bold text-white',
-                            theme.primaryBgDark
-                          ),
-                        }}
-                        data={{ cy: 'create-question' }}
-                      >
-                        FRAGE ERSTELLEN
-                      </Button>
-                    </div>
-                    {isQuestionCreationModalOpen && (
-                      <QuestionEditModal
-                        handleSetIsOpen={setIsQuestionCreationModalOpen}
-                        isOpen={isQuestionCreationModalOpen}
-                        mode="CREATE"
-                      />
-                    )}
-                    <QuestionList
-                      questions={processedQuestions}
-                      selectedQuestions={selectedQuestions}
-                      setSelectedQuestions={(index: number) => {
-                        const tempQuestions = [...selectedQuestions]
-                        tempQuestions[index] = !tempQuestions[index]
-                        setSelectedQuestions(tempQuestions)
+                <div className="flex flex-row content-center justify-between flex-none pl-8">
+                  <div className="relative flex flex-row pb-6">
+                    <TextField
+                      placeholder="Suchen.."
+                      value={searchInput}
+                      onChange={(newValue: string) => {
+                        setSearchInput(newValue)
+                        handleSearch(newValue)
                       }}
-                      tagfilter={filters.tags}
+                      icon={faMagnifyingGlass}
+                      className={{
+                        input: 'h-10',
+                        field: 'w-30 pr-3',
+                      }}
+                    />
+                    <Button
+                      disabled={!sortBy}
+                      onClick={() => {
+                        handleSortOrderToggle()
+                      }}
+                      className={{
+                        root: 'h-10 mr-1',
+                      }}
+                    >
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={sortIcon} />
+                      </Button.Icon>
+                    </Button>
+                    <Select
+                      className={{
+                        root: 'min-w-30',
+                        trigger: 'h-10',
+                      }}
+                      placeholder="Sortieren nach.."
+                      items={dropdownItems}
+                      onChange={(newSortBy: string) => {
+                        setSortBy(newSortBy)
+                        handleSortByChange(newSortBy)
+                      }}
                     />
                   </div>
+                  <Button
+                    onClick={() =>
+                      setIsQuestionCreationModalOpen(
+                        !isQuestionCreationModalOpen
+                      )
+                    }
+                    className={{
+                      root: twMerge(
+                        'h-10 font-bold text-white',
+                        theme.primaryBgDark
+                      ),
+                    }}
+                    data={{ cy: 'create-question' }}
+                  >
+                    FRAGE ERSTELLEN
+                  </Button>
                 </div>
-              )}
-            </div>
+                {isQuestionCreationModalOpen && (
+                  <QuestionEditModal
+                    handleSetIsOpen={setIsQuestionCreationModalOpen}
+                    isOpen={isQuestionCreationModalOpen}
+                    mode="CREATE"
+                  />
+                )}
+                <div className="overflow-y-auto [height:_calc(100vh-500px)]">
+                  <QuestionList
+                    questions={processedQuestions}
+                    selectedQuestions={selectedQuestions}
+                    setSelectedQuestions={(index: number) => {
+                      const tempQuestions = [...selectedQuestions]
+                      tempQuestions[index] = !tempQuestions[index]
+                      setSelectedQuestions(tempQuestions)
+                    }}
+                    tagfilter={filters.tags}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
