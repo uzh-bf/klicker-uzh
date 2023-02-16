@@ -9,7 +9,7 @@ import {
   FormikDateField,
   FormikSelectField,
   FormikTextField,
-  Label,
+  H3,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -233,51 +233,49 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   return (
-    <>
-      <div className="flex flex-row items-center gap-4">
-        <Label
-          label="Optionen"
-          className={{
-            root: 'my-auto mr-2 font-bold min-w-max',
-            tooltip: 'text-sm font-normal !w-1/2',
-          }}
-        />
-
+    <div className="flex flex-col gap-2">
+      <H3 className={{ root: 'mb-0' }}>Einstellungen</H3>
+      <div className="flex flex-row items-center gap-4 text-left">
         <FormikSelectField
           name="courseId"
           items={props.courses || []}
           required
           tooltip="Für die Erstellung einer Micro-Session ist die Auswahl des zugehörigen Kurses erforderlich."
           label="Kurs"
-          className={{ label: 'font-normal' }}
         />
-
-        <FormikDateField
-          label="Startdatum"
-          name="startDate"
-          required
-          className={{
-            root: 'ml-4',
-            input: 'bg-bg-uzh-grey-20',
-            label: 'font-normal',
-          }}
+        <ErrorMessage
+          name="courseId"
+          component="div"
+          className="text-sm text-red-400"
         />
-
-        <FormikDateField
-          label="Enddatum"
-          name="endDate"
-          required
-          className={{
-            root: 'ml-4',
-            input: 'bg-bg-uzh-grey-20',
-            label: 'font-normal',
-          }}
-        />
-
-        <Label label="Multiplier:" className={{ root: 'ml-4 mr-2' }} />
+      </div>
+      <FormikDateField
+        label="Startdatum"
+        name="startDate"
+        tooltip="Wählen Sie das Startdatum der Micro-Session aus. Die Session wird den Teilnehmenden ab diesem Zeitpunkt angezeigt."
+        required
+        className={{
+          root: 'w-[24rem]',
+          input: 'bg-uzh-grey-20',
+        }}
+      />
+      <FormikDateField
+        label="Enddatum"
+        name="endDate"
+        tooltip="Wählen Sie das Enddatum der Micro-Session aus. Die Session wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt."
+        required
+        className={{
+          root: 'w-[24rem]',
+          input: 'bg-uzh-grey-20',
+        }}
+      />
+      <div className="flex flex-row items-center gap-4">
         <FormikSelectField
           name="multiplier"
           placeholder="Default: 1x"
+          label="Multiplier"
+          tooltip="Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einer gamifizierten Micro-Session multipliziert werden."
+          required
           items={[
             { label: 'Einfach (1x)', value: '1' },
             { label: 'Doppelt (2x)', value: '2' },
@@ -285,22 +283,13 @@ function StepTwo(props: StepProps) {
             { label: 'Vierfach (4x)', value: '4' },
           ]}
         />
-
-        <div>
-          <ErrorMessage
-            name="courseId"
-            component="div"
-            className="text-sm text-red-400"
-          />
-
-          <ErrorMessage
-            name="multiplier"
-            component="div"
-            className="text-sm text-red-400"
-          />
-        </div>
+        <ErrorMessage
+          name="multiplier"
+          component="div"
+          className="text-sm text-red-400"
+        />
       </div>
-    </>
+    </div>
   )
 }
 

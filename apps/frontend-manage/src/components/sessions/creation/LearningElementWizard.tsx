@@ -2,13 +2,13 @@ import { useMutation } from '@apollo/client'
 import SessionCreationErrorToast from '@components/toasts/SessionCreationErrorToast'
 import {
   CreateLearningElementDocument,
-  OrderType,
+  LearningElementOrderType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FormikNumberField,
   FormikSelectField,
   FormikTextField,
-  Label,
+  H3,
 } from '@uzh-bf/design-system'
 import { ErrorMessage } from 'formik'
 import { useRouter } from 'next/router'
@@ -61,9 +61,6 @@ const stepThreeValidationSchema = yup.object().shape({
       yup.object().shape({
         id: yup.string(),
         title: yup.string(),
-        // type: yup
-        //   .string()
-        //   .oneOf(['SC', 'MC', 'KPRIM', 'NUMERICAL', 'KPRIM', 'FREE_TEXT']),
         // hasAnswerFeedbacks: yup.boolean().when('type', {
         //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
         //   then: yup.boolean().isTrue(),
@@ -107,7 +104,7 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
           questions: values.questions.map((q: any) => q.id),
           multiplier: parseInt(values.multiplier),
           courseId: values.courseId,
-          order: values.order as OrderType,
+          order: values.order as LearningElementOrderType,
           resetTimeDays: parseInt(values.resetTimeDays),
         },
       })
@@ -211,25 +208,24 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   return (
-    <>
+    <div className="flex flex-col gap-2">
+      <H3 className={{ root: 'mb-0' }}>Einstellungen</H3>
       <div className="flex flex-row items-center gap-4">
-        <Label
-          label="Optionen"
-          className={{
-            root: 'my-auto mr-2 font-bold min-w-max',
-            tooltip: 'text-sm font-normal !w-1/2',
-          }}
-        />
-
         <FormikSelectField
           name="courseId"
           items={props.courses || [{ label: '', value: '' }]}
           required
           tooltip="Für die Erstellung einer Micro-Session ist die Auswahl des zugehörigen Kurses erforderlich."
           label="Kurs"
-          className={{ label: 'font-normal' }}
         />
+        <ErrorMessage
+          name="courseId"
+          component="div"
+          className="text-sm text-red-400"
+        />
+      </div>
 
+      <div className="flex flex-row items-center gap-4">
         <FormikSelectField
           label="Multiplier"
           required
@@ -242,22 +238,33 @@ function StepTwo(props: StepProps) {
             { label: 'Dreifach (3x)', value: '3' },
             { label: 'Vierfach (4x)', value: '4' },
           ]}
-          className={{ label: 'font-normal', root: 'ml-4' }}
         />
+        <ErrorMessage
+          name="multiplier"
+          component="div"
+          className="text-sm text-red-400"
+        />
+      </div>
 
+      <div className="flex flex-row items-center gap-4">
         <FormikNumberField
           name="resetTimeDays"
           label="Wiederholungszeitraum:"
           tooltip="Wählen Sie einen Zeitraum nach welchem die Studierenden die Micro-Session wiederholen können."
           className={{
-            root: 'ml-4',
-            label: 'font-normal',
             input: 'w-20',
           }}
           required
           hideError={true}
         />
+        <ErrorMessage
+          name="resetTimeDays"
+          component="div"
+          className="text-sm text-red-400"
+        />
+      </div>
 
+      <div className="flex flex-row items-center gap-4">
         <FormikSelectField
           label="Reihenfolge"
           tooltip="Wählen Sie eine Reihenfolge in welcher die Fragen für die Studierenden zu lösen sind."
@@ -266,25 +273,7 @@ function StepTwo(props: StepProps) {
           items={Object.keys(LEARNING_ELEMENT_ORDERS).map((key) => {
             return { value: key, label: LEARNING_ELEMENT_ORDERS[key] }
           })}
-          className={{ label: 'font-normal', root: 'ml-4' }}
           required
-        />
-      </div>
-      <div className="mb-2">
-        <ErrorMessage
-          name="courseId"
-          component="div"
-          className="text-sm text-red-400"
-        />
-        <ErrorMessage
-          name="multiplier"
-          component="div"
-          className="text-sm text-red-400"
-        />
-        <ErrorMessage
-          name="resetTimeDays"
-          component="div"
-          className="text-sm text-red-400"
         />
         <ErrorMessage
           name="order"
@@ -292,7 +281,7 @@ function StepTwo(props: StepProps) {
           className="text-sm text-red-400"
         />
       </div>
-    </>
+    </div>
   )
 }
 
