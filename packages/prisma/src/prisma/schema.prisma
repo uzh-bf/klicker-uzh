@@ -212,8 +212,8 @@ model QuestionInstance {
   groupActivity     GroupActivity?   @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   groupActivityId   String?          @db.Uuid
 
-  attachments AttachmentInstance[]
-  bookmarks   Participation[]
+  attachments  AttachmentInstance[]
+  bookmarkedBy Participation[]
 
   question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questionId Int?
