@@ -19,7 +19,7 @@ import {
   ParticipantLearningData,
   Participation,
 } from './participant'
-import { Question, Tag } from './question'
+import { Question, QuestionInstance, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
 import { User } from './user'
 
@@ -314,6 +314,16 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ParticipantGroupService.getGroupActivityDetails(args, ctx)
+        },
+      }),
+      getBookmarkedQuestions: asParticipant.field({
+        nullable: true,
+        type: [QuestionInstance],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.getBookmarkedQuestions(args, ctx)
         },
       }),
     }

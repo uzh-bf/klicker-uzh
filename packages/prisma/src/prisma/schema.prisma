@@ -213,6 +213,7 @@ model QuestionInstance {
   groupActivityId   String?          @db.Uuid
 
   attachments AttachmentInstance[]
+  bookmarks   Participation[]
 
   question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questionId Int?
@@ -696,6 +697,8 @@ model Participation {
   detailResponses        QuestionResponseDetail[]
   subscriptions          PushSubscription[]
   completedMicroSessions String[]
+
+  bookmarkedQuestions QuestionInstance[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

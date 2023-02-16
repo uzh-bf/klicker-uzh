@@ -11,6 +11,7 @@ import {
   LeaderboardEntry,
   LeaderboardStatistics,
 } from './course'
+import { IQuestionInstance, QuestionInstanceRef } from './question'
 
 export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
   fields: (t) => ({
@@ -116,6 +117,7 @@ export interface IParticipation extends DB.Participation {
   subscriptions?: DB.PushSubscription[]
   course?: ICourse
   participant?: IParticipant
+  bookmarkedQuestions?: IQuestionInstance[]
 }
 export const ParticipationRef =
   builder.objectRef<IParticipation>('Participation')
@@ -139,6 +141,11 @@ export const Participation = ParticipationRef.implement({
 
     participant: t.expose('participant', {
       type: ParticipantRef,
+      nullable: true,
+    }),
+
+    bookmarkedQuestions: t.expose('bookmarkedQuestions', {
+      type: [QuestionInstanceRef],
       nullable: true,
     }),
   }),
