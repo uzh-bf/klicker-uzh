@@ -72,8 +72,9 @@ function CourseOverview({ courseId }: any) {
   return (
     <Layout
       displayName="Leaderboard"
-      courseName={course.displayName}
-      courseColor={course.color}
+      courseName={course?.displayName}
+      courseColor={course?.color}
+      courseId={course?.id}
     >
       <div className="md:mx-auto md:max-w-6xl md:w-full md:border md:rounded">
         <Tabs

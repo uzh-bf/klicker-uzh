@@ -1,3 +1,5 @@
+import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2 } from '@uzh-bf/design-system'
 import Image from 'next/image'
@@ -11,11 +13,13 @@ interface HeaderProps {
   title?: string
   courseName?: string
   courseColor?: string | null
+  courseId?: string
 }
 
 const defaultProps = {
   title: undefined,
   courseColor: undefined,
+  courseId: undefined,
 }
 
 function Header({
@@ -23,6 +27,7 @@ function Header({
   title,
   courseName,
   courseColor,
+  courseId,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
 
@@ -52,6 +57,17 @@ function Header({
       )}
 
       <div className="flex flex-row items-center gap-4">
+        {courseId && (
+          <Link href={`/course/${courseId}/docs`}>
+            <Button
+              className={{
+                root: 'bg-slate-800 peer-disabled: md:block border-slate-800',
+              }}
+            >
+              <FontAwesomeIcon className="fa-xl" icon={faCircleQuestion} />
+            </Button>
+          </Link>
+        )}
         {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
         {participant ? (
           router.pathname !== '/' &&

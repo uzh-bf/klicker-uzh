@@ -12,6 +12,7 @@ interface LayoutProps {
   displayName?: string
   courseName?: string
   courseColor?: string | null
+  courseId?: string
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string
@@ -28,6 +29,7 @@ const defaultProps = {
   displayName: 'KlickerUZH',
   courseName: undefined,
   courseColor: undefined,
+  courseId: undefined,
   mobileMenuItems: undefined,
   className: '',
   pageNotFound: false,
@@ -38,6 +40,7 @@ function Layout({
   displayName,
   courseName,
   courseColor,
+  courseId,
   mobileMenuItems,
   pageNotFound,
   setActiveMobilePage,
@@ -71,6 +74,7 @@ function Layout({
             title={displayName}
             courseName={courseName}
             courseColor={courseColor}
+            courseId={courseId}
           />
         </div>
 
