@@ -71,15 +71,15 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
         // set the TTL to 0 to disable response caching by default
         ttl: 0,
         // set caching for each type individually
-        ttlPerType: {
-          Participant: 60000,
-          Course: 60000,
-          LearningElement: 60000,
-          MicroSession: 60000,
-          QuestionInstance: 60000,
-          Participation: 0,
-          LeaderboardEntry: 0,
-        },
+        // ttlPerType: {
+        //   Participant: 60000,
+        //   Course: 60000,
+        //   LearningElement: 60000,
+        //   MicroSession: 60000,
+        //   QuestionInstance: 60000,
+        //   Participation: 0,
+        //   LeaderboardEntry: 0,
+        // },
         cache,
         session(req) {
           // extract user id from locals as stored in passport auth middleware
