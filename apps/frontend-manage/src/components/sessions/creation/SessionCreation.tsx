@@ -28,7 +28,6 @@ interface SessionCreationProps {
 function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
   const theme = useContext(ThemeContext)
   const [selectedForm, setSelectedForm] = useState(editMode)
-  //  const [stepNumber, setStepNumber] = useState(0)
 
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
@@ -113,12 +112,6 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
             value="liveSession"
             className={{ root: 'p-0' }}
           >
-            {/* <LiveSessionCreationForm
-              courses={courseSelection}
-              initialValues={
-                (dataLiveSession?.liveSession as Session) ?? undefined
-              }
-            /> */}
             <LiveSessionWizard
               courses={courseSelection || [{ label: '', value: '' }]}
               initialValues={
@@ -131,13 +124,6 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
             value="microSession"
             className={{ root: 'p-0' }}
           >
-            {/* <MicroSessionCreationForm
-              courses={courseSelection || [{ label: '', value: '' }]}
-              initialValues={
-                (dataMicroSession?.singleMicroSession as MicroSession) ??
-                undefined
-              }
-            /> */}
             <MicroSessionWizard
               courses={courseSelection || [{ label: '', value: '' }]}
               initialValues={
@@ -151,25 +137,12 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
             value="learningElement"
             className={{ root: 'p-0' }}
           >
-            {/* <LearningElementCreationForm
-              courses={courseSelection || [{ label: '', value: '' }]}
-            /> */}
             <LearningElementWizard
               courses={courseSelection || [{ label: '', value: '' }]}
             />
           </TabContent>
         </Tabs>
       </div>
-      {/* <LiveSessionWizard
-        courses={courseSelection}
-        initialValues={(dataLiveSession?.liveSession as Session) ?? undefined}
-      /> */}
-      {/* <MicroSessionWizard
-        courses={courseSelection}
-        initialValues={
-          (dataMicroSession?.singleMicroSession as MicroSession) ?? undefined
-        }
-      /> */}
     </div>
   )
 }
