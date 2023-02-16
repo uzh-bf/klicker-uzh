@@ -8,6 +8,7 @@ import type { IParticipant, IParticipantGroup } from './participant'
 import { Participant, ParticipantGroup, Participation } from './participant'
 import type { ISession } from './session'
 import { SessionRef } from './session'
+import { User } from './user'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -20,6 +21,7 @@ export interface ICourse extends DB.Course {
   microSessions?: IMicroSession[]
   leaderboard?: ILeaderboardEntry[]
   awards?: DB.AwardEntry[]
+  owner?: DB.User
 }
 export const CourseRef = builder.objectRef<ICourse>('Course')
 export const Course = builder.objectType(CourseRef, {
@@ -70,6 +72,10 @@ export const Course = builder.objectType(CourseRef, {
     }),
     awards: t.expose('awards', {
       type: [AwardEntryRef],
+      nullable: true,
+    }),
+    owner: t.expose('owner', {
+      type: User,
       nullable: true,
     }),
   }),

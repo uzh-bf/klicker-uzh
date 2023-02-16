@@ -79,9 +79,8 @@ function GroupActivityDetails() {
 
   return (
     <Layout
-      courseName={data.groupActivityDetails.course.displayName}
+      course={data.groupActivityDetails.course}
       displayName={data.groupActivityDetails.displayName}
-      courseColor={data.groupActivityDetails.course.color}
     >
       <Head>
         <base target="_blank" />

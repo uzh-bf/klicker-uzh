@@ -80,8 +80,7 @@ function MicroSessionInstance() {
   return (
     <Layout
       displayName={data.microSession.displayName}
-      courseName={data.microSession.course.displayName}
-      courseColor={data.microSession.course.color}
+      course={data.microSession.course ?? undefined}
     >
       <div className="flex-1">
         <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">

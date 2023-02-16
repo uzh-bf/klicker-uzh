@@ -131,8 +131,7 @@ function LearningElement({ courseId, id }: Props) {
   return (
     <Layout
       displayName={data.learningElement.displayName}
-      courseName={data.learningElement.course?.displayName}
-      courseColor={data.learningElement.course?.color}
+      course={data.learningElement.course ?? undefined}
     >
       <div className="flex-1">
         <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">

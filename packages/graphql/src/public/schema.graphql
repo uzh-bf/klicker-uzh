@@ -126,6 +126,7 @@ type Course {
   name: String!
   numOfActiveParticipants: Int
   numOfParticipants: Int
+  owner: User
   pinCode: Int
   sessions: [Session!]
   updatedAt: Date!

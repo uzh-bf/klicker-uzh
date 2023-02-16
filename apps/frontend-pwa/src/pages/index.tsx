@@ -163,7 +163,7 @@ const Index = function () {
   }
 
   return (
-    <Layout courseName="KlickerUZH" displayName="Kursübersicht">
+    <Layout displayName="KlickerUZH">
       <div
         className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"

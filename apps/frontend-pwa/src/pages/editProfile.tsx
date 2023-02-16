@@ -43,7 +43,10 @@ const EditProfile: NextPageWithLayout = () => {
   }
 
   return (
-    <Layout courseName="KlickerUZH" displayName="Profil editieren">
+    <Layout
+      course={{ displayName: 'KlickerUZH' }}
+      displayName="Profil editieren"
+    >
       <Formik
         validationSchema={yup.object({
           username: yup

@@ -42,8 +42,7 @@ function MicroSessionIntroduction({ id }: Props) {
   return (
     <Layout
       displayName={data.microSession.displayName}
-      courseName={data.microSession.course.displayName}
-      courseColor={data.microSession.course.color}
+      course={data.microSession.course ?? undefined}
     >
       <div className="flex flex-col w-full md:p-8 md:pt-6 md:w-full md:border md:rounded md:max-w-3xl md:mx-auto">
         <H3>{data.microSession.displayName}</H3>

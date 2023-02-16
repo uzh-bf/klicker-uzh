@@ -11,7 +11,10 @@ function Repetition() {
   const { data } = useQuery(GetLearningElementsDocument)
 
   return (
-    <Layout courseName="KlickerUZH" displayName="Repetition Lernelemente">
+    <Layout
+      course={{ displayName: 'KlickerUZH' }}
+      displayName="Repetition Lernelemente"
+    >
       <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className={{ root: 'text-xl' }}>Repetition</H1>
         {data?.learningElements?.map((element) => (

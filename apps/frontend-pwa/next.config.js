@@ -36,6 +36,7 @@ const nextConfig = withPWA({
       '127.0.0.1',
       'upload.wikimedia.org',
       'tc-klicker-prod.s3.amazonaws.com',
+      'course-cms.sos-ch-dk-2.exo.io',
     ],
     remotePatterns: [
       {
