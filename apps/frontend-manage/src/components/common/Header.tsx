@@ -12,7 +12,7 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
-  user: User
+  user?: User | null
 }
 
 function Header({ user }: HeaderProps): React.ReactElement {
@@ -20,7 +20,8 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const [logoutUser] = useMutation(LogoutUserDocument)
 
   const { data } = useQuery(GetRunningSessionsDocument, {
-    variables: { shortname: user.shortname },
+    variables: { shortname: user?.shortname as string },
+    skip: !user?.shortname,
   })
 
   return (
@@ -82,7 +83,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
         </Navigation.TriggerItem>
         <Navigation.TriggerItem
           icon={<FontAwesomeIcon icon={faUserCircle} className="h-5" />}
-          label={user.shortname}
+          label={user?.shortname}
           dropdownWidth="w-[12rem]"
           className={{
             label: 'font-bold text-white text-base my-auto',
