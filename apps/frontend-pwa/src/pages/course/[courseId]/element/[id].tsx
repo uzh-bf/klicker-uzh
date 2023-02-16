@@ -1,9 +1,15 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  faBookmark,
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import { faCheck, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
+import {
+  faBookmark as faBookmarkSolid,
+  faCheck,
+  faRepeat,
+  faShuffle,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetLearningElementDocument,
@@ -243,9 +249,20 @@ function LearningElement({ courseId, id }: Props) {
                   <div className="flex-1 basis-2/3">
                     <div className="flex flex-row items-center justify-between mb-4 border-b">
                       <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
-                      <div className="text-sm md:text-base text-slate-500">
-                        Frage {currentIx + 1}/
-                        {data.learningElement?.instances?.length}
+                      <div className="flex flex-row gap-3">
+                        <div className="text-sm md:text-base text-slate-500">
+                          Frage {currentIx + 1}/
+                          {data.learningElement?.instances?.length}
+                        </div>
+                        <FontAwesomeIcon
+                          style={{ color: 'red' }}
+                          className="mt-1 aria-selected:true aria-disabled:false"
+                          icon={faBookmarkSolid}
+                        ></FontAwesomeIcon>
+                        <FontAwesomeIcon
+                          className="mt-1 aria-selected:false aria-disabled:true"
+                          icon={faBookmark}
+                        ></FontAwesomeIcon>
                       </div>
                     </div>
 
