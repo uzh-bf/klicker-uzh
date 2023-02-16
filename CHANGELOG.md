@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.40...v3.0.0-alpha.41) (2023-02-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** add prod AWS url ([037a57b](https://github.com/uzh-bf/klicker-uzh/commit/037a57b1102a567d156360c936c00ad0ca7c9ca4))
+
 ## [3.0.0-alpha.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.39...v3.0.0-alpha.40) (2023-02-15)
 
 
