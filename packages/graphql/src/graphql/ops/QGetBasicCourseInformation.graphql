@@ -5,5 +5,8 @@ query GetBasicCourseInformation($courseId: String!) {
     displayName
     description
     color
+    owner {
+      shortname
+    }
   }
 }

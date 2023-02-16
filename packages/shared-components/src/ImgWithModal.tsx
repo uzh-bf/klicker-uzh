@@ -5,9 +5,13 @@ import React, { useState } from 'react'
 export default function ImgWithModal({
   src,
   alt,
+  width,
+  height,
 }: {
   src: string
   alt?: string
+  width?: number
+  height?: number
 }) {
   const [isOpen, setIsOpen] = useState(false)
   return (
@@ -21,7 +25,12 @@ export default function ImgWithModal({
       trigger={
         <Button basic onClick={() => setIsOpen(true)}>
           <div className="flex flex-col items-start mb-1">
-            <Image src={src} alt="Image" width={250} height={250} />
+            <Image
+              src={src}
+              alt="Image"
+              width={width ?? 250}
+              height={height ?? 250}
+            />
             {alt && <div className="text-sm text-slate-600">{alt}</div>}
           </div>
         </Button>

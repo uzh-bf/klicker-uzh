@@ -7,11 +7,15 @@ export async function getBasicCourseInformation(
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
+    include: {
+      owner: true,
+    },
   })
 
   if (!course) {
     return null
   }
+
   return course
 }
 
