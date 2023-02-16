@@ -50,9 +50,13 @@ function LearningElement({ courseId, id }: Props) {
   const router = useRouter()
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
-  const [bookmarked, setBookmarked] = useState(false)
 
-  const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument)
+  const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
+    refetchQueries: [
+      // TODO: replace with more efficient UPDATE instead of refetching everything
+      { query: GetBookmarkedQuestionsDocument, variables: { courseId } },
+    ],
+  })
   const { data: bookmarks } = useQuery(GetBookmarkedQuestionsDocument, {
     variables: { courseId: router.query.courseId as string },
     skip: !router.query.courseId,
@@ -89,14 +93,6 @@ function LearningElement({ courseId, id }: Props) {
       setResponse(null)
     }
   }, [questionData?.type, currentIx])
-
-  useEffect(() => {
-    if (currentInstance.isBookmarked) {
-      setBookmarked(true)
-    } else {
-      setBookmarked(false)
-    }
-  }, [currentInstance.isBookmarked])
 
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
@@ -281,18 +277,17 @@ function LearningElement({ courseId, id }: Props) {
                         </div>
                         <Button
                           className={{ root: 'border-none shadow-none' }}
-                          onClick={async () => {
-                            await bookmarkQuestion({
+                          onClick={() => {
+                            bookmarkQuestion({
                               variables: {
                                 instanceId: currentInstance.id!,
                                 courseId: courseId,
-                                bookmarked: !bookmarked,
+                                bookmarked: !currentInstance.isBookmarked,
                               },
-                            }),
-                              setBookmarked(!bookmarked)
+                            })
                           }}
                         >
-                          {bookmarked ? (
+                          {currentInstance.isBookmarked ? (
                             <FontAwesomeIcon
                               className="text-red-600"
                               icon={faBookmarkSolid}
