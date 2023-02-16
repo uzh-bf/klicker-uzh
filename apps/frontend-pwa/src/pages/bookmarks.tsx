@@ -17,6 +17,7 @@ function Bookmarks() {
         {data?.participantCourses?.map((course) => (
           <Link key={course.id} href={`/course/${course.id}/bookmarks`}>
             <Button
+              fluid
               className={{
                 root: twMerge(
                   'gap-5 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
