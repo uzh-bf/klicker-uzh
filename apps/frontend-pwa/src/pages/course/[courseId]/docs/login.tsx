@@ -1,28 +1,28 @@
 import { useQuery } from '@apollo/client'
 import CommonDocs from '@components/CommonDocs'
 import Layout from '@components/Layout'
-import { GetCourseOverviewDataDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H3 } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 
-function LoginPage() {
+function Login() {
   const router = useRouter()
 
-  const { data } = useQuery(GetCourseOverviewDataDocument, {
+  const { data } = useQuery(GetBasicCourseInformationDocument, {
     variables: { courseId: router.query.courseId as string },
     skip: !router.query?.courseId,
   })
 
-  if (!data?.getCourseOverviewData) {
+  if (!data?.basicCourseInformation) {
     return <div>Loading...</div>
   }
 
   return (
     <Layout
-      courseName={data.getCourseOverviewData.course.name}
+      courseName={data.basicCourseInformation.name}
       displayName="Hilfe"
-      courseColor={data.getCourseOverviewData.course.color}
+      courseColor={data.basicCourseInformation.color}
     >
       <CommonDocs />
       <div className="m-5 text-sm leading-relaxed md:m-0 md:w-full md:max-w-xxl md:p-8 md:mx-auto md:border md:rounded">
@@ -77,4 +77,4 @@ function LoginPage() {
   )
 }
 
-export default LoginPage
+export default Login

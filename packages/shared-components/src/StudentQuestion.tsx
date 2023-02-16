@@ -4,49 +4,21 @@ import {
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import Image from 'next/image'
 import { without } from 'ramda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 // eslint-disable-next-line prettier/prettier
-import React, { useContext, useState } from 'react'
+import React, { useContext } from 'react'
 
-import { Button, Modal, ThemeContext } from '@uzh-bf/design-system'
+import { ThemeContext } from '@uzh-bf/design-system'
 import { QUESTION_GROUPS } from './constants'
+import ImgWithModal from './ImgWithModal'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
 import { QuestionAttachment } from './questions/QuestionAttachment'
 import { SCAnswerOptions } from './questions/SCAnswerOptions'
 import SessionProgress from './questions/SessionProgress'
-
-function ImgWithModal({ src, alt }: { src: string; alt?: string }) {
-  const [isOpen, setIsOpen] = useState(false)
-  return (
-    <Modal
-      fullScreen
-      className={{
-        overlay: 'z-20',
-        content: 'z-30',
-      }}
-      open={isOpen}
-      trigger={
-        <Button basic onClick={() => setIsOpen(true)}>
-          <div className="flex flex-col items-start mb-1">
-            <Image src={src} alt="Image" width={250} height={250} />
-            {alt && <div className="text-sm text-slate-600">{alt}</div>}
-          </div>
-        </Button>
-      }
-      onClose={() => setIsOpen(false)}
-      title={alt}
-    >
-      <div className="relative w-full h-full">
-        <Image src={src} alt="Image" fill className="object-contain" />
-      </div>
-    </Modal>
-  )
-}
 
 const messages = {
   [QuestionType.Sc]: <p>Bitte eine einzige Option auswählen:</p>,
