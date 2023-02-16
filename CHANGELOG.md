@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.42](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.41...v3.0.0-alpha.42) (2023-02-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** issue with multiple images in the same paragraph ([4dcc823](https://github.com/uzh-bf/klicker-uzh/commit/4dcc823289457f2e9e04f7bab2f402cbf57df4dd))
+
+
+### Enhancements
+
+* **packages/markdown:** sanitize links in markdown ([d9d5453](https://github.com/uzh-bf/klicker-uzh/commit/d9d5453320904da990e92a1aaa131d3d67d9be9c))
+
 ## [3.0.0-alpha.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.40...v3.0.0-alpha.41) (2023-02-16)
 
 
