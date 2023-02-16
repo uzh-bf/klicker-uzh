@@ -28,7 +28,11 @@ const nextConfig = {
     defaultLocale: 'en',
   },
   images: {
-    domains: [process.env.S3_HOSTNAME, 'upload.wikimedia.org'],
+    domains: [
+      process.env.S3_HOSTNAME,
+      'upload.wikimedia.org',
+      'tc-klicker-prod.s3.amazonaws.com',
+    ],
     remotePatterns: [
       {
         protocol: 'https',
