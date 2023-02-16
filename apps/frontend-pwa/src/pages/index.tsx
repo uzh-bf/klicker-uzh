@@ -171,8 +171,41 @@ const Index = function () {
         className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
       >
+        {activeSessions.length !== 0 && (
+          <>
+            <H1 className={{ root: 'text-xl' }}>Aktive Sessions</H1>
+            <div className="flex flex-col gap-2 mt-2 mb-8">
+              {activeSessions.map((session) => (
+                <Link
+                  href={session.linkTo || `/session/${session.id}`}
+                  key={session.id}
+                  legacyBehavior
+                >
+                  <Button
+                    className={{
+                      root: 'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
+                    }}
+                  >
+                    <Button.Icon>
+                      <FontAwesomeIcon
+                        icon={session.linkTo ? faLink : faChalkboard}
+                      />
+                    </Button.Icon>
+                    <Button.Label className={{ root: 'flex-1' }}>
+                      <div className="flex flex-row items-end justify-between md:flex-row">
+                        <div>{session.displayName}</div>
+                        <div className="text-sm">{session.courseName}</div>
+                      </div>
+                    </Button.Label>
+                  </Button>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
+
         <H1 className={{ root: 'text-xl' }}>Fragen aus deinen Kursen</H1>
-        <div className="flex flex-col mt-2">
+        <div className="flex flex-col gap-2 mt-2 mb-8">
           <Link href="/repetition" legacyBehavior>
             <Button
               className={{
@@ -185,40 +218,26 @@ const Index = function () {
                 <FontAwesomeIcon icon={faGraduationCap} />
               </Button.Icon>
               <Button.Label className={{ root: 'flex-1 text-left' }}>
-                <div>Repetition</div>
+                Lernelemente
               </Button.Label>
             </Button>
           </Link>
-        </div>
-
-        <H1 className={{ root: 'mt-8 text-xl' }}>Aktive Sessions</H1>
-        <div className="flex flex-col gap-2 mt-2 mb-8">
-          {activeSessions.length === 0 && <div>Keine aktiven Sessions.</div>}
-          {activeSessions.map((session) => (
-            <Link
-              href={session.linkTo || `/session/${session.id}`}
-              key={session.id}
-              legacyBehavior
+          <Link href="/bookmarks" legacyBehavior>
+            <Button
+              className={{
+                root: twMerge(
+                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
+                ),
+              }}
             >
-              <Button
-                className={{
-                  root: 'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
-                }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon
-                    icon={session.linkTo ? faLink : faChalkboard}
-                  />
-                </Button.Icon>
-                <Button.Label className={{ root: 'flex-1' }}>
-                  <div className="flex flex-row items-end justify-between md:flex-row">
-                    <div>{session.displayName}</div>
-                    <div className="text-sm">{session.courseName}</div>
-                  </div>
-                </Button.Label>
-              </Button>
-            </Link>
-          ))}
+              <Button.Icon>
+                <FontAwesomeIcon icon={faBookmark} />
+              </Button.Icon>
+              <Button.Label className={{ root: 'flex-1 text-left' }}>
+                Meine Bookmarks
+              </Button.Label>
+            </Button>
+          </Link>
         </div>
 
         <H1 className={{ root: 'text-xl' }}>Aktives Microlearning</H1>
@@ -278,26 +297,6 @@ const Index = function () {
         )}
 
         <SurveyPromotion courseId={courses?.[0]?.id} />
-
-        <H1 className={{ root: 'text-xl' }}>Meine Bookmarks</H1>
-        <div className="flex flex-col mt-2">
-          <Link href="/bookmarks" legacyBehavior>
-            <Button
-              className={{
-                root: twMerge(
-                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
-                ),
-              }}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faBookmark} />
-              </Button.Icon>
-              <Button.Label className={{ root: 'flex-1 text-left' }}>
-                <div>Kurse</div>
-              </Button.Label>
-            </Button>
-          </Link>
-        </div>
       </div>
     </Layout>
   )
