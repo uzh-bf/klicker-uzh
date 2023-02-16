@@ -53,10 +53,18 @@ function Layout({
   return (
     <div className="flex flex-col w-full h-full">
       <Head>
-        <title>{`${course?.displayName} - ${displayName}`}</title>
+        <title>
+          {course?.displayName
+            ? `${course?.displayName} - ${displayName}`
+            : displayName}
+        </title>
         <meta
           name="description"
-          content={`${course?.displayName} - ${displayName}`}
+          content={
+            course?.displayName
+              ? `${course?.displayName} - ${displayName}`
+              : displayName
+          }
           charSet="utf-8"
         ></meta>
       </Head>
