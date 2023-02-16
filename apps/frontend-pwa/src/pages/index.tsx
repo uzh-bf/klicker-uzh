@@ -17,7 +17,6 @@ import {
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CourseElement from '../components/CourseElement'
@@ -29,8 +28,6 @@ import {
 } from '../utils/push'
 
 const Index = function () {
-  const router = useRouter()
-
   const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
   const [userInfo, setUserInfo] = useState<string>('')
   const [registration, setRegistration] =
