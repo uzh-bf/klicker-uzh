@@ -86,7 +86,6 @@ function MultistepWizard({
       | LearningElementFormValues,
     bag: any
   ) => {
-    console.log('handleSubmit - values: ', values)
     if (step.props.onSubmit) {
       await step.props.onSubmit(values, bag)
     }
