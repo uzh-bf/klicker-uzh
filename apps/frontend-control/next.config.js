@@ -32,8 +32,8 @@ const nextConfig = withPWA({
   },
   images: {
     domains: [
-      '127.0.0.1',
       process.env.S3_HOSTNAME,
+      '127.0.0.1',
       'upload.wikimedia.org',
       'tc-klicker-prod.s3.amazonaws.com',
     ],
