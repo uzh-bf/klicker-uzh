@@ -13,6 +13,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  BookmarkQuestionDocument,
   GetLearningElementDocument,
   QuestionType,
   ResponseToQuestionInstanceDocument,
@@ -48,6 +49,8 @@ function LearningElement({ courseId, id }: Props) {
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
   const [bookMarkSelected, setbookMarkSelected] = useState(false)
+
+  const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument)
 
   const router = useRouter()
 
@@ -258,7 +261,15 @@ function LearningElement({ courseId, id }: Props) {
                         </div>
                         <Button
                           className={{ root: 'border-none shadow-none' }}
-                          onClick={() => setbookMarkSelected(!bookMarkSelected)}
+                          onClick={async () => {
+                            await bookmarkQuestion({
+                              variables: {
+                                instanceId: currentInstance.id,
+                                courseId: id,
+                              },
+                            }),
+                              setbookMarkSelected(!bookMarkSelected)
+                          }}
                         >
                           {bookMarkSelected ? (
                             <FontAwesomeIcon
