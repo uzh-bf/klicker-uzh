@@ -608,3 +608,31 @@ export async function createLearningElement(
 
   return element
 }
+
+interface GetBookMarksLearningElement {
+  elementId: string
+  courseId: string
+}
+
+export async function getBookmarksLearningElement(
+  { elementId, courseId }: GetBookMarksLearningElement,
+  ctx: ContextWithUser
+) {
+  const participation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    include: {
+      bookmarkedQuestions: {
+        where: {
+          learningElementId: elementId,
+        },
+      },
+    },
+  })
+
+  return participation?.bookmarkedQuestions
+}
