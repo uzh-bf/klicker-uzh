@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   faBookmark,
+  faFlag,
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
@@ -46,6 +47,7 @@ interface Props {
 function LearningElement({ courseId, id }: Props) {
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
+  const [bookMarkSelected, setbookMarkSelected] = useState(false)
 
   const router = useRouter()
 
@@ -254,15 +256,21 @@ function LearningElement({ courseId, id }: Props) {
                           Frage {currentIx + 1}/
                           {data.learningElement?.instances?.length}
                         </div>
-                        <FontAwesomeIcon
-                          style={{ color: 'red' }}
-                          className="mt-1 aria-selected:true aria-disabled:false"
-                          icon={faBookmarkSolid}
-                        ></FontAwesomeIcon>
-                        <FontAwesomeIcon
-                          className="mt-1 aria-selected:false aria-disabled:true"
-                          icon={faBookmark}
-                        ></FontAwesomeIcon>
+                        <Button
+                          className={{ root: 'border-none shadow-none' }}
+                          onClick={() => setbookMarkSelected(!bookMarkSelected)}
+                        >
+                          {bookMarkSelected ? (
+                            <FontAwesomeIcon
+                              className="text-red-600"
+                              icon={faBookmarkSolid}
+                            ></FontAwesomeIcon>
+                          ) : (
+                            <FontAwesomeIcon
+                              icon={faBookmark}
+                            ></FontAwesomeIcon>
+                          )}
+                        </Button>
                       </div>
                     </div>
 
@@ -284,9 +292,12 @@ function LearningElement({ courseId, id }: Props) {
 
                   {currentInstance.evaluation && (
                     <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50 basis-1/3">
-                      <div className="flex flex-row gap-2">
-                        <div className="font-bold">Multiplikator</div>
-                        <div>{currentInstance.pointsMultiplier}x</div>
+                      <div className="flex justify-between">
+                        <div className="flex flex-row gap-2">
+                          <div className="font-bold">Multiplikator</div>
+                          <div>{currentInstance.pointsMultiplier}x</div>
+                        </div>
+                        <FontAwesomeIcon icon={faFlag}></FontAwesomeIcon>
                       </div>
                       <div className="flex flex-row gap-8">
                         <div>
