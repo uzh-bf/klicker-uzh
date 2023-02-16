@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.44](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.43...v3.0.0-alpha.44) (2023-02-16)
+
+
+### Features
+
+* add possibility for students to bookmark questions ([#3351](https://github.com/uzh-bf/klicker-uzh/issues/3351)) ([ff1aade](https://github.com/uzh-bf/klicker-uzh/commit/ff1aade674196c900093f0992cdfef7591ac46d6))
+
+
+### Bug Fixes
+
+* **frontend-manage:** fix session editing functionality ([#3349](https://github.com/uzh-bf/klicker-uzh/issues/3349)) ([3ff5c8a](https://github.com/uzh-bf/klicker-uzh/commit/3ff5c8a5850ddea6c6af9e60e77e9c5079f61f27))
+
+
+### Other
+
+* **frontend:** improve styling of session wizzard ([#3348](https://github.com/uzh-bf/klicker-uzh/issues/3348)) ([bad8a1c](https://github.com/uzh-bf/klicker-uzh/commit/bad8a1c9c62566e12ab544f9fd6daf8208904f78))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add built-in documentation pages for students ([#3350](https://github.com/uzh-bf/klicker-uzh/issues/3350)) ([a8c99b2](https://github.com/uzh-bf/klicker-uzh/commit/a8c99b29a95d672e63161025aa502fd62e987428))
+
 ## [3.0.0-alpha.43](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.42...v3.0.0-alpha.43) (2023-02-16)
 
 
