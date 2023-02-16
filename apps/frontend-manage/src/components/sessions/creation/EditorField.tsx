@@ -40,7 +40,7 @@ function EditorField({
         showToolbarOnFocus={true}
         placeholder="Inhalt hier eingeben…"
         className={{
-          editor: '!leading-3 h-20 overflow-x-auto',
+          editor: '!leading-3 h-14 overflow-x-auto',
           root: 'w-full',
         }}
       />

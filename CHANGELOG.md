@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.43](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.42...v3.0.0-alpha.43) (2023-02-16)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure all auth conditions are checked ([3736f7c](https://github.com/uzh-bf/klicker-uzh/commit/3736f7c6b91dc77ea2f413fc9946496df62d6264))
+
+## [3.0.0-alpha.42](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.41...v3.0.0-alpha.42) (2023-02-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** issue with multiple images in the same paragraph ([4dcc823](https://github.com/uzh-bf/klicker-uzh/commit/4dcc823289457f2e9e04f7bab2f402cbf57df4dd))
+
+
+### Enhancements
+
+* **packages/markdown:** sanitize links in markdown ([d9d5453](https://github.com/uzh-bf/klicker-uzh/commit/d9d5453320904da990e92a1aaa131d3d67d9be9c))
+
+## [3.0.0-alpha.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.40...v3.0.0-alpha.41) (2023-02-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** add prod AWS url ([037a57b](https://github.com/uzh-bf/klicker-uzh/commit/037a57b1102a567d156360c936c00ad0ca7c9ca4))
+
+## [3.0.0-alpha.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.39...v3.0.0-alpha.40) (2023-02-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** add remote pattern for AWS images ([23cc5e4](https://github.com/uzh-bf/klicker-uzh/commit/23cc5e447e1c266231ca783fbb118c3fbbf28eb2))
+* **packages/shared-components:** display alt text of image in ImgWithModal ([3e98535](https://github.com/uzh-bf/klicker-uzh/commit/3e9853545b2e643ca027f93f02967a5fc9079598))
+
 ## [3.0.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.38...v3.0.0-alpha.39) (2023-02-15)
 
 

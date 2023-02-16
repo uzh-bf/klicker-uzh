@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.0.0-alpha.39",
+  "version": "3.0.0-alpha.43",
   "license": "AGPL-3.0",
   "config": {
     "app_to_debug": "powerpoint",
@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@fluentui/react": "8.105.7",
-    "@uzh-bf/design-system": "1.2.2",
+    "@uzh-bf/design-system": "1.2.3",
     "core-js": "3.27.2",
     "es6-promise": "4.2.8",
     "formik": "2.2.9",

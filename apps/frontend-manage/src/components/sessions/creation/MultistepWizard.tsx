@@ -129,8 +129,8 @@ function MultistepWizard({
       isInitialValid={false}
     >
       {({ values, isSubmitting, isValid, resetForm }) => (
-        <Form className="flex flex-col gap-1 p-4">
-          {!isCompleted && step}
+        <Form className="flex flex-col justify-between gap-1 p-4 overflow-y-auto h-80">
+          {!isCompleted && <div>{step}</div>}
           {isCompleted && (
             <div className="flex flex-col items-center gap-4 p-4">
               <div>
@@ -175,11 +175,11 @@ function MultistepWizard({
               <Progress
                 className={{
                   root: 'flex-1 h-4 text-xs',
-                  indicator: 'bg-slate-400 h-4 text-xs',
+                  indicator: 'bg-slate-400 h-4 text-xs min-w-max',
                 }}
-                value={stepNumber + 1}
-                max={totalSteps}
-                formatter={(step) => `Schritt ${step}`}
+                value={stepNumber}
+                max={totalSteps - 1}
+                formatter={(step) => `Schritt ${step + 1}`}
               />
 
               <div>
