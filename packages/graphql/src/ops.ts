@@ -385,7 +385,6 @@ export type Mutation = {
   __typename?: 'Mutation';
   activateSessionBlock?: Maybe<Session>;
   addConfusionTimestep?: Maybe<ConfusionTimestep>;
-  bookmarkQuestion?: Maybe<Participation>;
   cancelSession?: Maybe<Session>;
   changeCourseColor?: Maybe<Course>;
   changeCourseDescription?: Maybe<Course>;
@@ -446,12 +445,6 @@ export type MutationAddConfusionTimestepArgs = {
   difficulty: Scalars['Int'];
   sessionId: Scalars['String'];
   speed: Scalars['Int'];
-};
-
-
-export type MutationBookmarkQuestionArgs = {
-  courseId: Scalars['String'];
-  instanceId: Scalars['Int'];
 };
 
 
@@ -879,7 +872,6 @@ export type ParticipantLearningData = {
 
 export type Participation = {
   __typename?: 'Participation';
-  bookmarkedQuestions?: Maybe<Array<QuestionInstance>>;
   completedMicroSessions: Array<Scalars['String']>;
   course?: Maybe<Course>;
   id: Scalars['Int'];
@@ -903,8 +895,6 @@ export type Query = {
   controlSession?: Maybe<Session>;
   course?: Maybe<Course>;
   feedbacks?: Maybe<Array<Feedback>>;
-  getBookmarkedQuestions?: Maybe<Array<QuestionInstance>>;
-  getBookmarksLearningElement?: Maybe<Array<QuestionInstance>>;
   getCourseOverviewData?: Maybe<ParticipantLearningData>;
   getLoginToken?: Maybe<User>;
   groupActivityDetails?: Maybe<GroupActivityDetails>;
@@ -958,17 +948,6 @@ export type QueryCourseArgs = {
 
 export type QueryFeedbacksArgs = {
   id: Scalars['String'];
-};
-
-
-export type QueryGetBookmarkedQuestionsArgs = {
-  courseId: Scalars['String'];
-};
-
-
-export type QueryGetBookmarksLearningElementArgs = {
-  courseId: Scalars['String'];
-  elementId: Scalars['String'];
 };
 
 
