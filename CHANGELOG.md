@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.47](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.46...v3.0.0-alpha.47) (2023-02-16)
+
+
+### Bug Fixes
+
+* disable caching temporarily ([db830e6](https://github.com/uzh-bf/klicker-uzh/commit/db830e663ebaa270e220404129950555c0122b0d))
+
 ## [3.0.0-alpha.46](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.45...v3.0.0-alpha.46) (2023-02-16)
 
 
