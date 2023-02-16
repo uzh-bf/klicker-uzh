@@ -326,6 +326,18 @@ export const Query = builder.queryType({
           return ParticipantService.getBookmarkedQuestions(args, ctx)
         },
       }),
+
+      getBookmarksLearningElement: asParticipant.field({
+        nullable: true,
+        type: [QuestionInstance],
+        args: {
+          elementId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.getBookmarksLearningElement(args, ctx)
+        },
+      }),
     }
   },
 })
