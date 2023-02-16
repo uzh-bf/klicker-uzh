@@ -19,7 +19,7 @@ function Bookmarks() {
         {data?.participantCourses?.map((course) => (
           <Link
             key={course.id}
-            href={`/course/${course.id}/bookmarks/${course.id}`}
+            href={`/course/${course.id}/bookmarks`}
             legacyBehavior
           >
             <Button

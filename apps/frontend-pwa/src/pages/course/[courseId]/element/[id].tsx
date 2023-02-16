@@ -265,7 +265,7 @@ function LearningElement({ courseId, id }: Props) {
                             await bookmarkQuestion({
                               variables: {
                                 instanceId: currentInstance.id,
-                                courseId: id,
+                                courseId: courseId,
                               },
                             }),
                               setbookMarkSelected(!bookMarkSelected)

@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { H1 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import Layout from '../../../../components/Layout'
+import Layout from '../../../components/Layout'
 
 function Bookmarks() {
   const router = useRouter()
