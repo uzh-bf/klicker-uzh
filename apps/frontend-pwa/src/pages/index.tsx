@@ -218,7 +218,7 @@ const Index = function () {
                 <FontAwesomeIcon icon={faGraduationCap} />
               </Button.Icon>
               <Button.Label className={{ root: 'flex-1 text-left' }}>
-                Lernelemente
+                Repetition Lernelemente
               </Button.Label>
             </Button>
           </Link>
