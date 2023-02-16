@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.43](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.42...v3.0.0-alpha.43) (2023-02-16)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure all auth conditions are checked ([3736f7c](https://github.com/uzh-bf/klicker-uzh/commit/3736f7c6b91dc77ea2f413fc9946496df62d6264))
+
 ## [3.0.0-alpha.42](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.41...v3.0.0-alpha.42) (2023-02-16)
 
 

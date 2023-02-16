@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.0.0-alpha.42",
+  "version": "3.0.0-alpha.43",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
