@@ -75,31 +75,9 @@ function MultistepWizard({
 
   const steps = React.Children.toArray(children)
 
-  const [snapshot, setSnapshot] = useState(initialValues)
-
   const step = steps[stepNumber]
   const totalSteps = steps.length
   const isLastStep = stepNumber === totalSteps - 1
-
-  const next = (
-    values:
-      | LiveSessionFormValues
-      | MicroSessionFormValues
-      | LearningElementFormValues
-  ) => {
-    setSnapshot(values)
-    setStepNumber(Math.min(stepNumber + 1, totalSteps - 1))
-  }
-
-  const previous = (
-    values:
-      | LiveSessionFormValues
-      | MicroSessionFormValues
-      | LearningElementFormValues
-  ) => {
-    setSnapshot(values)
-    setStepNumber(Math.max(stepNumber - 1, 0))
-  }
 
   const handleSubmit = async (
     values:
@@ -108,7 +86,6 @@ function MultistepWizard({
       | LearningElementFormValues,
     bag: any
   ) => {
-    console.log('handleSubmit - values: ', values)
     if (step.props.onSubmit) {
       await step.props.onSubmit(values, bag)
     }
@@ -117,16 +94,17 @@ function MultistepWizard({
       return onSubmit(values, bag)
     } else {
       bag.setTouched({})
-      next(values)
+      setStepNumber(Math.min(stepNumber + 1, totalSteps - 1))
     }
   }
 
   return (
     <Formik
-      initialValues={snapshot}
+      initialValues={initialValues}
       onSubmit={handleSubmit}
       validationSchema={step.props.validationSchema}
       isInitialValid={false}
+      enableReinitialize
     >
       {({ values, isSubmitting, isValid, resetForm }) => (
         <Form className="flex flex-col justify-between gap-1 p-4 overflow-y-auto h-80">
@@ -165,7 +143,7 @@ function MultistepWizard({
               <div>
                 <Button
                   disabled={stepNumber === 0}
-                  onClick={() => previous(values)}
+                  onClick={() => setStepNumber(Math.max(stepNumber - 1, 0))}
                   type="button"
                 >
                   Zurück
@@ -182,11 +160,9 @@ function MultistepWizard({
                 formatter={(step) => `Schritt ${step + 1}`}
               />
 
-              <div>
-                <Button disabled={isSubmitting} type="submit">
-                  {isLastStep ? 'Erstellen' : 'Weiter'}
-                </Button>
-              </div>
+              <Button disabled={isSubmitting && !isValid} type="submit">
+                {isLastStep ? 'Erstellen' : 'Weiter'}
+              </Button>
             </div>
           )}
         </Form>

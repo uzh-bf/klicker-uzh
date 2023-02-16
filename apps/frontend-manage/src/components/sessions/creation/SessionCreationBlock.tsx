@@ -39,7 +39,6 @@ function SessionCreationBlock({
 }: SessionCreationBlockProps): React.ReactElement {
   const theme = useContext(ThemeContext)
   const [openSettings, setOpenSettings] = useState(false)
-  console.log('SessionCreationBlock - block: ', block)
 
   const [{ isOver }, drop] = useDrop(
     () => ({
@@ -51,18 +50,11 @@ function SessionCreationBlock({
         title: string
         content: string
       }) => {
-        console.log('useDrop item: ', item)
-        console.log('block - questionIds: ', block.questionIds)
-        console.log('block - titles: ', block.titles)
-
         replace(index, {
           ...block,
           questionIds: [...block.questionIds, item.id],
           titles: [...block.titles, item.title],
         })
-
-        console.log('updated block - questionIds: ', block.questionIds)
-        console.log('updated block - titles: ', block.titles)
       },
       collect: (monitor) => ({
         isOver: !!monitor.isOver(),
@@ -70,7 +62,6 @@ function SessionCreationBlock({
     }),
     []
   )
-  console.log('block - questionIds: ', block.questionIds)
 
   return (
     <div
