@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.45](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.44...v3.0.0-alpha.45) (2023-02-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** update course prop ([c2e96de](https://github.com/uzh-bf/klicker-uzh/commit/c2e96deecda928903b690f10f0774cb05050ae88))
+
 ## [3.0.0-alpha.44](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.43...v3.0.0-alpha.44) (2023-02-16)
 
 
