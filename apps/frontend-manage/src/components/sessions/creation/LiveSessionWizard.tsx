@@ -9,7 +9,7 @@ import {
   FormikSelectField,
   FormikSwitchField,
   FormikTextField,
-  Label,
+  H3,
 } from '@uzh-bf/design-system'
 import { ErrorMessage } from 'formik'
 import { useRouter } from 'next/router'
@@ -242,59 +242,56 @@ function StepOne(_: StepProps) {
 function StepTwo(props: StepProps) {
   return (
     <>
-      <div className="flex flex-row items-center gap-4">
-        <Label
-          label="Optionen"
-          className={{
-            root: 'my-auto mr-2 font-bold min-w-max',
-            tooltip: 'text-sm font-normal !w-1/2',
-          }}
-        />
+      <div className="flex flex-col gap-2">
+        <H3 className={{ root: 'mb-0' }}>Optionen</H3>
         {props.courses && (
-          <>
-            <div className="mr-2" data-cy="select-course-div">
-              Kurs:
-            </div>
+          <div className="flex flex-row items-center gap-4">
             <FormikSelectField
               name="courseId"
+              label="Kurs"
+              tooltip="Sie können Ihre Session einem Kurs zuordnen."
               placeholder="Kurs auswählen"
               items={[{ label: 'Kein Kurs', value: '' }, ...props.courses]}
+              hideError
             />
-          </>
+            <ErrorMessage
+              name="courseId"
+              component="div"
+              className="text-sm text-red-400"
+            />
+          </div>
         )}
-        <div className="ml-4 mr-2">Multiplier:</div>
-        <FormikSelectField
-          name="multiplier"
-          placeholder="Default: 1x"
-          items={[
-            { label: 'Einfach (1x)', value: '1' },
-            { label: 'Doppelt (2x)', value: '2' },
-            { label: 'Dreifach (3x)', value: '3' },
-            { label: 'Vierfach (4x)', value: '4' },
-          ]}
-        />
-        <FormikSwitchField
-          name="isGamificationEnabled"
-          label="Gamification"
-          className={{ root: 'ml-4' }}
-        />
-      </div>
-      <div>
-        <ErrorMessage
-          name="courseId"
-          component="div"
-          className="text-sm text-red-400"
-        />
-        <ErrorMessage
-          name="multiplier"
-          component="div"
-          className="text-sm text-red-400"
-        />
-        <ErrorMessage
-          name="isGamificationEnabled"
-          component="div"
-          className="text-sm text-red-400"
-        />
+        <div className="flex flex-row items-center gap-4">
+          <FormikSelectField
+            name="multiplier"
+            label="Multiplier"
+            tooltip="Beim Multiplier handelt es sich um einen Faktor, mit welchem die Punkte bei einer beantworteten Frage multipliziert werden. Der Faktor findet nur Verwendung, wenn Gamification aktiviert ist."
+            placeholder="Default: 1x"
+            items={[
+              { label: 'Einfach (1x)', value: '1' },
+              { label: 'Doppelt (2x)', value: '2' },
+              { label: 'Dreifach (3x)', value: '3' },
+              { label: 'Vierfach (4x)', value: '4' },
+            ]}
+            required
+          />
+          <ErrorMessage
+            name="multiplier"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
+        <div>
+          <FormikSwitchField
+            name="isGamificationEnabled"
+            label="Gamification"
+          />
+          <ErrorMessage
+            name="isGamificationEnabled"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
       </div>
     </>
   )
