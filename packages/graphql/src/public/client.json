@@ -1,6 +1,7 @@
 {
    "ActivateSessionBlock": "6b9057f6ce9239f8fda1eb6cee6ea184fa52414d4048f39d272d94ff789bd928",
    "AddConfusionTimestep": "c3f0a2dcb9c2abf0e273a6c0ada8eb9afa2f7bb3872728c6d27f22371ea13f31",
+   "BookmarkQuestion": "e43230031ba8572694cdad173b5f3c1b9b921968b71a21c1fc4aee1b9dee07ef",
    "CancelSession": "3c4a68af1d35ac27358723adb601fc9d7bf5d2fb15edbbf8f5b353679ac76387",
    "ChangeCourseColor": "3d483bc4021ae8f471409fb6d1994f3e00678595a665c15359c7b5b9b79d89d0",
    "ChangeCourseDescription": "b11fa59c1381e2682eb55a8f06436a0eff89006c0c31eaf3db05472b888c616d",
@@ -49,6 +50,7 @@
    "UpvoteFeedback": "1bb1b9c4d54dd21359cb8b10323958fe15776d603b4ab9d54de7c6bb779cad43",
    "VoteFeedbackResponse": "eca425e3d49e7898281d10de07a8b54068e6f4ce77dc5049bd9f2386395fe459",
    "GetBasicCourseInformation": "01371442c035027a3226299eb86410fb5c472bbfd725ad8bd7c05a2665b49809",
+   "GetBookmarkedQuestions": "16ea7e12cf3a353096912207b25a11654290a7f2c1fdfeba1aa769ffc63712f9",
    "GetCockpitSession": "93ff8b83c846f412f80e564a899f8a3fbf3cb69014c774595b54fd7fffbcccb2",
    "GetControlCourse": "88f7734aa4fd0d77bcf607916ed3e6aee305171448d19d6be9604f845b0c2594",
    "GetControlCourses": "f62c7d2cb59eb42a077e6d527c90f4838a2888cb9a9f60259979114b6a3b759f",

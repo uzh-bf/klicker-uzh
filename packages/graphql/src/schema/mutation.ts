@@ -716,6 +716,18 @@ export const Mutation = builder.mutationType({
           return QuestionService.manipulateQuestion(args, ctx)
         },
       }),
+
+      bookmarkQuestion: asParticipant.field({
+        nullable: true,
+        type: Participation,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          instanceId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.bookmarkQuestion(args, ctx)
+        },
+      }),
     }
   },
 })

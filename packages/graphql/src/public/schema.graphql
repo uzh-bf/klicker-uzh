@@ -342,6 +342,7 @@ type MicroSession {
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
+  bookmarkQuestion(courseId: String!, instanceId: Int!): Participation
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDescription(courseId: String!, input: String!): Course
@@ -491,6 +492,7 @@ type ParticipantLearningData {
 }
 
 type Participation {
+  bookmarkedQuestions: [QuestionInstance!]
   completedMicroSessions: [String!]!
   course: Course
   id: Int!
@@ -512,6 +514,7 @@ type Query {
   controlSession(id: String!): Session
   course(id: String!): Course
   feedbacks(id: String!): [Feedback!]
+  getBookmarkedQuestions(courseId: String!): [QuestionInstance!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails

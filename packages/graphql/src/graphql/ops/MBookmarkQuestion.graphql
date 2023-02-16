@@ -1,0 +1,9 @@
+mutation BookmarkQuestion($instanceId: Int!, $courseId: String!) {
+  bookmarkQuestion(instanceId: $instanceId, courseId: $courseId) {
+    id
+    isActive
+    bookmarkedQuestions {
+      id
+    }
+  }
+}
