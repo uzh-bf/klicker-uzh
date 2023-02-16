@@ -4,8 +4,7 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, ThemeContext } from '@uzh-bf/design-system'
-import { useContext } from 'react'
+import { Button } from '@uzh-bf/design-system'
 
 interface QuestionBlockProps {
   index: number
@@ -27,9 +26,6 @@ function QuestionBlock({
   remove,
   move,
 }: QuestionBlockProps): React.ReactElement {
-  const theme = useContext(ThemeContext)
-
-  console.log('QuestionBlock - question: ', question)
   return (
     <div
       key={index}

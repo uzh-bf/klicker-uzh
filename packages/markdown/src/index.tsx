@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react'
+import rehypeExternalLinks from 'rehype-external-links'
 import katex from 'rehype-katex'
+// import rehypePrism from 'rehype-prism-plus'
 import rehype2react from 'rehype-react'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import math from 'remark-math'
@@ -54,8 +56,14 @@ function Markdown({
                   ...(defaultSchema?.attributes?.img || []),
                   ['className', 'src', 'alt'],
                 ],
+                a: [
+                  ...(defaultSchema?.attributes?.a || []),
+                  ['className', 'href', 'target', 'rel'],
+                ],
               },
             })
+            // .use(rehypePrism)
+            .use(rehypeExternalLinks)
             .use(katex, {
               throwOnError: false,
             })

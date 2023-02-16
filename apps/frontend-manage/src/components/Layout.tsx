@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { User, UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
@@ -45,7 +45,7 @@ function Layout({ displayName, children, className, scrollable }: LayoutProps) {
 
       <div className={twMerge('h-full overflow-y-none', className)}>
         <div className="fixed top-0 z-10 w-full print:hidden">
-          <Header user={dataUser.userProfile as User} />
+          <Header user={dataUser.userProfile} />
         </div>
         <div
           className={twMerge(

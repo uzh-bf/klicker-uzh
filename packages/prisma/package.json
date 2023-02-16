@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.0.0-alpha.40",
+  "version": "3.0.0-alpha.43",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,6 +36,7 @@
     "seed": "ENV=development doppler run --config dev -- npm-run-all seed:test",
     "seed:test": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
     "seed:achievements": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/seed/seedAchievements.ts",
+    "seed:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config dev -- ts-node --esm --experimental-specifier-resolution=node src/data/importQuestions.ts",
     "seed:qa": "ENV=development doppler run --config stg -- npm-run-all seed:qa:test",
     "seed:qa:test": "ts-node --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
     "seed:prod": "ENV=production doppler run --config prd -- npm-run-all seed:prod:bf1 seed:prod:ami",
@@ -65,6 +66,7 @@
     "@tsconfig/node18": "^1.0.1",
     "@tsconfig/recommended": "^1.0.2",
     "@types/bcryptjs": "^2.4.2",
+    "@types/node": "^18.13.0",
     "@types/ramda": "^0.28.15",
     "bcryptjs": "2.4.3",
     "dotenv": "16.0.3",
@@ -76,7 +78,8 @@
     "size-limit": "8.2.4",
     "ts-node": "10.9.1",
     "tsup": "6.6.2",
-    "typescript": "4.9.5"
+    "typescript": "4.9.5",
+    "uuidv4": "6.2.13"
   },
   "dependencies": {
     "@prisma/client": "4.8.1"
