@@ -1,11 +1,20 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  faBookmark,
+  faFlag,
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import { faCheck, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
+import {
+  faBookmark as faBookmarkSolid,
+  faCheck,
+  faRepeat,
+  faShuffle,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  BookmarkQuestionDocument,
+  GetBookmarkedQuestionsDocument,
   GetLearningElementDocument,
   QuestionType,
   ResponseToQuestionInstanceDocument,
@@ -38,16 +47,34 @@ interface Props {
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
 function LearningElement({ courseId, id }: Props) {
+  const router = useRouter()
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
 
-  const router = useRouter()
+  const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
+    refetchQueries: [
+      // TODO: replace with more efficient UPDATE instead of refetching everything
+      { query: GetBookmarkedQuestionsDocument, variables: { courseId } },
+    ],
+  })
+  const { data: bookmarks } = useQuery(GetBookmarkedQuestionsDocument, {
+    variables: { courseId: router.query.courseId as string },
+    skip: !router.query.courseId,
+  })
 
   const { loading, error, data } = useQuery(GetLearningElementDocument, {
     variables: { id },
   })
 
-  const currentInstance = data?.learningElement?.instances?.[currentIx]
+  const currentInstance = {
+    ...data?.learningElement?.instances?.[currentIx],
+    isBookmarked: bookmarks?.getBookmarkedQuestions?.find(
+      (question) =>
+        question.id === data?.learningElement?.instances?.[currentIx]?.id
+    )
+      ? true
+      : false,
+  }
   const questionData = currentInstance?.questionData
 
   useEffect(() => {
@@ -104,8 +131,8 @@ function LearningElement({ courseId, id }: Props) {
   return (
     <Layout
       displayName={data.learningElement.displayName}
-      courseName={data.learningElement.course.displayName}
-      courseColor={data.learningElement.course.color}
+      courseName={data.learningElement.course?.displayName}
+      courseColor={data.learningElement.course?.color}
     >
       <div className="flex-1">
         <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
@@ -164,7 +191,7 @@ function LearningElement({ courseId, id }: Props) {
                     <div>
                       Min. 1x beantwortet:{' '}
                       {data.learningElement.previouslyAnswered}/
-                      {data.learningElement.instances.length}
+                      {data.learningElement.instances?.length}
                     </div>
                   </div>
                   {/* <div className="flex flex-row items-center gap-2">
@@ -243,9 +270,34 @@ function LearningElement({ courseId, id }: Props) {
                   <div className="flex-1 basis-2/3">
                     <div className="flex flex-row items-center justify-between mb-4 border-b">
                       <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
-                      <div className="text-sm md:text-base text-slate-500">
-                        Frage {currentIx + 1}/
-                        {data.learningElement?.instances?.length}
+                      <div className="flex flex-row gap-3">
+                        <div className="text-sm md:text-base text-slate-500">
+                          Frage {currentIx + 1}/
+                          {data.learningElement?.instances?.length}
+                        </div>
+                        <Button
+                          className={{ root: 'border-none shadow-none' }}
+                          onClick={() => {
+                            bookmarkQuestion({
+                              variables: {
+                                instanceId: currentInstance.id!,
+                                courseId: courseId,
+                                bookmarked: !currentInstance.isBookmarked,
+                              },
+                            })
+                          }}
+                        >
+                          {currentInstance.isBookmarked ? (
+                            <FontAwesomeIcon
+                              className="text-red-600"
+                              icon={faBookmarkSolid}
+                            ></FontAwesomeIcon>
+                          ) : (
+                            <FontAwesomeIcon
+                              icon={faBookmark}
+                            ></FontAwesomeIcon>
+                          )}
+                        </Button>
                       </div>
                     </div>
 
@@ -267,9 +319,12 @@ function LearningElement({ courseId, id }: Props) {
 
                   {currentInstance.evaluation && (
                     <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50 basis-1/3">
-                      <div className="flex flex-row gap-2">
-                        <div className="font-bold">Multiplikator</div>
-                        <div>{currentInstance.pointsMultiplier}x</div>
+                      <div className="flex justify-between">
+                        <div className="flex flex-row gap-2">
+                          <div className="font-bold">Multiplikator</div>
+                          <div>{currentInstance.pointsMultiplier}x</div>
+                        </div>
+                        <FontAwesomeIcon icon={faFlag}></FontAwesomeIcon>
                       </div>
                       <div className="flex flex-row gap-8">
                         <div>

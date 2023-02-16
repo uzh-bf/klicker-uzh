@@ -354,3 +354,59 @@ export async function createParticipantAndJoinCourse(
     return participant
   }
 }
+
+interface BookmarkQuestionArgs {
+  instanceId: number
+  courseId: string
+  bookmarked: boolean
+}
+
+export async function bookmarkQuestion(
+  { instanceId, courseId, bookmarked }: BookmarkQuestionArgs,
+  ctx: Context
+) {
+  console.log('received args', { instanceId, courseId, bookmarked })
+  const participation = await ctx.prisma.participation.update({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user!.sub,
+      },
+    },
+    data: {
+      bookmarkedQuestions: {
+        [bookmarked ? 'connect' : 'disconnect']: {
+          id: instanceId,
+        },
+      },
+    },
+    include: {
+      bookmarkedQuestions: true,
+    },
+  })
+
+  return participation
+}
+
+interface GetBookmarkedQuestionsArgs {
+  courseId: string
+}
+
+export async function getBookmarkedQuestions(
+  { courseId }: GetBookmarkedQuestionsArgs,
+  ctx: Context
+) {
+  const participation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user!.sub,
+      },
+    },
+    include: {
+      bookmarkedQuestions: true,
+    },
+  })
+
+  return participation?.bookmarkedQuestions ?? []
+}
