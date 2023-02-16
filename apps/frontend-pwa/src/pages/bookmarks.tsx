@@ -11,7 +11,10 @@ function Bookmarks() {
   const { data } = useQuery(GetParticipantCoursesDocument)
 
   return (
-    <Layout courseName="KlickerUZH" displayName="Meine Bookmarks">
+    <Layout
+      course={{ displayName: 'KlickerUZH' }}
+      displayName="Meine Bookmarks"
+    >
       <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className={{ root: 'text-xl' }}>Kurs auswählen</H1>
         {data?.participantCourses?.map((course) => (
