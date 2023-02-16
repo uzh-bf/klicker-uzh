@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.46](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.45...v3.0.0-alpha.46) (2023-02-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** add server side props for docs index page to allow for LTI integration ([110c0e6](https://github.com/uzh-bf/klicker-uzh/commit/110c0e6117c02fb7c976a2d5a07ca4856d37b2a5))
+
 ## [3.0.0-alpha.45](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.44...v3.0.0-alpha.45) (2023-02-16)
 
 
