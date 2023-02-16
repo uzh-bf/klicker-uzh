@@ -1,8 +1,7 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Choice } from '@klicker-uzh/graphql/dist/ops'
+import { Choice, QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { QuestionType } from '@type/app'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { indexBy } from 'ramda'
 import { useContext, useMemo } from 'react'
@@ -35,7 +34,7 @@ function ChoiceOptions({
         <div key={choice.value} className="w-full">
           <Button
             disabled={disabled || isEvaluation}
-            active={response?.includes(choice.ix)}
+            active={Array.isArray(response) && response?.includes(choice.ix)}
             className={{
               root: twMerge(
                 'px-4 py-3 text-sm shadow-md',
@@ -110,7 +109,7 @@ export function Options({
   isCompact,
 }: OptionsProps) {
   switch (questionType) {
-    case QuestionType.SC:
+    case QuestionType.Sc:
       return (
         <div>
           {withGuidance && (
@@ -131,7 +130,7 @@ export function Options({
         </div>
       )
 
-    case QuestionType.MC:
+    case QuestionType.Mc:
       return (
         <div>
           {withGuidance && (
@@ -161,7 +160,7 @@ export function Options({
         </div>
       )
 
-    case QuestionType.KPRIM:
+    case QuestionType.Kprim:
       return (
         <div>
           {withGuidance && (
@@ -177,7 +176,7 @@ export function Options({
                 (!response?.[choice.ix] && !feedbacks?.[choice.ix].correct)
 
               return (
-                <div className="flex flex-col" key={choice.ix}>
+                <div className="flex flex-col" key={choice.value}>
                   <div className="flex flex-row items-center justify-between gap-4 p-2 border">
                     <div>
                       <Markdown content={choice.value} />
@@ -257,7 +256,7 @@ export function Options({
         </div>
       )
 
-    case QuestionType.NUMERICAL:
+    case QuestionType.Numerical:
       return (
         <div>
           {withGuidance && (
@@ -283,7 +282,11 @@ export function Options({
       )
 
     default:
-      return null
+      return (
+        <div className="text-red-600">
+          Dieser Fragetyp ist für Lernelemente nicht verfügbar.
+        </div>
+      )
   }
 }
 
@@ -333,9 +336,9 @@ function OptionsDisplay({
           className={{ root: 'text-lg' }}
           disabled={
             (!isEvaluation &&
-              questionType !== QuestionType.KPRIM &&
+              questionType !== QuestionType.Kprim &&
               response?.length === 0) ||
-            (questionType === QuestionType.KPRIM &&
+            (questionType === QuestionType.Kprim &&
               response &&
               Object.keys(response).length !== options.choices.length)
           }

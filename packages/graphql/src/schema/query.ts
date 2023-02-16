@@ -19,7 +19,7 @@ import {
   ParticipantLearningData,
   Participation,
 } from './participant'
-import { Question, Tag } from './question'
+import { Question, QuestionInstance, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
 import { User } from './user'
 
@@ -119,6 +119,13 @@ export const Query = builder.queryType({
           return CourseService.getUserCourses(ctx)
         },
       }),
+      participantCourses: asParticipant.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return CourseService.getParticipantCourses(ctx)
+        },
+      }),
       unassignedSessions: asUser.field({
         nullable: true,
         type: [Session],
@@ -181,7 +188,7 @@ export const Query = builder.queryType({
           return LearningElementService.getLearningElementData(args, ctx) as any
         },
       }),
-      learningElements: asUser.field({
+      learningElements: asParticipant.field({
         nullable: true,
         type: [LearningElement],
         resolve(_, __, ctx) {
@@ -318,6 +325,28 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ParticipantGroupService.getGroupActivityDetails(args, ctx)
+        },
+      }),
+      getBookmarkedQuestions: asParticipant.field({
+        nullable: true,
+        type: [QuestionInstance],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.getBookmarkedQuestions(args, ctx)
+        },
+      }),
+
+      getBookmarksLearningElement: asParticipant.field({
+        nullable: true,
+        type: [QuestionInstance],
+        args: {
+          elementId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.getBookmarksLearningElement(args, ctx)
         },
       }),
     }

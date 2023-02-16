@@ -332,6 +332,23 @@ export async function getUserCourses(ctx: ContextWithUser) {
   return userCourses?.courses ?? []
 }
 
+export async function getParticipantCourses(ctx: ContextWithUser) {
+  const participantCourses = await ctx.prisma.participant.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      participations: {
+        include: {
+          course: true,
+        },
+      },
+    },
+  })
+
+  return participantCourses?.participations.map((p) => p.course) ?? []
+}
+
 export async function getControlCourses(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {

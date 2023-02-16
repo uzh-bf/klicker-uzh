@@ -1,0 +1,9 @@
+query GetParticipantCourses {
+  participantCourses {
+    id
+    isArchived
+    name
+    displayName
+    description
+  }
+}
