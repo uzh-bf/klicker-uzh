@@ -62,6 +62,7 @@
    "GetLearningElements": "b52b80f8e157bbae0da3f345e6cabac0c5c3346ed07a51b1164cf7b924a8db42",
    "GetLoginToken": "491946fc1fcbd066ea481c564313f4e50b7cc98ea16ab16a7a2146d75ec8cf00",
    "GetMicroSession": "8ccedb455823acae0eb9a97824e27bfa7b609eb8482cbb669ec615171828b64c",
+   "GetParticipantCourses": "aa42400c1896e92228becf29b1c489c1a07f8c695725ce2e2651c60600d083cc",
    "GetParticipantGroups": "ed00e7291d2ce97456fd3d3549fbb0ac68e86573da564d38c6798e9bfb439e4d",
    "GetPinnedFeedbacks": "c518ff6077ec8146c40f030193aa568be1c3ae87223c916975e94400f752e158",
    "GetRunningSession": "6e4bafb0d80145321bfe7272ce931444d72502dabf77efc8fa2ced040fefbb9b",
