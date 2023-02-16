@@ -148,10 +148,10 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
           description: initialValues?.description || '',
           blocks: initialValues?.blocks?.map((block) => {
             return {
-              questionIds: block.instances.map(
+              questionIds: block.instances?.map(
                 (instance) => instance.questionData.id
               ),
-              titles: block.instances.map(
+              titles: block.instances?.map(
                 (instance) => instance.questionData.name
               ),
               timeLimit: block.timeLimit ?? undefined,
@@ -243,7 +243,7 @@ function StepTwo(props: StepProps) {
   return (
     <>
       <div className="flex flex-col gap-2">
-        <H3 className={{ root: 'mb-0' }}>Optionen</H3>
+        <H3 className={{ root: 'mb-0' }}>Einstellungen</H3>
         {props.courses && (
           <div className="flex flex-row items-center gap-4">
             <FormikSelectField
@@ -285,6 +285,9 @@ function StepTwo(props: StepProps) {
           <FormikSwitchField
             name="isGamificationEnabled"
             label="Gamification"
+            tooltip="Bestimmen Sie, ob Gamification für diese Session aktiviert sein soll. Gamifizierte Sessionen sollten nur für gamifizierte Kurse verwendet werden."
+            required
+            standardLabel
           />
           <ErrorMessage
             name="isGamificationEnabled"
