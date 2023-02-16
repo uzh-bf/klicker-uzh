@@ -61,9 +61,6 @@ const stepThreeValidationSchema = yup.object().shape({
       yup.object().shape({
         id: yup.string(),
         title: yup.string(),
-        // type: yup
-        //   .string()
-        //   .oneOf(['SC', 'MC', 'KPRIM', 'NUMERICAL', 'KPRIM', 'FREE_TEXT']),
         // hasAnswerFeedbacks: yup.boolean().when('type', {
         //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
         //   then: yup.boolean().isTrue(),
