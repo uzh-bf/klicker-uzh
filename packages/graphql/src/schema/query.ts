@@ -188,7 +188,7 @@ export const Query = builder.queryType({
           return LearningElementService.getLearningElementData(args, ctx) as any
         },
       }),
-      learningElements: asUser.field({
+      learningElements: asParticipant.field({
         nullable: true,
         type: [LearningElement],
         resolve(_, __, ctx) {
