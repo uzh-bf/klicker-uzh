@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
+import { Course, SelfDocument } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -10,9 +10,7 @@ import MobileMenuBar from './common/MobileMenuBar'
 interface LayoutProps {
   children?: React.ReactNode
   displayName?: string
-  courseName?: string
-  courseColor?: string | null
-  courseId?: string
+  course?: Partial<Omit<Course, 'awards' | 'owner'>>
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string
@@ -27,9 +25,7 @@ interface LayoutProps {
 
 const defaultProps = {
   displayName: 'KlickerUZH',
-  courseName: undefined,
-  courseColor: undefined,
-  courseId: undefined,
+  course: undefined,
   mobileMenuItems: undefined,
   className: '',
   pageNotFound: false,
@@ -38,9 +34,7 @@ const defaultProps = {
 function Layout({
   children,
   displayName,
-  courseName,
-  courseColor,
-  courseId,
+  course,
   mobileMenuItems,
   pageNotFound,
   setActiveMobilePage,
@@ -59,10 +53,10 @@ function Layout({
   return (
     <div className="flex flex-col w-full h-full">
       <Head>
-        <title>{`${courseName} - ${displayName}`}</title>
+        <title>{`${course?.displayName} - ${displayName}`}</title>
         <meta
           name="description"
-          content={`${courseName} - ${displayName}`}
+          content={`${course?.displayName} - ${displayName}`}
           charSet="utf-8"
         ></meta>
       </Head>
@@ -72,9 +66,7 @@ function Layout({
           <Header
             participant={dataParticipant?.self || undefined}
             title={displayName}
-            courseName={courseName}
-            courseColor={courseColor}
-            courseId={courseId}
+            course={course}
           />
         </div>
 

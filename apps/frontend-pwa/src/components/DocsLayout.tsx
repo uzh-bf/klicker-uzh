@@ -32,11 +32,7 @@ function DocsLayout({
   }
 
   return (
-    <Layout
-      courseName={data.basicCourseInformation.name}
-      displayName="Dokumentation"
-      courseColor={data.basicCourseInformation.color}
-    >
+    <Layout course={data.basicCourseInformation} displayName="Dokumentation">
       <div className="w-full max-w-4xl mx-auto">
         <div>
           <Navigation
@@ -51,7 +47,7 @@ function DocsLayout({
               label="Kursinformationen"
               className={{ root: `text-white` }}
               onClick={() =>
-                router.push(`/course/${data.basicCourseInformation.id}/docs`)
+                router.push(`/course/${data.basicCourseInformation?.id}/docs`)
               }
             ></Navigation.ButtonItem>
             <Navigation.TriggerItem
@@ -63,7 +59,7 @@ function DocsLayout({
                 title="App einrichten"
                 onClick={() =>
                   router.push(
-                    `/course/${data.basicCourseInformation.id}/docs/appSetup`
+                    `/course/${data.basicCourseInformation?.id}/docs/appSetup`
                   )
                 }
               />
@@ -71,7 +67,7 @@ function DocsLayout({
                 title="Erstmaliges Login"
                 onClick={() =>
                   router.push(
-                    `/course/${data.basicCourseInformation.id}/docs/login`
+                    `/course/${data.basicCourseInformation?.id}/docs/login`
                   )
                 }
               />
@@ -85,7 +81,7 @@ function DocsLayout({
                 title="Umfragen"
                 onClick={() =>
                   router.push(
-                    `/course/${data.basicCourseInformation.id}/docs/polls`
+                    `/course/${data.basicCourseInformation?.id}/docs/polls`
                   )
                 }
                 className={{ root: 'text-center' }}
@@ -94,7 +90,7 @@ function DocsLayout({
                 title="Live Q&A"
                 onClick={() =>
                   router.push(
-                    `/course/${data.basicCourseInformation.id}/docs/liveQA`
+                    `/course/${data.basicCourseInformation?.id}/docs/liveQA`
                   )
                 }
               />
@@ -102,7 +98,7 @@ function DocsLayout({
                 title="Gruppenaktivitäten"
                 onClick={() =>
                   router.push(
-                    `/course/${data.basicCourseInformation.id}/docs/groupActivities`
+                    `/course/${data.basicCourseInformation?.id}/docs/groupActivities`
                   )
                 }
               />
@@ -110,7 +106,7 @@ function DocsLayout({
                 title="Microlearning"
                 onClick={() =>
                   router.push(
-                    `/course/${data.basicCourseInformation.id}/docs/microSessions`
+                    `/course/${data.basicCourseInformation?.id}/docs/microSessions`
                   )
                 }
               />
@@ -118,7 +114,7 @@ function DocsLayout({
                 title="Selbsttests"
                 onClick={() =>
                   router.push(
-                    `/course/${data.basicCourseInformation.id}/docs/learningElements`
+                    `/course/${data.basicCourseInformation?.id}/docs/learningElements`
                   )
                 }
               />

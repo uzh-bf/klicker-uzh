@@ -1,6 +1,6 @@
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Participant } from '@klicker-uzh/graphql/dist/ops'
+import { Course, Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2 } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -9,25 +9,20 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
-  participant?: Participant
+  participant?: Partial<Participant>
   title?: string
-  courseName?: string
-  courseColor?: string | null
-  courseId?: string
+  course?: Partial<Course>
 }
 
 const defaultProps = {
   title: undefined,
-  courseColor: undefined,
-  courseId: undefined,
+  course: undefined,
 }
 
 function Header({
   participant,
   title,
-  courseName,
-  courseColor,
-  courseId,
+  course,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
 
@@ -37,28 +32,26 @@ function Header({
 
   return (
     <div
-      style={{ borderColor: courseColor || undefined }}
+      style={{ borderColor: course?.color || undefined }}
       className={twMerge(
         'flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800 border-b-8',
-        !courseColor && 'border-uzh-red-60'
+        !course?.color && 'border-uzh-red-60'
       )}
     >
-      {title && courseName && (
+      {title && course?.displayName && (
         <div>
           <H1 className={{ root: 'm-0 text-sm text-uzh-grey-60' }}>
-            {courseName}
+            {course.displayName}
           </H1>
           <H2 className={{ root: 'm-0 text-base' }}>{title}</H2>
         </div>
       )}
-
-      {title && !courseName && (
+      {title && !course?.displayName && (
         <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
       )}
-
       <div className="flex flex-row items-center gap-4">
-        {courseId && (
-          <Link href={`/course/${courseId}/docs`}>
+        {course?.id && (
+          <Link href={`/course/${course.id}/docs`}>
             <Button
               className={{
                 root: 'bg-slate-800 peer-disabled: md:block border-slate-800',

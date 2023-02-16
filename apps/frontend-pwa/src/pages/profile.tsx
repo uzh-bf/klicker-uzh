@@ -18,7 +18,7 @@ const Profile = () => {
   const pageInFrame = window && window?.location !== window?.parent.location
 
   return (
-    <Layout courseName="KlickerUZH" displayName="Mein Profil">
+    <Layout course={{ displayName: 'KlickerUZH' }} displayName="Mein Profil">
       <div className="flex flex-col gap-8 md:max-w-3xl md:border md:rounded md:p-4 md:mx-auto md:w-full">
         <div className="flex flex-row gap-4">
           <div className="relative flex-none border-b-4 w-36 h-36 ">
