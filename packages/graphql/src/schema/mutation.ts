@@ -723,6 +723,7 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
           instanceId: t.arg.int({ required: true }),
+          bookmarked: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return ParticipantService.bookmarkQuestion(args, ctx)

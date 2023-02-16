@@ -1,5 +1,13 @@
-mutation BookmarkQuestion($instanceId: Int!, $courseId: String!) {
-  bookmarkQuestion(instanceId: $instanceId, courseId: $courseId) {
+mutation BookmarkQuestion(
+  $instanceId: Int!
+  $courseId: String!
+  $bookmarked: Boolean!
+) {
+  bookmarkQuestion(
+    instanceId: $instanceId
+    courseId: $courseId
+    bookmarked: $bookmarked
+  ) {
     id
     isActive
     bookmarkedQuestions {

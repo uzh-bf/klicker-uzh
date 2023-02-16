@@ -14,6 +14,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   BookmarkQuestionDocument,
+  GetBookmarkedQuestionsDocument,
   GetLearningElementDocument,
   QuestionType,
   ResponseToQuestionInstanceDocument,
@@ -46,19 +47,30 @@ interface Props {
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
 function LearningElement({ courseId, id }: Props) {
+  const router = useRouter()
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
-  const [bookMarkSelected, setbookMarkSelected] = useState(false)
+  const [bookmarked, setBookmarked] = useState(false)
 
   const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument)
-
-  const router = useRouter()
+  const { data: bookmarks } = useQuery(GetBookmarkedQuestionsDocument, {
+    variables: { courseId: router.query.courseId as string },
+    skip: !router.query.courseId,
+  })
 
   const { loading, error, data } = useQuery(GetLearningElementDocument, {
     variables: { id },
   })
 
-  const currentInstance = data?.learningElement?.instances?.[currentIx]
+  const currentInstance = {
+    ...data?.learningElement?.instances?.[currentIx],
+    isBookmarked: bookmarks?.getBookmarkedQuestions?.find(
+      (question) =>
+        question.id === data?.learningElement?.instances?.[currentIx]?.id
+    )
+      ? true
+      : false,
+  }
   const questionData = currentInstance?.questionData
 
   useEffect(() => {
@@ -77,6 +89,14 @@ function LearningElement({ courseId, id }: Props) {
       setResponse(null)
     }
   }, [questionData?.type, currentIx])
+
+  useEffect(() => {
+    if (currentInstance.isBookmarked) {
+      setBookmarked(true)
+    } else {
+      setBookmarked(false)
+    }
+  }, [currentInstance.isBookmarked])
 
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
@@ -115,8 +135,8 @@ function LearningElement({ courseId, id }: Props) {
   return (
     <Layout
       displayName={data.learningElement.displayName}
-      courseName={data.learningElement.course.displayName}
-      courseColor={data.learningElement.course.color}
+      courseName={data.learningElement.course?.displayName}
+      courseColor={data.learningElement.course?.color}
     >
       <div className="flex-1">
         <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
@@ -175,7 +195,7 @@ function LearningElement({ courseId, id }: Props) {
                     <div>
                       Min. 1x beantwortet:{' '}
                       {data.learningElement.previouslyAnswered}/
-                      {data.learningElement.instances.length}
+                      {data.learningElement.instances?.length}
                     </div>
                   </div>
                   {/* <div className="flex flex-row items-center gap-2">
@@ -264,14 +284,15 @@ function LearningElement({ courseId, id }: Props) {
                           onClick={async () => {
                             await bookmarkQuestion({
                               variables: {
-                                instanceId: currentInstance.id,
+                                instanceId: currentInstance.id!,
                                 courseId: courseId,
+                                bookmarked: !bookmarked,
                               },
                             }),
-                              setbookMarkSelected(!bookMarkSelected)
+                              setBookmarked(!bookmarked)
                           }}
                         >
-                          {bookMarkSelected ? (
+                          {bookmarked ? (
                             <FontAwesomeIcon
                               className="text-red-600"
                               icon={faBookmarkSolid}
