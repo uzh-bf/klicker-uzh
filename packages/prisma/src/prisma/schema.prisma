@@ -238,12 +238,13 @@ model Course {
 
   pinCode Int @unique @default(123456789)
 
-  name        String
-  displayName String
-  description String?
-  color       String?  @default("#eaa07d")
-  startDate   DateTime
-  endDate     DateTime
+  name              String
+  displayName       String
+  description       String?
+  color             String?  @default("#eaa07d")
+  startDate         DateTime
+  endDate           DateTime
+  notificationEmail String?
 
   sessions          Session[]
   learningElements  LearningElement[]

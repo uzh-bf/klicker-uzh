@@ -2,9 +2,8 @@ import {
   faBell,
   faBellSlash,
   faCalendar,
-  faFolderClosed,
 } from '@fortawesome/free-regular-svg-icons'
-import { faSync } from '@fortawesome/free-solid-svg-icons'
+import { faBolt, faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -35,7 +34,7 @@ function CourseElement({
   return (
     <div key={course.id} className="flex flex-row w-full">
       <LinkButton
-        icon={(isFuture && faCalendar) || (isPast && faFolderClosed) || faSync}
+        icon={(isFuture && faCalendar) || (isPast && faCheck) || faBolt}
         className={{
           root: twMerge(
             'flex-1 rounded-r-none border-r-0 h-full',

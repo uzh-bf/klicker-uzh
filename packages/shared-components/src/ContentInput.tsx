@@ -25,7 +25,7 @@ import { HistoryEditor, withHistory } from 'slate-history'
 import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
 import { twMerge } from 'tailwind-merge'
 
-import { convertToMd, convertToSlate } from '../../lib/utils/slateMdConversion'
+import { convertToMd, convertToSlate } from './utils/slateMdConversion'
 
 interface Props {
   error?: any

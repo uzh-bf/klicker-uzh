@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   faBookmark,
-  faFlag,
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
@@ -30,6 +29,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Footer from '../../../../components/common/Footer'
 import OptionsDisplay from '../../../../components/common/OptionsDisplay'
 import EvaluationDisplay from '../../../../components/evaluation/EvaluationDisplay'
+import FlagQuestionModal from '../../../../components/flags/FlagQuestionModal'
 import Layout from '../../../../components/Layout'
 import formatResponse from '../../../../lib/formatResponse'
 
@@ -50,6 +50,7 @@ function LearningElement({ courseId, id }: Props) {
   const router = useRouter()
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
     refetchQueries: [
@@ -290,11 +291,9 @@ function LearningElement({ courseId, id }: Props) {
                             <FontAwesomeIcon
                               className="text-red-600"
                               icon={faBookmarkSolid}
-                            ></FontAwesomeIcon>
+                            />
                           ) : (
-                            <FontAwesomeIcon
-                              icon={faBookmark}
-                            ></FontAwesomeIcon>
+                            <FontAwesomeIcon icon={faBookmark} />
                           )}
                         </Button>
                       </div>
@@ -323,7 +322,11 @@ function LearningElement({ courseId, id }: Props) {
                           <div className="font-bold">Multiplikator</div>
                           <div>{currentInstance.pointsMultiplier}x</div>
                         </div>
-                        <FontAwesomeIcon icon={faFlag}></FontAwesomeIcon>
+                        <FlagQuestionModal
+                          open={modalOpen}
+                          setOpen={setModalOpen}
+                          instanceId={currentInstance.id!}
+                        />
                       </div>
                       <div className="flex flex-row gap-8">
                         <div>

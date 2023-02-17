@@ -733,6 +733,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      flagQuestion: asParticipant.string({
+        nullable: true,
+        args: {
+          questionInstanceId: t.arg.int({ required: true }),
+          content: t.arg.string({ required: true }),
+        },
+        async resolve(_, args, ctx) {
+          return ParticipantService.flagQuestion(args, ctx)
+        },
+      }),
+
       changeCourseDates: asUser.field({
         nullable: true,
         type: Course,

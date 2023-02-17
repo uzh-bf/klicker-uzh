@@ -8,6 +8,10 @@ podSecurityContext: {}
 
 securityContext: {}
 
+notifications:
+  url: ''
+  secret: ''
+
 cron:
   dailyGroupScores: "* * * * *"
 
