@@ -38,7 +38,7 @@ import {
   QUESTION_TYPES,
   TYPES_LABELS,
 } from 'shared-components/src/constants'
-import ContentInput from './ContentInput'
+import ContentInput from 'shared-components/src/ContentInput'
 
 const questionManipulationSchema = Yup.object().shape({
   name: Yup.string().required('Geben Sie einen Namen für die Frage ein.'),
