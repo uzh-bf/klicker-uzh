@@ -4,6 +4,7 @@ import {
   faBookOpenReader,
   faChalkboard,
   faCheck,
+  faCirclePlus,
   faGraduationCap,
   faLink,
 } from '@fortawesome/free-solid-svg-icons'
@@ -19,6 +20,7 @@ import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import LinkButton from '../components/common/LinkButton'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import SurveyPromotion from '../components/SurveyPromotion'
@@ -39,6 +41,7 @@ const Index = function () {
   const { data, loading, error } = useQuery(ParticipationsDocument, {
     skip: pushDisabled === null,
     variables: { endpoint: subscription?.endpoint },
+    fetchPolicy: 'network-only',
   })
 
   // This is necessary to make sure navigator is defined
@@ -173,29 +176,16 @@ const Index = function () {
             <H1 className={{ root: 'text-xl' }}>Aktive Sessions</H1>
             <div className="flex flex-col gap-2 mt-2 mb-8">
               {activeSessions.map((session) => (
-                <Link
+                <LinkButton
                   href={session.linkTo || `/session/${session.id}`}
                   key={session.id}
-                  legacyBehavior
+                  icon={session.linkTo ? faLink : faChalkboard}
                 >
-                  <Button
-                    className={{
-                      root: 'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
-                    }}
-                  >
-                    <Button.Icon>
-                      <FontAwesomeIcon
-                        icon={session.linkTo ? faLink : faChalkboard}
-                      />
-                    </Button.Icon>
-                    <Button.Label className={{ root: 'flex-1' }}>
-                      <div className="flex flex-row items-end justify-between md:flex-row">
-                        <div>{session.displayName}</div>
-                        <div className="text-sm">{session.courseName}</div>
-                      </div>
-                    </Button.Label>
-                  </Button>
-                </Link>
+                  <div className="flex flex-row items-end justify-between md:flex-row">
+                    <div>{session.displayName}</div>
+                    <div className="text-sm">{session.courseName}</div>
+                  </div>
+                </LinkButton>
               ))}
             </div>
           </>
@@ -203,38 +193,12 @@ const Index = function () {
 
         <H1 className={{ root: 'text-xl' }}>Fragen aus deinen Kursen</H1>
         <div className="flex flex-col gap-2 mt-2 mb-8">
-          <Link href="/repetition" legacyBehavior>
-            <Button
-              className={{
-                root: twMerge(
-                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
-                ),
-              }}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faGraduationCap} />
-              </Button.Icon>
-              <Button.Label className={{ root: 'flex-1 text-left' }}>
-                Repetition Lernelemente
-              </Button.Label>
-            </Button>
-          </Link>
-          <Link href="/bookmarks" legacyBehavior>
-            <Button
-              className={{
-                root: twMerge(
-                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
-                ),
-              }}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faBookmark} />
-              </Button.Icon>
-              <Button.Label className={{ root: 'flex-1 text-left' }}>
-                Meine Bookmarks
-              </Button.Label>
-            </Button>
-          </Link>
+          <LinkButton href="/repetition" icon={faGraduationCap}>
+            Repetition Lernelemente
+          </LinkButton>
+          <LinkButton href="/bookmarks" icon={faBookmark}>
+            Meine Bookmarks
+          </LinkButton>
         </div>
 
         <H1 className={{ root: 'text-xl' }}>Aktives Microlearning</H1>
@@ -287,6 +251,9 @@ const Index = function () {
               isSubscribed={course.isSubscribed}
             />
           ))}
+          <LinkButton icon={faCirclePlus} href="/join">
+            Kurs beitreten
+          </LinkButton>
         </div>
 
         {userInfo && (

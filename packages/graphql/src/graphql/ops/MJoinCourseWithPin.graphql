@@ -1,5 +1,5 @@
-mutation JoinCourseWithPin($courseId: String!, $pin: Int!) {
-  joinCourseWithPin(courseId: $courseId, pin: $pin) {
+mutation JoinCourseWithPin($pin: Int!) {
+  joinCourseWithPin(pin: $pin) {
     id
   }
 }

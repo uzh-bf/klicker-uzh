@@ -40,10 +40,7 @@ const joinAndRegisterSchema = yup.object({
       schema
         .required('Passwörter müssen übereinstimmen.')
         .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.')
-        .oneOf(
-          [yup.ref('password'), null],
-          'Passwörter müssen übereinstimmen.'
-        ),
+        .oneOf([yup.ref('password'), ''], 'Passwörter müssen übereinstimmen.'),
     otherwise: (schema) =>
       schema.oneOf([''], 'Passwörter müssen übereinstimmen.'),
   }),
@@ -53,7 +50,7 @@ const joinAndRegisterSchema = yup.object({
     .required('Bitte geben Sie den Kurs-PIN ein.'),
 })
 
-const joinCourseWithPinSchema = yup.object({
+export const joinCourseWithPinSchema = yup.object({
   pin: yup
     .number()
     .typeError('Bitte geben Sie einen numerischen PIN ein.')
@@ -109,183 +106,196 @@ function JoinCourse({
     >
       <div className="max-w-sm mx-auto lg:max-w-md md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         <H2>Kurs &quot;{displayName}&quot; beitreten</H2>
-        <div className="mb-5 ">
-          Erstellen Sie hier Ihr KlickerUZH Konto für den Kurs {displayName}.
-          Sollten Sie bereits über ein Konto verfügen, können sie die
-          entsprechenden Anmeldedaten direkt im Formular eingeben.
-        </div>
+
         {/* if the participant is logged in, a simplified form will be displayed */}
         {dataParticipant?.self ? (
-          <Formik
-            initialValues={{
-              pin: initialPin,
-            }}
-            validationSchema={joinCourseWithPinSchema}
-            onSubmit={async (values, { setSubmitting }) => {
-              setSubmitting(true)
-              const participant = await joinCourseWithPin({
-                variables: {
-                  courseId,
-                  pin: Number(values.pin.replace(/\s/g, '')),
-                },
-              })
+          <div>
+            <div className="mb-5 ">
+              Sie sind bereits eingeloggt und können dem Kurs {displayName}{' '}
+              durch die Eingabe des korrekten PINs direkt beitreten.
+            </div>
+            <Formik
+              initialValues={{
+                pin: initialPin,
+              }}
+              validationSchema={joinCourseWithPinSchema}
+              onSubmit={async (values, { setSubmitting }) => {
+                setSubmitting(true)
+                const participant = await joinCourseWithPin({
+                  variables: {
+                    pin: Number(values.pin.replace(/\s/g, '')),
+                  },
+                })
 
-              if (participant?.data?.joinCourseWithPin) {
-                router.push('/')
-              } else {
-                setError(true)
-              }
-              setSubmitting(false)
-            }}
-          >
-            {({
-              errors,
-              touched,
-              values,
-              isSubmitting,
-              isValid,
-              setFieldValue,
-            }) => {
-              return (
-                <Form>
-                  <PinField
-                    name="pin"
-                    label="Kurs-PIN (Format: ### ### ###)"
-                    error={errors.pin}
-                    touched={touched.pin}
-                    value={values.pin}
-                    setFieldValue={setFieldValue}
-                  />
+                if (participant?.data?.joinCourseWithPin) {
+                  router.push('/')
+                } else {
+                  setError(true)
+                }
+                setSubmitting(false)
+              }}
+            >
+              {({
+                errors,
+                touched,
+                values,
+                isSubmitting,
+                isValid,
+                setFieldValue,
+              }) => {
+                return (
+                  <Form>
+                    <PinField
+                      name="pin"
+                      label="Kurs-PIN (Format: ### ### ###)"
+                      error={errors.pin}
+                      touched={touched.pin}
+                      value={values.pin}
+                      setFieldValue={setFieldValue}
+                    />
 
-                  <Button
-                    className={{ root: 'float-right mt-2 border-uzh-grey-80' }}
-                    type="submit"
-                    disabled={isSubmitting || !isValid}
-                  >
-                    <Button.Label>Kurs beitreten</Button.Label>
-                  </Button>
-                </Form>
-              )
-            }}
-          </Formik>
+                    <Button
+                      className={{
+                        root: 'float-right mt-2 border-uzh-grey-80',
+                      }}
+                      type="submit"
+                      disabled={isSubmitting || !isValid}
+                    >
+                      <Button.Label>Kurs beitreten</Button.Label>
+                    </Button>
+                  </Form>
+                )
+              }}
+            </Formik>
+          </div>
         ) : (
-          <Formik
-            initialValues={{
-              email: '',
-              username: '',
-              password: '',
-              passwordRepetition: '',
-              pin: initialPin,
-            }}
-            validationSchema={joinAndRegisterSchema}
-            onSubmit={async (values, { setSubmitting }) => {
-              setSubmitting(true)
-              const participant = await createParticipantAndJoinCourse({
-                variables: {
-                  courseId: courseId,
-                  username: values.username,
-                  password: values.password,
-                  pin: Number(values.pin.replace(/\s/g, '')),
-                },
-              })
+          <div>
+            <div className="mb-5 ">
+              Erstellen Sie hier Ihr KlickerUZH Konto für den Kurs {displayName}
+              . Sollten Sie bereits über ein Konto verfügen, können sie die
+              entsprechenden Anmeldedaten direkt im Formular eingeben.
+            </div>
+            <Formik
+              initialValues={{
+                email: '',
+                username: '',
+                password: '',
+                passwordRepetition: '',
+                pin: initialPin,
+              }}
+              validationSchema={joinAndRegisterSchema}
+              onSubmit={async (values, { setSubmitting }) => {
+                setSubmitting(true)
+                const participant = await createParticipantAndJoinCourse({
+                  variables: {
+                    courseId: courseId,
+                    username: values.username,
+                    password: values.password,
+                    pin: Number(values.pin.replace(/\s/g, '')),
+                  },
+                })
 
-              if (participant?.data?.createParticipantAndJoinCourse) {
-                router.push('/')
-              } else {
-                setError(true)
-              }
-              setSubmitting(false)
-            }}
-          >
-            {({
-              errors,
-              touched,
-              values,
-              isSubmitting,
-              isValid,
-              setFieldValue,
-            }) => {
-              return (
-                <Form>
-                  <Label label="Nutzername" className={{ root: 'italic' }} />
-                  <Field
-                    name="username"
-                    type="text"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                      theme.primaryBorderFocus,
-                      errors.username &&
-                        touched.username &&
-                        'border-red-400 bg-red-50 mb-0'
-                    )}
-                    disabled={isSubmitting}
-                  />
-                  <ErrorMessage
-                    name="username"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
+                if (participant?.data?.createParticipantAndJoinCourse) {
+                  router.push('/')
+                } else {
+                  setError(true)
+                }
+                setSubmitting(false)
+              }}
+            >
+              {({
+                errors,
+                touched,
+                values,
+                isSubmitting,
+                isValid,
+                setFieldValue,
+              }) => {
+                return (
+                  <Form>
+                    <Label label="Nutzername" className={{ root: 'italic' }} />
+                    <Field
+                      name="username"
+                      type="text"
+                      className={twMerge(
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                        theme.primaryBorderFocus,
+                        errors.username &&
+                          touched.username &&
+                          'border-red-400 bg-red-50 mb-0'
+                      )}
+                      disabled={isSubmitting}
+                    />
+                    <ErrorMessage
+                      name="username"
+                      component="div"
+                      className="text-sm text-red-400"
+                    />
 
-                  <Label label="Passwort" className={{ root: 'italic' }} />
-                  <Field
-                    name="password"
-                    type="password"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                      theme.primaryBorderFocus,
-                      errors.password &&
-                        touched.password &&
-                        'border-red-400 bg-red-50 mb-0'
-                    )}
-                    disabled={isSubmitting}
-                  />
-                  <ErrorMessage
-                    name="password"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
+                    <Label label="Passwort" className={{ root: 'italic' }} />
+                    <Field
+                      name="password"
+                      type="password"
+                      className={twMerge(
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                        theme.primaryBorderFocus,
+                        errors.password &&
+                          touched.password &&
+                          'border-red-400 bg-red-50 mb-0'
+                      )}
+                      disabled={isSubmitting}
+                    />
+                    <ErrorMessage
+                      name="password"
+                      component="div"
+                      className="text-sm text-red-400"
+                    />
 
-                  <Label
-                    label="Passwort (Wiederholung)"
-                    className={{ root: 'italic' }}
-                  />
-                  <Field
-                    name="passwordRepetition"
-                    type="password"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                      theme.primaryBorderFocus,
-                      errors.passwordRepetition &&
-                        touched.passwordRepetition &&
-                        'border-red-400 bg-red-50 mb-0'
-                    )}
-                    disabled={isSubmitting}
-                  />
-                  <ErrorMessage
-                    name="passwordRepetition"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
+                    <Label
+                      label="Passwort (Wiederholung)"
+                      className={{ root: 'italic' }}
+                    />
+                    <Field
+                      name="passwordRepetition"
+                      type="password"
+                      className={twMerge(
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                        theme.primaryBorderFocus,
+                        errors.passwordRepetition &&
+                          touched.passwordRepetition &&
+                          'border-red-400 bg-red-50 mb-0'
+                      )}
+                      disabled={isSubmitting}
+                    />
+                    <ErrorMessage
+                      name="passwordRepetition"
+                      component="div"
+                      className="text-sm text-red-400"
+                    />
 
-                  <PinField
-                    name="pin"
-                    error={errors.pin}
-                    touched={touched.pin}
-                    value={values.pin}
-                    setFieldValue={setFieldValue}
-                  />
+                    <PinField
+                      label="Kurs-PIN (Format: ### ### ###)"
+                      name="pin"
+                      error={errors.pin}
+                      touched={touched.pin}
+                      value={values.pin}
+                      setFieldValue={setFieldValue}
+                    />
 
-                  <Button
-                    className={{ root: 'float-right mt-2 border-uzh-grey-80' }}
-                    type="submit"
-                    disabled={isSubmitting || !isValid}
-                  >
-                    <Button.Label>Kurs beitreten</Button.Label>
-                  </Button>
-                </Form>
-              )
-            }}
-          </Formik>
+                    <Button
+                      className={{
+                        root: 'float-right mt-2 border-uzh-grey-80',
+                      }}
+                      type="submit"
+                      disabled={isSubmitting || !isValid}
+                    >
+                      <Button.Label>Kurs beitreten</Button.Label>
+                    </Button>
+                  </Form>
+                )
+              }}
+            </Formik>
+          </div>
         )}
         {showError && (
           <UserNotification
