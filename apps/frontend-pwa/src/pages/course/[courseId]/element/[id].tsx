@@ -8,12 +8,14 @@ import {
 import {
   faBookmark as faBookmarkSolid,
   faCheck,
+  faEnvelope,
   faRepeat,
   faShuffle,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   BookmarkQuestionDocument,
+  FlagQuestionDocument,
   GetBookmarkedQuestionsDocument,
   GetLearningElementDocument,
   QuestionType,
@@ -22,11 +24,23 @@ import {
 import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Button, H3, Progress } from '@uzh-bf/design-system'
+import {
+  Button,
+  H3,
+  H4,
+  Modal,
+  Progress,
+  ThemeContext as Theme,
+  Toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import * as Yup from 'yup'
+import ContentInput from '../../../../../../frontend-manage/src/components/questions/ContentInput'
 import Footer from '../../../../components/common/Footer'
 import EvaluationDisplay from '../../../../components/EvaluationDisplay'
 import Layout from '../../../../components/Layout'
@@ -42,14 +56,18 @@ const ORDER_TYPE_LABEL = {
 interface Props {
   courseId: string
   id: string
+  description: string
+  submitText: string
 }
 
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
-function LearningElement({ courseId, id }: Props) {
+function LearningElement({ courseId, id, description, submitText }: Props) {
   const router = useRouter()
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
+  const [isOpen, setIsOpen] = useState(false)
+  const [open, setOpen] = useState(false)
 
   const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
     refetchQueries: [
@@ -61,6 +79,36 @@ function LearningElement({ courseId, id }: Props) {
     variables: { courseId: router.query.courseId as string },
     skip: !router.query.courseId,
   })
+
+  const theme = useContext(Theme)
+  const [flagQuestion] = useMutation(FlagQuestionDocument, {})
+
+  const flagQuestionSchema = Yup.object().shape({
+    description: Yup.string().test({
+      message: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
+      test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+    }),
+  })
+
+  const flagQuestionFeedback = async (
+    content: string,
+    setSubmitting: (isSubmitting: boolean) => void
+  ) => {
+    setSubmitting(true)
+    if (!content.match(/^(<br>(\n)*)$/g) && content !== '') {
+      const result = await flagQuestion({
+        variables: {
+          questionInstanceId: questionData!.id,
+          content: content,
+        },
+      })
+      if (result.data?.flagQuestion === 'OK') {
+        setOpen(true)
+        setIsOpen(false)
+      }
+    }
+    setSubmitting(false)
+  }
 
   const { loading, error, data } = useQuery(GetLearningElementDocument, {
     variables: { id },
@@ -323,7 +371,86 @@ function LearningElement({ courseId, id }: Props) {
                           <div className="font-bold">Multiplikator</div>
                           <div>{currentInstance.pointsMultiplier}x</div>
                         </div>
-                        <FontAwesomeIcon icon={faFlag}></FontAwesomeIcon>
+                        <Modal
+                          className={{ content: 'm-10 md:m-20' }}
+                          open={isOpen}
+                          trigger={
+                            <Button
+                              onClick={() => (setIsOpen(true), setOpen(false))}
+                            >
+                              <FontAwesomeIcon icon={faFlag}></FontAwesomeIcon>
+                            </Button>
+                          }
+                          onClose={() => setIsOpen(false)}
+                        >
+                          <div className="my-4 text-gray-400">
+                            If you found an error in this question we would
+                            appreciate a feedback where you detail the error!
+                            {' :)'}
+                          </div>
+                          <Formik
+                            initialValues={{ description: '<br>' }}
+                            onSubmit={(values, { setSubmitting }) =>
+                              flagQuestionFeedback(
+                                values.description,
+                                setSubmitting
+                              )
+                            }
+                            validationSchema={flagQuestionSchema}
+                          >
+                            {({
+                              values,
+                              setFieldValue,
+                              isSubmitting,
+                              isValid,
+                              touched,
+                              errors,
+                            }) => (
+                              <div className="flex-1">
+                                <Form>
+                                  <ContentInput
+                                    placeholder="Feedback hinzufügen"
+                                    touched={touched.description}
+                                    content={values.description}
+                                    onChange={(newValue: string) =>
+                                      setFieldValue('description', newValue)
+                                    }
+                                  />
+
+                                  <div className="flex flex-row justify-between w-full mt-1">
+                                    {errors && (
+                                      <div className="text-sm text-red-700">
+                                        {errors.description}
+                                      </div>
+                                    )}
+                                    <Button
+                                      className={{
+                                        root: twMerge(
+                                          'float-right px-5 text-white disabled:opacity-60',
+                                          theme.primaryBgMedium
+                                        ),
+                                      }}
+                                      type="submit"
+                                      disabled={isSubmitting || !isValid}
+                                    >
+                                      <Button.Icon
+                                        className={{
+                                          root: 'mr-1 justify-items-center',
+                                        }}
+                                      >
+                                        <FontAwesomeIcon
+                                          className="ml-1"
+                                          icon={faEnvelope}
+                                        />
+                                      </Button.Icon>
+                                      <Button.Label>{submitText}</Button.Label>
+                                    </Button>
+                                  </div>
+                                </Form>
+                              </div>
+                            )}
+                          </Formik>
+                        </Modal>
                       </div>
                       <div className="flex flex-row gap-8">
                         <div>
@@ -380,6 +507,15 @@ function LearningElement({ courseId, id }: Props) {
             </div>
           )}
         </div>
+        <Toast
+          duration={5000}
+          type="success"
+          openExternal={open}
+          setOpenExternal={setOpen}
+        >
+          <H4>Thank you!</H4>
+          <div>Feedback sent successfully!</div>
+        </Toast>
       </div>
 
       <Footer
