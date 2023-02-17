@@ -168,7 +168,7 @@ function Home() {
               new concept and ideas
             </a>{' '}
             for the upcoming KlickerUZH v3.0, which will be released in beta
-            this month. Please have a look and let us know what you think!
+            Please have a look and let us know what you think!
           </div>
         </div>
       </div>
