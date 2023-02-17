@@ -741,8 +741,8 @@ export const Mutation = builder.mutationType({
         },
         async resolve(_, args, ctx) {
           return ParticipantService.flagQuestion(args, ctx)
-        })
-      ,
+        },
+      }),
 
       changeCourseDates: asUser.field({
         nullable: true,
@@ -756,7 +756,6 @@ export const Mutation = builder.mutationType({
           return CourseService.changeCourseDates(args, ctx)
         },
       }),
-
     }
   },
 })
