@@ -26,6 +26,7 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import {
   Button,
+  H2,
   H3,
   H4,
   Modal,
@@ -336,11 +337,9 @@ function LearningElement({ courseId, id }: Props) {
                             <FontAwesomeIcon
                               className="text-red-600"
                               icon={faBookmarkSolid}
-                            ></FontAwesomeIcon>
+                            />
                           ) : (
-                            <FontAwesomeIcon
-                              icon={faBookmark}
-                            ></FontAwesomeIcon>
+                            <FontAwesomeIcon icon={faBookmark} />
                           )}
                         </Button>
                       </div>
@@ -382,11 +381,17 @@ function LearningElement({ courseId, id }: Props) {
                             </Button>
                           }
                           onClose={() => setModalOpen(false)}
+                          hideCloseButton
                         >
+                          <H2>Frage Markieren</H2>
                           <div className="my-4">
-                            If you found an error in this question we would
-                            appreciate a feedback where you detail the error!
-                            {' :)'}
+                            Dieses Feedback-Formular soll ermöglichen, zu den
+                            einzelnen Fragen eines Lernelements / einer
+                            Micro-Session eine direkte Anmerkung abgeben zu
+                            können, sollte sich ein Fehler eingeschlichen haben.
+                            Der Dozierende wird eine Nachricht mit Ihrem
+                            Feedback erhalten. Bitte versuchen Sie daher, den
+                            Fehler so genau wie möglich zu beschreiben.
                           </div>
                           <Formik
                             initialValues={{ description: '<br>' }}
@@ -438,10 +443,7 @@ function LearningElement({ courseId, id }: Props) {
                                           root: 'mr-1 justify-items-center',
                                         }}
                                       >
-                                        <FontAwesomeIcon
-                                          className="ml-1"
-                                          icon={faEnvelope}
-                                        />
+                                        <FontAwesomeIcon icon={faEnvelope} />
                                       </Button.Icon>
                                       <Button.Label>
                                         Feedback abschicken
