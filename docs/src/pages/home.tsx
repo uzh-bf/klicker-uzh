@@ -159,7 +159,7 @@ function Home() {
           <div className="font-bold">
             KlickerUZH v3.0 - Concept and Request for Feedback
           </div>
-          <div>
+          <div className="font-sans">
             We have just published our{' '}
             <a
               href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79"
@@ -168,7 +168,7 @@ function Home() {
               new concept and ideas
             </a>{' '}
             for the upcoming KlickerUZH v3.0, which will be released in beta
-            next February. Please have a look and let us know what you think!
+            this month. Please have a look and let us know what you think!
           </div>
         </div>
       </div>
@@ -371,16 +371,7 @@ const TitleImage = ({ imgSrc }) => {
 const KlickerLogo = ({ className }) => {
   const { isDarkTheme } = useColorMode()
 
-  return (
-    <img
-      className={twMerge(className)}
-      src={`/img/${
-        isDarkTheme
-          ? 'KlickerUZH_Gray_Transparent_borderless_inverted.png'
-          : 'KlickerUZH_Gray_Transparent_borderless.png'
-      }`}
-    />
-  )
+  return <img className={twMerge(className)} src={'/img/KlickerLogo.png'} />
 }
 
 export default Home
