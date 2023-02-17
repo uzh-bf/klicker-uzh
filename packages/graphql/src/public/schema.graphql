@@ -118,6 +118,7 @@ type Course {
   createdAt: Date!
   description: String
   displayName: String!
+  endDate: Date!
   id: ID!
   isArchived: Boolean
   leaderboard: [LeaderboardEntry!]
@@ -129,6 +130,7 @@ type Course {
   owner: User
   pinCode: Int
   sessions: [Session!]
+  startDate: Date!
   updatedAt: Date!
 }
 
@@ -346,6 +348,7 @@ type Mutation {
   bookmarkQuestion(bookmarked: Boolean!, courseId: String!, instanceId: Int!): Participation
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
+  changeCourseDates(courseId: String!, endDate: Date, startDate: Date): Course
   changeCourseDescription(courseId: String!, input: String!): Course
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
   createFeedback(content: String!, sessionId: String!): Feedback

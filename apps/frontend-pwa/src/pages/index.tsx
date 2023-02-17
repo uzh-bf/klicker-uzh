@@ -1,9 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import {
-  faBell,
-  faBellSlash,
-  faBookmark,
-} from '@fortawesome/free-regular-svg-icons'
+import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookOpenReader,
   faChalkboard,
@@ -12,17 +8,15 @@ import {
   faGraduationCap,
   faLink,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   MicroSession,
   ParticipationsDocument,
   Session,
   SubscribeToPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, UserNotification } from '@uzh-bf/design-system'
+import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import LinkButton from '../components/common/LinkButton'
 import Layout from '../components/Layout'
 import {
@@ -59,30 +53,70 @@ const Index = function () {
 
   const {
     courses,
+    oldCourses,
     activeSessions,
     activeMicrolearning,
   }: {
-    courses: { id: string; displayName: string; isSubscribed: boolean }[]
+    courses: {
+      id: string
+      displayName: string
+      isSubscribed: boolean
+      startDate: string
+      endDate: string
+    }[]
+    oldCourses: {
+      id: string
+      displayName: string
+      isSubscribed: boolean
+      startDate: string
+      endDate: string
+    }[]
     activeSessions: (Session & { courseName: string })[]
     activeMicrolearning: (MicroSession & {
       courseName: string
       isCompleted: boolean
     })[]
   } = useMemo(() => {
-    const obj = { courses: [], activeSessions: [], activeMicrolearning: [] }
+    const obj = {
+      courses: [],
+      oldCourses: [],
+      activeSessions: [],
+      activeMicrolearning: [],
+    }
     if (!data?.participations) return obj
     return data.participations.reduce((acc, participation) => {
       return {
-        courses: [
-          ...acc.courses,
-          {
-            id: participation.course?.id,
-            displayName: participation.course?.displayName,
-            isSubscribed:
-              participation.subscriptions &&
-              participation.subscriptions.length > 0,
-          },
-        ],
+        courses:
+          // check if endDate of course is before today or today
+          dayjs(participation.course?.endDate).isAfter(dayjs()) ||
+          dayjs(participation.course?.endDate).isSame(dayjs())
+            ? [
+                ...acc.courses,
+                {
+                  id: participation.course?.id,
+                  displayName: participation.course?.displayName,
+                  startDate: participation.course?.startDate,
+                  endDate: participation.course?.endDate,
+                  isSubscribed:
+                    participation.subscriptions &&
+                    participation.subscriptions.length > 0,
+                },
+              ]
+            : acc.courses,
+        oldCourses: dayjs(participation.course?.endDate).isBefore(dayjs())
+          ? [
+              ...acc.oldCourses,
+              {
+                id: participation.course?.id,
+                displayName: participation.course?.displayName,
+                startDate: participation.course?.startDate,
+                endDate: participation.course?.endDate,
+                isSubscribed:
+                  participation.subscriptions &&
+                  participation.subscriptions.length > 0,
+              },
+            ]
+          : acc.oldCourses,
         activeSessions: [
           ...acc.activeSessions,
           ...participation.course.sessions?.map((session) => ({
@@ -233,45 +267,14 @@ const Index = function () {
           <H1 className={{ root: 'text-xl mb-2' }}>Meine Kurse</H1>
           <div className="flex flex-col gap-2">
             {courses.map((course) => (
-              <div key={course.id} className="flex flex-row w-full">
-                <LinkButton
-                  className={{
-                    root: 'flex-1 rounded-r-none border-r-0 h-full',
-                  }}
-                  href={`/course/${course.id}`}
-                >
-                  <div>{course.displayName}</div>
-                </LinkButton>
-                <Button
-                  className={{
-                    root: twMerge(
-                      'rounded-l-none p-4',
-                      pushDisabled
-                        ? 'bg-slate-400 border-slate-400'
-                        : 'bg-slate-600 border-slate-600',
-                      !course.isSubscribed && !pushDisabled && 'cursor-pointer'
-                    ),
-                  }}
-                  disabled={course.isSubscribed || !!pushDisabled}
-                  onClick={() =>
-                    onSubscribeClick(course.isSubscribed, course.id)
-                  }
-                >
-                  {course.isSubscribed ? (
-                    <FontAwesomeIcon
-                      className="text-uzh-yellow-100"
-                      icon={faBell}
-                      fixedWidth
-                    />
-                  ) : (
-                    <FontAwesomeIcon
-                      icon={faBellSlash}
-                      fixedWidth
-                      flip="horizontal"
-                    />
-                  )}
-                </Button>
-              </div>
+              <CourseElement
+                key={course.id}
+                course={course}
+                onSubscribeClick={onSubscribeClick}
+              />
+            ))}
+            {oldCourses.map((course) => (
+              <CourseElement key={course.id} course={course} />
             ))}
             <LinkButton icon={faCirclePlus} href="/join">
               Kurs beitreten

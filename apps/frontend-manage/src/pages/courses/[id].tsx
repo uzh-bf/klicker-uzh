@@ -1,12 +1,15 @@
 import { useMutation, useQuery } from '@apollo/client'
+import DateChanger from '@components/courses/DateChanger'
 import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeCourseColorDocument,
+  ChangeCourseDatesDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { Button, H1, H2, H3, ThemeContext } from '@uzh-bf/design-system'
+import { Button, H1, H2, H3, ThemeContext, Toast } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { sort } from 'ramda'
@@ -27,6 +30,10 @@ function CourseOverviewPage() {
 
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
   const [isColorPickerVisible, setIsColorPickerVisible] = useState(false)
+  const [editStartDate, setEditStartDate] = useState(false)
+  const [editEndDate, setEditEndDate] = useState(false)
+  const [dateToastSuccess, setDateToastSuccess] = useState(false)
+  const [dateToastError, setDateToastError] = useState(false)
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
@@ -34,6 +41,7 @@ function CourseOverviewPage() {
   })
 
   const [changeCourseColor] = useMutation(ChangeCourseColorDocument)
+  const [changeCourseDates] = useMutation(ChangeCourseDatesDocument)
 
   useEffect(() => {
     if (data && !data.course) {
@@ -135,25 +143,88 @@ function CourseOverviewPage() {
             setDescriptionEditMode={setDescriptionEditMode}
           />
         )}
-        <div className="flex flex-row pt-1">
-          <span className="pr-3">Kursfarbe</span>
-          <div
-            className={
-              'flex relative w-20 mr-3 rounded-lg align-center justify-end'
-            }
-            style={{ backgroundColor: course.color ?? '#eaa07d' }}
-          >
-            <Button onClick={toggleColorPicker}>
-              <FontAwesomeIcon icon={faPalette} />
-            </Button>
-            {isColorPickerVisible && (
-              <ColorPicker
-                color={course.color ?? '#eaa07d'}
-                onSubmit={handleColorChange}
-                onAbort={toggleColorPicker}
-              />
-            )}
+        <div className="flex flex-row items-center gap-8 pt-1 h-11">
+          <div className="flex flex-row">
+            <div className="pr-3">Kursfarbe</div>
+            <div
+              className={
+                'flex relative w-20 rounded-lg align-center justify-end'
+              }
+              style={{ backgroundColor: course.color ?? '#eaa07d' }}
+            >
+              <Button onClick={toggleColorPicker}>
+                <FontAwesomeIcon icon={faPalette} />
+              </Button>
+              {isColorPickerVisible && (
+                <ColorPicker
+                  color={course.color ?? '#eaa07d'}
+                  onSubmit={handleColorChange}
+                  onAbort={toggleColorPicker}
+                />
+              )}
+            </div>
           </div>
+          <DateChanger
+            label="Startdatum:"
+            date={course.startDate}
+            edit={editStartDate}
+            onEdit={() => setEditStartDate(true)}
+            onSave={async (date: string) => {
+              if (dayjs(date).isBefore(course.endDate)) {
+                const { data } = await changeCourseDates({
+                  variables: {
+                    courseId: course.id,
+                    startDate: date + 'T00:00:00.000Z',
+                  },
+                })
+                if (data?.changeCourseDates?.id) {
+                  setDateToastSuccess(true)
+                  setEditStartDate(false)
+                }
+              } else {
+                setDateToastError(true)
+              }
+            }}
+          />
+          <DateChanger
+            label="Enddatum:"
+            date={course.endDate}
+            edit={editEndDate}
+            onEdit={() => setEditEndDate(true)}
+            onSave={async (date: string) => {
+              if (dayjs(date).isAfter(course.startDate)) {
+                const { data } = await changeCourseDates({
+                  variables: {
+                    courseId: course.id,
+                    endDate: date + 'T23:59:59.999Z',
+                  },
+                })
+                if (data?.changeCourseDates?.id) {
+                  setDateToastSuccess(true)
+                  setEditEndDate(false)
+                }
+              } else {
+                setDateToastError(true)
+              }
+            }}
+          />
+          <Toast
+            duration={4000}
+            openExternal={dateToastSuccess}
+            setOpenExternal={setDateToastSuccess}
+            type="success"
+          >
+            Datum wurde erfolgreich angepasst.
+          </Toast>
+          <Toast
+            duration={4000}
+            openExternal={dateToastError}
+            setOpenExternal={setDateToastError}
+            type="error"
+          >
+            Beim Anpassen des Datums ist ein Fehler aufgetreten. Bitte
+            überprüfen Sie die Eingabe.
+          </Toast>
         </div>
       </div>
       <div className="flex flex-col md:flex-row">

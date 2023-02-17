@@ -595,3 +595,24 @@ export async function changeCourseColor(
 
   return course
 }
+
+interface ChangeCourseDates {
+  courseId: string
+  startDate?: Date | null
+  endDate?: Date | null
+}
+
+export async function changeCourseDates(
+  { courseId, startDate, endDate }: ChangeCourseDates,
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.update({
+    where: { id: courseId },
+    data: {
+      ...(startDate && { startDate }),
+      ...(endDate && { endDate }),
+    },
+  })
+
+  return course
+}

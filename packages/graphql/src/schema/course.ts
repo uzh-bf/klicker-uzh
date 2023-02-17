@@ -51,6 +51,8 @@ export const Course = builder.objectType(CourseRef, {
       nullable: true,
     }),
 
+    startDate: t.expose('startDate', { type: 'Date' }),
+    endDate: t.expose('endDate', { type: 'Date' }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
 
