@@ -28,9 +28,9 @@ import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import Footer from '../../../../components/common/Footer'
-import EvaluationDisplay from '../../../../components/EvaluationDisplay'
+import OptionsDisplay from '../../../../components/common/OptionsDisplay'
+import EvaluationDisplay from '../../../../components/evaluation/EvaluationDisplay'
 import Layout from '../../../../components/Layout'
-import OptionsDisplay from '../../../../components/OptionsDisplay'
 import formatResponse from '../../../../lib/formatResponse'
 
 const ORDER_TYPE_LABEL = {
