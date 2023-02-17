@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Navigation } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import Layout from './Layout'
+import Layout from '../Layout'
 
 interface BasicCourseData {
   id: string

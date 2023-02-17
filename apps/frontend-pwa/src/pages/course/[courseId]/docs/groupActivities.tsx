@@ -1,5 +1,5 @@
 import { H3 } from '@uzh-bf/design-system'
-import DocsLayout from '../../../../components/DocsLayout'
+import DocsLayout from '../../../../components/docs/DocsLayout'
 
 function GroupActivities() {
   return (
