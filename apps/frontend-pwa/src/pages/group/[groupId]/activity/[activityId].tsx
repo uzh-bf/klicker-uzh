@@ -15,8 +15,8 @@ import { useRouter } from 'next/router'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { array, number, object, string } from 'yup'
+import { Options } from '../../../../components/common/OptionsDisplay'
 import Layout from '../../../../components/Layout'
-import { Options } from '../../../../components/OptionsDisplay'
 
 function GroupActivityDetails() {
   const theme = useContext(ThemeContext)

@@ -20,11 +20,11 @@ export async function getBasicCourseInformation(
 }
 
 export async function joinCourseWithPin(
-  { courseId, pin }: { courseId: string; pin: number },
+  { pin }: { pin: number },
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { pinCode: pin },
   })
 
   if (!course || course.pinCode !== pin) {
@@ -38,12 +38,20 @@ export async function joinCourseWithPin(
       participations: {
         connectOrCreate: {
           where: {
-            courseId_participantId: { courseId, participantId: ctx.user.sub },
+            courseId_participantId: {
+              courseId: course.id,
+              participantId: ctx.user.sub,
+            },
           },
-          create: { course: { connect: { id: courseId } }, isActive: true },
+          create: { course: { connect: { id: course.id } }, isActive: true },
         },
       },
     },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Participant',
+    id: updatedParticipant.id,
   })
 
   return updatedParticipant
@@ -582,6 +590,27 @@ export async function changeCourseColor(
     where: { id: courseId },
     data: {
       color,
+    },
+  })
+
+  return course
+}
+
+interface ChangeCourseDates {
+  courseId: string
+  startDate?: Date | null
+  endDate?: Date | null
+}
+
+export async function changeCourseDates(
+  { courseId, startDate, endDate }: ChangeCourseDates,
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.update({
+    where: { id: courseId },
+    data: {
+      ...(startDate && { startDate }),
+      ...(endDate && { endDate }),
     },
   })
 

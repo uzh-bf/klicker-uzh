@@ -31,6 +31,7 @@ function GroupVisualization({ participants, scaleFactor }) {
           src="/rakete_mond.png"
           width={width}
           height={height}
+          alt=""
         />
         {/* <Image className="" src="/rocket_base.svg" fill /> */}
       </div>

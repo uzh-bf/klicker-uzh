@@ -182,7 +182,6 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
-          courseId: t.arg.string({ required: true }),
           pin: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -731,6 +730,19 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ParticipantService.bookmarkQuestion(args, ctx)
+        },
+      }),
+
+      changeCourseDates: asUser.field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          startDate: t.arg({ type: 'Date', required: false }),
+          endDate: t.arg({ type: 'Date', required: false }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.changeCourseDates(args, ctx)
         },
       }),
     }

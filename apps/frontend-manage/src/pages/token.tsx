@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import Layout from '@components/Layout'
 import {
   GenerateLoginTokenDocument,
   GetLoginTokenDocument,
@@ -15,6 +14,7 @@ import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Countdown from '../components/common/Countdown'
+import Layout from '../components/Layout'
 
 function TokenGeneration() {
   const theme = useContext(ThemeContext)

@@ -9,6 +9,8 @@ query Participations($endpoint: String) {
     course {
       id
       displayName
+      startDate
+      endDate
       microSessions {
         id
         displayName

@@ -1,0 +1,15 @@
+mutation ChangeCourseDates(
+  $courseId: String!
+  $startDate: Date
+  $endDate: Date
+) {
+  changeCourseDates(
+    courseId: $courseId
+    startDate: $startDate
+    endDate: $endDate
+  ) {
+    id
+    startDate
+    endDate
+  }
+}
