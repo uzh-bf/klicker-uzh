@@ -8,7 +8,7 @@ import {
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
-import { Button, H1, H2, H3, ThemeContext } from '@uzh-bf/design-system'
+import { Button, H1, H2, H3, ThemeContext, Toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -32,6 +32,8 @@ function CourseOverviewPage() {
   const [isColorPickerVisible, setIsColorPickerVisible] = useState(false)
   const [editStartDate, setEditStartDate] = useState(false)
   const [editEndDate, setEditEndDate] = useState(false)
+  const [dateToastSuccess, setDateToastSuccess] = useState(false)
+  const [dateToastError, setDateToastError] = useState(false)
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
@@ -176,13 +178,11 @@ function CourseOverviewPage() {
                   },
                 })
                 if (data?.changeCourseDates?.id) {
-                  // TODO: date change successful toast
-                  console.log('trigger success toast')
+                  setDateToastSuccess(true)
                   setEditStartDate(false)
                 }
               } else {
-                console.log('trigger error toast')
-                // TODO: error toast date change not successful
+                setDateToastError(true)
               }
             }}
           />
@@ -200,16 +200,31 @@ function CourseOverviewPage() {
                   },
                 })
                 if (data?.changeCourseDates?.id) {
-                  // TODO: date change successful toast
-                  console.log('trigger success toast')
+                  setDateToastSuccess(true)
                   setEditEndDate(false)
                 }
               } else {
-                console.log('trigger error toast')
-                // TODO: error toast date change not successful
+                setDateToastError(true)
               }
             }}
           />
+          <Toast
+            duration={4000}
+            openExternal={dateToastSuccess}
+            setOpenExternal={setDateToastSuccess}
+            type="success"
+          >
+            Datum wurde erfolgreich angepasst.
+          </Toast>
+          <Toast
+            duration={4000}
+            openExternal={dateToastError}
+            setOpenExternal={setDateToastError}
+            type="error"
+          >
+            Beim Anpassen des Datums ist ein Fehler aufgetreten. Bitte
+            überprüfen Sie die Eingabe.
+          </Toast>
         </div>
       </div>
       <div className="flex flex-col md:flex-row">
