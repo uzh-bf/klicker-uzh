@@ -1,11 +1,18 @@
-const { TailwindColorsUZH } = require('@uzh-bf/design-system/dist/constants')
+const {
+  TailwindColorsUZH,
+  TailwindAnimations,
+} = require('@uzh-bf/design-system/dist/constants')
 
 module.exports = {
   content: ['./src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      ...TailwindAnimations,
       colors: {
         ...TailwindColorsUZH,
+      },
+      fontFamily: {
+        sans: ['var(--source-sans-pro)', ...fontFamily.sans],
       },
     },
   },

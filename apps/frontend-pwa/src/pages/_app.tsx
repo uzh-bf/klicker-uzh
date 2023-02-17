@@ -2,12 +2,20 @@ import { ApolloProvider } from '@apollo/client'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { useApollo } from '@lib/apollo'
+import { Source_Sans_Pro } from '@next/font/google'
 import { ThemeProvider } from '@uzh-bf/design-system'
 import type { AppProps } from 'next/app'
+import Script from 'next/script'
 import ErrorBoundary from '../components/ErrorBoundary'
 config.autoAddCss = false
 
 import '../globals.css'
+
+const sourceSansPro = Source_Sans_Pro({
+  subsets: ['latin'],
+  variable: '--source-sans-pro',
+  weight: ['300', '400', '700'],
+})
 
 function App({ Component, pageProps }: AppProps) {
   const apolloClient = useApollo(pageProps)
@@ -36,6 +44,11 @@ function App({ Component, pageProps }: AppProps) {
             primaryProseHover: 'hover:text-uzh-blue-100',
           }}
         >
+          <Script
+            src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"
+            integrity="sha384-PwRUT/YqbnEjkZO0zZxNqcxACrXe+j766U2amXcgMg5457rve2Y7I6ZJSm2A0mS4"
+            crossOrigin="anonymous"
+          />
           <Component {...pageProps} />
         </ThemeProvider>
       </ApolloProvider>
