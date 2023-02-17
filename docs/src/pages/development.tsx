@@ -114,7 +114,7 @@ const Development = () => {
           extending the KlickerUZH with capabilities that support each of these
           areas. <br />
           This page and our official documentation will be continuously extended
-          with helpful resources. You can help shape the KlickerApp by joining
+          with helpful resources. You can help shape the KlickerUZH by joining
           our{' '}
           <a href="https://community.klicker.uzh.ch/" target="_blank">
             community
