@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.49...v3.0.0-alpha.50) (2023-02-17)
+
+
+### Features
+
+* flag questions ([#3352](https://github.com/uzh-bf/klicker-uzh/issues/3352)) ([f2c8c1d](https://github.com/uzh-bf/klicker-uzh/commit/f2c8c1dc4e5d6be5f303d14b91a8cd79e6e6a470))
+
 ## [3.0.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.48...v3.0.0-alpha.49) (2023-02-17)
 
 
