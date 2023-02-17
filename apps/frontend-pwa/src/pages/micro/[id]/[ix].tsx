@@ -124,7 +124,6 @@ function MicroSessionInstance() {
                       <FlagQuestionModal
                         open={modalOpen}
                         setOpen={setModalOpen}
-                        setToastOpen={setToastOpen}
                         instanceId={currentInstance.id}
                       />
                     </div>
