@@ -363,6 +363,7 @@ type Mutation {
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
+  flagQuestion(content: String!, questionInstanceId: Int!): String
   generateLoginToken: User
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(courseId: String!, pin: Int!): Participant

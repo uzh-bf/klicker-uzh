@@ -733,6 +733,41 @@ export const Mutation = builder.mutationType({
           return ParticipantService.bookmarkQuestion(args, ctx)
         },
       }),
+
+      flagQuestion: asParticipant.string({
+        nullable: true,
+        args: {
+          questionInstanceId: t.arg.int({ required: true }),
+          content: t.arg.string({ required: true }),
+        },
+        async resolve(_, args, ctx) {
+          const questionInstance = await ctx.prisma.questionInstance.findUnique(
+            {
+              where: {
+                id: args.questionInstanceId,
+              },
+            }
+          )
+
+          if (!questionInstance) return null
+
+          fetch(process.env.NOTIFICATION_URL as string, {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              questionInstance: questionInstance,
+              content: args.content,
+              participantId: ctx.user.sub,
+              secret: process.env.NOTIFICATION_SECRET,
+            }),
+          })
+
+          return 'OK'
+        },
+      }),
     }
   },
 })
