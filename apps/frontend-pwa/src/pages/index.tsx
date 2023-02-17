@@ -1,5 +1,9 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faBookmark } from '@fortawesome/free-regular-svg-icons'
+import {
+  faBell,
+  faBellSlash,
+  faBookmark,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faBookOpenReader,
   faChalkboard,
@@ -17,13 +21,10 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from '../components/common/LinkButton'
-import CourseElement from '../components/home/CourseElement'
 import Layout from '../components/Layout'
-import SurveyPromotion from '../components/surveys/SurveyPromotion'
 import {
   determineInitialSubscriptionState,
   subscribeParticipant,
@@ -168,13 +169,13 @@ const Index = function () {
   return (
     <Layout displayName="KlickerUZH">
       <div
-        className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
+        className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
       >
         {activeSessions.length !== 0 && (
-          <>
-            <H1 className={{ root: 'text-xl' }}>Aktive Sessions</H1>
-            <div className="flex flex-col gap-2 mt-2 mb-8">
+          <div>
+            <H1 className={{ root: 'text-xl mb-2' }}>Aktive Sessions</H1>
+            <div className="flex flex-col gap-2">
               {activeSessions.map((session) => (
                 <LinkButton
                   href={session.linkTo || `/session/${session.id}`}
@@ -188,79 +189,101 @@ const Index = function () {
                 </LinkButton>
               ))}
             </div>
-          </>
+          </div>
         )}
 
-        <H1 className={{ root: 'text-xl' }}>Fragen aus deinen Kursen</H1>
-        <div className="flex flex-col gap-2 mt-2 mb-8">
-          <LinkButton href="/repetition" icon={faGraduationCap}>
-            Repetition Lernelemente
-          </LinkButton>
-          <LinkButton href="/bookmarks" icon={faBookmark}>
-            Meine Bookmarks
-          </LinkButton>
+        <div>
+          <H1 className={{ root: 'text-xl mb-2' }}>Lernelemente</H1>
+          <div className="flex flex-col gap-2">
+            <LinkButton href="/repetition" icon={faGraduationCap}>
+              Repetition
+            </LinkButton>
+            <LinkButton href="/bookmarks" icon={faBookmark}>
+              Meine Bookmarks
+            </LinkButton>
+          </div>
         </div>
 
-        <H1 className={{ root: 'text-xl' }}>Aktives Microlearning</H1>
-        <div className="flex flex-col gap-2 mt-2 mb-8">
-          {activeMicrolearning.length === 0 && (
-            <div>Kein aktives Microlearning.</div>
-          )}
-          {activeMicrolearning.map((micro) => (
-            <Link href={`/micro/${micro.id}/`} key={micro.id}>
-              <Button
-                fluid
-                disabled={micro.isCompleted}
-                className={{
-                  root: twMerge(
-                    'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
-                    micro.isCompleted && 'hover:bg-unset'
-                  ),
-                }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon
-                    icon={micro.isCompleted ? faCheck : faBookOpenReader}
-                  />
-                </Button.Icon>
-                <Button.Label className={{ root: 'flex-1 text-left' }}>
+        {activeMicrolearning.length > 0 && (
+          <div>
+            <H1 className={{ root: 'text-xl mb-2' }}>Microlearning</H1>
+            <div className="flex flex-col gap-2">
+              {activeMicrolearning.map((micro) => (
+                <LinkButton
+                  icon={micro.isCompleted ? faCheck : faBookOpenReader}
+                  href={`/micro/${micro.id}/`}
+                  key={micro.id}
+                  className={{ root: micro.isCompleted && 'hover:bg-unset' }}
+                >
                   <div>{micro.displayName}</div>
                   <div className="flex flex-row items-end justify-between">
                     <div className="text-xs">
-                      {dayjs(micro.scheduledStartAt).format('D.M.YYYY HH:mm')} -{' '}
-                      {dayjs(micro.scheduledEndAt).format('D.M.YYYY HH:mm')}
+                      {dayjs(micro.scheduledStartAt).format('DD.MM.YYYY HH:mm')}{' '}
+                      - {dayjs(micro.scheduledEndAt).format('DD.MM.YYYY HH:mm')}
                     </div>
                     <div className="text-xs">{micro.courseName}</div>
                   </div>
-                </Button.Label>
-              </Button>
-            </Link>
-          ))}
-        </div>
+                </LinkButton>
+              ))}
+            </div>
+          </div>
+        )}
 
-        <H1 className={{ root: 'text-xl' }}>Meine Kurse</H1>
-        <div className="flex flex-col gap-2 mt-2 mb-4">
-          {courses.length === 0 && <div>Keine Kursmitgliedschaften.</div>}
-          {courses.map((course) => (
-            <CourseElement
-              disabled={!!pushDisabled}
-              key={course.id}
-              courseId={course.id}
-              courseName={course.displayName}
-              onSubscribeClick={onSubscribeClick}
-              isSubscribed={course.isSubscribed}
-            />
-          ))}
-          <LinkButton icon={faCirclePlus} href="/join">
-            Kurs beitreten
-          </LinkButton>
+        <div>
+          <H1 className={{ root: 'text-xl mb-2' }}>Meine Kurse</H1>
+          <div className="flex flex-col gap-2">
+            {courses.map((course) => (
+              <div key={course.id} className="flex flex-row w-full">
+                <LinkButton
+                  className={{
+                    root: 'flex-1 rounded-r-none border-r-0 h-full',
+                  }}
+                  href={`/course/${course.id}`}
+                >
+                  <div>{course.displayName}</div>
+                </LinkButton>
+                <Button
+                  className={{
+                    root: twMerge(
+                      'rounded-l-none p-4',
+                      pushDisabled
+                        ? 'bg-slate-400 border-slate-400'
+                        : 'bg-slate-600 border-slate-600',
+                      !course.isSubscribed && !pushDisabled && 'cursor-pointer'
+                    ),
+                  }}
+                  disabled={course.isSubscribed || !!pushDisabled}
+                  onClick={() =>
+                    onSubscribeClick(course.isSubscribed, course.id)
+                  }
+                >
+                  {course.isSubscribed ? (
+                    <FontAwesomeIcon
+                      className="text-uzh-yellow-100"
+                      icon={faBell}
+                      fixedWidth
+                    />
+                  ) : (
+                    <FontAwesomeIcon
+                      icon={faBellSlash}
+                      fixedWidth
+                      flip="horizontal"
+                    />
+                  )}
+                </Button>
+              </div>
+            ))}
+            <LinkButton icon={faCirclePlus} href="/join">
+              Kurs beitreten
+            </LinkButton>
+          </div>
         </div>
 
         {userInfo && (
           <UserNotification notificationType="info" message={userInfo} />
         )}
 
-        <SurveyPromotion courseId={courses?.[0]?.id} />
+        {/* <SurveyPromotion courseId={courses?.[0]?.id} /> */}
       </div>
     </Layout>
   )
