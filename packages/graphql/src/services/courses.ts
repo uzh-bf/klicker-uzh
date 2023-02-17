@@ -604,7 +604,7 @@ interface ChangeCourseDates {
 
 export async function changeCourseDates(
   { courseId, startDate, endDate }: ChangeCourseDates,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
     where: { id: courseId },
