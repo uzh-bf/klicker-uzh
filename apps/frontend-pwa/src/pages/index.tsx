@@ -3,6 +3,8 @@ import {
   faBell,
   faBellSlash,
   faBookmark,
+  faCalendar,
+  faFolderClosed,
 } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookOpenReader,
@@ -11,6 +13,7 @@ import {
   faCirclePlus,
   faGraduationCap,
   faLink,
+  faSync,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -54,15 +57,25 @@ function CourseElement({
   return (
     <div key={course.id} className="flex flex-row w-full">
       <LinkButton
+        icon={(isFuture && faCalendar) || (isPast && faFolderClosed) || faSync}
         className={{
-          root: 'flex-1 rounded-r-none border-r-0 h-full',
+          root: twMerge(
+            'flex-1 rounded-r-none border-r-0 h-full',
+            isPast && 'text-slate-600'
+          ),
         }}
         href={`/course/${course.id}`}
       >
         <div>
-          {isFuture && `${course.displayName} (Bevorstehend)`}
-          {isCurrent && course.displayName}
-          {isPast && `${course.displayName} (Abgeschlossen)`}
+          <div>{course.displayName}</div>
+          <div className="flex flex-row items-end justify-between">
+            <div className="text-xs">
+              {isFuture &&
+                `Start am ${dayjs(course.startDate).format('DD.MM.YYYY')}`}
+              {isPast &&
+                `Beendet am ${dayjs(course.endDate).format('DD.MM.YYYY')}`}
+            </div>
+          </div>
         </div>
       </LinkButton>
       {onSubscribeClick && (
