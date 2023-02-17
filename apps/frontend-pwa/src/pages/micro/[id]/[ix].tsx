@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import FlagSuccessToast from '@components/flags/FlagSuccessToast'
 import {
   GetMicroSessionDocument,
   QuestionType,
@@ -20,7 +19,6 @@ import Layout from '../../../components/Layout'
 function MicroSessionInstance() {
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
-  const [toastOpen, setToastOpen] = useState(false)
 
   const router = useRouter()
 
@@ -128,10 +126,6 @@ function MicroSessionInstance() {
                         setOpen={setModalOpen}
                         setToastOpen={setToastOpen}
                         instanceId={currentInstance.id}
-                      />
-                      <FlagSuccessToast
-                        open={toastOpen}
-                        setOpen={setToastOpen}
                       />
                     </div>
                   </div>

@@ -30,7 +30,6 @@ import Footer from '../../../../components/common/Footer'
 import OptionsDisplay from '../../../../components/common/OptionsDisplay'
 import EvaluationDisplay from '../../../../components/evaluation/EvaluationDisplay'
 import FlagQuestionModal from '../../../../components/flags/FlagQuestionModal'
-import FlagSuccessToast from '../../../../components/flags/FlagSuccessToast'
 import Layout from '../../../../components/Layout'
 import formatResponse from '../../../../lib/formatResponse'
 
@@ -52,7 +51,6 @@ function LearningElement({ courseId, id }: Props) {
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
   const [modalOpen, setModalOpen] = useState(false)
-  const [toastOpen, setToastOpen] = useState(false)
 
   const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
     refetchQueries: [
@@ -327,14 +325,9 @@ function LearningElement({ courseId, id }: Props) {
                         <FlagQuestionModal
                           open={modalOpen}
                           setOpen={setModalOpen}
-                          setToastOpen={setToastOpen}
                           instanceId={currentInstance.id!}
                         />
                       </div>
-                      <FlagSuccessToast
-                        open={toastOpen}
-                        setOpen={setToastOpen}
-                      />
                       <div className="flex flex-row gap-8">
                         <div>
                           <div className="font-bold">Berechnet</div>
