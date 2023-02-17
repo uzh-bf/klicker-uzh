@@ -30,6 +30,7 @@
     "formik": "2.2.9",
     "graphql": "16.6.0",
     "graphql-ws": "5.11.3",
+    "is-hotkey": "0.2.0",
     "js-search": "2.0.0",
     "localforage": "1.10.0",
     "lodash": "4.17.21",
@@ -49,6 +50,9 @@
     "remark-slate": "1.8.6",
     "shared-components": "*",
     "sharp": "0.31.3",
+    "slate": "0.90.0",
+    "slate-history": "0.86.0",
+    "slate-react": "0.90.0",
     "tailwind-merge": "1.9.1",
     "yup": "1.0.0"
   },
