@@ -377,9 +377,9 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
-  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String!], type: QuestionType!): Question
-  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String!], type: QuestionType!): Question
+  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, feedback: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
+  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, feedback: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String!], type: QuestionType!): Question
+  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, feedback: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String!], type: QuestionType!): Question
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -551,6 +551,7 @@ type Question {
   content: String!
   createdAt: Date!
   displayMode: QuestionDisplayMode!
+  feedback: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
   id: Int!
