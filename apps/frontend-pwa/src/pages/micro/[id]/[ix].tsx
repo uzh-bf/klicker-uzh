@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import FlagSuccessToast from '@components/flags/FlagSuccessToast'
 import {
   GetMicroSessionDocument,
   QuestionType,
@@ -11,12 +12,15 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Footer from '../../../components/common/Footer'
 import EvaluationDisplay from '../../../components/EvaluationDisplay'
+import FlagQuestionModal from '../../../components/flags/FlagQuestionModal'
 import Layout from '../../../components/Layout'
 import OptionsDisplay from '../../../components/OptionsDisplay'
 
 // TODO: different question types (FREE and RANGE)
 function MicroSessionInstance() {
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [toastOpen, setToastOpen] = useState(false)
 
   const router = useRouter()
 
@@ -111,12 +115,24 @@ function MicroSessionInstance() {
 
               {currentInstance.evaluation && (
                 <div className="flex-1 p-4 space-y-4 border rounded basis-1/3 bg-gray-50">
-                  <div className="flex flex-row gap-8">
-                    <div>
+                  <div className="flex flex-row justify-between gap-8">
+                    <div className="flex flex-col">
                       <div className="font-bold">Punkte (gesammelt)</div>
                       <div className="text-xl">
                         {currentInstance.evaluation.pointsAwarded} Punkte
                       </div>
+                    </div>
+                    <div>
+                      <FlagQuestionModal
+                        open={modalOpen}
+                        setOpen={setModalOpen}
+                        setToastOpen={setToastOpen}
+                        instanceId={currentInstance.id}
+                      />
+                      <FlagSuccessToast
+                        open={toastOpen}
+                        setOpen={setToastOpen}
+                      />
                     </div>
                   </div>
 

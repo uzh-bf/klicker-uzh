@@ -13,14 +13,14 @@ interface FlagQuestionModalProps {
   open: boolean
   setOpen: (newValue: boolean) => void
   setToastOpen: (newValue: boolean) => void
-  questionData: { id: number }
+  instanceId: number
 }
 
 function FlagQuestionModal({
   open,
   setOpen,
   setToastOpen,
-  questionData,
+  instanceId,
 }: FlagQuestionModalProps) {
   const theme = useContext(ThemeContext)
   const [flagQuestion] = useMutation(FlagQuestionDocument)
@@ -40,8 +40,8 @@ function FlagQuestionModal({
     if (!content.match(/^(<br>(\n)*)$/g) && content !== '') {
       const result = await flagQuestion({
         variables: {
-          questionInstanceId: questionData.id,
-          content: content,
+          questionInstanceId: instanceId,
+          content,
         },
       })
       if (result.data?.flagQuestion === 'OK') {

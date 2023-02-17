@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import FlagSuccessToast from '@components/flags/FlagSuccessToast'
 import {
   faBookmark,
   faQuestionCircle,
@@ -30,6 +29,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Footer from '../../../../components/common/Footer'
 import EvaluationDisplay from '../../../../components/EvaluationDisplay'
 import FlagQuestionModal from '../../../../components/flags/FlagQuestionModal'
+import FlagSuccessToast from '../../../../components/flags/FlagSuccessToast'
 import Layout from '../../../../components/Layout'
 import OptionsDisplay from '../../../../components/OptionsDisplay'
 import formatResponse from '../../../../lib/formatResponse'
@@ -328,9 +328,13 @@ function LearningElement({ courseId, id }: Props) {
                           open={modalOpen}
                           setOpen={setModalOpen}
                           setToastOpen={setToastOpen}
-                          questionData={questionData}
+                          instanceId={currentInstance.id!}
                         />
                       </div>
+                      <FlagSuccessToast
+                        open={toastOpen}
+                        setOpen={setToastOpen}
+                      />
                       <div className="flex flex-row gap-8">
                         <div>
                           <div className="font-bold">Berechnet</div>
@@ -386,7 +390,6 @@ function LearningElement({ courseId, id }: Props) {
             </div>
           )}
         </div>
-        <FlagSuccessToast open={toastOpen} setOpen={setToastOpen} />
       </div>
 
       <Footer
