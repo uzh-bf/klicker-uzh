@@ -99,7 +99,7 @@ function JoinCourse({
   return (
     <Layout
       displayName="Kurs beitreten"
-      course={{ displayName: displayName, color: color }}
+      course={{ displayName: displayName, color: color, id: courseId }}
     >
       <div className="max-w-sm mx-auto lg:max-w-md md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         <H2>Kurs &quot;{displayName}&quot; beitreten</H2>
