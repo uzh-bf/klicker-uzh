@@ -358,6 +358,10 @@ function LearningElement({ courseId, id }: Props) {
                           ).format('DD.MM.YYYY HH:mm')}
                         </div>
                       </div>
+                      <div className="p-1.5 bg-green-100 border border-green-600 border-solid rounded">
+                        <div className="font-bold">Erklärung</div>
+                        <Markdown content={questionData.feedback} />
+                      </div>
                     </div>
                   )}
                 </div>

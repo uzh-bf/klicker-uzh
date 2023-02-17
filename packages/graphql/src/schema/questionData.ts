@@ -15,6 +15,7 @@ export interface BaseQuestionData {
   name: string
   type: DB.QuestionType
   content: string
+  feedback?: string | null
   pointsMultiplier?: number
   displayMode?: DB.QuestionDisplayMode
 }
@@ -26,6 +27,7 @@ export const QuestionData = QuestionDataRef.implement({
     name: t.exposeString('name'),
     type: t.expose('type', { type: QuestionType }),
     content: t.exposeString('content'),
+    feedback: t.exposeString('feedback', { nullable: true }),
     pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
     displayMode: t.expose('displayMode', {
       type: QuestionDisplayMode,

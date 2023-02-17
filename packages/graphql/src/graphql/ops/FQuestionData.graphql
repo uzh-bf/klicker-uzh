@@ -5,6 +5,7 @@ fragment QuestionData on QuestionInstance {
     type
     displayMode
     content
+    feedback
     pointsMultiplier
 
     ... on ChoicesQuestionData {
