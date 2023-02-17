@@ -48,6 +48,10 @@ releases:
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
           databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
 
+          notifications:
+            url: '{{ requiredEnv "NOTIFICATION_URL" }}'
+            secret: '{{ requiredEnv "NOTIFICATION_SECRET" }}'
+
           redisCache:
             host: klicker-v2-prod-redis-master
             port: 6379
