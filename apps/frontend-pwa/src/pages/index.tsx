@@ -55,30 +55,70 @@ const Index = function () {
 
   const {
     courses,
+    oldCourses,
     activeSessions,
     activeMicrolearning,
   }: {
-    courses: { id: string; displayName: string; isSubscribed: boolean }[]
+    courses: {
+      id: string
+      displayName: string
+      isSubscribed: boolean
+      startDate: string
+      endDate: string
+    }[]
+    oldCourses: {
+      id: string
+      displayName: string
+      isSubscribed: boolean
+      startDate: string
+      endDate: string
+    }[]
     activeSessions: (Session & { courseName: string })[]
     activeMicrolearning: (MicroSession & {
       courseName: string
       isCompleted: boolean
     })[]
   } = useMemo(() => {
-    const obj = { courses: [], activeSessions: [], activeMicrolearning: [] }
+    const obj = {
+      courses: [],
+      oldCourses: [],
+      activeSessions: [],
+      activeMicrolearning: [],
+    }
     if (!data?.participations) return obj
     return data.participations.reduce((acc, participation) => {
       return {
-        courses: [
-          ...acc.courses,
-          {
-            id: participation.course.id,
-            displayName: participation.course.displayName,
-            isSubscribed:
-              participation.subscriptions &&
-              participation.subscriptions.length > 0,
-          },
-        ],
+        courses:
+          // check if endDate of course is before today or today
+          dayjs(participation.course?.endDate).isAfter(dayjs()) ||
+          dayjs(participation.course?.endDate).isSame(dayjs())
+            ? [
+                ...acc.courses,
+                {
+                  id: participation.course?.id,
+                  displayName: participation.course?.displayName,
+                  startDate: participation.course?.startDate,
+                  endDate: participation.course?.endDate,
+                  isSubscribed:
+                    participation.subscriptions &&
+                    participation.subscriptions.length > 0,
+                },
+              ]
+            : acc.courses,
+        oldCourses: dayjs(participation.course?.endDate).isBefore(dayjs())
+          ? [
+              ...acc.oldCourses,
+              {
+                id: participation.course?.id,
+                displayName: participation.course?.displayName,
+                startDate: participation.course?.startDate,
+                endDate: participation.course?.endDate,
+                isSubscribed:
+                  participation.subscriptions &&
+                  participation.subscriptions.length > 0,
+              },
+            ]
+          : acc.oldCourses,
         activeSessions: [
           ...acc.activeSessions,
           ...participation.course.sessions?.map((session) => ({
@@ -276,15 +316,30 @@ const Index = function () {
 
         <H1 className={{ root: 'text-xl' }}>Meine Kurse</H1>
         <div className="flex flex-col gap-2 mt-2 mb-4">
-          {courses.length === 0 && <div>Keine Kursmitgliedschaften.</div>}
+          {courses.length === 0 && oldCourses.length === 0 && (
+            <div>Keine Kursmitgliedschaften.</div>
+          )}
           {courses.map((course) => (
             <CourseElement
               disabled={!!pushDisabled}
               key={course.id}
               courseId={course.id}
-              courseName={course.displayName}
+              courseName={
+                dayjs(course.startDate).isAfter(dayjs())
+                  ? `${course.displayName} (Bevorstehend)`
+                  : course.displayName
+              }
               onSubscribeClick={onSubscribeClick}
               isSubscribed={course.isSubscribed}
+            />
+          ))}
+          {oldCourses.map((oldCourse) => (
+            <CourseElement
+              disabled={!!pushDisabled}
+              key={oldCourse.id}
+              courseId={oldCourse.id}
+              courseName={`${oldCourse.displayName} (Abgeschlossen)`}
+              hideSubscribeButton
             />
           ))}
         </div>
