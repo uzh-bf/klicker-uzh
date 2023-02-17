@@ -24,7 +24,7 @@ function Bookmarks() {
   return (
     <Layout
       course={courseData?.basicCourseInformation ?? undefined}
-      displayName={`Bookmarks ${courseData?.basicCourseInformation?.displayName}`}
+      displayName="Bookmarks"
     >
       <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className={{ root: 'text-xl' }}>
