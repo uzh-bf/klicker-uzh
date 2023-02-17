@@ -11,6 +11,8 @@ query GetSingleCourse($courseId: String!) {
     numOfActiveParticipants
     averageScore
     averageActiveScore
+    startDate
+    endDate
 
     sessions {
       id

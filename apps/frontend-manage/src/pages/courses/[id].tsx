@@ -135,24 +135,34 @@ function CourseOverviewPage() {
             setDescriptionEditMode={setDescriptionEditMode}
           />
         )}
-        <div className="flex flex-row pt-1">
-          <span className="pr-3">Kursfarbe</span>
-          <div
-            className={
-              'flex relative w-20 mr-3 rounded-lg align-center justify-end'
-            }
-            style={{ backgroundColor: course.color ?? '#eaa07d' }}
-          >
-            <Button onClick={toggleColorPicker}>
-              <FontAwesomeIcon icon={faPalette} />
-            </Button>
-            {isColorPickerVisible && (
-              <ColorPicker
-                color={course.color ?? '#eaa07d'}
-                onSubmit={handleColorChange}
-                onAbort={toggleColorPicker}
-              />
-            )}
+        <div className="flex flex-row gap-5 pt-1">
+          <div className="flex flex-row">
+            <div className="pr-3">Kursfarbe</div>
+            <div
+              className={
+                'flex relative w-20 rounded-lg align-center justify-end'
+              }
+              style={{ backgroundColor: course.color ?? '#eaa07d' }}
+            >
+              <Button onClick={toggleColorPicker}>
+                <FontAwesomeIcon icon={faPalette} />
+              </Button>
+              {isColorPickerVisible && (
+                <ColorPicker
+                  color={course.color ?? '#eaa07d'}
+                  onSubmit={handleColorChange}
+                  onAbort={toggleColorPicker}
+                />
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row">
+            <div className="mr-2">Startdatum: </div>
+            <div>{course.startDate}</div>
+          </div>
+          <div className="flex flex-row">
+            <div className="mr-2">Enddatum:</div>
+            <div>{course.endDate}</div>
           </div>
         </div>
       </div>

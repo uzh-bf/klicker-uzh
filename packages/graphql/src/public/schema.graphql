@@ -118,6 +118,7 @@ type Course {
   createdAt: Date!
   description: String
   displayName: String!
+  endDate: Date!
   id: ID!
   isArchived: Boolean
   leaderboard: [LeaderboardEntry!]
@@ -129,6 +130,7 @@ type Course {
   owner: User
   pinCode: Int
   sessions: [Session!]
+  startDate: Date!
   updatedAt: Date!
 }
 
