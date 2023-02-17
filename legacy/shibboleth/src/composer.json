@@ -19,7 +19,7 @@
     "require": {
         "php": ">=7.1",
         "ext-json": "*",
-        "firebase/php-jwt": "^5.0",
+        "firebase/php-jwt": "^6.0",
         "monolog/monolog": "^1.24",
         "php-di/php-di": "^6.0",
         "slim/psr7": "^0.5",
