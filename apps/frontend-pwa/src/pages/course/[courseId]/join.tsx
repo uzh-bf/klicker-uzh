@@ -2,7 +2,6 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   CreateParticipantAndJoinCourseDocument,
   GetBasicCourseInformationDocument,
-  GetCourseOverviewDataDocument,
   JoinCourseWithPinDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -89,11 +88,9 @@ function JoinCourse({
 
   const [createParticipantAndJoinCourse] = useMutation(
     CreateParticipantAndJoinCourseDocument,
-    { refetchQueries: [SelfDocument, GetCourseOverviewDataDocument] }
+    { refetchQueries: [SelfDocument] }
   )
-  const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument, {
-    refetchQueries: [GetCourseOverviewDataDocument],
-  })
+  const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 
   if (loadingParticipant || courseLoading) {
     return <div>Loading...</div>
@@ -131,8 +128,8 @@ function JoinCourse({
                   router.push('/')
                 } else {
                   setError(true)
+                  setSubmitting(false)
                 }
-                setSubmitting(false)
               }}
             >
               {({
@@ -199,8 +196,8 @@ function JoinCourse({
                   router.push('/')
                 } else {
                   setError(true)
+                  setSubmitting(false)
                 }
-                setSubmitting(false)
               }}
             >
               {({
