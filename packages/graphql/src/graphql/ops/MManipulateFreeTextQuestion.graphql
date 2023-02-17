@@ -2,7 +2,7 @@ mutation ManipulateFreeTextQuestion(
   $id: Int
   $name: String
   $content: String
-  $feedback: String
+  $explanation: String
   $options: OptionsFreeTextInput
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
@@ -14,7 +14,7 @@ mutation ManipulateFreeTextQuestion(
     type: FREE_TEXT
     name: $name
     content: $content
-    feedback: $feedback
+    explanation: $explanation
     options: $options
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
@@ -25,7 +25,7 @@ mutation ManipulateFreeTextQuestion(
     name
     type
     content
-    feedback
+    explanation
     hasSampleSolution
     hasAnswerFeedbacks
 

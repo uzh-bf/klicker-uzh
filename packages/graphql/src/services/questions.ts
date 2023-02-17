@@ -51,7 +51,7 @@ export async function manipulateQuestion(
     type,
     name,
     content,
-    feedback,
+    explanation,
     options,
     hasSampleSolution,
     hasAnswerFeedbacks,
@@ -63,7 +63,7 @@ export async function manipulateQuestion(
     type: DB.QuestionType
     name?: string | null
     content?: string | null
-    feedback?: string | null
+    explanation?: string | null
     options?: {
       restrictions?: {
         maxLength?: number
@@ -119,7 +119,7 @@ export async function manipulateQuestion(
       type: type,
       name: name ?? 'Missing Question Title',
       content: content ?? 'Missing Question Content',
-      feedback: feedback ?? undefined,
+      explanation: explanation ?? undefined,
       hasSampleSolution: hasSampleSolution ?? false,
       hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
       displayMode: displayMode ?? undefined,
@@ -148,7 +148,7 @@ export async function manipulateQuestion(
     update: {
       name: name ?? undefined,
       content: content ?? undefined,
-      feedback: feedback ?? undefined,
+      explanation: explanation ?? undefined,
       hasSampleSolution: hasSampleSolution ?? false,
       hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
       options: options ?? undefined,

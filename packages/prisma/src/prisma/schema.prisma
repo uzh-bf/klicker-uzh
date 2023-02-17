@@ -148,7 +148,7 @@ model Question {
   name               String
   content            String
   options            Json
-  feedback           String?
+  explanation        String?
   pointsMultiplier   Int                 @default(1)
   displayMode        QuestionDisplayMode @default(LIST)
   hasSampleSolution  Boolean             @default(false)

@@ -87,7 +87,7 @@ type ChoiceQuestionOptions {
 type ChoicesQuestionData implements QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
-  feedback: String
+  explanation: String
   id: Int!
   name: String!
   options: ChoiceQuestionOptions!
@@ -169,7 +169,7 @@ type FeedbackResponse {
 type FreeTextQuestionData implements QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
-  feedback: String
+  explanation: String
   id: Int!
   name: String!
   options: FreeTextQuestionOptions!
@@ -380,9 +380,9 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, feedback: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
-  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, feedback: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String!], type: QuestionType!): Question
-  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, feedback: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String!], type: QuestionType!): Question
+  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
+  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String!], type: QuestionType!): Question
+  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String!], type: QuestionType!): Question
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -402,7 +402,7 @@ type Mutation {
 type NumericalQuestionData implements QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
-  feedback: String
+  explanation: String
   id: Int!
   name: String!
   options: NumericalQuestionOptions!
@@ -555,7 +555,7 @@ type Question {
   content: String!
   createdAt: Date!
   displayMode: QuestionDisplayMode!
-  feedback: String
+  explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
   id: Int!
@@ -573,7 +573,7 @@ type Question {
 interface QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
-  feedback: String
+  explanation: String
   id: Int!
   name: String!
   pointsMultiplier: Int

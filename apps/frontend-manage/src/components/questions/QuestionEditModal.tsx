@@ -53,7 +53,7 @@ const questionManipulationSchema = Yup.object().shape({
       message: 'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu',
       test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
     }),
-  feedback: Yup.string(),
+  explanation: Yup.string(),
   hasSampleSolution: Yup.boolean(),
   hasAnswerFeedbacks: Yup.boolean(),
 
@@ -242,7 +242,7 @@ function QuestionEditModal({
         displayMode: QuestionDisplayMode.List,
         name: '',
         content: '<br>',
-        feedback: '<br>',
+        explanation: '<br>',
         tags: [],
         attachments: null,
         hasSampleSolution: false,
@@ -317,7 +317,7 @@ function QuestionEditModal({
           id: questionId,
           name: values.name,
           content: values.content,
-          feedback: values.feedback,
+          explanation: values.explanation,
           hasSampleSolution: values.hasSampleSolution,
           hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
@@ -593,7 +593,7 @@ function QuestionEditModal({
 
                 <div className="mt-4">
                   <Label
-                    label="Feedback"
+                    label="Erklärung"
                     className={{
                       root: 'my-auto mr-2 text-lg font-bold',
                       tooltip:
@@ -603,13 +603,13 @@ function QuestionEditModal({
                     showTooltipSymbol={true}
                   />
 
-                  {typeof values.feedback !== 'undefined' && (
+                  {typeof values.explanation !== 'undefined' && (
                     <FastField
-                      name="feedback"
+                      name="explanation"
                       questionType={questionType}
                       shouldUpdate={(next, prev) =>
-                        next?.formik.values.feedback !==
-                          prev?.formik.values.feedback ||
+                        next?.formik.values.explanation !==
+                          prev?.formik.values.explanation ||
                         next?.questionType !== prev?.questionType
                       }
                     >
@@ -619,11 +619,11 @@ function QuestionEditModal({
                           touched={meta.touched}
                           content={field.value || '<br>'}
                           onChange={(newValue: string) =>
-                            setFieldValue('feedback', newValue)
+                            setFieldValue('explanation', newValue)
                           }
-                          placeholder="Feedback hier eingeben…"
-                          key={`${questionType}-feedback`}
-                          data_cy="insert-question-feedback"
+                          placeholder="Erklärung hier eingeben…"
+                          key={`${questionType}-explanation`}
+                          data_cy="insert-question-explanation"
                         />
                       )}
                     </FastField>
@@ -891,7 +891,7 @@ function QuestionEditModal({
                                 : 0,
                               value: '<br>',
                               correct: false,
-                              feedback: '<br>',
+                              explanation: '<br>',
                             })
                           }
                           data={{ cy: 'add-new-answer' }}

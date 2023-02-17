@@ -134,7 +134,7 @@ export const Question = builder.prismaObject('Question', {
     name: t.exposeString('name'),
     type: t.expose('type', { type: QuestionType }),
     content: t.exposeString('content'),
-    feedback: t.exposeString('feedback', { nullable: true }),
+    explanation: t.exposeString('explanation', { nullable: true }),
 
     options: t.expose('options', { type: 'Json' }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),

@@ -2,7 +2,7 @@ mutation ManipulateNumericalQuestion(
   $id: Int
   $name: String
   $content: String
-  $feedback: String
+  $explanation: String
   $options: OptionsNumericalInput
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
@@ -14,7 +14,7 @@ mutation ManipulateNumericalQuestion(
     type: NUMERICAL
     name: $name
     content: $content
-    feedback: $feedback
+    explanation: $explanation
     options: $options
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
@@ -25,7 +25,7 @@ mutation ManipulateNumericalQuestion(
     name
     type
     content
-    feedback
+    explanation
     hasSampleSolution
     hasAnswerFeedbacks
 

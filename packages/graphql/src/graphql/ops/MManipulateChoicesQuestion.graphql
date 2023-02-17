@@ -3,7 +3,7 @@ mutation ManipulateChoicesQuestion(
   $type: QuestionType!
   $name: String
   $content: String
-  $feedback: String
+  $explanation: String
   $options: OptionsChoicesInput
   $displayMode: QuestionDisplayMode
   $hasSampleSolution: Boolean
@@ -16,7 +16,7 @@ mutation ManipulateChoicesQuestion(
     type: $type
     name: $name
     content: $content
-    feedback: $feedback
+    explanation: $explanation
     options: $options
     displayMode: $displayMode
     hasSampleSolution: $hasSampleSolution
@@ -28,7 +28,7 @@ mutation ManipulateChoicesQuestion(
     name
     type
     content
-    feedback
+    explanation
     displayMode
     hasSampleSolution
     hasAnswerFeedbacks

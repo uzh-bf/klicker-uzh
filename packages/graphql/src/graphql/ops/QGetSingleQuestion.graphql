@@ -4,7 +4,7 @@ query GetSingleQuestion($id: Int!) {
     name
     type
     content
-    feedback
+    explanation
     displayMode
 
     hasSampleSolution
