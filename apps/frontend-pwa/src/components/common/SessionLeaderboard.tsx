@@ -6,8 +6,8 @@ import {
 import localforage from 'localforage'
 import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { ParticipantOther } from '../Participant'
-import { Podium } from '../Podium'
+import { ParticipantOther } from '../participant/Participant'
+import { Podium } from '../participant/Podium'
 
 interface LeaderboardProps {
   sessionId: string

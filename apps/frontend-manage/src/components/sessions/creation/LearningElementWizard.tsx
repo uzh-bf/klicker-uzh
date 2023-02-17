@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import SessionCreationErrorToast from '@components/toasts/SessionCreationErrorToast'
 import {
   CreateLearningElementDocument,
   LearningElementOrderType,
@@ -15,6 +14,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { LEARNING_ELEMENT_ORDERS } from 'shared-components/src/constants'
 import * as yup from 'yup'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
 import MultistepWizard, { MicroSessionFormValues } from './MultistepWizard'

@@ -182,7 +182,6 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
-          courseId: t.arg.string({ required: true }),
           pin: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {

@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import SessionCreationErrorToast from '@components/toasts/SessionCreationErrorToast'
 import {
   CreateMicroSessionDocument,
   EditMicroSessionDocument,
@@ -17,6 +16,7 @@ import { ErrorMessage } from 'formik'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
+import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
 import MultistepWizard from './MultistepWizard'

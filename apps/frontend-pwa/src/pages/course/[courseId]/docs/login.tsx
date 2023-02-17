@@ -1,6 +1,6 @@
-import DocsLayout from '@components/DocsLayout'
 import { H3 } from '@uzh-bf/design-system'
 import Image from 'next/image'
+import DocsLayout from '../../../../components/docs/DocsLayout'
 
 function Login() {
   return (

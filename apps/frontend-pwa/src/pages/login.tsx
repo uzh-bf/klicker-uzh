@@ -194,6 +194,7 @@ function LoginForm() {
                   )}
                   {oniOS && (
                     <UserNotification
+                      className={{ root: 'mt-4' }}
                       notificationType="info"
                       message="Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
                     />
