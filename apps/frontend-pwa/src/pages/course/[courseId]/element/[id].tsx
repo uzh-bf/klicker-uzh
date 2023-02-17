@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import FlagSuccessToast from '@components/flags/FlagSuccessToast'
 import {
   faBookmark,
   faQuestionCircle,
@@ -21,7 +22,7 @@ import {
 import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Button, H3, H4, Progress, Toast } from '@uzh-bf/design-system'
+import { Button, H3, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
@@ -385,15 +386,7 @@ function LearningElement({ courseId, id }: Props) {
             </div>
           )}
         </div>
-        <Toast
-          duration={5000}
-          type="success"
-          openExternal={toastOpen}
-          setOpenExternal={setToastOpen}
-        >
-          <H4>Thank you!</H4>
-          <div>Feedback sent successfully.</div>
-        </Toast>
+        <FlagSuccessToast open={toastOpen} setOpen={setToastOpen} />
       </div>
 
       <Footer
