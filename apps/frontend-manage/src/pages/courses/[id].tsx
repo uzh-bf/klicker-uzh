@@ -4,6 +4,7 @@ import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeCourseColorDocument,
+  ChangeCourseDatesDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
@@ -37,6 +38,7 @@ function CourseOverviewPage() {
   })
 
   const [changeCourseColor] = useMutation(ChangeCourseColorDocument)
+  const [changeCourseDates] = useMutation(ChangeCourseDatesDocument)
 
   useEffect(() => {
     if (data && !data.course) {
@@ -165,8 +167,12 @@ function CourseOverviewPage() {
             edit={editStartDate}
             onEdit={() => setEditStartDate(true)}
             onSave={(date: string) => {
-              console.log(date + 'T00:00:00.000Z')
-              // TODO: add mutation
+              changeCourseDates({
+                variables: {
+                  courseId: course.id,
+                  startDate: date + 'T00:00:00.000Z',
+                },
+              })
               setEditStartDate(false)
             }}
           />
@@ -176,8 +182,12 @@ function CourseOverviewPage() {
             edit={editEndDate}
             onEdit={() => setEditEndDate(true)}
             onSave={(date: string) => {
-              console.log(date + 'T23:59:59.999Z')
-              // TODO: add mutation
+              changeCourseDates({
+                variables: {
+                  courseId: course.id,
+                  endDate: date + 'T23:59:59.999Z',
+                },
+              })
               setEditEndDate(false)
             }}
           />

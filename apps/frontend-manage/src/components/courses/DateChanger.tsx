@@ -35,7 +35,7 @@ function DateChanger({ label, edit, date, onEdit, onSave }: DateChangerProps) {
         </div>
       ) : (
         <div className="flex flex-row gap-2 px-2 py-1 border border-solid rounded">
-          <div>{dayjs(date).format('DD / MM / YYYY')}</div>
+          <div>{dayjs(dateState).format('DD / MM / YYYY')}</div>
           <Button basic onClick={onEdit}>
             <Button.Icon>
               <FontAwesomeIcon icon={faPencil} />
