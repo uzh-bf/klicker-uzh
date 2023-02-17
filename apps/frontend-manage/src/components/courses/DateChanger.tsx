@@ -1,7 +1,7 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
+import { Button, Label } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useState } from 'react'
 
@@ -18,7 +18,7 @@ function DateChanger({ label, edit, date, onEdit, onSave }: DateChangerProps) {
 
   return (
     <div className="flex flex-row items-center">
-      {label && <div className="mr-1.5">{label}</div>}
+      {label && <Label label={label} className={{ root: 'mr-1.5' }} />}
       {edit ? (
         <div className="flex flex-row gap-2 border border-solid rounded">
           <input
