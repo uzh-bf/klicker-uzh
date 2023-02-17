@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.48...v3.0.0-alpha.49) (2023-02-17)
+
+
+### Bug Fixes
+
+* **packages/prisma:** ensure start and end date of courses are required ([3e3b57a](https://github.com/uzh-bf/klicker-uzh/commit/3e3b57a11d59dddceeeae2a9cb6744e8b546ae3e))
+
 ## [3.0.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.47...v3.0.0-alpha.48) (2023-02-17)
 
 
