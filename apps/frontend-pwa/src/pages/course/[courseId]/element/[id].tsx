@@ -39,7 +39,6 @@ import { Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
-import ContentInput from 'shared-components/src/ContentInput'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import Footer from '../../../../components/common/Footer'
@@ -369,7 +368,7 @@ function LearningElement({ courseId, id }: Props) {
                           <div>{currentInstance.pointsMultiplier}x</div>
                         </div>
                         <Modal
-                          className={{ content: 'm-10 md:m-20' }}
+                          className={{ content: 'h-max mt-20 md:mt-0' }}
                           open={modalOpen}
                           trigger={
                             <Button
@@ -394,10 +393,11 @@ function LearningElement({ courseId, id }: Props) {
                             Fehler so genau wie möglich zu beschreiben.
                           </div>
                           <Formik
-                            initialValues={{ description: '<br>' }}
+                            initialValues={{ feedback: '' }}
+                            isInitialValid={false}
                             onSubmit={(values, { setSubmitting }) =>
                               flagQuestionFeedback(
-                                values.description,
+                                values.feedback,
                                 setSubmitting
                               )
                             }
@@ -408,31 +408,38 @@ function LearningElement({ courseId, id }: Props) {
                               setFieldValue,
                               isSubmitting,
                               isValid,
-                              touched,
                               errors,
                             }) => (
                               <div className="flex-1">
                                 <Form>
-                                  <ContentInput
+                                  <textarea
+                                    className="w-full h-24 rounded-md"
                                     placeholder="Feedback hinzufügen"
-                                    touched={touched.description}
-                                    content={values.description}
-                                    onChange={(newValue: string) =>
-                                      setFieldValue('description', newValue)
+                                    value={values.feedback}
+                                    onChange={(e) =>
+                                      setFieldValue('feedback', e.target.value)
                                     }
                                   />
-
                                   <div className="flex flex-row justify-between w-full mt-1">
                                     {errors && (
                                       <div className="text-sm text-red-700">
-                                        {errors.description}
+                                        {errors.feedback}
                                       </div>
                                     )}
+                                  </div>
+
+                                  <div className="flex flex-col justify-between gap-2 mt-4 md:gap-0 md:flex-row">
+                                    <Button
+                                      onClick={() => setModalOpen(false)}
+                                      className={{ root: 'order-2 md:order-1' }}
+                                    >
+                                      Abbrechen
+                                    </Button>
                                     <Button
                                       className={{
                                         root: twMerge(
-                                          'float-right px-5 text-white disabled:opacity-60',
-                                          theme.primaryBgMedium
+                                          'float-right px-5 text-white disabled:opacity-80 order-1 md:order-2',
+                                          theme.primaryBgDark
                                         ),
                                       }}
                                       type="submit"
@@ -518,7 +525,7 @@ function LearningElement({ courseId, id }: Props) {
           setOpenExternal={setToastOpen}
         >
           <H4>Thank you!</H4>
-          <div>Feedback sent successfully!</div>
+          <div>Feedback sent successfully.</div>
         </Toast>
       </div>
 

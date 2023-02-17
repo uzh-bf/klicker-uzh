@@ -434,7 +434,7 @@ export async function flagQuestion(
   })
 
   if (
-    !questionInstance?.learningElement?.course?.notificationEmail ||
+    !questionInstance?.learningElement?.course?.notificationEmail &&
     !questionInstance?.microSession?.course?.notificationEmail
   )
     return null
@@ -451,8 +451,8 @@ export async function flagQuestion(
       participantId: ctx.user.sub,
       secret: process.env.NOTIFICATION_SECRET,
       notificationEmail:
-        questionInstance.learningElement.course.notificationEmail ||
-        questionInstance.microSession.course.notificationEmail,
+        questionInstance.learningElement?.course?.notificationEmail ||
+        questionInstance.microSession?.course?.notificationEmail,
     }),
   })
 
