@@ -14,13 +14,13 @@ import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import Leaderboard from 'shared-components/src/Leaderboard'
+import Tabs from '../../../components/common/Tabs'
 import Layout from '../../../components/Layout'
-import Tabs from '../../../components/Tabs'
 
 import Markdown from '@klicker-uzh/markdown'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import GroupVisualization from '../../../components/GroupVisualization'
+import GroupVisualization from '../../../components/participant/GroupVisualization'
 
 function CourseOverview({ courseId }: any) {
   const [selectedTab, setSelectedTab] = useState('global')

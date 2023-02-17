@@ -241,7 +241,9 @@ model Course {
   name              String
   displayName       String
   description       String?
-  color             String? @default("#eaa07d")
+  color             String?  @default("#eaa07d")
+  startDate         DateTime
+  endDate           DateTime
   notificationEmail String?
 
   sessions          Session[]

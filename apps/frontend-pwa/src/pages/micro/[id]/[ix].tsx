@@ -11,10 +11,10 @@ import { H3, Progress } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Footer from '../../../components/common/Footer'
-import EvaluationDisplay from '../../../components/EvaluationDisplay'
+import OptionsDisplay from '../../../components/common/OptionsDisplay'
+import EvaluationDisplay from '../../../components/evaluation/EvaluationDisplay'
 import FlagQuestionModal from '../../../components/flags/FlagQuestionModal'
 import Layout from '../../../components/Layout'
-import OptionsDisplay from '../../../components/OptionsDisplay'
 
 // TODO: different question types (FREE and RANGE)
 function MicroSessionInstance() {

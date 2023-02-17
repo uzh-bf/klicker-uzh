@@ -4,24 +4,21 @@ import {
   faBookOpenReader,
   faChalkboard,
   faCheck,
+  faCirclePlus,
   faGraduationCap,
   faLink,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   MicroSession,
   ParticipationsDocument,
   Session,
   SubscribeToPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, UserNotification } from '@uzh-bf/design-system'
+import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-import CourseElement from '../components/CourseElement'
+import LinkButton from '../components/common/LinkButton'
 import Layout from '../components/Layout'
-import SurveyPromotion from '../components/SurveyPromotion'
 import {
   determineInitialSubscriptionState,
   subscribeParticipant,
@@ -39,6 +36,7 @@ const Index = function () {
   const { data, loading, error } = useQuery(ParticipationsDocument, {
     skip: pushDisabled === null,
     variables: { endpoint: subscription?.endpoint },
+    fetchPolicy: 'network-only',
   })
 
   // This is necessary to make sure navigator is defined
@@ -55,30 +53,70 @@ const Index = function () {
 
   const {
     courses,
+    oldCourses,
     activeSessions,
     activeMicrolearning,
   }: {
-    courses: { id: string; displayName: string; isSubscribed: boolean }[]
+    courses: {
+      id: string
+      displayName: string
+      isSubscribed: boolean
+      startDate: string
+      endDate: string
+    }[]
+    oldCourses: {
+      id: string
+      displayName: string
+      isSubscribed: boolean
+      startDate: string
+      endDate: string
+    }[]
     activeSessions: (Session & { courseName: string })[]
     activeMicrolearning: (MicroSession & {
       courseName: string
       isCompleted: boolean
     })[]
   } = useMemo(() => {
-    const obj = { courses: [], activeSessions: [], activeMicrolearning: [] }
+    const obj = {
+      courses: [],
+      oldCourses: [],
+      activeSessions: [],
+      activeMicrolearning: [],
+    }
     if (!data?.participations) return obj
     return data.participations.reduce((acc, participation) => {
       return {
-        courses: [
-          ...acc.courses,
-          {
-            id: participation.course.id,
-            displayName: participation.course.displayName,
-            isSubscribed:
-              participation.subscriptions &&
-              participation.subscriptions.length > 0,
-          },
-        ],
+        courses:
+          // check if endDate of course is before today or today
+          dayjs(participation.course?.endDate).isAfter(dayjs()) ||
+          dayjs(participation.course?.endDate).isSame(dayjs())
+            ? [
+                ...acc.courses,
+                {
+                  id: participation.course?.id,
+                  displayName: participation.course?.displayName,
+                  startDate: participation.course?.startDate,
+                  endDate: participation.course?.endDate,
+                  isSubscribed:
+                    participation.subscriptions &&
+                    participation.subscriptions.length > 0,
+                },
+              ]
+            : acc.courses,
+        oldCourses: dayjs(participation.course?.endDate).isBefore(dayjs())
+          ? [
+              ...acc.oldCourses,
+              {
+                id: participation.course?.id,
+                displayName: participation.course?.displayName,
+                startDate: participation.course?.startDate,
+                endDate: participation.course?.endDate,
+                isSubscribed:
+                  participation.subscriptions &&
+                  participation.subscriptions.length > 0,
+              },
+            ]
+          : acc.oldCourses,
         activeSessions: [
           ...acc.activeSessions,
           ...participation.course.sessions?.map((session) => ({
@@ -165,135 +203,90 @@ const Index = function () {
   return (
     <Layout displayName="KlickerUZH">
       <div
-        className="flex flex-col md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
+        className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
       >
         {activeSessions.length !== 0 && (
-          <>
-            <H1 className={{ root: 'text-xl' }}>Aktive Sessions</H1>
-            <div className="flex flex-col gap-2 mt-2 mb-8">
+          <div>
+            <H1 className={{ root: 'text-xl mb-2' }}>Aktive Sessions</H1>
+            <div className="flex flex-col gap-2">
               {activeSessions.map((session) => (
-                <Link
+                <LinkButton
                   href={session.linkTo || `/session/${session.id}`}
                   key={session.id}
-                  legacyBehavior
+                  icon={session.linkTo ? faLink : faChalkboard}
                 >
-                  <Button
-                    className={{
-                      root: 'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
-                    }}
-                  >
-                    <Button.Icon>
-                      <FontAwesomeIcon
-                        icon={session.linkTo ? faLink : faChalkboard}
-                      />
-                    </Button.Icon>
-                    <Button.Label className={{ root: 'flex-1' }}>
-                      <div className="flex flex-row items-end justify-between md:flex-row">
-                        <div>{session.displayName}</div>
-                        <div className="text-sm">{session.courseName}</div>
-                      </div>
-                    </Button.Label>
-                  </Button>
-                </Link>
+                  <div className="flex flex-row items-end justify-between md:flex-row">
+                    <div>{session.displayName}</div>
+                    <div className="text-sm">{session.courseName}</div>
+                  </div>
+                </LinkButton>
               ))}
             </div>
-          </>
+          </div>
         )}
 
-        <H1 className={{ root: 'text-xl' }}>Fragen aus deinen Kursen</H1>
-        <div className="flex flex-col gap-2 mt-2 mb-8">
-          <Link href="/repetition" legacyBehavior>
-            <Button
-              className={{
-                root: twMerge(
-                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
-                ),
-              }}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faGraduationCap} />
-              </Button.Icon>
-              <Button.Label className={{ root: 'flex-1 text-left' }}>
-                Repetition Lernelemente
-              </Button.Label>
-            </Button>
-          </Link>
-          <Link href="/bookmarks" legacyBehavior>
-            <Button
-              className={{
-                root: twMerge(
-                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
-                ),
-              }}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faBookmark} />
-              </Button.Icon>
-              <Button.Label className={{ root: 'flex-1 text-left' }}>
-                Meine Bookmarks
-              </Button.Label>
-            </Button>
-          </Link>
+        <div>
+          <H1 className={{ root: 'text-xl mb-2' }}>Lernelemente</H1>
+          <div className="flex flex-col gap-2">
+            <LinkButton href="/repetition" icon={faGraduationCap}>
+              Repetition
+            </LinkButton>
+            <LinkButton href="/bookmarks" icon={faBookmark}>
+              Meine Bookmarks
+            </LinkButton>
+          </div>
         </div>
 
-        <H1 className={{ root: 'text-xl' }}>Aktives Microlearning</H1>
-        <div className="flex flex-col gap-2 mt-2 mb-8">
-          {activeMicrolearning.length === 0 && (
-            <div>Kein aktives Microlearning.</div>
-          )}
-          {activeMicrolearning.map((micro) => (
-            <Link href={`/micro/${micro.id}/`} key={micro.id}>
-              <Button
-                fluid
-                disabled={micro.isCompleted}
-                className={{
-                  root: twMerge(
-                    'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40',
-                    micro.isCompleted && 'hover:bg-unset'
-                  ),
-                }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon
-                    icon={micro.isCompleted ? faCheck : faBookOpenReader}
-                  />
-                </Button.Icon>
-                <Button.Label className={{ root: 'flex-1 text-left' }}>
+        {activeMicrolearning.length > 0 && (
+          <div>
+            <H1 className={{ root: 'text-xl mb-2' }}>Microlearning</H1>
+            <div className="flex flex-col gap-2">
+              {activeMicrolearning.map((micro) => (
+                <LinkButton
+                  icon={micro.isCompleted ? faCheck : faBookOpenReader}
+                  href={`/micro/${micro.id}/`}
+                  key={micro.id}
+                  className={{ root: micro.isCompleted && 'hover:bg-unset' }}
+                >
                   <div>{micro.displayName}</div>
                   <div className="flex flex-row items-end justify-between">
                     <div className="text-xs">
-                      {dayjs(micro.scheduledStartAt).format('D.M.YYYY HH:mm')} -{' '}
-                      {dayjs(micro.scheduledEndAt).format('D.M.YYYY HH:mm')}
+                      {dayjs(micro.scheduledStartAt).format('DD.MM.YYYY HH:mm')}{' '}
+                      - {dayjs(micro.scheduledEndAt).format('DD.MM.YYYY HH:mm')}
                     </div>
                     <div className="text-xs">{micro.courseName}</div>
                   </div>
-                </Button.Label>
-              </Button>
-            </Link>
-          ))}
-        </div>
+                </LinkButton>
+              ))}
+            </div>
+          </div>
+        )}
 
-        <H1 className={{ root: 'text-xl' }}>Meine Kurse</H1>
-        <div className="flex flex-col gap-2 mt-2 mb-4">
-          {courses.length === 0 && <div>Keine Kursmitgliedschaften.</div>}
-          {courses.map((course) => (
-            <CourseElement
-              disabled={!!pushDisabled}
-              key={course.id}
-              courseId={course.id}
-              courseName={course.displayName}
-              onSubscribeClick={onSubscribeClick}
-              isSubscribed={course.isSubscribed}
-            />
-          ))}
+        <div>
+          <H1 className={{ root: 'text-xl mb-2' }}>Meine Kurse</H1>
+          <div className="flex flex-col gap-2">
+            {courses.map((course) => (
+              <CourseElement
+                key={course.id}
+                course={course}
+                onSubscribeClick={onSubscribeClick}
+              />
+            ))}
+            {oldCourses.map((course) => (
+              <CourseElement key={course.id} course={course} />
+            ))}
+            <LinkButton icon={faCirclePlus} href="/join">
+              Kurs beitreten
+            </LinkButton>
+          </div>
         </div>
 
         {userInfo && (
           <UserNotification notificationType="info" message={userInfo} />
         )}
 
-        <SurveyPromotion courseId={courses?.[0]?.id} />
+        {/* <SurveyPromotion courseId={courses?.[0]?.id} /> */}
       </div>
     </Layout>
   )

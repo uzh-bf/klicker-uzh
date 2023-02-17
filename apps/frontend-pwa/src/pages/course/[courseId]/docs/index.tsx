@@ -1,4 +1,3 @@
-import DocsLayout from '@components/DocsLayout'
 import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
@@ -6,6 +5,7 @@ import { getParticipantToken } from '@lib/token'
 import { H3 } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
+import DocsLayout from '../../../../components/docs/DocsLayout'
 
 function Landing() {
   return (

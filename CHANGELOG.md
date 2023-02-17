@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.48...v3.0.0-alpha.49) (2023-02-17)
+
+
+### Bug Fixes
+
+* **packages/prisma:** ensure start and end date of courses are required ([3e3b57a](https://github.com/uzh-bf/klicker-uzh/commit/3e3b57a11d59dddceeeae2a9cb6744e8b546ae3e))
+
+## [3.0.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.47...v3.0.0-alpha.48) (2023-02-17)
+
+
+### Features
+
+* add course start and end date and editing feature ([#3355](https://github.com/uzh-bf/klicker-uzh/issues/3355)) ([52c417d](https://github.com/uzh-bf/klicker-uzh/commit/52c417d56f15cfe56a28b53eda98b304a587aaad))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add possibility to join course from pwa home ([#3354](https://github.com/uzh-bf/klicker-uzh/issues/3354)) ([622a353](https://github.com/uzh-bf/klicker-uzh/commit/622a35396106f0206b7b4600ab0d73745d669228))
+* **apps/frontend-pwa:** add proper error page ([#3353](https://github.com/uzh-bf/klicker-uzh/issues/3353)) ([20d2065](https://github.com/uzh-bf/klicker-uzh/commit/20d2065cdf265252d1a7710e2ebf20fbdfcf7a52))
+
 ## [3.0.0-alpha.47](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.46...v3.0.0-alpha.47) (2023-02-16)
 
 

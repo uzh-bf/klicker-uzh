@@ -1,56 +1,86 @@
-import { faBellSlash } from '@fortawesome/free-regular-svg-icons'
-import { faBell } from '@fortawesome/free-solid-svg-icons'
+import {
+  faBell,
+  faBellSlash,
+  faCalendar,
+  faFolderClosed,
+} from '@fortawesome/free-regular-svg-icons'
+import { faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
-import Link from 'next/link'
+import dayjs from 'dayjs'
 import { twMerge } from 'tailwind-merge'
+import LinkButton from './common/LinkButton'
 
-type courseElementProps = {
-  courseName: string
-  courseId: string
-  disabled: boolean
-  isSubscribed: boolean
-  onSubscribeClick: (subscribed: boolean, courseId: string) => void
+interface CourseElementProps {
+  course: {
+    id: string
+    startDate: string
+    endDate: string
+    isSubscribed: boolean
+    displayName: string
+  }
+  pushDisabled?: boolean
+  onSubscribeClick?: (subscribed: boolean, courseId: string) => void
 }
 
-const CourseElement = ({
-  courseId,
-  courseName,
-  isSubscribed,
-  disabled,
+function CourseElement({
+  course,
+  pushDisabled,
   onSubscribeClick,
-}: courseElementProps) => {
-  // TODO: Fetch initial subscription state from DB
+}: CourseElementProps) {
+  const isFuture = dayjs(course.startDate).isAfter(dayjs())
+  const isPast = dayjs().isAfter(course.endDate)
+  const isCurrent = !isFuture && !isPast
 
   return (
-    <div className="flex justify-between w-full mr-4 align-center hover:cursor-pointer">
-      <Link href={`/course/${courseId}`} legacyBehavior>
-        <span className="w-full p-4 text-lg rounded-l-md bg-uzh-grey-20 hover:bg-uzh-grey-40">
-          {courseName}
-        </span>
-      </Link>
-
-      <Button
+    <div key={course.id} className="flex flex-row w-full">
+      <LinkButton
+        icon={(isFuture && faCalendar) || (isPast && faFolderClosed) || faSync}
         className={{
           root: twMerge(
-            'py-2 px-4 text-2xl rounded-r-md',
-            disabled ? 'bg-slate-400' : 'bg-slate-600',
-            !isSubscribed && !disabled && 'cursor-pointer hover:text-white'
+            'flex-1 rounded-r-none border-r-0 h-full',
+            isPast && 'text-slate-600'
           ),
         }}
-        disabled={isSubscribed || disabled}
-        onClick={() => onSubscribeClick(isSubscribed, courseId)}
+        href={`/course/${course.id}`}
       >
-        {isSubscribed ? (
-          <FontAwesomeIcon
-            className="text-uzh-yellow-100"
-            icon={faBell}
-            fixedWidth
-          />
-        ) : (
-          <FontAwesomeIcon icon={faBellSlash} fixedWidth flip="horizontal" />
-        )}
-      </Button>
+        <div>
+          <div>{course.displayName}</div>
+          <div className="flex flex-row items-end justify-between">
+            <div className="text-xs">
+              {isFuture &&
+                `Start am ${dayjs(course.startDate).format('DD.MM.YYYY')}`}
+              {isPast &&
+                `Beendet am ${dayjs(course.endDate).format('DD.MM.YYYY')}`}
+            </div>
+          </div>
+        </div>
+      </LinkButton>
+      {onSubscribeClick && (
+        <Button
+          className={{
+            root: twMerge(
+              'rounded-l-none p-4',
+              pushDisabled
+                ? 'bg-slate-400 border-slate-400'
+                : 'bg-slate-600 border-slate-600',
+              !course.isSubscribed && !pushDisabled && 'cursor-pointer'
+            ),
+          }}
+          disabled={course.isSubscribed || !!pushDisabled}
+          onClick={() => onSubscribeClick(course.isSubscribed, course.id)}
+        >
+          {course.isSubscribed ? (
+            <FontAwesomeIcon
+              className="text-uzh-yellow-100"
+              icon={faBell}
+              fixedWidth
+            />
+          ) : (
+            <FontAwesomeIcon icon={faBellSlash} fixedWidth flip="horizontal" />
+          )}
+        </Button>
+      )}
     </div>
   )
 }

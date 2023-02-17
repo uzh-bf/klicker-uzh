@@ -37,6 +37,8 @@ export function prepareCourse({
   ownerId: string
   color?: string
   pinCode?: number
+  startDate: Date
+  endDate: Date
 }) {
   const data = {
     ...args,
