@@ -9,6 +9,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { Button, H1, H2, H3, ThemeContext } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { sort } from 'ramda'
@@ -166,14 +167,23 @@ function CourseOverviewPage() {
             date={course.startDate}
             edit={editStartDate}
             onEdit={() => setEditStartDate(true)}
-            onSave={(date: string) => {
-              changeCourseDates({
-                variables: {
-                  courseId: course.id,
-                  startDate: date + 'T00:00:00.000Z',
-                },
-              })
-              setEditStartDate(false)
+            onSave={async (date: string) => {
+              if (dayjs(date).isBefore(course.endDate)) {
+                const { data } = await changeCourseDates({
+                  variables: {
+                    courseId: course.id,
+                    startDate: date + 'T00:00:00.000Z',
+                  },
+                })
+                if (data?.changeCourseDates?.id) {
+                  // TODO: date change successful toast
+                  console.log('trigger success toast')
+                  setEditStartDate(false)
+                }
+              } else {
+                console.log('trigger error toast')
+                // TODO: error toast date change not successful
+              }
             }}
           />
           <DateChanger
@@ -181,14 +191,23 @@ function CourseOverviewPage() {
             date={course.endDate}
             edit={editEndDate}
             onEdit={() => setEditEndDate(true)}
-            onSave={(date: string) => {
-              changeCourseDates({
-                variables: {
-                  courseId: course.id,
-                  endDate: date + 'T23:59:59.999Z',
-                },
-              })
-              setEditEndDate(false)
+            onSave={async (date: string) => {
+              if (dayjs(date).isAfter(course.startDate)) {
+                const { data } = await changeCourseDates({
+                  variables: {
+                    courseId: course.id,
+                    endDate: date + 'T23:59:59.999Z',
+                  },
+                })
+                if (data?.changeCourseDates?.id) {
+                  // TODO: date change successful toast
+                  console.log('trigger success toast')
+                  setEditEndDate(false)
+                }
+              } else {
+                console.log('trigger error toast')
+                // TODO: error toast date change not successful
+              }
             }}
           />
         </div>
