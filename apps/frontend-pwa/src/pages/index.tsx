@@ -21,9 +21,9 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from '../components/common/LinkButton'
-import CourseElement from '../components/CourseElement'
+import CourseElement from '../components/home/CourseElement'
 import Layout from '../components/Layout'
-import SurveyPromotion from '../components/SurveyPromotion'
+import SurveyPromotion from '../components/surveys/SurveyPromotion'
 import {
   determineInitialSubscriptionState,
   subscribeParticipant,
@@ -75,8 +75,8 @@ const Index = function () {
         courses: [
           ...acc.courses,
           {
-            id: participation.course.id,
-            displayName: participation.course.displayName,
+            id: participation.course?.id,
+            displayName: participation.course?.displayName,
             isSubscribed:
               participation.subscriptions &&
               participation.subscriptions.length > 0,
