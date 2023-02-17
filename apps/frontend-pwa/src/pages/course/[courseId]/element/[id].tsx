@@ -1,21 +1,18 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   faBookmark,
-  faFlag,
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookmark as faBookmarkSolid,
   faCheck,
-  faEnvelope,
   faRepeat,
   faShuffle,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   BookmarkQuestionDocument,
-  FlagQuestionDocument,
   GetBookmarkedQuestionsDocument,
   GetLearningElementDocument,
   QuestionType,
@@ -24,25 +21,14 @@ import {
 import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import {
-  Button,
-  H2,
-  H3,
-  H4,
-  Modal,
-  Progress,
-  ThemeContext as Theme,
-  Toast,
-} from '@uzh-bf/design-system'
+import { Button, H3, H4, Progress, Toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-import * as Yup from 'yup'
+import { useEffect, useMemo, useState } from 'react'
 import Footer from '../../../../components/common/Footer'
 import EvaluationDisplay from '../../../../components/EvaluationDisplay'
+import FlagQuestionModal from '../../../../components/flags/FlagQuestionModal'
 import Layout from '../../../../components/Layout'
 import OptionsDisplay from '../../../../components/OptionsDisplay'
 import formatResponse from '../../../../lib/formatResponse'
@@ -77,36 +63,6 @@ function LearningElement({ courseId, id }: Props) {
     variables: { courseId: router.query.courseId as string },
     skip: !router.query.courseId,
   })
-
-  const theme = useContext(Theme)
-  const [flagQuestion] = useMutation(FlagQuestionDocument)
-
-  const flagQuestionSchema = Yup.object().shape({
-    description: Yup.string().test({
-      message: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
-      test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-    }),
-  })
-
-  const flagQuestionFeedback = async (
-    content: string,
-    setSubmitting: (isSubmitting: boolean) => void
-  ) => {
-    setSubmitting(true)
-    if (!content.match(/^(<br>(\n)*)$/g) && content !== '') {
-      const result = await flagQuestion({
-        variables: {
-          questionInstanceId: questionData!.id,
-          content: content,
-        },
-      })
-      if (result.data?.flagQuestion === 'OK') {
-        setToastOpen(true)
-        setModalOpen(false)
-      }
-    }
-    setSubmitting(false)
-  }
 
   const { loading, error, data } = useQuery(GetLearningElementDocument, {
     variables: { id },
@@ -367,101 +323,12 @@ function LearningElement({ courseId, id }: Props) {
                           <div className="font-bold">Multiplikator</div>
                           <div>{currentInstance.pointsMultiplier}x</div>
                         </div>
-                        <Modal
-                          className={{ content: 'h-max mt-20 md:mt-0' }}
+                        <FlagQuestionModal
                           open={modalOpen}
-                          trigger={
-                            <Button
-                              onClick={() => (
-                                setModalOpen(true), setToastOpen(false)
-                              )}
-                            >
-                              <FontAwesomeIcon icon={faFlag}></FontAwesomeIcon>
-                            </Button>
-                          }
-                          onClose={() => setModalOpen(false)}
-                          hideCloseButton
-                        >
-                          <H2>Frage Markieren</H2>
-                          <div className="my-4">
-                            Dieses Feedback-Formular soll ermöglichen, zu den
-                            einzelnen Fragen eines Lernelements / einer
-                            Micro-Session eine direkte Anmerkung abgeben zu
-                            können, sollte sich ein Fehler eingeschlichen haben.
-                            Der Dozierende wird eine Nachricht mit Ihrem
-                            Feedback erhalten. Bitte versuchen Sie daher, den
-                            Fehler so genau wie möglich zu beschreiben.
-                          </div>
-                          <Formik
-                            initialValues={{ feedback: '' }}
-                            isInitialValid={false}
-                            onSubmit={(values, { setSubmitting }) =>
-                              flagQuestionFeedback(
-                                values.feedback,
-                                setSubmitting
-                              )
-                            }
-                            validationSchema={flagQuestionSchema}
-                          >
-                            {({
-                              values,
-                              setFieldValue,
-                              isSubmitting,
-                              isValid,
-                              errors,
-                            }) => (
-                              <div className="flex-1">
-                                <Form>
-                                  <textarea
-                                    className="w-full h-24 rounded-md"
-                                    placeholder="Feedback hinzufügen"
-                                    value={values.feedback}
-                                    onChange={(e) =>
-                                      setFieldValue('feedback', e.target.value)
-                                    }
-                                  />
-                                  <div className="flex flex-row justify-between w-full mt-1">
-                                    {errors && (
-                                      <div className="text-sm text-red-700">
-                                        {errors.feedback}
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  <div className="flex flex-col justify-between gap-2 mt-4 md:gap-0 md:flex-row">
-                                    <Button
-                                      onClick={() => setModalOpen(false)}
-                                      className={{ root: 'order-2 md:order-1' }}
-                                    >
-                                      Abbrechen
-                                    </Button>
-                                    <Button
-                                      className={{
-                                        root: twMerge(
-                                          'float-right px-5 text-white disabled:opacity-80 order-1 md:order-2',
-                                          theme.primaryBgDark
-                                        ),
-                                      }}
-                                      type="submit"
-                                      disabled={isSubmitting || !isValid}
-                                    >
-                                      <Button.Icon
-                                        className={{
-                                          root: 'mr-1 justify-items-center',
-                                        }}
-                                      >
-                                        <FontAwesomeIcon icon={faEnvelope} />
-                                      </Button.Icon>
-                                      <Button.Label>
-                                        Feedback abschicken
-                                      </Button.Label>
-                                    </Button>
-                                  </div>
-                                </Form>
-                              </div>
-                            )}
-                          </Formik>
-                        </Modal>
+                          setOpen={setModalOpen}
+                          setToastOpen={setToastOpen}
+                          questionData={questionData}
+                        />
                       </div>
                       <div className="flex flex-row gap-8">
                         <div>
