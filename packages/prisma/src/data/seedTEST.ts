@@ -47,6 +47,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pinCode: 123456789,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2024-01-01T23:59'),
+      notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )
 
