@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import DateChanger from '@components/courses/DateChanger'
 import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -27,6 +28,8 @@ function CourseOverviewPage() {
 
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
   const [isColorPickerVisible, setIsColorPickerVisible] = useState(false)
+  const [editStartDate, setEditStartDate] = useState(false)
+  const [editEndDate, setEditEndDate] = useState(false)
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
@@ -135,7 +138,7 @@ function CourseOverviewPage() {
             setDescriptionEditMode={setDescriptionEditMode}
           />
         )}
-        <div className="flex flex-row gap-5 pt-1">
+        <div className="flex flex-row items-center gap-8 pt-1 h-11">
           <div className="flex flex-row">
             <div className="pr-3">Kursfarbe</div>
             <div
@@ -156,14 +159,28 @@ function CourseOverviewPage() {
               )}
             </div>
           </div>
-          <div className="flex flex-row">
-            <div className="mr-2">Startdatum: </div>
-            <div>{course.startDate}</div>
-          </div>
-          <div className="flex flex-row">
-            <div className="mr-2">Enddatum:</div>
-            <div>{course.endDate}</div>
-          </div>
+          <DateChanger
+            label="Startdatum:"
+            date={course.startDate}
+            edit={editStartDate}
+            onEdit={() => setEditStartDate(true)}
+            onSave={(date: string) => {
+              console.log(date + 'T00:00:00.000Z')
+              // TODO: add mutation
+              setEditStartDate(false)
+            }}
+          />
+          <DateChanger
+            label="Enddatum:"
+            date={course.endDate}
+            edit={editEndDate}
+            onEdit={() => setEditEndDate(true)}
+            onSave={(date: string) => {
+              console.log(date + 'T23:59:59.999Z')
+              // TODO: add mutation
+              setEditEndDate(false)
+            }}
+          />
         </div>
       </div>
       <div className="flex flex-col md:flex-row">
