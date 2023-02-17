@@ -20,23 +20,35 @@ function DateChanger({ label, edit, date, onEdit, onSave }: DateChangerProps) {
     <div className="flex flex-row items-center">
       {label && <div className="mr-1.5">{label}</div>}
       {edit ? (
-        <div className="flex flex-row gap-2 px-2 py-1 border border-solid rounded">
+        <div className="flex flex-row gap-2 border border-solid rounded">
           <input
             type="date"
-            className="p-0 m-0 border-none w-max"
+            className="px-0 py-1 pl-2 border-none w-max"
             value={dateState}
             onChange={(e) => setDateState(e.target.value)}
           />
-          <Button basic onClick={() => onSave(dateState)}>
+          <Button
+            basic
+            onClick={() => onSave(dateState)}
+            className={{
+              root: 'px-2 py-1 bg-uzh-blue-20 hover:bg-uzh-blue-40',
+            }}
+          >
             <Button.Icon>
               <FontAwesomeIcon icon={faSave} />
             </Button.Icon>
           </Button>
         </div>
       ) : (
-        <div className="flex flex-row gap-2 px-2 py-1 border border-solid rounded">
-          <div>{dayjs(dateState).format('DD / MM / YYYY')}</div>
-          <Button basic onClick={onEdit}>
+        <div className="flex flex-row gap-2 border border-solid rounded">
+          <div className="py-1 pl-2">
+            {dayjs(dateState).format('DD / MM / YYYY')}
+          </div>
+          <Button
+            basic
+            onClick={onEdit}
+            className={{ root: 'bg-uzh-grey-20 py-1 px-2' }}
+          >
             <Button.Icon>
               <FontAwesomeIcon icon={faPencil} />
             </Button.Icon>
