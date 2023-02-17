@@ -410,3 +410,63 @@ export async function getBookmarkedQuestions(
 
   return participation?.bookmarkedQuestions ?? []
 }
+
+export async function flagQuestion(
+  args: { questionInstanceId: number; content: string },
+  ctx: ContextWithUser
+) {
+  const questionInstance = await ctx.prisma.questionInstance.findUnique({
+    where: {
+      id: args.questionInstanceId,
+    },
+    include: {
+      learningElement: {
+        include: {
+          course: true,
+        },
+      },
+      microSession: {
+        include: {
+          course: true,
+        },
+      },
+    },
+  })
+
+  if (
+    !questionInstance?.learningElement?.course?.notificationEmail &&
+    !questionInstance?.microSession?.course?.notificationEmail
+  )
+    return null
+
+  await fetch(process.env.NOTIFICATION_URL as string, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      elementType: questionInstance?.learningElement
+        ? 'Learning Element'
+        : 'Micro-Session',
+      elementId:
+        questionInstance?.learningElement?.id ||
+        questionInstance?.microSession?.id,
+      elementName:
+        questionInstance?.learningElement?.name ||
+        questionInstance?.microSession?.name,
+      questionId: questionInstance.questionId,
+      questionName: (
+        questionInstance.questionData?.valueOf() as AllQuestionTypeData
+      ).name,
+      content: args.content,
+      participantId: ctx.user.sub,
+      secret: process.env.NOTIFICATION_SECRET,
+      notificationEmail:
+        questionInstance.learningElement?.course?.notificationEmail ||
+        questionInstance.microSession?.course?.notificationEmail,
+    }),
+  })
+
+  return 'OK'
+}

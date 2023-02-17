@@ -39,6 +39,7 @@ export function prepareCourse({
   pinCode?: number
   startDate: Date
   endDate: Date
+  notificationEmail?: string
 }) {
   const data = {
     ...args,

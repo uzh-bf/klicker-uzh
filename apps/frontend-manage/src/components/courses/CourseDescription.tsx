@@ -5,9 +5,9 @@ import { ChangeCourseDescriptionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useContext } from 'react'
+import ContentInput from 'shared-components/src/ContentInput'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import ContentInput from '../questions/ContentInput'
 
 interface CourseDescriptionProps {
   courseId: string

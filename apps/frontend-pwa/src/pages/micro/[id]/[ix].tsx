@@ -12,11 +12,13 @@ import { useEffect, useState } from 'react'
 import Footer from '../../../components/common/Footer'
 import OptionsDisplay from '../../../components/common/OptionsDisplay'
 import EvaluationDisplay from '../../../components/evaluation/EvaluationDisplay'
+import FlagQuestionModal from '../../../components/flags/FlagQuestionModal'
 import Layout from '../../../components/Layout'
 
 // TODO: different question types (FREE and RANGE)
 function MicroSessionInstance() {
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const router = useRouter()
 
@@ -111,12 +113,20 @@ function MicroSessionInstance() {
 
               {currentInstance.evaluation && (
                 <div className="flex-1 p-4 space-y-4 border rounded basis-1/3 bg-gray-50">
-                  <div className="flex flex-row gap-8">
-                    <div>
+                  <div className="flex flex-row justify-between gap-8">
+                    <div className="flex flex-col">
                       <div className="font-bold">Punkte (gesammelt)</div>
                       <div className="text-xl">
                         {currentInstance.evaluation.pointsAwarded} Punkte
                       </div>
+                    </div>
+                    <div>
+                      <FlagQuestionModal
+                        open={modalOpen}
+                        setOpen={setModalOpen}
+                        setToastOpen={setToastOpen}
+                        instanceId={currentInstance.id}
+                      />
                     </div>
                   </div>
 
