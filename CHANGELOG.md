@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.50...v3.0.0-alpha.51) (2023-02-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** remove setToastOpen ([85ece0b](https://github.com/uzh-bf/klicker-uzh/commit/85ece0be8879982adff6a41a6bdb7c126099931c))
+
 ## [3.0.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.49...v3.0.0-alpha.50) (2023-02-17)
 
 
