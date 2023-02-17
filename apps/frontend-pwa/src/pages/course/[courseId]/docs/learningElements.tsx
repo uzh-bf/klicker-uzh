@@ -1,5 +1,5 @@
-import DocsLayout from '@components/DocsLayout'
 import { H3 } from '@uzh-bf/design-system'
+import DocsLayout from '../../../../components/DocsLayout'
 
 function LearningElements() {
   return (

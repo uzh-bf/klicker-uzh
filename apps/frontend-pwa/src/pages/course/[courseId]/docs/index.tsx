@@ -1,7 +1,7 @@
-import DocsLayout from '@components/DocsLayout'
 import Markdown from '@klicker-uzh/markdown'
 import { H3 } from '@uzh-bf/design-system'
 import Image from 'next/image'
+import DocsLayout from '../../../../components/DocsLayout'
 
 function Landing() {
   return (

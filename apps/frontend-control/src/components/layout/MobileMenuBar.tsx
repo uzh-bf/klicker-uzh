@@ -1,4 +1,3 @@
-import EmbeddingModal from '@components/sessions/EmbeddingModal'
 import {
   faArrowLeftLong,
   faHouse,
@@ -7,6 +6,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import EmbeddingModal from '../../components/sessions/EmbeddingModal'
 import MenuButton from './MenuButton'
 
 interface MobileMenuBarProps {
