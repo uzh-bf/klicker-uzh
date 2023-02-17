@@ -446,12 +446,19 @@ export async function flagQuestion(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      elementType: questionInstance?.learningElement
+        ? 'Learning Element'
+        : 'Micro-Session',
       elementId:
         questionInstance?.learningElement?.id ||
         questionInstance?.microSession?.id,
       elementName:
         questionInstance?.learningElement?.name ||
         questionInstance?.microSession?.name,
+      questionId: questionInstance.questionId,
+      questionName: (
+        questionInstance.questionData?.valueOf() as AllQuestionTypeData
+      ).name,
       content: args.content,
       participantId: ctx.user.sub,
       secret: process.env.NOTIFICATION_SECRET,
