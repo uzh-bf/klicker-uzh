@@ -56,18 +56,16 @@ const ORDER_TYPE_LABEL = {
 interface Props {
   courseId: string
   id: string
-  description: string
-  submitText: string
 }
 
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
-function LearningElement({ courseId, id, description, submitText }: Props) {
+function LearningElement({ courseId, id }: Props) {
   const router = useRouter()
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
-  const [isOpen, setIsOpen] = useState(false)
-  const [open, setOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [toastOpen, setToastOpen] = useState(false)
 
   const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
     refetchQueries: [
@@ -81,7 +79,7 @@ function LearningElement({ courseId, id, description, submitText }: Props) {
   })
 
   const theme = useContext(Theme)
-  const [flagQuestion] = useMutation(FlagQuestionDocument, {})
+  const [flagQuestion] = useMutation(FlagQuestionDocument)
 
   const flagQuestionSchema = Yup.object().shape({
     description: Yup.string().test({
@@ -103,8 +101,8 @@ function LearningElement({ courseId, id, description, submitText }: Props) {
         },
       })
       if (result.data?.flagQuestion === 'OK') {
-        setOpen(true)
-        setIsOpen(false)
+        setToastOpen(true)
+        setModalOpen(false)
       }
     }
     setSubmitting(false)
@@ -373,17 +371,19 @@ function LearningElement({ courseId, id, description, submitText }: Props) {
                         </div>
                         <Modal
                           className={{ content: 'm-10 md:m-20' }}
-                          open={isOpen}
+                          open={modalOpen}
                           trigger={
                             <Button
-                              onClick={() => (setIsOpen(true), setOpen(false))}
+                              onClick={() => (
+                                setModalOpen(true), setToastOpen(false)
+                              )}
                             >
                               <FontAwesomeIcon icon={faFlag}></FontAwesomeIcon>
                             </Button>
                           }
-                          onClose={() => setIsOpen(false)}
+                          onClose={() => setModalOpen(false)}
                         >
-                          <div className="my-4 text-gray-400">
+                          <div className="my-4">
                             If you found an error in this question we would
                             appreciate a feedback where you detail the error!
                             {' :)'}
@@ -443,7 +443,9 @@ function LearningElement({ courseId, id, description, submitText }: Props) {
                                           icon={faEnvelope}
                                         />
                                       </Button.Icon>
-                                      <Button.Label>{submitText}</Button.Label>
+                                      <Button.Label>
+                                        Feedback abschicken
+                                      </Button.Label>
                                     </Button>
                                   </div>
                                 </Form>
@@ -510,8 +512,8 @@ function LearningElement({ courseId, id, description, submitText }: Props) {
         <Toast
           duration={5000}
           type="success"
-          openExternal={open}
-          setOpenExternal={setOpen}
+          openExternal={toastOpen}
+          setOpenExternal={setToastOpen}
         >
           <H4>Thank you!</H4>
           <div>Feedback sent successfully!</div>
