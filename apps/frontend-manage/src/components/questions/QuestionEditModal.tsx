@@ -599,7 +599,7 @@ function QuestionEditModal({
                       tooltip:
                         'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                     }}
-                    tooltip="Geben Sie hier ein generisches Feedback zu Ihrer Frage ein, welches den Studierenden unabhängig von Ihrer Antwort in Lernelementen und Micro-Sessions angezeigt wird."
+                    tooltip="Geben Sie hier eine generische Erklärung zu Ihrer Frage ein, welches den Studierenden unabhängig von Ihrer Antwort in Lernelementen und Micro-Sessions angezeigt wird."
                     showTooltipSymbol={true}
                   />
 
