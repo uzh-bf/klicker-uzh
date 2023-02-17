@@ -260,6 +260,8 @@ model Course {
   subscriptions     PushSubscription[]
   participantGroups ParticipantGroup[]
 
+  startDate DateTime
+  endDate   DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
