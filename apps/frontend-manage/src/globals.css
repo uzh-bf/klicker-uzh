@@ -1,5 +1,6 @@
 @import 'tailwindcss/src/css/preflight.css';
 @import '@uzh-bf/design-system/dist/index.esm.css';
+@import '@klicker-uzh/markdown/dist/tailwind.css';
 @import 'shared-components/src/tailwind.css';
 
 @tailwind base;
