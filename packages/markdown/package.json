@@ -13,7 +13,7 @@
     "build": "run-s build:tailwind build:ts",
     "build:tailwind": "tailwindcss -i src/globals.css -o src/public/tailwind.css",
     "build:ts": "NODE_ENV=production tsup",
-    "dev": "run-s dev:tailwind dev:ts",
+    "dev": "run-p dev:tailwind dev:ts",
     "dev:tailwind": "tailwindcss -i src/globals.css -o src/public/tailwind.css --watch",
     "dev:ts": "NODE_ENV=development tsup --watch",
     "format": "prettier --write .",
