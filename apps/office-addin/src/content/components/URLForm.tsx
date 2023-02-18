@@ -24,7 +24,7 @@ export function URLForm({ slideID }: URLFormProps) {
           required
           name="url"
           label="URL"
-          tooltip="die URL der KlickerUZH Auswertungs-Seite (evaluation page), die Sie hier einbetten möchten"
+          tooltip="Die URL der KlickerUZH Auswertungs-Seite (evaluation page), die Sie hier einbetten möchten"
           className={{ root: "flex-row w-3/4", input: "mr-8" }}
           placeholder="https://manage.klicker.uzh.ch/sessions/12345-12345/evaluation"
         />
