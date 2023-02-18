@@ -24,7 +24,7 @@
     "@next/font": "13.1.6",
     "@sentry/nextjs": "7.37.2",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "1.2.3",
+    "@uzh-bf/design-system": "1.2.4",
     "body-parser": "1.20.1",
     "cross-env": "7.0.3",
     "dayjs": "1.11.7",
