@@ -3,8 +3,6 @@
 query GroupActivityDetails($activityId: String!, $groupId: String!) {
   groupActivityDetails(activityId: $activityId, groupId: $groupId) {
     id
-
-    name
     displayName
     description
     scheduledStartAt
@@ -12,7 +10,6 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
 
     clues {
       id
-      name
       displayName
     }
 
@@ -56,7 +53,6 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
 
       clues {
         id
-        name
         displayName
         type
         unit
