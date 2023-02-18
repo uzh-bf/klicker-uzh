@@ -85,7 +85,9 @@ function QuestionPreviewModal({
                     Feedback for Choice {index + 1}
                   </H3>
                   <Markdown
-                    className="mt-2 prose max-w-none prose-p:m-0 prose-img:m-0"
+                    className={{
+                      root: 'mt-2 prose max-w-none prose-p:m-0 prose-img:m-0',
+                    }}
                     content={choice.feedback}
                   />
                 </div>

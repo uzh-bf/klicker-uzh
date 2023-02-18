@@ -76,7 +76,10 @@ export function ImgWithModal({
 }
 
 interface MarkdownProps {
-  className?: string
+  className?: {
+    root?: string
+    img?: string
+  }
   content: any
   description?: string
   components?: {
@@ -164,6 +167,9 @@ function Markdown({
                     alt={alt}
                     width={width}
                     height={height}
+                    className={{
+                      img: className?.img,
+                    }}
                   />
                 ),
                 ...(components as any),
@@ -177,7 +183,7 @@ function Markdown({
     }
   }, [content, description])
 
-  return <div className={className}>{parsedContent}</div>
+  return <div className={className?.root}>{parsedContent}</div>
 }
 
 Markdown.defaultProps = defaultProps

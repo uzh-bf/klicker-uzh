@@ -123,7 +123,7 @@ function CourseOverviewPage() {
             <div className="flex flex-row gap-2 border border-solid rounded border-uzh-grey-80">
               <Markdown
                 content={course.description}
-                className="w-full p-2 rounded"
+                className={{ root: 'w-full p-2 rounded' }}
               />
               <Button
                 onClick={() => setDescriptionEditMode(true)}

@@ -59,7 +59,7 @@ function EvaluationCollapsible({
           }}
         >
           <Markdown
-            className="flex flex-row content-between"
+            className={{ root: 'flex flex-row content-between' }}
             content={currentInstance.questionData?.content}
           />
         </Prose>

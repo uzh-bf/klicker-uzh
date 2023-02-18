@@ -4,7 +4,6 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { H3 } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
-import Image from 'next/image'
 import DocsLayout from '../../../../components/docs/DocsLayout'
 
 function Landing() {
@@ -13,21 +12,7 @@ function Landing() {
       {(courseInformation) => (
         <>
           <H3>Kursinformationen</H3>
-          <Markdown
-            content={courseInformation.description}
-            components={{
-              img: ({ src }: { src: string }) => (
-                <div className="relative h-96">
-                  <Image
-                    src={src}
-                    alt="Image"
-                    fill
-                    className="object-contain m-0"
-                  />
-                </div>
-              ),
-            }}
-          />
+          <Markdown content={courseInformation.description} />
         </>
       )}
     </DocsLayout>

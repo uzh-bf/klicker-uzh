@@ -5,6 +5,7 @@ import {
   InstanceResult,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
+import Markdown from '@klicker-uzh/markdown'
 import { Table } from '@uzh-bf/design-system'
 import React, { useMemo } from 'react'
 import { QUESTION_GROUPS } from 'shared-components/src/constants'
@@ -26,7 +27,12 @@ function TableChart({
         (choice: Choice, index: number) => {
           return {
             count: data.results[index].count,
-            value: choice.value,
+            value: (
+              <Markdown
+                content={choice.value}
+                className={{ img: 'max-h-32' }}
+              />
+            ),
             correct: choice.correct ? 'T' : 'F',
             percentage: data.participants
               ? String(

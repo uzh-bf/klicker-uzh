@@ -92,7 +92,9 @@ function GroupActivityDetails() {
             <H1>Ausgangslage</H1>
 
             <Markdown
-              className="prose max-w-none prose-img:max-w-[250px] prose-img:mx-auto prose-p:mt-0"
+              className={{
+                root: 'prose max-w-none prose-img:max-w-[250px] prose-img:mx-auto prose-p:mt-0',
+              }}
               content={data.groupActivityDetails.description}
             />
           </div>
