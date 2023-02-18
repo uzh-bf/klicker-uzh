@@ -38,7 +38,7 @@ function ChoiceOptions({
     <div
       className={twMerge(
         displayMode === QuestionDisplayMode.Grid
-          ? 'grid grid-cols-2 gap-2'
+          ? 'grid grid-cols-2 gap-3'
           : isCompact
           ? 'flex flex-row gap-2'
           : 'space-y-2'
@@ -57,7 +57,6 @@ function ChoiceOptions({
                 (disabled || isEvaluation) &&
                   response?.includes(choice.ix) &&
                   'border-gray-400 text-gray-800'
-                // isEvaluation && response?.includes(choice.ix) && (choice.correct ? 'bg-green-200 border-green-300' : 'bg-red-200 border-red-300')
               ),
             }}
             fluid
