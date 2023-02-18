@@ -1,7 +1,6 @@
 query GetBasicCourseInformation($courseId: String!) {
   basicCourseInformation(courseId: $courseId) {
     id
-    name
     displayName
     description
     color
