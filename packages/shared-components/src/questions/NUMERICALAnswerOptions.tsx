@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ThemeContext } from '@uzh-bf/design-system'
 import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
+import NumberField from './NumberField'
 
 export interface NUMERICALAnswerOptionsProps {
   disabled?: boolean
@@ -42,21 +43,18 @@ export function NUMERICALAnswerOptions({
         )}
       </div>
       <div className="flex flex-row">
-        <input
-          disabled={disabled}
-          type="text"
+        <NumberField
           value={value}
+          onChange={onChange}
           placeholder={placeholder}
-          className={twMerge(
-            'rounded-l focus:border focus:border-solid flex-1',
-            theme.primaryBorderDarkFocus,
-            !valid && 'border-red-600',
-            !unit && 'rounded-r',
-            disabled && 'bg-gray-200 text-gray-500'
-          )}
-          onChange={(e): void =>
-            onChange(e.target.value.replace(/[^0-9.-]/g, ''))
-          }
+          allowDecimals
+          className={{
+            input: twMerge(
+              theme.primaryBorderFocus,
+              unit && '!rounded-r-none',
+              !valid && 'border-red-600'
+            ),
+          }}
         />
         {unit && (
           <div className="flex flex-col items-center justify-center px-4 text-white rounded-r bg-slate-600">
