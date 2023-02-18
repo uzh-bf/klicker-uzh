@@ -1,6 +1,5 @@
 import Markdown from '@klicker-uzh/markdown'
 import { Prose, Tooltip } from '@uzh-bf/design-system'
-import Image from 'next/image'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -43,15 +42,10 @@ function Ellipsis({
             }}
           >
             <Markdown
-              components={{
-                img: ({ src, alt }: any) => (
-                  <Image src={src} alt="Image" width={50} height={50} />
-                ),
-              }}
               content={children
                 .toString()
                 .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-              className={{ root: className?.markdown }}
+              className={{ root: className?.markdown, img: 'max-h-36' }}
             />
           </Prose>
         }
@@ -84,7 +78,7 @@ function Ellipsis({
               content={children
                 .toString()
                 .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-              className={{ root: className?.markdown }}
+              className={{ root: className?.markdown, img: 'max-h-36' }}
             />
           </Prose>
         </div>
@@ -129,7 +123,7 @@ function Ellipsis({
           .toString()
           .substr(0, endIndex || maxLength)
           .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')} **...**`}
-        className={{ root: className?.markdown }}
+        className={{ root: className?.markdown, img: 'max-h-36' }}
       />
     </Prose>
   )
@@ -144,7 +138,7 @@ function Ellipsis({
     return (
       <Markdown
         content={children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-        className={{ root: className?.markdown }}
+        className={{ root: className?.markdown, img: 'max-h-36' }}
       />
     )
   }

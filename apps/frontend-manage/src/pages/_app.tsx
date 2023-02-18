@@ -65,6 +65,12 @@ function App({ Component, pageProps }: AppProps) {
           </ThemeProvider>
         </DndProvider>
       </ApolloProvider>
+
+      <style jsx global>{`
+        :root {
+          --source-sans-pro: ${sourceSansPro.variable};
+        }
+      `}</style>
     </div>
   )
 }

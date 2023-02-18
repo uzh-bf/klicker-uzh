@@ -29,7 +29,7 @@ function QuestionTags({
         (tag): React.ReactElement => (
           <div
             className={twMerge(
-              'p-1 px-2 m-1 mt-0 bg-white border border-solid rounded-md border-blue-40 w-max',
+              'py-1 px-3 m-1 mt-0 bg-slate-100 border border-solid rounded-md border-blue-40 w-max',
               tagfilter?.includes(tag.name) && theme.primaryBg
             )}
             key={tag.id}
