@@ -28,6 +28,7 @@
     "prisma:reset": "doppler run --config dev -- npm run prisma:reset:raw",
     "prisma:reset:seed": "doppler run --config dev -- prisma migrate reset --schema=src/prisma/schema.prisma",
     "prisma:reset:qa": "doppler run --config stg -- npm run prisma:reset:raw",
+    "prisma:setup": "run-s prisma:reset prisma:push seed",
     "prisma:studio:raw": "prisma studio --schema=src/prisma/schema.prisma",
     "prisma:studio": "doppler run --config dev -- npm run prisma:studio:raw",
     "prisma:studio:qa": "doppler run --config stg -- npm run prisma:studio:raw",
