@@ -6,6 +6,7 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { useApollo } from '../lib/apollo'
 
+import Head from 'next/head'
 import '../globals.css'
 
 const sourceSansPro = Source_Sans_Pro({
@@ -19,6 +20,14 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <div className={`${sourceSansPro.variable} font-sans h-full`}>
+      <Head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css"
+          integrity="sha384-vKruj+a13U8yHIkAyGgK1J3ArTLzrFGBbBc0tDp4ad/EyewESeXE/Iv67Aj8gKZ0"
+          crossOrigin="anonymous"
+        />
+      </Head>
       <ApolloProvider client={apolloClient}>
         <DndProvider backend={HTML5Backend}>
           <ThemeProvider
@@ -42,12 +51,6 @@ function App({ Component, pageProps }: AppProps) {
               primaryProseHover: 'hover:text-uzh-blue-100',
             }}
           >
-            <link
-              rel="stylesheet"
-              href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css"
-              integrity="sha384-vKruj+a13U8yHIkAyGgK1J3ArTLzrFGBbBc0tDp4ad/EyewESeXE/Iv67Aj8gKZ0"
-              crossOrigin="anonymous"
-            />
             <Component {...pageProps} />
           </ThemeProvider>
         </DndProvider>

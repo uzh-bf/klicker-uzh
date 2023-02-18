@@ -9,6 +9,8 @@
     "format": "prettier --write ."
   },
   "peerDependencies": {
+    "@klicker-uzh/graphql": "*",
+    "@klicker-uzh/markdown": "*",
     "@fortawesome/free-regular-svg-icons": "^6.3.0",
     "@fortawesome/free-solid-svg-icons": "^6.2.0",
     "@fortawesome/react-fontawesome": "^0.2.0",
