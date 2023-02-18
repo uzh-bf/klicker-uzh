@@ -30,6 +30,7 @@ export function NUMERICALAnswerOptions({
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   const theme = useContext(ThemeContext)
 
+  // TODO: integrate accuracy prop into numberfield implementation
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-row">
@@ -47,6 +48,7 @@ export function NUMERICALAnswerOptions({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
+          disabled={disabled}
           allowDecimals
           className={{
             input: twMerge(
