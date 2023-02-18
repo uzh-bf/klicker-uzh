@@ -84,6 +84,8 @@ function CourseOverview({ courseId }: any) {
           <Tabs.TabList>
             <Tabs.Tab key="course" value="global" label="Leaderboard" />
 
+            <Tabs.Tab key="info" value="info" label="Kursinformationen" />
+
             {data.participantGroups?.map((group) => (
               <Tabs.Tab
                 key={group.id}
@@ -92,20 +94,23 @@ function CourseOverview({ courseId }: any) {
               />
             ))}
 
-            <Tabs.Tab
-              key="create"
-              value="create"
-              label="Gruppe erstellen/beitreten"
-            />
+            {(data.participantGroups?.length ?? 0) < 1 && (
+              <Tabs.Tab
+                key="create"
+                value="create"
+                label="Gruppe erstellen/beitreten"
+              />
+            )}
           </Tabs.TabList>
 
-          <Tabs.TabContent key="course" value="global" className="md:px-4">
-            {course?.description && (
-              <div className="p-4 mb-4 border rounded bg-slate-100">
-                <DynamicMarkdown content={course.description} />
-              </div>
-            )}
+          {course?.description && (
+            <Tabs.TabContent key="info" value="info" className="md:px-4">
+              <H3 className={{ root: 'mb-4' }}>Kursinformationen</H3>
+              <DynamicMarkdown content={course.description} />
+            </Tabs.TabContent>
+          )}
 
+          <Tabs.TabContent key="course" value="global" className="md:px-4">
             <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
               <div className="flex flex-col justify-between flex-1 gap-6">
                 <div>
