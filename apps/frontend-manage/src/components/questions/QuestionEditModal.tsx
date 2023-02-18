@@ -53,6 +53,7 @@ const questionManipulationSchema = Yup.object().shape({
       message: 'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu',
       test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
     }),
+  explanation: Yup.string(),
   hasSampleSolution: Yup.boolean(),
   hasAnswerFeedbacks: Yup.boolean(),
 
@@ -241,6 +242,7 @@ function QuestionEditModal({
         displayMode: QuestionDisplayMode.List,
         name: '',
         content: '<br>',
+        explanation: '<br>',
         tags: [],
         attachments: null,
         hasSampleSolution: false,
@@ -315,7 +317,7 @@ function QuestionEditModal({
           id: questionId,
           name: values.name,
           content: values.content,
-          contentPlain: values.content, // TODO: remove this field
+          explanation: values.explanation,
           hasSampleSolution: values.hasSampleSolution,
           hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
@@ -425,7 +427,7 @@ function QuestionEditModal({
         return (
           <Modal
             fullScreen
-            title="Frage erstellen"
+            title={mode === 'CREATE' ? 'Frage erstellen' : 'Frage bearbeiten'}
             className={{
               overlay: 'top-14',
               content: 'm-auto max-w-7xl',
@@ -471,6 +473,7 @@ function QuestionEditModal({
                   }}
                   tooltip="// TODO: tooltip content"
                   showTooltipSymbol={mode === 'CREATE'}
+                  required
                 />
                 {mode === 'CREATE' ? (
                   <Select
@@ -500,7 +503,8 @@ function QuestionEditModal({
                         'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                     }}
                     tooltip="Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht."
-                    showTooltipSymbol={true}
+                    showTooltipSymbol
+                    required
                   />
                   <FastField
                     name="name"
@@ -554,7 +558,8 @@ function QuestionEditModal({
                         'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                     }}
                     tooltip="Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen."
-                    showTooltipSymbol={true}
+                    showTooltipSymbol
+                    required
                   />
 
                   {typeof values.content !== 'undefined' && (
@@ -586,6 +591,45 @@ function QuestionEditModal({
                   )}
                 </div>
 
+                <div className="mt-4">
+                  <Label
+                    label="Erklärung"
+                    className={{
+                      root: 'my-auto mr-2 text-lg font-bold',
+                      tooltip:
+                        'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                    }}
+                    tooltip="Geben Sie hier eine generische Erklärung zu Ihrer Frage ein, welche den Studierenden unabhängig von Ihrer Antwort in Lernelementen und Micro-Sessions angezeigt wird."
+                    showTooltipSymbol={true}
+                  />
+
+                  {typeof values.explanation !== 'undefined' && (
+                    <FastField
+                      name="explanation"
+                      questionType={questionType}
+                      shouldUpdate={(next, prev) =>
+                        next?.formik.values.explanation !==
+                          prev?.formik.values.explanation ||
+                        next?.questionType !== prev?.questionType
+                      }
+                    >
+                      {({ field, meta }: FastFieldProps) => (
+                        <ContentInput
+                          error={meta.error}
+                          touched={meta.touched}
+                          content={field.value || '<br>'}
+                          onChange={(newValue: string) =>
+                            setFieldValue('explanation', newValue)
+                          }
+                          placeholder="Erklärung hier eingeben…"
+                          key={`${questionType}-explanation`}
+                          data_cy="insert-question-explanation"
+                        />
+                      )}
+                    </FastField>
+                  )}
+                </div>
+
                 {/* // TODO: to be released
                 <div className="mb-4">
                   <Label
@@ -607,7 +651,8 @@ function QuestionEditModal({
                           tooltip: 'text-base font-normal',
                         }}
                         tooltip="// TODO Tooltip Content"
-                        showTooltipSymbol={true}
+                        showTooltipSymbol
+                        required
                       />
                     </div>
                   )}
@@ -846,7 +891,7 @@ function QuestionEditModal({
                                 : 0,
                               value: '<br>',
                               correct: false,
-                              feedback: '<br>',
+                              explanation: '<br>',
                             })
                           }
                           data={{ cy: 'add-new-answer' }}

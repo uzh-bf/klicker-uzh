@@ -22,6 +22,7 @@ export const QUESTIONS = [
     name: 'Testfrage FREE_TEXT',
     content:
       'Beantworte mich korrekt, richtig, oder genau. Ansonsten bekommst du keine Punkte!',
+    explanation: 'FT generische Erklärung, warum diese Frage richtig ist.',
     type: QuestionType.FREE_TEXT,
     hasSampleSolution: true,
     hasAnswerFeedbacks: false,
@@ -36,6 +37,7 @@ export const QUESTIONS = [
     id: 1,
     name: 'Testfrage MC',
     content: 'Wähle 2 und 3, denn sonst ist es vorbei.',
+    explanation: 'MC generische Erklärung, warum diese Frage richtig ist.',
     type: QuestionType.MC,
     hasSampleSolution: true,
     hasAnswerFeedbacks: true,
@@ -77,6 +79,7 @@ export const QUESTIONS = [
     id: 2,
     name: 'Testfrage NUMERICAL',
     content: 'Wie viel würdest du in Aktien anlegen? Beni mag 17%.',
+    explanation: 'NR generische Erklärung, warum diese Frage richtig ist.',
     type: QuestionType.NUMERICAL,
     hasSampleSolution: true,
     hasAnswerFeedbacks: false,
@@ -108,6 +111,7 @@ export const QUESTIONS = [
     type: QuestionType.KPRIM,
     hasSampleSolution: true,
     hasAnswerFeedbacks: true,
+    explanation: 'KPRIM generische Erklärung, warum diese Frage richtig ist.',
     choices: [
       {
         correct: true,
@@ -144,6 +148,7 @@ export const QUESTIONS = [
     hasSampleSolution: true,
     hasAnswerFeedbacks: true,
     pointsMultiplier: 2,
+    explanation: 'SC generische Erklärung, warum diese Frage richtig ist.',
     choices: [
       {
         feedback: 'Falsch!',
