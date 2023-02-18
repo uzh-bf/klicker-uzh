@@ -2,20 +2,14 @@ import { ApolloProvider } from '@apollo/client'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { useApollo } from '@lib/apollo'
-import { Source_Sans_Pro } from '@next/font/google'
 import { ThemeProvider } from '@uzh-bf/design-system'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
+import { sourceSansPro } from 'shared-components/src/font'
 import ErrorBoundary from '../components/layout/ErrorBoundary'
 config.autoAddCss = false
 
 import '../globals.css'
-
-const sourceSansPro = Source_Sans_Pro({
-  subsets: ['latin'],
-  variable: '--source-sans-pro',
-  weight: ['300', '400', '700'],
-})
 
 function App({ Component, pageProps }: AppProps) {
   const apolloClient = useApollo(pageProps)

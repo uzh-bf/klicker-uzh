@@ -1,19 +1,13 @@
 import { ApolloProvider } from '@apollo/client'
-import { Source_Sans_Pro } from '@next/font/google'
 import { ThemeProvider } from '@uzh-bf/design-system'
 import type { AppProps } from 'next/app'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
+import { sourceSansPro } from 'shared-components/src/font'
 import { useApollo } from '../lib/apollo'
 
 import Head from 'next/head'
 import '../globals.css'
-
-const sourceSansPro = Source_Sans_Pro({
-  subsets: ['latin'],
-  variable: '--source-sans-pro',
-  weight: ['300', '400', '700'],
-})
 
 function App({ Component, pageProps }: AppProps) {
   const apolloClient = useApollo(pageProps)
