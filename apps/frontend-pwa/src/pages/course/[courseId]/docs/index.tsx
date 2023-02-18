@@ -16,7 +16,12 @@ function Landing() {
       {(courseInformation) => (
         <>
           <H3>Kursinformationen</H3>
-          <DynamicMarkdown content={courseInformation.description} />
+          <DynamicMarkdown
+            content={
+              courseInformation.description ??
+              'In dieser Dokumentation findest du die wichtigsten Informationen zum KlickerUZH.'
+            }
+          />
         </>
       )}
     </DocsLayout>
