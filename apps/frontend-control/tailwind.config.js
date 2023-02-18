@@ -17,7 +17,7 @@ module.exports = {
         xs: '480px',
       },
       fontFamily: {
-        sans: ['var(--source-sans-pro)', ...fontFamily.sans],
+        ...TailwindFonts,
       },
     },
   },

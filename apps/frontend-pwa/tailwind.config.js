@@ -14,7 +14,7 @@ module.exports = {
         ...TailwindColorsUZH,
       },
       fontFamily: {
-        sans: ['var(--source-sans-pro)', ...fontFamily.sans],
+        ...TailwindFonts,
       },
     },
   },
