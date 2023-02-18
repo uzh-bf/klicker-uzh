@@ -68,7 +68,7 @@
    "GetParticipantGroups": "ed00e7291d2ce97456fd3d3549fbb0ac68e86573da564d38c6798e9bfb439e4d",
    "GetPinnedFeedbacks": "c518ff6077ec8146c40f030193aa568be1c3ae87223c916975e94400f752e158",
    "GetRunningSession": "066e556954a097dcc86aeee1a48942439898acce5f7290e4e98f889e6a63be3b",
-   "GetRunningSessions": "5150f7caef5346b01463788bcbabcf928e168d76150478f548c01fd81e46af26",
+   "GetRunningSessions": "db9601297d4de1b497598ff8a2a58c286492ec65cec0116b63f630d1bd8c86b7",
    "GetSessionEvaluation": "7b738682851c7ec891cacac7fc20e2090ab007a32d26f49eac56cf48051b6d8b",
    "GetSessionLeaderboard": "09404af10f91c8da107743b4ba18a43e35507163176a8cd8ac6542feaa08bb91",
    "GetSingleCourse": "81e6c101f89a31ca930c58acd25185760612d734c84b0babf71adfd26c535d93",

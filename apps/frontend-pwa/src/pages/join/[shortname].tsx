@@ -1,4 +1,6 @@
 import { useQuery } from '@apollo/client'
+import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetRunningSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
@@ -27,14 +29,27 @@ function Join({ isInactive, shortname }: Props) {
   }
 
   return (
-    <div className="max-w-6xl p-4 mx-auto mt-4 border rounded">
-      {data.runningSessions.map((session) => (
-        <div className="" key={session.id}>
-          <Link href={`/session/${session.id}`} legacyBehavior>
-            <Button>{session.displayName}</Button>
-          </Link>
-        </div>
-      ))}
+    <div className="max-w-md p-4 mx-auto mt-4 border rounded">
+      <div className="font-bold">
+        Aktive Sessions von <span className="italic">{shortname}</span>
+      </div>
+      <div className="mt-2 space-y-1">
+        {data.runningSessions.map((session) => (
+          <div className="" key={session.id}>
+            <Link href={`/session/${session.id}`}>
+              <Button fluid className={{ root: 'justify-start gap-4' }}>
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faExternalLink} />
+                </Button.Icon>
+                <Button.Label>
+                  {session.displayName}{' '}
+                  {session.course && `in ${session.course?.displayName}`}
+                </Button.Label>
+              </Button>
+            </Link>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

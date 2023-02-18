@@ -1146,6 +1146,9 @@ export async function getRunningSessions(
           accessMode: 'PUBLIC',
           status: 'RUNNING',
         },
+        include: {
+          course: true,
+        },
       },
     },
   })
