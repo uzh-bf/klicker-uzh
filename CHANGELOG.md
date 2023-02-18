@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.52...v3.0.0-alpha.53) (2023-02-18)
+
 ## [3.0.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.51...v3.0.0-alpha.52) (2023-02-18)
 
 
