@@ -440,7 +440,6 @@ function QuestionEditModal({
             open={isOpen}
             onClose={() => handleSetIsOpen(false)}
             escapeDisabled={true}
-            hideCloseButton={true}
             onPrimaryAction={
               <Button
                 disabled={isSubmitting || !isValid}
