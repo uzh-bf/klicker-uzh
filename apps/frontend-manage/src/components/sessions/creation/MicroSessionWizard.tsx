@@ -201,16 +201,16 @@ function StepOne(_: StepProps) {
         required
         autoComplete="off"
         name="name"
-        label="Session-Name"
-        tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
+        label="Name"
+        tooltip="Der Name soll Ihnen ermöglichen, diese Micro-Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
         className={{ root: 'mb-1' }}
       />
       <FormikTextField
         required
         autoComplete="off"
         name="displayName"
-        label="Anzeigenamen"
-        tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
+        label="Anzeigename"
+        tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
         className={{ root: 'mb-1' }}
       />
 
