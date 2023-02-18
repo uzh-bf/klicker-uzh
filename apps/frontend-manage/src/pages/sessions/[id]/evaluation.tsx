@@ -207,9 +207,9 @@ function Evaluation() {
 
       <div
         className={twMerge(
-          'flex justify-between flex-col mt-11 [height:_calc(100%-6.25rem)] mb-14',
+          'flex justify-between flex-col mt-11 [height:_calc(100%-6.25rem)] pb-14',
           (showFeedbacks || showConfusion || showLeaderboard) &&
-            '[height:_calc(100%-7.25rem)] mb-18'
+            '[height:_calc(100%-7.25rem)] pb-18'
         )}
       >
         {currentInstance &&
@@ -224,9 +224,9 @@ function Evaluation() {
               chartType={chartType}
               setChartType={setChartType}
               className={twMerge(
-                '[height:_calc(100%-4rem)] mb-14',
+                '[height:_calc(100%-4rem)]',
                 (showFeedbacks || showConfusion || showLeaderboard) &&
-                  '[height:_calc(100%-4.5rem)] mb-18'
+                  '[height:_calc(100%-4.5rem)]'
               )}
             />
           )}
@@ -297,7 +297,7 @@ function Evaluation() {
 
       <Footer
         className={twMerge(
-          'fixed bottom-0 flex-none h-14',
+          'fixed bottom-0 flex-none h-14 z-10',
           (showFeedbacks || showConfusion || showLeaderboard) && 'h-18'
         )}
       >
