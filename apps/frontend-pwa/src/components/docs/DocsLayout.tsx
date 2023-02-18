@@ -119,7 +119,7 @@ function DocsLayout({
             />
           </Navigation.TriggerItem>
         </Navigation>
-        <div className="p-4 prose border rounded-b max-w-none">
+        <div className="p-4 prose border rounded-b max-w-none prose-img:m-0">
           {typeof children === 'function'
             ? children(data.basicCourseInformation)
             : children}

@@ -51,7 +51,7 @@ function Ellipsis({
               content={children
                 .toString()
                 .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-              className={className?.markdown}
+              className={{ root: className?.markdown }}
             />
           </Prose>
         }
@@ -84,7 +84,7 @@ function Ellipsis({
               content={children
                 .toString()
                 .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-              className={className?.markdown}
+              className={{ root: className?.markdown }}
             />
           </Prose>
         </div>
@@ -129,7 +129,7 @@ function Ellipsis({
           .toString()
           .substr(0, endIndex || maxLength)
           .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')} **...**`}
-        className={className?.markdown}
+        className={{ root: className?.markdown }}
       />
     </Prose>
   )
@@ -144,7 +144,7 @@ function Ellipsis({
     return (
       <Markdown
         content={children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-        className={className?.markdown}
+        className={{ root: className?.markdown }}
       />
     )
   }
@@ -161,7 +161,7 @@ function Ellipsis({
               content={children
                 .toString()
                 .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-              className={className?.markdown}
+              className={{ root: className?.markdown }}
             />
           }
           className={{

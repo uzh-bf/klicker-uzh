@@ -13,14 +13,18 @@ import { getParticipantToken } from '@lib/token'
 import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
+import dynamic from 'next/dynamic'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import Tabs from '../../../components/common/Tabs'
 import Layout from '../../../components/Layout'
 
-import Markdown from '@klicker-uzh/markdown'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
+
+const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
+  ssr: false,
+})
 
 function CourseOverview({ courseId }: any) {
   const [selectedTab, setSelectedTab] = useState('global')
@@ -96,9 +100,9 @@ function CourseOverview({ courseId }: any) {
           </Tabs.TabList>
 
           <Tabs.TabContent key="course" value="global" className="md:px-4">
-            {course.description && (
+            {course?.description && (
               <div className="p-4 mb-4 border rounded bg-slate-100">
-                <Markdown content={course.description} />
+                <DynamicMarkdown content={course.description} />
               </div>
             )}
 

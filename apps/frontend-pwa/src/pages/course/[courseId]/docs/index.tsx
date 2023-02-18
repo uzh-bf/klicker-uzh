@@ -1,10 +1,14 @@
 import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { H3 } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
+import dynamic from 'next/dynamic'
 import DocsLayout from '../../../../components/docs/DocsLayout'
+
+const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
+  ssr: false,
+})
 
 function Landing() {
   return (
@@ -12,7 +16,7 @@ function Landing() {
       {(courseInformation) => (
         <>
           <H3>Kursinformationen</H3>
-          <Markdown content={courseInformation.description} />
+          <DynamicMarkdown content={courseInformation.description} />
         </>
       )}
     </DocsLayout>
