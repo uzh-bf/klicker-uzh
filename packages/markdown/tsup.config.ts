@@ -5,4 +5,5 @@ export default defineConfig({
   clean: false,
   format: 'esm',
   dts: true,
+  publicDir: 'src/public',
 })

@@ -1,4 +1,6 @@
-import React, { useMemo } from 'react'
+import { Button, Modal } from '@uzh-bf/design-system'
+import Image from 'next/image'
+import React, { useMemo, useState } from 'react'
 import rehypeExternalLinks from 'rehype-external-links'
 import katex from 'rehype-katex'
 // import rehypePrism from 'rehype-prism-plus'
@@ -9,19 +11,77 @@ import markdown from 'remark-parse'
 import remark2rehype from 'remark-rehype'
 import { unified } from 'unified'
 
+export function ImgWithModal({
+  src,
+  alt,
+  width,
+  height,
+  ...props
+}: {
+  src: string
+  alt?: string
+  width?: number
+  height?: number
+  [key: string]: any
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <Modal
+      fullScreen
+      open={isOpen}
+      trigger={
+        <Button basic onClick={() => setIsOpen(true)}>
+          <div className="flex flex-col items-start mb-2">
+            <Image
+              className="border rounded hover:shadow"
+              src={src}
+              alt="Image"
+              width={width ?? 200}
+              height={height ?? 200}
+            />
+            {alt && <div className="text-sm text-slate-500">{alt}</div>}
+          </div>
+        </Button>
+      }
+      onClose={() => setIsOpen(false)}
+      title={alt}
+      {...props}
+    >
+      <div className="relative w-full h-full">
+        <Image src={src} alt="Image" fill className="object-contain" />
+      </div>
+    </Modal>
+  )
+}
+
 interface MarkdownProps {
   className?: string
   content: any
   description?: string
   components?: {
-    img: any
+    img?: ({
+      src,
+      alt,
+      width,
+      height,
+    }: {
+      src: string
+      alt?: string
+      width?: number
+      height?: number
+    }) => React.ReactElement
   }
 }
 
-const defaultProps = {
+const defaultProps: MarkdownProps = {
+  content: '<br>',
   className: undefined,
   description: 'Description missing',
-  components: undefined,
+  components: {
+    img: ({ src, alt, width, height }) => (
+      <ImgWithModal src={src} alt={alt} width={width} height={height} />
+    ),
+  },
 }
 
 function Markdown({
@@ -69,7 +129,9 @@ function Markdown({
             })
             .use(rehype2react, {
               createElement: React.createElement,
-              components,
+              components: {
+                ...(components as any),
+              },
             })
             .processSync(content).result
         : description
