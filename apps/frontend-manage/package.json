@@ -71,6 +71,7 @@
     "@types/react-tagcloud": "^1.1.7",
     "@types/sharp": "^0.31.0",
     "autoprefixer": "10.4.13",
+    "cssnano": "5.1.15",
     "eslint-config-next": "13.1.6",
     "postcss": "8.4.21",
     "prettier": "2.8.4",

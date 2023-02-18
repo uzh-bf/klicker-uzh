@@ -13,7 +13,6 @@ import React, { useContext } from 'react'
 
 import { ThemeContext } from '@uzh-bf/design-system'
 import { QUESTION_GROUPS } from './constants'
-import ImgWithModal from './ImgWithModal'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
 import { QuestionAttachment } from './questions/QuestionAttachment'
@@ -187,12 +186,7 @@ export const StudentQuestion = ({
           'mt-4 border-slate-300 flex-initial min-h-[6rem] bg-primary-10 border rounded leading-6 prose max-w-none prose-p:!m-0 prose-img:!m-0 p-4'
         )}
       >
-        <Markdown
-          components={{
-            img: ImgWithModal,
-          }}
-          content={currentQuestion.content}
-        />
+        <Markdown content={currentQuestion.content} />
       </div>
 
       {currentQuestion.attachments && (

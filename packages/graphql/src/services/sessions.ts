@@ -1165,6 +1165,9 @@ export async function getUserSessions(
     },
     include: {
       sessions: {
+        orderBy: {
+          createdAt: 'desc',
+        },
         include: {
           course: true,
           blocks: {

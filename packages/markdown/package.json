@@ -10,8 +10,12 @@
   ],
   "scripts": {
     "analyze": "size-limit --why",
-    "build": "NODE_ENV=production tsup",
-    "build:watch": "NODE_ENV=development tsup --watch",
+    "build": "run-s build:tailwind build:ts",
+    "build:tailwind": "tailwindcss -i src/globals.css -o src/public/tailwind.css",
+    "build:ts": "NODE_ENV=production tsup",
+    "dev": "run-p dev:tailwind dev:ts",
+    "dev:tailwind": "tailwindcss -i src/globals.css -o src/public/tailwind.css --watch",
+    "dev:ts": "NODE_ENV=development tsup --watch",
     "format": "prettier --write .",
     "size": "size-limit"
   },
@@ -25,6 +29,7 @@
     }
   ],
   "peerDependencies": {
+    "@uzh-bf/design-system": "^1.0.0",
     "next": "^13.0.0",
     "react": "^18.2.0"
   },
@@ -32,7 +37,9 @@
     "@size-limit/preset-small-lib": "8.2.4",
     "@tsconfig/node18": "^1.0.1",
     "@tsconfig/recommended": "^1.0.2",
+    "npm-run-all": "4.1.5",
     "size-limit": "8.2.4",
+    "tailwindcss": "3.2.7",
     "tsup": "6.6.2",
     "typescript": "4.9.5"
   },
