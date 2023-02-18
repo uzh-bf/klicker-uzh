@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.51...v3.0.0-alpha.52) (2023-02-18)
+
+
+### Features
+
+* add question level explanation ([#3358](https://github.com/uzh-bf/klicker-uzh/issues/3358)) ([90c2f5e](https://github.com/uzh-bf/klicker-uzh/commit/90c2f5e679f470b8a7c7cdd69c618ea3d81e36c2))
+
+
+### Enhancements
+
+* **apps/frontend-*, apps/office-addin:** Source Sans Pro, Sentry removal ([#3359](https://github.com/uzh-bf/klicker-uzh/issues/3359)) ([ab9d373](https://github.com/uzh-bf/klicker-uzh/commit/ab9d37367efc294766652e704b2bdfb3bdf04ff3))
+
 ## [3.0.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.50...v3.0.0-alpha.51) (2023-02-17)
 
 
