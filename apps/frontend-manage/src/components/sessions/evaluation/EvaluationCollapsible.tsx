@@ -53,13 +53,13 @@ function EvaluationCollapsible({
         <Prose
           className={{
             root: twMerge(
-              'flex-initial max-w-full prose-p:m-0 leading-8 prose-lg',
+              'flex-initial max-w-full prose-p:m-0 leading-8 prose-lg prose-img:m-0',
               proseSize
             ),
           }}
         >
           <Markdown
-            className="flex flex-row content-between hover:text-black"
+            className="flex flex-row content-between"
             content={currentInstance.questionData?.content}
           />
         </Prose>

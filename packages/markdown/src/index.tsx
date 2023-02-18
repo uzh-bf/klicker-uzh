@@ -4,11 +4,14 @@ import React, { useMemo, useState } from 'react'
 import rehypeExternalLinks from 'rehype-external-links'
 import katex from 'rehype-katex'
 // import rehypePrism from 'rehype-prism-plus'
+import { faExpand } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import rehype2react from 'rehype-react'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import math from 'remark-math'
 import markdown from 'remark-parse'
 import remark2rehype from 'remark-rehype'
+import { twMerge } from 'tailwind-merge'
 import { unified } from 'unified'
 
 export function ImgWithModal({
@@ -16,13 +19,16 @@ export function ImgWithModal({
   alt,
   width,
   height,
-  ...props
+  className,
 }: {
   src: string
   alt?: string
   width?: number
   height?: number
-  [key: string]: any
+  className?: {
+    modal?: string
+    img?: string
+  }
 }) {
   const [isOpen, setIsOpen] = useState(false)
   return (
@@ -30,22 +36,37 @@ export function ImgWithModal({
       fullScreen
       open={isOpen}
       trigger={
-        <Button basic onClick={() => setIsOpen(true)}>
-          <div className="flex flex-col items-start mb-2">
+        <div className="flex flex-col items-start mb-1">
+          <div className="relative">
             <Image
-              className="border rounded hover:shadow"
               src={src}
               alt="Image"
-              width={width ?? 200}
-              height={height ?? 200}
+              height="0"
+              width="0"
+              className={twMerge(
+                'object-contain w-auto min-h-36 max-h-64 rounded shadow',
+                className?.img
+              )}
+              style={{ width, height }}
+              sizes="100vw"
             />
-            {alt && <div className="text-sm text-slate-500">{alt}</div>}
+            <Button
+              className={{
+                root: 'absolute top-2 right-2 text-sm',
+              }}
+              onClick={() => setIsOpen(true)}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faExpand} />
+              </Button.Icon>
+            </Button>
           </div>
-        </Button>
+          {alt && <div className="text-sm text-slate-600">{alt}</div>}
+        </div>
       }
       onClose={() => setIsOpen(false)}
       title={alt}
-      {...props}
+      className={{ content: className?.modal }}
     >
       <div className="relative w-full h-full">
         <Image src={src} alt="Image" fill className="object-contain" />
@@ -70,6 +91,7 @@ interface MarkdownProps {
       width?: number
       height?: number
     }) => React.ReactElement
+    [key: string]: any
   }
 }
 
@@ -77,11 +99,7 @@ const defaultProps: MarkdownProps = {
   content: '<br>',
   className: undefined,
   description: 'Description missing',
-  components: {
-    img: ({ src, alt, width, height }) => (
-      <ImgWithModal src={src} alt={alt} width={width} height={height} />
-    ),
-  },
+  components: {},
 }
 
 function Markdown({
@@ -130,6 +148,24 @@ function Markdown({
             .use(rehype2react, {
               createElement: React.createElement,
               components: {
+                img: ({
+                  src,
+                  alt,
+                  width,
+                  height,
+                }: {
+                  src: string
+                  alt?: string
+                  width?: number
+                  height?: number
+                }) => (
+                  <ImgWithModal
+                    src={src}
+                    alt={alt}
+                    width={width}
+                    height={height}
+                  />
+                ),
                 ...(components as any),
               },
             })

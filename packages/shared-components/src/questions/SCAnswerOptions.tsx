@@ -1,7 +1,6 @@
 import { QuestionDisplayMode } from '@klicker-uzh/graphql/dist/ops'
 import Markdown from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
-import Image from 'next/image'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -43,12 +42,7 @@ export function SCAnswerOptions({
             <Button.Label>
               <Markdown
                 content={choice.value}
-                components={{
-                  img: ({ src, alt }: any) => (
-                    <Image src={src} alt="Image" width={200} height={200} />
-                  ),
-                }}
-                className="p-1 prose prose-img:!m-0 max-w-none prose-p:!m-0"
+                className="p-1 pt-2 prose prose-img:!m-0 max-w-none prose-p:!m-0"
               />
             </Button.Label>
           </Button>

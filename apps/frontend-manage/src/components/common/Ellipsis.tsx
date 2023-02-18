@@ -33,18 +33,6 @@ function Ellipsis({
   withoutPopup,
   className,
 }: EllipsisPropsMaxLength | EllipsisPropsMaxLines): React.ReactElement {
-  const parsedContent = (
-    <Markdown
-      components={{
-        img: ({ src, alt }: any) => (
-          <Image src={src} alt="Image" width={50} height={50} />
-        ),
-      }}
-      content={children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-      className={className?.markdown}
-    />
-  )
-
   if (maxLines) {
     return (
       <Tooltip
@@ -54,7 +42,17 @@ function Ellipsis({
               root: 'flex-initial max-w-full leading-6 prose-p:m-0 prose-invert text-white hover:text-white prose-img:m-0',
             }}
           >
-            {parsedContent}
+            <Markdown
+              components={{
+                img: ({ src, alt }: any) => (
+                  <Image src={src} alt="Image" width={50} height={50} />
+                ),
+              }}
+              content={children
+                .toString()
+                .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+              className={className?.markdown}
+            />
           </Prose>
         }
         className={{
@@ -82,7 +80,12 @@ function Ellipsis({
               ),
             }}
           >
-            {parsedContent}
+            <Markdown
+              content={children
+                .toString()
+                .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+              className={className?.markdown}
+            />
           </Prose>
         </div>
       </Tooltip>
@@ -138,7 +141,12 @@ function Ellipsis({
     typeof children !== 'string' ||
     children.length === endIndex
   ) {
-    return parsedContent
+    return (
+      <Markdown
+        content={children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+        className={className?.markdown}
+      />
+    )
   }
 
   // return shortened content including tooltip with full content (if not explicitely disabled)
@@ -148,7 +156,14 @@ function Ellipsis({
         shortenedParsedContent
       ) : (
         <Tooltip
-          tooltip={parsedContent}
+          tooltip={
+            <Markdown
+              content={children
+                .toString()
+                .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+              className={className?.markdown}
+            />
+          }
           className={{
             tooltip: twMerge(
               'text-sm max-w-[50%] md:max-w-[60%]',
