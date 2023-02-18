@@ -108,6 +108,7 @@ function MicroSessionInstance() {
                   }
                   questionType={questionData.type as QuestionType}
                   options={questionData.options}
+                  displayMode={questionData.displayMode}
                 />
               </div>
 

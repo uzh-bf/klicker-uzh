@@ -312,6 +312,7 @@ function LearningElement({ courseId, id }: Props) {
                       }
                       questionType={questionData.type}
                       options={questionData.options}
+                      displayMode={questionData.displayMode}
                     />
                   </div>
 
