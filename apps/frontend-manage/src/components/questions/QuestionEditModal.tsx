@@ -433,7 +433,6 @@ function QuestionEditModal({
             fullScreen
             title={mode === 'CREATE' ? 'Frage erstellen' : 'Frage bearbeiten'}
             className={{
-              overlay: 'top-14',
               content: 'max-w-[1400px]',
               title: 'text-xl',
             }}
