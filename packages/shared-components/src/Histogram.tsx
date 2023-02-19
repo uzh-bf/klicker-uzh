@@ -17,8 +17,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { CHART_SOLUTION_COLORS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
+import { CHART_SOLUTION_COLORS } from './constants'
 
 interface HistogramProps {
   data: Partial<InstanceResult>
