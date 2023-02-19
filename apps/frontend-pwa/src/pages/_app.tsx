@@ -2,8 +2,10 @@ import { ApolloProvider } from '@apollo/client'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { useApollo } from '@lib/apollo'
+import { init } from '@socialgouv/matomo-next'
 import { ThemeProvider } from '@uzh-bf/design-system'
 import type { AppProps } from 'next/app'
+import { useEffect } from 'react'
 import { sourceSansPro } from 'shared-components/src/font'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -11,8 +13,17 @@ config.autoAddCss = false
 
 import '../globals.css'
 
+const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
+const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
+
 function App({ Component, pageProps }: AppProps) {
   const apolloClient = useApollo(pageProps)
+
+  useEffect(() => {
+    if (MATOMO_URL && MATOMO_SITE_ID) {
+      init({ url: MATOMO_URL, siteId: MATOMO_SITE_ID })
+    }
+  }, [])
 
   return (
     <div className={`${sourceSansPro.variable} font-sans h-full`}>

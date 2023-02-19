@@ -1,5 +1,5 @@
 import { Button, Modal } from '@uzh-bf/design-system'
-import Image from 'next/image'
+import Image from 'next/image.js'
 import React, { useMemo, useState } from 'react'
 import rehypeExternalLinks from 'rehype-external-links'
 import katex from 'rehype-katex'
