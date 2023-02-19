@@ -41,6 +41,7 @@ export const OptionsNumericalInput = builder.inputType(
   {
     fields: (t) => ({
       accuracy: t.int({ required: false }),
+      unit: t.string({ required: false }),
       restrictions: t.field({
         type: NumericalRestrictionsInput,
         required: false,
@@ -67,6 +68,7 @@ export const FreeTextRestrictionsInput = builder.inputType(
 
 export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
   fields: (t) => ({
+    placeholder: t.string({ required: false }),
     restrictions: t.field({
       type: FreeTextRestrictionsInput,
       required: false,

@@ -45,6 +45,8 @@ function QuestionList({
           hasSampleSolution={question.hasSampleSolution}
           onCheck={() => setSelectedQuestions(index)}
           tagfilter={tagfilter}
+          createdAt={question.createdAt}
+          updatedAt={question.updatedAt}
         />
       ))}
     </>

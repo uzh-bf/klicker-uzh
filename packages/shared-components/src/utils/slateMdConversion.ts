@@ -8,6 +8,7 @@ export const convertToMd = (slateObj) => {
     if (line.type === 'block-quote') {
       return `>${serialize(line)}\n`
     }
+
     if (line.type === 'bulleted-list') {
       return serialize({
         type: 'bulleted-list',
@@ -24,6 +25,7 @@ export const convertToMd = (slateObj) => {
         }),
       })
     }
+
     if (line.type === 'numbered-list') {
       return serialize({
         type: 'numbered-list',
@@ -41,6 +43,7 @@ export const convertToMd = (slateObj) => {
         }),
       })
     }
+
     if (line.type === 'block_quote') {
       return line.children
         .map((quoteline: any) => {
@@ -58,16 +61,19 @@ export const convertToMd = (slateObj) => {
         })
         .join('\n')
     }
+
     return serialize(line)
   })
   return result.join('\n')
 }
 
 export const convertToSlate = (mdObj) => {
+  const trimmedMdObj = mdObj.trim() === '' ? '<br>' : mdObj
+
   const result = unified()
     .use(markdown)
     .use(slate)
-    .processSync(mdObj.replace(/\\/g, '\\\\')).result as any
+    .processSync(trimmedMdObj.replace(/\\/g, '\\\\')).result as any
 
   return result.map((line: any) => {
     if (line.type === 'paragraph') {
@@ -77,10 +83,14 @@ export const convertToSlate = (mdObj) => {
           if (child.type === 'image') {
             return { text: `![${child.caption}](${child.link})` }
           }
+          if (child.type === 'link') {
+            return { text: `[${child.children[0].text}](${child.link})` }
+          }
           return child
         }),
       }
     }
+
     if (line.type === 'ol_list') {
       return {
         ...line,
@@ -97,6 +107,7 @@ export const convertToSlate = (mdObj) => {
         }),
       }
     }
+
     if (line.type === 'ul_list') {
       return {
         ...line,
@@ -113,6 +124,7 @@ export const convertToSlate = (mdObj) => {
         }),
       }
     }
+
     if (line.type === 'block_quote') {
       return {
         ...line,
@@ -121,6 +133,7 @@ export const convertToSlate = (mdObj) => {
         }),
       }
     }
+
     return line
   })
 }

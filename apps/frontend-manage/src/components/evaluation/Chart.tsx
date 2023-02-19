@@ -30,11 +30,13 @@ function Chart({
   if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
     return (
-      <TableChart
-        data={data}
-        showSolution={showSolution}
-        textSize={textSize.textLg}
-      />
+      <div className="h-full overflow-y-auto">
+        <TableChart
+          data={data}
+          showSolution={showSolution}
+          textSize={textSize.textLg}
+        />
+      </div>
     )
   } else if (chartType === 'histogram') {
     return (

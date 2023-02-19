@@ -4,7 +4,7 @@ import {
   StartGroupActivityDocument,
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { QuestionType } from '@type/app'
 import { Button, H1, ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -92,7 +92,9 @@ function GroupActivityDetails() {
             <H1>Ausgangslage</H1>
 
             <Markdown
-              className="prose max-w-none prose-img:max-w-[250px] prose-img:mx-auto prose-p:mt-0"
+              className={{
+                root: 'prose max-w-none prose-img:max-w-[250px] prose-img:mx-auto prose-p:mt-0',
+              }}
               content={data.groupActivityDetails.description}
             />
           </div>

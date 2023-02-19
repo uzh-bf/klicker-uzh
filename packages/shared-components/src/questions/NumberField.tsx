@@ -11,10 +11,10 @@ export interface NumberFieldProps {
   onChange: (newValue: string) => void
   placeholder?: string
   disabled?: boolean
-  allowDecimals?: boolean
   className?: {
     input?: string
   }
+  accuracy?: number
   [key: string]: any
 }
 
@@ -24,9 +24,9 @@ export function NumberField({
   value,
   onChange,
   placeholder,
-  allowDecimals,
   disabled,
   className,
+  accuracy,
 }: NumberFieldProps): React.ReactElement {
   return (
     <input
@@ -36,10 +36,12 @@ export function NumberField({
       type="text"
       value={value}
       onChange={(e) => {
-        if (allowDecimals && e.target.value.match(/^[-]?\d*\.?\d*$/)) {
+        const regex = accuracy
+          ? new RegExp(`^[-]?\\d*\\.?\\d{0,${accuracy}}$`)
+          : /^[-]?\d*\.?\d*$/
+
+        if (e.target.value.match(regex) !== null) {
           onChange(e.target.value)
-        } else {
-          onChange(e.target.value.replace(/[-]?[^0-9]/g, ''))
         }
       }}
       placeholder={placeholder}

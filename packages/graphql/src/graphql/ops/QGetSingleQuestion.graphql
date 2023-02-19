@@ -24,6 +24,9 @@ query GetSingleQuestion($id: Int!) {
 
       ... on NumericalQuestionData {
         options {
+          unit
+          accuracy
+          placeholder
           restrictions {
             min
             max

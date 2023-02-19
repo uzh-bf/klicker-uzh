@@ -4,5 +4,9 @@ query GetRunningSessions($shortname: String!) {
     name
     displayName
     linkTo
+    course {
+      id
+      displayName
+    }
   }
 }

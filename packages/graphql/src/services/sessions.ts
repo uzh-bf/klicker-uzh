@@ -1010,12 +1010,7 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
             case QuestionType.FREE_TEXT:
               return {
                 ...instance,
-                questionData: {
-                  ...questionData,
-                  options: {
-                    restrictions: questionData.options.restrictions,
-                  },
-                },
+                questionData,
               }
 
             default:
@@ -1145,6 +1140,9 @@ export async function getRunningSessions(
         where: {
           accessMode: 'PUBLIC',
           status: 'RUNNING',
+        },
+        include: {
+          course: true,
         },
       },
     },

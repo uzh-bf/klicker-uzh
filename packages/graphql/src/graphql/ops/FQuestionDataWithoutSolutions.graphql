@@ -19,6 +19,9 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
 
     ... on NumericalQuestionData {
       options {
+        unit
+        accuracy
+        placeholder
         restrictions {
           min
           max

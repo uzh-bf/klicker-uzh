@@ -29,7 +29,7 @@ function App({ Component, pageProps }: AppProps) {
   }, [])
 
   return (
-    <div className={`${sourceSansPro.variable} font-sans h-full`}>
+    <div id="__app" className={`${sourceSansPro.variable} font-sans h-full`}>
       <Head>
         <link
           rel="stylesheet"
@@ -65,6 +65,17 @@ function App({ Component, pageProps }: AppProps) {
           </ThemeProvider>
         </DndProvider>
       </ApolloProvider>
+
+      <style jsx global>{`
+        :root {
+          --source-sans-pro: ${sourceSansPro.variable};
+        }
+
+        #__app {
+          min-height: 100%;
+          height: 100%;
+        }
+      `}</style>
     </div>
   )
 }

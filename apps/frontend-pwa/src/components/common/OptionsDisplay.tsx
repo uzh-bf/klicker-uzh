@@ -1,7 +1,11 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Choice, QuestionType } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import {
+  Choice,
+  QuestionDisplayMode,
+  QuestionType,
+} from '@klicker-uzh/graphql/dist/ops'
+import {Markdown} from '@klicker-uzh/markdown'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { indexBy } from 'ramda'
 import { useContext, useMemo } from 'react'
@@ -45,6 +49,7 @@ interface ChoiceOptionsProps {
   feedbacks: any
   response?: number[]
   onChange: (ix: number) => void
+  displayMode?: QuestionDisplayMode | null
 }
 function ChoiceOptions({
   disabled,
@@ -54,11 +59,20 @@ function ChoiceOptions({
   feedbacks,
   response,
   isCompact,
+  displayMode,
 }: ChoiceOptionsProps) {
   const theme = useContext(ThemeContext)
 
   return (
-    <div className={twMerge(isCompact ? 'flex flex-row gap-2' : 'space-y-2')}>
+    <div
+      className={twMerge(
+        displayMode === QuestionDisplayMode.Grid
+          ? 'grid grid-cols-2 gap-3'
+          : isCompact
+          ? 'flex flex-row gap-2'
+          : 'space-y-2'
+      )}
+    >
       {choices.map((choice) => (
         <div key={choice.value} className="w-full">
           <Button
@@ -72,7 +86,6 @@ function ChoiceOptions({
                 (disabled || isEvaluation) &&
                   response?.includes(choice.ix) &&
                   'border-gray-400 text-gray-800'
-                // isEvaluation && response?.includes(choice.ix) && (choice.correct ? 'bg-green-200 border-green-300' : 'bg-red-200 border-red-300')
               ),
             }}
             fluid
@@ -123,6 +136,7 @@ interface OptionsProps {
   isCompact?: boolean
   isResponseValid: boolean
   onChangeResponse: (value: any) => void
+  displayMode?: QuestionDisplayMode | null
 }
 
 export function Options({
@@ -136,6 +150,7 @@ export function Options({
   onChangeResponse,
   withGuidance,
   isCompact,
+  displayMode,
 }: OptionsProps) {
   switch (questionType) {
     case QuestionType.Sc: {
@@ -155,6 +170,7 @@ export function Options({
             response={response}
             onChange={(ix) => onChangeResponse([ix])}
             isCompact={isCompact}
+            displayMode={displayMode}
           />
         </div>
       )
@@ -186,6 +202,7 @@ export function Options({
               })
             }
             isCompact={isCompact}
+            displayMode={displayMode}
           />
         </div>
       )
@@ -341,6 +358,7 @@ interface OptionsDisplayProps {
   onChangeResponse: any
   onSubmitResponse: any
   isEvaluation?: boolean
+  displayMode?: QuestionDisplayMode | null
 }
 
 function OptionsDisplay({
@@ -351,6 +369,7 @@ function OptionsDisplay({
   onSubmitResponse,
   questionType,
   options,
+  displayMode,
 }: OptionsDisplayProps) {
   const feedbacks = useMemo(() => {
     if (evaluation) {
@@ -367,6 +386,7 @@ function OptionsDisplay({
         isEvaluation={isEvaluation}
         options={options}
         onChangeResponse={onChangeResponse}
+        displayMode={displayMode}
       />
       <div className="self-end mt-4">
         <Button

@@ -10,11 +10,13 @@
   ],
   "scripts": {
     "analyze": "size-limit --why",
-    "build": "run-s build:tailwind build:ts",
-    "build:tailwind": "tailwindcss -i src/globals.css -o src/public/tailwind.css",
+    "build": "run-s build:tw build:ts",
+    "build:tw": "run-p build:tw:*",
+    "build:tw:components": "tailwindcss -i src/components.css -o src/public/components.css",
+    "build:tw:utilities": "tailwindcss -i src/utilities.css -o src/public/utilities.css",
     "build:ts": "NODE_ENV=production tsup",
-    "dev": "run-p dev:tailwind dev:ts",
-    "dev:tailwind": "tailwindcss -i src/globals.css -o src/public/tailwind.css --watch",
+    "//dev": "run-p dev:tailwind dev:ts",
+    "dev:tailwind": "tailwindcss -i src/globals.css -o src/public/tailwind.css -w",
     "dev:ts": "NODE_ENV=development tsup --watch",
     "format": "prettier --write .",
     "size": "size-limit"
@@ -29,9 +31,13 @@
     }
   ],
   "peerDependencies": {
+    "@fortawesome/free-regular-svg-icons": "^6.3.0",
+    "@fortawesome/free-solid-svg-icons": "^6.2.0",
+    "@fortawesome/react-fontawesome": "^0.2.0",
     "@uzh-bf/design-system": "^1.0.0",
     "next": "^13.0.0",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "tailwind-merge": "^1.8.0"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",

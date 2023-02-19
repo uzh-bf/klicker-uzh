@@ -8,6 +8,7 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Ellipsis } from '@klicker-uzh/markdown'
 import {
   Button,
   FormikNumberField,
@@ -18,7 +19,6 @@ import { move as RamdaMove } from 'ramda'
 import { useContext, useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
-import Ellipsis from '../../common/Ellipsis'
 
 interface SessionCreationBlockProps {
   index: number
@@ -121,7 +121,11 @@ function SessionCreationBlock({
             className="flex flex-row text-xs border border-solid rounded bg-uzh-grey-20 border-uzh-grey-100"
           >
             <div className="p-0.5 flex-1">
-              <Ellipsis maxLines={2} className={{ content: 'prose-sm' }}>
+              <Ellipsis
+                // maxLines={2}
+                maxLength={40}
+                className={{ content: 'prose-sm' }}
+              >
                 {title}
               </Ellipsis>
             </div>

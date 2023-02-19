@@ -43,6 +43,9 @@ mutation ManipulateNumericalQuestion(
 
       ... on NumericalQuestionData {
         options {
+          accuracy
+          placeholder
+          unit
           restrictions {
             min
             max

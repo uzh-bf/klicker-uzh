@@ -132,8 +132,6 @@ export async function registerParticipantFromLTI(
       },
     })
 
-    console.log('participant', participant)
-
     let participation = null
 
     // if there is no participant matching the SSO id from LTI
@@ -155,8 +153,6 @@ export async function registerParticipantFromLTI(
         symbols: true,
         numbers: true,
       })
-
-      console.log('login', username, password)
 
       const hash = await bcrypt.hash(password, 12)
 
@@ -183,8 +179,6 @@ export async function registerParticipantFromLTI(
           participant: true,
         },
       })
-
-      console.log('new participant', participant)
     } else {
       participation = await ctx.prisma.participation.upsert({
         where: {

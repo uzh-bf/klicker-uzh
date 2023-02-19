@@ -65,6 +65,9 @@ export async function manipulateQuestion(
     content?: string | null
     explanation?: string | null
     options?: {
+      unit?: string
+      accuracy?: number
+      placeholder?: string
       restrictions?: {
         maxLength?: number
         minLength?: number

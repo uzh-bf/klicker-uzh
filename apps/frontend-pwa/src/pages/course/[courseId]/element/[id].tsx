@@ -18,12 +18,12 @@ import {
   QuestionType,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { Button, H3, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import Footer from '../../../../components/common/Footer'
@@ -43,6 +43,16 @@ interface Props {
   courseId: string
   id: string
 }
+
+const DynamicMarkdown = dynamic(
+  async () => {
+    const { Markdown } = await import('@klicker-uzh/markdown')
+    return Markdown
+  },
+  {
+    ssr: false,
+  }
+)
 
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
@@ -145,7 +155,7 @@ function LearningElement({ courseId, id }: Props) {
               </div>
 
               {data.learningElement.description && (
-                <Markdown content={data.learningElement.description} />
+                <DynamicMarkdown content={data.learningElement.description} />
               )}
 
               <div className="flex flex-col gap-4 text-sm md:gap-16 md:flex-row">
@@ -300,9 +310,10 @@ function LearningElement({ courseId, id }: Props) {
                     </div>
 
                     <div className="pb-2">
-                      <Markdown content={questionData.content} />
+                      <DynamicMarkdown content={questionData.content} />
                     </div>
                     <OptionsDisplay
+                      key={currentInstance.id}
                       isEvaluation={isEvaluation}
                       evaluation={currentInstance.evaluation}
                       response={response}
@@ -312,6 +323,7 @@ function LearningElement({ courseId, id }: Props) {
                       }
                       questionType={questionData.type}
                       options={questionData.options}
+                      displayMode={questionData.displayMode}
                     />
                   </div>
 
@@ -359,10 +371,13 @@ function LearningElement({ courseId, id }: Props) {
                           ).format('DD.MM.YYYY HH:mm')}
                         </div>
                       </div>
-                      <div className="p-1.5 bg-green-100 border border-green-600 border-solid rounded">
-                        <div className="font-bold">Erklärung</div>
-                        <Markdown content={questionData.explanation} />
-                      </div>
+
+                      {questionData.explanation && (
+                        <div className="">
+                          <div className="mb-1 font-bold">Erklärung</div>
+                          <DynamicMarkdown content={questionData.explanation} />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

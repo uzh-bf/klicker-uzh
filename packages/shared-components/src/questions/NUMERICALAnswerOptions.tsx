@@ -30,17 +30,17 @@ export function NUMERICALAnswerOptions({
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   const theme = useContext(ThemeContext)
 
-  // TODO: integrate accuracy prop into numberfield implementation
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-row">
+      <div className="flex flex-row gap-6">
         {typeof min === 'number' && (
-          <div className="mr-6" data-cy="input-numerical-minimum">
-            Min: {min}
-          </div>
+          <div data-cy="input-numerical-minimum">Min: {min}</div>
         )}
         {typeof max === 'number' && (
           <div data-cy="input-numerical-maximum">Max: {max}</div>
+        )}
+        {typeof accuracy === 'number' && (
+          <div data-cy="input-numerical-accuracy">Präzision: {accuracy}</div>
         )}
       </div>
       <div className="flex flex-row">
@@ -49,12 +49,12 @@ export function NUMERICALAnswerOptions({
           onChange={onChange}
           placeholder={placeholder}
           disabled={disabled}
-          allowDecimals
+          accuracy={accuracy}
           className={{
             input: twMerge(
               theme.primaryBorderFocus,
               unit && '!rounded-r-none',
-              !valid && 'border-red-600'
+              !valid && value !== '' && 'border-red-600'
             ),
           }}
         />
@@ -64,7 +64,7 @@ export function NUMERICALAnswerOptions({
           </div>
         )}
       </div>
-      {!valid && (
+      {!valid && value !== '' && (
         <div className="text-black">
           <FontAwesomeIcon
             icon={faTriangleExclamation}

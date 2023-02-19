@@ -3,6 +3,7 @@ import {
   CreateSessionDocument,
   EditSessionDocument,
   GetUserSessionsDocument,
+  QuestionType,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -55,6 +56,21 @@ const stepThreeValidationSchema = yup.object().shape({
       yup.object().shape({
         ids: yup.array().of(yup.number()),
         titles: yup.array().of(yup.string()),
+        types: yup
+          .array()
+          .of(
+            yup
+              .string()
+              .oneOf(
+                [
+                  QuestionType.Sc,
+                  QuestionType.Mc,
+                  QuestionType.Numerical,
+                  QuestionType.FreeText,
+                ],
+                'Live-Sessions können nur Single-Choice, Multiple-Choice, Numerische und Freitext-Fragen enthalten.'
+              )
+          ),
         timeLimit: yup
           .number()
           .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
@@ -207,8 +223,8 @@ function StepOne(_: StepProps) {
         required
         autoComplete="off"
         name="name"
-        label="Session-Name"
-        tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
+        label="Name"
+        tooltip="Der Name soll Ihnen ermöglichen, diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
         className={{ root: 'mb-1' }}
         data-cy="insert-live-session-name"
         shouldValidate={() => true}
@@ -217,8 +233,8 @@ function StepOne(_: StepProps) {
         required
         autoComplete="off"
         name="displayName"
-        label="Anzeigenamen"
-        tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
+        label="Anzeigename"
+        tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
         className={{ root: 'mb-1' }}
         data-cy="insert-live-display-name"
       />

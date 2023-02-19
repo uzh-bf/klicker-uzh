@@ -4,7 +4,7 @@ import {
   QuestionType,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import formatResponse from '@lib/formatResponse'
 import { H3, Progress } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -99,6 +99,7 @@ function MicroSessionInstance() {
                 </div>
 
                 <OptionsDisplay
+                  key={currentInstance.id}
                   isEvaluation={isEvaluation}
                   evaluation={currentInstance.evaluation}
                   response={response}
@@ -108,6 +109,7 @@ function MicroSessionInstance() {
                   }
                   questionType={questionData.type as QuestionType}
                   options={questionData.options}
+                  displayMode={questionData.displayMode}
                 />
               </div>
 
@@ -134,10 +136,13 @@ function MicroSessionInstance() {
                     questionType={questionData.type}
                     evaluation={currentInstance.evaluation}
                   />
-                  <div className="p-1.5 bg-green-100 border border-green-600 border-solid rounded">
-                    <div className="font-bold">Erklärung</div>
-                    <Markdown content={questionData.explanation} />
-                  </div>
+
+                  {questionData.explanation && (
+                    <div className="">
+                      <div className="mb-1 font-bold">Erklärung</div>
+                      <Markdown content={questionData.explanation} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

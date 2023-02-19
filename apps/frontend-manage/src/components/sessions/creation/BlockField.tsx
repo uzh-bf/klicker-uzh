@@ -46,6 +46,7 @@ function BlockField({ label, fieldName, tooltip, className }: BlockFieldProps) {
       </div>
       {meta.error && (
         <div className="text-sm text-red-400">
+          <WizardErrorMessage fieldName={`${fieldName}[0].type`} />
           <WizardErrorMessage fieldName={`${fieldName}[0].hasSampleSolution`} />
           {typeof meta.error === 'string' && meta.error}
         </div>

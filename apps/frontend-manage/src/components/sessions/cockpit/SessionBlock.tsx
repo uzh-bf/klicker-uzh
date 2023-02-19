@@ -49,7 +49,7 @@ function SessionBlock({
     <div
       className={twMerge(
         className,
-        'bg-uzh-grey-40 p-4 rounded',
+        'bg-uzh-grey-40 p-4 rounded min-w-[150px]',
         active && 'bg-green-300'
       )}
     >

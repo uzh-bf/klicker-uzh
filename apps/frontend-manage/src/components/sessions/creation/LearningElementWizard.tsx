@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   CreateLearningElementDocument,
   LearningElementOrderType,
+  QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FormikNumberField,
@@ -61,6 +62,17 @@ const stepThreeValidationSchema = yup.object().shape({
       yup.object().shape({
         id: yup.string(),
         title: yup.string(),
+        type: yup
+          .string()
+          .oneOf(
+            [
+              QuestionType.Sc,
+              QuestionType.Mc,
+              QuestionType.Kprim,
+              QuestionType.Numerical,
+            ],
+            'Lernelemente können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.'
+          ),
         // hasAnswerFeedbacks: yup.boolean().when('type', {
         //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
         //   then: yup.boolean().isTrue(),
@@ -176,16 +188,16 @@ function StepOne(_: StepProps) {
         required
         autoComplete="off"
         name="name"
-        label="Session-Name"
-        tooltip="Dieser Name der Session soll Ihnen ermöglichen diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
+        label="Name"
+        tooltip="Der Name soll Ihnen ermöglichen, dieses Lernelement von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
         className={{ root: 'mb-1' }}
       />
       <FormikTextField
         required
         autoComplete="off"
         name="displayName"
-        label="Anzeigenamen"
-        tooltip="Dieser Session-Name wird den Teilnehmenden bei der Durchführung angezeigt."
+        label="Anzeigename"
+        tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
         className={{ root: 'mb-1' }}
       />
 

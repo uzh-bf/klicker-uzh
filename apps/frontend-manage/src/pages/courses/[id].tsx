@@ -7,7 +7,7 @@ import {
   ChangeCourseDatesDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { Button, H1, H2, H3, ThemeContext, Toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
@@ -123,7 +123,7 @@ function CourseOverviewPage() {
             <div className="flex flex-row gap-2 border border-solid rounded border-uzh-grey-80">
               <Markdown
                 content={course.description}
-                className="w-full p-2 rounded"
+                className={{ root: 'w-full p-2 rounded' }}
               />
               <Button
                 onClick={() => setDescriptionEditMode(true)}
