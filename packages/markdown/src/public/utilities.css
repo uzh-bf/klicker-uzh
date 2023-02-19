@@ -26,6 +26,14 @@
   height: 100%
 }
 
+.max-h-16 {
+  max-height: 4rem
+}
+
+.max-h-36 {
+  max-height: 9rem
+}
+
 .max-h-64 {
   max-height: 16rem
 }
@@ -36,6 +44,26 @@
 
 .w-full {
   width: 100%
+}
+
+.max-w-\[50\%\] {
+  max-width: 50%
+}
+
+.max-w-full {
+  max-width: 100%
+}
+
+.max-w-md {
+  max-width: 28rem
+}
+
+.max-w-none {
+  max-width: none
+}
+
+.flex-initial {
+  flex: 0 1 auto
 }
 
 .flex-col {
@@ -50,6 +78,15 @@
   border-radius: 0.25rem
 }
 
+.border {
+  border-width: 1px
+}
+
+.bg-white {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity))
+}
+
 .object-contain {
   -o-object-fit: contain;
      object-fit: contain
@@ -58,6 +95,15 @@
 .text-sm {
   font-size: 0.875rem;
   line-height: 1.25rem
+}
+
+.leading-6 {
+  line-height: 1.5rem
+}
+
+.text-black {
+  --tw-text-opacity: 1;
+  color: rgb(0 0 0 / var(--tw-text-opacity))
 }
 
 .text-slate-600 {
@@ -69,4 +115,20 @@
   --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)
+}
+
+.hover\:text-black:hover {
+  --tw-text-opacity: 1;
+  color: rgb(0 0 0 / var(--tw-text-opacity))
+}
+
+.hover\:text-white:hover {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity))
+}
+
+@media (min-width: 768px) {
+  .md\:max-w-\[60\%\] {
+    max-width: 60%
+  }
 }

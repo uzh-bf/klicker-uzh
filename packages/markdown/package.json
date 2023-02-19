@@ -10,8 +10,10 @@
   ],
   "scripts": {
     "analyze": "size-limit --why",
-    "build": "run-s build:tailwind build:ts",
-    "build:tailwind": "tailwindcss -i src/globals.css -o src/public/tailwind.css",
+    "build": "run-s build:tw build:ts",
+    "build:tw": "run-p build:tw:*",
+    "build:tw:components": "tailwindcss -i src/components.css -o src/public/components.css",
+    "build:tw:utilities": "tailwindcss -i src/utilities.css -o src/public/utilities.css",
     "build:ts": "NODE_ENV=production tsup",
     "//dev": "run-p dev:tailwind dev:ts",
     "dev:tailwind": "tailwindcss -i src/globals.css -o src/public/tailwind.css -w",
