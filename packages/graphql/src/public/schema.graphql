@@ -260,7 +260,8 @@ type GroupLeaderboardEntry {
 }
 
 type InstanceEvaluation {
-  choices: Json!
+  answers: Json
+  choices: Json
   feedbacks: [QuestionFeedback!]
   newPointsFrom: Date
   percentile: Float

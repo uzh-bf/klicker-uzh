@@ -1,6 +1,7 @@
 import {
   gradeQuestionKPRIM,
   gradeQuestionMC,
+  gradeQuestionNumerical,
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 import {
@@ -96,6 +97,23 @@ function evaluateQuestionResponse(
               ? round(pointsPercentage * 10 * (multiplier ?? 1))
               : -1,
         }
+      }
+    }
+
+    case QuestionType.NUMERICAL: {
+      const data = questionData as NumericalQuestionData
+      const solutionRanges = data.options.solutionRanges
+
+      const correct = gradeQuestionNumerical({
+        response: parseFloat(String(response.value)),
+        solutionRanges: solutionRanges ?? [],
+      })
+
+      // TODO: add feedbacks here once they are implemented for specified solution ranges
+      return {
+        feedbacks: [],
+        answers: results ?? [],
+        score: correct ? correct * 10 * (multiplier ?? 1) : 0,
       }
     }
 

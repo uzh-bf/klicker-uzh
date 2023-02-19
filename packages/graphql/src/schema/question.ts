@@ -102,7 +102,8 @@ export const QuestionFeedback = builder
 
 export interface IInstanceEvaluation {
   feedbacks?: IQuestionFeedback[]
-  choices: object[]
+  choices?: object[]
+  answers?: object[]
   score: number
   pointsAwarded?: number
   percentile?: number
@@ -116,7 +117,11 @@ export const InstanceEvaluation = builder
         type: [QuestionFeedback],
         nullable: true,
       }),
-      choices: t.expose('choices', { type: 'Json' }),
+      choices: t.expose('choices', { type: 'Json', nullable: true }),
+      answers: t.expose('answers', {
+        type: 'Json',
+        nullable: true,
+      }),
       score: t.exposeFloat('score'),
       pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
       percentile: t.exposeFloat('percentile', { nullable: true }),

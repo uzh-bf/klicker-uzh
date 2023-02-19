@@ -16,6 +16,7 @@ mutation ResponseToQuestionInstance(
         value
       }
       choices
+      answers
       score
       pointsAwarded
       percentile

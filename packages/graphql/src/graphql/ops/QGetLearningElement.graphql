@@ -29,6 +29,7 @@ query GetLearningElement($id: String!) {
           value
         }
         choices
+        answers
         score
         pointsAwarded
         percentile

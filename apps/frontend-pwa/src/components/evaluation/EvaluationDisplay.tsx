@@ -1,7 +1,11 @@
-import { InstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import {
+  InstanceEvaluation,
+  NumericalQuestionData,
+} from '@klicker-uzh/graphql/dist/ops'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
+import Histogram from '../../../../frontend-manage/src/components/evaluation/Histogram'
 
 interface Props {
   questionType: string
@@ -92,7 +96,29 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
       return <div></div>
 
     case QuestionType.NUMERICAL:
-      return <div></div>
+      const results = Object.entries(
+        evaluation.answers as Record<string, number>
+      ).reduce(
+        (acc, [value, count]) => ({ ...acc, [value]: { value, count } }),
+        {}
+      )
+
+      return (
+        <div className="h-40 space-y-2">
+          <div className="font-bold">So haben andere geantwortet</div>
+          <Histogram
+            data={{
+              results: results,
+              questionData: { options } as NumericalQuestionData,
+            }}
+            showSolution={{ general: true }}
+            textSize={'md'}
+            className={{ root: 'h-40' }}
+            hideBins
+            basic
+          />
+        </div>
+      )
 
     default:
       return <div></div>
