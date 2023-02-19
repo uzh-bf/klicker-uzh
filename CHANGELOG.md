@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.56...v3.0.0-alpha.57) (2023-02-19)
+
+
+### Dependencies
+
+* **packages/markdown:** install recharts ([d529b7d](https://github.com/uzh-bf/klicker-uzh/commit/d529b7dda35ac46b9151ba10398a22ccbf6ff7ba))
+
 ## [3.0.0-alpha.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.55...v3.0.0-alpha.56) (2023-02-19)
 
 
