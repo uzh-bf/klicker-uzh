@@ -17,11 +17,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { CHART_SOLUTION_COLORS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
+import { CHART_SOLUTION_COLORS } from './constants'
 
 interface HistogramProps {
-  data: InstanceResult
+  data: Partial<InstanceResult>
   showSolution: {
     general: boolean
     mean?: boolean
@@ -31,6 +31,12 @@ interface HistogramProps {
     sd?: boolean
   }
   textSize: string
+  reference?: number
+  hideBins?: boolean
+  basic?: boolean
+  className?: {
+    root?: string
+  }
 }
 
 const defaultProps = {
@@ -42,12 +48,19 @@ const defaultProps = {
     q3: false,
     sd: false,
   },
+  hideBins: false,
+  basic: false,
+  className: undefined,
 }
 
 function Histogram({
   data,
   showSolution,
   textSize,
+  hideBins,
+  basic,
+  reference,
+  className,
 }: HistogramProps): React.ReactElement {
   const theme = useContext(ThemeContext)
   const [numBins, setNumBins] = useState(20)
@@ -102,10 +115,10 @@ function Histogram({
     })
 
     return { data: dataArray, domain: { min: min, max: max } }
-  }, [data, numBins])
+  }, [data.results, numBins, questionData.options.restrictions])
 
   return (
-    <div className="h-[calc(100%-4rem)] mt-1">
+    <div className={twMerge('h-[calc(100%-4rem)] mt-1', className?.root)}>
       <ResponsiveContainer width="99%" height="99%">
         <BarChart
           data={processedData.data}
@@ -150,6 +163,15 @@ function Histogram({
             }}
           />
           <Bar dataKey="count" fill="rgb(19, 149, 186)" />
+          {reference && (
+            <ReferenceLine
+              isFront
+              className={textSize}
+              key="reference"
+              stroke="red"
+              x={reference}
+            />
+          )}
           {data.statistics && showSolution.mean && (
             <ReferenceLine
               isFront
@@ -242,11 +264,14 @@ function Histogram({
                   stroke={CHART_SOLUTION_COLORS.correct}
                   fill={CHART_SOLUTION_COLORS.correct}
                   enableBackground="#FFFFFF"
-                  label={{
-                    fill: CHART_SOLUTION_COLORS.correct,
-                    position: 'top',
-                    value: 'Korrekt',
-                  }}
+                  opacity={basic ? 0.6 : 1}
+                  label={
+                    !basic && {
+                      fill: CHART_SOLUTION_COLORS.correct,
+                      position: 'top',
+                      value: 'Korrekt',
+                    }
+                  }
                   className={textSize}
                 />
               )
@@ -254,15 +279,17 @@ function Histogram({
         </BarChart>
       </ResponsiveContainer>
 
-      <div className="flex flex-row items-center float-right gap-2 mr-4">
-        <div className="font-bold">Bins:</div>
-        <input
-          className="rounded-md"
-          type="number"
-          value={numBins}
-          onChange={(e) => setNumBins(+e.target.value)}
-        />
-      </div>
+      {!hideBins && (
+        <div className="flex flex-row items-center float-right gap-2 mr-4">
+          <div className="font-bold">Bins:</div>
+          <input
+            className="rounded-md"
+            type="number"
+            value={numBins}
+            onChange={(e) => setNumBins(+e.target.value)}
+          />
+        </div>
+      )}
     </div>
   )
 }

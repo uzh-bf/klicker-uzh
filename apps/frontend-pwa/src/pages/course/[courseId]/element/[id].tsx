@@ -67,8 +67,8 @@ function LearningElement({ courseId, id }: Props) {
     variables: { id },
   })
 
-  const currentInstance = {
-    ...data?.learningElement?.instances?.[currentIx],
+  const currentInstance = data?.learningElement?.instances?.[currentIx] && {
+    ...data.learningElement.instances[currentIx],
     isBookmarked: bookmarks?.getBookmarkedQuestions?.find(
       (question) =>
         question.id === data?.learningElement?.instances?.[currentIx]?.id
@@ -348,6 +348,7 @@ function LearningElement({ courseId, id }: Props) {
                         options={questionData.options}
                         questionType={questionData.type}
                         evaluation={currentInstance.evaluation}
+                        reference={String(response)}
                       />
 
                       <div>
