@@ -37,9 +37,11 @@ export function NumberField({
       value={value}
       onChange={(e) => {
         if (allowDecimals) {
-          e.target.value.match(/^\d*\.?\d*$/) ? onChange(e.target.value) : null
+          e.target.value.match(/^[-]?\d*\.?\d*$/)
+            ? onChange(e.target.value)
+            : null
         } else {
-          onChange(e.target.value.replace(/[^0-9]/g, ''))
+          onChange(e.target.value.replace(/[-]?[^0-9]/g, ''))
         }
       }}
       placeholder={placeholder}
