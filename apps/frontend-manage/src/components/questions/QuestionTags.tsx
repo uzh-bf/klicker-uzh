@@ -1,4 +1,4 @@
-import { Tag } from '@klicker-uzh/prisma'
+import { Tag } from '@klicker-uzh/graphql/dist/ops'
 import { ThemeContext } from '@uzh-bf/design-system'
 import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'

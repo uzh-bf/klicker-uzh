@@ -12,8 +12,10 @@ import { useMutation } from '@apollo/client'
 import {
   DeleteQuestionDocument,
   GetUserQuestionsDocument,
+  Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
+import dayjs from 'dayjs'
 import QuestionEditModal from './QuestionEditModal'
 import QuestionTags from './QuestionTags'
 // import QuestionTags from './QuestionTags'
@@ -22,7 +24,7 @@ interface Props {
   checked: boolean
   id: number
   isArchived?: boolean
-  tags?: any[] // TODO: typing
+  tags?: Tag[]
   title: string
   type: string
   content: string
@@ -30,28 +32,24 @@ interface Props {
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
   tagfilter?: string[]
-}
-
-const defaultProps = {
-  checked: false,
-  isArchived: false,
-  lastUsed: [],
-  tags: [],
-  tagfilter: [],
+  createdAt?: string
+  updatedAt?: string
 }
 
 function Question({
-  checked,
+  checked = false,
   id,
-  tags,
+  tags = [],
   title,
   type,
   content,
   onCheck,
-  isArchived,
+  isArchived = false,
   hasAnswerFeedbacks,
   hasSampleSolution,
-  tagfilter,
+  tagfilter = [],
+  createdAt,
+  updatedAt,
 }: Props): React.ReactElement {
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
@@ -89,9 +87,9 @@ function Question({
         data-cy="question-block"
       >
         <div className="flex flex-row flex-1">
-          <div className="flex-1">
+          <div className="flex flex-col flex-1">
             {isArchived && <div>ARCHIVED // TODO styling</div>}
-            <div className="flex flex-row mb-2">
+            <div className="flex flex-row flex-none mb-2">
               <a
                 className="flex-1 text-xl font-bold cursor-pointer text-primary-strong hover:text-uzh-blue-100"
                 role="button"
@@ -111,6 +109,15 @@ function Question({
               >
                 {content}
               </Ellipsis>
+            </div>
+
+            <div className="flex flex-row flex-none gap-8 text-sm text-slate-600">
+              <div>
+                Erstellt am {dayjs(createdAt).format('DD.MM.YYYY HH:mm')}
+              </div>
+              <div>
+                Editiert am {dayjs(updatedAt).format('DD.MM.YYYY HH:mm')}
+              </div>
             </div>
           </div>
           <div className="hidden mr-6 w-max md:block">
@@ -202,7 +209,7 @@ function Question({
                     <div>{content}</div>
                   </div>
                   <div className="mt-6 mb-2 text-sm italic">
-                    Gelöschte Fragen können nicht wieder hergestellt werden. Aus
+                    Gelöschte Fragen können nicht wiederhergestellt werden. Aus
                     bestehenden Sessionen werden gelöschte Fragen nicht
                     entfernt.
                   </div>
@@ -215,7 +222,5 @@ function Question({
     </div>
   )
 }
-
-Question.defaultProps = defaultProps
 
 export default Question
