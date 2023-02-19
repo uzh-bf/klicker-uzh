@@ -114,7 +114,6 @@ function Question({
         </div>
 
         <div className="flex flex-col md:flex-row md:justify-between">
-          <div></div>
           <div className="flex flex-col gap-2">
             <div className="w-36">
               <Button
