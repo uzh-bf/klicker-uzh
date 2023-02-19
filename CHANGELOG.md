@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.55...v3.0.0-alpha.56) (2023-02-19)
+
+
+### Bug Fixes
+
+* **packages/markdown:** use next/image.js ([37f4b5e](https://github.com/uzh-bf/klicker-uzh/commit/37f4b5ee414ee3cf0b15a71b926f3dc66c3786de))
+
 ## [3.0.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.54...v3.0.0-alpha.55) (2023-02-19)
 
 
