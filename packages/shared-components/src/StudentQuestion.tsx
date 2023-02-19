@@ -20,11 +20,11 @@ import { SCAnswerOptions } from './questions/SCAnswerOptions'
 import SessionProgress from './questions/SessionProgress'
 
 const messages = {
-  [QuestionType.Sc]: <p>Bitte eine einzige Option auswählen:</p>,
-  [QuestionType.Mc]: <p>Bitte eine oder mehrere Optionen auswählen:</p>,
-  [QuestionType.Kprim]: <p>Beurteile die Aussagen auf ihre Richtigkeit:</p>,
-  [QuestionType.FreeText]: <p>Bitte eine Antwort eingeben:</p>,
-  [QuestionType.Numerical]: <p>Bitte eine Zahl eingeben:</p>,
+  [QuestionType.Sc]: 'Bitte eine einzige Option auswählen',
+  [QuestionType.Mc]: 'Bitte eine oder mehrere Optionen auswählen',
+  [QuestionType.Kprim]: 'Beurteile die Aussagen auf ihre Richtigkeit',
+  [QuestionType.FreeText]: 'Bitte eine Antwort eingeben',
+  [QuestionType.Numerical]: 'Bitte eine Zahl eingeben',
 }
 
 export interface StudentQuestionProps {
@@ -208,7 +208,11 @@ export const StudentQuestion = ({
       )}
 
       <div className="flex-1 mt-4">
-        <div className="mb-2 font-bold">{messages[currentQuestion.type]}</div>
+        <div className="mb-2">
+          <span className="font-bold">{messages[currentQuestion.type]}</span>{' '}
+          {currentQuestion.options?.accuracy &&
+            `(gerundet auf ${currentQuestion.options.accuracy} Nachkommastellen)`}
+        </div>
 
         {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) && (
           <SCAnswerOptions
