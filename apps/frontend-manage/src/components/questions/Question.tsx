@@ -82,7 +82,7 @@ function Question({
       </div>
       <div
         className={twMerge(
-          'flex flex-row w-full p-3 bg-grey-20 border border-solid rounded-lg cursor-[grab] hover:shadow-md',
+          'flex flex-row w-full p-3 border border-solid rounded-lg cursor-[grab] hover:shadow-md',
           collectedProps.isDragging && 'opacity-50'
         )}
         ref={drag}
@@ -105,7 +105,7 @@ function Question({
             </div>
 
             <div className="flex-1">
-              <Ellipsis maxLines={1}>{content}</Ellipsis>
+              <Ellipsis maxLines={3}>{content}</Ellipsis>
             </div>
           </div>
           <div className="hidden mr-6 w-max md:block">
