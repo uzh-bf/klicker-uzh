@@ -1,4 +1,5 @@
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import { Ellipsis } from '@klicker-uzh/markdown'
 import { Select } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import {
@@ -7,7 +8,6 @@ import {
   STATISTICS_ORDER,
 } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
-import Ellipsis from '../../../components/common/Ellipsis'
 import Statistic from '../../../components/evaluation/Statistic'
 import EvaluationCollapsible from '../../../components/sessions/evaluation/EvaluationCollapsible'
 import Chart from '../../evaluation/Chart'

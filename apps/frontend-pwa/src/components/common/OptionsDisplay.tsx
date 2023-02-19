@@ -5,7 +5,7 @@ import {
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import {Markdown} from '@klicker-uzh/markdown'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { indexBy } from 'ramda'
 import { useContext, useMemo } from 'react'

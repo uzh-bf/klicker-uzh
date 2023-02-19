@@ -4,7 +4,7 @@ import {
   StartGroupActivityDocument,
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { QuestionType } from '@type/app'
 import { Button, H1, ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'

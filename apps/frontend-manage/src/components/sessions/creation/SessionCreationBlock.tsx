@@ -8,6 +8,7 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Ellipsis } from '@klicker-uzh/markdown'
 import {
   Button,
   FormikNumberField,
@@ -18,7 +19,6 @@ import { move as RamdaMove } from 'ramda'
 import { useContext, useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
-import Ellipsis from '../../common/Ellipsis'
 
 interface SessionCreationBlockProps {
   index: number

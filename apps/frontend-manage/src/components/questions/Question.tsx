@@ -13,7 +13,7 @@ import {
   DeleteQuestionDocument,
   GetUserQuestionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Ellipsis from '../common/Ellipsis'
+import { Ellipsis } from '@klicker-uzh/markdown'
 import QuestionEditModal from './QuestionEditModal'
 import QuestionTags from './QuestionTags'
 // import QuestionTags from './QuestionTags'

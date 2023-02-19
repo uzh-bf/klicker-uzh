@@ -6,9 +6,15 @@ import { GetServerSideProps } from 'next'
 import dynamic from 'next/dynamic'
 import DocsLayout from '../../../../components/docs/DocsLayout'
 
-const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
-  ssr: false,
-})
+const DynamicMarkdown = dynamic(
+  async () => {
+    const { Markdown } = await import('@klicker-uzh/markdown')
+    return Markdown
+  },
+  {
+    ssr: false,
+  }
+)
 
 function Landing() {
   return (

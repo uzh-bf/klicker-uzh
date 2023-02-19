@@ -1,7 +1,7 @@
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Prose, ThemeContext } from '@uzh-bf/design-system'
 import { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

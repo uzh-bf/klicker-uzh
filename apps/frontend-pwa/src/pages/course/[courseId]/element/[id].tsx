@@ -44,9 +44,15 @@ interface Props {
   id: string
 }
 
-const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
-  ssr: false,
-})
+const DynamicMarkdown = dynamic(
+  async () => {
+    const { Markdown } = await import('@klicker-uzh/markdown')
+    return Markdown
+  },
+  {
+    ssr: false,
+  }
+)
 
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)

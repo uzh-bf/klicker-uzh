@@ -4,7 +4,7 @@ import {
   QuestionType,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import formatResponse from '@lib/formatResponse'
 import { H3, Progress } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'

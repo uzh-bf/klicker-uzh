@@ -22,9 +22,15 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
 
-const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
+const DynamicMarkdown = dynamic(
+  async () => {
+    const { Markdown } = await import('@klicker-uzh/markdown')
+    return Markdown
+  },
+  {
   ssr: false,
-})
+  }
+)
 
 function CourseOverview({ courseId }: any) {
   const [selectedTab, setSelectedTab] = useState('global')

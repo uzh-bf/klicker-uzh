@@ -5,7 +5,7 @@ import {
   InstanceResult,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { Table } from '@uzh-bf/design-system'
 import React, { useMemo } from 'react'
 import { QUESTION_GROUPS } from 'shared-components/src/constants'

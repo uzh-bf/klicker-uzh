@@ -7,9 +7,15 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import Layout from '../../../components/Layout'
 
-const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
-  ssr: false,
-})
+const DynamicMarkdown = dynamic(
+  async () => {
+    const { Markdown } = await import('@klicker-uzh/markdown')
+    return Markdown
+  },
+  {
+    ssr: false,
+  }
+)
 
 interface Props {
   id: string

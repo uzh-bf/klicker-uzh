@@ -7,7 +7,7 @@ import {
   ChangeCourseDatesDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { Button, H1, H2, H3, ThemeContext, Toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
