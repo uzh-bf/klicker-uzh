@@ -11,9 +11,15 @@ interface Props {
   questionType: string
   options: any
   evaluation: InstanceEvaluation
+  reference?: string
 }
 
-function EvaluationDisplay({ options, questionType, evaluation }: Props) {
+function EvaluationDisplay({
+  options,
+  questionType,
+  evaluation,
+  reference,
+}: Props) {
   switch (questionType) {
     case QuestionType.SC: {
       const sum = Object.values(
@@ -112,8 +118,9 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
               questionData: { options } as NumericalQuestionData,
             }}
             showSolution={{ general: true }}
-            textSize={'md'}
+            textSize="md"
             className={{ root: 'h-40' }}
+            reference={reference ? parseFloat(reference) : undefined}
             hideBins
             basic
           />

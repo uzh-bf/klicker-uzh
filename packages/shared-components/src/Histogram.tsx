@@ -31,6 +31,7 @@ interface HistogramProps {
     sd?: boolean
   }
   textSize: string
+  reference?: number
   hideBins?: boolean
   basic?: boolean
   className?: {
@@ -58,6 +59,7 @@ function Histogram({
   textSize,
   hideBins,
   basic,
+  reference,
   className,
 }: HistogramProps): React.ReactElement {
   const theme = useContext(ThemeContext)
@@ -161,6 +163,15 @@ function Histogram({
             }}
           />
           <Bar dataKey="count" fill="rgb(19, 149, 186)" />
+          {reference && (
+            <ReferenceLine
+              isFront
+              className={textSize}
+              key="reference"
+              stroke="red"
+              x={reference}
+            />
+          )}
           {data.statistics && showSolution.mean && (
             <ReferenceLine
               isFront

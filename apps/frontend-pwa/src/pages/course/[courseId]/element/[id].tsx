@@ -348,6 +348,7 @@ function LearningElement({ courseId, id }: Props) {
                         options={questionData.options}
                         questionType={questionData.type}
                         evaluation={currentInstance.evaluation}
+                        reference={String(response)}
                       />
 
                       <div>
