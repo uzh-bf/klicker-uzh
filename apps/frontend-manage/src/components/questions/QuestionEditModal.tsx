@@ -157,6 +157,9 @@ const questionManipulationSchema = Yup.object().shape({
           )
 
           return schema.shape({
+            accuracy: Yup.number().nullable().min(0),
+            unit: Yup.string().nullable(),
+
             restrictions: Yup.object().shape({
               min: Yup.number().nullable(),
               // TODO: less than if max defined
@@ -204,6 +207,12 @@ function QuestionEditModal({
 }: QuestionEditModalProps): React.ReactElement {
   const theme = useContext(ThemeContext)
 
+  const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
+    inputValue: '',
+    inputValid: false,
+    inputEmpty: true,
+  })
+
   const {
     loading: loadingQuestion,
     error: errorQuestion,
@@ -244,8 +253,8 @@ function QuestionEditModal({
         type: questionType,
         displayMode: QuestionDisplayMode.List,
         name: '',
-        content: '<br>',
-        explanation: '<br>',
+        content: '',
+        explanation: '',
         tags: [],
         attachments: null,
         hasSampleSolution: false,
@@ -259,9 +268,7 @@ function QuestionEditModal({
           return {
             ...common,
             options: {
-              choices: [
-                { ix: 0, value: '<br>', correct: false, feedback: '<br>' },
-              ],
+              choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
             },
           }
 
@@ -269,6 +276,8 @@ function QuestionEditModal({
           return {
             ...common,
             options: {
+              accuracy: 0,
+              unit: '',
               restrictions: { min: undefined, max: undefined },
               solutionRanges: [{ min: undefined, max: undefined }],
             },
@@ -278,6 +287,7 @@ function QuestionEditModal({
           return {
             ...common,
             options: {
+              placeholder: '',
               restrictions: { maxLength: undefined },
               solutions: [],
             },
@@ -358,6 +368,8 @@ function QuestionEditModal({
               variables: {
                 ...common,
                 options: {
+                  unit: values.options?.unit,
+                  accuracy: values.options?.accuracy,
                   restrictions: {
                     min:
                       !values.options?.restrictions ||
@@ -392,6 +404,7 @@ function QuestionEditModal({
               variables: {
                 ...common,
                 options: {
+                  placeholder: values.options?.placeholder,
                   restrictions: {
                     maxLength: values.options?.restrictions?.maxLength,
                   },
@@ -663,7 +676,7 @@ function QuestionEditModal({
                     {QUESTION_GROUPS.FREE.includes(questionType) && (
                       <div className="flex-1">
                         <Label
-                          label="Einschränkungen"
+                          label="Optionen"
                           className={{
                             root: 'my-auto mr-2 text-lg font-bold',
                             tooltip: 'text-base font-normal',
@@ -934,12 +947,42 @@ function QuestionEditModal({
                             data-cy="set-numerical-maximum"
                           />
                         </div>
+                        <div className="flex flex-row items-center gap-2">
+                          <div className="font-bold">Einheit: </div>
+                          <FastField
+                            name="options.unit"
+                            type="text"
+                            className={twMerge(
+                              'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                              theme.primaryBorderFocus
+                            )}
+                            placeholder="CHF"
+                            data-cy="set-numerical-unit"
+                          />
+                          <div className="font-bold">Präzision: </div>
+                          <FastField
+                            name="options.accuracy"
+                            type="number"
+                            className={twMerge(
+                              'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
+                              theme.primaryBorderFocus
+                            )}
+                            placeholder="Präzision"
+                            data-cy="set-numerical-accuracy"
+                          />
+                        </div>
                       </div>
                       {values.hasSampleSolution && (
                         <div className="mt-3">
-                          <div className="mb-1 mr-2 font-bold">
-                            Lösungsbereiche:
-                          </div>
+                          <Label
+                            label="Lösungsbereiche"
+                            className={{
+                              root: 'my-auto mr-2 text-lg font-bold',
+                              tooltip: 'text-base font-normal',
+                            }}
+                            tooltip="// TODO Tooltip Content"
+                            showTooltipSymbol={true}
+                          />
                           <FieldArray name="options.solutionRanges">
                             {({ push, remove }: FieldArrayRenderProps) => (
                               <div className="flex flex-col gap-1 w-max">
@@ -1098,6 +1141,8 @@ function QuestionEditModal({
                       // options: dataQuestion?.question?.questionData.options,
                       options: {
                         choices: values.options?.choices,
+                        accuracy: values.options?.accuracy,
+                        unit: values.options?.unit,
                         restrictions: {
                           min: values.options?.restrictions?.min,
                           max: values.options?.restrictions?.max,
@@ -1105,10 +1150,10 @@ function QuestionEditModal({
                         },
                       },
                     }}
-                    // inputValue={inputValue}
-                    // inputValid={inputValid}
-                    // inputEmpty={inputEmpty}
-                    setInputState={() => null}
+                    inputValue={inputValue}
+                    inputValid={inputValid}
+                    inputEmpty={inputEmpty}
+                    setInputState={setInputState}
                   />
                 </div>
               </div>

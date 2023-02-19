@@ -3,7 +3,7 @@ import {
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
-import {Markdown} from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { without } from 'ramda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -234,6 +234,8 @@ export const StudentQuestion = ({
             valid={inputValid || inputEmpty}
             value={inputValue as string}
             onChange={onNumericalValueChange}
+            unit={currentQuestion.options?.unit}
+            accuracy={currentQuestion.options?.accuracy}
           />
         )}
       </div>
