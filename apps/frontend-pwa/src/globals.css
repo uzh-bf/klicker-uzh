@@ -1,10 +1,20 @@
 @import 'tailwindcss/src/css/preflight.css';
 @import '@uzh-bf/design-system/dist/index.esm.css';
-@import '@klicker-uzh/markdown/dist/tailwind.css';
-@import 'shared-components/src/tailwind.css';
-
-@tailwind base;
 
 @tailwind components;
 
+@layer components {
+  @import '@klicker-uzh/markdown/dist/components.css';
+  @import 'shared-components/dist/components.css';
+}
+
 @tailwind utilities;
+
+@layer utilities {
+  @import '@klicker-uzh/markdown/dist/utilities.css';
+  @import 'shared-components/dist/utilities.css';
+}
+
+/* html {
+  font-size: 17px;
+} */
