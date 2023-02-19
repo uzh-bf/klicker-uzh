@@ -37,7 +37,7 @@ function Ellipsis({
   if (maxLines) {
     return (
       <Tooltip
-        delay={3000}
+        delay={1000}
         tooltip={
           <Prose
             className={{
@@ -149,7 +149,7 @@ function Ellipsis({
         shortenedParsedContent
       ) : (
         <Tooltip
-          delay={3000}
+          delay={1000}
           tooltip={
             <Markdown
               withModal={false}

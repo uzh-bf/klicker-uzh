@@ -112,7 +112,8 @@ function QuestionEvaluation({
 
                       <div className="w-[calc(100%-3rem)] line-clamp-3">
                         <Ellipsis
-                          maxLines={3}
+                          // maxLines={3}
+                          maxLength={60}
                           className={{
                             tooltip:
                               'z-20 float-right !text-white min-w-[25rem]',
