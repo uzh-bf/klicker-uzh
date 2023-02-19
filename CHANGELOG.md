@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.54...v3.0.0-alpha.55) (2023-02-19)
+
+
+### Features
+
+* add support for NR questions in learning elements ([#3361](https://github.com/uzh-bf/klicker-uzh/issues/3361)) ([8bd4496](https://github.com/uzh-bf/klicker-uzh/commit/8bd44965b72cd87ce0480b3e55c1c3a653e65079))
+* image embedding, grid layout, editing preview, numerical questions in learning elements, and many more ([#3362](https://github.com/uzh-bf/klicker-uzh/issues/3362)) ([3b4b8ac](https://github.com/uzh-bf/klicker-uzh/commit/3b4b8ac3a94dc2f6a42a2e62c359197df5bb4db3))
+
 ## [3.0.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.53...v3.0.0-alpha.54) (2023-02-18)
 
 
