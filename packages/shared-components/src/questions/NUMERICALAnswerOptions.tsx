@@ -54,7 +54,7 @@ export function NUMERICALAnswerOptions({
             input: twMerge(
               theme.primaryBorderFocus,
               unit && '!rounded-r-none',
-              !valid && 'border-red-600'
+              !valid && value !== '' && 'border-red-600'
             ),
           }}
         />
@@ -64,7 +64,7 @@ export function NUMERICALAnswerOptions({
           </div>
         )}
       </div>
-      {!valid && (
+      {!valid && value !== '' && (
         <div className="text-black">
           <FontAwesomeIcon
             icon={faTriangleExclamation}
