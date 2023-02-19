@@ -56,7 +56,7 @@ const questionManipulationSchema = Yup.object().shape({
       message: 'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu',
       test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
     }),
-  explanation: Yup.string(),
+  explanation: Yup.string().nullable(true),
   hasSampleSolution: Yup.boolean(),
   hasAnswerFeedbacks: Yup.boolean(),
 
@@ -303,6 +303,7 @@ function QuestionEditModal({
     return dataQuestion?.question?.questionData
       ? {
           ...dataQuestion.question,
+          explanation: dataQuestion.question.explanation ?? '',
           displayMode:
             dataQuestion.question.displayMode ?? QuestionDisplayMode.List,
           tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
