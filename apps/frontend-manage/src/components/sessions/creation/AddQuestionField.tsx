@@ -26,7 +26,7 @@ function AddQuestionField({ push }: AddQuestionFieldProps) {
         push({
           id: item.id,
           title: item.title,
-          type: item.type,
+          type: item.questionType,
           hasAnswerFeedbacks: item.hasAnswerFeedbacks,
           hasSampleSolution: item.hasSampleSolution,
         })
