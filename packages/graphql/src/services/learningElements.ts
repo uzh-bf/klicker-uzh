@@ -189,7 +189,7 @@ export async function respondToQuestionInstance(
         if (Object.keys(results).includes(value)) {
           updatedResults = {
             ...results,
-            [value]: results[value] + 1,
+            [value]: (results as NumericalQuestionResults)[value] + 1,
           }
         } else {
           updatedResults = { ...results, [value]: 1 }
