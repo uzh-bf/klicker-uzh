@@ -70,13 +70,12 @@ function QuestionEvaluation({
         </div>
         <div
           className={twMerge(
-            'flex-none flex flex-col gap-2 order-1 w-full h-full px-4 py-2 border-l md:w-64 md:order-2',
+            'flex-none flex flex-col gap-2 order-1 px-4 py-2 border-l md:w-64 md:order-2',
             textSize.text
           )}
         >
-          <div className="font-bold">Diagramm Typ:</div>
           <Select
-            className={{ root: '-mt-1 mb-1' }}
+            className={{ root: 'w-full mt-2', trigger: 'border-slate-400' }}
             items={ACTIVE_CHART_TYPES[currentInstance.questionData.type]}
             value={chartType}
             onChange={(newValue: string) => setChartType(newValue)}
@@ -85,7 +84,7 @@ function QuestionEvaluation({
           {(currentInstance.questionData.type === 'SC' ||
             currentInstance.questionData.type === 'MC' ||
             currentInstance.questionData.type === 'KPRIM') && (
-            <div className="flex flex-col flex-1 min-h-0 gap-2">
+            <div className="flex flex-col flex-1 min-h-0 gap-2 mt-2">
               <div className="flex-none font-bold">Antwortmöglichkeiten</div>
               <div className="flex-1 overflow-y-auto">
                 {currentInstance.questionData.options.choices.map(
