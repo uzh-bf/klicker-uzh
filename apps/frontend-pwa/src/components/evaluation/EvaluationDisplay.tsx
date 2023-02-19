@@ -4,8 +4,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
+import Histogram from 'shared-components/src/Histogram'
 import { twMerge } from 'tailwind-merge'
-import Histogram from '../../../../frontend-manage/src/components/evaluation/Histogram'
 
 interface Props {
   questionType: string
@@ -68,7 +68,7 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
           <div className="font-bold">So haben andere geantwortet</div>
           {Object.entries(evaluation.choices as Record<string, number>).map(
             ([ix, value]) => (
-              <div key={ix}>
+              <div key={value}>
                 <Progress
                   isMaxVisible={false}
                   className={{
