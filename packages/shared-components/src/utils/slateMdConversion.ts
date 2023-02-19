@@ -64,10 +64,12 @@ export const convertToMd = (slateObj) => {
 }
 
 export const convertToSlate = (mdObj) => {
+  const trimmedMdObj = mdObj.trim() === '' ? '<br>' : mdObj
+
   const result = unified()
     .use(markdown)
     .use(slate)
-    .processSync(mdObj.replace(/\\/g, '\\\\')).result as any
+    .processSync(trimmedMdObj.replace(/\\/g, '\\\\')).result as any
 
   return result.map((line: any) => {
     if (line.type === 'paragraph') {
