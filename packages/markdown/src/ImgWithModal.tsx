@@ -1,10 +1,11 @@
 import { faExpand } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Modal } from '@uzh-bf/design-system'
-import Image from 'next/image'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+// IMPORTANT: keep the import with .js, otherwise docker build will fail to resolve the module
+import Image from 'next/image.js'
 export interface ImgWithModalProps {
   src: string
   alt?: string
