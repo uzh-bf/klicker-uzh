@@ -105,7 +105,12 @@ function Question({
             </div>
 
             <div className="flex-1">
-              <Ellipsis maxLines={3}>{content}</Ellipsis>
+              <Ellipsis
+                // maxLines={3}
+                maxLength={120}
+              >
+                {content}
+              </Ellipsis>
             </div>
           </div>
           <div className="hidden mr-6 w-max md:block">
