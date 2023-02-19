@@ -161,9 +161,11 @@ export async function respondToQuestionInstance(
 
     if (!questionData) return null
 
-    const updatedResults: {
-      choices?: Record<string, number>
-    } = {}
+    let updatedResults:
+      | {
+          choices?: Record<string, number>
+        }
+      | Record<string, number> = {}
 
     switch (questionData.type) {
       case QuestionType.SC:
@@ -176,12 +178,22 @@ export async function respondToQuestionInstance(
           }),
           results.choices as Record<string, number>
         )
-
-        break
       }
 
       case QuestionType.NUMERICAL: {
-        break
+        if (!response.value) {
+          break
+        }
+        const value = String(parseFloat(response.value))
+
+        if (Object.keys(results).includes(value)) {
+          updatedResults = {
+            ...results,
+            [value]: results[value] + 1,
+          }
+        } else {
+          updatedResults = { ...results, [value]: 1 }
+        }
       }
 
       case QuestionType.FREE_TEXT: {
