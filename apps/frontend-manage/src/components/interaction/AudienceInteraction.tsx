@@ -233,7 +233,7 @@ function AudienceInteraction({
           )}
         </div>
         <div className="flex flex-col md:w-[250px] flex-auto gap-4 md:flex-row md:flex-wrap">
-          <div className="flex flex-row flex-wrap items-end justify-between w-full gap-2">
+          <div className="flex flex-row flex-wrap items-end justify-between flex-none w-full gap-2">
             <div className="text-2xl font-bold">Feedback</div>
             <Switch
               checked={isConfusionFeedbackEnabled}

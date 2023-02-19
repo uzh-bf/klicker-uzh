@@ -326,7 +326,7 @@ export type LeaderboardEntry = {
   __typename?: 'LeaderboardEntry';
   avatar?: Maybe<Scalars['String']>;
   id: Scalars['Int'];
-  isSelf: Scalars['Boolean'];
+  isSelf?: Maybe<Scalars['Boolean']>;
   lastBlockOrder: Scalars['Int'];
   participant?: Maybe<Participant>;
   participantId: Scalars['String'];
@@ -1827,7 +1827,7 @@ export type GetCourseOverviewDataQueryVariables = Exact<{
 }>;
 
 
-export type GetCourseOverviewDataQuery = { __typename?: 'Query', getCourseOverviewData?: { __typename?: 'ParticipantLearningData', id: string, participant?: { __typename?: 'Participant', id: string, avatar?: string | null, username: string } | null, participation?: { __typename?: 'Participation', id: number, isActive: boolean } | null, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null, description?: string | null, awards?: Array<{ __typename?: 'AwardEntry', id: number, order: number, type: string, displayName: string, description: string, participant?: { __typename?: 'Participant', id: string, username: string, avatar?: string | null } | null, participantGroup?: { __typename?: 'ParticipantGroup', id: string, name: string } | null }> | null } | null, leaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, participantId: string, username: string, avatar?: string | null, score: number, isSelf: boolean, rank: number }> | null, leaderboardStatistics?: { __typename?: 'LeaderboardStatistics', participantCount: number, averageScore: number } | null, groupLeaderboard?: Array<{ __typename?: 'GroupLeaderboardEntry', id: string, name: string, score: number }> | null, groupLeaderboardStatistics?: { __typename?: 'LeaderboardStatistics', participantCount: number, averageScore: number } | null } | null, participantGroups?: Array<{ __typename?: 'ParticipantGroup', id: string, name: string, code: number, averageMemberScore: number, groupActivityScore: number, score?: number | null, participants: Array<{ __typename?: 'Participant', id: string, username: string, avatar?: string | null, score?: number | null, isSelf?: boolean | null }> }> | null };
+export type GetCourseOverviewDataQuery = { __typename?: 'Query', getCourseOverviewData?: { __typename?: 'ParticipantLearningData', id: string, participant?: { __typename?: 'Participant', id: string, avatar?: string | null, username: string } | null, participation?: { __typename?: 'Participation', id: number, isActive: boolean } | null, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null, description?: string | null, awards?: Array<{ __typename?: 'AwardEntry', id: number, order: number, type: string, displayName: string, description: string, participant?: { __typename?: 'Participant', id: string, username: string, avatar?: string | null } | null, participantGroup?: { __typename?: 'ParticipantGroup', id: string, name: string } | null }> | null } | null, leaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, participantId: string, username: string, avatar?: string | null, score: number, isSelf?: boolean | null, rank: number }> | null, leaderboardStatistics?: { __typename?: 'LeaderboardStatistics', participantCount: number, averageScore: number } | null, groupLeaderboard?: Array<{ __typename?: 'GroupLeaderboardEntry', id: string, name: string, score: number }> | null, groupLeaderboardStatistics?: { __typename?: 'LeaderboardStatistics', participantCount: number, averageScore: number } | null } | null, participantGroups?: Array<{ __typename?: 'ParticipantGroup', id: string, name: string, code: number, averageMemberScore: number, groupActivityScore: number, score?: number | null, participants: Array<{ __typename?: 'Participant', id: string, username: string, avatar?: string | null, score?: number | null, isSelf?: boolean | null }> }> | null };
 
 export type GetFeedbacksQueryVariables = Exact<{
   sessionId: Scalars['String'];
@@ -1905,7 +1905,7 @@ export type GetSessionLeaderboardQueryVariables = Exact<{
 }>;
 
 
-export type GetSessionLeaderboardQuery = { __typename?: 'Query', sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, participantId: string, rank: number, username: string, avatar?: string | null, score: number, isSelf: boolean, lastBlockOrder: number }> | null };
+export type GetSessionLeaderboardQuery = { __typename?: 'Query', sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, participantId: string, rank: number, username: string, avatar?: string | null, score: number, isSelf?: boolean | null, lastBlockOrder: number }> | null };
 
 export type GetSingleCourseQueryVariables = Exact<{
   courseId: Scalars['String'];

@@ -288,7 +288,7 @@ scalar Json
 type LeaderboardEntry {
   avatar: String
   id: Int!
-  isSelf: Boolean!
+  isSelf: Boolean
   lastBlockOrder: Int!
   participant: Participant
   participantId: String!
