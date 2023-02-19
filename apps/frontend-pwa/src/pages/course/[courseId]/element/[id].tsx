@@ -313,6 +313,7 @@ function LearningElement({ courseId, id }: Props) {
                       <DynamicMarkdown content={questionData.content} />
                     </div>
                     <OptionsDisplay
+                      key={currentInstance.id}
                       isEvaluation={isEvaluation}
                       evaluation={currentInstance.evaluation}
                       response={response}

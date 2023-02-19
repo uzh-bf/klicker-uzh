@@ -43,15 +43,17 @@ function QuestionEvaluation({
   })
 
   return (
-    <div className={className}>
-      <EvaluationCollapsible
-        currentInstance={currentInstance}
-        selectedInstance={selectedInstance}
-        proseSize={textSize.prose}
-      />
+    <div className={twMerge('h-full flex flex-col', className)}>
+      <div className="flex-none">
+        <EvaluationCollapsible
+          currentInstance={currentInstance}
+          selectedInstance={selectedInstance}
+          proseSize={textSize.prose}
+        />
+      </div>
 
-      <div className="flex flex-col flex-1 h-full md:flex-row">
-        <div className="z-10 flex-1 order-2 px-4 overflow-y-scroll md:order-1">
+      <div className="flex flex-col flex-1 min-h-0 md:flex-row">
+        <div className="flex-1 order-2 px-4 md:order-1">
           <Chart
             chartType={chartType}
             data={currentInstance}
@@ -66,21 +68,26 @@ function QuestionEvaluation({
             }}
           />
         </div>
-        <div className="order-1 w-full px-4 py-2 overflow-y-scroll border-l md:w-64 md:order-2">
-          <div className={twMerge('flex flex-col gap-2', textSize.text)}>
-            <div className="font-bold">Diagramm Typ:</div>
-            <Select
-              className={{ root: '-mt-1 mb-1' }}
-              items={ACTIVE_CHART_TYPES[currentInstance.questionData.type]}
-              value={chartType}
-              onChange={(newValue: string) => setChartType(newValue)}
-            />
+        <div
+          className={twMerge(
+            'flex-none flex flex-col gap-2 order-1 w-full h-full px-4 py-2 border-l md:w-64 md:order-2',
+            textSize.text
+          )}
+        >
+          <div className="font-bold">Diagramm Typ:</div>
+          <Select
+            className={{ root: '-mt-1 mb-1' }}
+            items={ACTIVE_CHART_TYPES[currentInstance.questionData.type]}
+            value={chartType}
+            onChange={(newValue: string) => setChartType(newValue)}
+          />
 
-            {(currentInstance.questionData.type === 'SC' ||
-              currentInstance.questionData.type === 'MC' ||
-              currentInstance.questionData.type === 'KPRIM') && (
-              <div className="flex flex-col gap-2">
-                <div className="font-bold">Antwortmöglichkeiten</div>
+          {(currentInstance.questionData.type === 'SC' ||
+            currentInstance.questionData.type === 'MC' ||
+            currentInstance.questionData.type === 'KPRIM') && (
+            <div className="flex flex-col flex-1 min-h-0 gap-2">
+              <div className="flex-none font-bold">Antwortmöglichkeiten</div>
+              <div className="flex-1 overflow-y-auto">
                 {currentInstance.questionData.options.choices.map(
                   (choice, innerIndex) => (
                     <div
@@ -120,82 +127,80 @@ function QuestionEvaluation({
                   )
                 )}
               </div>
-            )}
+            </div>
+          )}
 
-            {currentInstance.questionData.type === 'NUMERICAL' && (
+          {currentInstance.questionData.type === 'NUMERICAL' && (
+            <div>
+              <div className="font-bold">Erlaubter Antwortbereich:</div>
               <div>
-                <div className="font-bold">Erlaubter Antwortbereich:</div>
-                <div>
-                  [
-                  {currentInstance.questionData.options.restrictions?.min ??
-                    '-∞'}
-                  ,
-                  {currentInstance.questionData.options.restrictions?.max ??
-                    '+∞'}
-                  ]
-                </div>
-                <div className="mt-4 font-bold">Statistik:</div>
-                {Object.entries(currentInstance.statistics)
-                  .slice(1)
-                  .sort(
-                    (a, b) =>
-                      STATISTICS_ORDER.indexOf(a[0]) -
-                      STATISTICS_ORDER.indexOf(b[0])
-                  )
-                  .map((statistic) => {
-                    const statisticName = statistic[0]
-                    return (
-                      <Statistic
-                        key={statisticName}
-                        statisticName={statisticName}
-                        value={statistic[1]}
-                        hasCheckbox={
-                          !(statisticName === 'min' || statisticName === 'max')
-                        }
-                        chartType={chartType}
-                        checked={statisticStates[statisticName]}
-                        onCheck={() => {
-                          setStatisticStates({
-                            ...statisticStates,
-                            [statisticName]: !statisticStates[statisticName],
-                          })
-                        }}
-                        size={textSize.size}
-                      />
-                    )
-                  })}
-                {showSolution &&
-                  currentInstance.questionData.options.solutionRanges && (
-                    <div>
-                      <div className="mt-4 font-bold">
-                        Korrekte Lösungsbereiche:
-                      </div>
-                      {currentInstance.questionData.options.solutionRanges.map(
-                        (range, innerIndex) => (
-                          <div key={innerIndex}>
-                            [{range?.min || '-∞'},{range?.max || '+∞'}]
-                          </div>
-                        )
-                      )}
-                    </div>
-                  )}
+                [
+                {currentInstance.questionData.options.restrictions?.min ?? '-∞'}
+                ,
+                {currentInstance.questionData.options.restrictions?.max ?? '+∞'}
+                ]
               </div>
-            )}
-            {currentInstance.questionData.type === 'FREE_TEXT' &&
-              currentInstance.questionData.options.solutions &&
-              showSolution && (
-                <div>
-                  <div className="font-bold">Schlüsselwörter Lösung:</div>
-                  <ul>
-                    {currentInstance.questionData.options.solutions.map(
-                      (keyword, innerIndex) => (
-                        <li key={innerIndex}>{`- ${keyword}`}</li>
+              <div className="mt-4 font-bold">Statistik:</div>
+              {Object.entries(currentInstance.statistics)
+                .slice(1)
+                .sort(
+                  (a, b) =>
+                    STATISTICS_ORDER.indexOf(a[0]) -
+                    STATISTICS_ORDER.indexOf(b[0])
+                )
+                .map((statistic) => {
+                  const statisticName = statistic[0]
+                  return (
+                    <Statistic
+                      key={statisticName}
+                      statisticName={statisticName}
+                      value={statistic[1]}
+                      hasCheckbox={
+                        !(statisticName === 'min' || statisticName === 'max')
+                      }
+                      chartType={chartType}
+                      checked={statisticStates[statisticName]}
+                      onCheck={() => {
+                        setStatisticStates({
+                          ...statisticStates,
+                          [statisticName]: !statisticStates[statisticName],
+                        })
+                      }}
+                      size={textSize.size}
+                    />
+                  )
+                })}
+              {showSolution &&
+                currentInstance.questionData.options.solutionRanges && (
+                  <div>
+                    <div className="mt-4 font-bold">
+                      Korrekte Lösungsbereiche:
+                    </div>
+                    {currentInstance.questionData.options.solutionRanges.map(
+                      (range, innerIndex) => (
+                        <div key={innerIndex}>
+                          [{range?.min || '-∞'},{range?.max || '+∞'}]
+                        </div>
                       )
                     )}
-                  </ul>
-                </div>
-              )}
-          </div>
+                  </div>
+                )}
+            </div>
+          )}
+          {currentInstance.questionData.type === 'FREE_TEXT' &&
+            currentInstance.questionData.options.solutions &&
+            showSolution && (
+              <div>
+                <div className="font-bold">Schlüsselwörter Lösung:</div>
+                <ul>
+                  {currentInstance.questionData.options.solutions.map(
+                    (keyword, innerIndex) => (
+                      <li key={innerIndex}>{`- ${keyword}`}</li>
+                    )
+                  )}
+                </ul>
+              </div>
+            )}
         </div>
       </div>
     </div>

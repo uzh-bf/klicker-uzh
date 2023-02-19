@@ -99,6 +99,7 @@ function MicroSessionInstance() {
                 </div>
 
                 <OptionsDisplay
+                  key={currentInstance.id}
                   isEvaluation={isEvaluation}
                   evaluation={currentInstance.evaluation}
                   response={response}

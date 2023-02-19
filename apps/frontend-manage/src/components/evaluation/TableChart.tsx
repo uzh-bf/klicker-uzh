@@ -83,7 +83,7 @@ function TableChart({
       className={{
         root: 'pb-4',
         tableHeader: textSize,
-        body: textSize,
+        body: `${textSize}`,
       }}
     />
   )

@@ -208,6 +208,7 @@ function QuestionArea({
       ) : (
         <div className="flex flex-col w-full gap-2">
           <StudentQuestion
+            key={currentQuestion.instanceId}
             activeIndex={questions.length - remainingQuestions.length}
             numItems={questions.length}
             expiresAt={expiresAt}

@@ -39,12 +39,12 @@ function EvaluationCollapsible({
   }, [questionCollapsed, questionElem, selectedInstance])
 
   const computedClassName = twMerge(
-    questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
+    questionCollapsed ? 'md:max-h-[5rem]' : 'md:max-h-content',
     !showExtensibleButton && 'border-solid border-b-only border-primary',
     showExtensibleButton &&
       questionCollapsed &&
       'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
-    'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
+    'w-full md:overflow-y-hidden md:self-start p-4 text-left'
   )
 
   return (
