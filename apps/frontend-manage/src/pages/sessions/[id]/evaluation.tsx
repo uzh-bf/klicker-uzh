@@ -340,9 +340,6 @@ function Evaluation() {
 
       <style jsx global>{`
         #__app {
-           {
-            /* max-height: 100%; */
-          }
           display: flex;
           flex-direction: column;
         }

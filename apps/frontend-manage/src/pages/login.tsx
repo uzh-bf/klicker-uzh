@@ -21,7 +21,7 @@ function LoginForm() {
   const [loginUser] = useMutation(LoginUserDocument)
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-screen h-screen pb-20">
+    <div className="flex flex-col items-center h-full md:justify-center">
       <Formik
         initialValues={{ email: '', password: '' }}
         validationSchema={loginSchema}
@@ -34,71 +34,73 @@ function LoginForm() {
       >
         {({ errors, touched, isSubmitting }) => {
           return (
-            <div className="">
-              <div className="w-full mb-8 text-center sm:mb-12">
-                <Image
-                  src="/KlickerLogo.png"
-                  width={300}
-                  height={90}
-                  alt="KlickerUZH Logo"
-                  className="mx-auto"
-                  data-cy="login-logo"
-                />
-              </div>
-              <H1>Login</H1>
-              <div className="mb-10">
-                <Form className="w-72 sm:w-96">
-                  <RadixLabel.Root
-                    htmlFor="email"
-                    className="text-sm leading-7 text-gray-600"
-                  >
-                    E-Mail Adresse
-                  </RadixLabel.Root>
-                  <Field
-                    name="email"
-                    type="text"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                      theme.primaryBorderFocus,
-                      errors.email &&
-                        touched.email &&
-                        'border-red-400 bg-red-50'
-                    )}
-                    data-cy="email-field"
+            <div className="max-w-xl md:border md:rounded-lg md:shadow">
+              <div className="flex flex-col items-center p-12">
+                <div className="w-full mb-8 text-center sm:mb-12">
+                  <Image
+                    src="/KlickerLogo.png"
+                    width={300}
+                    height={90}
+                    alt="KlickerUZH Logo"
+                    className="mx-auto"
+                    data-cy="login-logo"
                   />
-                  <ErrorMessage
-                    name="email"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
+                </div>
+                <div className="">
+                  <H1>Login</H1>
 
-                  <RadixLabel.Root
-                    className="text-sm leading-7 text-gray-600"
-                    htmlFor="password"
-                  >
-                    Passwort
-                  </RadixLabel.Root>
-                  <Field
-                    name="password"
-                    type="password"
-                    className={twMerge(
-                      'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                      theme.primaryBorderFocus,
-                      errors.password &&
-                        touched.password &&
-                        'border-red-400 bg-red-50'
-                    )}
-                    data-cy="password-field"
-                  />
-                  <ErrorMessage
-                    name="password"
-                    component="div"
-                    className="text-sm text-red-400"
-                  />
+                  <Form className="w-72 sm:w-96">
+                    <RadixLabel.Root
+                      htmlFor="email"
+                      className="text-sm leading-7 text-gray-600"
+                    >
+                      E-Mail Adresse
+                    </RadixLabel.Root>
+                    <Field
+                      name="email"
+                      type="text"
+                      className={twMerge(
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                        theme.primaryBorderFocus,
+                        errors.email &&
+                          touched.email &&
+                          'border-red-400 bg-red-50'
+                      )}
+                      data-cy="email-field"
+                    />
+                    <ErrorMessage
+                      name="email"
+                      component="div"
+                      className="text-sm text-red-400"
+                    />
 
-                  <div className="flex flex-row justify-between">
-                    <div className="flex flex-col text-sm">
-                      {/* // TODO: Implement password reset and registration
+                    <RadixLabel.Root
+                      className="text-sm leading-7 text-gray-600"
+                      htmlFor="password"
+                    >
+                      Passwort
+                    </RadixLabel.Root>
+                    <Field
+                      name="password"
+                      type="password"
+                      className={twMerge(
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
+                        theme.primaryBorderFocus,
+                        errors.password &&
+                          touched.password &&
+                          'border-red-400 bg-red-50'
+                      )}
+                      data-cy="password-field"
+                    />
+                    <ErrorMessage
+                      name="password"
+                      component="div"
+                      className="text-sm text-red-400"
+                    />
+
+                    <div className="flex flex-row justify-between">
+                      <div className="flex flex-col text-sm">
+                        {/* // TODO: Implement password reset and registration
                       <Link href="/requestPassword">
                         <div className="">
                           Passwort vergessen?
@@ -109,23 +111,26 @@ function LoginForm() {
                           Neu registrieren
                         </div>
                       </Link> */}
+                      </div>
+                      <Button
+                        className={{ root: 'mt-2 border-uzh-grey-80' }}
+                        type="submit"
+                        disabled={isSubmitting}
+                        data={{ cy: 'submit-login' }}
+                      >
+                        <Button.Label>Anmelden</Button.Label>
+                      </Button>
                     </div>
-                    <Button
-                      className={{ root: 'mt-2 border-uzh-grey-80' }}
-                      type="submit"
-                      disabled={isSubmitting}
-                      data={{ cy: 'submit-login' }}
-                    >
-                      <Button.Label>Anmelden</Button.Label>
-                    </Button>
-                  </div>
-                </Form>
+                  </Form>
+                </div>
+              </div>
+              <div className="flex-none w-full">
+                <Footer />
               </div>
             </div>
           )
         }}
       </Formik>
-      <Footer />
     </div>
   )
 }
