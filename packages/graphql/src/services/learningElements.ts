@@ -1,6 +1,7 @@
 import {
   gradeQuestionKPRIM,
   gradeQuestionMC,
+  gradeQuestionNumerical,
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 import {
@@ -99,6 +100,23 @@ function evaluateQuestionResponse(
       }
     }
 
+    case QuestionType.NUMERICAL: {
+      const data = questionData as NumericalQuestionData
+      const solutionRanges = data.options.solutionRanges
+
+      const correct = gradeQuestionNumerical({
+        response: parseFloat(String(response.value)),
+        solutionRanges: solutionRanges ?? [],
+      })
+
+      // TODO: add feedbacks here once they are implemented for specified solution ranges
+      return {
+        feedbacks: [],
+        answers: results ?? [],
+        score: correct ? correct * 10 * (multiplier ?? 1) : 0,
+      }
+    }
+
     default:
       return null
   }
@@ -161,9 +179,11 @@ export async function respondToQuestionInstance(
 
     if (!questionData) return null
 
-    const updatedResults: {
-      choices?: Record<string, number>
-    } = {}
+    let updatedResults:
+      | {
+          choices?: Record<string, number>
+        }
+      | Record<string, number> = {}
 
     switch (questionData.type) {
       case QuestionType.SC:
@@ -176,12 +196,22 @@ export async function respondToQuestionInstance(
           }),
           results.choices as Record<string, number>
         )
-
-        break
       }
 
       case QuestionType.NUMERICAL: {
-        break
+        if (!response.value) {
+          break
+        }
+        const value = String(parseFloat(response.value))
+
+        if (Object.keys(results).includes(value)) {
+          updatedResults = {
+            ...results,
+            [value]: (results as NumericalQuestionResults)[value] + 1,
+          }
+        } else {
+          updatedResults = { ...results, [value]: 1 }
+        }
       }
 
       case QuestionType.FREE_TEXT: {

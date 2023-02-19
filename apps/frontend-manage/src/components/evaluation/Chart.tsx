@@ -1,8 +1,8 @@
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
+import Histogram from 'shared-components/src/Histogram'
 import { TextSizeType } from '../sessions/evaluation/constants'
 import BarChart from './BarChart'
-import Histogram from './Histogram'
 import TableChart from './TableChart'
 import Wordcloud from './Wordcloud'
 

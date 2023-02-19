@@ -1,4 +1,9 @@
-import { ChoicesQuestionData, FreeTextQuestionData, NumericalQuestionData, QuestionType } from "@klicker-uzh/graphql/dist/ops"
+import {
+  ChoicesQuestionData,
+  FreeTextQuestionData,
+  NumericalQuestionData,
+  QuestionType,
+} from '@klicker-uzh/graphql/dist/ops'
 
 export default function formatResponse(
   questionData:

@@ -12,6 +12,35 @@ import { useContext, useMemo } from 'react'
 import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
 import { twMerge } from 'tailwind-merge'
 
+function validateNumericalResponse({
+  response,
+  min,
+  max,
+}: {
+  response: string
+  min?: number
+  max?: number
+}) {
+  if (!response) return false
+
+  if (
+    typeof min !== 'undefined' &&
+    min !== null &&
+    parseFloat(response) < min
+  ) {
+    return false
+  }
+
+  if (
+    typeof max !== 'undefined' &&
+    max !== null &&
+    parseFloat(response) > max
+  ) {
+    return false
+  }
+
+  return true
+}
 interface ChoiceOptionsProps {
   disabled?: boolean
   choices: Choice[]
@@ -124,7 +153,7 @@ export function Options({
   displayMode,
 }: OptionsProps) {
   switch (questionType) {
-    case QuestionType.Sc:
+    case QuestionType.Sc: {
       return (
         <div>
           {withGuidance && (
@@ -145,8 +174,9 @@ export function Options({
           />
         </div>
       )
+    }
 
-    case QuestionType.Mc:
+    case QuestionType.Mc: {
       return (
         <div>
           {withGuidance && (
@@ -176,8 +206,9 @@ export function Options({
           />
         </div>
       )
+    }
 
-    case QuestionType.Kprim:
+    case QuestionType.Kprim: {
       return (
         <div>
           {withGuidance && (
@@ -272,8 +303,9 @@ export function Options({
           </div>
         </div>
       )
+    }
 
-    case QuestionType.Numerical:
+    case QuestionType.Numerical: {
       return (
         <div>
           {withGuidance && (
@@ -293,10 +325,15 @@ export function Options({
             max={options?.restrictions?.max}
             value={response}
             onChange={onChangeResponse}
-            valid={isResponseValid}
+            valid={validateNumericalResponse({
+              response,
+              min: options?.restrictions?.min,
+              max: options?.restrictions?.max,
+            })}
           />
         </div>
       )
+    }
 
     default:
       return (
@@ -360,7 +397,13 @@ function OptionsDisplay({
               response?.length === 0) ||
             (questionType === QuestionType.Kprim &&
               response &&
-              Object.keys(response).length !== options.choices.length)
+              Object.keys(response).length !== options.choices.length) ||
+            (questionType === QuestionType.Numerical &&
+              !validateNumericalResponse({
+                response,
+                min: options?.restrictions?.min,
+                max: options?.restrictions?.max,
+              }))
           }
           onClick={onSubmitResponse}
         >

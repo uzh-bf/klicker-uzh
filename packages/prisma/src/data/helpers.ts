@@ -242,9 +242,7 @@ export function prepareQuestionInstance({
     case Prisma.QuestionType.FREE_TEXT: {
       return {
         ...common,
-        results: {
-          answers: [],
-        },
+        results: {},
       }
     }
   }

@@ -232,7 +232,7 @@ export const StudentQuestion = ({
             min={currentQuestion.options?.restrictions?.min}
             max={currentQuestion.options?.restrictions?.max}
             valid={inputValid || inputEmpty}
-            value={inputValue}
+            value={inputValue as string}
             onChange={onNumericalValueChange}
           />
         )}
