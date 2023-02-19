@@ -942,6 +942,10 @@ html,
   display: grid;
 }
 
+.contents {
+  display: contents;
+}
+
 .hidden {
   display: none;
 }
@@ -1883,6 +1887,11 @@ html,
   color: rgb(234 179 8 / var(--tw-text-opacity));
 }
 
+.text-uzh-grey-100 {
+  --tw-text-opacity: 1;
+  color: rgb(163 173 183 / var(--tw-text-opacity));
+}
+
 .text-gray-500 {
   --tw-text-opacity: 1;
   color: rgb(107 114 128 / var(--tw-text-opacity));
@@ -1921,11 +1930,6 @@ html,
 .text-gray-800 {
   --tw-text-opacity: 1;
   color: rgb(31 41 55 / var(--tw-text-opacity));
-}
-
-.text-uzh-grey-100 {
-  --tw-text-opacity: 1;
-  color: rgb(163 173 183 / var(--tw-text-opacity));
 }
 
 .text-slate-700 {
