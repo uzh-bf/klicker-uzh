@@ -276,7 +276,12 @@ export function Options({
             max={options?.restrictions?.max}
             value={response}
             onChange={onChangeResponse}
-            valid={isResponseValid}
+            valid={
+              isResponseValid &&
+              ((parseFloat(response) >= options?.restrictions?.min &&
+                parseFloat(response) <= options?.restrictions?.max) ||
+                response === '')
+            }
           />
         </div>
       )
@@ -340,7 +345,11 @@ function OptionsDisplay({
               response?.length === 0) ||
             (questionType === QuestionType.Kprim &&
               response &&
-              Object.keys(response).length !== options.choices.length)
+              Object.keys(response).length !== options.choices.length) ||
+            (questionType === QuestionType.Numerical &&
+              response &&
+              (parseFloat(response) < options.restrictions.min ||
+                parseFloat(response) > options.restrictions.max))
           }
           onClick={onSubmitResponse}
         >
