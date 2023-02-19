@@ -36,19 +36,12 @@ export function NumberField({
       type="text"
       value={value}
       onChange={(e) => {
-        // original regex /^[-]?\d*\.?\d*$/ is replaced by the following
-        // dynamically generated regex, e.g., for accuracy = 2: /^[-]?\d*\.?\d{2}$/
-        const regex = new RegExp(
-          `^[-]?\\d*\\.?\\d${'{' + accuracy + '}' ?? '*'}$`
-        )
-        if (
-          typeof accuracy !== 'undefined' &&
-          accuracy > 0 &&
-          e.target.value.match(regex)
-        ) {
+        const regex = accuracy
+          ? new RegExp(`^[-]?\\d*\\.?\\d{0,${accuracy}}$`)
+          : /^[-]?\d*\.?\d*$/
+
+        if (e.target.value.match(regex) !== null) {
           onChange(e.target.value)
-        } else {
-          onChange(e.target.value.replace(/[-]?[^0-9]/g, ''))
         }
       }}
       placeholder={placeholder}
