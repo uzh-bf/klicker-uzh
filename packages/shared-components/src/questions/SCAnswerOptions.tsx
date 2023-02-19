@@ -1,5 +1,5 @@
 import { QuestionDisplayMode } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
