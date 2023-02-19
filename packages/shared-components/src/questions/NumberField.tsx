@@ -36,7 +36,8 @@ export function NumberField({
       type="text"
       value={value}
       onChange={(e) => {
-        // generates the following regex for accuracy = 2: /^[-]?\d*\.?\d{2}$/
+        // original regex /^[-]?\d*\.?\d*$/ is replaced by the following
+        // dynamically generated regex, e.g., for accuracy = 2: /^[-]?\d*\.?\d{2}$/
         const regex = new RegExp(
           `^[-]?\\d*\\.?\\d${'{' + accuracy + '}' ?? '*'}$`
         )
