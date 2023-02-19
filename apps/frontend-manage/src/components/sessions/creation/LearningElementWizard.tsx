@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   CreateLearningElementDocument,
   LearningElementOrderType,
+  QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FormikNumberField,
@@ -61,6 +62,17 @@ const stepThreeValidationSchema = yup.object().shape({
       yup.object().shape({
         id: yup.string(),
         title: yup.string(),
+        type: yup
+          .string()
+          .oneOf(
+            [
+              QuestionType.Sc,
+              QuestionType.Mc,
+              QuestionType.Kprim,
+              QuestionType.Numerical,
+            ],
+            'Lernelemente können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.'
+          ),
         // hasAnswerFeedbacks: yup.boolean().when('type', {
         //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
         //   then: yup.boolean().isTrue(),

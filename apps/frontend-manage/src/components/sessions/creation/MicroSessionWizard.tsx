@@ -3,6 +3,7 @@ import {
   CreateMicroSessionDocument,
   EditMicroSessionDocument,
   MicroSession,
+  QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FormikDateField,
@@ -60,6 +61,17 @@ const stepThreeValidationSchema = yup.object().shape({
       yup.object().shape({
         id: yup.string(),
         title: yup.string(),
+        type: yup
+          .string()
+          .oneOf(
+            [
+              QuestionType.Sc,
+              QuestionType.Mc,
+              QuestionType.Kprim,
+              QuestionType.Numerical,
+            ],
+            'Micro-Sessions können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.'
+          ),
       })
     )
     .min(1),

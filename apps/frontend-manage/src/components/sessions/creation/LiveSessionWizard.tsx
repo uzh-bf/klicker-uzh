@@ -3,6 +3,7 @@ import {
   CreateSessionDocument,
   EditSessionDocument,
   GetUserSessionsDocument,
+  QuestionType,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -55,6 +56,21 @@ const stepThreeValidationSchema = yup.object().shape({
       yup.object().shape({
         ids: yup.array().of(yup.number()),
         titles: yup.array().of(yup.string()),
+        types: yup
+          .array()
+          .of(
+            yup
+              .string()
+              .oneOf(
+                [
+                  QuestionType.Sc,
+                  QuestionType.Mc,
+                  QuestionType.Numerical,
+                  QuestionType.FreeText,
+                ],
+                'Live-Sessions können nur Single-Choice, Multiple-Choice, Numerische und Freitext-Fragen enthalten.'
+              )
+          ),
         timeLimit: yup
           .number()
           .min(1, 'Bitte geben Sie eine gültige Zeitbegrenzung ein.'),
