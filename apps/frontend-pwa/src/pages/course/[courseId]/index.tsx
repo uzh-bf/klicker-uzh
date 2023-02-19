@@ -28,7 +28,7 @@ const DynamicMarkdown = dynamic(
     return Markdown
   },
   {
-  ssr: false,
+    ssr: false,
   }
 )
 
@@ -90,7 +90,9 @@ function CourseOverview({ courseId }: any) {
           <Tabs.TabList>
             <Tabs.Tab key="course" value="global" label="Leaderboard" />
 
-            <Tabs.Tab key="info" value="info" label="Kursinformationen" />
+            {course?.description && (
+              <Tabs.Tab key="info" value="info" label="Kursinformationen" />
+            )}
 
             {data.participantGroups?.map((group) => (
               <Tabs.Tab
