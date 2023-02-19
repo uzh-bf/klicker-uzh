@@ -588,6 +588,7 @@ function QuestionEditModal({
                             placeholder="Fragetext hier eingeben…"
                             key={`${questionType}-content`}
                             data_cy="insert-question-text"
+                            className={{ content: 'max-w-none' }}
                           />
                         )}
                       </FastField>
