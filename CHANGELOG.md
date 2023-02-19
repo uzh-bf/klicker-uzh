@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.57...v3.0.0-alpha.58) (2023-02-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** handle nullable question explanation ([34f5de3](https://github.com/uzh-bf/klicker-uzh/commit/34f5de339b4c1993af02515bad6360409e3ab624))
+* **apps/frontend-manage:** use question type for validation in creation wizard ([d42f1d2](https://github.com/uzh-bf/klicker-uzh/commit/d42f1d2f7b2237e25b72e25851c82bb818e654e7))
+
 ## [3.0.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.56...v3.0.0-alpha.57) (2023-02-19)
 
 
