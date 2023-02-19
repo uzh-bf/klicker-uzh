@@ -73,7 +73,10 @@ function Markdown({
             },
           })
           // .use(rehypePrism)
-          .use(rehypeExternalLinks)
+          .use(rehypeExternalLinks, {
+            target: '_blank',
+            rel: ['noopener', 'noreferrer', 'nofollow'],
+          })
           .use(katex, {
             throwOnError: false,
           })

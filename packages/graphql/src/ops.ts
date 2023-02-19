@@ -838,6 +838,7 @@ export type OptionsChoicesInput = {
 
 export type OptionsFreeTextInput = {
   feedback?: InputMaybe<Scalars['String']>;
+  placeholder?: InputMaybe<Scalars['String']>;
   restrictions?: InputMaybe<FreeTextRestrictionsInput>;
   solutions?: InputMaybe<Array<Scalars['String']>>;
 };
@@ -847,6 +848,7 @@ export type OptionsNumericalInput = {
   feedback?: InputMaybe<Scalars['String']>;
   restrictions?: InputMaybe<NumericalRestrictionsInput>;
   solutionRanges?: InputMaybe<Array<SolutionRangeInput>>;
+  unit?: InputMaybe<Scalars['String']>;
 };
 
 export enum ParameterType {

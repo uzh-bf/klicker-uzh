@@ -440,6 +440,7 @@ input OptionsChoicesInput {
 
 input OptionsFreeTextInput {
   feedback: String
+  placeholder: String
   restrictions: FreeTextRestrictionsInput
   solutions: [String!]
 }
@@ -449,6 +450,7 @@ input OptionsNumericalInput {
   feedback: String
   restrictions: NumericalRestrictionsInput
   solutionRanges: [SolutionRangeInput!]
+  unit: String
 }
 
 enum ParameterType {
