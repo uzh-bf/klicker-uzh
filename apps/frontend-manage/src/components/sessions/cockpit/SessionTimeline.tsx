@@ -7,7 +7,6 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-// import getConfig from 'next/config'
 import Link from 'next/link'
 import React, { useContext, useEffect, useState } from 'react'
 
@@ -49,18 +48,12 @@ interface Props {
   startedAt?: string
 }
 
-const defaultProps = {
-  blocks: [],
-  isEvaluationPublic: false,
-  startedAt: undefined,
-}
-
 function SessionTimeline({
   sessionId,
-  blocks,
+  blocks = [],
   sessionName,
   startedAt,
-  isEvaluationPublic,
+  isEvaluationPublic = false,
   handleEndSession,
   handleTogglePublicEvaluation,
   handleOpenBlock,
@@ -279,7 +272,5 @@ function SessionTimeline({
     </div>
   )
 }
-
-SessionTimeline.defaultProps = defaultProps
 
 export default SessionTimeline

@@ -22,10 +22,6 @@ interface SessionBlockProps {
   block: SessionBlockType
 }
 
-const defaultProps = {
-  className: '',
-}
-
 const ICON_MAP = {
   [SessionBlockStatus.Executed]: faCheck,
   [SessionBlockStatus.Scheduled]: faCalendar,
@@ -61,7 +57,7 @@ function SessionBlock({
         <div>
           <FontAwesomeIcon icon={ICON_MAP[block.status]} />
         </div>
-        <div>Block {block.order + 1}</div>
+        <div>Block {block.order! + 1}</div>
         {untilExpiration && (
           <Countdown
             isStatic={!block.expiresAt}
@@ -74,7 +70,7 @@ function SessionBlock({
           />
         )}
       </div>
-      {block.instances.map((instance: QuestionInstance) => (
+      {block.instances?.map((instance: QuestionInstance) => (
         <div key={instance.id}>
           <Link
             href={`/questions/${instance.questionData.id}`}
@@ -90,5 +86,4 @@ function SessionBlock({
   )
 }
 
-SessionBlock.defaultProps = defaultProps
 export default SessionBlock

@@ -39,8 +39,9 @@ interface HistogramProps {
   }
 }
 
-const defaultProps = {
-  showSolution: {
+function Histogram({
+  data,
+  showSolution = {
     general: false,
     mean: false,
     median: false,
@@ -48,17 +49,9 @@ const defaultProps = {
     q3: false,
     sd: false,
   },
-  hideBins: false,
-  basic: false,
-  className: undefined,
-}
-
-function Histogram({
-  data,
-  showSolution,
   textSize,
-  hideBins,
-  basic,
+  hideBins = false,
+  basic = false,
   reference,
   className,
 }: HistogramProps): React.ReactElement {
@@ -294,5 +287,4 @@ function Histogram({
   )
 }
 
-Histogram.defaultProps = defaultProps
 export default Histogram
