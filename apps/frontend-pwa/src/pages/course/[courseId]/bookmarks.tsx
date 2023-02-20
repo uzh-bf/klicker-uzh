@@ -3,7 +3,7 @@ import {
   GetBasicCourseInformationDocument,
   GetBookmarkedQuestionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H1 } from '@uzh-bf/design-system'
+import { H1, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import Layout from '../../../components/Layout'
 
@@ -30,9 +30,13 @@ function Bookmarks() {
         <H1 className={{ root: 'text-xl' }}>
           Bookmarks {courseData?.basicCourseInformation?.displayName}
         </H1>
-        {data?.getBookmarkedQuestions?.map((question) => (
+        <UserNotification
+          message="Diese Seite ist aktuell noch in Entwicklung und wird bald publiziert. Hier werden alle mit Bookmarks versehenen Fragen angezeigt werden."
+          notificationType="info"
+        />
+        {/* {data?.getBookmarkedQuestions?.map((question) => (
           <div key={question.id}>{question.questionData.name}</div>
-        ))}
+        ))} */}
       </div>
     </Layout>
   )
