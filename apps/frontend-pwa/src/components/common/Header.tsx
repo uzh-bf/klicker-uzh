@@ -21,6 +21,7 @@ function Header({
   course,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
+  const { pathname, asPath, query } = router
   const theme = useContext(ThemeContext)
   const t = useTranslations('Layout')
 
@@ -52,7 +53,9 @@ function Header({
           <Button
             basic
             onClick={() =>
-              router.push(router.pathname, router.pathname, { locale: 'de' })
+              router.push({ pathname, query }, asPath, {
+                locale: 'de',
+              })
             }
             className={{
               root: twMerge(
@@ -67,7 +70,9 @@ function Header({
           <Button
             basic
             onClick={() =>
-              router.push(router.pathname, router.pathname, { locale: 'en' })
+              router.push({ pathname, query }, asPath, {
+                locale: 'en',
+              })
             }
             className={{
               root: twMerge(
