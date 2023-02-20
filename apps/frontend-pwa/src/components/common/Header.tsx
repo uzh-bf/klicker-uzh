@@ -14,11 +14,6 @@ interface HeaderProps {
   course?: Partial<Course>
 }
 
-const defaultProps = {
-  title: undefined,
-  course: undefined,
-}
-
 function Header({
   participant,
   title,
@@ -117,7 +112,5 @@ function Header({
     </div>
   )
 }
-
-Header.defaultProps = defaultProps
 
 export default Header

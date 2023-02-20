@@ -41,18 +41,11 @@ interface Props {
   className?: string
 }
 
-const defaultProps = {
-  disabled: undefined,
-  hidden: undefined,
-  searchString: '',
-  withSearch: false,
-}
-
 function FeedbackSearchAndFilters({
   disabled,
   hidden,
-  withSearch,
-  searchString,
+  withSearch = false,
+  searchString = '',
   setSearchString,
   showResolved,
   setShowResolved,
@@ -214,7 +207,5 @@ function FeedbackSearchAndFilters({
     </div>
   )
 }
-
-FeedbackSearchAndFilters.defaultProps = defaultProps
 
 export default FeedbackSearchAndFilters

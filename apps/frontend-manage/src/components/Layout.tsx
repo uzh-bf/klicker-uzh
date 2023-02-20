@@ -14,13 +14,12 @@ interface LayoutProps {
   scrollable?: boolean
 }
 
-const defaultProps = {
-  displayName: 'KlickerUZH',
-  className: '',
-  scrollable: true,
-}
-
-function Layout({ displayName, children, className, scrollable }: LayoutProps) {
+function Layout({
+  displayName = 'KlickerUZH',
+  children,
+  className,
+  scrollable = true,
+}: LayoutProps) {
   const router = useRouter()
 
   const {
@@ -61,5 +60,4 @@ function Layout({ displayName, children, className, scrollable }: LayoutProps) {
   )
 }
 
-Layout.defaultProps = defaultProps
 export default Layout
