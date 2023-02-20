@@ -1,35 +1,40 @@
 {
-  "questions": {
-    "SCtext": "Please select a single option.",
-    "MCtext": "Please select one or more options.",
-    "KPRIMtext": "Evaluate the statements for correctness.",
-    "FREE_TEXTtext": "Please enter your answer.",
-    "NUMERICALtext": "Please enter a number.",
-    "roundedTo": "(rounded to {accuracy} decimal places)",
-    "numMin": "Min",
-    "numMax": "Max",
-    "numPrecision": "Precision",
-    "numInvalidValue": "The entered value is not a number or is not in the specified range.",
-    "ftCharacters": "characters",
-    "ftPlaceholder": "Your answer..."
+  "shared": {
+    "questions": {
+      "SCtext": "Please select a single option.",
+      "MCtext": "Please select one or more options.",
+      "KPRIMtext": "Evaluate the statements for correctness.",
+      "FREE_TEXTtext": "Please enter your answer.",
+      "NUMERICALtext": "Please enter a number.",
+      "roundedTo": "(rounded to {accuracy} decimal places)",
+      "numMin": "Min",
+      "numMax": "Max",
+      "numPrecision": "Precision",
+      "numInvalidValue": "The entered value is not a number or is not in the specified range.",
+      "characters": "characters",
+      "ftPlaceholder": "Your answer..."
+    },
+    "generic": {
+      "title": "KlickerUZH",
+      "send": "Send",
+      "logout": "Logout",
+      "login": "Login",
+      "username": "Username",
+      "password": "Password",
+      "signin": "Login",
+      "usernameError": "Please enter your username.",
+      "passwordError": "Please enter your password.",
+      "loginError": "The username or password are incorrect.",
+      "systemError": "An unexpected error occurred. Please try again later.",
+      "back": "Back",
+      "home": "Home",
+      "questions": "Questions",
+      "feedbacks": "Feedbacks",
+      "leaderboard": "Leaderboard",
+      "question": "Question"
+    }
   },
-  "generic": {
-    "title": "KlickerUZH",
-    "send": "Send",
-    "logout": "Logout",
-    "login": "Login",
-    "username": "Username",
-    "password": "Password",
-    "signin": "Login",
-    "usernameError": "Please enter your username.",
-    "passwordError": "Please enter your password.",
-    "loginError": "The username or password are incorrect.",
-    "systemError": "An unexpected error occurred. Please try again later.",
-    "back": "Back",
-    "home": "Home",
-    "questions": "Questions",
-    "feedbacks": "Feedbacks",
-    "leaderboard": "Leaderboard",
-    "question": "Question"
-  }
+  "pwa": {},
+  "manage": {},
+  "control": {}
 }

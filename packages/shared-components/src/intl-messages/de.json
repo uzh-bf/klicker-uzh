@@ -1,35 +1,40 @@
 {
-  "questions": {
-    "SCtext": "Bitte eine einzige Option auswählen.",
-    "MCtext": "Bitte eine oder mehrere Optionen auswählen.",
-    "KPRIMtext": "Beurteile die Aussagen auf ihre Richtigkeit.",
-    "FREE_TEXTtext": "Bitte eine Antwort eingeben.",
-    "NUMERICALtext": "Bitte eine Zahl eingeben.",
-    "roundedTo": "(gerundet auf {accuracy} Nachkommastellen)",
-    "numMin": "Min",
-    "numMax": "Max",
-    "numPrecision": "Präzision",
-    "numInvalidValue": "Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.",
-    "ftCharacters": "Zeichen",
-    "ftPlaceholder": "Ihre Antwort..."
+  "shared": {
+    "questions": {
+      "SCtext": "Bitte eine einzige Option auswählen.",
+      "MCtext": "Bitte eine oder mehrere Optionen auswählen.",
+      "KPRIMtext": "Beurteile die Aussagen auf ihre Richtigkeit.",
+      "FREE_TEXTtext": "Bitte eine Antwort eingeben.",
+      "NUMERICALtext": "Bitte eine Zahl eingeben.",
+      "roundedTo": "(gerundet auf {accuracy} Nachkommastellen)",
+      "numMin": "Min",
+      "numMax": "Max",
+      "numPrecision": "Präzision",
+      "numInvalidValue": "Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.",
+      "characters": "Zeichen",
+      "ftPlaceholder": "Ihre Antwort..."
+    },
+    "generic": {
+      "title": "KlickerUZH",
+      "send": "Absenden",
+      "logout": "Ausloggen",
+      "login": "Login",
+      "username": "Benutzername",
+      "password": "Passwort",
+      "signin": "Anmelden",
+      "usernameError": "Bitte geben Sie Ihren Nutzernamen ein.",
+      "passwordError": "Bitte geben Sie Ihr Passwort ein.",
+      "loginError": "Benutzername oder Passwort sind falsch.",
+      "systemError": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+      "back": "Zurück",
+      "home": "Home",
+      "questions": "Fragen",
+      "feedbacks": "Feedbacks",
+      "leaderboard": "Leaderboard",
+      "question": "Frage"
+    }
   },
-  "generic": {
-    "title": "KlickerUZH",
-    "send": "Absenden",
-    "logout": "Ausloggen",
-    "login": "Login",
-    "username": "Benutzername",
-    "password": "Passwort",
-    "signin": "Anmelden",
-    "usernameError": "Bitte geben Sie Ihren Nutzernamen ein.",
-    "passwordError": "Bitte geben Sie Ihr Passwort ein.",
-    "loginError": "Benutzername oder Passwort sind falsch.",
-    "systemError": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
-    "back": "Zurück",
-    "home": "Home",
-    "questions": "Fragen",
-    "feedbacks": "Feedbacks",
-    "leaderboard": "Leaderboard",
-    "question": "Frage"
-  }
+  "pwa": {},
+  "manage": {},
+  "control": {}
 }

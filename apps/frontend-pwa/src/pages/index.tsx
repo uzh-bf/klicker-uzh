@@ -34,8 +34,7 @@ const Index = function () {
   const [subscription, setSubscription] = useState<PushSubscription | null>(
     null
   )
-  const t = useTranslations('index')
-  const tgeneric = useTranslations('generic')
+  const t = useTranslations()
 
   const { data, loading, error } = useQuery(ParticipationsDocument, {
     skip: pushDisabled === null,
@@ -205,14 +204,16 @@ const Index = function () {
   }
 
   return (
-    <Layout displayName={tgeneric('title')}>
+    <Layout displayName={t('generic.title')}>
       <div
         className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
       >
         {activeSessions.length !== 0 && (
           <div>
-            <H1 className={{ root: 'text-xl mb-2' }}>{t('activeSessions')}</H1>
+            <H1 className={{ root: 'text-xl mb-2' }}>
+              {t('index.activeSessions')}
+            </H1>
             <div className="flex flex-col gap-2">
               {activeSessions.map((session) => (
                 <LinkButton
@@ -230,19 +231,23 @@ const Index = function () {
           </div>
         )}
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>{t('learningElements')}</H1>
+          <H1 className={{ root: 'text-xl mb-2' }}>
+            {t('index.learningElements')}
+          </H1>
           <div className="flex flex-col gap-2">
             <LinkButton href="/repetition" icon={faGraduationCap}>
-              {t('repetition')}
+              {t('index.repetition')}
             </LinkButton>
             <LinkButton href="/bookmarks" icon={faBookmark}>
-              {t('myBookmarks')}
+              {t('index.myBookmarks')}
             </LinkButton>
           </div>
         </div>
         {activeMicrolearning.length > 0 && (
           <div>
-            <H1 className={{ root: 'text-xl mb-2' }}>{t('microlearning')}</H1>
+            <H1 className={{ root: 'text-xl mb-2' }}>
+              {t('index.microlearning')}
+            </H1>
             <div className="flex flex-col gap-2">
               {activeMicrolearning.map((micro) => (
                 <LinkButton
@@ -265,7 +270,7 @@ const Index = function () {
           </div>
         )}
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>{t('myCourses')}</H1>
+          <H1 className={{ root: 'text-xl mb-2' }}>{t('index.myCourses')}</H1>
           <div className="flex flex-col gap-2">
             {courses.map((course) => (
               <CourseElement
@@ -278,7 +283,7 @@ const Index = function () {
               <CourseElement key={course.id} course={course} />
             ))}
             <LinkButton icon={faCirclePlus} href="/join">
-              {t('joinCourse')}
+              {t('index.joinCourse')}
             </LinkButton>
           </div>
         </div>

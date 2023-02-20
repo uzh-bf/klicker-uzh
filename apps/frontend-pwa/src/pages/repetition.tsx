@@ -10,17 +10,15 @@ import Layout from '../components/Layout'
 
 function Repetition() {
   const { data } = useQuery(GetLearningElementsDocument)
-
-  const t = useTranslations('learningElement')
-  const tindex = useTranslations('index')
+  const t = useTranslations()
 
   return (
     <Layout
       course={{ displayName: 'KlickerUZH' }}
-      displayName={t('repetitionLearningElements')}
+      displayName={t('learningElement.repetitionLearningElements')}
     >
       <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
-        <H1 className={{ root: 'text-xl' }}>{tindex('repetition')}</H1>
+        <H1 className={{ root: 'text-xl' }}>{t('index.repetition')}</H1>
         {data?.learningElements?.map((element) => (
           <Link
             key={element.id}

@@ -17,7 +17,7 @@ export function FREETextAnswerOptions({
   value,
 }: FREETextAnswerOptionsProps): React.ReactElement {
   const theme = useContext(ThemeContext)
-  const t = useTranslations('questions')
+  const t = useTranslations('shared.questions')
 
   return (
     <div className="flex flex-col gap-2">
@@ -37,7 +37,7 @@ export function FREETextAnswerOptions({
       />
 
       <div className="text-sm italic text-right">
-        ({value?.length ?? 0} / {maxLength ?? '1500'} {t('ftCharacters')})
+        ({value?.length ?? 0} / {maxLength ?? '1500'} {t('characters')})
       </div>
     </div>
   )

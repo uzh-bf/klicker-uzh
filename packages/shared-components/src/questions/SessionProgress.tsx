@@ -28,7 +28,7 @@ export function SessionProgress({
   onSubmit,
   onExpire,
 }: SessionProgressProps): React.ReactElement {
-  const t = useTranslations('generic')
+  const t = useTranslations('shared.generic')
   const theme = useContext(ThemeContext)
   const untilExpiration = expiresAt
     ? dayjs(expiresAt).diff(dayjs(), 'second')

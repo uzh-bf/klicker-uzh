@@ -57,7 +57,7 @@ export const StudentQuestion = ({
   inputEmpty,
   setInputState,
 }: StudentQuestionProps) => {
-  const t = useTranslations('questions')
+  const t = useTranslations('shared.questions')
 
   const onActiveChoicesChange =
     (type: string): any =>
