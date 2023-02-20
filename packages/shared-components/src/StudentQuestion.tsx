@@ -57,15 +57,7 @@ export const StudentQuestion = ({
   inputEmpty,
   setInputState,
 }: StudentQuestionProps) => {
-  const t = useTranslations('sharedComponents.questions')
-
-  const messages = {
-    [QuestionType.Sc]: t('ScText'),
-    [QuestionType.Mc]: t('McText'),
-    [QuestionType.Kprim]: t('KprimText'),
-    [QuestionType.FreeText]: t('FtText'),
-    [QuestionType.Numerical]: t('NumText'),
-  }
+  const t = useTranslations('questions')
 
   const onActiveChoicesChange =
     (type: string): any =>
@@ -210,7 +202,7 @@ export const StudentQuestion = ({
 
       <div className="flex-1 mt-4">
         <div className="mb-2">
-          <span className="font-bold">{messages[currentQuestion.type]}</span>{' '}
+          <span className="font-bold">{t(`${currentQuestion.type}text`)}</span>{' '}
           {currentQuestion.options?.accuracy &&
             t('roundedTo', { accuracy: currentQuestion.options.accuracy })}
         </div>

@@ -8,8 +8,6 @@ import Layout from '../components/Layout'
 function MissingPage() {
   const { data: dataParticipant } = useQuery(SelfDocument)
 
-  console.log(dataParticipant)
-
   return (
     <Layout className="h-full">
       <div className="flex flex-col items-center gap-6 mx-auto my-auto text-center">
@@ -46,3 +44,13 @@ function MissingPage() {
 }
 
 export default MissingPage
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
+}

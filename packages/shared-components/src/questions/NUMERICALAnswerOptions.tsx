@@ -30,7 +30,7 @@ export function NUMERICALAnswerOptions({
   onChange,
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   const theme = useContext(ThemeContext)
-  const t = useTranslations('sharedComponents.questions')
+  const t = useTranslations('questions')
 
   return (
     <div className="flex flex-col gap-2">

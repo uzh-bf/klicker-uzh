@@ -17,7 +17,7 @@ export function FREETextAnswerOptions({
   value,
 }: FREETextAnswerOptionsProps): React.ReactElement {
   const theme = useContext(ThemeContext)
-  const t = useTranslations('sharedComponents.questions')
+  const t = useTranslations('questions')
 
   return (
     <div className="flex flex-col gap-2">
@@ -32,7 +32,7 @@ export function FREETextAnswerOptions({
         onChange={(e): void => onChange(e.target.value)}
         rows={3}
         maxLength={maxLength ?? 1500}
-        placeholder={placeholder || 'Bitte geben Sie hier Ihre Antwort ein'}
+        placeholder={placeholder || t('ftPlaceholder')}
         data-cy="free-text-response-input"
       />
 

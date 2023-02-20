@@ -120,7 +120,7 @@ export function getStaticProps({ locale }: any) {
     props: {
       messages: {
         ...require(`../messages/user/${locale}.json`),
-        ...require(`../messages/shared/${locale}.json`),
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
       },
     },
   }

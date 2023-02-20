@@ -295,7 +295,7 @@ export function getStaticProps({ locale }: any) {
     props: {
       messages: {
         ...require(`../messages/index/${locale}.json`),
-        ...require(`../messages/shared/${locale}.json`),
+        ...require(`../messages/layout/${locale}.json`),
       },
     },
   }

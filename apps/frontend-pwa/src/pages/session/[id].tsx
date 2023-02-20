@@ -257,7 +257,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       id: ctx.params.id,
       messages: {
         ...require(`../../messages/session/${ctx.locale}.json`),
-        ...require(`../../messages/shared/${ctx.locale}.json`),
+        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
       },
     },
   })

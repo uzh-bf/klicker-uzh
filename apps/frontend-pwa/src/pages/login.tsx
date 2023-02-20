@@ -15,11 +15,6 @@ import { useContext, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
-const loginSchema = Yup.object().shape({
-  username: Yup.string().required('Enter your username'),
-  password: Yup.string().required('Enter your password'),
-})
-
 interface BeforeInstallPromptEventReturn {
   userChoice: string
   platform: string
@@ -43,6 +38,11 @@ function LoginForm() {
   const deferredPrompt = useRef<undefined | BeforeInstallPromptEvent>(undefined)
 
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
+
+  const loginSchema = Yup.object().shape({
+    username: Yup.string().required(t('usernameError')),
+    password: Yup.string().required(t('passwordError')),
+  })
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
@@ -78,7 +78,7 @@ function LoginForm() {
       })
       const userID: string | null = result.data!.loginParticipant
       if (!userID) {
-        setError('Wrong username or password')
+        setError(t('loginError'))
         setSubmitting(false)
         resetForm()
       } else {
@@ -89,9 +89,7 @@ function LoginForm() {
       }
     } catch (e) {
       console.error(e)
-      setError(
-        'A problem occurred while signing you in. Please try again later.'
-      )
+      setError(t('systemError'))
       setSubmitting(false)
       resetForm()
     }
@@ -221,7 +219,7 @@ export function getStaticProps({ locale }: any) {
   return {
     props: {
       messages: {
-        ...require(`../messages/shared/${locale}.json`),
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
         ...require(`../messages/index/${locale}.json`),
       },
     },
