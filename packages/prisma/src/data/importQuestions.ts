@@ -5,7 +5,7 @@ import { readFile } from 'fs/promises'
 interface ImportedQuestion {
   id: string
   title: string
-  type: 'SC' | 'MC' | 'NR' | 'FT'
+  type: 'SC' | 'MC' | 'NR' | 'FREE'
   tags: string[]
   version: {
     content: string
@@ -22,7 +22,7 @@ const QuestionTypeMap: Record<string, QuestionType> = {
   SC: 'SC',
   MC: 'MC',
   NR: 'NUMERICAL',
-  FT: 'FREE_TEXT',
+  FREE: 'FREE_TEXT',
 }
 
 async function importQuestions(prisma: Prisma.PrismaClient) {
@@ -65,7 +65,7 @@ async function importQuestions(prisma: Prisma.PrismaClient) {
                 ix,
                 value: choice.name,
                 correct: choice.correct,
-                feedback: '<br>',
+                feedback: '',
               }
             }
           ),
@@ -73,9 +73,11 @@ async function importQuestions(prisma: Prisma.PrismaClient) {
       } else if (question.type === 'NR') {
         // TODO
         throw new Error('Unsupported question type (NR)')
-      } else if (question.type === 'FT') {
-        // TODO
-        throw new Error('Unsupported question type (FT)')
+      } else if (question.type === 'FREE') {
+        options = {
+          restrictions: {},
+          solutions: [],
+        }
       } else {
         throw new Error('Unknown question type')
       }
