@@ -25,8 +25,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 function LoginForm() {
-  const t = useTranslations('generic')
-  const tlogin = useTranslations('login')
+  const t = useTranslations()
 
   const router = useRouter()
   const theme = useContext(ThemeContext)
@@ -40,8 +39,8 @@ function LoginForm() {
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
 
   const loginSchema = Yup.object().shape({
-    username: Yup.string().required(t('usernameError')),
-    password: Yup.string().required(t('passwordError')),
+    username: Yup.string().required(t('shared.generic.usernameError')),
+    password: Yup.string().required(t('shared.generic.passwordError')),
   })
 
   useEffect(() => {
@@ -78,7 +77,7 @@ function LoginForm() {
       })
       const userID: string | null = result.data!.loginParticipant
       if (!userID) {
-        setError(t('loginError'))
+        setError(t('shared.generic.loginError'))
         setSubmitting(false)
         resetForm()
       } else {
@@ -89,7 +88,7 @@ function LoginForm() {
       }
     } catch (e) {
       console.error(e)
-      setError(t('systemError'))
+      setError(t('shared.generic.systemError'))
       setSubmitting(false)
       resetForm()
     }
@@ -115,14 +114,14 @@ function LoginForm() {
                   data-cy="login-logo"
                 />
               </div>
-              <H1>{t('login')}</H1>
+              <H1>{t('shared.generic.login')}</H1>
               <div className="mb-10">
                 <Form className="w-72 sm:w-96">
                   <RadixLabel.Root
                     htmlFor="username"
                     className="text-sm leading-7 text-gray-600"
                   >
-                    {t('username')}
+                    {t('shared.generic.username')}
                   </RadixLabel.Root>
                   <Field
                     name="username"
@@ -146,7 +145,7 @@ function LoginForm() {
                     className="text-sm leading-7 text-gray-600"
                     htmlFor="password"
                   >
-                    {t('password')}
+                    {t('shared.generic.password')}
                   </RadixLabel.Root>
                   <Field
                     name="password"
@@ -176,14 +175,14 @@ function LoginForm() {
                       className={{ root: 'mt-2 border-uzh-grey-80' }}
                       data={{ cy: 'submit-login' }}
                     >
-                      <Button.Label>{t('signin')}</Button.Label>
+                      <Button.Label>{t('shared.generic.signin')}</Button.Label>
                     </Button>
                   </div>
                   {onChrome && (
                     <div className="flex flex-col justify-center md:hidden mt-7">
                       <UserNotification
                         notificationType="info"
-                        message={tlogin('installPWA')}
+                        message={t('pwa.login.installPWA')}
                       >
                         <Button
                           className={{
@@ -191,7 +190,9 @@ function LoginForm() {
                           }}
                           onClick={onInstallClick}
                         >
-                          <Button.Label>{tlogin('installButton')}</Button.Label>
+                          <Button.Label>
+                            {t('pwa.login.installButton')}
+                          </Button.Label>
                         </Button>
                       </UserNotification>
                     </div>
@@ -200,7 +201,7 @@ function LoginForm() {
                     <UserNotification
                       className={{ root: 'mt-4' }}
                       notificationType="info"
-                      message={tlogin('installHomeScreen')}
+                      message={t('pwa.login.installHomeScreen')}
                     />
                   )}
                 </Form>
@@ -213,15 +214,14 @@ function LoginForm() {
   )
 }
 
-export default LoginForm
-
 export function getStaticProps({ locale }: any) {
   return {
     props: {
       messages: {
         ...require(`shared-components/src/intl-messages/${locale}.json`),
-        ...require(`../messages/index/${locale}.json`),
       },
     },
   }
 }
+
+export default LoginForm

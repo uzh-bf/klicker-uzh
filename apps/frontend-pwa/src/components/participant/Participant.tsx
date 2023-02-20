@@ -24,7 +24,7 @@ function Participant({
   points,
   rank,
 }: PropsWithChildren<ParticipantProps>) {
-  const t = useTranslations('sessionLeaderboard')
+  const t = useTranslations()
 
   return (
     <div
@@ -49,7 +49,7 @@ function Participant({
         )}
 
         <div className="overflow-hidden first:ml-2 text-slate-700 text-ellipsis">
-          {pseudonym ?? t('free')}
+          {pseudonym ?? t('shared.generic.free')}
         </div>
         <div className="flex-1 text-right">{children}</div>
       </div>

@@ -51,8 +51,7 @@ interface Props {
 
 function Index({ id }: Props) {
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
-  const t = useTranslations('liveSession')
-  const tgeneric = useTranslations('generic')
+  const t = useTranslations()
 
   const { data, subscribeToMore } = useQuery(GetRunningSessionDocument, {
     variables: { id },
@@ -127,7 +126,7 @@ function Index({ id }: Props) {
   }[] = [
     {
       value: 'questions',
-      label: tgeneric('questions'),
+      label: t('shared.generic.questions'),
       icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
       unseenItems: activeBlock?.instances?.length,
     },
@@ -136,14 +135,14 @@ function Index({ id }: Props) {
   if (isLiveQAEnabled || isConfusionFeedbackEnabled) {
     mobileMenuItems.push({
       value: 'feedbacks',
-      label: tgeneric('feedbacks'),
+      label: t('shared.generic.feedbacks'),
       icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
     })
   }
   if (selfData?.self && isGamificationEnabled) {
     mobileMenuItems.push({
       value: 'leaderboard',
-      label: tgeneric('leaderboard'),
+      label: t('shared.generic.leaderboard'),
       icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
     })
   }
@@ -174,7 +173,7 @@ function Index({ id }: Props) {
                 <SessionLeaderboard sessionId={id} />
               </div>
             ) : (
-              <div>{t('noActiveQuestion')}</div>
+              <div>{t('pwa.session.noActiveQuestion')}</div>
             )
           ) : (
             <QuestionArea
@@ -257,7 +256,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     props: {
       id: ctx.params.id,
       messages: {
-        ...require(`../../messages/session/${ctx.locale}.json`),
         ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
       },
     },

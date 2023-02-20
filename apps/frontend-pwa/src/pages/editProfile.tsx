@@ -21,7 +21,7 @@ import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import Layout from '../components/Layout'
 
-const EditProfile: NextPageWithLayout = () => {
+function EditProfile(): NextPageWithLayout {
   const theme = useContext(ThemeContext)
   const { data, loading } = useQuery(SelfDocument)
   const [updateParticipantProfile, { error }] = useMutation(
@@ -438,15 +438,14 @@ const EditProfile: NextPageWithLayout = () => {
   )
 }
 
-export default EditProfile
-
 export function getStaticProps({ locale }: any) {
   return {
     props: {
       messages: {
-        ...require(`../messages/user/${locale}.json`),
         ...require(`shared-components/src/intl-messages/${locale}.json`),
       },
     },
   }
 }
+
+export default EditProfile

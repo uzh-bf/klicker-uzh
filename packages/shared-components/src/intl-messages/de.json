@@ -7,16 +7,13 @@
       "FREE_TEXTtext": "Bitte eine Antwort eingeben.",
       "NUMERICALtext": "Bitte eine Zahl eingeben.",
       "roundedTo": "(gerundet auf {accuracy} Nachkommastellen)",
-      "numMin": "Min",
-      "numMax": "Max",
-      "numPrecision": "Präzision",
       "numInvalidValue": "Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.",
-      "characters": "Zeichen",
       "ftPlaceholder": "Ihre Antwort..."
     },
     "generic": {
       "title": "KlickerUZH",
       "send": "Absenden",
+      "loading": "Laden...",
       "logout": "Ausloggen",
       "login": "Login",
       "username": "Benutzername",
@@ -29,12 +26,61 @@
       "back": "Zurück",
       "home": "Home",
       "questions": "Fragen",
+      "question": "Frage",
       "feedbacks": "Feedbacks",
       "leaderboard": "Leaderboard",
-      "question": "Frage"
+      "repetition": "Repetition",
+      "learningElements": "Lernelemente",
+      "microlearning": "Microlearning",
+      "activeSessions": "Aktive Sessions",
+      "characters": "Zeichen",
+      "precision": "Präzision",
+      "min": "Min",
+      "max": "Max",
+      "free": "Frei"
+    },
+    "leaderboard": {
+      "sessionTitle": "Session Leaderboard",
+      "ranks": "Ränge",
+      "points": "Punkte"
     }
   },
-  "pwa": {},
+  "pwa": {
+    "index": {
+      "myCourses": "Meine Kurse",
+      "myBookmarks": "Meine Bookmarks",
+      "joinCourse": "Kurs beitreten",
+      "setupProfile": "Profil einrichten"
+    },
+    "login": {
+      "installPWA": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
+      "installButton": "Jetzt installieren",
+      "installHomeScreen": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+    },
+    "learningElement": {
+      "repetitionTitle": "Repetition Lernelemente"
+    },
+    "session": {
+      "noActiveQuestion": "Keine Frage aktiv.",
+      "allQuestionsAnswered": "Sie haben bereits alle aktiven Fragen beantwortet."
+    },
+    "feedbacks": {
+      "title": "Feedback-Kanal",
+      "speed": "Geschwindigkeit",
+      "difficulty": "Schwierigkeit",
+      "openQuestions": "Offene Fragen",
+      "resolvedQuestions": "Erledigte Fragen",
+      "feedbackPlaceholder": "Feedback / Frage eingeben",
+      "postedAt": "Gepostet am {date}",
+      "solvedAt": "Gelöst am {date}"
+    },
+    "user": {
+      "editProfile": "Profil editieren",
+      "achievements": "Errungenschaften",
+      "noAchievements": "Bisher keine Errungenschaften.",
+      "myProfile": "Mein Profil"
+    }
+  },
   "manage": {},
   "control": {}
 }

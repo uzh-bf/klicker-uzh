@@ -468,6 +468,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     props: {
       id: ctx.params.id,
       courseId: ctx.params.courseId,
+      messages: {
+        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+      },
     },
   })
 }

@@ -17,7 +17,7 @@ export function FREETextAnswerOptions({
   value,
 }: FREETextAnswerOptionsProps): React.ReactElement {
   const theme = useContext(ThemeContext)
-  const t = useTranslations('shared.questions')
+  const t = useTranslations()
 
   return (
     <div className="flex flex-col gap-2">
@@ -32,12 +32,13 @@ export function FREETextAnswerOptions({
         onChange={(e): void => onChange(e.target.value)}
         rows={3}
         maxLength={maxLength ?? 1500}
-        placeholder={placeholder || t('ftPlaceholder')}
+        placeholder={placeholder || t('shared.questions.ftPlaceholder')}
         data-cy="free-text-response-input"
       />
 
       <div className="text-sm italic text-right">
-        ({value?.length ?? 0} / {maxLength ?? '1500'} {t('characters')})
+        ({value?.length ?? 0} / {maxLength ?? '1500'}{' '}
+        {t('shared.generic.characters')})
       </div>
     </div>
   )

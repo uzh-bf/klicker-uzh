@@ -23,7 +23,7 @@ function Leaderboard({
   const { data: selfData } = useQuery(SelfDocument, {
     fetchPolicy: 'cache-only',
   })
-  const t = useTranslations('sessionLeaderboard')
+  const t = useTranslations()
 
   const { data, loading } = useQuery(GetSessionLeaderboardDocument, {
     variables: { sessionId },
@@ -80,7 +80,7 @@ function Leaderboard({
   return (
     <div className={twMerge(className, '')}>
       <div className="space-y-4">
-        <H2>{t('title')}</H2>
+        <H2>{t('shared.leaderboard.sessionTitle')}</H2>
         <div>
           {data.sessionLeaderboard?.length > 0 && (
             <Podium leaderboard={data.sessionLeaderboard?.slice(0, 3)} />
@@ -101,7 +101,7 @@ function Leaderboard({
         {blockDelta && (
           <div className="flex flex-row gap-4 text-xl">
             <div>
-              &Delta; {t('ranks')}:{' '}
+              &Delta; {t('shared.leaderboard.ranks')}:{' '}
               <span
                 className={twMerge(
                   blockDelta.rank > 0 && 'text-green-700',
@@ -113,7 +113,7 @@ function Leaderboard({
               </span>
             </div>
             <div>
-              &Delta; {t('points')}:{' '}
+              &Delta; {t('shared.leaderboard.points')}:{' '}
               <span
                 className={twMerge(
                   blockDelta.score > 0 && 'text-green-700',

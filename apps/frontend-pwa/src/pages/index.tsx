@@ -27,6 +27,7 @@ import {
 } from '../utils/push'
 
 const Index = function () {
+  const t = useTranslations()
   const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
   const [userInfo, setUserInfo] = useState<string>('')
   const [registration, setRegistration] =
@@ -34,7 +35,6 @@ const Index = function () {
   const [subscription, setSubscription] = useState<PushSubscription | null>(
     null
   )
-  const t = useTranslations()
 
   const { data, loading, error } = useQuery(ParticipationsDocument, {
     skip: pushDisabled === null,
@@ -204,7 +204,7 @@ const Index = function () {
   }
 
   return (
-    <Layout displayName={t('generic.title')}>
+    <Layout displayName={t('shared.generic.title')}>
       <div
         className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
@@ -212,7 +212,7 @@ const Index = function () {
         {activeSessions.length !== 0 && (
           <div>
             <H1 className={{ root: 'text-xl mb-2' }}>
-              {t('index.activeSessions')}
+              {t('shared.generic.activeSessions')}
             </H1>
             <div className="flex flex-col gap-2">
               {activeSessions.map((session) => (
@@ -232,21 +232,21 @@ const Index = function () {
         )}
         <div>
           <H1 className={{ root: 'text-xl mb-2' }}>
-            {t('index.learningElements')}
+            {t('shared.generic.learningElements')}
           </H1>
           <div className="flex flex-col gap-2">
             <LinkButton href="/repetition" icon={faGraduationCap}>
-              {t('index.repetition')}
+              {t('shared.generic.repetition')}
             </LinkButton>
             <LinkButton href="/bookmarks" icon={faBookmark}>
-              {t('index.myBookmarks')}
+              {t('pwa.index.myBookmarks')}
             </LinkButton>
           </div>
         </div>
         {activeMicrolearning.length > 0 && (
           <div>
             <H1 className={{ root: 'text-xl mb-2' }}>
-              {t('index.microlearning')}
+              {t('shared.generic.microlearning')}
             </H1>
             <div className="flex flex-col gap-2">
               {activeMicrolearning.map((micro) => (
@@ -270,7 +270,9 @@ const Index = function () {
           </div>
         )}
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>{t('index.myCourses')}</H1>
+          <H1 className={{ root: 'text-xl mb-2' }}>
+            {t('pwa.index.myCourses')}
+          </H1>
           <div className="flex flex-col gap-2">
             {courses.map((course) => (
               <CourseElement
@@ -283,7 +285,7 @@ const Index = function () {
               <CourseElement key={course.id} course={course} />
             ))}
             <LinkButton icon={faCirclePlus} href="/join">
-              {t('index.joinCourse')}
+              {t('pwa.index.joinCourse')}
             </LinkButton>
           </div>
         </div>
@@ -300,7 +302,6 @@ export function getStaticProps({ locale }: any) {
   return {
     props: {
       messages: {
-        ...require(`../messages/index/${locale}.json`),
         ...require(`shared-components/src/intl-messages/${locale}.json`),
       },
     },

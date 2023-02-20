@@ -28,7 +28,7 @@ export function SessionProgress({
   onSubmit,
   onExpire,
 }: SessionProgressProps): React.ReactElement {
-  const t = useTranslations('shared.generic')
+  const t = useTranslations()
   const theme = useContext(ThemeContext)
   const untilExpiration = expiresAt
     ? dayjs(expiresAt).diff(dayjs(), 'second')
@@ -73,7 +73,7 @@ export function SessionProgress({
           onClick={onSubmit}
           data={{ cy: 'student-submit-answer' }}
         >
-          <Button.Label>{t('send')}</Button.Label>
+          <Button.Label>{t('shared.generic.send')}</Button.Label>
         </Button>
       </div>
     </div>

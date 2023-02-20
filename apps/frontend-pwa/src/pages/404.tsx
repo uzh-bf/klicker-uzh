@@ -43,8 +43,6 @@ function MissingPage() {
   )
 }
 
-export default MissingPage
-
 export function getStaticProps({ locale }: any) {
   return {
     props: {
@@ -54,3 +52,5 @@ export function getStaticProps({ locale }: any) {
     },
   }
 }
+
+export default MissingPage

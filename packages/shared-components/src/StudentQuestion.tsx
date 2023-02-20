@@ -57,7 +57,7 @@ export const StudentQuestion = ({
   inputEmpty,
   setInputState,
 }: StudentQuestionProps) => {
-  const t = useTranslations('shared.questions')
+  const t = useTranslations()
 
   const onActiveChoicesChange =
     (type: string): any =>
@@ -202,9 +202,13 @@ export const StudentQuestion = ({
 
       <div className="flex-1 mt-4">
         <div className="mb-2">
-          <span className="font-bold">{t(`${currentQuestion.type}text`)}</span>{' '}
+          <span className="font-bold">
+            {t(`shared.questions.${currentQuestion.type}text`)}
+          </span>{' '}
           {currentQuestion.options?.accuracy &&
-            t('roundedTo', { accuracy: currentQuestion.options.accuracy })}
+            t('shared.questions.roundedTo', {
+              accuracy: currentQuestion.options.accuracy,
+            })}
         </div>
 
         {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) && (

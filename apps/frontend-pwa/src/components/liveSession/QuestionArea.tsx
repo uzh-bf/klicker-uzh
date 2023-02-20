@@ -46,8 +46,7 @@ function QuestionArea({
   timeLimit,
   execution,
 }: QuestionAreaProps): React.ReactElement {
-  const t = useTranslations('questionArea')
-  const tgeneric = useTranslations('generic')
+  const t = useTranslations()
 
   const [remainingQuestions, setRemainingQuestions] = useState(new Array())
   const [activeQuestion, setActiveQuestion] = useState(
@@ -206,11 +205,11 @@ function QuestionArea({
   return (
     <div className="w-full h-full min-h-content">
       <H2 className={{ root: 'hidden mb-2 md:block' }}>
-        {tgeneric('question')}
+        {t('shared.generic.question')}
       </H2>
 
       {remainingQuestions.length === 0 ? (
-        t('allQuestionsAnswered')
+        t('pwa.session.allQuestionsAnswered')
       ) : (
         <div className="flex flex-col w-full gap-2">
           <StudentQuestion

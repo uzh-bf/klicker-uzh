@@ -30,24 +30,24 @@ export function NUMERICALAnswerOptions({
   onChange,
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   const theme = useContext(ThemeContext)
-  const t = useTranslations('shared.questions')
+  const t = useTranslations()
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-row gap-6">
         {typeof min === 'number' && (
           <div data-cy="input-numerical-minimum">
-            {t('numMin')}: {min}
+            {t('shared.generic.min')}: {min}
           </div>
         )}
         {typeof max === 'number' && (
           <div data-cy="input-numerical-maximum">
-            {t('numMax')}: {max}
+            {t('shared.generic.max')}: {max}
           </div>
         )}
         {typeof accuracy === 'number' && (
           <div data-cy="input-numerical-accuracy">
-            {t('numPrecision')}: {accuracy}
+            {t('shared.generic.precision')}: {accuracy}
           </div>
         )}
       </div>
@@ -78,7 +78,7 @@ export function NUMERICALAnswerOptions({
             icon={faTriangleExclamation}
             className="mr-1.5 ml-0.5 text-red-700"
           />
-          {t('numInvalidValue')}
+          {t('shared.questions.numInvalidValue')}
         </div>
       )}
     </div>

@@ -15,10 +15,12 @@ function Repetition() {
   return (
     <Layout
       course={{ displayName: 'KlickerUZH' }}
-      displayName={t('learningElement.repetitionLearningElements')}
+      displayName={t('pwa.learningElement.repetitionTitle')}
     >
       <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
-        <H1 className={{ root: 'text-xl' }}>{t('index.repetition')}</H1>
+        <H1 className={{ root: 'text-xl' }}>
+          {t('shared.generic.repetition')}
+        </H1>
         {data?.learningElements?.map((element) => (
           <Link
             key={element.id}
@@ -50,8 +52,6 @@ export function getStaticProps({ locale }: any) {
   return {
     props: {
       messages: {
-        ...require(`../messages/learningElement/${locale}.json`),
-        ...require(`../messages/index/${locale}.json`),
         ...require(`shared-components/src/intl-messages/${locale}.json`),
       },
     },

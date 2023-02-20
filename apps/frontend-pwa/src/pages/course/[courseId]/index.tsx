@@ -507,6 +507,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       courseId: ctx.params.courseId,
+      messages: {
+        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+      },
     },
   })
 }

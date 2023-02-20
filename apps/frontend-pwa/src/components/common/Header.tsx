@@ -23,8 +23,7 @@ function Header({
   const router = useRouter()
   const { pathname, asPath, query } = router
   const theme = useContext(ThemeContext)
-  const t = useTranslations('index')
-  const tshared = useTranslations('generic')
+  const t = useTranslations()
 
   const pageInFrame =
     global?.window &&
@@ -105,21 +104,21 @@ function Header({
               className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               onClick={() => router.back()}
             >
-              {t('back')}
+              {t('shared.generic.back')}
             </Button>
           ) : (
             <Link href="/" legacyBehavior>
               <Button
                 className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               >
-                {t('home')}
+                {t('shared.generic.home')}
               </Button>
             </Link>
           ))
         ) : (
           <Link href="/login" legacyBehavior>
             <Button className={{ root: 'text-white bg-slate-800' }}>
-              {tshared('login')}
+              {t('shared.generic.login')}
             </Button>
           </Link>
         )}

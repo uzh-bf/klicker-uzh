@@ -87,6 +87,9 @@ export const getStaticProps: GetStaticProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
+      messages: {
+        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+      },
     },
     revalidate: 60,
   })

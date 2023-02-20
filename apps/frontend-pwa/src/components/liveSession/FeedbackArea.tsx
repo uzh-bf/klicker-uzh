@@ -90,8 +90,7 @@ function FeedbackArea({
   isConfusionFeedbackEnabled,
   isLiveQAEnabled,
 }: FeedbackAreaProps) {
-  const t = useTranslations('feedbackArea')
-  const tshared = useTranslations('generic')
+  const t = useTranslations()
 
   const router = useRouter()
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
@@ -290,7 +289,7 @@ function FeedbackArea({
 
   return (
     <div className="w-full h-full">
-      <H2>{t('title')}</H2>
+      <H2>{t('pwa.feedbacks.title')}</H2>
 
       <Subscriber sessionId={sessionId} subscribeToMore={subscribeToMore} />
 
@@ -315,7 +314,7 @@ function FeedbackArea({
               <Form>
                 <FormikTextareaField
                   name="feedbackInput"
-                  placeholder={t('feedbackPlaceholder')}
+                  placeholder={t('pwa.feedbacks.feedbackPlaceholder')}
                   className={{
                     input:
                       'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm bg-white',
@@ -324,7 +323,7 @@ function FeedbackArea({
                   component="textarea"
                   rows="3"
                   maxLength={500}
-                  maxLengthLabel={t('characters')}
+                  maxLengthLabel={t('shared.generic.characters')}
                 />
                 <Button
                   className={{
@@ -334,9 +333,9 @@ function FeedbackArea({
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
-                    <Button.Label>{tshared('loading')}</Button.Label>
+                    <Button.Label>{t('shared.generic.loading')}</Button.Label>
                   ) : (
-                    <Button.Label>{tshared('send')}</Button.Label>
+                    <Button.Label>{t('shared.generic.send')}</Button.Label>
                   )}
                 </Button>
               </Form>
@@ -348,7 +347,7 @@ function FeedbackArea({
       {isConfusionFeedbackEnabled && (
         <div className="mb-8 space-y-6 text-sm">
           <div className="">
-            <H3 className={{ root: 'mb-0' }}>{t('speed')}</H3>
+            <H3 className={{ root: 'mb-0' }}>{t('pwa.feedbacks.speed')}</H3>
             <div className="w-full -mt-8">
               <Slider
                 disabled={!isConfusionEnabled}
@@ -366,7 +365,9 @@ function FeedbackArea({
             </div>
           </div>
           <div>
-            <H3 className={{ root: 'mb-0' }}>{t('difficulty')}</H3>
+            <H3 className={{ root: 'mb-0' }}>
+              {t('pwa.feedbacks.difficulty')}
+            </H3>
             <div className="w-full -mt-5">
               <Slider
                 disabled={!isConfusionEnabled}
@@ -390,7 +391,7 @@ function FeedbackArea({
         <div>
           {openFeedbacks && openFeedbacks.length > 0 && (
             <div className="mb-8">
-              <H3>{t('openQuestions')}</H3>
+              <H3>{t('pwa.feedbacks.openQuestions')}</H3>
               {openFeedbacks.map((feedback) =>
                 feedback ? (
                   <PublicFeedback
@@ -406,7 +407,7 @@ function FeedbackArea({
 
           {resolvedFeedbacks && resolvedFeedbacks.length > 0 && (
             <div className="mb-4">
-              <H3>{t('resolvedQuestions')}</H3>
+              <H3>{t('pwa.feedbacks.resolvedQuestions')}</H3>
               {resolvedFeedbacks
                 .sort((feedback1, feedback2) =>
                   feedback1 && feedback2

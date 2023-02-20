@@ -7,16 +7,13 @@
       "FREE_TEXTtext": "Please enter your answer.",
       "NUMERICALtext": "Please enter a number.",
       "roundedTo": "(rounded to {accuracy} decimal places)",
-      "numMin": "Min",
-      "numMax": "Max",
-      "numPrecision": "Precision",
       "numInvalidValue": "The entered value is not a number or is not in the specified range.",
-      "characters": "characters",
       "ftPlaceholder": "Your answer..."
     },
     "generic": {
       "title": "KlickerUZH",
       "send": "Send",
+      "loading": "Loading...",
       "logout": "Logout",
       "login": "Login",
       "username": "Username",
@@ -29,12 +26,62 @@
       "back": "Back",
       "home": "Home",
       "questions": "Questions",
+      "question": "Question",
       "feedbacks": "Feedbacks",
       "leaderboard": "Leaderboard",
-      "question": "Question"
+      "repetition": "Repetition",
+      "learningElements": "Learning Elements",
+      "microlearning": "Microlearning",
+      "activeSessions": "Active Sessions",
+      "characters": "characters",
+      "precision": "Precision",
+      "min": "Min",
+      "max": "Max",
+      "free": "Free"
+    },
+    "leaderboard": {
+      "sessionTitle": "Session Leaderboard",
+      "ranks": "Ranks",
+      "points": "Points"
     }
   },
-  "pwa": {},
+  "pwa": {
+    "index": {
+      "myCourses": "My Courses",
+      "myBookmarks": "My Bookmarks",
+      "joinCourse": "Join Course",
+      "setupProfile": "Setup profile"
+    },
+    "login": {
+      "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
+      "installButton": "Install Now",
+      "installHomeScreen": "Open the Share dialog and click 'Add to Home Screen' to install the Klicker app on your phone."
+    },
+    "learningElement": {
+      "repetitionTitle": "Repetition learning elements"
+    },
+    "session": {
+      "noActiveQuestion": "No question active.",
+      "allQuestionsAnswered": "You have already answered all active questions."
+    },
+
+    "feedbacks": {
+      "title": "Feedback Channel",
+      "speed": "Speed",
+      "difficulty": "Difficulty",
+      "openQuestions": "Open Questions",
+      "resolvedQuestions": "Resolved Questions",
+      "feedbackPlaceholder": "Enter your question / feedback",
+      "postedAt": "Posted at {date}",
+      "solvedAt": "Resolved at {date}"
+    },
+    "user": {
+      "editProfile": "Edit profile",
+      "achievements": "Achievements",
+      "noAchievements": "No achievements yet.",
+      "myProfile": "My Profile"
+    }
+  },
   "manage": {},
   "control": {}
 }

@@ -333,6 +333,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         color: data?.basicCourseInformation?.color,
         description: data?.basicCourseInformation?.description,
         courseLoading: loading,
+        messages: {
+          ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+        },
       },
     }
   } catch {
