@@ -1,8 +1,27 @@
 {
-  "Layout": {
+  "layout": {
     "back": "Zurück",
     "home": "Home",
     "login": "Login",
     "setupProfile": "Profil einrichten"
+  },
+  "generic": {
+    "send": "Absenden"
+  },
+  "sharedComponents": {
+    "progressBar": { "send": "Absenden" },
+    "questions": {
+      "ScText": "Bitte eine einzige Option auswählen.",
+      "McText": "Bitte eine oder mehrere Optionen auswählen.",
+      "KprimText": "Beurteile die Aussagen auf ihre Richtigkeit.",
+      "FtText": "Bitte eine Antwort eingeben.",
+      "NumText": "Bitte eine Zahl eingeben.",
+      "roundedTo": "(gerundet auf {accuracy} Nachkommastellen)",
+      "numMin": "Min",
+      "numMax": "Max",
+      "numPrecision": "Präzision",
+      "numInvalidValue": "Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.",
+      "ftCharacters": "Zeichen"
+    }
   }
 }

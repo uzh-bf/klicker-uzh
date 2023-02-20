@@ -1,8 +1,27 @@
 {
-  "Layout": {
+  "layout": {
     "back": "Back",
     "home": "Home",
     "login": "Login",
     "setupProfile": "Setup profile"
+  },
+  "generic": {
+    "send": "Send"
+  },
+  "sharedComponents": {
+    "progressBar": { "send": "Send" },
+    "questions": {
+      "ScText": "Please select a single option.",
+      "McText": "Please select one or more options.",
+      "KprimText": "Evaluate the statements for correctness.",
+      "FtText": "Please enter your answer.",
+      "NumText": "Please enter a number.",
+      "roundedTo": "(rounded to {accuracy} decimal places)",
+      "numMin": "Min",
+      "numMax": "Max",
+      "numPrecision": "Precision",
+      "numInvalidValue": "The entered value is not a number or is not in the specified range.",
+      "ftCharacters": "characters"
+    }
   }
 }

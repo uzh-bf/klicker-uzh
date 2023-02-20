@@ -1,0 +1,29 @@
+{
+  "liveSession": {
+    "questions": "Questions",
+    "feedbacks": "Feedbacks",
+    "leaderboard": "Leaderboard",
+    "noActiveQuestion": "No question active."
+  },
+  "sessionLeaderboard": {
+    "title": "Session Leaderboard",
+    "ranks": "Ranks",
+    "points": "Points",
+    "free": "Free"
+  },
+  "questionArea": {
+    "question": "Question",
+    "allQuestionsAnswered": "You have already answered all active questions."
+  },
+  "feedbackArea": {
+    "title": "Feedback Channel",
+    "speed": "Speed",
+    "difficulty": "Difficulty",
+    "openQuestions": "Open Questions",
+    "resolvedQuestions": "Resolved Questions",
+    "feedbackPlaceholder": "Enter your question / feedback",
+    "characters": "characters",
+    "postedAt": "Posted at {date}",
+    "solvedAt": "Resolved at {date}"
+  }
+}

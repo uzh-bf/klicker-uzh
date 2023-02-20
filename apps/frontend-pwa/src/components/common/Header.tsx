@@ -23,7 +23,7 @@ function Header({
   const router = useRouter()
   const { pathname, asPath, query } = router
   const theme = useContext(ThemeContext)
-  const t = useTranslations('Layout')
+  const t = useTranslations('layout')
 
   const pageInFrame =
     global?.window &&

@@ -7,6 +7,7 @@ import { push } from '@socialgouv/matomo-next'
 import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
+import { useTranslations } from 'next-intl'
 import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
 
@@ -45,6 +46,7 @@ function QuestionArea({
   timeLimit,
   execution,
 }: QuestionAreaProps): React.ReactElement {
+  const t = useTranslations('questionArea')
   const [remainingQuestions, setRemainingQuestions] = useState(new Array())
   const [activeQuestion, setActiveQuestion] = useState(
     (): any => remainingQuestions[0]
@@ -201,10 +203,10 @@ function QuestionArea({
 
   return (
     <div className="w-full h-full min-h-content">
-      <H2 className={{ root: 'hidden mb-2 md:block' }}>Frage</H2>
+      <H2 className={{ root: 'hidden mb-2 md:block' }}>{t('question')}</H2>
 
       {remainingQuestions.length === 0 ? (
-        'Sie haben bereits alle aktiven Fragen beantwortet.'
+        t('allQuestionsAnswered')
       ) : (
         <div className="flex flex-col w-full gap-2">
           <StudentQuestion

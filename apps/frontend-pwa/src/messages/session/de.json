@@ -1,0 +1,29 @@
+{
+  "liveSession": {
+    "questions": "Fragen",
+    "feedbacks": "Feedbacks",
+    "leaderboard": "Leaderboard",
+    "noActiveQuestion": "Keine Frage aktiv."
+  },
+  "sessionLeaderboard": {
+    "title": "Session Leaderboard",
+    "ranks": "Ränge",
+    "points": "Punkte",
+    "free": "Frei"
+  },
+  "questionArea": {
+    "question": "Frage",
+    "allQuestionsAnswered": "Sie haben bereits alle aktiven Fragen beantwortet."
+  },
+  "feedbackArea": {
+    "title": "Feedback-Kanal",
+    "speed": "Geschwindigkeit",
+    "difficulty": "Schwierigkeit",
+    "openQuestions": "Offene Fragen",
+    "resolvedQuestions": "Erledigte Fragen",
+    "feedbackPlaceholder": "Feedback / Frage eingeben",
+    "characters": "Zeichen",
+    "postedAt": "Gepostet am {date}",
+    "solvedAt": "Gelöst am {date}"
+  }
+}

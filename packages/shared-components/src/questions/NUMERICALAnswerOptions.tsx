@@ -1,6 +1,7 @@
 import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ThemeContext } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import NumberField from './NumberField'
@@ -29,18 +30,25 @@ export function NUMERICALAnswerOptions({
   onChange,
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   const theme = useContext(ThemeContext)
+  const t = useTranslations('sharedComponents.questions')
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-row gap-6">
         {typeof min === 'number' && (
-          <div data-cy="input-numerical-minimum">Min: {min}</div>
+          <div data-cy="input-numerical-minimum">
+            {t('numMin')}: {min}
+          </div>
         )}
         {typeof max === 'number' && (
-          <div data-cy="input-numerical-maximum">Max: {max}</div>
+          <div data-cy="input-numerical-maximum">
+            {t('numMax')}: {max}
+          </div>
         )}
         {typeof accuracy === 'number' && (
-          <div data-cy="input-numerical-accuracy">Präzision: {accuracy}</div>
+          <div data-cy="input-numerical-accuracy">
+            {t('numPrecision')}: {accuracy}
+          </div>
         )}
       </div>
       <div className="flex flex-row">
@@ -70,8 +78,7 @@ export function NUMERICALAnswerOptions({
             icon={faTriangleExclamation}
             className="mr-1.5 ml-0.5 text-red-700"
           />
-          Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen
-          Bereich.
+          {t('numInvalidValue')}
         </div>
       )}
     </div>

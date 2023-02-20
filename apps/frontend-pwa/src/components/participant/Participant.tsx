@@ -1,4 +1,5 @@
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -23,6 +24,8 @@ function Participant({
   points,
   rank,
 }: PropsWithChildren<ParticipantProps>) {
+  const t = useTranslations('sessionLeaderboard')
+
   return (
     <div
       className={twMerge(
@@ -46,7 +49,7 @@ function Participant({
         )}
 
         <div className="overflow-hidden first:ml-2 text-slate-700 text-ellipsis">
-          {pseudonym ?? 'Frei'}
+          {pseudonym ?? t('free')}
         </div>
         <div className="flex-1 text-right">{children}</div>
       </div>
