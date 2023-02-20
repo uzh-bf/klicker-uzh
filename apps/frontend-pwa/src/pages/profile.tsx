@@ -59,10 +59,9 @@ const Profile = () => {
 
         <div>
           <H2>Errungenschaften</H2>
-          {!data.self.achievements ||
-            (data.self.achievements?.length == 0 && (
-              <div>Bisher keine Errungenschaften</div>
-            ))}
+          {(!data.self.achievements || data.self.achievements?.length == 0) && (
+            <div>Bisher keine Errungenschaften</div>
+          )}
           <div className="grid gap-4 mt-2 md:grid-cols-2">
             {data.self.achievements?.map((achievement) => (
               <div
