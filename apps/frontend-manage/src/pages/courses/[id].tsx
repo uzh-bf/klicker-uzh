@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import DateChanger from '@components/courses/DateChanger'
 import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -8,7 +7,15 @@ import {
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import { Button, H1, H2, H3, ThemeContext, Toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  DateChanger,
+  H1,
+  H2,
+  H3,
+  ThemeContext,
+  Toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
