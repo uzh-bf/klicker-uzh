@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   faBookmark,
-  faFlag,
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
@@ -19,17 +18,18 @@ import {
   QuestionType,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { Button, H3, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import Footer from '../../../../components/common/Footer'
 import OptionsDisplay from '../../../../components/common/OptionsDisplay'
 import EvaluationDisplay from '../../../../components/evaluation/EvaluationDisplay'
+import FlagQuestionModal from '../../../../components/flags/FlagQuestionModal'
 import Layout from '../../../../components/Layout'
 import formatResponse from '../../../../lib/formatResponse'
 
@@ -44,12 +44,23 @@ interface Props {
   id: string
 }
 
+const DynamicMarkdown = dynamic(
+  async () => {
+    const { Markdown } = await import('@klicker-uzh/markdown')
+    return Markdown
+  },
+  {
+    ssr: false,
+  }
+)
+
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
 function LearningElement({ courseId, id }: Props) {
   const router = useRouter()
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
     refetchQueries: [
@@ -66,8 +77,8 @@ function LearningElement({ courseId, id }: Props) {
     variables: { id },
   })
 
-  const currentInstance = {
-    ...data?.learningElement?.instances?.[currentIx],
+  const currentInstance = data?.learningElement?.instances?.[currentIx] && {
+    ...data.learningElement.instances[currentIx],
     isBookmarked: bookmarks?.getBookmarkedQuestions?.find(
       (question) =>
         question.id === data?.learningElement?.instances?.[currentIx]?.id
@@ -144,7 +155,7 @@ function LearningElement({ courseId, id }: Props) {
               </div>
 
               {data.learningElement.description && (
-                <Markdown content={data.learningElement.description} />
+                <DynamicMarkdown content={data.learningElement.description} />
               )}
 
               <div className="flex flex-col gap-4 text-sm md:gap-16 md:flex-row">
@@ -290,20 +301,19 @@ function LearningElement({ courseId, id }: Props) {
                             <FontAwesomeIcon
                               className="text-red-600"
                               icon={faBookmarkSolid}
-                            ></FontAwesomeIcon>
+                            />
                           ) : (
-                            <FontAwesomeIcon
-                              icon={faBookmark}
-                            ></FontAwesomeIcon>
+                            <FontAwesomeIcon icon={faBookmark} />
                           )}
                         </Button>
                       </div>
                     </div>
 
                     <div className="pb-2">
-                      <Markdown content={questionData.content} />
+                      <DynamicMarkdown content={questionData.content} />
                     </div>
                     <OptionsDisplay
+                      key={currentInstance.id}
                       isEvaluation={isEvaluation}
                       evaluation={currentInstance.evaluation}
                       response={response}
@@ -313,6 +323,7 @@ function LearningElement({ courseId, id }: Props) {
                       }
                       questionType={questionData.type}
                       options={questionData.options}
+                      displayMode={questionData.displayMode}
                     />
                   </div>
 
@@ -323,7 +334,11 @@ function LearningElement({ courseId, id }: Props) {
                           <div className="font-bold">Multiplikator</div>
                           <div>{currentInstance.pointsMultiplier}x</div>
                         </div>
-                        <FontAwesomeIcon icon={faFlag}></FontAwesomeIcon>
+                        <FlagQuestionModal
+                          open={modalOpen}
+                          setOpen={setModalOpen}
+                          instanceId={currentInstance.id!}
+                        />
                       </div>
                       <div className="flex flex-row gap-8">
                         <div>
@@ -345,6 +360,7 @@ function LearningElement({ courseId, id }: Props) {
                         options={questionData.options}
                         questionType={questionData.type}
                         evaluation={currentInstance.evaluation}
+                        reference={String(response)}
                       />
 
                       <div>
@@ -355,6 +371,13 @@ function LearningElement({ courseId, id }: Props) {
                           ).format('DD.MM.YYYY HH:mm')}
                         </div>
                       </div>
+
+                      {questionData.explanation && (
+                        <div className="">
+                          <div className="mb-1 font-bold">Erklärung</div>
+                          <DynamicMarkdown content={questionData.explanation} />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

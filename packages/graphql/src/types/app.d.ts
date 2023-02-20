@@ -10,6 +10,7 @@ interface QuestionData<Type, Options> {
   createdAt: string | Date
   updatedAt: string | Date
   pointsMultiplier: number
+  explanation?: string
 
   options: Options
 }

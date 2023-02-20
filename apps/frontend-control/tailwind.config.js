@@ -15,7 +15,9 @@ module.exports = {
       screens: {
         xs: '480px',
       },
-      fontFamily: {},
+      fontFamily: {
+        ...TailwindFonts,
+      },
     },
   },
   plugins: [

@@ -133,7 +133,7 @@ export const Query = builder.queryType({
           return SessionService.getUnassignedSessions(ctx)
         },
       }),
-      runningSessions: asUser.field({
+      runningSessions: t.field({
         nullable: true,
         type: [Session],
         args: {

@@ -1,8 +1,8 @@
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import React from 'react'
+import Histogram from 'shared-components/src/Histogram'
 import { TextSizeType } from '../sessions/evaluation/constants'
 import BarChart from './BarChart'
-import Histogram from './Histogram'
 import TableChart from './TableChart'
 import Wordcloud from './Wordcloud'
 
@@ -30,11 +30,13 @@ function Chart({
   if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
     return (
-      <TableChart
-        data={data}
-        showSolution={showSolution}
-        textSize={textSize.textLg}
-      />
+      <div className="h-full overflow-y-auto">
+        <TableChart
+          data={data}
+          showSolution={showSolution}
+          textSize={textSize.textLg}
+        />
+      </div>
     )
   } else if (chartType === 'histogram') {
     return (

@@ -15,7 +15,7 @@ releases:
       - appSecret: '{{ requiredEnv "APP_SECRET" }}'
 
         frontendPWA:
-          replicaCount: 1
+          replicaCount: 3
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
@@ -40,13 +40,17 @@ releases:
 
 
         backendGraphql:
-          replicaCount: 1
+          replicaCount: 2
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
           apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
           cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
           databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
+
+          notifications:
+            url: '{{ requiredEnv "NOTIFICATION_URL" }}'
+            secret: '{{ requiredEnv "NOTIFICATION_SECRET" }}'
 
           redisCache:
             host: klicker-v2-prod-redis-master

@@ -4,27 +4,44 @@
   "types": "src/index.ts",
   "private": true,
   "scripts": {
-    "dev": "tailwindcss -i src/globals.css -o src/tailwind.css -w",
-    "build": "tailwindcss -i src/globals.css -o src/tailwind.css",
+    "//dev": "run-p dev:tw:*",
+    "dev:tw:components": "tailwindcss -i src/components.css -o dist/components.css -w",
+    "dev:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css -w",
+    "build": "run-p build:tw:*",
+    "build:tw:components": "tailwindcss -i src/components.css -o dist/components.css",
+    "build:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css",
     "format": "prettier --write ."
   },
   "peerDependencies": {
+    "@fortawesome/free-regular-svg-icons": "^6.3.0",
+    "@fortawesome/free-solid-svg-icons": "^6.2.0",
+    "@fortawesome/react-fontawesome": "^0.2.0",
+    "@klicker-uzh/graphql": "*",
+    "@klicker-uzh/markdown": "*",
+    "@next/font": "^13.1.6",
+    "@uzh-bf/design-system": "^1.3.0",
+    "dayjs": "^1.11.6",
+    "is-hotkey": "^0.2.0",
+    "ramda": "^0.28.0",
+    "react": "^18.2.0",
+    "slate": "^0.90.0",
+    "slate-history": "^0.86.0",
+    "slate-react": "^0.91.0",
+    "tailwind-merge": "^1.8.0",
+    "typescript": "^4.9.3",
+    "yup": "^1.0.0",
+    "recharts": "^2.4.1",
+    "lodash": "^4.17.21"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "devDependencies": {
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.3",
     "@tailwindcss/line-clamp": "^0.4.2",
     "@tailwindcss/typography": "^0.5.7",
-    "@fortawesome/free-solid-svg-icons": "^6.2.0",
-    "@fortawesome/react-fontawesome": "^0.2.0",
-    "@uzh-bf/design-system": "1.2.3",
-    "dayjs": "^1.11.6",
-    "ramda": "^0.28.0",
-    "react": "^18.2.0",
-    "tailwind-merge": "^1.8.0",
-    "tailwindcss": "^3.2.4",
-    "typescript": "^4.9.3",
-    "yup": "^1.0.0"
-  },
-  "volta": {
-    "extends": "../../package.json"
+    "npm-run-all": "^4.1.5",
+    "tailwindcss": "^3.2.4"
   }
 }

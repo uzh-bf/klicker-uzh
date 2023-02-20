@@ -1,7 +1,7 @@
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Prose, ThemeContext } from '@uzh-bf/design-system'
 import { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -39,12 +39,12 @@ function EvaluationCollapsible({
   }, [questionCollapsed, questionElem, selectedInstance])
 
   const computedClassName = twMerge(
-    questionCollapsed ? 'md:max-h-[7rem]' : 'md:max-h-content',
+    questionCollapsed ? 'md:max-h-[5rem]' : 'md:max-h-content',
     !showExtensibleButton && 'border-solid border-b-only border-primary',
     showExtensibleButton &&
       questionCollapsed &&
       'md:bg-clip-text md:bg-gradient-to-b md:from-black md:via-black md:to-white md:text-transparent',
-    'w-full md:overflow-y-hidden md:self-start flex-[0_0_auto] p-4 text-left'
+    'w-full md:overflow-y-hidden md:self-start p-4 text-left'
   )
 
   return (
@@ -53,13 +53,13 @@ function EvaluationCollapsible({
         <Prose
           className={{
             root: twMerge(
-              'flex-initial max-w-full prose-p:m-0 leading-8 prose-lg',
+              'flex-initial max-w-full prose-p:m-0 leading-8 prose-lg prose-img:m-0',
               proseSize
             ),
           }}
         >
           <Markdown
-            className="flex flex-row content-between hover:text-black"
+            className={{ root: 'flex flex-row content-between' }}
             content={currentInstance.questionData?.content}
           />
         </Prose>

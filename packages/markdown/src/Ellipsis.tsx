@@ -1,13 +1,12 @@
-import Markdown from '@klicker-uzh/markdown'
 import { Prose, Tooltip } from '@uzh-bf/design-system'
-import Image from 'next/image'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import Markdown from './Markdown'
 
-interface EllipsisProps {
+export interface EllipsisBaseProps {
   children: string
   maxLength?: number
-  maxLines?: number
+  maxLines?: 1 | 2 | 3
   withoutPopup?: boolean
   className?: {
     root?: string
@@ -17,14 +16,16 @@ interface EllipsisProps {
   }
 }
 
-interface EllipsisPropsMaxLength extends EllipsisProps {
+export interface EllipsisPropsMaxLength extends EllipsisBaseProps {
   maxLength: number
   maxLines?: never
 }
-interface EllipsisPropsMaxLines extends EllipsisProps {
+export interface EllipsisPropsMaxLines extends EllipsisBaseProps {
   maxLength?: never
-  maxLines: number
+  maxLines: 1 | 2 | 3
 }
+
+export type EllipsisProps = EllipsisPropsMaxLength | EllipsisPropsMaxLines
 
 function Ellipsis({
   children,
@@ -32,59 +33,54 @@ function Ellipsis({
   maxLines,
   withoutPopup,
   className,
-}: EllipsisPropsMaxLength | EllipsisPropsMaxLines): React.ReactElement {
-  const parsedContent = (
-    <Markdown
-      components={{
-        img: ({ src, alt }: any) => (
-          <Image src={src} alt="Image" width={50} height={50} />
-        ),
-      }}
-      content={children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
-      className={className?.markdown}
-    />
-  )
-
+}: EllipsisProps): React.ReactElement {
   if (maxLines) {
     return (
       <Tooltip
+        delay={1000}
         tooltip={
           <Prose
             className={{
-              root: 'flex-initial max-w-full leading-6 prose-p:m-0 prose-invert text-white hover:text-white prose-img:m-0',
+              root: 'flex-initial max-w-full leading-6 prose-p:m-0 hover:text-white prose-img:m-0 ',
             }}
           >
-            {parsedContent}
+            <Markdown
+              withModal={false}
+              content={children
+                .toString()
+                .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+              className={{ root: className?.markdown, img: 'max-h-36' }}
+            />
           </Prose>
         }
         className={{
           tooltip: twMerge(
-            'text-sm max-w-[50%] md:max-w-[60%]',
+            'text-sm bg-white border shadow max-w-md',
             className?.tooltip
           ),
         }}
         withIndicator={false}
       >
-        <div
-          className={twMerge(
-            'line-clamp-1 line-clamp-2 line-clamp-3',
-            // HACK: dynamic classnames do not work with tailwind
-            // the above ensures classes 1-3 are present
-            `line-clamp-${maxLines}`,
-            className?.root
-          )}
+        <Prose
+          className={{
+            root: twMerge(
+              'flex-initial max-w-full leading-6 prose-p:m-0 text-black hover:text-black prose-img:m-0',
+              // HACK: dynamic classnames do not work with tailwind
+              // line-clamp-1 line-clamp-2 line-clamp-3
+              // the above ensures classes 1-3 are present
+              `line-clamp-${maxLines}`,
+              className?.root,
+              className?.content
+            ),
+          }}
         >
-          <Prose
-            className={{
-              root: twMerge(
-                'flex-initial max-w-full leading-6 prose-p:m-0 text-black hover:text-black prose-img:m-0',
-                className?.content
-              ),
-            }}
-          >
-            {parsedContent}
-          </Prose>
-        </div>
+          <Markdown
+            content={children
+              .toString()
+              .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+            className={{ root: className?.markdown, img: 'max-h-16' }}
+          />
+        </Prose>
       </Tooltip>
     )
   }
@@ -126,7 +122,7 @@ function Ellipsis({
           .toString()
           .substr(0, endIndex || maxLength)
           .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')} **...**`}
-        className={className?.markdown}
+        className={{ root: className?.markdown, img: 'max-h-36' }}
       />
     </Prose>
   )
@@ -138,7 +134,12 @@ function Ellipsis({
     typeof children !== 'string' ||
     children.length === endIndex
   ) {
-    return parsedContent
+    return (
+      <Markdown
+        content={children.toString().replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+        className={{ root: className?.markdown, img: 'max-h-36' }}
+      />
+    )
   }
 
   // return shortened content including tooltip with full content (if not explicitely disabled)
@@ -148,7 +149,16 @@ function Ellipsis({
         shortenedParsedContent
       ) : (
         <Tooltip
-          tooltip={parsedContent}
+          delay={1000}
+          tooltip={
+            <Markdown
+              withModal={false}
+              content={children
+                .toString()
+                .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
+              className={{ root: className?.markdown }}
+            />
+          }
           className={{
             tooltip: twMerge(
               'text-sm max-w-[50%] md:max-w-[60%]',

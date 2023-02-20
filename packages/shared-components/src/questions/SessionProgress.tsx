@@ -18,15 +18,9 @@ export interface SessionProgressProps {
   onExpire: () => void
 }
 
-const defaultProps = {
-  isSubmitDisabled: false,
-  expiresAt: undefined,
-  timeLimit: undefined,
-}
-
 export function SessionProgress({
   activeIndex,
-  isSubmitDisabled,
+  isSubmitDisabled = false,
   numItems,
   expiresAt,
   timeLimit,
@@ -83,7 +77,5 @@ export function SessionProgress({
     </div>
   )
 }
-
-SessionProgress.defaultProps = defaultProps
 
 export default SessionProgress

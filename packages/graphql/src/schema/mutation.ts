@@ -658,6 +658,7 @@ export const Mutation = builder.mutationType({
           type: t.arg({ required: true, type: QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
+          explanation: t.arg.string({ required: false }),
           displayMode: t.arg({ required: false, type: QuestionDisplayMode }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
@@ -682,6 +683,7 @@ export const Mutation = builder.mutationType({
           type: t.arg({ required: true, type: QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
+          explanation: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
           tags: t.arg.stringList({ required: false }),
@@ -705,6 +707,7 @@ export const Mutation = builder.mutationType({
           type: t.arg({ required: true, type: QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
+          explanation: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
           tags: t.arg.stringList({ required: false }),
@@ -730,6 +733,17 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ParticipantService.bookmarkQuestion(args, ctx)
+        },
+      }),
+
+      flagQuestion: asParticipant.string({
+        nullable: true,
+        args: {
+          questionInstanceId: t.arg.int({ required: true }),
+          content: t.arg.string({ required: true }),
+        },
+        async resolve(_, args, ctx) {
+          return ParticipantService.flagQuestion(args, ctx)
         },
       }),
 

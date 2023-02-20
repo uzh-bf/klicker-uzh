@@ -5,6 +5,7 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
     type
     displayMode
     content
+    explanation
     pointsMultiplier
 
     ... on ChoicesQuestionData {
@@ -18,6 +19,9 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
 
     ... on NumericalQuestionData {
       options {
+        unit
+        accuracy
+        placeholder
         restrictions {
           min
           max

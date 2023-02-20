@@ -87,57 +87,59 @@ function EvaluationControlBar({
   }, [blocks, selectedBlock])
 
   return (
-    <div className="fixed top-0 z-10 flex flex-row flex-none w-full px-3 bg-white border-b-2 border-solid justify-betweenb h-11 print:hidden">
-      {blocks && blocks[selectedBlock] && (
-        <div className="flex flex-row items-center gap-2">
-          <Button
-            basic
-            onClick={() => {
-              setSelectedInstanceIndex(selectedInstanceIndex - 1)
-            }}
-            disabled={selectedInstanceIndex === 0}
-            className={{
-              root: twMerge(
-                selectedInstanceIndex === 0 &&
-                  'text-uzh-grey-80 cursor-not-allowed'
-              ),
-            }}
-          >
-            <FontAwesomeIcon icon={faArrowLeft} />
-          </Button>
-          <Button
-            basic
-            onClick={() => {
-              setSelectedInstanceIndex(selectedInstanceIndex + 1)
-            }}
-            disabled={selectedInstanceIndex === instanceResults.length - 1}
-            className={{
-              root: twMerge(
-                selectedInstanceIndex === instanceResults.length - 1 &&
-                  'text-uzh-grey-80 cursor-not-allowed'
-              ),
-            }}
-            data={{ cy: 'evaluate-next-question' }}
-          >
-            <FontAwesomeIcon icon={faArrowRight} />
-          </Button>
+    <div className="flex flex-row justify-between w-full px-3 bg-white border-b-2 border-solid print:hidden">
+      <div>
+        {blocks && blocks[selectedBlock] && (
+          <div className="flex flex-row items-center gap-2">
+            <Button
+              basic
+              onClick={() => {
+                setSelectedInstanceIndex(selectedInstanceIndex - 1)
+              }}
+              disabled={selectedInstanceIndex === 0}
+              className={{
+                root: twMerge(
+                  selectedInstanceIndex === 0 &&
+                    'text-uzh-grey-80 cursor-not-allowed'
+                ),
+              }}
+            >
+              <FontAwesomeIcon icon={faArrowLeft} />
+            </Button>
+            <Button
+              basic
+              onClick={() => {
+                setSelectedInstanceIndex(selectedInstanceIndex + 1)
+              }}
+              disabled={selectedInstanceIndex === instanceResults.length - 1}
+              className={{
+                root: twMerge(
+                  selectedInstanceIndex === instanceResults.length - 1 &&
+                    'text-uzh-grey-80 cursor-not-allowed'
+                ),
+              }}
+              data={{ cy: 'evaluate-next-question' }}
+            >
+              <FontAwesomeIcon icon={faArrowRight} />
+            </Button>
 
-          <div className="ml-2 font-bold">Frage:</div>
+            <div className="ml-2 font-bold">Frage:</div>
 
-          <Select
-            items={selectData || []}
-            onChange={(newValue) => {
-              setSelectedInstanceIndex(Number(newValue))
-            }}
-            className={{
-              root: 'h-[2.65rem] z-20',
-              trigger: 'shadow-none rounded-none m-0 border-none h-full',
-            }}
-            value={String(selectedInstanceIndex)}
-          />
-        </div>
-      )}
-      <div className="flex flex-row ml-auto">
+            <Select
+              items={selectData || []}
+              onChange={(newValue) => {
+                setSelectedInstanceIndex(Number(newValue))
+              }}
+              className={{
+                root: 'h-[2.65rem] z-20',
+                trigger: 'shadow-none rounded-none m-0 border-none h-full',
+              }}
+              value={String(selectedInstanceIndex)}
+            />
+          </div>
+        )}
+      </div>
+      <div className="flex flex-row">
         <Button
           basic
           onClick={() => {

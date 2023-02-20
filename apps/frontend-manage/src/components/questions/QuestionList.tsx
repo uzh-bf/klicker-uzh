@@ -10,16 +10,11 @@ interface QuestionListProps {
   tagfilter?: string[]
 }
 
-const defaultProps = {
-  questions: [],
-  tagfilter: [],
-}
-
 function QuestionList({
   setSelectedQuestions,
   selectedQuestions,
-  questions,
-  tagfilter,
+  questions = [],
+  tagfilter = [],
 }: QuestionListProps): React.ReactElement {
   if (!questions) {
     return <></>
@@ -45,12 +40,12 @@ function QuestionList({
           hasSampleSolution={question.hasSampleSolution}
           onCheck={() => setSelectedQuestions(index)}
           tagfilter={tagfilter}
+          createdAt={question.createdAt}
+          updatedAt={question.updatedAt}
         />
       ))}
     </>
   )
 }
-
-QuestionList.defaultProps = defaultProps
 
 export default QuestionList

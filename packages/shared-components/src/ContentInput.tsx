@@ -25,7 +25,7 @@ import { HistoryEditor, withHistory } from 'slate-history'
 import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
 import { twMerge } from 'tailwind-merge'
 
-import { convertToMd, convertToSlate } from '../../lib/utils/slateMdConversion'
+import { convertToMd, convertToSlate } from './utils/slateMdConversion'
 
 interface Props {
   error?: any
@@ -46,12 +46,6 @@ interface Props {
   data_cy?: string
 }
 
-const defaultProps = {
-  error: '',
-  disabled: false,
-  showToolbarOnFocus: false,
-}
-
 const HOTKEYS: Record<string, string> = {
   'mod+b': 'bold',
   'mod+i': 'italic',
@@ -62,11 +56,11 @@ type OrNull<T> = T | null
 function ContentInput({
   content,
   onChange,
-  disabled,
-  showToolbarOnFocus,
+  disabled = false,
+  showToolbarOnFocus = false,
   placeholder,
   autoFocus,
-  error,
+  error = '',
   touched,
   className,
   key,
@@ -479,7 +473,5 @@ export const Button = React.forwardRef(
   )
 )
 Button.displayName = 'Button'
-
-ContentInput.defaultProps = defaultProps
 
 export default ContentInput

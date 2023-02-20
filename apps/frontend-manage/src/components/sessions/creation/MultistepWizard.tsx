@@ -107,7 +107,7 @@ function MultistepWizard({
       enableReinitialize
     >
       {({ values, isSubmitting, isValid, resetForm }) => (
-        <Form className="flex flex-col justify-between gap-1 p-4 overflow-y-auto h-80">
+        <Form className="flex flex-col justify-between gap-1 p-4 overflow-y-auto h-72">
           {!isCompleted && <div>{step}</div>}
           {isCompleted && (
             <div className="flex flex-col items-center gap-4 p-4">

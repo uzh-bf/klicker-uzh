@@ -39,6 +39,7 @@ export function prepareCourse({
   pinCode?: number
   startDate: Date
   endDate: Date
+  notificationEmail?: string
 }) {
   const data = {
     ...args,
@@ -241,9 +242,7 @@ export function prepareQuestionInstance({
     case Prisma.QuestionType.FREE_TEXT: {
       return {
         ...common,
-        results: {
-          answers: [],
-        },
+        results: {},
       }
     }
   }

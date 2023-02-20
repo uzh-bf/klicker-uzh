@@ -3,7 +3,7 @@ import {
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { without } from 'ramda'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -13,7 +13,6 @@ import React, { useContext } from 'react'
 
 import { ThemeContext } from '@uzh-bf/design-system'
 import { QUESTION_GROUPS } from './constants'
-import ImgWithModal from './ImgWithModal'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
 import { QuestionAttachment } from './questions/QuestionAttachment'
@@ -21,11 +20,11 @@ import { SCAnswerOptions } from './questions/SCAnswerOptions'
 import SessionProgress from './questions/SessionProgress'
 
 const messages = {
-  [QuestionType.Sc]: <p>Bitte eine einzige Option auswählen:</p>,
-  [QuestionType.Mc]: <p>Bitte eine oder mehrere Optionen auswählen:</p>,
-  [QuestionType.Kprim]: <p>Beurteile die Aussagen auf ihre Richtigkeit:</p>,
-  [QuestionType.FreeText]: <p>Bitte eine Antwort eingeben:</p>,
-  [QuestionType.Numerical]: <p>Bitte eine Zahl eingeben:</p>,
+  [QuestionType.Sc]: 'Bitte eine einzige Option auswählen',
+  [QuestionType.Mc]: 'Bitte eine oder mehrere Optionen auswählen',
+  [QuestionType.Kprim]: 'Beurteile die Aussagen auf ihre Richtigkeit',
+  [QuestionType.FreeText]: 'Bitte eine Antwort eingeben',
+  [QuestionType.Numerical]: 'Bitte eine Zahl eingeben',
 }
 
 export interface StudentQuestionProps {
@@ -187,12 +186,7 @@ export const StudentQuestion = ({
           'mt-4 border-slate-300 flex-initial min-h-[6rem] bg-primary-10 border rounded leading-6 prose max-w-none prose-p:!m-0 prose-img:!m-0 p-4'
         )}
       >
-        <Markdown
-          components={{
-            img: ImgWithModal,
-          }}
-          content={currentQuestion.content}
-        />
+        <Markdown content={currentQuestion.content} />
       </div>
 
       {currentQuestion.attachments && (
@@ -214,7 +208,11 @@ export const StudentQuestion = ({
       )}
 
       <div className="flex-1 mt-4">
-        <div className="mb-2 font-bold">{messages[currentQuestion.type]}</div>
+        <div className="mb-2">
+          <span className="font-bold">{messages[currentQuestion.type]}</span>{' '}
+          {currentQuestion.options?.accuracy &&
+            `(gerundet auf ${currentQuestion.options.accuracy} Nachkommastellen)`}
+        </div>
 
         {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) && (
           <SCAnswerOptions
@@ -238,8 +236,10 @@ export const StudentQuestion = ({
             min={currentQuestion.options?.restrictions?.min}
             max={currentQuestion.options?.restrictions?.max}
             valid={inputValid || inputEmpty}
-            value={inputValue}
+            value={inputValue as string}
             onChange={onNumericalValueChange}
+            unit={currentQuestion.options?.unit}
+            accuracy={currentQuestion.options?.accuracy}
           />
         )}
       </div>

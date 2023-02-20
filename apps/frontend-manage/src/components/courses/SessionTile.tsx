@@ -11,12 +11,12 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Session } from '@klicker-uzh/graphql/dist/ops'
+import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Ellipsis from '../common/Ellipsis'
 
 interface SessionTileProps {
   session: Partial<Session>

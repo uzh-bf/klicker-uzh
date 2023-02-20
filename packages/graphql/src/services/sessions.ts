@@ -62,11 +62,11 @@ export function prepareInitialInstanceResults(
     }
 
     case QuestionType.NUMERICAL: {
-      return { answers: [] }
+      return {}
     }
 
     case QuestionType.FREE_TEXT: {
-      return { answers: [] }
+      return {}
     }
   }
 }
@@ -1010,12 +1010,7 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
             case QuestionType.FREE_TEXT:
               return {
                 ...instance,
-                questionData: {
-                  ...questionData,
-                  options: {
-                    restrictions: questionData.options.restrictions,
-                  },
-                },
+                questionData,
               }
 
             default:
@@ -1146,6 +1141,9 @@ export async function getRunningSessions(
           accessMode: 'PUBLIC',
           status: 'RUNNING',
         },
+        include: {
+          course: true,
+        },
       },
     },
   })
@@ -1165,6 +1163,9 @@ export async function getUserSessions(
     },
     include: {
       sessions: {
+        orderBy: {
+          createdAt: 'desc',
+        },
         include: {
           course: true,
           blocks: {

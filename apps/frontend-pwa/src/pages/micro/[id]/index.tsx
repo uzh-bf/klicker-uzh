@@ -4,28 +4,18 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button, H3, Prose } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import dynamic from 'next/dynamic'
-import { default as NextImage } from 'next/image'
 import Link from 'next/link'
 import Layout from '../../../components/Layout'
 
-const DynamicMarkdown = dynamic(() => import('@klicker-uzh/markdown'), {
-  ssr: false,
-})
-
-interface ImageProps {
-  alt: string
-  src: string
-}
-
-function Image({ alt, src }: ImageProps) {
-  return (
-    <div className="p-4 mx-auto border rounded">
-      <div className="relative h-52">
-        <NextImage src={src} className="object-contain" fill alt={alt} />
-      </div>
-    </div>
-  )
-}
+const DynamicMarkdown = dynamic(
+  async () => {
+    const { Markdown } = await import('@klicker-uzh/markdown')
+    return Markdown
+  },
+  {
+    ssr: false,
+  }
+)
 
 interface Props {
   id: string
@@ -51,12 +41,7 @@ function MicroSessionIntroduction({ id }: Props) {
             root: 'max-w-none prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 hover:text-current',
           }}
         >
-          <DynamicMarkdown
-            content={data.microSession.description}
-            components={{
-              img: Image as any,
-            }}
-          />
+          <DynamicMarkdown content={data.microSession.description} />
         </Prose>
         <Link href={`/micro/${data.microSession.id}/0`} legacyBehavior>
           <Button

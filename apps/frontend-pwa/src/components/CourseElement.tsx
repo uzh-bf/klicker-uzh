@@ -2,12 +2,12 @@ import {
   faBell,
   faBellSlash,
   faCalendar,
-  faFolderClosed,
 } from '@fortawesome/free-regular-svg-icons'
-import { faSync } from '@fortawesome/free-solid-svg-icons'
+import { faBolt, faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from './common/LinkButton'
 
@@ -28,14 +28,14 @@ function CourseElement({
   pushDisabled,
   onSubscribeClick,
 }: CourseElementProps) {
+  dayjs.extend(utc)
   const isFuture = dayjs(course.startDate).isAfter(dayjs())
   const isPast = dayjs().isAfter(course.endDate)
-  const isCurrent = !isFuture && !isPast
 
   return (
     <div key={course.id} className="flex flex-row w-full">
       <LinkButton
-        icon={(isFuture && faCalendar) || (isPast && faFolderClosed) || faSync}
+        icon={(isFuture && faCalendar) || (isPast && faCheck) || faBolt}
         className={{
           root: twMerge(
             'flex-1 rounded-r-none border-r-0 h-full',
@@ -49,9 +49,13 @@ function CourseElement({
           <div className="flex flex-row items-end justify-between">
             <div className="text-xs">
               {isFuture &&
-                `Start am ${dayjs(course.startDate).format('DD.MM.YYYY')}`}
+                `Start am ${dayjs(course.startDate)
+                  .utc()
+                  .format('DD.MM.YYYY')}`}
               {isPast &&
-                `Beendet am ${dayjs(course.endDate).format('DD.MM.YYYY')}`}
+                `Beendet am ${dayjs(course.endDate)
+                  .utc()
+                  .format('DD.MM.YYYY')}`}
             </div>
           </div>
         </div>

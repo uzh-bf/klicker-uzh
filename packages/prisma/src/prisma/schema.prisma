@@ -148,6 +148,7 @@ model Question {
   name               String
   content            String
   options            Json
+  explanation        String?
   pointsMultiplier   Int                 @default(1)
   displayMode        QuestionDisplayMode @default(LIST)
   hasSampleSolution  Boolean             @default(false)
@@ -238,12 +239,13 @@ model Course {
 
   pinCode Int @unique @default(123456789)
 
-  name        String
-  displayName String
-  description String?
-  color       String?  @default("#eaa07d")
-  startDate   DateTime
-  endDate     DateTime
+  name              String
+  displayName       String
+  description       String?
+  color             String?  @default("#eaa07d")
+  startDate         DateTime
+  endDate           DateTime
+  notificationEmail String?
 
   sessions          Session[]
   learningElements  LearningElement[]

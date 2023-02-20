@@ -12,6 +12,7 @@ import {
   SessionBlock,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Collapsible, H3, ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
@@ -22,7 +23,6 @@ import {
   SESSION_STATUS,
 } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
-import Ellipsis from '../common/Ellipsis'
 import EmbeddingModal from './EmbeddingModal'
 
 interface SessionProps {

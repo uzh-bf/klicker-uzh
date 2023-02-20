@@ -1,15 +1,25 @@
-import { InstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import {
+  InstanceEvaluation,
+  NumericalQuestionData,
+} from '@klicker-uzh/graphql/dist/ops'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
+import Histogram from 'shared-components/src/Histogram'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
   questionType: string
   options: any
   evaluation: InstanceEvaluation
+  reference?: string
 }
 
-function EvaluationDisplay({ options, questionType, evaluation }: Props) {
+function EvaluationDisplay({
+  options,
+  questionType,
+  evaluation,
+  reference,
+}: Props) {
   switch (questionType) {
     case QuestionType.SC: {
       const sum = Object.values(
@@ -64,7 +74,7 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
           <div className="font-bold">So haben andere geantwortet</div>
           {Object.entries(evaluation.choices as Record<string, number>).map(
             ([ix, value]) => (
-              <div key={ix}>
+              <div key={value}>
                 <Progress
                   isMaxVisible={false}
                   className={{
@@ -92,7 +102,30 @@ function EvaluationDisplay({ options, questionType, evaluation }: Props) {
       return <div></div>
 
     case QuestionType.NUMERICAL:
-      return <div></div>
+      const results = Object.entries(
+        evaluation.answers as Record<string, number>
+      ).reduce(
+        (acc, [value, count]) => ({ ...acc, [value]: { value, count } }),
+        {}
+      )
+
+      return (
+        <div className="h-40 space-y-2">
+          <div className="font-bold">So haben andere geantwortet</div>
+          <Histogram
+            data={{
+              results: results,
+              questionData: { options } as NumericalQuestionData,
+            }}
+            showSolution={{ general: true }}
+            textSize="md"
+            className={{ root: 'h-40' }}
+            reference={reference ? parseFloat(reference) : undefined}
+            hideBins
+            basic
+          />
+        </div>
+      )
 
     default:
       return <div></div>

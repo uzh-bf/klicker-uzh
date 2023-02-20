@@ -2,6 +2,7 @@ mutation ManipulateNumericalQuestion(
   $id: Int
   $name: String
   $content: String
+  $explanation: String
   $options: OptionsNumericalInput
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
@@ -13,6 +14,7 @@ mutation ManipulateNumericalQuestion(
     type: NUMERICAL
     name: $name
     content: $content
+    explanation: $explanation
     options: $options
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
@@ -23,7 +25,7 @@ mutation ManipulateNumericalQuestion(
     name
     type
     content
-
+    explanation
     hasSampleSolution
     hasAnswerFeedbacks
 
@@ -41,6 +43,9 @@ mutation ManipulateNumericalQuestion(
 
       ... on NumericalQuestionData {
         options {
+          accuracy
+          placeholder
+          unit
           restrictions {
             min
             max

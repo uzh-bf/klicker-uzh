@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.57...v3.0.0-alpha.58) (2023-02-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** handle nullable question explanation ([34f5de3](https://github.com/uzh-bf/klicker-uzh/commit/34f5de339b4c1993af02515bad6360409e3ab624))
+* **apps/frontend-manage:** use question type for validation in creation wizard ([d42f1d2](https://github.com/uzh-bf/klicker-uzh/commit/d42f1d2f7b2237e25b72e25851c82bb818e654e7))
+
+## [3.0.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.56...v3.0.0-alpha.57) (2023-02-19)
+
+
+### Dependencies
+
+* **packages/markdown:** install recharts ([d529b7d](https://github.com/uzh-bf/klicker-uzh/commit/d529b7dda35ac46b9151ba10398a22ccbf6ff7ba))
+
+## [3.0.0-alpha.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.55...v3.0.0-alpha.56) (2023-02-19)
+
+
+### Bug Fixes
+
+* **packages/markdown:** use next/image.js ([37f4b5e](https://github.com/uzh-bf/klicker-uzh/commit/37f4b5ee414ee3cf0b15a71b926f3dc66c3786de))
+
+## [3.0.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.54...v3.0.0-alpha.55) (2023-02-19)
+
+
+### Features
+
+* add support for NR questions in learning elements ([#3361](https://github.com/uzh-bf/klicker-uzh/issues/3361)) ([8bd4496](https://github.com/uzh-bf/klicker-uzh/commit/8bd44965b72cd87ce0480b3e55c1c3a653e65079))
+* image embedding, grid layout, editing preview, numerical questions in learning elements, and many more ([#3362](https://github.com/uzh-bf/klicker-uzh/issues/3362)) ([3b4b8ac](https://github.com/uzh-bf/klicker-uzh/commit/3b4b8ac3a94dc2f6a42a2e62c359197df5bb4db3))
+
+## [3.0.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.53...v3.0.0-alpha.54) (2023-02-18)
+
+
+### Enhancements
+
+* **apps/frontend-*:** add matomo for production environments ([d8016f6](https://github.com/uzh-bf/klicker-uzh/commit/d8016f638e45f0669d136dbc35dc69cf2ea4dd25))
+
+## [3.0.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.52...v3.0.0-alpha.53) (2023-02-18)
+
+## [3.0.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.51...v3.0.0-alpha.52) (2023-02-18)
+
+
+### Features
+
+* add question level explanation ([#3358](https://github.com/uzh-bf/klicker-uzh/issues/3358)) ([90c2f5e](https://github.com/uzh-bf/klicker-uzh/commit/90c2f5e679f470b8a7c7cdd69c618ea3d81e36c2))
+
+
+### Enhancements
+
+* **apps/frontend-*, apps/office-addin:** Source Sans Pro, Sentry removal ([#3359](https://github.com/uzh-bf/klicker-uzh/issues/3359)) ([ab9d373](https://github.com/uzh-bf/klicker-uzh/commit/ab9d37367efc294766652e704b2bdfb3bdf04ff3))
+
+## [3.0.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.50...v3.0.0-alpha.51) (2023-02-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** remove setToastOpen ([85ece0b](https://github.com/uzh-bf/klicker-uzh/commit/85ece0be8879982adff6a41a6bdb7c126099931c))
+
+## [3.0.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.49...v3.0.0-alpha.50) (2023-02-17)
+
+
+### Features
+
+* flag questions ([#3352](https://github.com/uzh-bf/klicker-uzh/issues/3352)) ([f2c8c1d](https://github.com/uzh-bf/klicker-uzh/commit/f2c8c1dc4e5d6be5f303d14b91a8cd79e6e6a470))
+
 ## [3.0.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.48...v3.0.0-alpha.49) (2023-02-17)
 
 

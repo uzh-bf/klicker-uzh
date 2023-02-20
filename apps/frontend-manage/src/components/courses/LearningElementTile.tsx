@@ -1,7 +1,7 @@
 import { LearningElement } from '@klicker-uzh/graphql/dist/ops'
+import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import Link from 'next/link'
-import Ellipsis from '../common/Ellipsis'
 
 interface LearningElementTileProps {
   courseId: string

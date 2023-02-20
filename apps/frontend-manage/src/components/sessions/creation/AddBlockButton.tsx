@@ -24,6 +24,7 @@ function AddBlockButton({ push }: AddBlockButtonProps) {
         push({
           questionIds: [item.id],
           titles: [item.title],
+          types: [item.questionType],
           timeLimit: undefined,
         })
       },
@@ -45,6 +46,7 @@ function AddBlockButton({ push }: AddBlockButtonProps) {
         push({
           questionIds: [],
           titles: [],
+          types: [],
           timeLimit: undefined,
         })
       }

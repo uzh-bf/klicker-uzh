@@ -41,6 +41,7 @@ export const OptionsNumericalInput = builder.inputType(
   {
     fields: (t) => ({
       accuracy: t.int({ required: false }),
+      unit: t.string({ required: false }),
       restrictions: t.field({
         type: NumericalRestrictionsInput,
         required: false,
@@ -67,6 +68,7 @@ export const FreeTextRestrictionsInput = builder.inputType(
 
 export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
   fields: (t) => ({
+    placeholder: t.string({ required: false }),
     restrictions: t.field({
       type: FreeTextRestrictionsInput,
       required: false,
@@ -102,7 +104,8 @@ export const QuestionFeedback = builder
 
 export interface IInstanceEvaluation {
   feedbacks?: IQuestionFeedback[]
-  choices: object[]
+  choices?: object[]
+  answers?: object[]
   score: number
   pointsAwarded?: number
   percentile?: number
@@ -116,7 +119,11 @@ export const InstanceEvaluation = builder
         type: [QuestionFeedback],
         nullable: true,
       }),
-      choices: t.expose('choices', { type: 'Json' }),
+      choices: t.expose('choices', { type: 'Json', nullable: true }),
+      answers: t.expose('answers', {
+        type: 'Json',
+        nullable: true,
+      }),
       score: t.exposeFloat('score'),
       pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
       percentile: t.exposeFloat('percentile', { nullable: true }),
@@ -134,6 +141,7 @@ export const Question = builder.prismaObject('Question', {
     name: t.exposeString('name'),
     type: t.expose('type', { type: QuestionType }),
     content: t.exposeString('content'),
+    explanation: t.exposeString('explanation', { nullable: true }),
 
     options: t.expose('options', { type: 'Json' }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),

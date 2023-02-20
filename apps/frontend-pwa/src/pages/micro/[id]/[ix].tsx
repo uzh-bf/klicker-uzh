@@ -4,7 +4,7 @@ import {
   QuestionType,
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import formatResponse from '@lib/formatResponse'
 import { H3, Progress } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -12,11 +12,13 @@ import { useEffect, useState } from 'react'
 import Footer from '../../../components/common/Footer'
 import OptionsDisplay from '../../../components/common/OptionsDisplay'
 import EvaluationDisplay from '../../../components/evaluation/EvaluationDisplay'
+import FlagQuestionModal from '../../../components/flags/FlagQuestionModal'
 import Layout from '../../../components/Layout'
 
 // TODO: different question types (FREE and RANGE)
 function MicroSessionInstance() {
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const router = useRouter()
 
@@ -97,6 +99,7 @@ function MicroSessionInstance() {
                 </div>
 
                 <OptionsDisplay
+                  key={currentInstance.id}
                   isEvaluation={isEvaluation}
                   evaluation={currentInstance.evaluation}
                   response={response}
@@ -106,17 +109,25 @@ function MicroSessionInstance() {
                   }
                   questionType={questionData.type as QuestionType}
                   options={questionData.options}
+                  displayMode={questionData.displayMode}
                 />
               </div>
 
               {currentInstance.evaluation && (
                 <div className="flex-1 p-4 space-y-4 border rounded basis-1/3 bg-gray-50">
-                  <div className="flex flex-row gap-8">
-                    <div>
+                  <div className="flex flex-row justify-between gap-8">
+                    <div className="flex flex-col">
                       <div className="font-bold">Punkte (gesammelt)</div>
                       <div className="text-xl">
                         {currentInstance.evaluation.pointsAwarded} Punkte
                       </div>
+                    </div>
+                    <div>
+                      <FlagQuestionModal
+                        open={modalOpen}
+                        setOpen={setModalOpen}
+                        instanceId={currentInstance.id}
+                      />
                     </div>
                   </div>
 
@@ -125,6 +136,13 @@ function MicroSessionInstance() {
                     questionType={questionData.type}
                     evaluation={currentInstance.evaluation}
                   />
+
+                  {questionData.explanation && (
+                    <div className="">
+                      <div className="mb-1 font-bold">Erklärung</div>
+                      <Markdown content={questionData.explanation} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

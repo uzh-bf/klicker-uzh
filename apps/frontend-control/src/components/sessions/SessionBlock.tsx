@@ -22,11 +22,7 @@ interface SessionBlockProps {
   active?: boolean
 }
 
-const defaultProps = {
-  active: false,
-}
-
-function SessionBlock({ block, active }: SessionBlockProps) {
+function SessionBlock({ block, active = false }: SessionBlockProps) {
   const untilExpiration = useMemo(
     () =>
       block?.expiresAt
@@ -90,5 +86,4 @@ function SessionBlock({ block, active }: SessionBlockProps) {
   )
 }
 
-SessionBlock.defaultProps = defaultProps
 export default SessionBlock

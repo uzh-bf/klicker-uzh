@@ -83,10 +83,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               value="microSession"
               label="Micro-Session"
               className={{
-                root: twMerge(
-                  'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
-                  theme.primaryBgHover
-                ),
+                root: twMerge('flex-1 ', theme.primaryBgHover),
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
@@ -97,10 +94,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               value="learningElement"
               label="Lernelement"
               className={{
-                root: twMerge(
-                  'flex-1 disabled:text-uzh-grey-80 disabled:hover:bg-white disabled:cursor-not-allowed',
-                  theme.primaryBgHover
-                ),
+                root: twMerge('flex-1 ', theme.primaryBgHover),
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}

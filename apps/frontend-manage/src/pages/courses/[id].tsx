@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import DateChanger from '@components/courses/DateChanger'
 import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -7,8 +6,16 @@ import {
   ChangeCourseDatesDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Markdown from '@klicker-uzh/markdown'
-import { Button, H1, H2, H3, ThemeContext, Toast } from '@uzh-bf/design-system'
+import { Markdown } from '@klicker-uzh/markdown'
+import {
+  Button,
+  DateChanger,
+  H1,
+  H2,
+  H3,
+  ThemeContext,
+  Toast,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -123,7 +130,7 @@ function CourseOverviewPage() {
             <div className="flex flex-row gap-2 border border-solid rounded border-uzh-grey-80">
               <Markdown
                 content={course.description}
-                className="w-full p-2 rounded"
+                className={{ root: 'w-full p-2 rounded' }}
               />
               <Button
                 onClick={() => setDescriptionEditMode(true)}

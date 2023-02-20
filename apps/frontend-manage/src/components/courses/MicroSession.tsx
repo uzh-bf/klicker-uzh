@@ -8,11 +8,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { MicroSession } from '@klicker-uzh/graphql/dist/ops'
+import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext } from 'react'
-import Ellipsis from '../common/Ellipsis'
 
 interface MicroSessionProps {
   microSession: Partial<MicroSession>

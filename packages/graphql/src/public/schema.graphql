@@ -87,6 +87,7 @@ type ChoiceQuestionOptions {
 type ChoicesQuestionData implements QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
+  explanation: String
   id: Int!
   name: String!
   options: ChoiceQuestionOptions!
@@ -168,6 +169,7 @@ type FeedbackResponse {
 type FreeTextQuestionData implements QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
+  explanation: String
   id: Int!
   name: String!
   options: FreeTextQuestionOptions!
@@ -258,7 +260,8 @@ type GroupLeaderboardEntry {
 }
 
 type InstanceEvaluation {
-  choices: Json!
+  answers: Json
+  choices: Json
   feedbacks: [QuestionFeedback!]
   newPointsFrom: Date
   percentile: Float
@@ -285,7 +288,7 @@ scalar Json
 type LeaderboardEntry {
   avatar: String
   id: Int!
-  isSelf: Boolean!
+  isSelf: Boolean
   lastBlockOrder: Int!
   participant: Participant
   participantId: String!
@@ -366,6 +369,7 @@ type Mutation {
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
+  flagQuestion(content: String!, questionInstanceId: Int!): String
   generateLoginToken: User
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
@@ -377,9 +381,9 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
-  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String!], type: QuestionType!): Question
-  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String!], type: QuestionType!): Question
+  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
+  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String!], type: QuestionType!): Question
+  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String!], type: QuestionType!): Question
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -399,6 +403,7 @@ type Mutation {
 type NumericalQuestionData implements QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
+  explanation: String
   id: Int!
   name: String!
   options: NumericalQuestionOptions!
@@ -435,6 +440,7 @@ input OptionsChoicesInput {
 
 input OptionsFreeTextInput {
   feedback: String
+  placeholder: String
   restrictions: FreeTextRestrictionsInput
   solutions: [String!]
 }
@@ -444,6 +450,7 @@ input OptionsNumericalInput {
   feedback: String
   restrictions: NumericalRestrictionsInput
   solutionRanges: [SolutionRangeInput!]
+  unit: String
 }
 
 enum ParameterType {
@@ -551,6 +558,7 @@ type Question {
   content: String!
   createdAt: Date!
   displayMode: QuestionDisplayMode!
+  explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
   id: Int!
@@ -568,6 +576,7 @@ type Question {
 interface QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
+  explanation: String
   id: Int!
   name: String!
   pointsMultiplier: Int
