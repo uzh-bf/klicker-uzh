@@ -1,11 +1,11 @@
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Course, Participant } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, H2 } from '@uzh-bf/design-system'
+import { Button, H1, H2, ThemeContext } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
@@ -20,6 +20,7 @@ function Header({
   course,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
+  const theme = useContext(ThemeContext)
 
   const pageInFrame =
     global?.window &&
@@ -45,6 +46,38 @@ function Header({
         <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
       )}
       <div className="flex flex-row items-center gap-4">
+        <div className="flex flex-row text-black bg-transparent rounded">
+          <Button
+            basic
+            onClick={() =>
+              router.push(router.pathname, router.pathname, { locale: 'de' })
+            }
+            className={{
+              root: twMerge(
+                'py-1 px-2 rounded-l bg-white',
+                router.locale === 'de' &&
+                  `font-bold text-white ${theme.primaryBgDark}`
+              ),
+            }}
+          >
+            DE
+          </Button>
+          <Button
+            basic
+            onClick={() =>
+              router.push(router.pathname, router.pathname, { locale: 'en' })
+            }
+            className={{
+              root: twMerge(
+                'py-1 px-2 rounded-r bg-white',
+                router.locale === 'en' &&
+                  `font-bold text-white ${theme.primaryBgDark}`
+              ),
+            }}
+          >
+            EN
+          </Button>
+        </div>
         {course?.id && (
           <Link href={`/course/${course.id}/docs`}>
             <Button
