@@ -2,6 +2,7 @@ import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Course, Participant } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2, ThemeContext } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -21,6 +22,7 @@ function Header({
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const theme = useContext(ThemeContext)
+  const t = useTranslations('Layout')
 
   const pageInFrame =
     global?.window &&
@@ -97,21 +99,21 @@ function Header({
               className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               onClick={() => router.back()}
             >
-              Zurück
+              {t('back')}
             </Button>
           ) : (
             <Link href="/" legacyBehavior>
               <Button
                 className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               >
-                Home
+                {t('home')}
               </Button>
             </Link>
           ))
         ) : (
           <Link href="/login" legacyBehavior>
             <Button className={{ root: 'text-white bg-slate-800' }}>
-              Login
+              {t('login')}
             </Button>
           </Link>
         )}
@@ -122,7 +124,7 @@ function Header({
                 root: 'hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block',
               }}
             >
-              Profil einrichten
+              {t('setupProfile')}
             </Button>
           </Link>
         )}

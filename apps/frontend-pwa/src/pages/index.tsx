@@ -16,6 +16,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import LinkButton from '../components/common/LinkButton'
 import CourseElement from '../components/CourseElement'
@@ -33,6 +34,7 @@ const Index = function () {
   const [subscription, setSubscription] = useState<PushSubscription | null>(
     null
   )
+  const t = useTranslations('Index')
 
   const { data, loading, error } = useQuery(ParticipationsDocument, {
     skip: pushDisabled === null,
@@ -202,14 +204,14 @@ const Index = function () {
   }
 
   return (
-    <Layout displayName="KlickerUZH">
+    <Layout displayName={t('title')}>
       <div
         className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
       >
         {activeSessions.length !== 0 && (
           <div>
-            <H1 className={{ root: 'text-xl mb-2' }}>Aktive Sessions</H1>
+            <H1 className={{ root: 'text-xl mb-2' }}>{t('activeSessions')}</H1>
             <div className="flex flex-col gap-2">
               {activeSessions.map((session) => (
                 <LinkButton
@@ -226,22 +228,20 @@ const Index = function () {
             </div>
           </div>
         )}
-
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>Lernelemente</H1>
+          <H1 className={{ root: 'text-xl mb-2' }}>{t('learningElements')}</H1>
           <div className="flex flex-col gap-2">
             <LinkButton href="/repetition" icon={faGraduationCap}>
-              Repetition
+              {t('repetition')}
             </LinkButton>
             <LinkButton href="/bookmarks" icon={faBookmark}>
-              Meine Bookmarks
+              {t('myBookmarks')}
             </LinkButton>
           </div>
         </div>
-
         {activeMicrolearning.length > 0 && (
           <div>
-            <H1 className={{ root: 'text-xl mb-2' }}>Microlearning</H1>
+            <H1 className={{ root: 'text-xl mb-2' }}>{t('microlearning')}</H1>
             <div className="flex flex-col gap-2">
               {activeMicrolearning.map((micro) => (
                 <LinkButton
@@ -263,9 +263,8 @@ const Index = function () {
             </div>
           </div>
         )}
-
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>Meine Kurse</H1>
+          <H1 className={{ root: 'text-xl mb-2' }}>{t('myCourses')}</H1>
           <div className="flex flex-col gap-2">
             {courses.map((course) => (
               <CourseElement
@@ -278,19 +277,28 @@ const Index = function () {
               <CourseElement key={course.id} course={course} />
             ))}
             <LinkButton icon={faCirclePlus} href="/join">
-              Kurs beitreten
+              {t('joinCourse')}
             </LinkButton>
           </div>
         </div>
-
         {userInfo && (
           <UserNotification notificationType="info" message={userInfo} />
         )}
-
         {/* <SurveyPromotion courseId={courses?.[0]?.id} /> */}
       </div>
     </Layout>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`../messages/index/${locale}.json`),
+        ...require(`../messages/shared/${locale}.json`),
+      },
+    },
+  }
 }
 
 export default Index

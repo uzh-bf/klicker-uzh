@@ -1,5 +1,12 @@
 {
   "Index": {
-    "title": "TestTitle DE"
+    "title": "KlickerUZH",
+    "activeSessions": "Aktive Sessions",
+    "learningElements": "Lernelemente",
+    "microlearning": "Microlearning",
+    "myCourses": "Meine Kurse",
+    "repetition": "Repetition",
+    "myBookmarks": "Meine Bookmarks",
+    "joinCourse": "Kurs beitreten"
   }
 }
