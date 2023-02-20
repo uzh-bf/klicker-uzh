@@ -52,6 +52,7 @@ interface Props {
 function Index({ id }: Props) {
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
   const t = useTranslations('liveSession')
+  const tgeneric = useTranslations('generic')
 
   const { data, subscribeToMore } = useQuery(GetRunningSessionDocument, {
     variables: { id },
@@ -126,7 +127,7 @@ function Index({ id }: Props) {
   }[] = [
     {
       value: 'questions',
-      label: t('questions'),
+      label: tgeneric('questions'),
       icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
       unseenItems: activeBlock?.instances?.length,
     },
@@ -135,14 +136,14 @@ function Index({ id }: Props) {
   if (isLiveQAEnabled || isConfusionFeedbackEnabled) {
     mobileMenuItems.push({
       value: 'feedbacks',
-      label: t('feedbacks'),
+      label: tgeneric('feedbacks'),
       icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
     })
   }
   if (selfData?.self && isGamificationEnabled) {
     mobileMenuItems.push({
       value: 'leaderboard',
-      label: t('leaderboard'),
+      label: tgeneric('leaderboard'),
       icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
     })
   }

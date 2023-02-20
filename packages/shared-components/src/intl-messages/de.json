@@ -14,6 +14,7 @@
     "ftPlaceholder": "Ihre Antwort..."
   },
   "generic": {
+    "title": "KlickerUZH",
     "send": "Absenden",
     "logout": "Ausloggen",
     "login": "Login",
@@ -23,6 +24,12 @@
     "usernameError": "Bitte geben Sie Ihren Nutzernamen ein.",
     "passwordError": "Bitte geben Sie Ihr Passwort ein.",
     "loginError": "Benutzername oder Passwort sind falsch.",
-    "systemError": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+    "systemError": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "back": "Zurück",
+    "home": "Home",
+    "questions": "Fragen",
+    "feedbacks": "Feedbacks",
+    "leaderboard": "Leaderboard",
+    "question": "Frage"
   }
 }

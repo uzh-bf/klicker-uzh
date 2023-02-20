@@ -1,13 +1,13 @@
 {
   "index": {
-    "title": "KlickerUZH",
     "activeSessions": "Active Sessions",
     "learningElements": "Learning Elements",
     "microlearning": "Microlearning",
     "myCourses": "My Courses",
     "repetition": "Repetition",
     "myBookmarks": "My Bookmarks",
-    "joinCourse": "Join Course"
+    "joinCourse": "Join Course",
+    "setupProfile": "Setup profile"
   },
   "login": {
     "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",

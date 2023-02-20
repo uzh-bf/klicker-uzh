@@ -1,8 +1,5 @@
 {
   "liveSession": {
-    "questions": "Questions",
-    "feedbacks": "Feedbacks",
-    "leaderboard": "Leaderboard",
     "noActiveQuestion": "No question active."
   },
   "sessionLeaderboard": {
@@ -12,7 +9,6 @@
     "free": "Free"
   },
   "questionArea": {
-    "question": "Question",
     "allQuestionsAnswered": "You have already answered all active questions."
   },
   "feedbackArea": {

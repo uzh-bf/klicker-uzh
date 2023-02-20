@@ -35,6 +35,7 @@ const Index = function () {
     null
   )
   const t = useTranslations('index')
+  const tgeneric = useTranslations('generic')
 
   const { data, loading, error } = useQuery(ParticipationsDocument, {
     skip: pushDisabled === null,
@@ -204,7 +205,7 @@ const Index = function () {
   }
 
   return (
-    <Layout displayName={t('title')}>
+    <Layout displayName={tgeneric('title')}>
       <div
         className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
@@ -295,7 +296,7 @@ export function getStaticProps({ locale }: any) {
     props: {
       messages: {
         ...require(`../messages/index/${locale}.json`),
-        ...require(`../messages/layout/${locale}.json`),
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
       },
     },
   }

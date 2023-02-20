@@ -47,6 +47,8 @@ function QuestionArea({
   execution,
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations('questionArea')
+  const tgeneric = useTranslations('generic')
+
   const [remainingQuestions, setRemainingQuestions] = useState(new Array())
   const [activeQuestion, setActiveQuestion] = useState(
     (): any => remainingQuestions[0]
@@ -203,7 +205,9 @@ function QuestionArea({
 
   return (
     <div className="w-full h-full min-h-content">
-      <H2 className={{ root: 'hidden mb-2 md:block' }}>{t('question')}</H2>
+      <H2 className={{ root: 'hidden mb-2 md:block' }}>
+        {tgeneric('question')}
+      </H2>
 
       {remainingQuestions.length === 0 ? (
         t('allQuestionsAnswered')

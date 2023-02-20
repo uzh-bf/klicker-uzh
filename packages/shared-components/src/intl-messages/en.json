@@ -14,6 +14,7 @@
     "ftPlaceholder": "Your answer..."
   },
   "generic": {
+    "title": "KlickerUZH",
     "send": "Send",
     "logout": "Logout",
     "login": "Login",
@@ -23,6 +24,12 @@
     "usernameError": "Please enter your username.",
     "passwordError": "Please enter your password.",
     "loginError": "The username or password are incorrect.",
-    "systemError": "An unexpected error occurred. Please try again later."
+    "systemError": "An unexpected error occurred. Please try again later.",
+    "back": "Back",
+    "home": "Home",
+    "questions": "Questions",
+    "feedbacks": "Feedbacks",
+    "leaderboard": "Leaderboard",
+    "question": "Question"
   }
 }
