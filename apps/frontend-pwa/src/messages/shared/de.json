@@ -2,12 +2,15 @@
   "layout": {
     "back": "Zurück",
     "home": "Home",
-    "login": "Login",
     "setupProfile": "Profil einrichten"
   },
   "generic": {
     "send": "Absenden",
-    "logout": "Ausloggen"
+    "logout": "Ausloggen",
+    "login": "Login",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "signin": "Anmelden"
   },
   "sharedComponents": {
     "progressBar": { "send": "Absenden" },

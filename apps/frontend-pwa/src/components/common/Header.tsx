@@ -24,6 +24,7 @@ function Header({
   const { pathname, asPath, query } = router
   const theme = useContext(ThemeContext)
   const t = useTranslations('layout')
+  const tshared = useTranslations('generic')
 
   const pageInFrame =
     global?.window &&
@@ -118,7 +119,7 @@ function Header({
         ) : (
           <Link href="/login" legacyBehavior>
             <Button className={{ root: 'text-white bg-slate-800' }}>
-              {t('login')}
+              {tshared('login')}
             </Button>
           </Link>
         )}

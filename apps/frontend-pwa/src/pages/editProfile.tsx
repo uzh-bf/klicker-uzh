@@ -439,3 +439,14 @@ const EditProfile: NextPageWithLayout = () => {
 }
 
 export default EditProfile
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`../messages/user/${locale}.json`),
+        ...require(`../messages/shared/${locale}.json`),
+      },
+    },
+  }
+}

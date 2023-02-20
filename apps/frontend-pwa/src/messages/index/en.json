@@ -8,5 +8,10 @@
     "repetition": "Repetition",
     "myBookmarks": "My Bookmarks",
     "joinCourse": "Join Course"
+  },
+  "login": {
+    "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
+    "installButton": "Install Now",
+    "installHomeScreen": "Open the Share dialog and click 'Add to Home Screen' to install the Klicker app on your phone."
   }
 }

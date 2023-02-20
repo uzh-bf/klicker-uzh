@@ -8,6 +8,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useRef, useState } from 'react'
@@ -29,6 +30,9 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 function LoginForm() {
+  const t = useTranslations('generic')
+  const tlogin = useTranslations('login')
+
   const router = useRouter()
   const theme = useContext(ThemeContext)
 
@@ -113,14 +117,14 @@ function LoginForm() {
                   data-cy="login-logo"
                 />
               </div>
-              <H1>Login</H1>
+              <H1>{t('login')}</H1>
               <div className="mb-10">
                 <Form className="w-72 sm:w-96">
                   <RadixLabel.Root
                     htmlFor="username"
                     className="text-sm leading-7 text-gray-600"
                   >
-                    Username
+                    {t('username')}
                   </RadixLabel.Root>
                   <Field
                     name="username"
@@ -144,7 +148,7 @@ function LoginForm() {
                     className="text-sm leading-7 text-gray-600"
                     htmlFor="password"
                   >
-                    Passwort
+                    {t('password')}
                   </RadixLabel.Root>
                   <Field
                     name="password"
@@ -174,20 +178,22 @@ function LoginForm() {
                       className={{ root: 'mt-2 border-uzh-grey-80' }}
                       data={{ cy: 'submit-login' }}
                     >
-                      <Button.Label>Anmelden</Button.Label>
+                      <Button.Label>{t('signin')}</Button.Label>
                     </Button>
                   </div>
                   {onChrome && (
                     <div className="flex flex-col justify-center md:hidden mt-7">
                       <UserNotification
                         notificationType="info"
-                        message="Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind."
+                        message={tlogin('installPWA')}
                       >
                         <Button
-                          className={{ root: 'mt-2 w-fit border-uzh-grey-80' }}
+                          className={{
+                            root: 'mt-2 w-fit border-uzh-grey-80',
+                          }}
                           onClick={onInstallClick}
                         >
-                          <Button.Label>Jetzt installieren</Button.Label>
+                          <Button.Label>{tlogin('installButton')}</Button.Label>
                         </Button>
                       </UserNotification>
                     </div>
@@ -196,7 +202,7 @@ function LoginForm() {
                     <UserNotification
                       className={{ root: 'mt-4' }}
                       notificationType="info"
-                      message="Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+                      message={tlogin('installHomeScreen')}
                     />
                   )}
                 </Form>
@@ -210,3 +216,14 @@ function LoginForm() {
 }
 
 export default LoginForm
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`../messages/shared/${locale}.json`),
+        ...require(`../messages/index/${locale}.json`),
+      },
+    },
+  }
+}

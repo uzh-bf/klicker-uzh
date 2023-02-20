@@ -8,5 +8,10 @@
     "repetition": "Repetition",
     "myBookmarks": "Meine Bookmarks",
     "joinCourse": "Kurs beitreten"
+  },
+  "login": {
+    "installPWA": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
+    "installButton": "Jetzt installieren",
+    "installHomeScreen": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
   }
 }
