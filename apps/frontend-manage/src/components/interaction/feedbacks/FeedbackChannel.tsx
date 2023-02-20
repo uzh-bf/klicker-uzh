@@ -25,15 +25,10 @@ interface Props {
   isPublic?: boolean
 }
 
-const defaultProps = {
-  feedbacks: [],
-  isActive: false,
-  isPublic: false,
-}
-
 function FeedbackChannel({
-  feedbacks,
-  isPublic,
+  feedbacks = [],
+  isActive = false,
+  isPublic = false,
   handleDeleteFeedback,
   handlePinFeedback,
   handlePublishFeedback,
@@ -179,7 +174,5 @@ function FeedbackChannel({
     </div>
   )
 }
-
-FeedbackChannel.defaultProps = defaultProps
 
 export default FeedbackChannel

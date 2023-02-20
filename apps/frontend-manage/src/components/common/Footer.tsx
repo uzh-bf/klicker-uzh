@@ -6,10 +6,6 @@ interface FooterProps {
   children?: React.ReactNode
 }
 
-const defaultProps = {
-  className: '',
-}
-
 function Footer({ className, children }: FooterProps): React.ReactElement {
   return (
     <footer className={twMerge(' bg-slate-100 print:hidden px-4', className)}>
@@ -31,7 +27,5 @@ function Footer({ className, children }: FooterProps): React.ReactElement {
     </footer>
   )
 }
-
-Footer.defaultProps = defaultProps
 
 export default Footer

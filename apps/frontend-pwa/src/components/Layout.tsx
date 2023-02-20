@@ -23,20 +23,12 @@ interface LayoutProps {
   className?: string
 }
 
-const defaultProps = {
-  displayName: 'KlickerUZH',
-  course: undefined,
-  mobileMenuItems: undefined,
-  className: '',
-  pageNotFound: false,
-}
-
 function Layout({
   children,
-  displayName,
+  displayName = 'KlickerUZH',
   course,
   mobileMenuItems,
-  pageNotFound,
+  pageNotFound = false,
   setActiveMobilePage,
   className,
 }: LayoutProps) {
@@ -101,5 +93,4 @@ function Layout({
   )
 }
 
-Layout.defaultProps = defaultProps
 export default Layout

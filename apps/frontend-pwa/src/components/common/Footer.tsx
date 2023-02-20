@@ -6,11 +6,6 @@ interface FooterProps {
   className?: string
 }
 
-const defaultProps = {
-  browserLink: undefined,
-  className: '',
-}
-
 function Footer({ browserLink, className }: FooterProps): React.ReactElement {
   return (
     <footer
@@ -40,7 +35,5 @@ function Footer({ browserLink, className }: FooterProps): React.ReactElement {
     </footer>
   )
 }
-
-Footer.defaultProps = defaultProps
 
 export default Footer

@@ -8,14 +8,9 @@ interface QuestionTagsProps {
   tagfilter?: string[]
 }
 
-const defaultProps = {
-  tags: [],
-  tagfilter: [],
-}
-
 function QuestionTags({
-  tags,
-  tagfilter,
+  tags = [],
+  tagfilter = [],
 }: QuestionTagsProps): React.ReactElement {
   const theme = useContext(ThemeContext)
 
@@ -41,7 +36,5 @@ function QuestionTags({
     </div>
   )
 }
-
-QuestionTags.defaultProps = defaultProps
 
 export default QuestionTags
