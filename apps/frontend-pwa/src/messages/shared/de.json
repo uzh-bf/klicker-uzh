@@ -6,7 +6,8 @@
     "setupProfile": "Profil einrichten"
   },
   "generic": {
-    "send": "Absenden"
+    "send": "Absenden",
+    "logout": "Ausloggen"
   },
   "sharedComponents": {
     "progressBar": { "send": "Absenden" },

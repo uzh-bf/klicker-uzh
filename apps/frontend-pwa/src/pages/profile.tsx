@@ -5,11 +5,14 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Router from 'next/router'
 import Layout from '../components/Layout'
 
 const Profile = () => {
+  const t = useTranslations('user')
+  const tshared = useTranslations('generic')
   const { data, loading } = useQuery(SelfDocument)
   const [logoutParticipant] = useMutation(LogoutParticipantDocument)
 
@@ -18,7 +21,7 @@ const Profile = () => {
   const pageInFrame = window && window?.location !== window?.parent.location
 
   return (
-    <Layout course={{ displayName: 'KlickerUZH' }} displayName="Mein Profil">
+    <Layout course={{ displayName: 'KlickerUZH' }} displayName={t('myProfile')}>
       <div className="flex flex-col gap-8 md:max-w-3xl md:border md:rounded md:p-4 md:mx-auto md:w-full">
         <div className="flex flex-row gap-4">
           <div className="relative flex-none border-b-4 w-36 h-36 ">
@@ -39,7 +42,7 @@ const Profile = () => {
               onClick={() => Router.replace('/editProfile')}
               className={{ root: 'mt-2' }}
             >
-              Profil editieren
+              {t('editProfile')}
             </Button>
 
             {!pageInFrame && (
@@ -51,16 +54,16 @@ const Profile = () => {
                 }}
                 className={{ root: 'mt-2' }}
               >
-                Ausloggen
+                {tshared('logout')}
               </Button>
             )}
           </div>
         </div>
 
         <div>
-          <H2>Errungenschaften</H2>
+          <H2>{t('achievements')}</H2>
           {(!data.self.achievements || data.self.achievements?.length == 0) && (
-            <div>Bisher keine Errungenschaften</div>
+            <div>{t('noAchievements')}</div>
           )}
           <div className="grid gap-4 mt-2 md:grid-cols-2">
             {data.self.achievements?.map((achievement) => (
@@ -111,3 +114,14 @@ const Profile = () => {
   )
 }
 export default Profile
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`../messages/user/${locale}.json`),
+        ...require(`../messages/shared/${locale}.json`),
+      },
+    },
+  }
+}

@@ -6,7 +6,8 @@
     "setupProfile": "Setup profile"
   },
   "generic": {
-    "send": "Send"
+    "send": "Send",
+    "logout": "Logout"
   },
   "sharedComponents": {
     "progressBar": { "send": "Send" },

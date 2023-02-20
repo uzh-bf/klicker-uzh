@@ -34,7 +34,7 @@ const Index = function () {
   const [subscription, setSubscription] = useState<PushSubscription | null>(
     null
   )
-  const t = useTranslations('Index')
+  const t = useTranslations('index')
 
   const { data, loading, error } = useQuery(ParticipationsDocument, {
     skip: pushDisabled === null,
