@@ -21,6 +21,7 @@
       "save": "Speichern",
       "start": "Starten",
       "continue": "Weiter",
+      "cancel": "Abbrechen",
       "sendAnswer": "Antwort senden",
       "loading": "Laden...",
       "begin": "Beginnen",
@@ -35,6 +36,7 @@
       "passwordError": "Bitte geben Sie Ihr Passwort ein.",
       "loginError": "Benutzername oder Passwort sind falsch.",
       "systemError": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+      "error": "Fehler",
       "back": "Zurück",
       "home": "Home",
       "questions": "Fragen",
@@ -52,7 +54,8 @@
       "min": "Min",
       "max": "Max",
       "free": "Frei",
-      "congrats": "Gratulation!"
+      "congrats": "Gratulation!",
+      "thanks": "Vielen Dank!"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -94,7 +97,13 @@
       "questionTypeNotSupported": "Dieser Fragetyp ist für Lernelemente nicht verfügbar.",
       "questionProgress": "Frage: {current}/{total}",
       "newPointsFrom": "Erneute Punkte ab:",
-      "othersAnswered": "So haben andere geantwortet"
+      "othersAnswered": "So haben andere geantwortet",
+      "flagQuestion": "Frage melden",
+      "flagQuestionText": "Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen eines Lernelements / einer Micro-Session eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.",
+      "addFeedback": "Feedback hinzufügen",
+      "feedbackRequired": "Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu",
+      "submitFeedback": "Feedback abschicken",
+      "feedbackTransmitted": "Ihr Feedback wurde erfolgreich übermittelt."
     },
     "microlearning": {
       "solvedMicrolearning": "Du hast das Microlearning <it>{name}</it> erfolgreich absolviert."

@@ -21,6 +21,7 @@
       "save": "Save",
       "start": "Start",
       "continue": "Continue",
+      "cancel": "Cancel",
       "sendAnswer": "Send answer",
       "loading": "Loading...",
       "begin": "Begin",
@@ -35,6 +36,7 @@
       "passwordError": "Please enter your password.",
       "loginError": "The username or password are incorrect.",
       "systemError": "An unexpected error occurred. Please try again later.",
+      "error": "Error",
       "back": "Back",
       "home": "Home",
       "questions": "Questions",
@@ -52,7 +54,8 @@
       "min": "Min",
       "max": "Max",
       "free": "Free",
-      "congrats": "Congratulations!"
+      "congrats": "Congratulations!",
+      "thanks": "Thank you!"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -94,7 +97,13 @@
       "questionTypeNotSupported": "This question type is currently not available for learning elements",
       "questionProgress": "Question: {current}/{total}",
       "newPointsFrom": "New points from:",
-      "othersAnswered": "Others answered as follows"
+      "othersAnswered": "Others answered as follows",
+      "flagQuestion": "Report question",
+      "flagQuestionText": "This feedback form is intended to allow you to make a direct comment on the individual questions of a learning element / micro-session, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.",
+      "addFeedback": "Add feedback",
+      "feedbackRequired": "Please add a text to your feedback.",
+      "submitFeedback": "Submit feedback",
+      "feedbackTransmitted": "Your feedback has been transmitted successfully."
     },
     "microlearning": {
       "solvedMicrolearning": "You have successfully completed the microlearning <it>{name}</it>."
