@@ -4,6 +4,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Histogram from 'shared-components/src/Histogram'
 import { twMerge } from 'tailwind-merge'
 
@@ -20,6 +21,8 @@ function EvaluationDisplay({
   evaluation,
   reference,
 }: Props) {
+  const t = useTranslations()
+
   switch (questionType) {
     case QuestionType.SC: {
       const sum = Object.values(
@@ -32,7 +35,9 @@ function EvaluationDisplay({
 
       return (
         <div className="space-y-2">
-          <div className="font-bold">So haben andere geantwortet</div>
+          <div className="font-bold">
+            {t('pwa.learningElement.othersAnswered')}
+          </div>
           {Object.entries(evaluation.choices as Record<string, number>).map(
             ([ix, value]) => (
               <Progress
@@ -71,7 +76,9 @@ function EvaluationDisplay({
 
       return (
         <div className="space-y-2">
-          <div className="font-bold">So haben andere geantwortet</div>
+          <div className="font-bold">
+            {t('pwa.learningElement.othersAnswered')}
+          </div>
           {Object.entries(evaluation.choices as Record<string, number>).map(
             ([ix, value]) => (
               <div key={value}>
@@ -111,7 +118,9 @@ function EvaluationDisplay({
 
       return (
         <div className="h-40 space-y-2">
-          <div className="font-bold">So haben andere geantwortet</div>
+          <div className="font-bold">
+            {t('pwa.learningElement.othersAnswered')}
+          </div>
           <Histogram
             data={{
               results: results,

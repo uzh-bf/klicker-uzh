@@ -6,6 +6,11 @@
       "KPRIMtext": "Beurteile die Aussagen auf ihre Richtigkeit.",
       "FREE_TEXTtext": "Bitte eine Antwort eingeben.",
       "NUMERICALtext": "Bitte eine Zahl eingeben.",
+      "SCrichtext": "Bitte <b>eine einzige</b> Option auswählen.",
+      "MCrichtext": "Bitte <b>eine oder mehrere</b> Optionen auswählen.",
+      "KPRIMrichtext": "Beurteile die Aussagen auf ihre <b>Richtigkeit</b>.",
+      "FREE_TEXTrichtext": "Bitte eine <b>Antwort</b> eingeben.",
+      "NUMERICALrichtext": "Bitte eine <b>Zahl</b> eingeben.",
       "roundedTo": "(gerundet auf {accuracy} Nachkommastellen)",
       "numInvalidValue": "Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.",
       "ftPlaceholder": "Ihre Antwort..."
@@ -14,6 +19,9 @@
       "title": "KlickerUZH",
       "send": "Absenden",
       "save": "Speichern",
+      "start": "Starten",
+      "continue": "Weiter",
+      "sendAnswer": "Antwort senden",
       "loading": "Laden...",
       "logout": "Ausloggen",
       "login": "Login",
@@ -30,8 +38,10 @@
       "questions": "Fragen",
       "question": "Frage",
       "feedbacks": "Feedbacks",
+      "explanation": "Erklärung",
       "leaderboard": "Leaderboard",
       "repetition": "Repetition",
+      "evaluation": "Auswertung",
       "learningElements": "Lernelemente",
       "microlearning": "Microlearning",
       "activeSessions": "Aktive Sessions",
@@ -39,12 +49,15 @@
       "precision": "Präzision",
       "min": "Min",
       "max": "Max",
-      "free": "Frei"
+      "free": "Frei",
+      "congrats": "Gratulation!"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
       "ranks": "Ränge",
-      "points": "Punkte"
+      "points": "Punkte",
+      "computed": "Berechnet",
+      "collected": "Gesammelt"
     }
   },
   "pwa": {
@@ -52,7 +65,8 @@
       "myCourses": "Meine Kurse",
       "myBookmarks": "Meine Bookmarks",
       "joinCourse": "Kurs beitreten",
-      "setupProfile": "Profil einrichten"
+      "setupProfile": "Profil einrichten",
+      "openInBrowser": "In Browser öffnen"
     },
     "login": {
       "installPWA": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
@@ -60,7 +74,24 @@
       "installHomeScreen": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
     },
     "learningElement": {
-      "repetitionTitle": "Repetition Lernelemente"
+      "repetitionTitle": "Repetition Lernelemente",
+      "numOfQuestions": "Anzahl Fragen: {number}",
+      "orderLAST_RESPONSE": "Reihenfolge: zuletzt beantwortete Fragen am Ende",
+      "orderSHUFFLED": "Reihenfolge: zufällige Reihenfolge",
+      "orderSEQUENTIAL": "Reihenfolge: geordnet in Sequenz",
+      "repetitionDaily": "Wiederholung: täglich",
+      "repetitionXDays": "Wiederholung: alle {days} Tage",
+      "answeredMinOnce": "Min. 1x beantwortet: {answered}/{total}",
+      "multiplicatorPoints": "Multiplikator: {mult}x Punkte",
+      "multiplicatorEval": "<b>Multiplikator</b> {mult}x",
+      "solvedLearningElement": "Du hast das Lernelement <it>{name}</it> erfolgreich absolviert.",
+      "pointsCollectedPossible": "Punkte (gesammelt/berechnet/möglich)",
+      "notAttempted": "Nicht gelöst",
+      "totalPoints": "Total Punkte (gesammelt): {points}",
+      "questionTypeNotSupported": "Dieser Fragetyp ist für Lernelemente nicht verfügbar.",
+      "questionProgress": "Frage: {current}/{total}",
+      "newPointsFrom": "Erneute Punkte ab:",
+      "othersAnswered": "So haben andere geantwortet"
     },
     "session": {
       "noActiveQuestion": "Keine Frage aktiv.",

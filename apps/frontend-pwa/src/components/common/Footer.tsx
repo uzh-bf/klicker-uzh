@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -7,6 +8,8 @@ interface FooterProps {
 }
 
 function Footer({ browserLink, className }: FooterProps): React.ReactElement {
+  const t = useTranslations()
+
   return (
     <footer
       className={twMerge(
@@ -19,7 +22,7 @@ function Footer({ browserLink, className }: FooterProps): React.ReactElement {
       {browserLink && (
         <div className="mt-4 text-sm text-center text-slate-700">
           <a href={browserLink} target="_blank" rel="noreferrer">
-            Im Browser öffnen
+            {t('pwa.index.openInBrowser')}
           </a>
         </div>
       )}
