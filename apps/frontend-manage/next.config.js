@@ -25,10 +25,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  i18n: {
-    locales: ['de', 'en'],
-    defaultLocale: 'en',
-  },
   images: {
     domains: [
       process.env.S3_HOSTNAME,
