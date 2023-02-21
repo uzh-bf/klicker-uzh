@@ -55,7 +55,8 @@
       "max": "Max",
       "free": "Free",
       "congrats": "Congratulations!",
-      "thanks": "Thank you!"
+      "thanks": "Thank you!",
+      "bookmarks": "Bookmarks"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -67,12 +68,14 @@
     }
   },
   "pwa": {
-    "index": {
+    "general": {
       "myCourses": "My Courses",
       "myBookmarks": "My Bookmarks",
       "joinCourse": "Join Course",
       "setupProfile": "Setup profile",
-      "openInBrowser": "Open in browser"
+      "openInBrowser": "Open in browser",
+      "selectCourse": "Select course",
+      "bookmarksPlaceholder": "This page is currently under development and will be published soon. All bookmarked questions will be displayed here."
     },
     "login": {
       "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",

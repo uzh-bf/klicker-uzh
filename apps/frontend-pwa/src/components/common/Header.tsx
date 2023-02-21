@@ -129,7 +129,7 @@ function Header({
                 root: 'hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block',
               }}
             >
-              {t('pwa.index.setupProfile')}
+              {t('pwa.general.setupProfile')}
             </Button>
           </Link>
         )}

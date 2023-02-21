@@ -55,7 +55,8 @@
       "max": "Max",
       "free": "Frei",
       "congrats": "Gratulation!",
-      "thanks": "Vielen Dank!"
+      "thanks": "Vielen Dank!",
+      "bookmarks": "Bookmarks"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -67,12 +68,14 @@
     }
   },
   "pwa": {
-    "index": {
+    "general": {
       "myCourses": "Meine Kurse",
       "myBookmarks": "Meine Bookmarks",
       "joinCourse": "Kurs beitreten",
       "setupProfile": "Profil einrichten",
-      "openInBrowser": "In Browser öffnen"
+      "openInBrowser": "In Browser öffnen",
+      "selectCourse": "Kurs auswählen",
+      "bookmarksPlaceholder": "Diese Seite ist aktuell noch in Entwicklung und wird bald publiziert. Hier werden alle mit Bookmarks versehenen Fragen angezeigt werden."
     },
     "login": {
       "installPWA": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",

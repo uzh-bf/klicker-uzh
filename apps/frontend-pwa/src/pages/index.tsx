@@ -239,7 +239,7 @@ const Index = function () {
               {t('shared.generic.repetition')}
             </LinkButton>
             <LinkButton href="/bookmarks" icon={faBookmark}>
-              {t('pwa.index.myBookmarks')}
+              {t('pwa.general.myBookmarks')}
             </LinkButton>
           </div>
         </div>
@@ -271,7 +271,7 @@ const Index = function () {
         )}
         <div>
           <H1 className={{ root: 'text-xl mb-2' }}>
-            {t('pwa.index.myCourses')}
+            {t('pwa.general.myCourses')}
           </H1>
           <div className="flex flex-col gap-2">
             {courses.map((course) => (
@@ -285,7 +285,7 @@ const Index = function () {
               <CourseElement key={course.id} course={course} />
             ))}
             <LinkButton icon={faCirclePlus} href="/join">
-              {t('pwa.index.joinCourse')}
+              {t('pwa.general.joinCourse')}
             </LinkButton>
           </div>
         </div>

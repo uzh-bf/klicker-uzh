@@ -22,7 +22,7 @@ function Footer({ browserLink, className }: FooterProps): React.ReactElement {
       {browserLink && (
         <div className="mt-4 text-sm text-center text-slate-700">
           <a href={browserLink} target="_blank" rel="noreferrer">
-            {t('pwa.index.openInBrowser')}
+            {t('pwa.general.openInBrowser')}
           </a>
         </div>
       )}
