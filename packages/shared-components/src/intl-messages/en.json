@@ -60,7 +60,10 @@
       "group": "Group",
       "create": "Create",
       "join": "Join",
-      "leave": "Leave"
+      "leave": "Leave",
+      "documentation": "Documentation",
+      "features": "Features",
+      "groupActivities": "Group activities"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -87,7 +90,12 @@
       "setupProfile": "Setup profile",
       "openInBrowser": "Open in browser",
       "selectCourse": "Select course",
-      "bookmarksPlaceholder": "This page is currently under development and will be published soon. All bookmarked questions will be displayed here."
+      "bookmarksPlaceholder": "This page is currently under development and will be published soon. All bookmarked questions will be displayed here.",
+      "setup": "Setup",
+      "appSetup": "App setup",
+      "firstLogin": "First login",
+      "polls": "Polls",
+      "liveQA": "Live-Q&A"
     },
     "login": {
       "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
@@ -153,7 +161,6 @@
       "noActiveQuestion": "No question active.",
       "allQuestionsAnswered": "You have already answered all active questions."
     },
-
     "feedbacks": {
       "title": "Feedback Channel",
       "speed": "Speed",
