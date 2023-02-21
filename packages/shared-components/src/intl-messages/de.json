@@ -178,7 +178,7 @@
       "myProfile": "Mein Profil",
       "usernameMinLength": "Der Benutzername muss mindestens {length} Zeichen lang sein.",
       "usernameMaxLength": "Der Benutzername darf nicht länger als {length} Zeichen sein.",
-      "passwordMinLenght": "Das Passwort muss mindestens {length} Zeichen lang sein.",
+      "passwordMinLength": "Das Passwort muss mindestens {length} Zeichen lang sein.",
       "identicalPasswords": "Passwörter müssen übereinstimmen.",
       "usernameRequired": "Bitte geben Sie einen Benutzernamen ein.",
       "passwordRequired": "Bitte geben Sie ein Passwort ein.",

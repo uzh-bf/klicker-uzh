@@ -52,13 +52,13 @@ function JoinCourse({
     password: yup
       .string()
       .required(t('pwa.profile.passwordRequired'))
-      .min(8, t('pwa.profile.passwordMinLenght', { length: '8' })),
+      .min(8, t('pwa.profile.passwordMinLength', { length: '8' })),
     passwordRepetition: yup.string().when('password', {
       is: (val: string) => val && val.length > 0,
       then: (schema) =>
         schema
           .required(t('pwa.profile.identicalPasswords'))
-          .min(8, t('pwa.profile.passwordMinLenght', { length: '8' }))
+          .min(8, t('pwa.profile.passwordMinLength', { length: '8' }))
           .oneOf(
             [yup.ref('password'), null],
             t('pwa.profile.identicalPasswords')
