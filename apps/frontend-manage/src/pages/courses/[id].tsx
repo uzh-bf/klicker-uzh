@@ -309,4 +309,14 @@ function CourseOverviewPage() {
   )
 }
 
+export function getServerSideProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
+}
+
 export default CourseOverviewPage
