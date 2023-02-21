@@ -23,6 +23,8 @@
       "continue": "Continue",
       "sendAnswer": "Send answer",
       "loading": "Loading...",
+      "begin": "Begin",
+      "finish": "Finish",
       "logout": "Logout",
       "login": "Login",
       "username": "Username",
@@ -57,7 +59,8 @@
       "ranks": "Ranks",
       "points": "Points",
       "computed": "Computed",
-      "collected": "Collected"
+      "collected": "Collected",
+      "pointsCollected": "Points (collected)"
     }
   },
   "pwa": {
@@ -84,7 +87,7 @@
       "answeredMinOnce": "Min. answered once: {answered}/{total}",
       "multiplicatorPoints": "Multiplicator: {mult}x points",
       "multiplicatorEval": "<b>Multiplicator</b> {mult}x",
-      "solvedLearningElement": "You have successfully solved the learning element <it>{name}</it>.",
+      "solvedLearningElement": "You have successfully completed the learning element <it>{name}</it>.",
       "pointsCollectedPossible": "Points (collected/computed/available)",
       "notAttempted": "Not attempted",
       "totalPoints": "Total points (collected): {points}",
@@ -92,6 +95,9 @@
       "questionProgress": "Question: {current}/{total}",
       "newPointsFrom": "New points from:",
       "othersAnswered": "Others answered as follows"
+    },
+    "microlearning": {
+      "solvedMicrolearning": "You have successfully completed the microlearning <it>{name}</it>."
     },
     "session": {
       "noActiveQuestion": "No question active.",

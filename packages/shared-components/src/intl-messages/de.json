@@ -23,6 +23,8 @@
       "continue": "Weiter",
       "sendAnswer": "Antwort senden",
       "loading": "Laden...",
+      "begin": "Beginnen",
+      "finish": "Abschliessen",
       "logout": "Ausloggen",
       "login": "Login",
       "username": "Benutzername",
@@ -57,7 +59,8 @@
       "ranks": "Ränge",
       "points": "Punkte",
       "computed": "Berechnet",
-      "collected": "Gesammelt"
+      "collected": "Gesammelt",
+      "pointsCollected": "Punkte (gesammelt)"
     }
   },
   "pwa": {
@@ -92,6 +95,9 @@
       "questionProgress": "Frage: {current}/{total}",
       "newPointsFrom": "Erneute Punkte ab:",
       "othersAnswered": "So haben andere geantwortet"
+    },
+    "microlearning": {
+      "solvedMicrolearning": "Du hast das Microlearning <it>{name}</it> erfolgreich absolviert."
     },
     "session": {
       "noActiveQuestion": "Keine Frage aktiv.",

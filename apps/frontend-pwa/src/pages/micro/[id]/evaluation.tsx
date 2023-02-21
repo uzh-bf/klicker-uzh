@@ -4,11 +4,13 @@ import {
   MarkMicroSessionCompletedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3 } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import Layout from '../../../components/Layout'
 
 function Evaluation() {
+  const t = useTranslations()
   const router = useRouter()
 
   const id = router.query.id as string
@@ -31,7 +33,7 @@ function Evaluation() {
   }, [data?.microSession?.instances])
 
   if (loading || !data?.microSession) {
-    return <div>loading</div>
+    return <div>{t('shared.generic.loading')}</div>
   }
 
   return (
@@ -41,34 +43,37 @@ function Evaluation() {
     >
       <div className="flex flex-col gap-3 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         <div>
-          <H3>Gratulation!</H3>
+          <H3>{t('shared.generic.congrats')}</H3>
           <p>
-            Du hast das Microlearning{' '}
-            <span className="italic">{data.microSession.displayName}</span>{' '}
-            erfolgreich absolviert.
+            {t.rich('pwa.microlearning.solvedMicrolearning', {
+              name: data.microSession.displayName,
+              it: (text) => <span className="italic">{text}</span>,
+            })}
           </p>
         </div>
         <div>
           <div className="flex flex-row items-center justify-between">
             <H3 className={{ root: 'flex flex-row justify-between' }}>
-              Auswertung
+              {t('shared.generic.evaluation')}
             </H3>
-            <H3>Punkte (gesammelt/berechnet/möglich)</H3>
+            <H3>{t('pwa.learningElement.pointsCollectedPossible')}</H3>
           </div>
           <div>
-            {data.microSession.instances.map((instance) => (
-              <div className="flex flex-row justify-between">
+            {data.microSession.instances?.map((instance) => (
+              <div className="flex flex-row justify-between" key={instance.id}>
                 <div>{instance.questionData.name}</div>
                 <div>
-                  {instance.evaluation.pointsAwarded}/
-                  {instance.evaluation.score}/10
+                  {instance.evaluation?.pointsAwarded}/
+                  {instance.evaluation?.score}/10
                 </div>
               </div>
             ))}
           </div>
 
           <H3 className={{ root: 'mt-4 text-right' }}>
-            Total Punkte (gesammelt): {totalPointsAwarded}
+            {t('pwa.learningElement.totalPoints', {
+              points: totalPointsAwarded,
+            })}
           </H3>
         </div>
         <div className="text-right">
@@ -83,7 +88,7 @@ function Evaluation() {
               router.replace('/')
             }}
           >
-            Abschliessen
+            {t('shared.generic.finish')}
           </Button>
         </div>
       </div>
@@ -91,7 +96,7 @@ function Evaluation() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export function getServerSideProps({ locale }: any) {
   return {
     props: {
       messages: {
