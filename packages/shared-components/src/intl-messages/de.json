@@ -111,6 +111,15 @@
       "groupActivityScore": "Punkte durch Gruppenaktivitäten",
       "totalScore": "Total Punkte"
     },
+    "joinCourse": {
+      "title": "Kurs \"{name}\" beitreten",
+      "introLoggedIn": "Sie sind bereits eingeloggt und können dem Kurs {name} durch die Eingabe des korrekten PINs direkt beitreten.",
+      "introLoggedInNoCourse": "Sie sind bereits eingeloggt und können einem Kurs durch die Eingabe des entsprechenden PINs direkt beitreten.",
+      "introNewUser": "Erstellen Sie hier Ihr KlickerUZH Konto für den Kurs {name}. Sollten Sie bereits über ein Konto verfügen, können sie die entsprechenden Anmeldedaten direkt im Formular eingeben.",
+      "coursePinFormat": "Kurs-PIN (Format: ### ### ###)",
+      "coursePinNumerical": "Bitte geben Sie einen numerischen PIN ein.",
+      "coursePinRequired": "Bitte geben Sie den Kurs-PIN ein."
+    },
     "learningElement": {
       "repetitionTitle": "Repetition Lernelemente",
       "numOfQuestions": "Anzahl Fragen: {number}",
@@ -164,6 +173,7 @@
       "passwordMinLenght": "Das Passwort muss mindestens {length} Zeichen lang sein.",
       "identicalPasswords": "Passwörter müssen übereinstimmen.",
       "usernameRequired": "Bitte geben Sie einen Benutzernamen ein.",
+      "passwordRequired": "Bitte geben Sie ein Passwort ein.",
       "welcomeMessage": "Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar."
     },
     "avatar": {

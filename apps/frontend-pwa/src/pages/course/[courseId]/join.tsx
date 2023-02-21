@@ -15,6 +15,7 @@ import {
 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import PinField from 'shared-components/src/PinField'
@@ -22,39 +23,6 @@ import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
 import Layout from '../../../components/Layout'
-
-const joinAndRegisterSchema = yup.object({
-  username: yup
-    .string()
-    .required('Bitte geben Sie einen Benutzernamen ein')
-    .min(5, 'Der Benutzername muss mindestens 5 Zeichen lang sein.')
-    .max(10, 'Der Benutzername darf nicht länger als 10 Zeichen sein.'),
-  password: yup
-    .string()
-    .required('Bitte geben Sie ein Passwort ein')
-    .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.'),
-  passwordRepetition: yup.string().when('password', {
-    is: (val: string) => val && val.length > 0,
-    then: (schema) =>
-      schema
-        .required('Passwörter müssen übereinstimmen.')
-        .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.')
-        .oneOf([yup.ref('password'), ''], 'Passwörter müssen übereinstimmen.'),
-    otherwise: (schema) =>
-      schema.oneOf([''], 'Passwörter müssen übereinstimmen.'),
-  }),
-  pin: yup
-    .number()
-    .typeError('Bitte geben Sie einen numerischen PIN ein.')
-    .required('Bitte geben Sie den Kurs-PIN ein.'),
-})
-
-export const joinCourseWithPinSchema = yup.object({
-  pin: yup
-    .number()
-    .typeError('Bitte geben Sie einen numerischen PIN ein.')
-    .required('Bitte geben Sie den Kurs-PIN ein.'),
-})
 
 function JoinCourse({
   courseId,
@@ -69,10 +37,47 @@ function JoinCourse({
   description: string
   courseLoading: boolean
 }) {
+  const t = useTranslations()
   const router = useRouter()
   const theme = useContext(ThemeContext)
   const [showError, setError] = useState(false)
   const [initialPin, setInitialPin] = useState<string>('')
+
+  const joinAndRegisterSchema = yup.object({
+    username: yup
+      .string()
+      .required(t('pwa.profile.usernameRequired'))
+      .min(5, t('pwa.profile.usernameMinLength', { length: '5' }))
+      .max(10, t('pwa.profile.usernameMaxLength', { length: '10' })),
+    password: yup
+      .string()
+      .required(t('pwa.profile.passwordRequired'))
+      .min(8, t('pwa.profile.passwordMinLenght', { length: '8' })),
+    passwordRepetition: yup.string().when('password', {
+      is: (val: string) => val && val.length > 0,
+      then: (schema) =>
+        schema
+          .required(t('pwa.profile.identicalPasswords'))
+          .min(8, t('pwa.profile.passwordMinLenght', { length: '8' }))
+          .oneOf(
+            [yup.ref('password'), null],
+            t('pwa.profile.identicalPasswords')
+          ),
+      otherwise: (schema) =>
+        schema.oneOf([''], t('pwa.profile.identicalPasswords')),
+    }),
+    pin: yup
+      .number()
+      .typeError(t('pwa.joinCourse.coursePinNumerical'))
+      .required(t('pwa.joinCourse.coursePinRequired')),
+  })
+
+  const joinCourseWithPinSchema = yup.object({
+    pin: yup
+      .number()
+      .typeError(t('pwa.joinCourse.coursePinNumerical'))
+      .required(t('pwa.joinCourse.coursePinRequired')),
+  })
 
   useEffect(() => {
     const pin = router.query.pin
@@ -93,23 +98,22 @@ function JoinCourse({
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 
   if (loadingParticipant || courseLoading) {
-    return <div>Loading...</div>
+    return <div>{t('shared.generic.loading')}</div>
   }
 
   return (
     <Layout
-      displayName="Kurs beitreten"
+      displayName={t('pwa.general.joinCourse')}
       course={{ displayName: displayName, color: color, id: courseId }}
     >
       <div className="max-w-sm mx-auto lg:max-w-md md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
-        <H2>Kurs &quot;{displayName}&quot; beitreten</H2>
+        <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
 
         {/* if the participant is logged in, a simplified form will be displayed */}
         {dataParticipant?.self ? (
           <div>
             <div className="mb-5 ">
-              Sie sind bereits eingeloggt und können dem Kurs {displayName}{' '}
-              durch die Eingabe des korrekten PINs direkt beitreten.
+              {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
               initialValues={{
@@ -144,7 +148,7 @@ function JoinCourse({
                   <Form>
                     <PinField
                       name="pin"
-                      label="Kurs-PIN (Format: ### ### ###)"
+                      label={t('pwa.joinCourse.coursePinFormat')}
                       error={errors.pin}
                       touched={touched.pin}
                       value={values.pin}
@@ -158,7 +162,7 @@ function JoinCourse({
                       type="submit"
                       disabled={isSubmitting || !isValid}
                     >
-                      <Button.Label>Kurs beitreten</Button.Label>
+                      <Button.Label>{t('pwa.general.joinCourse')}</Button.Label>
                     </Button>
                   </Form>
                 )
@@ -168,9 +172,7 @@ function JoinCourse({
         ) : (
           <div>
             <div className="mb-5 ">
-              Erstellen Sie hier Ihr KlickerUZH Konto für den Kurs {displayName}
-              . Sollten Sie bereits über ein Konto verfügen, können sie die
-              entsprechenden Anmeldedaten direkt im Formular eingeben.
+              {t('pwa.joinCourse.introNewUser', { name: displayName })}
             </div>
             <Formik
               initialValues={{
@@ -210,7 +212,10 @@ function JoinCourse({
               }) => {
                 return (
                   <Form>
-                    <Label label="Nutzername" className={{ root: 'italic' }} />
+                    <Label
+                      label={t('shared.generic.username')}
+                      className={{ root: 'italic' }}
+                    />
                     <Field
                       name="username"
                       type="text"
@@ -229,7 +234,10 @@ function JoinCourse({
                       className="text-sm text-red-400"
                     />
 
-                    <Label label="Passwort" className={{ root: 'italic' }} />
+                    <Label
+                      label={t('shared.generic.password')}
+                      className={{ root: 'italic' }}
+                    />
                     <Field
                       name="password"
                       type="password"
@@ -249,7 +257,7 @@ function JoinCourse({
                     />
 
                     <Label
-                      label="Passwort (Wiederholung)"
+                      label={t('shared.generic.passwordRepetition')}
                       className={{ root: 'italic' }}
                     />
                     <Field
@@ -271,7 +279,7 @@ function JoinCourse({
                     />
 
                     <PinField
-                      label="Kurs-PIN (Format: ### ### ###)"
+                      label={t('pwa.joinCourse.coursePinFormat')}
                       name="pin"
                       error={errors.pin}
                       touched={touched.pin}
@@ -286,7 +294,7 @@ function JoinCourse({
                       type="submit"
                       disabled={isSubmitting || !isValid}
                     >
-                      <Button.Label>Kurs beitreten</Button.Label>
+                      <Button.Label>{t('pwa.general.joinCourse')}</Button.Label>
                     </Button>
                   </Form>
                 )

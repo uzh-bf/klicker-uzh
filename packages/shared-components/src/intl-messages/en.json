@@ -111,6 +111,15 @@
       "groupActivityScore": "Points by group activities",
       "totalScore": "Total points"
     },
+    "joinCourse": {
+      "title": "Join Course \"{name}\"",
+      "introLoggedIn": "You are already logged in and can join the course {name} directly by entering the correct PIN.",
+      "introLoggedInNoCourse": "You are already logged in and can join a course directly by entering the corresponding PIN.",
+      "introNewUser": "Create your KlickerUZH account for the course {name} here. If you already have an account, you can enter the corresponding login data directly in the form.",
+      "coursePinFormat": "Course-PIN (format: ### ### ###)",
+      "coursePinNumerical": "Please enter a numerical course PIN.",
+      "coursePinRequired": "Please enter the course PIN."
+    },
     "learningElement": {
       "repetitionTitle": "Repetition learning elements",
       "numOfQuestions": "Number of questions: {number}",
@@ -165,6 +174,7 @@
       "passwordMinLenght": "The password must be at least {length} characters long.",
       "identicalPasswords": "Passwords must match.",
       "usernameRequired": "Please enter a username here.",
+      "passwordRequired": "Please enter a password here.",
       "welcomeMessage": "Welcome to KlickerUZH! If this is your first time here, please set a password and define your own username and avatar."
     },
     "avatar": {

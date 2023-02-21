@@ -2,25 +2,31 @@ import { useMutation } from '@apollo/client'
 import { JoinCourseWithPinDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import PinField from 'shared-components/src/PinField'
+import * as yup from 'yup'
 import Layout from '../components/Layout'
-import { joinCourseWithPinSchema } from './course/[courseId]/join'
 
 function JoinPage() {
+  const t = useTranslations()
   const router = useRouter()
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
   const [showError, setError] = useState(false)
 
+  const joinCourseWithPinSchema = yup.object({
+    pin: yup
+      .number()
+      .typeError(t('pwa.joinCourse.coursePinNumerical'))
+      .required(t('pwa.joinCourse.coursePinRequired')),
+  })
+
   return (
-    <Layout displayName="Kurs beitreten">
+    <Layout displayName={t('pwa.general.joinCourse')}>
       <div className="max-w-sm mx-auto lg:max-w-md md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
-        <H2>Kurs beitreten</H2>
-        <div className="mb-5 ">
-          Sie sind bereits eingeloggt und können einem Kurs durch die Eingabe
-          des entsprechenden PINs direkt beitreten.
-        </div>
+        <H2>{t('pwa.general.joinCourse')}</H2>
+        <div className="mb-5 ">{t('pwa.joinCourse.introLoggedInNoCourse')}</div>
         <Formik
           initialValues={{
             pin: '',
@@ -54,7 +60,7 @@ function JoinPage() {
               <Form>
                 <PinField
                   name="pin"
-                  label="Kurs-PIN (Format: ### ### ###)"
+                  label={t('pwa.joinCourse.coursePinFormat')}
                   error={errors.pin}
                   touched={touched.pin}
                   value={values.pin}
@@ -68,7 +74,7 @@ function JoinPage() {
                   type="submit"
                   disabled={isSubmitting || !isValid}
                 >
-                  <Button.Label>Kurs beitreten</Button.Label>
+                  <Button.Label>{t('pwa.general.joinCourse')}</Button.Label>
                 </Button>
               </Form>
             )
