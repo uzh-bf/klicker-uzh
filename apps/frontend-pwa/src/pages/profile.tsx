@@ -22,7 +22,7 @@ const Profile = () => {
   return (
     <Layout
       course={{ displayName: 'KlickerUZH' }}
-      displayName={t('pwa.user.myProfile')}
+      displayName={t('pwa.profile.myProfile')}
     >
       <div className="flex flex-col gap-8 md:max-w-3xl md:border md:rounded md:p-4 md:mx-auto md:w-full">
         <div className="flex flex-row gap-4">
@@ -44,7 +44,7 @@ const Profile = () => {
               onClick={() => Router.replace('/editProfile')}
               className={{ root: 'mt-2' }}
             >
-              {t('pwa.user.editProfile')}
+              {t('pwa.profile.editProfile')}
             </Button>
 
             {!pageInFrame && (
@@ -63,9 +63,9 @@ const Profile = () => {
         </div>
 
         <div>
-          <H2>{t('pwa.user.achievements')}</H2>
+          <H2>{t('pwa.profile.achievements')}</H2>
           {(!data.self.achievements || data.self.achievements?.length == 0) && (
-            <div>{t('pwa.user.noAchievements')}</div>
+            <div>{t('pwa.profile.noAchievements')}</div>
           )}
           <div className="grid gap-4 mt-2 md:grid-cols-2">
             {data.self.achievements?.map((achievement) => (
