@@ -38,7 +38,7 @@ function GroupActivities() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export function getServerSideProps({ locale }: any) {
   return {
     props: {
       messages: {
