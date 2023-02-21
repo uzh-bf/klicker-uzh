@@ -72,6 +72,11 @@
       "participantCount": "Anzahl Teilnehmende: {number}",
       "groupCount": "Anzahl Gruppen: {number}",
       "averagePoints": "Durchschnittliche Punkte: {number}"
+    },
+    "error": {
+      "404": "404 Seite nicht gefunden",
+      "pwaWithoutUser": "Die von Ihnen aufgerufene Seite existiert leider nicht. Sie können sich <login>anmelden</login>, um eine Übersicht aller Klicker-Elemente Ihrer Kurse zu sehen.",
+      "pwaWithUser": "Die von Ihnen aufgerufene Seite existiert leider nicht. Sehen Sie sich eine <home>Übersicht</home> aller Klicker-Elemente Ihrer Kurse an."
     }
   },
   "pwa": {

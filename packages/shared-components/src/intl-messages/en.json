@@ -72,6 +72,11 @@
       "participantCount": "Number of participants: {number}",
       "groupCount": "Number of groups: {number}",
       "averagePoints": "Average points: {number}"
+    },
+    "error": {
+      "404": "404 Page not found",
+      "pwaWithoutUser": "Sorry, the page you requested does not exist. You can <login>sign in</login> to see an overview of all Klicker elements your courses offer.",
+      "pwaWithUser": "Sorry, the page you requested does not exist. View an <home>overview</home> of all Klicker elements your courses offer."
     }
   },
   "pwa": {
