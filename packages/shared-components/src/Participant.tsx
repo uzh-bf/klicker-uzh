@@ -1,4 +1,5 @@
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -25,6 +26,8 @@ function Participant({
   points,
   rank,
 }: PropsWithChildren<ParticipantProps>) {
+  const t = useTranslations()
+
   return (
     <div
       className={twMerge(
@@ -49,7 +52,9 @@ function Participant({
           </div>
         )}
 
-        <div className="first:ml-2 text-slate-700">{pseudonym ?? 'Frei'}</div>
+        <div className="first:ml-2 text-slate-700">
+          {pseudonym ?? t('shared.generic.free')}
+        </div>
         <div className="flex-1 text-right">{children}</div>
       </div>
       {typeof points === 'number' && (
@@ -76,6 +81,8 @@ interface ParticipantSelfProps extends ParticipantProps {
 }
 
 export function ParticipantSelf(props: ParticipantSelfProps) {
+  const t = useTranslations()
+
   return (
     <Participant isHighlighted {...props}>
       {props.isActive ? (
@@ -83,14 +90,14 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
           className={{ root: 'text-sm' }}
           onClick={() => props.onLeaveCourse()}
         >
-          Austreten
+          {t('shared.generic.leave')}
         </Button>
       ) : (
         <Button
           className={{ root: 'text-sm' }}
           onClick={props.onJoinCourse ? () => props.onJoinCourse!() : undefined}
         >
-          Beitreten
+          {t('shared.generic.join')}
         </Button>
       )}
     </Participant>

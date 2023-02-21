@@ -56,7 +56,11 @@
       "free": "Free",
       "congrats": "Congratulations!",
       "thanks": "Thank you!",
-      "bookmarks": "Bookmarks"
+      "bookmarks": "Bookmarks",
+      "group": "Group",
+      "create": "Create",
+      "join": "Join",
+      "leave": "Leave"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -64,7 +68,10 @@
       "points": "Points",
       "computed": "Computed",
       "collected": "Collected",
-      "pointsCollected": "Points (collected)"
+      "pointsCollected": "Points (collected)",
+      "participantCount": "Number of participants: {number}",
+      "groupCount": "Number of groups: {number}",
+      "averagePoints": "Average points: {number}"
     }
   },
   "pwa": {
@@ -81,6 +88,23 @@
       "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
       "installButton": "Install Now",
       "installHomeScreen": "Open the Share dialog and click 'Add to Home Screen' to install the Klicker app on your phone."
+    },
+    "courses": {
+      "courseInformation": "Course Information",
+      "createJoinGroup": "Create/Join Group",
+      "createGroup": "Create Group",
+      "joinGroup": "Join Group",
+      "groupName": "Group Name",
+      "code": "Code",
+      "individualLeaderboard": "Individual Leaderboard",
+      "groupLeaderboard": "Group Leaderboard",
+      "individualLeaderboardUpdate": "The individual leaderboard will be updated hourly.",
+      "noGroups": "No groups have been created yet. Let's go!",
+      "noGroupPoints": "No group points have been collected yet. Let's go!",
+      "groupLeaderboardUpdate": "The group leaderboard will be updated daily.<b>x</b>Groups with a single member will not receive any points.",
+      "membersScore": "Points by group members",
+      "groupActivityScore": "Points by group activities",
+      "totalScore": "Total points"
     },
     "learningElement": {
       "repetitionTitle": "Repetition learning elements",

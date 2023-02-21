@@ -56,7 +56,11 @@
       "free": "Frei",
       "congrats": "Gratulation!",
       "thanks": "Vielen Dank!",
-      "bookmarks": "Bookmarks"
+      "bookmarks": "Bookmarks",
+      "group": "Gruppe",
+      "create": "Erstellen",
+      "join": "Beitreten",
+      "leave": "Austreten"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -64,7 +68,10 @@
       "points": "Punkte",
       "computed": "Berechnet",
       "collected": "Gesammelt",
-      "pointsCollected": "Punkte (gesammelt)"
+      "pointsCollected": "Punkte (gesammelt)",
+      "participantCount": "Anzahl Teilnehmende: {number}",
+      "groupCount": "Anzahl Gruppen: {number}",
+      "averagePoints": "Durchschnittliche Punkte: {number}"
     }
   },
   "pwa": {
@@ -81,6 +88,23 @@
       "installPWA": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
       "installButton": "Jetzt installieren",
       "installHomeScreen": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+    },
+    "courses": {
+      "courseInformation": "Kursinformationen",
+      "createJoinGroup": "Gruppe erstellen/beitreten",
+      "createGroup": "Gruppe erstellen",
+      "joinGroup": "Gruppe beitreten",
+      "groupName": "Gruppenname",
+      "code": "Code",
+      "individualLeaderboard": "Individuelles Leaderboard",
+      "groupLeaderboard": "Gruppenleaderboard",
+      "individualLeaderboardUpdate": "Das individuelle Leaderboard wird stündlich aktualisiert.",
+      "noGroups": "Bisher wurden noch keine Gruppen gebildet. Los geht's!",
+      "noGroupPoints": "Bisher hat noch keine Gruppe Punkte erhalten. Los geht's!",
+      "groupLeaderboardUpdate": "Das Gruppenleaderboard wird täglich aktualisiert.<b>x</b>Gruppen mit einem Mitglied erhalten keine Punkte.",
+      "membersScore": "Punkte durch Mitglieder",
+      "groupActivityScore": "Punkte durch Gruppenaktivitäten",
+      "totalScore": "Total Punkte"
     },
     "learningElement": {
       "repetitionTitle": "Repetition Lernelemente",

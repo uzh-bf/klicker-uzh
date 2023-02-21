@@ -18,9 +18,12 @@ import Leaderboard from 'shared-components/src/Leaderboard'
 import Tabs from '../../../components/common/Tabs'
 import Layout from '../../../components/Layout'
 
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
+
+// TODO: replace fields in this component through our own design system components
 
 const DynamicMarkdown = dynamic(
   async () => {
@@ -33,6 +36,7 @@ const DynamicMarkdown = dynamic(
 )
 
 function CourseOverview({ courseId }: any) {
+  const t = useTranslations()
   const [selectedTab, setSelectedTab] = useState('global')
   // const [participantModalOpen, setParticipantModalOpen] =
   //   useState<boolean>(false)
@@ -80,7 +84,10 @@ function CourseOverview({ courseId }: any) {
   )
 
   return (
-    <Layout displayName="Leaderboard" course={course ?? undefined}>
+    <Layout
+      displayName={t('shared.generic.leaderboard')}
+      course={course ?? undefined}
+    >
       <div className="md:mx-auto md:max-w-6xl md:w-full md:border md:rounded">
         <Tabs
           defaultValue="global"
@@ -88,17 +95,25 @@ function CourseOverview({ courseId }: any) {
           onValueChange={(tab) => setSelectedTab(tab)}
         >
           <Tabs.TabList>
-            <Tabs.Tab key="course" value="global" label="Leaderboard" />
+            <Tabs.Tab
+              key="leaderboard"
+              value="global"
+              label={t('shared.generic.leaderboard')}
+            />
 
             {course?.description && (
-              <Tabs.Tab key="info" value="info" label="Kursinformationen" />
+              <Tabs.Tab
+                key="info"
+                value="info"
+                label={t('pwa.courses.courseInformation')}
+              />
             )}
 
             {data.participantGroups?.map((group) => (
               <Tabs.Tab
                 key={group.id}
                 value={group.id}
-                label={`Gruppe ${group.name}`}
+                label={`${t('shared.generic.group')} ${group.name}`}
               />
             ))}
 
@@ -106,14 +121,16 @@ function CourseOverview({ courseId }: any) {
               <Tabs.Tab
                 key="create"
                 value="create"
-                label="Gruppe erstellen/beitreten"
+                label={t('pwa.courses.createJoinGroup')}
               />
             )}
           </Tabs.TabList>
 
           {course?.description && (
             <Tabs.TabContent key="info" value="info" className="md:px-4">
-              <H3 className={{ root: 'mb-4' }}>Kursinformationen</H3>
+              <H3 className={{ root: 'mb-4' }}>
+                {t('pwa.courses.courseInformation')}
+              </H3>
               <DynamicMarkdown content={course.description} />
             </Tabs.TabContent>
           )}
@@ -123,7 +140,7 @@ function CourseOverview({ courseId }: any) {
               <div className="flex flex-col justify-between flex-1 gap-6">
                 <div>
                   <H3 className={{ root: 'mb-4' }}>
-                    Individuelles Leaderboard
+                    {t('pwa.courses.individualLeaderboard')}
                   </H3>
 
                   <Leaderboard
@@ -180,25 +197,28 @@ function CourseOverview({ courseId }: any) {
 
                   <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                     <div>
-                      Anzahl Teilnehmende:{' '}
-                      {leaderboardStatistics.participantCount}
+                      {t('shared.leaderboard.participantCount', {
+                        number: leaderboardStatistics?.participantCount,
+                      })}
                     </div>
                     <div>
-                      Durchschnittl. Punkte:{' '}
-                      {leaderboardStatistics.averageScore?.toFixed(2)}
+                      {t('shared.leaderboard.averagePoints', {
+                        number: leaderboardStatistics?.averageScore?.toFixed(2),
+                      })}
                     </div>
                   </div>
-                  {/* TODO: HISTOGRAMM */}
                 </div>
 
                 <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
-                  Das individuelle Leaderboard wird stündlich aktualisiert.
+                  {t('pwa.courses.individualLeaderboardUpdate')}
                 </div>
               </div>
 
               <div className="flex flex-col justify-between flex-1 gap-8">
                 <div>
-                  <H3 className={{ root: 'mb-4' }}>Gruppenleaderboard</H3>
+                  <H3 className={{ root: 'mb-4' }}>
+                    {t('pwa.courses.groupLeaderboard')}
+                  </H3>
 
                   <Leaderboard
                     leaderboard={
@@ -212,40 +232,40 @@ function CourseOverview({ courseId }: any) {
 
                   {!groupLeaderboard ||
                     (groupLeaderboard.length === 0 && (
-                      <div className="mt-6">
-                        Bisher wurden noch keine Gruppen gebildet. Los
-                        geht&apos;s!
-                      </div>
+                      <div className="mt-6">{t('pwa.courses.noGroups')}</div>
                     ))}
                   {groupLeaderboard &&
                     groupLeaderboard.length !== 0 &&
                     filteredGroupLeaderboard?.length === 0 && (
-                      <div>
-                        Bisher hat noch keine Gruppe Punkte erhalten. Los
-                        geht&apos;s!
-                      </div>
+                      <div>{t('pwa.courses.noGroupPoints')}</div>
                     )}
 
                   <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                     <div>
-                      Anzahl Gruppen:{' '}
-                      {groupLeaderboardStatistics.participantCount}
+                      {t('shared.leaderboard.participantCount', {
+                        number: groupLeaderboardStatistics?.participantCount,
+                      })}
                     </div>
                     <div>
-                      Durchschnittl. Punkte:{' '}
-                      {groupLeaderboardStatistics.averageScore?.toFixed(2)}
+                      {t('shared.leaderboard.averagePoints', {
+                        number:
+                          groupLeaderboardStatistics?.averageScore?.toFixed(2),
+                      })}
                     </div>
                   </div>
                 </div>
 
                 <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
-                  Das Gruppenleaderboard wird täglich aktualisiert. <br />
-                  Gruppen mit einem Mitglied erhalten keine Punkte.
+                  {/* {t('pwa.courses.groupLeaderboardUpdate')} */}
+                  {t.rich('pwa.courses.groupLeaderboardUpdate', {
+                    b: () => <br />,
+                  })}
                 </div>
               </div>
             </div>
 
-            {course?.awards?.length != 0 && (
+            {/* // TODO: update the translation strings as well, once this hard-coded content has been updated with a flexible implementation */}
+            {course?.awards && course?.awards?.length != 0 && (
               <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
                 <H3 className={{ root: 'mb-2 text-base' }}>
                   BF-Champion Awards
@@ -306,7 +326,9 @@ function CourseOverview({ courseId }: any) {
             <Tabs.TabContent key={group.id} value={group.id}>
               <div className="flex flex-col gap-4">
                 <H3 className={{ root: 'flex flex-row justify-between' }}>
-                  <div>Gruppe {group.name}</div>
+                  <div>
+                    {t('shared.generic.group')} {group.name}
+                  </div>
                   <div>{group.code}</div>
                 </H3>
 
@@ -331,15 +353,15 @@ function CourseOverview({ courseId }: any) {
 
                     <div className="self-end mt-6 text-sm w-60 text-slate-600">
                       <div className="flex flex-row justify-between">
-                        <div>Punkte durch Mitglieder</div>
+                        <div>{t('pwa.courses.membersScore')}</div>
                         <div>{group.averageMemberScore}</div>
                       </div>
                       <div className="flex flex-row justify-between">
-                        <div>Punkte aus Gruppenaktivitäten</div>
+                        <div>{t('pwa.courses.groupActivityScore')}</div>
                         <div>{group.groupActivityScore}</div>
                       </div>
                       <div className="flex flex-row justify-between font-bold">
-                        <div>Total Punkte</div>
+                        <div>{t('pwa.courses.totalScore')}</div>
                         <div>{group.score}</div>
                       </div>
                     </div>
@@ -347,7 +369,8 @@ function CourseOverview({ courseId }: any) {
                   <GroupVisualization participants={group.participants} />
                 </div>
 
-                {data.getCourseOverviewData?.course.id ===
+                {/* // TODO: add internationlized strings, once the hard-coded implementation has been updated */}
+                {data.getCourseOverviewData?.course?.id ===
                   '2b302436-4fc3-4d5d-bbfb-1e13b4ee11b2' && (
                   <div className="mt-8">
                     <H4>Gruppenaktivitäten</H4>
@@ -369,7 +392,7 @@ function CourseOverview({ courseId }: any) {
           ))}
 
           <Tabs.TabContent key="create" value="create">
-            <H3>Gruppe erstellen</H3>
+            <H3>{t('pwa.courses.createGroup')}</H3>
             <Formik
               initialValues={{ groupName: '' }}
               onSubmit={async (values) => {
@@ -400,22 +423,22 @@ function CourseOverview({ courseId }: any) {
                   <Field
                     type="text"
                     name="groupName"
-                    placeholder="Gruppenname"
+                    placeholder={t('pwa.courses.groupName')}
                   />
                   <ErrorMessage
                     name="groupName"
                     component="div"
                     className="text-sm text-red-400"
                   />
-                  <Button type="submit">Erstellen</Button>
+                  <Button type="submit">{t('shared.generic.create')}</Button>
                 </div>
               </Form>
             </Formik>
 
-            <H3 className={{ root: 'mt-4' }}>Gruppe beitreten</H3>
+            <H3 className={{ root: 'mt-4' }}>{t('pwa.courses.joinGroup')}</H3>
             <Formik
               initialValues={{ code: '' }}
-              onSubmit={async (values, actions) => {
+              onSubmit={async (values) => {
                 const result = await joinParticipantGroup({
                   variables: {
                     courseId: courseId,
@@ -436,13 +459,17 @@ function CourseOverview({ courseId }: any) {
             >
               <Form>
                 <div className="flex flex-row gap-4">
-                  <Field type="text" name="code" placeholder="Code" />
+                  <Field
+                    type="text"
+                    name="code"
+                    placeholder={t('pwa.courses.code')}
+                  />
                   <ErrorMessage
                     name="code"
                     component="div"
                     className="text-sm text-red-400"
                   />
-                  <Button type="submit">Beitreten</Button>
+                  <Button type="submit">{t('shared.generic.join')}</Button>
                 </div>
               </Form>
             </Formik>
