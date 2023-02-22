@@ -589,8 +589,8 @@ enum QuestionDisplayMode {
 }
 
 type QuestionFeedback {
-  correct: Boolean!
-  feedback: String!
+  correct: Boolean
+  feedback: String
   ix: Int!
   value: String!
 }
