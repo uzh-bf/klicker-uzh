@@ -9,6 +9,10 @@ const withPWA = require('next-pwa')({
 
 const nextConfig = withPWA({
   transpilePackages: ['shared-components'],
+  i18n: {
+    locales: ['en', 'de'],
+    defaultLocale: 'de',
+  },
   modularizeImports: {
     ramda: {
       transform: 'ramda/es/{{member}}',

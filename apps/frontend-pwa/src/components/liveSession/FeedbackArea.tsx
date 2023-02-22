@@ -20,6 +20,7 @@ import {
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import localForage from 'localforage'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -89,6 +90,8 @@ function FeedbackArea({
   isConfusionFeedbackEnabled,
   isLiveQAEnabled,
 }: FeedbackAreaProps) {
+  const t = useTranslations()
+
   const router = useRouter()
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
   const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
@@ -286,7 +289,7 @@ function FeedbackArea({
 
   return (
     <div className="w-full h-full">
-      <H2>Feedback-Kanal</H2>
+      <H2>{t('pwa.feedbacks.title')}</H2>
 
       <Subscriber sessionId={sessionId} subscribeToMore={subscribeToMore} />
 
@@ -311,7 +314,7 @@ function FeedbackArea({
               <Form>
                 <FormikTextareaField
                   name="feedbackInput"
-                  placeholder="Feedback / Frage eingeben"
+                  placeholder={t('pwa.feedbacks.feedbackPlaceholder')}
                   className={{
                     input:
                       'w-full mb-1 border-2 border-solid border-uzh-grey-80 rounded-md p-1.5 text-sm bg-white',
@@ -320,7 +323,7 @@ function FeedbackArea({
                   component="textarea"
                   rows="3"
                   maxLength={500}
-                  maxLengthLabel="Zeichen"
+                  maxLengthLabel={t('shared.generic.characters')}
                 />
                 <Button
                   className={{
@@ -330,9 +333,9 @@ function FeedbackArea({
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
-                    <Button.Label>Loading...</Button.Label>
+                    <Button.Label>{t('shared.generic.loading')}</Button.Label>
                   ) : (
-                    <Button.Label>Absenden</Button.Label>
+                    <Button.Label>{t('shared.generic.send')}</Button.Label>
                   )}
                 </Button>
               </Form>
@@ -344,7 +347,7 @@ function FeedbackArea({
       {isConfusionFeedbackEnabled && (
         <div className="mb-8 space-y-6 text-sm">
           <div className="">
-            <H3 className={{ root: 'mb-0' }}>Geschwindigkeit</H3>
+            <H3 className={{ root: 'mb-0' }}>{t('pwa.feedbacks.speed')}</H3>
             <div className="w-full -mt-8">
               <Slider
                 disabled={!isConfusionEnabled}
@@ -362,7 +365,9 @@ function FeedbackArea({
             </div>
           </div>
           <div>
-            <H3 className={{ root: 'mb-0' }}>Schwierigkeit</H3>
+            <H3 className={{ root: 'mb-0' }}>
+              {t('pwa.feedbacks.difficulty')}
+            </H3>
             <div className="w-full -mt-5">
               <Slider
                 disabled={!isConfusionEnabled}
@@ -386,7 +391,7 @@ function FeedbackArea({
         <div>
           {openFeedbacks && openFeedbacks.length > 0 && (
             <div className="mb-8">
-              <H3>Offene Fragen</H3>
+              <H3>{t('pwa.feedbacks.openQuestions')}</H3>
               {openFeedbacks.map((feedback) =>
                 feedback ? (
                   <PublicFeedback
@@ -402,7 +407,7 @@ function FeedbackArea({
 
           {resolvedFeedbacks && resolvedFeedbacks.length > 0 && (
             <div className="mb-4">
-              <H3>Erledigte Fragen</H3>
+              <H3>{t('pwa.feedbacks.resolvedQuestions')}</H3>
               {resolvedFeedbacks
                 .sort((feedback1, feedback2) =>
                   feedback1 && feedback2

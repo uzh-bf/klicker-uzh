@@ -7,6 +7,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import formatResponse from '@lib/formatResponse'
 import { H3, Progress } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Footer from '../../../components/common/Footer'
@@ -17,6 +18,8 @@ import Layout from '../../../components/Layout'
 
 // TODO: different question types (FREE and RANGE)
 function MicroSessionInstance() {
+  const t = useTranslations()
+
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -54,7 +57,8 @@ function MicroSessionInstance() {
     ResponseToQuestionInstanceDocument
   )
 
-  if (loading || !data?.microSession) return <p>Loading...</p>
+  if (loading || !data?.microSession)
+    return <p>{t('shared.generic.loading')}</p>
   if (error) return <p>Oh no... {error.message}</p>
 
   const isEvaluation = !!currentInstance?.evaluation
@@ -117,9 +121,12 @@ function MicroSessionInstance() {
                 <div className="flex-1 p-4 space-y-4 border rounded basis-1/3 bg-gray-50">
                   <div className="flex flex-row justify-between gap-8">
                     <div className="flex flex-col">
-                      <div className="font-bold">Punkte (gesammelt)</div>
+                      <div className="font-bold">
+                        {t('shared.leaderboard.pointsCollected')}
+                      </div>
                       <div className="text-xl">
-                        {currentInstance.evaluation.pointsAwarded} Punkte
+                        {currentInstance.evaluation.pointsAwarded}{' '}
+                        {t('shared.leaderboard.points')}
                       </div>
                     </div>
                     <div>
@@ -138,8 +145,10 @@ function MicroSessionInstance() {
                   />
 
                   {questionData.explanation && (
-                    <div className="">
-                      <div className="mb-1 font-bold">Erklärung</div>
+                    <div>
+                      <div className="mb-1 font-bold">
+                        {t('shared.generic.explanation')}
+                      </div>
                       <Markdown content={questionData.explanation} />
                     </div>
                   )}
@@ -163,6 +172,24 @@ function MicroSessionInstance() {
       <Footer />
     </Layout>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+    revalidate: 600,
+  }
+}
+
+export function getStaticPaths() {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
 }
 
 export default MicroSessionInstance

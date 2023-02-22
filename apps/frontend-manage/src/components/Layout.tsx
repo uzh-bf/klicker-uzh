@@ -8,7 +8,7 @@ import Footer from './common/Footer'
 import Header from './common/Header'
 
 interface LayoutProps {
-  displayName: string
+  displayName?: string
   children: React.ReactNode
   className?: string
   scrollable?: boolean

@@ -1,11 +1,12 @@
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Course, Participant } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, H2 } from '@uzh-bf/design-system'
+import { Button, H1, H2, ThemeContext } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
@@ -20,6 +21,9 @@ function Header({
   course,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
+  const { pathname, asPath, query } = router
+  const theme = useContext(ThemeContext)
+  const t = useTranslations()
 
   const pageInFrame =
     global?.window &&
@@ -45,6 +49,42 @@ function Header({
         <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
       )}
       <div className="flex flex-row items-center gap-4">
+        <div className="flex flex-row text-black bg-transparent rounded">
+          <Button
+            basic
+            onClick={() =>
+              router.push({ pathname, query }, asPath, {
+                locale: 'de',
+              })
+            }
+            className={{
+              root: twMerge(
+                'py-1 px-2 rounded-l bg-white',
+                router.locale === 'de' &&
+                  `font-bold text-white ${theme.primaryBgDark}`
+              ),
+            }}
+          >
+            DE
+          </Button>
+          <Button
+            basic
+            onClick={() =>
+              router.push({ pathname, query }, asPath, {
+                locale: 'en',
+              })
+            }
+            className={{
+              root: twMerge(
+                'py-1 px-2 rounded-r bg-white',
+                router.locale === 'en' &&
+                  `font-bold text-white ${theme.primaryBgDark}`
+              ),
+            }}
+          >
+            EN
+          </Button>
+        </div>
         {course?.id && (
           <Link href={`/course/${course.id}/docs`}>
             <Button
@@ -64,21 +104,21 @@ function Header({
               className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               onClick={() => router.back()}
             >
-              Zurück
+              {t('shared.generic.back')}
             </Button>
           ) : (
             <Link href="/" legacyBehavior>
               <Button
                 className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               >
-                Home
+                {t('shared.generic.home')}
               </Button>
             </Link>
           ))
         ) : (
           <Link href="/login" legacyBehavior>
             <Button className={{ root: 'text-white bg-slate-800' }}>
-              Login
+              {t('shared.generic.login')}
             </Button>
           </Link>
         )}
@@ -89,7 +129,7 @@ function Header({
                 root: 'hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block',
               }}
             >
-              Profil einrichten
+              {t('pwa.general.setupProfile')}
             </Button>
           </Link>
         )}

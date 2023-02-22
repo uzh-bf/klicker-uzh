@@ -5,8 +5,9 @@ import {
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
-import {Markdown} from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { indexBy } from 'ramda'
 import { useContext, useMemo } from 'react'
 import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
@@ -152,14 +153,17 @@ export function Options({
   isCompact,
   displayMode,
 }: OptionsProps) {
+  const t = useTranslations()
+
   switch (questionType) {
     case QuestionType.Sc: {
       return (
         <div>
           {withGuidance && (
             <div className="mb-4 italic">
-              Wähle <span className="font-bold">eine</span> der folgenden
-              Optionen:
+              {t.rich(`shared.${QuestionType.Sc}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
             </div>
           )}
           <ChoiceOptions
@@ -181,8 +185,9 @@ export function Options({
         <div>
           {withGuidance && (
             <div className="mb-4 italic">
-              Wähle <span className="font-bold">eine oder mehrere</span> der
-              folgenden Optionen:
+              {t.rich(`shared.${QuestionType.Mc}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
             </div>
           )}
           <ChoiceOptions
@@ -213,8 +218,9 @@ export function Options({
         <div>
           {withGuidance && (
             <div className="mb-4 italic">
-              Beurteile folgende Aussagen auf ihre{' '}
-              <span className="font-bold">Richtigkeit</span>:
+              {t.rich(`shared.${QuestionType.Kprim}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
             </div>
           )}
           <div className="space-y-1">
@@ -310,10 +316,11 @@ export function Options({
         <div>
           {withGuidance && (
             <div className="mb-2 italic">
-              Gib eine <span className="font-bold">Zahl</span> ein
-              {options?.accuracy &&
-                ` (gerundet auf ${options.accuracy} Nachkommastellen)`}
-              :
+              {t.rich(`shared.${QuestionType.Numerical}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
+              {options.accuracy &&
+                t('shared.questions.roundedTo', { accuracy: options.accuracy })}
             </div>
           )}
           <NUMERICALAnswerOptions
@@ -338,7 +345,7 @@ export function Options({
     default:
       return (
         <div className="text-red-600">
-          Dieser Fragetyp ist für Lernelemente nicht verfügbar.
+          {t('pwa.learningElement.questionTypeNotSupported')}
         </div>
       )
   }
@@ -371,6 +378,7 @@ function OptionsDisplay({
   options,
   displayMode,
 }: OptionsDisplayProps) {
+  const t = useTranslations()
   const feedbacks = useMemo(() => {
     if (evaluation) {
       return indexBy((feedback: any) => feedback.ix, evaluation.feedbacks)
@@ -407,11 +415,23 @@ function OptionsDisplay({
           }
           onClick={onSubmitResponse}
         >
-          {isEvaluation ? 'Weiter' : 'Antwort absenden'}
+          {isEvaluation
+            ? t('shared.generic.continue')
+            : t('shared.generic.sendAnswer')}
         </Button>
       </div>
     </div>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
 }
 
 export default OptionsDisplay

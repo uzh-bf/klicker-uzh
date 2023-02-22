@@ -3,7 +3,9 @@ import {
   GetSessionLeaderboardDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { H2 } from '@uzh-bf/design-system'
 import localforage from 'localforage'
+import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther } from '../participant/Participant'
@@ -21,6 +23,7 @@ function Leaderboard({
   const { data: selfData } = useQuery(SelfDocument, {
     fetchPolicy: 'cache-only',
   })
+  const t = useTranslations()
 
   const { data, loading } = useQuery(GetSessionLeaderboardDocument, {
     variables: { sessionId },
@@ -77,6 +80,7 @@ function Leaderboard({
   return (
     <div className={twMerge(className, '')}>
       <div className="space-y-4">
+        <H2>{t('shared.leaderboard.sessionTitle')}</H2>
         <div>
           {data.sessionLeaderboard?.length > 0 && (
             <Podium leaderboard={data.sessionLeaderboard?.slice(0, 3)} />
@@ -97,7 +101,7 @@ function Leaderboard({
         {blockDelta && (
           <div className="flex flex-row gap-4 text-xl">
             <div>
-              &Delta; Ränge:{' '}
+              &Delta; {t('shared.leaderboard.ranks')}:{' '}
               <span
                 className={twMerge(
                   blockDelta.rank > 0 && 'text-green-700',
@@ -109,7 +113,7 @@ function Leaderboard({
               </span>
             </div>
             <div>
-              &Delta; Punkte:{' '}
+              &Delta; {t('shared.leaderboard.points')}:{' '}
               <span
                 className={twMerge(
                   blockDelta.score > 0 && 'text-green-700',
