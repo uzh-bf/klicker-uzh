@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.59...v3.0.0-alpha.60) (2023-02-22)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** consistency in margin on docs pages ([f70bba9](https://github.com/uzh-bf/klicker-uzh/commit/f70bba9a6467b16437884a53f4246260996e668c))
+* **packages/graphql:** ensure that feedback and correct are nullable on question feedbacks ([f874dd0](https://github.com/uzh-bf/klicker-uzh/commit/f874dd0baa1025d60d7a81c237378fa049c87027))
+
 ## [3.0.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.58...v3.0.0-alpha.59) (2023-02-22)
 
 
