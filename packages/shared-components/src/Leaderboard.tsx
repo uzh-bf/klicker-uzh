@@ -10,6 +10,7 @@ interface LeaderboardProps {
   onJoin?: () => void
   onLeave?: () => void
   onParitcipantClick?: (participantId: string, isSelf: boolean) => void
+  onProfileClick: (modalData: any) => void
   participant?: Participant
   hidePodium?: boolean
   hideAvatars?: boolean
@@ -28,6 +29,7 @@ function Leaderboard({
   onJoin,
   onLeave,
   onParitcipantClick,
+  onProfileClick,
   participant,
   hidePodium,
   hideAvatars,
@@ -76,37 +78,43 @@ function Leaderboard({
         <div className={twMerge('space-y-1', className?.list)}>
           {top10.map((entry) =>
             entry.isSelf === true && onLeave ? (
-              <ParticipantSelf
-                key={entry.id}
-                isActive={activeParticipation ?? true}
-                pseudonym={entry.username}
-                avatar={entry.avatar ?? 'placeholder'}
-                withAvatar={!hideAvatars}
-                points={entry.score}
-                rank={entry.rank}
-                onJoinCourse={onJoin}
-                onLeaveCourse={onLeave}
-                onClick={
-                  onParitcipantClick
-                    ? () => onParitcipantClick(entry.participantId, true)
-                    : undefined
-                }
-              />
+              <div onClick={() => onProfileClick(entry)}>
+                <ParticipantSelf
+                  key={entry.id}
+                  isActive={activeParticipation ?? true}
+                  pseudonym={entry.username}
+                  avatar={entry.avatar ?? 'placeholder'}
+                  withAvatar={!hideAvatars}
+                  points={entry.score}
+                  rank={entry.rank}
+                  onJoinCourse={onJoin}
+                  onLeaveCourse={onLeave}
+                  onClick={() => true}
+                  // onClick={
+                  //   onParitcipantClick
+                  //     ? () => onParitcipantClick(entry.participantId, true)
+                  //     : undefined
+                  // }
+                />
+              </div>
             ) : (
-              <ParticipantOther
-                key={entry.id}
-                rank={entry.rank}
-                pseudonym={entry.username}
-                avatar={entry.avatar ?? 'placeholder'}
-                withAvatar={!hideAvatars}
-                points={entry.score}
-                onClick={
-                  onParitcipantClick
-                    ? () => onParitcipantClick(entry.participantId, false)
-                    : undefined
-                }
-                className={className?.listItem}
-              />
+              <div onClick={() => onProfileClick(entry)}>
+                <ParticipantOther
+                  key={entry.id}
+                  rank={entry.rank}
+                  pseudonym={entry.username}
+                  avatar={entry.avatar ?? 'placeholder'}
+                  withAvatar={!hideAvatars}
+                  points={entry.score}
+                  onClick={() => true}
+                  // onClick={
+                  //   onParitcipantClick
+                  //     ? () => onParitcipantClick(entry.participantId, false)
+                  //     : undefined
+                  // }
+                  className={className?.listItem}
+                />
+              </div>
             )
           )}
         </div>

@@ -17,6 +17,7 @@ import {
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
+  ParticipantWithAchievements,
   Participation,
 } from './participant'
 import { Question, QuestionInstance, Tag } from './question'
@@ -52,6 +53,24 @@ export const Query = builder.queryType({
           return ctx.prisma.participant.findUnique({
             where: { id: ctx.user.sub },
           })
+        },
+      }),
+      participantDetails: t.field({
+        nullable: true,
+        type: ParticipantWithAchievements,
+        args: {
+          participantId: t.arg.string({ required: true }),
+        },
+        async resolve(_, args, ctx) {
+          const participant = await ctx.prisma.participant.findUnique({
+            where: { id: args.participantId }
+            })
+          if (!participant) return null
+          const achievements = await ctx.prisma.achievement.findMany()
+          return {
+            participant,
+            achievements
+          }
         },
       }),
       controlCourse: asUser.field({

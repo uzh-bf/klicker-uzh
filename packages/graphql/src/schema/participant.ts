@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import { ParticipantAchievementInstance } from './achievement'
+import { Achievement, ParticipantAchievementInstance } from './achievement'
 import {
   CourseRef,
   GroupLeaderboardEntry,
@@ -230,3 +230,23 @@ export const LeaveCourseParticipation = LeaveCourseParticipationRef.implement({
     }),
   }),
 })
+
+export interface IParticipantWithAchievements {
+  participant: IParticipant
+  achievements: DB.Achievement[]
+}
+export const ParticipantWithAchievementsRef = builder.objectRef<
+  IParticipantWithAchievements
+>('ParticipantWithAchievements')
+export const ParticipantWithAchievements = ParticipantWithAchievementsRef.implement(
+  {
+    fields: (t) => ({
+      participant: t.expose('participant', {
+        type: Participant,
+      }),
+      achievements: t.expose('achievements', {
+        type: [Achievement],
+      }),
+    }),
+  }
+)
