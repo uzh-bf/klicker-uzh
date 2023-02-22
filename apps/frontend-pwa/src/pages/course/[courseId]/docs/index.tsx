@@ -1,7 +1,6 @@
 import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { H3 } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
 import dynamic from 'next/dynamic'
 import DocsLayout from '../../../../components/docs/DocsLayout'
@@ -20,21 +19,19 @@ function Landing() {
   return (
     <DocsLayout>
       {(courseInformation) => (
-        <>
-          <H3>Übersicht</H3>
-          <DynamicMarkdown
-            content={
-              courseInformation.description ??
-              `
+        <DynamicMarkdown
+          className={{ root: 'prose-headings:mt-0' }}
+          content={
+            courseInformation.description ??
+            `
 In dieser Dokumentation finden Sie die wichtigsten Informationen zum KlickerUZH in Ihrem Kurs:
 
 - [Erstmaliges Log-in und Profileinrichtung](docs/login)
 - [Installation der KlickerUZH-App](docs/appSetup)
 - [Wichtige Features des KlickerUZH](docs/features)
 `
-            }
-          />
-        </>
+          }
+        />
       )}
     </DocsLayout>
   )

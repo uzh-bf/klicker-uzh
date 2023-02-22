@@ -6,9 +6,8 @@ function Features() {
     <DocsLayout>
       {(courseInformation) => (
         <Markdown
-          className={{ root: 'prose-headings:m-0' }}
+          className={{ root: 'prose-headings:mt-0' }}
           content={`
-
 ### Funktionen im KlickerUZH
 
 Der KlickerUZH bietet Ihnen als Kursteilnehmenden einige Funktionen. Diese Übersicht fasst die Wichtigsten davon zusammen. Die konkret verfügbaren Funktionen hängen von den Einstellungen Ihrer Dozierenden ab (z.B., ob Gruppenaktivitäten oder eine Challenge zur Verfügung stehen) und werden Ihnen direkt von den Dozierenden kommuniziert.
