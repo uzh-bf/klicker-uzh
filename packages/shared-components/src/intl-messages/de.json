@@ -1,19 +1,29 @@
 {
   "shared": {
     "questions": {
-      "SCtext": "Bitte eine einzige Option auswählen.",
-      "MCtext": "Bitte eine oder mehrere Optionen auswählen.",
-      "KPRIMtext": "Beurteile die Aussagen auf ihre Richtigkeit.",
-      "FREE_TEXTtext": "Bitte eine Antwort eingeben.",
-      "NUMERICALtext": "Bitte eine Zahl eingeben.",
-      "SCrichtext": "Bitte <b>eine einzige</b> Option auswählen.",
-      "MCrichtext": "Bitte <b>eine oder mehrere</b> Optionen auswählen.",
-      "KPRIMrichtext": "Beurteile die Aussagen auf ihre <b>Richtigkeit</b>.",
-      "FREE_TEXTrichtext": "Bitte eine <b>Antwort</b> eingeben.",
-      "NUMERICALrichtext": "Bitte eine <b>Zahl</b> eingeben.",
       "roundedTo": "(gerundet auf {accuracy} Nachkommastellen)",
       "numInvalidValue": "Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.",
       "ftPlaceholder": "Ihre Antwort..."
+    },
+    "SC": {
+      "text": "Bitte eine einzige Option auswählen.",
+      "richtext": "Bitte <b>eine einzige</b> Option auswählen."
+    },
+    "MC": {
+      "text": "Bitte eine oder mehrere Optionen auswählen.",
+      "richtext": "Bitte <b>eine oder mehrere</b> Optionen auswählen."
+    },
+    "KPRIM": {
+      "text": "Beurteile die Aussagen auf ihre Richtigkeit.",
+      "richtext": "Beurteile die Aussagen auf ihre <b>Richtigkeit</b>."
+    },
+    "FREE_TEXT": {
+      "text": "Bitte eine Antwort eingeben.",
+      "richtext": "Bitte eine <b>Antwort</b> eingeben."
+    },
+    "NUMERICAL": {
+      "text": "Bitte eine Zahl eingeben.",
+      "richtext": "Bitte eine <b>Zahl</b> eingeben."
     },
     "generic": {
       "title": "KlickerUZH",

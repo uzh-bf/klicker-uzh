@@ -1,19 +1,29 @@
 {
   "shared": {
     "questions": {
-      "SCtext": "Please select a single option.",
-      "MCtext": "Please select one or more options.",
-      "KPRIMtext": "Evaluate the statements for correctness.",
-      "FREE_TEXTtext": "Please enter your answer.",
-      "NUMERICALtext": "Please enter a number.",
-      "SCrichtext": "Please select a <b>single</b> option.",
-      "MCrichtext": "Please select <b>one or more</b> options.",
-      "KPRIMrichtext": "Evaluate the statements for <b>correctness</b>.",
-      "FREE_TEXTrichtext": "Please enter your <b>answer</b>.",
-      "NUMERICALrichtext": "Please enter a <b>number</b>.",
       "roundedTo": "(rounded to {accuracy} decimal places)",
       "numInvalidValue": "The entered value is not a number or is not in the specified range.",
       "ftPlaceholder": "Your answer..."
+    },
+    "SC": {
+      "text": "Please select a single option.",
+      "richtext": "Please select a <b>single</b> option."
+    },
+    "MC": {
+      "text": "Please select one or more options.",
+      "richtext": "Please select <b>one or more</b> options."
+    },
+    "KPRIM": {
+      "text": "Evaluate the statements for correctness.",
+      "richtext": "Evaluate the statements for <b>correctness</b>."
+    },
+    "FREE_TEXT": {
+      "text": "Please enter your answer.",
+      "richtext": "Please enter your <b>answer</b>."
+    },
+    "NUMERICAL": {
+      "text": "Please enter a number.",
+      "richtext": "Please enter a <b>number</b>."
     },
     "generic": {
       "title": "KlickerUZH",

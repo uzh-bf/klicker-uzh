@@ -203,7 +203,7 @@ export const StudentQuestion = ({
       <div className="flex-1 mt-4">
         <div className="mb-2">
           <span className="font-bold">
-            {t(`shared.questions.${currentQuestion.type}text`)}
+            {t(`shared.${currentQuestion.type}.text`)}
           </span>{' '}
           {currentQuestion.options?.accuracy &&
             t('shared.questions.roundedTo', {

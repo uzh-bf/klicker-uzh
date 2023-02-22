@@ -161,7 +161,7 @@ export function Options({
         <div>
           {withGuidance && (
             <div className="mb-4 italic">
-              {t.rich(`shared.questions.${QuestionType.Sc}richtext`, {
+              {t.rich(`shared.${QuestionType.Sc}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}
             </div>
@@ -185,7 +185,7 @@ export function Options({
         <div>
           {withGuidance && (
             <div className="mb-4 italic">
-              {t.rich(`shared.questions.${QuestionType.Mc}richtext`, {
+              {t.rich(`shared.${QuestionType.Mc}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}
             </div>
@@ -218,7 +218,7 @@ export function Options({
         <div>
           {withGuidance && (
             <div className="mb-4 italic">
-              {t.rich(`shared.questions.${QuestionType.Kprim}richtext`, {
+              {t.rich(`shared.${QuestionType.Kprim}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}
             </div>
@@ -316,7 +316,7 @@ export function Options({
         <div>
           {withGuidance && (
             <div className="mb-2 italic">
-              {t.rich(`shared.questions.${QuestionType.Numerical}richtext`, {
+              {t.rich(`shared.${QuestionType.Numerical}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}
               {options.accuracy &&
