@@ -29,7 +29,7 @@ function DocsLayout({
     skip: !router.query?.courseId,
   })
 
-  if (!data?.basicCourseInformation) {
+  if (!data?.basicCourseInformation?.id) {
     return <div>{t('shared.generic.loading')}</div>
   }
 
@@ -51,7 +51,7 @@ function DocsLayout({
             label={t('pwa.courses.courseInformation')}
             className={{ root: `text-white` }}
             onClick={() =>
-              router.push(`/course/${data.basicCourseInformation?.id}/docs`)
+              router.push(`/course/${data.basicCourseInformation!.id}/docs`)
             }
           />
           <Navigation.TriggerItem
@@ -60,18 +60,18 @@ function DocsLayout({
             dropdownWidth="w-[20rem]"
           >
             <Navigation.DropdownItem
-              title={t('pwa.general.appSetup')}
+              title={t('pwa.general.firstLogin')}
               onClick={() =>
                 router.push(
-                  `/course/${data.basicCourseInformation?.id}/docs/appSetup`
+                  `/course/${data.basicCourseInformation!.id}/docs/login`
                 )
               }
             />
             <Navigation.DropdownItem
-              title={t('pwa.general.firstLogin')}
+              title={t('pwa.general.appSetup')}
               onClick={() =>
                 router.push(
-                  `/course/${data.basicCourseInformation?.id}/docs/login`
+                  `/course/${data.basicCourseInformation!.id}/docs/appSetup`
                 )
               }
             />
@@ -85,7 +85,7 @@ function DocsLayout({
               title={t('pwa.general.polls')}
               onClick={() =>
                 router.push(
-                  `/course/${data.basicCourseInformation?.id}/docs/polls`
+                  `/course/${data.basicCourseInformation!.id}/docs/polls`
                 )
               }
               className={{ root: 'text-center' }}
@@ -94,7 +94,7 @@ function DocsLayout({
               title={t('pwa.general.liveQA')}
               onClick={() =>
                 router.push(
-                  `/course/${data.basicCourseInformation?.id}/docs/liveQA`
+                  `/course/${data.basicCourseInformation!.id}/docs/liveQA`
                 )
               }
             />
@@ -102,7 +102,9 @@ function DocsLayout({
               title={t('shared.generic.groupActivities')}
               onClick={() =>
                 router.push(
-                  `/course/${data.basicCourseInformation?.id}/docs/groupActivities`
+                  `/course/${
+                    data.basicCourseInformation!.id
+                  }/docs/groupActivities`
                 )
               }
             />
@@ -110,7 +112,9 @@ function DocsLayout({
               title={t('shared.generic.microlearning')}
               onClick={() =>
                 router.push(
-                  `/course/${data.basicCourseInformation?.id}/docs/microSessions`
+                  `/course/${
+                    data.basicCourseInformation!.id
+                  }/docs/microSessions`
                 )
               }
             />
@@ -118,7 +122,9 @@ function DocsLayout({
               title={t('shared.generic.learningElements')}
               onClick={() =>
                 router.push(
-                  `/course/${data.basicCourseInformation?.id}/docs/learningElements`
+                  `/course/${
+                    data.basicCourseInformation!.id
+                  }/docs/learningElements`
                 )
               }
             />
@@ -126,7 +132,7 @@ function DocsLayout({
         </Navigation>
         <div className="p-4 prose border rounded-b max-w-none prose-img:m-0">
           {typeof children === 'function'
-            ? children(data.basicCourseInformation)
+            ? children(data.basicCourseInformation!)
             : children}
         </div>
       </div>

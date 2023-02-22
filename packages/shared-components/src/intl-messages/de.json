@@ -101,9 +101,9 @@
       "openInBrowser": "In Browser öffnen",
       "selectCourse": "Kurs auswählen",
       "bookmarksPlaceholder": "Diese Seite ist aktuell noch in Entwicklung und wird bald publiziert. Hier werden alle mit Bookmarks versehenen Fragen angezeigt werden.",
-      "setup": "Einrichtung",
-      "appSetup": "App einrichten",
-      "firstLogin": "Erstmaliges Login",
+      "setup": "Log-in und KlickerUZH-App",
+      "appSetup": "Installation der KlickerUZH-App",
+      "firstLogin": "Erstmaliges Login und Profileinrichtung",
       "polls": "Umfragen",
       "liveQA": "Live-Q&A"
     },

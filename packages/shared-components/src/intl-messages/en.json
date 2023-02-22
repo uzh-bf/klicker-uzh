@@ -101,9 +101,9 @@
       "openInBrowser": "Open in browser",
       "selectCourse": "Select course",
       "bookmarksPlaceholder": "This page is currently under development and will be published soon. All bookmarked questions will be displayed here.",
-      "setup": "Setup",
-      "appSetup": "App setup",
-      "firstLogin": "First login",
+      "setup": "Log-in and App-Installation",
+      "appSetup": "Installation of the KlickerUZH-App",
+      "firstLogin": "First login and profile setup",
       "polls": "Polls",
       "liveQA": "Live-Q&A"
     },
