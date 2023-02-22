@@ -338,6 +338,7 @@ function CourseOverview({ courseId }: any) {
                     <Leaderboard
                       leaderboard={group.participants}
                       participant={participant}
+                      onProfileClick={openProfileModal}
                       onLeave={() => {
                         leaveParticipantGroup({
                           variables: {
