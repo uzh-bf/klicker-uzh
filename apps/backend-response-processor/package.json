@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/backend-response-processor",
-  "version": "3.0.0-alpha.58",
+  "version": "3.0.0-alpha.59",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",

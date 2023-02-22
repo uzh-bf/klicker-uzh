@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.58...v3.0.0-alpha.59) (2023-02-22)
+
+
+### Features
+
+* **apps/frontend-*:** add internationalization to student frontend ([#3395](https://github.com/uzh-bf/klicker-uzh/issues/3395)) ([d1140fb](https://github.com/uzh-bf/klicker-uzh/commit/d1140fb96fc16138c12adc904d0f90a4a9905911))
+
+
+### Bug Fixes
+
+* **packages/prisma:** handle free text questions in import ([454afb2](https://github.com/uzh-bf/klicker-uzh/commit/454afb2ef34ee8c8aabdcb0c7e9018dd0f3c76e2))
+
+
+### Refactors
+
+* **apps/frontend-*:** replace date changer with design-system component ([#3364](https://github.com/uzh-bf/klicker-uzh/issues/3364)) ([0195139](https://github.com/uzh-bf/klicker-uzh/commit/01951398d0f305710cbb628a1444fcd1bc57181d))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add proper custom 404 error page ([#3366](https://github.com/uzh-bf/klicker-uzh/issues/3366)) ([188ae21](https://github.com/uzh-bf/klicker-uzh/commit/188ae2160bec5cc21125eca38f276ab4fd9c72b1))
+
+
+### Documentation
+
+* **apps/frontend-pwa:** rework structure and contents of student docs ([#3397](https://github.com/uzh-bf/klicker-uzh/issues/3397)) ([e71e24e](https://github.com/uzh-bf/klicker-uzh/commit/e71e24e470f0f7ae57a12afb71856e345fe2aab5))
+
 ## [3.0.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.57...v3.0.0-alpha.58) (2023-02-19)
 
 
