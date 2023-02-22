@@ -19,6 +19,8 @@ Willkommensseite begrüsst. Auf dieser Seite setzen Sie einen (anonymen) Nutzern
 
 ![](https://sos-ch-dk-2.exo.io/klicker-prod/img/klicker_profile_setup.png)
 
+Eine detailliertere Anleitung finden Sie in folgendem Dokument (Deutsch): [KlickerUZH_Anleitung_OLAT.pdf](https://sos-ch-dk-2.exo.io/klicker-prod/klicker_anleitung_olat.pdf)
+
 #### Kurse ohne LMS-Integration
 
 Falls Sie bereits ein KlickerUZH-Konto besitzen (z.B., aus anderen Kursen), öffnen Sie die KlickerUZH-App und klicken Sie unterhalb der Kursübersicht auf "Kurs beitreten". Geben Sie dort den 9-stelligen PIN ein, den Sie von Ihren Dozierenden erhalten haben. Sie sind anschliessen Teil des Kurses und können an allen Aktivitäten teilnehmen.

@@ -76,59 +76,15 @@ function DocsLayout({
               }
             />
           </Navigation.TriggerItem>
-          <Navigation.TriggerItem
+          <Navigation.ButtonItem
             label={t('shared.generic.features')}
             className={{ root: `text-white` }}
-            dropdownWidth="w-[20rem]"
-          >
-            <Navigation.DropdownItem
-              title={t('pwa.general.polls')}
-              onClick={() =>
-                router.push(
-                  `/course/${data.basicCourseInformation!.id}/docs/polls`
-                )
-              }
-              className={{ root: 'text-center' }}
-            />
-            <Navigation.DropdownItem
-              title={t('pwa.general.liveQA')}
-              onClick={() =>
-                router.push(
-                  `/course/${data.basicCourseInformation!.id}/docs/liveQA`
-                )
-              }
-            />
-            <Navigation.DropdownItem
-              title={t('shared.generic.groupActivities')}
-              onClick={() =>
-                router.push(
-                  `/course/${
-                    data.basicCourseInformation!.id
-                  }/docs/groupActivities`
-                )
-              }
-            />
-            <Navigation.DropdownItem
-              title={t('shared.generic.microlearning')}
-              onClick={() =>
-                router.push(
-                  `/course/${
-                    data.basicCourseInformation!.id
-                  }/docs/microSessions`
-                )
-              }
-            />
-            <Navigation.DropdownItem
-              title={t('shared.generic.learningElements')}
-              onClick={() =>
-                router.push(
-                  `/course/${
-                    data.basicCourseInformation!.id
-                  }/docs/learningElements`
-                )
-              }
-            />
-          </Navigation.TriggerItem>
+            onClick={() =>
+              router.push(
+                `/course/${data.basicCourseInformation!.id}/docs/features`
+              )
+            }
+          />
         </Navigation>
         <div className="p-4 prose border rounded-b max-w-none prose-img:m-0">
           {typeof children === 'function'

@@ -21,11 +21,17 @@ function Landing() {
     <DocsLayout>
       {(courseInformation) => (
         <>
-          <H3>Kursinformationen</H3>
+          <H3>Übersicht</H3>
           <DynamicMarkdown
             content={
               courseInformation.description ??
-              'In dieser Dokumentation findest du die wichtigsten Informationen zum KlickerUZH.'
+              `
+In dieser Dokumentation finden Sie die wichtigsten Informationen zum KlickerUZH in Ihrem Kurs:
+
+- [Erstmaliges Log-in und Profileinrichtung](docs/login)
+- [Installation der KlickerUZH-App](docs/appSetup)
+- [Wichtige Features des KlickerUZH](docs/features)
+`
             }
           />
         </>
