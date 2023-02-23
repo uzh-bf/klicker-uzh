@@ -167,8 +167,9 @@ function Home() {
             >
               new concept and ideas
             </a>{' '}
-            for the upcoming KlickerUZH v3.0, which has been made available for beta testing at UZH.
-            Please have a look and let us know what you think!
+            for the upcoming KlickerUZH v3.0, which has been made available for
+            beta testing at UZH. Please have a look and let us know what you
+            think!
           </div>
         </div>
       </div>

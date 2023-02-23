@@ -139,6 +139,11 @@ module.exports = {
           label: 'FAQ',
           position: 'left',
         },
+        {
+          to: 'kb',
+          label: 'Knowledge Base',
+          position: 'left',
+        },
 
         {
           to: 'https://community.klicker.uzh.ch',
