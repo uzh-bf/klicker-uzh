@@ -121,7 +121,8 @@ type Course {
   displayName: String!
   endDate: Date!
   id: ID!
-  isArchived: Boolean
+  isArchived: Boolean!
+  isGamificationEnabled: Boolean!
   leaderboard: [LeaderboardEntry!]
   learningElements: [LearningElement!]
   microSessions: [MicroSession!]
@@ -332,6 +333,15 @@ type LeaveCourseParticipation {
   participation: Participation!
 }
 
+type Level {
+  avatar: String
+  id: Int!
+  index: Int!
+  name: String
+  nextLevel: Level
+  requiredXp: Int!
+}
+
 type MicroSession {
   course: Course
   description: String
@@ -466,6 +476,7 @@ type Participant {
   isSelf: Boolean
   lastLoginAt: Date
   level: Int!
+  levelData: Level
   participantGroups: [ParticipantGroup!]
   rank: Int
   score: Float
@@ -502,6 +513,11 @@ type ParticipantLearningData {
   participation: Participation
 }
 
+type ParticipantWithAchievements {
+  achievements: [Achievement!]!
+  participant: Participant!
+}
+
 type Participation {
   bookmarkedQuestions: [QuestionInstance!]
   completedMicroSessions: [String!]!
@@ -535,6 +551,7 @@ type Query {
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
+  participantDetails(participantId: String!): ParticipantWithAchievements
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session

@@ -4,6 +4,22 @@ query Self {
     username
     avatar
     avatarSettings
+    xp
+    level
+    levelData {
+      id
+      index
+      name
+      avatar
+      requiredXp
+      nextLevel {
+        id
+        index
+        requiredXp
+        avatar
+        name
+      }
+    }
     achievements {
       id
       achievedAt

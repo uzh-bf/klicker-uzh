@@ -3,7 +3,8 @@ import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import type { ICourse } from './course'
 import { Course } from './course'
-import { IQuestionInstance, QuestionInstance } from './question'
+import type { IQuestionInstance } from './question'
+import { QuestionInstance } from './question'
 import { QuestionData } from './questionData'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
