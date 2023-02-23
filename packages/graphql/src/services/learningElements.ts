@@ -1,4 +1,5 @@
 import {
+  computeAwardedXp,
   gradeQuestionKPRIM,
   gradeQuestionMC,
   gradeQuestionNumerical,
@@ -31,19 +32,6 @@ type QuestionResponse = {
 
 function round(value: number) {
   return Number(Math.round(Number(value) * 100) / 100)
-}
-
-function computeAwardedXp({
-  pointsPercentage,
-  multiplier,
-}: {
-  pointsPercentage: number | null
-  multiplier: number
-}) {
-  if (pointsPercentage !== null && pointsPercentage === 1) {
-    return 10
-  }
-  return 0
 }
 
 function evaluateQuestionResponse(
