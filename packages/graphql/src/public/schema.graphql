@@ -332,6 +332,15 @@ type LeaveCourseParticipation {
   participation: Participation!
 }
 
+type Level {
+  avatar: String
+  id: Int!
+  index: Int!
+  name: String
+  nextLevel: Level
+  requiredXp: Int!
+}
+
 type MicroSession {
   course: Course
   description: String
@@ -466,6 +475,7 @@ type Participant {
   isSelf: Boolean
   lastLoginAt: Date
   level: Int!
+  levelData: Level
   participantGroups: [ParticipantGroup!]
   rank: Int
   score: Float

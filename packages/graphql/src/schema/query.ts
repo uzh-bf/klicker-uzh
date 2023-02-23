@@ -52,6 +52,13 @@ export const Query = builder.queryType({
           if (!ctx.user?.sub) return null
           return ctx.prisma.participant.findUnique({
             where: { id: ctx.user.sub },
+            include: {
+              levelData: {
+                include: {
+                  nextLevel: true,
+                },
+              },
+            },
           })
         },
       }),
@@ -63,13 +70,13 @@ export const Query = builder.queryType({
         },
         async resolve(_, args, ctx) {
           const participant = await ctx.prisma.participant.findUnique({
-            where: { id: args.participantId }
-            })
+            where: { id: args.participantId },
+          })
           if (!participant) return null
           const achievements = await ctx.prisma.achievement.findMany()
           return {
             participant,
-            achievements
+            achievements,
           }
         },
       }),

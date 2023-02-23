@@ -1,17 +1,20 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import { Achievement, ParticipantAchievementInstance } from './achievement'
-import {
-  CourseRef,
-  GroupLeaderboardEntry,
+import type {
   ICourse,
   IGroupLeaderboardEntry,
   ILeaderboardEntry,
   ILeaderboardStatistics,
+} from './course'
+import {
+  CourseRef,
+  GroupLeaderboardEntry,
   LeaderboardEntry,
   LeaderboardStatistics,
 } from './course'
-import { IQuestionInstance, QuestionInstanceRef } from './question'
+import type { IQuestionInstance } from './question'
+import { QuestionInstanceRef } from './question'
 
 export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
   fields: (t) => ({
@@ -59,7 +62,7 @@ export const Level = LevelRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     index: t.exposeInt('index'),
-    requiredXP: t.exposeInt('requiredXp'),
+    requiredXp: t.exposeInt('requiredXp'),
     name: t.exposeString('name', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
     nextLevel: t.expose('nextLevel', {
@@ -75,7 +78,7 @@ export interface IParticipant extends DB.Participant {
   isSelf?: boolean
   achievements?: DB.ParticipantAchievementInstance[]
   participantGroups?: IParticipantGroup[]
-  levelData: ILevel
+  levelData?: ILevel
 }
 export const ParticipantRef = builder.objectRef<IParticipant>('Participant')
 export const Participant = ParticipantRef.implement({
@@ -91,7 +94,7 @@ export const Participant = ParticipantRef.implement({
 
     xp: t.exposeInt('xp'),
     level: t.exposeInt('level'),
-    levelData: t.expose('levelData', { type: LevelRef }),
+    levelData: t.expose('levelData', { type: LevelRef, nullable: true }),
 
     participantGroups: t.expose('participantGroups', {
       type: [ParticipantGroupRef],
@@ -261,7 +264,7 @@ export const ParticipantWithAchievements =
   ParticipantWithAchievementsRef.implement({
     fields: (t) => ({
       participant: t.expose('participant', {
-        type: Participant,
+        type: ParticipantRef,
       }),
       achievements: t.expose('achievements', {
         type: [Achievement],

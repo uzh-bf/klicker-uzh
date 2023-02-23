@@ -101,7 +101,7 @@ export async function getParticipations(
   if (!participant) return []
 
   return R.sort(
-    R.ascend(R.prop('course.displayName')),
+    R.ascend(R.prop<string>('course.displayName')),
     participant.participations
   )
 }
