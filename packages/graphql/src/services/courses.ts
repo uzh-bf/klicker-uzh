@@ -1,3 +1,4 @@
+import { LearningElementStatus } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 
@@ -386,6 +387,9 @@ export async function getUserLearningElements(ctx: ContextWithUser) {
                 learningElements: {
                   orderBy: {
                     displayName: 'asc',
+                  },
+                  where: {
+                    status: LearningElementStatus.PUBLISHED,
                   },
                 },
               },

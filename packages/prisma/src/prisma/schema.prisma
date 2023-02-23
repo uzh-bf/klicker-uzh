@@ -237,15 +237,16 @@ model Course {
 
   isArchived Boolean @default(false)
 
-  pinCode Int @unique @default(123456789)
+  pinCode Int @unique
 
-  name              String
-  displayName       String
-  description       String?
-  color             String?  @default("#eaa07d")
-  startDate         DateTime
-  endDate           DateTime
-  notificationEmail String?
+  name                  String
+  displayName           String
+  description           String?
+  color                 String?  @default("#eaa07d")
+  startDate             DateTime
+  endDate               DateTime
+  notificationEmail     String?
+  isGamificationEnabled Boolean  @default(true)
 
   sessions          Session[]
   learningElements  LearningElement[]
@@ -400,15 +401,21 @@ enum OrderType {
   LAST_RESPONSE
 }
 
+enum LearningElementStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model LearningElement {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
   description      String?
-  pointsMultiplier Int       @default(1)
-  resetTimeDays    Int       @default(6)
-  orderType        OrderType @default(SEQUENTIAL)
+  pointsMultiplier Int                   @default(1)
+  resetTimeDays    Int                   @default(6)
+  orderType        OrderType             @default(SEQUENTIAL)
+  status           LearningElementStatus @default(PUBLISHED)
 
   instances QuestionInstance[]
 
@@ -423,13 +430,19 @@ model LearningElement {
 
 // ----- MICROLEARNING -----
 
+enum MicroSessionStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model MicroSession {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
-  pointsMultiplier Int     @default(1)
+  pointsMultiplier Int                @default(1)
   description      String?
+  status           MicroSessionStatus @default(PUBLISHED)
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime

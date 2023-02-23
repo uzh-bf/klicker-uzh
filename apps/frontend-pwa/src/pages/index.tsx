@@ -66,6 +66,7 @@ const Index = function () {
       isSubscribed: boolean
       startDate: string
       endDate: string
+      isGamificationEnabled: boolean
     }[]
     oldCourses: {
       id: string
@@ -100,6 +101,8 @@ const Index = function () {
                   displayName: participation.course?.displayName,
                   startDate: participation.course?.startDate,
                   endDate: participation.course?.endDate,
+                  isGamificationEnabled:
+                    participation.course?.isGamificationEnabled,
                   isSubscribed:
                     participation.subscriptions &&
                     participation.subscriptions.length > 0,
@@ -276,6 +279,9 @@ const Index = function () {
           <div className="flex flex-col gap-2">
             {courses.map((course) => (
               <CourseElement
+                disabled={
+                  !course?.isGamificationEnabled && !course?.description
+                }
                 key={course.id}
                 course={course}
                 onSubscribeClick={onSubscribeClick}
