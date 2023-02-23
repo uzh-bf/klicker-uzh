@@ -48,7 +48,7 @@ function Header({
       {title && !course?.displayName && (
         <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
       )}
-      <div className="flex flex-row items-center gap-4">
+      <div className="flex flex-row items-center gap-2 sm:gap-4">
         <div className="flex flex-row text-black bg-transparent rounded">
           <Select
             value={router.locale}
@@ -72,8 +72,13 @@ function Header({
           <Link href={`/course/${course.id}/docs`}>
             <Button
               className={{
-                root: 'bg-slate-800 peer-disabled: md:block border-slate-800',
+                root: twMerge(
+                  'block px-1 md:px-2 py-1 rounded',
+                  theme.primaryBgHover,
+                  theme.primaryTextHover
+                ),
               }}
+              basic
             >
               <FontAwesomeIcon className="fa-xl" icon={faCircleQuestion} />
             </Button>
