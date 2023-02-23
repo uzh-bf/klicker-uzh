@@ -4,6 +4,8 @@ query Self {
     username
     avatar
     avatarSettings
+    xp
+    level
     achievements {
       id
       achievedAt

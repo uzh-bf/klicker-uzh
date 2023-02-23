@@ -51,13 +51,11 @@ function Header({
       <div className="grid grid-cols-1">
         <div className="flex justify-between gap-1 text-sm">
           <div>Level:</div>
-          <div>
-            {participant?.level === undefined ? '0' : participant?.level}
-          </div>
+          <div>{participant?.level ?? 0}</div>
         </div>
         <div className="flex justify-between gap-1 text-sm">
           <div>XP: </div>
-          <div>{participant?.xp === undefined ? '0' : participant?.xp}</div>
+          <div>{participant?.xp ?? 0}</div>
         </div>
       </div>
       <div className="flex flex-row items-center gap-2 sm:gap-4">
