@@ -121,7 +121,8 @@ type Course {
   displayName: String!
   endDate: Date!
   id: ID!
-  isArchived: Boolean
+  isArchived: Boolean!
+  isGamificationEnabled: Boolean!
   leaderboard: [LeaderboardEntry!]
   learningElements: [LearningElement!]
   microSessions: [MicroSession!]

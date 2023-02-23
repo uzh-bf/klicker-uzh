@@ -286,7 +286,7 @@ function LearningElement({ courseId, id }: Props) {
                   <div className="flex-1 basis-2/3">
                     <div className="flex flex-row items-center justify-between mb-4 border-b">
                       <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
-                      <div className="flex flex-row gap-3">
+                      <div className="flex flex-row items-center gap-3">
                         <div className="text-sm md:text-base text-slate-500">
                           {t('pwa.learningElement.questionProgress', {
                             current: currentIx + 1,
@@ -294,7 +294,8 @@ function LearningElement({ courseId, id }: Props) {
                           })}
                         </div>
                         <Button
-                          className={{ root: 'border-none shadow-none' }}
+                          basic
+                          className={{ root: 'mb-1' }}
                           onClick={() => {
                             bookmarkQuestion({
                               variables: {
@@ -307,13 +308,21 @@ function LearningElement({ courseId, id }: Props) {
                         >
                           {currentInstance.isBookmarked ? (
                             <FontAwesomeIcon
-                              className="text-red-600"
+                              className="text-red-600 hover:text-red-500"
                               icon={faBookmarkSolid}
                             />
                           ) : (
-                            <FontAwesomeIcon icon={faBookmark} />
+                            <FontAwesomeIcon
+                              className="hover:text-red-400"
+                              icon={faBookmark}
+                            />
                           )}
                         </Button>
+                        <FlagQuestionModal
+                          open={modalOpen}
+                          setOpen={setModalOpen}
+                          instanceId={currentInstance.id!}
+                        />
                       </div>
                     </div>
 
@@ -346,11 +355,6 @@ function LearningElement({ courseId, id }: Props) {
                             ),
                           })}
                         </div>
-                        <FlagQuestionModal
-                          open={modalOpen}
-                          setOpen={setModalOpen}
-                          instanceId={currentInstance.id!}
-                        />
                       </div>
                       <div className="flex flex-row gap-8">
                         <div>
