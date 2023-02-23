@@ -400,15 +400,21 @@ enum OrderType {
   LAST_RESPONSE
 }
 
+enum LearningElementStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model LearningElement {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
   description      String?
-  pointsMultiplier Int       @default(1)
-  resetTimeDays    Int       @default(6)
-  orderType        OrderType @default(SEQUENTIAL)
+  pointsMultiplier Int                   @default(1)
+  resetTimeDays    Int                   @default(6)
+  orderType        OrderType             @default(SEQUENTIAL)
+  status           LearningElementStatus @default(PUBLISHED)
 
   instances QuestionInstance[]
 
@@ -423,13 +429,19 @@ model LearningElement {
 
 // ----- MICROLEARNING -----
 
+enum MicroSessionStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model MicroSession {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
-  pointsMultiplier Int     @default(1)
+  pointsMultiplier Int                   @default(1)
   description      String?
+  status           LearningElementStatus @default(PUBLISHED)
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
