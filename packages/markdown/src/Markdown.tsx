@@ -1,3 +1,5 @@
+import { faFileExcel, faFilePdf } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React, { useMemo } from 'react'
 import rehypeExternalLinks from 'rehype-external-links'
 import katex from 'rehype-katex'
@@ -105,6 +107,30 @@ function Markdown({
                   withModal={withModal}
                 />
               ),
+              a: ({
+                href,
+                children,
+              }: {
+                href: string
+                children: React.ReactNode
+              }) => {
+                const isExcel = href.includes('.xls')
+                const isPDF = href.includes('.pdf')
+                return (
+                  <a
+                    className={twMerge(
+                      'px-4 py-3 border rounded hover:bg-slate-200 flex flex-row gap-3 text-sm my-1'
+                    )}
+                    href={href}
+                  >
+                    <div>
+                      {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
+                      {isPDF && <FontAwesomeIcon icon={faFilePdf} />}
+                    </div>
+                    <div>{children}</div>
+                  </a>
+                )
+              },
               ...(components as any),
             },
           })
