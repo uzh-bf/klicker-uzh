@@ -62,7 +62,7 @@ export const Query = builder.queryType({
           })
         },
       }),
-      participantDetails: t.field({
+      participantDetails: asParticipant.field({
         nullable: true,
         type: ParticipantWithAchievements,
         args: {
