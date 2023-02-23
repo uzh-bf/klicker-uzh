@@ -9,23 +9,15 @@ import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 // eslint-disable-next-line prettier/prettier
-import React, { useContext } from 'react'
+import React from 'react'
 
-import { ThemeContext } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
 import { QuestionAttachment } from './questions/QuestionAttachment'
 import { SCAnswerOptions } from './questions/SCAnswerOptions'
 import SessionProgress from './questions/SessionProgress'
-
-const messages = {
-  [QuestionType.Sc]: 'Bitte eine einzige Option auswählen',
-  [QuestionType.Mc]: 'Bitte eine oder mehrere Optionen auswählen',
-  [QuestionType.Kprim]: 'Beurteile die Aussagen auf ihre Richtigkeit',
-  [QuestionType.FreeText]: 'Bitte eine Antwort eingeben',
-  [QuestionType.Numerical]: 'Bitte eine Zahl eingeben',
-}
 
 export interface StudentQuestionProps {
   activeIndex: number
@@ -65,7 +57,8 @@ export const StudentQuestion = ({
   inputEmpty,
   setInputState,
 }: StudentQuestionProps) => {
-  const theme = useContext(ThemeContext)
+  const t = useTranslations()
+
   const onActiveChoicesChange =
     (type: string): any =>
     (choice: any): any =>
@@ -209,9 +202,13 @@ export const StudentQuestion = ({
 
       <div className="flex-1 mt-4">
         <div className="mb-2">
-          <span className="font-bold">{messages[currentQuestion.type]}</span>{' '}
+          <span className="font-bold">
+            {t(`shared.${currentQuestion.type}.text`)}
+          </span>{' '}
           {currentQuestion.options?.accuracy &&
-            `(gerundet auf ${currentQuestion.options.accuracy} Nachkommastellen)`}
+            t('shared.questions.roundedTo', {
+              accuracy: currentQuestion.options.accuracy,
+            })}
         </div>
 
         {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) && (

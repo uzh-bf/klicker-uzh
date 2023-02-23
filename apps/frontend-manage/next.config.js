@@ -2,6 +2,10 @@
 
 const nextConfig = {
   transpilePackages: ['shared-components'],
+  i18n: {
+    locales: ['en', 'de'],
+    defaultLocale: 'de',
+  },
   modularizeImports: {
     ramda: {
       transform: 'ramda/es/{{member}}',
@@ -20,10 +24,6 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  },
-  i18n: {
-    locales: ['de', 'en'],
-    defaultLocale: 'en',
   },
   images: {
     domains: [

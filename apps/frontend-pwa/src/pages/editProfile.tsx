@@ -12,16 +12,18 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import Router from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
 import { useContext, useEffect, useState } from 'react'
-import { AVATAR_LABELS, AVATAR_OPTIONS } from 'shared-components/src/constants'
+import { AVATAR_OPTIONS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import Layout from '../components/Layout'
 
-const EditProfile: NextPageWithLayout = () => {
+function EditProfile(): NextPageWithLayout {
+  const t = useTranslations()
   const theme = useContext(ThemeContext)
   const { data, loading } = useQuery(SelfDocument)
   const [updateParticipantProfile, { error }] = useMutation(
@@ -44,32 +46,32 @@ const EditProfile: NextPageWithLayout = () => {
 
   return (
     <Layout
-      course={{ displayName: 'KlickerUZH' }}
-      displayName="Profil editieren"
+      course={{ displayName: t('shared.generic.title') }}
+      displayName={t('pwa.profile.editProfile')}
     >
       <Formik
         validationSchema={yup.object({
           username: yup
             .string()
-            .required()
-            .min(5, 'Der Benutzername muss mindestens 5 Zeichen lang sein.')
-            .max(10, 'Der Benutzername darf nicht länger als 10 Zeichen sein.'),
+            .required(t('pwa.profile.usernameRequired'))
+            .min(5, t('pwa.profile.usernameMinLength', { length: '5' }))
+            .max(10, t('pwa.profile.usernameMaxLength', { length: '10' })),
           password: yup
             .string()
             .optional()
-            .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.'),
+            .min(8, t('pwa.profile.passwordMinLength', { length: '8' })),
           passwordRepetition: yup.string().when('password', {
             is: (val: string) => val && val.length > 0,
             then: (schema) =>
               schema
-                .required('Passwörter müssen übereinstimmen.')
-                .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.')
+                .required(t('pwa.profile.identicalPasswords'))
+                .min(8, t('pwa.profile.passwordMinLength', { length: '8' }))
                 .oneOf(
                   [yup.ref('password'), null],
-                  'Passwörter müssen übereinstimmen.'
+                  t('pwa.profile.identicalPasswords')
                 ),
             otherwise: (schema) =>
-              schema.oneOf([''], 'Passwörter müssen übereinstimmen.'),
+              schema.oneOf([''], t('pwa.profile.identicalPasswords')),
           }),
         })}
         initialValues={{
@@ -176,17 +178,15 @@ const EditProfile: NextPageWithLayout = () => {
                 <div className="flex flex-col w-full gap-8 mt-8 md:flex-row md:gap-16">
                   <div className="flex flex-col justify-between flex-1 order-2 gap-4 md:order-1">
                     {!data.self?.avatar && (
-                      <Prose>
-                        Willkommen beim KlickerUZH! Falls dies dein erstes Mal
-                        hier ist, setze bitte ein Passwort und definiere deinen
-                        eigenen Benutzernamen und Avatar.
-                      </Prose>
+                      <Prose>{t('pwa.profile.welcomeMessage')}</Prose>
                     )}
 
                     <div className="space-y-4">
                       <div className="">
                         <div>
-                          <p className="font-bold">Benutzername</p>
+                          <p className="font-bold">
+                            {t('shared.generic.username')}
+                          </p>
                         </div>
                         <div>
                           <Field
@@ -210,7 +210,9 @@ const EditProfile: NextPageWithLayout = () => {
 
                       <div>
                         <div>
-                          <p className="font-bold">Passwort</p>
+                          <p className="font-bold">
+                            {t('shared.generic.password')}
+                          </p>
                         </div>
                         <div className="flex-1">
                           <Field
@@ -228,7 +230,9 @@ const EditProfile: NextPageWithLayout = () => {
 
                       <div>
                         <div>
-                          <p className="font-bold">Passwort (Wiederholung)</p>
+                          <p className="font-bold">
+                            {t('shared.generic.passwordRepetition')}
+                          </p>
                         </div>
                         <div>
                           <Field
@@ -251,182 +255,32 @@ const EditProfile: NextPageWithLayout = () => {
                         type="submit"
                         disabled={isSubmitting || !isValid}
                       >
-                        Save
+                        {t('shared.generic.save')}
                       </Button>
                     </div>
                   </div>
 
                   <div className="flex-1 order-1 space-y-2 md:order-2">
-                    <div className="flex flex-row items-center">
-                      <div className="flex-1">
-                        <p className="font-bold">Frisur</p>
+                    {Object.keys(AVATAR_OPTIONS).map((key) => (
+                      <div className="flex flex-row items-center" key={key}>
+                        <div className="flex-1">
+                          <p className="font-bold">{t(`pwa.avatar.${key}`)}</p>
+                        </div>
+                        <div className="flex-1">
+                          <Field
+                            as="select"
+                            name={key}
+                            style={{ width: '100%' }}
+                          >
+                            {AVATAR_OPTIONS[key].map((value) => (
+                              <option key={value} value={value}>
+                                {t(`pwa.avatar.${value}`)}
+                              </option>
+                            ))}
+                          </Field>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <Field
-                          as="select"
-                          name="hair"
-                          style={{ width: '100%' }}
-                        >
-                          {AVATAR_OPTIONS.hair.map((value) => (
-                            <option key={value} value={value}>
-                              {AVATAR_LABELS[value]}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-row items-center">
-                      <div className="flex-1">
-                        <p className="font-bold">Haarfarbe</p>
-                      </div>
-                      <div className="flex-1">
-                        <Field
-                          as="select"
-                          name="hairColor"
-                          style={{ width: '100%' }}
-                        >
-                          {AVATAR_OPTIONS.hairColor.map((value) => (
-                            <option key={value} value={value}>
-                              {AVATAR_LABELS[value]}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-row items-center">
-                      <div className="flex-1">
-                        <p className="font-bold">Augen</p>
-                      </div>
-                      <div className="flex-1">
-                        <Field
-                          as="select"
-                          name="eyes"
-                          style={{ width: '100%' }}
-                        >
-                          {AVATAR_OPTIONS.eyes.map((value) => (
-                            <option key={value} value={value}>
-                              {AVATAR_LABELS[value]}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-row items-center">
-                      <div className="flex-1">
-                        <p className="font-bold">Brille</p>
-                      </div>
-                      <div className="flex-1">
-                        <Field
-                          as="select"
-                          name="accessory"
-                          style={{ width: '100%' }}
-                        >
-                          {AVATAR_OPTIONS.accessory.map((value) => (
-                            <option key={value} value={value}>
-                              {AVATAR_LABELS[value]}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-row items-center">
-                      <div className="flex-1">
-                        <p className="font-bold">Mund</p>
-                      </div>
-                      <div className="flex-1">
-                        <Field
-                          as="select"
-                          name="mouth"
-                          style={{ width: '100%' }}
-                        >
-                          {AVATAR_OPTIONS.mouth.map((value) => (
-                            <option key={value} value={value}>
-                              {AVATAR_LABELS[value]}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-row items-center">
-                      <div className="flex-1">
-                        <p className="font-bold">Bart</p>
-                      </div>
-                      <div className="flex-1">
-                        <Field
-                          as="select"
-                          name="facialHair"
-                          style={{ width: '100%' }}
-                        >
-                          {AVATAR_OPTIONS.facialHair.map((value) => (
-                            <option key={value} value={value}>
-                              {AVATAR_LABELS[value]}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-row items-center">
-                      <div className="flex-1">
-                        <p className="font-bold">Kleidungsstil</p>
-                      </div>
-                      <div className="flex-1">
-                        <Field
-                          as="select"
-                          name="clothing"
-                          style={{ width: '100%' }}
-                        >
-                          {AVATAR_OPTIONS.clothing.map((value) => (
-                            <option key={value} value={value}>
-                              {AVATAR_LABELS[value]}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-row items-center">
-                      <div className="flex-1">
-                        <p className="font-bold">Kleiderfarbe</p>
-                      </div>
-                      <div className="flex-1">
-                        <Field
-                          as="select"
-                          name="clothingColor"
-                          style={{ width: '100%' }}
-                        >
-                          {AVATAR_OPTIONS.clothingColor.map((value) => (
-                            <option key={value} value={value}>
-                              {AVATAR_LABELS[value]}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-row items-center">
-                      <div className="flex-1">
-                        <p className="font-bold">Hautton</p>
-                      </div>
-                      <div className="flex-1">
-                        <Field
-                          as="select"
-                          name="skinTone"
-                          style={{ width: '100%' }}
-                        >
-                          {AVATAR_OPTIONS.skinTone.map((value) => (
-                            <option key={value} value={value}>
-                              {AVATAR_LABELS[value]}
-                            </option>
-                          ))}
-                        </Field>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </Form>
@@ -436,6 +290,16 @@ const EditProfile: NextPageWithLayout = () => {
       </Formik>
     </Layout>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
 }
 
 export default EditProfile

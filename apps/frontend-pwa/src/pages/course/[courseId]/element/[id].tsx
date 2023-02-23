@@ -23,6 +23,7 @@ import { getParticipantToken } from '@lib/token'
 import { Button, H3, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
+import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
@@ -32,12 +33,6 @@ import EvaluationDisplay from '../../../../components/evaluation/EvaluationDispl
 import FlagQuestionModal from '../../../../components/flags/FlagQuestionModal'
 import Layout from '../../../../components/Layout'
 import formatResponse from '../../../../lib/formatResponse'
-
-const ORDER_TYPE_LABEL = {
-  LAST_RESPONSE: 'zuletzt beantwortete Fragen am Ende',
-  SHUFFLED: 'zufällige Reihenfolge',
-  SEQUENTIAL: 'geordnet in Sequenz',
-}
 
 interface Props {
   courseId: string
@@ -57,6 +52,7 @@ const DynamicMarkdown = dynamic(
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
 function LearningElement({ courseId, id }: Props) {
+  const t = useTranslations()
   const router = useRouter()
   const [response, setResponse] = useState<{} | number[] | string | null>(null)
   const [currentIx, setCurrentIx] = useState(-1)
@@ -117,7 +113,8 @@ function LearningElement({ courseId, id }: Props) {
     )
   }, [data?.learningElement?.instances])
 
-  if (loading || !data?.learningElement) return <p>Loading...</p>
+  if (loading || !data?.learningElement)
+    return <p>{t('shared.generic.loading')}</p>
   if (error) return <p>Oh no... {error.message}</p>
 
   const isEvaluation = !!currentInstance?.evaluation
@@ -163,24 +160,30 @@ function LearningElement({ courseId, id }: Props) {
                   <div className="flex flex-row items-center gap-2">
                     <FontAwesomeIcon icon={faQuestionCircle} />
                     <div>
-                      Anzahl Fragen: {data.learningElement.instances?.length}
+                      {t('pwa.learningElement.numOfQuestions', {
+                        number: data.learningElement.instances?.length,
+                      })}
                     </div>
                   </div>
                   <div className="flex flex-row items-center gap-2">
-                    <FontAwesomeIcon icon={faShuffle} /> Reihenfolge:{' '}
+                    <FontAwesomeIcon icon={faShuffle} />
                     <div>
-                      {ORDER_TYPE_LABEL[data.learningElement.orderType]}
-                    </div>
-                  </div>
-                  <div className="flex flex-row items-center gap-2">
-                    <FontAwesomeIcon icon={faRepeat} /> Wiederholung:{' '}
-                    <div>
-                      {data.learningElement.resetTimeDays === 1 ? (
-                        <>täglich</>
-                      ) : (
-                        <>alle {data.learningElement.resetTimeDays} Tage</>
+                      {t(
+                        `pwa.learningElement.order${data.learningElement.orderType}`
                       )}
                     </div>
+                  </div>
+                  <div className="flex flex-row items-center gap-2">
+                    <FontAwesomeIcon icon={faRepeat} />
+                    {data.learningElement.resetTimeDays === 1 ? (
+                      <>{t('pwa.learningElement.repetitionDaily')}</>
+                    ) : (
+                      <>
+                        {t('pwa.learningElement.repetitionXDays', {
+                          days: data.learningElement.resetTimeDays,
+                        })}
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -199,9 +202,10 @@ function LearningElement({ courseId, id }: Props) {
                   <div className="flex flex-row items-center gap-2">
                     <FontAwesomeIcon icon={faCheck} />
                     <div>
-                      Min. 1x beantwortet:{' '}
-                      {data.learningElement.previouslyAnswered}/
-                      {data.learningElement.instances?.length}
+                      {t('pwa.learningElement.answeredMinOnce', {
+                        answered: data.learningElement.previouslyAnswered,
+                        total: data.learningElement.instances?.length,
+                      })}
                     </div>
                   </div>
                   {/* <div className="flex flex-row items-center gap-2">
@@ -211,8 +215,9 @@ function LearningElement({ courseId, id }: Props) {
                   <div className="flex flex-row items-center gap-2">
                     <FontAwesomeIcon icon={faTimesCircle} />
                     <div>
-                      Multiplikator: {data.learningElement.pointsMultiplier}x
-                      Punkte
+                      {t('pwa.learningElement.multiplicatorPoints', {
+                        mult: data.learningElement.pointsMultiplier,
+                      })}
                     </div>
                   </div>
                 </div>
@@ -222,7 +227,7 @@ function LearningElement({ courseId, id }: Props) {
                 className={{ root: 'self-end text-lg' }}
                 onClick={() => setCurrentIx(0)}
               >
-                Starten
+                {t('shared.generic.start')}
               </Button>
             </div>
           )}
@@ -230,21 +235,20 @@ function LearningElement({ courseId, id }: Props) {
           {currentIx >= 0 && !currentInstance && (
             <div className="space-y-3">
               <div>
-                <H3>Gratulation!</H3>
+                <H3>{t('shared.generic.congrats')}</H3>
                 <p>
-                  Du hast das Lernelement{' '}
-                  <span className="italic">
-                    {data.learningElement.displayName}
-                  </span>{' '}
-                  erfolgreich absolviert.
+                  {t.rich('pwa.learningElement.solvedLearningElement', {
+                    name: data.learningElement.displayName,
+                    it: (text) => <span className="italic">{text}</span>,
+                  })}
                 </p>
               </div>
               <div>
                 <div className="flex flex-row items-center justify-between">
                   <H3 className={{ root: 'flex flex-row justify-between' }}>
-                    Auswertung
+                    {t('shared.generic.evaluation')}
                   </H3>
-                  <H3>Punkte (gesammelt/berechnet/möglich)</H3>
+                  <H3>{t('pwa.learningElement.pointsCollectedPossible')}</H3>
                 </div>
                 <div>
                   {data.learningElement.instances?.map((instance) => (
@@ -260,14 +264,16 @@ function LearningElement({ courseId, id }: Props) {
                           {instance.pointsMultiplier * 10}
                         </div>
                       ) : (
-                        <div>Not attempted</div>
+                        <div>{t('pwa.learningElement.notAttempted')}</div>
                       )}
                     </div>
                   ))}
                 </div>
 
                 <H3 className={{ root: 'mt-4 text-right' }}>
-                  Total Punkte (gesammelt): {totalPointsAwarded}
+                  {t('pwa.learningElement.totalPoints', {
+                    points: totalPointsAwarded,
+                  })}
                 </H3>
               </div>
             </div>
@@ -282,8 +288,10 @@ function LearningElement({ courseId, id }: Props) {
                       <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
                       <div className="flex flex-row gap-3">
                         <div className="text-sm md:text-base text-slate-500">
-                          Frage {currentIx + 1}/
-                          {data.learningElement?.instances?.length}
+                          {t('pwa.learningElement.questionProgress', {
+                            current: currentIx + 1,
+                            total: data.learningElement?.instances?.length,
+                          })}
                         </div>
                         <Button
                           className={{ root: 'border-none shadow-none' }}
@@ -331,8 +339,12 @@ function LearningElement({ courseId, id }: Props) {
                     <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50 basis-1/3">
                       <div className="flex justify-between">
                         <div className="flex flex-row gap-2">
-                          <div className="font-bold">Multiplikator</div>
-                          <div>{currentInstance.pointsMultiplier}x</div>
+                          {t.rich('pwa.learningElement.multiplicatorEval', {
+                            mult: currentInstance.pointsMultiplier,
+                            b: (text) => (
+                              <span className="font-bold">{text}</span>
+                            ),
+                          })}
                         </div>
                         <FlagQuestionModal
                           open={modalOpen}
@@ -342,16 +354,22 @@ function LearningElement({ courseId, id }: Props) {
                       </div>
                       <div className="flex flex-row gap-8">
                         <div>
-                          <div className="font-bold">Berechnet</div>
+                          <div className="font-bold">
+                            {t('shared.leaderboard.computed')}
+                          </div>
                           <div className="text-xl">
-                            {currentInstance.evaluation.score} Punkte
+                            {currentInstance.evaluation.score}{' '}
+                            {t('shared.leaderboard.points')}
                           </div>
                         </div>
 
                         <div>
-                          <div className="font-bold">Gesammelt</div>
+                          <div className="font-bold">
+                            {t('shared.leaderboard.collected')}
+                          </div>
                           <div className="text-xl">
-                            {currentInstance.evaluation.pointsAwarded} Punkte
+                            {currentInstance.evaluation.pointsAwarded}{' '}
+                            {t('shared.leaderboard.points')}
                           </div>
                         </div>
                       </div>
@@ -364,7 +382,9 @@ function LearningElement({ courseId, id }: Props) {
                       />
 
                       <div>
-                        <div className="font-bold">Erneute Punkte ab:</div>
+                        <div className="font-bold">
+                          {t('pwa.learningElement.newPointsFrom')}
+                        </div>
                         <div>
                           {dayjs(
                             currentInstance.evaluation.newPointsFrom
@@ -374,7 +394,9 @@ function LearningElement({ courseId, id }: Props) {
 
                       {questionData.explanation && (
                         <div className="">
-                          <div className="mb-1 font-bold">Erklärung</div>
+                          <div className="mb-1 font-bold">
+                            {t('shared.generic.explanation')}
+                          </div>
                           <DynamicMarkdown content={questionData.explanation} />
                         </div>
                       )}
@@ -468,6 +490,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     props: {
       id: ctx.params.id,
       courseId: ctx.params.courseId,
+      messages: {
+        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+      },
     },
   })
 }

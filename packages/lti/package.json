@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/lti",
-  "version": "3.0.0-alpha.58",
+  "version": "3.0.0-alpha.60",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

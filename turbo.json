@@ -15,7 +15,7 @@
     "dev": {
       "cache": false,
       "outputs": ["dist/**", ".next/**"],
-      "dependsOn": ["@klicker-uzh/prisma#build"]
+      "dependsOn": ["@klicker-uzh/prisma#build", "@klicker-uzh/markdown#build"]
     },
     "publish": {
       "cache": false,

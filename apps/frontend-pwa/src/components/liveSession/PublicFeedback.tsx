@@ -5,6 +5,7 @@ import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
+import { useTranslations } from 'next-intl'
 import React, { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -25,6 +26,7 @@ function PublicFeedback({
 }: FeedbackProps): React.ReactElement {
   const feedbackId = feedback.id
   const theme = useContext(ThemeContext)
+  const t = useTranslations()
 
   // structure for upvotes element: { upvote: true/false, responseId1: 1, 0 or -1, responseId2: 1, 0 or -1, ...}
   // upvote true meaning feadback is upvoted, responseId value for upvote, no vote or downvote
@@ -140,12 +142,12 @@ function PublicFeedback({
           <div className="mb-0.5">{feedback.content}</div>
           <div className="text-xs italic text-gray-600">
             {feedback.resolvedAt
-              ? `Gelöst am ${dayjs(feedback.resolvedAt).format(
-                  'DD.MM.YYYY HH:mm'
-                )}`
-              : `Geposted am ${dayjs(feedback.createdAt).format(
-                  'DD.MM.YYYY HH:mm'
-                )}`}
+              ? t('pwa.feedbacks.solvedAt', {
+                  date: dayjs(feedback.resolvedAt).format('DD.MM.YYYY HH:mm'),
+                })
+              : t('pwa.feedbacks.postedAt', {
+                  date: dayjs(feedback.createdAt).format('DD.MM.YYYY HH:mm'),
+                })}
           </div>
         </div>
         <Button

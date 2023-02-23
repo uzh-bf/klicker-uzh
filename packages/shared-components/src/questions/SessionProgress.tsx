@@ -5,6 +5,7 @@ import {
   ThemeContext,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
 import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -27,6 +28,7 @@ export function SessionProgress({
   onSubmit,
   onExpire,
 }: SessionProgressProps): React.ReactElement {
+  const t = useTranslations()
   const theme = useContext(ThemeContext)
   const untilExpiration = expiresAt
     ? dayjs(expiresAt).diff(dayjs(), 'second')
@@ -71,7 +73,7 @@ export function SessionProgress({
           onClick={onSubmit}
           data={{ cy: 'student-submit-answer' }}
         >
-          <Button.Label>Absenden</Button.Label>
+          <Button.Label>{t('shared.generic.send')}</Button.Label>
         </Button>
       </div>
     </div>

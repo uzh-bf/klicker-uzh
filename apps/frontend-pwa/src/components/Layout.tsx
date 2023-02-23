@@ -18,7 +18,6 @@ interface LayoutProps {
     unseenItems?: number
     showBadge?: boolean
   }[]
-  pageNotFound?: boolean
   setActiveMobilePage?: (value: string) => void
   className?: string
 }
@@ -28,7 +27,6 @@ function Layout({
   displayName = 'KlickerUZH',
   course,
   mobileMenuItems,
-  pageNotFound = false,
   setActiveMobilePage,
   className,
 }: LayoutProps) {
