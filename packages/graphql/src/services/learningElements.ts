@@ -407,10 +407,7 @@ export async function respondToQuestionInstance(
             },
           },
         },
-      })
-    )
-
-    promises.push(
+      }),
       ctx.prisma.participant.update({
         where: {
           id: ctx.user.sub,
