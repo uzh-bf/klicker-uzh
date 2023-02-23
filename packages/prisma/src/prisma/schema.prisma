@@ -843,7 +843,9 @@ model QuestionResponse {
   trialsCount        Int       @default(0)
   totalScore         Float     @default(0)
   totalPointsAwarded Float     @default(0)
+  totalXpAwarded     Float     @default(0)
   lastAwardedAt      DateTime?
+  lastXpAwardedAt    DateTime?
 
   response Json
 
@@ -867,6 +869,7 @@ model QuestionResponseDetail {
 
   score         Float @default(0)
   pointsAwarded Float @default(0)
+  xpAwarded     Float @default(0)
 
   response Json
 

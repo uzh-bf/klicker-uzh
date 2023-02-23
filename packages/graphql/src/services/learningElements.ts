@@ -22,6 +22,7 @@ import { shuffle } from '../util'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
+const XP_AWARD_TIMEFRAME_DAYS = 1
 
 type QuestionResponse = {
   choices?: number[] | null
@@ -30,6 +31,18 @@ type QuestionResponse = {
 
 function round(value: number) {
   return Number(Math.round(Number(value) * 100) / 100)
+}
+
+function computeAwardedXp({
+  pointsPercentage,
+  multiplier,
+}: {
+  pointsPercentage: number | null
+  multiplier: number
+}) {
+  if (pointsPercentage !== null && pointsPercentage === 1) {
+    return 10
+  }
 }
 
 function evaluateQuestionResponse(
@@ -68,6 +81,10 @@ function evaluateQuestionResponse(
             pointsPercentage !== null
               ? round(pointsPercentage * 10 * (multiplier ?? 1))
               : -1,
+          xp: computeAwardedXp({
+            pointsPercentage,
+            multiplier: multiplier ?? 1,
+          }),
         }
       } else if (data.type === QuestionType.MC) {
         const pointsPercentage = gradeQuestionMC({
@@ -82,6 +99,10 @@ function evaluateQuestionResponse(
             pointsPercentage !== null
               ? round(pointsPercentage * 10 * (multiplier ?? 1))
               : -1,
+          xp: computeAwardedXp({
+            pointsPercentage,
+            multiplier: multiplier ?? 1,
+          }),
         }
       } else {
         const pointsPercentage = gradeQuestionKPRIM({
@@ -96,6 +117,10 @@ function evaluateQuestionResponse(
             pointsPercentage !== null
               ? round(pointsPercentage * 10 * (multiplier ?? 1))
               : -1,
+          xp: computeAwardedXp({
+            pointsPercentage,
+            multiplier: multiplier ?? 1,
+          }),
         }
       }
     }
@@ -114,6 +139,10 @@ function evaluateQuestionResponse(
         feedbacks: [],
         answers: results ?? [],
         score: correct ? correct * 10 * (multiplier ?? 1) : 0,
+        xp: computeAwardedXp({
+          pointsPercentage: correct,
+          multiplier: multiplier ?? 1,
+        }),
       }
     }
 
@@ -251,6 +280,8 @@ export async function respondToQuestionInstance(
   let pointsAwarded
   let newPointsFrom
   let lastAwardedAt
+  let lastXpAwardedAt
+  let xpAwarded
   const promises = []
 
   // if the user is logged in and the last response was not within the past 6 days
@@ -274,6 +305,20 @@ export async function respondToQuestionInstance(
         pointsAwarded = 0
       }
 
+      const previousXpResponseOutsideTimeframe =
+        !instance.responses[0].lastXpAwardedAt ||
+        dayjs(instance.responses[0].lastXpAwardedAt).isBefore(
+          dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
+        )
+
+      if (previousXpResponseOutsideTimeframe) {
+        lastXpAwardedAt = new Date()
+        xpAwarded = evaluation?.xp
+      } else {
+        lastXpAwardedAt = instance.responses[0].lastXpAwardedAt
+        xpAwarded = 0
+      }
+
       lastAwardedAt = previousResponseOutsideTimeframe
         ? new Date()
         : instance.responses[0].lastAwardedAt
@@ -287,6 +332,9 @@ export async function respondToQuestionInstance(
       newPointsFrom = dayjs(lastAwardedAt)
         .add(instance?.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
+
+      lastXpAwardedAt = new Date()
+      xpAwarded = evaluation?.xp
     }
 
     promises.push(
@@ -300,8 +348,10 @@ export async function respondToQuestionInstance(
         create: {
           totalScore: score,
           totalPointsAwarded: pointsAwarded,
+          totalXpAwarded: xpAwarded,
           trialsCount: 1,
           lastAwardedAt,
+          lastXpAwardedAt,
           response,
           participant: {
             connect: { id: ctx.user.sub },
@@ -321,6 +371,7 @@ export async function respondToQuestionInstance(
         update: {
           response,
           lastAwardedAt,
+          lastXpAwardedAt,
           trialsCount: {
             increment: 1,
           },
@@ -330,12 +381,16 @@ export async function respondToQuestionInstance(
           totalPointsAwarded: {
             increment: pointsAwarded,
           },
+          totalXpAwarded: {
+            increment: xpAwarded,
+          },
         },
       }),
       ctx.prisma.questionResponseDetail.create({
         data: {
           score,
           pointsAwarded,
+          xpAwarded,
           response,
           participant: {
             connect: { id: ctx.user.sub },
@@ -350,6 +405,16 @@ export async function respondToQuestionInstance(
                 participantId: ctx.user.sub,
               },
             },
+          },
+        },
+      }),
+      ctx.prisma.participant.update({
+        where: {
+          id: ctx.user.sub,
+        },
+        data: {
+          xp: {
+            increment: xpAwarded,
           },
         },
       })
