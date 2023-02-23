@@ -48,6 +48,14 @@ function Header({
       {title && !course?.displayName && (
         <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
       )}
+      <div className="text-center">
+        <div className="text-sm">
+          Level: {participant?.level === undefined ? '0' : participant?.level}
+        </div>
+        <div className="text-sm">
+          XP: {participant?.xp === undefined ? '0' : participant?.xp}
+        </div>
+      </div>
       <div className="flex flex-row items-center gap-2 sm:gap-4">
         <div className="flex flex-row text-black bg-transparent rounded">
           <Select
