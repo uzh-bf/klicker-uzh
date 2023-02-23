@@ -51,12 +51,31 @@ export const SubscriptionObjectInput = builder.inputType(
   }
 )
 
+export interface ILevel extends DB.Level {
+  nextLevel?: ILevel
+}
+export const LevelRef = builder.objectRef<ILevel>('Level')
+export const Level = LevelRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    index: t.exposeInt('index'),
+    requiredXP: t.exposeInt('requiredXp'),
+    name: t.exposeString('name', { nullable: true }),
+    avatar: t.exposeString('avatar', { nullable: true }),
+    nextLevel: t.expose('nextLevel', {
+      type: LevelRef,
+      nullable: true,
+    }),
+  }),
+})
+
 export interface IParticipant extends DB.Participant {
   rank?: number
   score?: number
   isSelf?: boolean
   achievements?: DB.ParticipantAchievementInstance[]
   participantGroups?: IParticipantGroup[]
+  levelData: ILevel
 }
 export const ParticipantRef = builder.objectRef<IParticipant>('Participant')
 export const Participant = ParticipantRef.implement({
@@ -72,6 +91,7 @@ export const Participant = ParticipantRef.implement({
 
     xp: t.exposeInt('xp'),
     level: t.exposeInt('level'),
+    levelData: t.expose('levelData', { type: LevelRef }),
 
     participantGroups: t.expose('participantGroups', {
       type: [ParticipantGroupRef],
@@ -235,11 +255,10 @@ export interface IParticipantWithAchievements {
   participant: IParticipant
   achievements: DB.Achievement[]
 }
-export const ParticipantWithAchievementsRef = builder.objectRef<
-  IParticipantWithAchievements
->('ParticipantWithAchievements')
-export const ParticipantWithAchievements = ParticipantWithAchievementsRef.implement(
-  {
+export const ParticipantWithAchievementsRef =
+  builder.objectRef<IParticipantWithAchievements>('ParticipantWithAchievements')
+export const ParticipantWithAchievements =
+  ParticipantWithAchievementsRef.implement({
     fields: (t) => ({
       participant: t.expose('participant', {
         type: Participant,
@@ -248,5 +267,4 @@ export const ParticipantWithAchievements = ParticipantWithAchievementsRef.implem
         type: [Achievement],
       }),
     }),
-  }
-)
+  })
