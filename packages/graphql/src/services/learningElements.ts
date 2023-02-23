@@ -43,6 +43,7 @@ function computeAwardedXp({
   if (pointsPercentage !== null && pointsPercentage === 1) {
     return 10
   }
+  return 0
 }
 
 function evaluateQuestionResponse(
