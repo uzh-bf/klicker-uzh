@@ -1,7 +1,7 @@
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Course, Participant } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, H2, ThemeContext } from '@uzh-bf/design-system'
+import { Button, H1, H2, Select, ThemeContext } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -50,40 +50,23 @@ function Header({
       )}
       <div className="flex flex-row items-center gap-4">
         <div className="flex flex-row text-black bg-transparent rounded">
-          <Button
-            basic
-            onClick={() =>
+          <Select
+            value={router.locale}
+            items={[
+              { value: 'de', label: 'DE' },
+              { value: 'en', label: 'EN' },
+            ]}
+            onChange={(newValue: string) =>
               router.push({ pathname, query }, asPath, {
-                locale: 'de',
+                locale: newValue,
               })
             }
             className={{
-              root: twMerge(
-                'py-1 px-2 rounded-l bg-white',
-                router.locale === 'de' &&
-                  `font-bold text-white ${theme.primaryBgDark}`
-              ),
+              trigger:
+                'text-white border-b border-solid p-0.5 pb-0 rounded-none hover:bg-transparent hover:text-white',
             }}
-          >
-            DE
-          </Button>
-          <Button
             basic
-            onClick={() =>
-              router.push({ pathname, query }, asPath, {
-                locale: 'en',
-              })
-            }
-            className={{
-              root: twMerge(
-                'py-1 px-2 rounded-r bg-white',
-                router.locale === 'en' &&
-                  `font-bold text-white ${theme.primaryBgDark}`
-              ),
-            }}
-          >
-            EN
-          </Button>
+          />
         </div>
         {course?.id && (
           <Link href={`/course/${course.id}/docs`}>
