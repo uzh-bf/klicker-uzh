@@ -237,15 +237,16 @@ model Course {
 
   isArchived Boolean @default(false)
 
-  pinCode Int @unique @default(123456789)
+  pinCode Int @unique
 
-  name              String
-  displayName       String
-  description       String?
-  color             String?  @default("#eaa07d")
-  startDate         DateTime
-  endDate           DateTime
-  notificationEmail String?
+  name                  String
+  displayName           String
+  description           String?
+  color                 String?  @default("#eaa07d")
+  startDate             DateTime
+  endDate               DateTime
+  notificationEmail     String?
+  isGamificationEnabled Boolean  @default(true)
 
   sessions          Session[]
   learningElements  LearningElement[]
@@ -439,9 +440,9 @@ model MicroSession {
 
   name             String
   displayName      String
-  pointsMultiplier Int                   @default(1)
+  pointsMultiplier Int                @default(1)
   description      String?
-  status           LearningElementStatus @default(PUBLISHED)
+  status           MicroSessionStatus @default(PUBLISHED)
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime

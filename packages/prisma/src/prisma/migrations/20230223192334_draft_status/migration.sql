@@ -8,4 +8,4 @@ CREATE TYPE "MicroSessionStatus" AS ENUM ('DRAFT', 'PUBLISHED');
 ALTER TABLE "LearningElement" ADD COLUMN     "status" "LearningElementStatus" NOT NULL DEFAULT 'PUBLISHED';
 
 -- AlterTable
-ALTER TABLE "MicroSession" ADD COLUMN     "status" "LearningElementStatus" NOT NULL DEFAULT 'PUBLISHED';
+ALTER TABLE "MicroSession" ADD COLUMN     "status" "MicroSessionStatus" NOT NULL DEFAULT 'PUBLISHED';
