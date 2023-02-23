@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import ParticipantProfileModal from '@components/participant/ParticipantProfileModal'
 import {
   CreateParticipantGroupDocument,
   GetCourseOverviewDataDocument,
@@ -13,14 +14,13 @@ import { getParticipantToken } from '@lib/token'
 import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
+import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
+import { useState } from 'react'
 import Leaderboard from 'shared-components/src/Leaderboard'
+import { twMerge } from 'tailwind-merge'
 import Tabs from '../../../components/common/Tabs'
 import Layout from '../../../components/Layout'
-
-import { useTranslations } from 'next-intl'
-import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
 
 // TODO: replace fields in this component through our own design system components
@@ -43,6 +43,8 @@ function CourseOverview({ courseId }: any) {
   // const [selectedParticipant, setSelectedParticipant] = useState<
   //   LeaderboardEntry | undefined
   // >(undefined)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
+  const [participantId, setParticipantId] = useState<string | undefined>()
 
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
@@ -82,6 +84,20 @@ function CourseOverview({ courseId }: any) {
   const filteredGroupLeaderboard = groupLeaderboard?.filter(
     (group) => group.score > 0
   )
+
+  const top10Participants = leaderboard
+    ? leaderboard.map((entry) => entry.participantId)
+    : []
+
+  const openProfileModal = (modalData: any) => {
+    setParticipantId(modalData.participantId)
+    setIsProfileModalOpen((prev) => !prev)
+  }
+
+  const closeProfileModal = () => {
+    setParticipantId(undefined)
+    setIsProfileModalOpen((prev) => !prev)
+  }
 
   return (
     <Layout
@@ -154,6 +170,7 @@ function CourseOverview({ courseId }: any) {
                       onJoin={joinCourse}
                       onLeave={leaveCourse}
                       participant={participant}
+                      onProfileClick={openProfileModal}
                       // onParitcipantClick={(participantId, isSelf) => {
                       //   if (!isSelf) {
                       //     setSelectedParticipant(
@@ -487,6 +504,14 @@ function CourseOverview({ courseId }: any) {
             </Tabs.TabContent>
           )}
         </Tabs>
+        {isProfileModalOpen && participantId && (
+          <ParticipantProfileModal
+            isProfileModalOpen={isProfileModalOpen}
+            closeProfileModal={closeProfileModal}
+            participantId={participantId}
+            top10Participants={top10Participants}
+          />
+        )}
       </div>
     </Layout>
   )

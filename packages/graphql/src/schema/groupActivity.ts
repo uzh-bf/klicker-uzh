@@ -2,12 +2,8 @@ import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import type { ICourse } from './course'
 import { Course } from './course'
-import {
-  IParticipant,
-  IParticipantGroup,
-  ParticipantGroup,
-  ParticipantRef,
-} from './participant'
+import type { IParticipant, IParticipantGroup } from './participant'
+import { ParticipantGroup, ParticipantRef } from './participant'
 import type { IQuestionInstance } from './question'
 import { QuestionInstance } from './question'
 
