@@ -289,9 +289,6 @@ export async function respondToQuestionInstance(
   if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
     const hasPreviousResponse = instance?.responses?.length > 0
 
-    console.log('instance', instance)
-    console.log('response', instance.responses[0])
-
     if (hasPreviousResponse) {
       const previousResponseOutsideTimeframe =
         !instance.responses[0].lastAwardedAt ||
@@ -313,8 +310,6 @@ export async function respondToQuestionInstance(
         dayjs(instance.responses[0].lastXpAwardedAt).isBefore(
           dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
         )
-
-      console.log('last xp out of window', previousXpResponseOutsideTimeframe)
 
       if (previousXpResponseOutsideTimeframe) {
         lastXpAwardedAt = new Date()
