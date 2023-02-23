@@ -635,6 +635,7 @@ model Participant {
   avatar         String?
   avatarSettings Json?
   level          Int     @default(1)
+  levelData      Level   @relation(fields: [level], references: [index])
   xp             Int     @default(0)
 
   lastLoginAt DateTime?
@@ -922,4 +923,20 @@ model AwardEntry {
 
   @@unique([courseId, type, order])
   @@unique([courseId, type, name])
+}
+
+// ----- LEVELS -----
+model Level {
+  id Int @id @default(autoincrement())
+
+  index      Int     @unique
+  name       String?
+  requiredXp Int
+  avatar     String?
+
+  nextLevel   Level?  @relation("level", fields: [nextLevelIx], references: [index])
+  nextLevelIx Int?
+  prevLevel   Level[] @relation("level")
+
+  participants Participant[]
 }

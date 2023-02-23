@@ -28,6 +28,20 @@ export const PARTICIPANT_IDS = [
 async function seedTest(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)
 
+  for (let index of [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) {
+    await prisma.level.upsert({
+      where: { index },
+      create: {
+        index,
+        name: `Level ${index}`,
+        requiredXp: 100 * index,
+        avatar: `https://sos-ch-dk-2.exo.io/klicker-prod/img/levels/level_${index}.svg`,
+        nextLevel: index < 11 ? { connect: { index: index + 1 } } : undefined,
+      },
+      update: {},
+    })
+  }
+
   const userTest = await prisma.user.upsert(
     await prepareUser({
       id: USER_ID_TEST,
