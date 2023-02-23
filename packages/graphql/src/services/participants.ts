@@ -1,4 +1,4 @@
-import { SSOType } from '@klicker-uzh/prisma'
+import { MicroSessionStatus, SessionStatus, SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
 import * as R from 'ramda'
@@ -75,21 +75,11 @@ export async function getParticipations(
                   scheduledEndAt: {
                     gt: new Date(),
                   },
-                },
-                select: {
-                  id: true,
-                  displayName: true,
-                  scheduledStartAt: true,
-                  scheduledEndAt: true,
+                  status: MicroSessionStatus.PUBLISHED,
                 },
               },
               sessions: {
-                where: { status: 'RUNNING' },
-                select: {
-                  id: true,
-                  displayName: true,
-                  linkTo: true,
-                },
+                where: { status: SessionStatus.RUNNING },
               },
             },
           },
@@ -101,7 +91,7 @@ export async function getParticipations(
   if (!participant) return []
 
   return R.sort(
-    R.ascend(R.prop('course.displayName')),
+    R.ascend(R.prop<string>('course.displayName')),
     participant.participations
   )
 }
