@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
-import { faFlag } from '@fortawesome/free-regular-svg-icons'
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
+import { faEnvelope, faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlagQuestionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H4, Modal, ThemeContext, Toast } from '@uzh-bf/design-system'
@@ -111,8 +110,11 @@ function FlagQuestionModal({
         }}
         open={open}
         trigger={
-          <Button onClick={() => setOpen(true)} basic>
-            <FontAwesomeIcon icon={faFlag} className="hover:text-red-500" />
+          <Button basic onClick={() => setOpen(true)}>
+            <FontAwesomeIcon
+              icon={faWarning}
+              className="text-red-600 hover:text-red-500"
+            />
           </Button>
         }
         onClose={() => setOpen(false)}
