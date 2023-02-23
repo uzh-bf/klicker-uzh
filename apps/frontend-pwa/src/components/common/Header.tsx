@@ -48,12 +48,16 @@ function Header({
       {title && !course?.displayName && (
         <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
       )}
-      <div className="text-center">
-        <div className="text-sm">
-          Level: {participant?.level === undefined ? '0' : participant?.level}
+      <div className="grid grid-cols-1">
+        <div className="flex justify-between gap-1 text-sm">
+          <div>Level:</div>
+          <div>
+            {participant?.level === undefined ? '0' : participant?.level}
+          </div>
         </div>
-        <div className="text-sm">
-          XP: {participant?.xp === undefined ? '0' : participant?.xp}
+        <div className="flex justify-between gap-1 text-sm">
+          <div>XP: </div>
+          <div>{participant?.xp === undefined ? '0' : participant?.xp}</div>
         </div>
       </div>
       <div className="flex flex-row items-center gap-2 sm:gap-4">
