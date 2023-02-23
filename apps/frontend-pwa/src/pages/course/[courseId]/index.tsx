@@ -46,8 +46,6 @@ function CourseOverview({ courseId }: any) {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
 
-  console.log('isProfileModalOpen: ', isProfileModalOpen)
-
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
   })
@@ -82,10 +80,6 @@ function CourseOverview({ courseId }: any) {
     groupLeaderboard,
     groupLeaderboardStatistics,
   } = data.getCourseOverviewData
-
-  console.log('course: ', course)
-  console.log('participant: ', participant)
-  console.log('leaderboard: ', leaderboard)
 
   const filteredGroupLeaderboard = groupLeaderboard?.filter(
     (group) => group.score > 0

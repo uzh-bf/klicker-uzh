@@ -6,6 +6,20 @@ query GetParticipantDetails($id: String!) {
       avatar
       avatarSettings
       level
+      levelData {
+        id
+        avatar
+        name
+        index
+        requiredXp
+        nextLevel {
+          id
+          index
+          avatar
+          requiredXp
+          name
+        }
+      }
       xp
       achievements {
         id

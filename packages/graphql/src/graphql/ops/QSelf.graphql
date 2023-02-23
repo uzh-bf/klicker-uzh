@@ -8,10 +8,16 @@ query Self {
     level
     levelData {
       id
+      index
+      name
+      avatar
+      requiredXp
       nextLevel {
         id
         index
         requiredXp
+        avatar
+        name
       }
     }
     achievements {
