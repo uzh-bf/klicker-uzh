@@ -25,7 +25,7 @@ const Profile = () => {
       course={{ displayName: 'KlickerUZH' }}
       displayName={t('pwa.profile.myProfile')}
     >
-      <div className="flex flex-col items-center gap-8 md:mx-auto md:w-full">
+      <div className="flex flex-col items-center gap-4 md:mx-auto md:w-max">
         <ProfileData
           isSelf={true}
           username={data.self.username}
@@ -35,7 +35,7 @@ const Profile = () => {
           achievements={data.self.achievements}
         />
 
-        <div className="space-x-2">
+        <div className="flex flex-row justify-between space-x-2 md:w-full">
           <Button
             onClick={() => router.push('/editProfile')}
             className={{ root: 'mt-2' }}

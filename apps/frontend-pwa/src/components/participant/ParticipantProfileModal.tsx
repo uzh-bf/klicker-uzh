@@ -17,8 +17,7 @@ interface ParticipantProfileModalProps {
 //TODO: Make profile visible after leaving the leaderboard
 //TODO: handle overflow in achivevements container in case there are more achievements than the current ones (=5)
 //TODO: fix modal for group leader board
-//TODO: make modal responsive for mobile apps
-//TODO: optional - implement new design for the carousel (e.g. 3D carousel where you can see the next and previous participant in the background)
+
 function ParticipantProfileModal({
   isProfileModalOpen,
   closeProfileModal,

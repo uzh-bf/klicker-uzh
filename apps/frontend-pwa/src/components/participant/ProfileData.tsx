@@ -27,7 +27,7 @@ function ProfileData({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col items-center p-5 mx-auto border rounded-md shadow-md">
+    <div className="flex flex-col items-center p-5 mx-auto border rounded-md shadow-md w-full max-w-[400px]">
       <div className="relative mb-2">
         <div className="w-[180px] h-[180px] rounded-full border border-solid border-black">
           <Image
