@@ -11,11 +11,10 @@ interface ParticipantProfileModalProps {
   top10Participants: string[]
 }
 
+// TODO: think about smart appraoch to allow scrolling between participants on mobile (currently hidden)
 //TODO: compare participant's achievements with all possible achievements and grey out the ones that are not achieved yet
 //TODO: bugfix - the modal opens when clicking on 'Austreten'
 //TODO: Make profile visible after leaving the leaderboard
-//TODO: move close button to top right
-//TODO: remove scroll bar on the right site
 //TODO: handle overflow in achivevements container in case there are more achievements than the current ones (=5)
 //TODO: fix modal for group leader board
 //TODO: make modal responsive for mobile apps

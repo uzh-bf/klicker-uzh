@@ -28,25 +28,28 @@ function ProfileData({
 
   return (
     <div className="flex flex-col md:w-[400px] border rounded-md shadow-md p-5 items-center">
-      <div className="relative w-[200px] h-36 mb-2">
-        <Image
-          src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-            avatar ?? 'placeholder'
-          }.svg`}
-          alt=""
-          fill
-        />
-        {level && (
-          <div className="absolute right-0 -bottom-2">
-            <Image
-              src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_PATH}/levels/level_${level.index}.svg`}
-              width={50}
-              height={50}
-              alt="Level"
-              className="object-contain"
-            />
-          </div>
-        )}
+      <div className="relative mb-2">
+        <div className="w-[180px] h-[180px] rounded-full border border-solid border-black">
+          <Image
+            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+              avatar ?? 'placeholder'
+            }.svg`}
+            alt=""
+            className="overflow-hidden w-[180px] h-[180px] rounded-full"
+            fill
+          />
+          {level && (
+            <div className="absolute right-0 -bottom-2">
+              <Image
+                src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_PATH}/levels/level_${level.index}.svg`}
+                width={50}
+                height={50}
+                alt="Level"
+                className="object-contain"
+              />
+            </div>
+          )}
+        </div>
       </div>
       <Label
         label={username}
