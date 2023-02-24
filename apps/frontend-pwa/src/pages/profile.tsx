@@ -25,7 +25,7 @@ const Profile = () => {
       course={{ displayName: 'KlickerUZH' }}
       displayName={t('pwa.profile.myProfile')}
     >
-      <div className="flex flex-col items-center gap-4 md:mx-auto md:w-max">
+      <div className="flex flex-col items-center gap-4 p-4 border rounded md:mx-auto md:w-max">
         <ProfileData
           isSelf={true}
           username={data.self.username}
