@@ -75,13 +75,17 @@ function ParticipantProfileModal({
             achievements={participant.achievements}
           />
         </div>
-        <div className="hidden grid-cols-10 pt-5 justify-items-center md:grid">
+        <div className="grid grid-cols-10 pt-5 justify-items-center">
           {top10Participants.map((p, index) => (
             <div
               key={index}
-              className={`w-2 h-2 rounded-full ${
+              className={`w-2 h-2 rounded-full hover:cursor-pointer ${
                 index === currentIndex ? 'bg-black' : 'bg-gray-300'
               }`}
+              onClick={() => {
+                setCurrentIndex(index)
+                setSelectedParticipant(top10Participants[index])
+              }}
             />
           ))}
         </div>
