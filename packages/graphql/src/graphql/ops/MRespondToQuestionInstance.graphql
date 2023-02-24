@@ -21,6 +21,8 @@ mutation ResponseToQuestionInstance(
       pointsAwarded
       percentile
       newPointsFrom
+      xpAwarded
+      newXpFrom
     }
   }
 }

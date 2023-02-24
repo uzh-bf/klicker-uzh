@@ -266,11 +266,13 @@ export async function respondToQuestionInstance(
     updatedInstance.pointsMultiplier
   )
   const score = evaluation?.score || 0
+  const xp = evaluation?.xp || 0
   let pointsAwarded
   let newPointsFrom
   let lastAwardedAt
   let lastXpAwardedAt
   let xpAwarded
+  let newXpFrom
   const promises = []
 
   // if the user is logged in and the last response was not within the past 6 days
@@ -301,29 +303,34 @@ export async function respondToQuestionInstance(
         )
 
       if (previousXpResponseOutsideTimeframe) {
-        lastXpAwardedAt = new Date()
-        xpAwarded = evaluation?.xp
+        xpAwarded = xp
       } else {
-        lastXpAwardedAt = instance.responses[0].lastXpAwardedAt
         xpAwarded = 0
       }
 
       lastAwardedAt = previousResponseOutsideTimeframe
         ? new Date()
         : instance.responses[0].lastAwardedAt
+      lastXpAwardedAt = previousXpResponseOutsideTimeframe
+        ? new Date()
+        : instance.responses[0].lastXpAwardedAt
       newPointsFrom = dayjs(lastAwardedAt)
         .add(instance?.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
+      newXpFrom = dayjs(lastXpAwardedAt)
+        .add(XP_AWARD_TIMEFRAME_DAYS, 'days')
+        .toDate()
     } else {
       pointsAwarded = score
+      xpAwarded = xp
 
       lastAwardedAt = new Date()
       newPointsFrom = dayjs(lastAwardedAt)
         .add(instance?.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
-
-      lastXpAwardedAt = new Date()
-      xpAwarded = evaluation?.xp
+      newXpFrom = dayjs(lastAwardedAt)
+        .add(XP_AWARD_TIMEFRAME_DAYS, 'days')
+        .toDate()
     }
 
     promises.push(
@@ -396,18 +403,23 @@ export async function respondToQuestionInstance(
             },
           },
         },
-      }),
-      ctx.prisma.participant.update({
-        where: {
-          id: ctx.user.sub,
-        },
-        data: {
-          xp: {
-            increment: xpAwarded,
-          },
-        },
       })
     )
+
+    if (typeof xpAwarded === 'number' && xpAwarded > 0) {
+      promises.push(
+        ctx.prisma.participant.update({
+          where: {
+            id: ctx.user.sub,
+          },
+          data: {
+            xp: {
+              increment: xpAwarded,
+            },
+          },
+        })
+      )
+    }
 
     if (typeof pointsAwarded === 'number') {
       promises.push(
@@ -460,6 +472,8 @@ export async function respondToQuestionInstance(
           ...evaluation,
           pointsAwarded,
           newPointsFrom,
+          xpAwarded,
+          newXpFrom,
         }
       : null,
   }

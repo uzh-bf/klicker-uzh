@@ -20,7 +20,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Button, H3, Progress } from '@uzh-bf/design-system'
+import { Button, H3, Progress, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useTranslations } from 'next-intl'
@@ -157,7 +157,7 @@ function LearningElement({ courseId, id }: Props) {
                 <DynamicMarkdown content={data.learningElement.description} />
               )}
 
-              <div className="flex flex-col gap-4 text-sm md:gap-16 md:flex-row">
+              <div className="flex flex-col gap-2 text-sm md:gap-16 md:flex-row">
                 <div className="flex-1 space-y-2">
                   <div className="flex flex-row items-center gap-2">
                     <FontAwesomeIcon icon={faQuestionCircle} />
@@ -338,12 +338,19 @@ function LearningElement({ courseId, id }: Props) {
                       <DynamicMarkdown content={questionData.content} />
                     </div>
                     {currentInstance.evaluation && questionData.explanation && (
-                      <div className="py-1 mb-4 text-green-900 border-green-700 border-y max-w-none">
+                      <UserNotification
+                        notificationType="success"
+                        message=""
+                        className={{
+                          root: 'flex flex-row items-center mb-2 md:mb-4 gap-3 px-3',
+                          content: 'mt-0',
+                        }}
+                      >
                         <div className="font-bold">
                           {t('shared.generic.explanation')}
                         </div>
                         <DynamicMarkdown content={questionData.explanation} />
-                      </div>
+                      </UserNotification>
                     )}
                     <OptionsDisplay
                       key={currentInstance.id}
@@ -390,6 +397,9 @@ function LearningElement({ courseId, id }: Props) {
                             {currentInstance.evaluation.pointsAwarded}{' '}
                             {t('shared.leaderboard.points')}
                           </div>
+                          <div className="text-lg">
+                            {currentInstance.evaluation.xpAwarded} XP
+                          </div>
                         </div>
                         <div>
                           <div className="font-bold">
@@ -399,6 +409,11 @@ function LearningElement({ courseId, id }: Props) {
                             {dayjs(
                               currentInstance.evaluation.newPointsFrom
                             ).format('DD.MM.YYYY HH:mm')}
+                          </div>
+                          <div className="text-lg">
+                            {dayjs(currentInstance.evaluation.newXpFrom).format(
+                              'DD.MM.YYYY HH:mm'
+                            )}
                           </div>
                         </div>
                       </div>
