@@ -73,7 +73,11 @@
       "leave": "Austreten",
       "documentation": "Dokumentation",
       "features": "Features",
-      "groupActivities": "Gruppenaktivitäten"
+      "groupActivities": "Gruppenaktivitäten",
+      "experiencePoints": "Erfahrungspunkte",
+      "NExperiencePoints": "Erfahrungspunkte",
+      "level": "Level",
+      "levelX": "Level: {number}"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -155,7 +159,7 @@
       "totalPoints": "Total Punkte (gesammelt): {points}",
       "questionTypeNotSupported": "Dieser Fragetyp ist für Lernelemente nicht verfügbar.",
       "questionProgress": "Frage: {current}/{total}",
-      "newPointsFrom": "Erneute Punkte ab:",
+      "newPointsFrom": "Erneute Punkte/XP ab:",
       "othersAnswered": "So haben andere geantwortet",
       "flagQuestion": "Frage melden",
       "flagQuestionText": "Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen eines Lernelements / einer Micro-Session eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.",

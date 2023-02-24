@@ -265,9 +265,11 @@ type InstanceEvaluation {
   choices: Json
   feedbacks: [QuestionFeedback!]
   newPointsFrom: Date
+  newXpFrom: Date
   percentile: Float
   pointsAwarded: Float
   score: Float!
+  xpAwarded: Int
 }
 
 type InstanceResult {

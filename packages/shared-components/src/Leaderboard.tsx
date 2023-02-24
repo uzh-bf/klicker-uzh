@@ -9,8 +9,7 @@ interface LeaderboardProps {
   activeParticipation?: boolean
   onJoin?: () => void
   onLeave?: () => void
-  onParitcipantClick?: (participantId: string, isSelf: boolean) => void
-  onProfileClick: (modalData: any) => void
+  onParticipantClick?: (participantId: string, isSelf: boolean) => void
   participant?: Participant
   hidePodium?: boolean
   hideAvatars?: boolean
@@ -28,8 +27,7 @@ function Leaderboard({
   activeParticipation,
   onJoin,
   onLeave,
-  onParitcipantClick,
-  onProfileClick,
+  onParticipantClick,
   participant,
   hidePodium,
   hideAvatars,
@@ -78,43 +76,37 @@ function Leaderboard({
         <div className={twMerge('space-y-1', className?.list)}>
           {top10.map((entry) =>
             entry.isSelf === true && onLeave ? (
-              <div onClick={() => onProfileClick(entry)}>
-                <ParticipantSelf
-                  key={entry.id}
-                  isActive={activeParticipation ?? true}
-                  pseudonym={entry.username}
-                  avatar={entry.avatar ?? 'placeholder'}
-                  withAvatar={!hideAvatars}
-                  points={entry.score}
-                  rank={entry.rank}
-                  onJoinCourse={onJoin}
-                  onLeaveCourse={onLeave}
-                  onClick={() => true}
-                  // onClick={
-                  //   onParitcipantClick
-                  //     ? () => onParitcipantClick(entry.participantId, true)
-                  //     : undefined
-                  // }
-                />
-              </div>
+              <ParticipantSelf
+                key={entry.id}
+                isActive={activeParticipation ?? true}
+                pseudonym={entry.username}
+                avatar={entry.avatar ?? 'placeholder'}
+                withAvatar={!hideAvatars}
+                points={entry.score}
+                rank={entry.rank}
+                onJoinCourse={onJoin}
+                onLeaveCourse={onLeave}
+                onClick={
+                  onParticipantClick
+                    ? () => onParticipantClick(entry.participantId, true)
+                    : undefined
+                }
+              />
             ) : (
-              <div onClick={() => onProfileClick(entry)}>
-                <ParticipantOther
-                  key={entry.id}
-                  rank={entry.rank}
-                  pseudonym={entry.username}
-                  avatar={entry.avatar ?? 'placeholder'}
-                  withAvatar={!hideAvatars}
-                  points={entry.score}
-                  onClick={() => true}
-                  // onClick={
-                  //   onParitcipantClick
-                  //     ? () => onParitcipantClick(entry.participantId, false)
-                  //     : undefined
-                  // }
-                  className={className?.listItem}
-                />
-              </div>
+              <ParticipantOther
+                key={entry.id}
+                rank={entry.rank}
+                pseudonym={entry.username}
+                avatar={entry.avatar ?? 'placeholder'}
+                withAvatar={!hideAvatars}
+                points={entry.score}
+                onClick={
+                  onParticipantClick
+                    ? () => onParticipantClick(entry.participantId, false)
+                    : undefined
+                }
+                className={className?.listItem}
+              />
             )
           )}
         </div>
@@ -129,8 +121,8 @@ function Leaderboard({
             onJoinCourse={onJoin}
             onLeaveCourse={onLeave}
             onClick={
-              onParitcipantClick
-                ? () => onParitcipantClick(participant.id, true)
+              onParticipantClick
+                ? () => onParticipantClick(participant.id, true)
                 : undefined
             }
           />

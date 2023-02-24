@@ -88,7 +88,10 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
       {props.isActive ? (
         <Button
           className={{ root: 'text-sm' }}
-          onClick={() => props.onLeaveCourse()}
+          onClick={(e) => {
+            e?.stopPropagation()
+            props.onLeaveCourse()
+          }}
         >
           {t('shared.generic.leave')}
         </Button>
