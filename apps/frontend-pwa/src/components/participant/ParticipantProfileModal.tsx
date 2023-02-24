@@ -58,6 +58,8 @@ function ParticipantProfileModal({
       className={{
         content: 'w-[500px] h-[700px]',
         title: 'text-3xl',
+        onNext: 'hidden md:block',
+        onPrev: 'hidden md:block',
       }}
       onNext={onNext}
       onPrev={onPrev}
@@ -73,7 +75,7 @@ function ParticipantProfileModal({
             achievements={participant.achievements}
           />
         </div>
-        <div className="grid grid-cols-10 pt-5 justify-items-center">
+        <div className="hidden grid-cols-10 pt-5 justify-items-center md:grid">
           {top10Participants.map((p, index) => (
             <div
               key={index}
