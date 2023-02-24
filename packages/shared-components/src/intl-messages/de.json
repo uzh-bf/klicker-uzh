@@ -73,7 +73,11 @@
       "leave": "Austreten",
       "documentation": "Dokumentation",
       "features": "Features",
-      "groupActivities": "Gruppenaktivitäten"
+      "groupActivities": "Gruppenaktivitäten",
+      "experiencePoints": "Erfahrungspunkte",
+      "NExperiencePoints": "Erfahrungspunkte: {number}",
+      "level": "Level",
+      "levelX": "Level: {number}"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",

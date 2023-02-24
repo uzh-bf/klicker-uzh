@@ -60,7 +60,7 @@ function ProfileData({
           <div className="flex flex-row items-center">
             <FontAwesomeIcon icon={faTrophy} className="pr-2" />
             <Label
-              label={`Level: ${level.index}`}
+              label={t('shared.generic.levelX', { number: level.index })}
               className={{ root: 'font-bold text-sm' }}
             />
           </div>
@@ -68,7 +68,7 @@ function ProfileData({
         <div className="flex flex-row items-center">
           <FontAwesomeIcon icon={faStar} className="pr-2" />
           <Label
-            label={`Erfahrungspunkte: ${xp}`}
+            label={t('shared.generic.NExperiencePoints', { number: xp })}
             className={{ root: 'font-bold text-sm' }}
           />
         </div>
@@ -77,7 +77,7 @@ function ProfileData({
         <div className="flex flex-row items-center">
           <FontAwesomeIcon icon={faShieldHeart} className="pr-2" />
           <Label
-            label="Errungenschaften"
+            label={t('pwa.profile.achievements')}
             className={{ root: 'font-bold text-sm' }}
           />
         </div>
