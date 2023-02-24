@@ -160,8 +160,8 @@ export const ConfusionSummary = builder
   .objectRef<IConfusionSummary>('ConfusionSummary')
   .implement({
     fields: (t) => ({
-      speed: t.exposeInt('speed'),
-      difficulty: t.exposeInt('difficulty'),
+      speed: t.exposeFloat('speed'),
+      difficulty: t.exposeFloat('difficulty'),
       numberOfParticipants: t.exposeInt('numberOfParticipants', {
         nullable: true,
       }),
