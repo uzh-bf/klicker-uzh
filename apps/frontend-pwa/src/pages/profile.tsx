@@ -27,6 +27,7 @@ const Profile = () => {
     >
       <div className="flex flex-col items-center gap-8 md:mx-auto md:w-full">
         <ProfileData
+          isSelf={true}
           username={data.self.username}
           avatar={data.self.avatar}
           xp={data.self.xp}

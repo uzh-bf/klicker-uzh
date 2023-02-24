@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 
 interface ProfileProps {
+  isSelf?: boolean
   username: string
   xp: number
   level?: Level | null
@@ -16,6 +17,7 @@ interface ProfileProps {
 }
 
 function ProfileData({
+  isSelf = false,
   username,
   xp,
   level,
@@ -25,8 +27,8 @@ function ProfileData({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col w-[400px] border rounded-md shadow-md p-5">
-      <div className="relative h-36">
+    <div className="flex flex-col md:w-[400px] border rounded-md shadow-md p-5 items-center">
+      <div className="relative w-[200px] h-36 mb-2">
         <Image
           src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
             avatar ?? 'placeholder'
@@ -35,7 +37,7 @@ function ProfileData({
           fill
         />
         {level && (
-          <div className="absolute bottom-0 right-0">
+          <div className="absolute right-0 -bottom-2">
             <Image
               src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_PATH}/levels/level_${level.index}.svg`}
               width={50}
@@ -51,14 +53,16 @@ function ProfileData({
         className={{ root: 'text-xl font-bold pb-4 w-full justify-center' }}
       />
       <div className="flex flex-col w-full">
-        <div className="flex flex-row justify-between">
-          <div className="flex flex-row">
-            <FontAwesomeIcon icon={faTrophy} className="pr-2" />
-            <Label
-              label={`Level: ${level.index}`}
-              className={{ root: 'font-bold text-sm' }}
-            />
-          </div>
+        <div className="flex flex-col justify-between md:flex-row">
+          {level && (
+            <div className="flex flex-row">
+              <FontAwesomeIcon icon={faTrophy} className="pr-2" />
+              <Label
+                label={`Level: ${level.index}`}
+                className={{ root: 'font-bold text-sm' }}
+              />
+            </div>
+          )}
           <div className="flex flex-row">
             <FontAwesomeIcon icon={faStar} className="pr-2" />
             <Label

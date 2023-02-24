@@ -57,29 +57,33 @@ function ParticipantProfileModal({
       open={isProfileModalOpen}
       onClose={closeProfileModal}
       className={{
-        content: 'flex flex-col items-center w-[500px] h-[700px]',
+        content: 'w-[500px] h-[700px]',
         title: 'text-3xl',
       }}
       onNext={onNext}
       onPrev={onPrev}
       title="Top 10"
     >
-      <ProfileData
-        level={participant.levelData}
-        xp={participant.xp}
-        avatar={participant.avatar}
-        username={participant.username}
-        achievements={participant.achievements}
-      />
-      <div className="grid grid-cols-10 pt-5 justify-items-center">
-        {top10Participants.map((p, index) => (
-          <div
-            key={index}
-            className={`w-2 h-2 rounded-full ${
-              index === currentIndex ? 'bg-black' : 'bg-gray-300'
-            }`}
+      <div className="items-center w-full px-auto">
+        <div className="mx-auto w-max">
+          <ProfileData
+            level={participant.levelData}
+            xp={participant.xp}
+            avatar={participant.avatar}
+            username={participant.username}
+            achievements={participant.achievements}
           />
-        ))}
+        </div>
+        <div className="grid grid-cols-10 pt-5 justify-items-center">
+          {top10Participants.map((p, index) => (
+            <div
+              key={index}
+              className={`w-2 h-2 rounded-full ${
+                index === currentIndex ? 'bg-black' : 'bg-gray-300'
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </Modal>
   )
