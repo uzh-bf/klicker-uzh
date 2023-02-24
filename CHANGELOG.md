@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.60...v3.0.0-alpha.61) (2023-02-24)
+
+
+### Features
+
+* **frontend-pwa:** extend profile with level data and display profiles of other participants ([#3396](https://github.com/uzh-bf/klicker-uzh/issues/3396)) ([22b6f48](https://github.com/uzh-bf/klicker-uzh/commit/22b6f48433eb1510819f275a0c17ffa5c1678e9a))
+
+
+### Bug Fixes
+
+* **packages/graphql:** fix issue in xp awarding ([#3402](https://github.com/uzh-bf/klicker-uzh/issues/3402)) ([798f95a](https://github.com/uzh-bf/klicker-uzh/commit/798f95a52aa017e6f2d521e44c2ad0ef1022903b))
+
+
+### Enhancements
+
+* add DRAFT and PUBLISHED for async elements, add course.isGamificationEnabled, add button for markdown links, improve layout and location of flag interaction, fix matomo integration ([#3400](https://github.com/uzh-bf/klicker-uzh/issues/3400)) ([5c573d8](https://github.com/uzh-bf/klicker-uzh/commit/5c573d8d2ab8fa3aa00ddcec3cd555c8166b0180))
+* **apps/frontend-pwa:** create smaller language switcher ([#3398](https://github.com/uzh-bf/klicker-uzh/issues/3398)) ([e74eb22](https://github.com/uzh-bf/klicker-uzh/commit/e74eb227d2bb463e229461506042ff77656eb84e))
+* **packages/graphql:** implement backend logic for participants to get xp from questions ([#3401](https://github.com/uzh-bf/klicker-uzh/issues/3401)) ([9f45500](https://github.com/uzh-bf/klicker-uzh/commit/9f45500593c83c08788dabfa940266289a56205b))
+
 ## [3.0.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.59...v3.0.0-alpha.60) (2023-02-22)
 
 
