@@ -178,3 +178,18 @@ export function computeAwardedPoints({
 
   return Math.round(awardedPoints)
 }
+
+interface ComputeAwardedXpArgs {
+  pointsPercentage: number | null
+  multiplier: number
+}
+
+export function computeAwardedXp({
+  pointsPercentage,
+  multiplier,
+}: ComputeAwardedXpArgs) {
+  if (pointsPercentage !== null && pointsPercentage === 1) {
+    return 10
+  }
+  return 0
+}
