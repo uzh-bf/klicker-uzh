@@ -121,6 +121,7 @@ function LearningElement({ courseId, id }: Props) {
 
   const handleSubmitResponse = () => {
     if (!response) return
+    scrollTo(0, 0)
 
     respondToQuestionInstance({
       variables: {
@@ -132,6 +133,7 @@ function LearningElement({ courseId, id }: Props) {
   }
 
   const handleNextQuestion = () => {
+    scrollTo(0, 0)
     setCurrentIx((ix) => ix + 1)
     setResponse(null)
   }
@@ -245,10 +247,16 @@ function LearningElement({ courseId, id }: Props) {
               </div>
               <div>
                 <div className="flex flex-row items-center justify-between">
-                  <H3 className={{ root: 'flex flex-row justify-between' }}>
+                  <H3
+                    className={{
+                      root: 'flex flex-row justify-between text-sm',
+                    }}
+                  >
                     {t('shared.generic.evaluation')}
                   </H3>
-                  <H3>{t('pwa.learningElement.pointsCollectedPossible')}</H3>
+                  <H3 className={{ root: 'text-sm' }}>
+                    {t('pwa.learningElement.pointsCollectedPossible')}
+                  </H3>
                 </div>
                 <div>
                   {data.learningElement.instances?.map((instance) => (
@@ -270,7 +278,7 @@ function LearningElement({ courseId, id }: Props) {
                   ))}
                 </div>
 
-                <H3 className={{ root: 'mt-4 text-right' }}>
+                <H3 className={{ root: 'mt-4 text-right text-base' }}>
                   {t('pwa.learningElement.totalPoints', {
                     points: totalPointsAwarded,
                   })}
@@ -329,6 +337,14 @@ function LearningElement({ courseId, id }: Props) {
                     <div className="pb-2">
                       <DynamicMarkdown content={questionData.content} />
                     </div>
+                    {currentInstance.evaluation && questionData.explanation && (
+                      <div className="py-1 mb-4 text-green-900 border-green-700 border-y max-w-none">
+                        <div className="font-bold">
+                          {t('shared.generic.explanation')}
+                        </div>
+                        <DynamicMarkdown content={questionData.explanation} />
+                      </div>
+                    )}
                     <OptionsDisplay
                       key={currentInstance.id}
                       isEvaluation={isEvaluation}
@@ -345,7 +361,7 @@ function LearningElement({ courseId, id }: Props) {
                   </div>
 
                   {currentInstance.evaluation && (
-                    <div className="flex-1 p-4 space-y-4 border rounded bg-gray-50 basis-1/3">
+                    <div className="flex-1 pt-4 space-y-4 border-t md:p-4 md:border md:rounded md:bg-gray-50 basis-1/3">
                       <div className="flex justify-between">
                         <div className="flex flex-row gap-2">
                           {t.rich('pwa.learningElement.multiplicatorEval', {
@@ -356,24 +372,33 @@ function LearningElement({ courseId, id }: Props) {
                           })}
                         </div>
                       </div>
-                      <div className="flex flex-row gap-8">
+                      <div className="flex flex-row gap-4 md:flex-wrap">
                         <div>
                           <div className="font-bold">
                             {t('shared.leaderboard.computed')}
                           </div>
-                          <div className="text-xl">
+                          <div className="text-lg">
                             {currentInstance.evaluation.score}{' '}
                             {t('shared.leaderboard.points')}
                           </div>
                         </div>
-
                         <div>
                           <div className="font-bold">
                             {t('shared.leaderboard.collected')}
                           </div>
-                          <div className="text-xl">
+                          <div className="text-lg">
                             {currentInstance.evaluation.pointsAwarded}{' '}
                             {t('shared.leaderboard.points')}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-bold">
+                            {t('pwa.learningElement.newPointsFrom')}
+                          </div>
+                          <div className="text-lg">
+                            {dayjs(
+                              currentInstance.evaluation.newPointsFrom
+                            ).format('DD.MM.YYYY HH:mm')}
                           </div>
                         </div>
                       </div>
@@ -384,26 +409,6 @@ function LearningElement({ courseId, id }: Props) {
                         evaluation={currentInstance.evaluation}
                         reference={String(response)}
                       />
-
-                      <div>
-                        <div className="font-bold">
-                          {t('pwa.learningElement.newPointsFrom')}
-                        </div>
-                        <div>
-                          {dayjs(
-                            currentInstance.evaluation.newPointsFrom
-                          ).format('DD.MM.YYYY HH:mm')}
-                        </div>
-                      </div>
-
-                      {questionData.explanation && (
-                        <div className="">
-                          <div className="mb-1 font-bold">
-                            {t('shared.generic.explanation')}
-                          </div>
-                          <DynamicMarkdown content={questionData.explanation} />
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

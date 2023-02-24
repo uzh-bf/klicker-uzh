@@ -386,17 +386,24 @@ function OptionsDisplay({
   }, [evaluation])
 
   return (
-    <div className="flex flex-col">
-      <Options
-        feedbacks={feedbacks}
-        questionType={questionType}
-        response={response}
-        isEvaluation={isEvaluation}
-        options={options}
-        onChangeResponse={onChangeResponse}
-        displayMode={displayMode}
-      />
-      <div className="self-end mt-4">
+    <div className="flex flex-col gap-4">
+      <div className={twMerge(isEvaluation && 'order-2 md:order-1')}>
+        <Options
+          feedbacks={feedbacks}
+          questionType={questionType}
+          response={response}
+          isEvaluation={isEvaluation}
+          options={options}
+          onChangeResponse={onChangeResponse}
+          displayMode={displayMode}
+        />
+      </div>
+      <div
+        className={twMerge(
+          'flex flex-col items-end',
+          isEvaluation && 'order-1 md:order-2 border-b md:border-0 pb-4 md:pb-0'
+        )}
+      >
         <Button
           className={{ root: 'text-lg' }}
           disabled={

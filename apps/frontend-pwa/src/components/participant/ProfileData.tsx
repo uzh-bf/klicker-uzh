@@ -2,7 +2,7 @@ import { faStar } from '@fortawesome/free-regular-svg-icons'
 import { faShieldHeart, faTrophy } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Level } from '@klicker-uzh/graphql/dist/ops'
-import { Label } from '@uzh-bf/design-system'
+import { Label, Progress } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -27,7 +27,7 @@ function ProfileData({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col items-center p-5 mx-auto border rounded-md shadow-md w-full max-w-[400px]">
+    <div className="flex flex-col items-center p-4 mx-auto w-full max-w-[400px]">
       <div className="relative mb-2">
         <div className="w-[180px] h-[180px] rounded-full border border-solid border-black">
           <Image
@@ -55,7 +55,7 @@ function ProfileData({
         label={username}
         className={{ root: 'text-xl font-bold pb-4 w-full justify-center' }}
       />
-      <div className="flex flex-col w-full gap-2 md:grid md:grid-cols-2">
+      <div className="flex flex-col w-full gap-2">
         {level && (
           <div className="flex flex-row items-center">
             <FontAwesomeIcon icon={faTrophy} className="pr-2" />
@@ -72,8 +72,16 @@ function ProfileData({
             className={{ root: 'font-bold text-sm' }}
           />
         </div>
-      </div>
-      <div className="flex flex-col w-full mt-2">
+        <div>
+          {level?.nextLevel?.requiredXp && (
+            <Progress
+              value={xp}
+              max={level.nextLevel.requiredXp}
+              formatter={Number}
+            />
+          )}
+        </div>
+
         <div className="flex flex-row items-center">
           <FontAwesomeIcon icon={faShieldHeart} className="pr-2" />
           <Label
