@@ -55,28 +55,26 @@ function ProfileData({
         label={username}
         className={{ root: 'text-xl font-bold pb-4 w-full justify-center' }}
       />
-      <div className="flex flex-col w-full">
-        <div className="flex flex-col justify-between md:flex-row">
-          {level && (
-            <div className="flex flex-row">
-              <FontAwesomeIcon icon={faTrophy} className="pr-2" />
-              <Label
-                label={`Level: ${level.index}`}
-                className={{ root: 'font-bold text-sm' }}
-              />
-            </div>
-          )}
-          <div className="flex flex-row">
-            <FontAwesomeIcon icon={faStar} className="pr-2" />
+      <div className="flex flex-col w-full gap-2 md:grid md:grid-cols-2">
+        {level && (
+          <div className="flex flex-row items-center">
+            <FontAwesomeIcon icon={faTrophy} className="pr-2" />
             <Label
-              label={`Erfahrungspunkte: ${xp}`}
+              label={`Level: ${level.index}`}
               className={{ root: 'font-bold text-sm' }}
             />
           </div>
+        )}
+        <div className="flex flex-row items-center">
+          <FontAwesomeIcon icon={faStar} className="pr-2" />
+          <Label
+            label={`Erfahrungspunkte: ${xp}`}
+            className={{ root: 'font-bold text-sm' }}
+          />
         </div>
       </div>
-      <div className="flex flex-col w-full mt-5">
-        <div className="flex flex-row">
+      <div className="flex flex-col w-full mt-2">
+        <div className="flex flex-row items-center">
           <FontAwesomeIcon icon={faShieldHeart} className="pr-2" />
           <Label
             label="Errungenschaften"
