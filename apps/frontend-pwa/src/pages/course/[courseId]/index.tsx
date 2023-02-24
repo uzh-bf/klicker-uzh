@@ -16,6 +16,7 @@ import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
@@ -37,6 +38,7 @@ const DynamicMarkdown = dynamic(
 
 function CourseOverview({ courseId }: any) {
   const t = useTranslations()
+  const router = useRouter()
   const [selectedTab, setSelectedTab] = useState('global')
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
@@ -85,6 +87,10 @@ function CourseOverview({ courseId }: any) {
     : []
 
   const openProfileModal = (id: string, isSelf: boolean) => {
+    if (isSelf) {
+      router.push('/profile')
+      return
+    }
     setParticipantId(id)
     setIsProfileModalOpen((prev) => !prev)
   }
