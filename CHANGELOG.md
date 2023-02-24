@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.63](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.62...v3.0.0-alpha.63) (2023-02-24)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** improvements for profile view and learning elements ([#3404](https://github.com/uzh-bf/klicker-uzh/issues/3404)) ([1814ca5](https://github.com/uzh-bf/klicker-uzh/commit/1814ca55488bdc0a6d60ec30bdb5b3e9f8a2ece9))
+
 ## [3.0.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.61...v3.0.0-alpha.62) (2023-02-24)
 
 
