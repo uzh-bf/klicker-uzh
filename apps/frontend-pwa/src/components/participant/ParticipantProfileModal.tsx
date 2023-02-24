@@ -67,15 +67,13 @@ function ParticipantProfileModal({
       title="Top 10"
     >
       <div className="items-center w-full px-auto">
-        <div className="mx-auto w-max">
-          <ProfileData
-            level={participant.levelData}
-            xp={participant.xp}
-            avatar={participant.avatar}
-            username={participant.username}
-            achievements={participant.achievements}
-          />
-        </div>
+        <ProfileData
+          level={participant.levelData}
+          xp={participant.xp}
+          avatar={participant.avatar}
+          username={participant.username}
+          achievements={participant.achievements}
+        />
         <div className="grid grid-cols-10 pt-5 justify-items-center">
           {top10Participants.map((p, index) => (
             <div
