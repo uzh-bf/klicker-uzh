@@ -38,11 +38,6 @@ const DynamicMarkdown = dynamic(
 function CourseOverview({ courseId }: any) {
   const t = useTranslations()
   const [selectedTab, setSelectedTab] = useState('global')
-  // const [participantModalOpen, setParticipantModalOpen] =
-  //   useState<boolean>(false)
-  // const [selectedParticipant, setSelectedParticipant] = useState<
-  //   LeaderboardEntry | undefined
-  // >(undefined)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
 
@@ -89,8 +84,8 @@ function CourseOverview({ courseId }: any) {
     ? leaderboard.map((entry) => entry.participantId)
     : []
 
-  const openProfileModal = (modalData: any) => {
-    setParticipantId(modalData.participantId)
+  const openProfileModal = (id: string, isSelf: boolean) => {
+    setParticipantId(id)
     setIsProfileModalOpen((prev) => !prev)
   }
 
@@ -169,53 +164,9 @@ function CourseOverview({ courseId }: any) {
                       activeParticipation={participation?.isActive}
                       onJoin={joinCourse}
                       onLeave={leaveCourse}
-                      participant={participant}
-                      onProfileClick={openProfileModal}
-                      // onParitcipantClick={(participantId, isSelf) => {
-                      //   if (!isSelf) {
-                      //     setSelectedParticipant(
-                      //       leaderboard?.find(
-                      //         (entry) => entry.participantId === participantId
-                      //       )
-                      //     )
-                      //     setParticipantModalOpen(true)
-                      //   } else {
-                      //     router.push('/profile')
-                      //   }
-                      // }}
+                      participant={participant ?? undefined}
+                      onParticipantClick={openProfileModal}
                     />
-
-                    {/* <Modal
-                    open={participantModalOpen}
-                    onClose={() => setParticipantModalOpen(false)}
-                  >
-                    {selectedParticipant ? (
-                      <div className="flex flex-col items-center">
-                        <div className={twMerge("relative border-b-4 w-36 h-36 md:w-48 md:h-48", theme.primaryBorderDark)}>
-                          <Image
-                            className="bg-white"
-                            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-                              selectedParticipant.avatar ?? 'placeholder'
-                            }.svg`}
-                            alt=""
-                            fill
-                          />
-                        </div>
-                        <div className="mt-4 text-xl font-bold">
-                          {selectedParticipant.username}
-                        </div>
-                        <div className="mt-3">
-                          Aktueller Rang: {selectedParticipant.rank}
-                        </div>
-                        <div>
-                          Aktuelle Punktzahl: {selectedParticipant.score}
-                        </div>
-                        <div>Errungenschaften: TODO</div>
-                      </div>
-                    ) : (
-                      <div>Dieser Teilnehmer hat kein öffentliches Profil</div>
-                    )}
-                  </Modal> */}
 
                     <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                       <div>
@@ -281,7 +232,6 @@ function CourseOverview({ courseId }: any) {
                   </div>
 
                   <div className="p-2 text-sm text-center rounded text-slate-500 bg-slate-100">
-                    {/* {t('pwa.courses.groupLeaderboardUpdate')} */}
                     {t.rich('pwa.courses.groupLeaderboardUpdate', {
                       b: () => <br />,
                     })}

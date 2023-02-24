@@ -14,7 +14,6 @@ interface ParticipantProfileModalProps {
 
 //TODO: compare participant's achievements with all possible achievements and grey out the ones that are not achieved yet
 //TODO: handle overflow in achivevements container in case there are more achievements than the current ones (=5)
-//TODO: fix modal for group leader board
 
 function ParticipantProfileModal({
   isProfileModalOpen,
