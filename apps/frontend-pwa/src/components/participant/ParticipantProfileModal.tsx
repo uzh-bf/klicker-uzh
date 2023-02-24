@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import { GetParticipantDetailsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import ProfileData from './ProfileData'
 
 interface ParticipantProfileModalProps {
@@ -79,9 +80,10 @@ function ParticipantProfileModal({
           {top10Participants.map((p, index) => (
             <div
               key={index}
-              className={`w-2 h-2 rounded-full hover:cursor-pointer ${
+              className={twMerge(
+                'w-2 h-2 rounded-full hover:cursor-pointer',
                 index === currentIndex ? 'bg-black' : 'bg-gray-300'
-              }`}
+              )}
               onClick={() => {
                 setCurrentIndex(index)
                 setSelectedParticipant(top10Participants[index])
