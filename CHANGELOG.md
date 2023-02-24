@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.61...v3.0.0-alpha.62) (2023-02-24)
+
+
+### Bug Fixes
+
+* **packages/graphql:** float instead of int for confusion summary ([475f703](https://github.com/uzh-bf/klicker-uzh/commit/475f7031f69eea14316b28952d502ea0f93ff113))
+
 ## [3.0.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.60...v3.0.0-alpha.61) (2023-02-24)
 
 

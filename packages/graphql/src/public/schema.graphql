@@ -100,9 +100,9 @@ type ClassAchievementInstance {
 }
 
 type ConfusionSummary {
-  difficulty: Int!
+  difficulty: Float!
   numberOfParticipants: Int
-  speed: Int!
+  speed: Float!
 }
 
 type ConfusionTimestep {

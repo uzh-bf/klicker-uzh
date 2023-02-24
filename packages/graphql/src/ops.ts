@@ -128,9 +128,9 @@ export type ClassAchievementInstance = {
 
 export type ConfusionSummary = {
   __typename?: 'ConfusionSummary';
-  difficulty: Scalars['Int'];
+  difficulty: Scalars['Float'];
   numberOfParticipants?: Maybe<Scalars['Int']>;
-  speed: Scalars['Int'];
+  speed: Scalars['Float'];
 };
 
 export type ConfusionTimestep = {
