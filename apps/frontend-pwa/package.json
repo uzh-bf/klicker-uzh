@@ -27,7 +27,7 @@
     "@next/font": "13.1.6",
     "@radix-ui/react-tabs": "1.0.1",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "1.5.1",
+    "@uzh-bf/design-system": "1.5.2",
     "body-parser": "1.20.1",
     "dayjs": "1.11.7",
     "deepmerge": "4.3.0",
