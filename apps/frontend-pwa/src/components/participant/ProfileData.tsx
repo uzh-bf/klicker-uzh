@@ -69,7 +69,7 @@ function ProfileData({
           <div className="flex flex-row items-center mb-2">
             <FontAwesomeIcon icon={faStar} className="pr-2" />
             <Label
-              label={t('shared.generic.NExperiencePoints')}
+              label={t('shared.generic.experiencePoints')}
               className={{ root: 'font-bold' }}
             />
           </div>

@@ -75,7 +75,6 @@
       "features": "Features",
       "groupActivities": "Gruppenaktivitäten",
       "experiencePoints": "Erfahrungspunkte",
-      "NExperiencePoints": "Erfahrungspunkte",
       "level": "Level",
       "levelX": "Level: {number}"
     },
