@@ -735,3 +735,29 @@ export async function getBookmarksLearningElement(
 
   return participation?.bookmarkedQuestions
 }
+
+interface PublishLearningElementArgs {
+  id: string
+}
+
+export async function publishLearningElement(
+  { id }: PublishLearningElementArgs,
+  ctx: ContextWithUser
+) {
+  const learningElement = await ctx.prisma.learningElement.update({
+    where: {
+      id,
+    },
+    data: {
+      status: LearningElementStatus.PUBLISHED,
+    },
+    include: {
+      instances: true,
+    },
+  })
+
+  return {
+    ...learningElement,
+    numOfInstances: learningElement.instances.length,
+  }
+}

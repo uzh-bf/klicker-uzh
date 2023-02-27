@@ -1,3 +1,4 @@
+import { useMutation } from '@apollo/client'
 import {
   faLink,
   faPencil,
@@ -7,6 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   LearningElement,
   LearningElementStatus,
+  PublishLearningElementDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, ThemeContext, Toast } from '@uzh-bf/design-system'
@@ -17,7 +19,7 @@ import StatusTag from './StatusTag'
 
 interface LearningElementTileProps {
   courseId: string
-  learningElement: Partial<LearningElement>
+  learningElement: Partial<LearningElement> & Pick<LearningElement, 'id'>
 }
 
 function LearningElementTile({
@@ -27,6 +29,8 @@ function LearningElementTile({
   const [copyToast, setCopyToast] = useState(false)
   const theme = useContext(ThemeContext)
   const router = useRouter()
+
+  const [publishLearningElement] = useMutation(PublishLearningElementDocument)
 
   return (
     <div className="flex flex-col justify-between p-2 border border-solid rounded h-36 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
@@ -87,6 +91,23 @@ function LearningElementTile({
               <FontAwesomeIcon icon={faPencil} />
             </Button.Icon>
             <Button.Label>Lernelement bearbeiten</Button.Label>
+          </Button>
+        )}
+
+        {learningElement.status === LearningElementStatus.Draft && (
+          <Button
+            basic
+            className={{ root: theme.primaryText }}
+            onClick={() =>
+              publishLearningElement({
+                variables: { id: learningElement.id },
+              })
+            }
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
+            </Button.Icon>
+            <Button.Label>Lernelement veröffentlichen</Button.Label>
           </Button>
         )}
 

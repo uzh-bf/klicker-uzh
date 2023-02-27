@@ -759,6 +759,17 @@ export const Mutation = builder.mutationType({
           return CourseService.changeCourseDates(args, ctx)
         },
       }),
+
+      publishLearningElement: asUser.field({
+        nullable: true,
+        type: LearningElement,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.publishLearningElement(args, ctx)
+        },
+      }),
     }
   },
 })
