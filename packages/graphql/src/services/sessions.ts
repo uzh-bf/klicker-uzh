@@ -478,10 +478,24 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                 },
               },
               participation: {
-                connect: {
-                  courseId_participantId: {
-                    courseId: session.courseId!,
-                    participantId,
+                connectOrCreate: {
+                  where: {
+                    courseId_participantId: {
+                      courseId: session.courseId!,
+                      participantId,
+                    },
+                  },
+                  create: {
+                    course: {
+                      connect: {
+                        id: session.courseId!,
+                      },
+                    },
+                    participant: {
+                      connect: {
+                        id: participantId,
+                      },
+                    },
                   },
                 },
               },
