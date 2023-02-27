@@ -37,6 +37,7 @@ query GetSingleCourse($courseId: String!) {
       id
       name
       displayName
+      status
       scheduledStartAt
       scheduledEndAt
       numOfInstances

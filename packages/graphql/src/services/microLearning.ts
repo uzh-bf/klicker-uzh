@@ -1,5 +1,6 @@
 import {
   Attachment,
+  MicroSessionStatus,
   Question,
   QuestionInstanceType,
   QuestionType,
@@ -325,4 +326,29 @@ export async function editMicroSession(
   ctx.emitter.emit('invalidate', { typename: 'MicroSession', id: session.id })
 
   return session
+}
+
+interface DeleteMicroSessionArgs {
+  id: string
+}
+
+export async function deleteMicroSession(
+  { id }: DeleteMicroSessionArgs,
+  ctx: ContextWithUser
+) {
+  const session = await ctx.prisma.microSession.findUnique({
+    where: { id, status: MicroSessionStatus.DRAFT },
+  })
+
+  if (!session) {
+    return null
+  }
+
+  const deletedItem = await ctx.prisma.microSession.delete({
+    where: { id },
+  })
+
+  ctx.emitter.emit('invalidate', { typename: 'MicroSession', id })
+
+  return deletedItem
 }

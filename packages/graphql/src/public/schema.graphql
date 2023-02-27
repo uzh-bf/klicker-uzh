@@ -361,6 +361,12 @@ type MicroSession {
   pointsMultiplier: Float!
   scheduledEndAt: Date!
   scheduledStartAt: Date!
+  status: MicroSessionStatus!
+}
+
+enum MicroSessionStatus {
+  DRAFT
+  PUBLISHED
 }
 
 type Mutation {
@@ -382,6 +388,7 @@ type Mutation {
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
   deleteLearningElement(id: String!): LearningElement
+  deleteMicroSession(id: String!): MicroSession
   deleteQuestion(id: Int!): Question
   deleteTag(id: Int!): Tag
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession

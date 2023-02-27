@@ -1,4 +1,4 @@
-import { faClock } from '@fortawesome/free-regular-svg-icons'
+import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
   faHourglassEnd,
@@ -8,15 +8,16 @@ import {
   faPlay,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { MicroSession } from '@klicker-uzh/graphql/dist/ops'
+import { MicroSession, MicroSessionStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, ThemeContext, Toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import MicroSessionDeletionModal from './modals/MicroSessionDeletionModal'
 
 interface MicroSessionProps {
-  microSession: Partial<MicroSession>
+  microSession: Partial<MicroSession> & Pick<MicroSession, 'id' | 'name'>
 }
 
 function MicroSessionTile({ microSession }: MicroSessionProps) {
@@ -24,6 +25,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   const router = useRouter()
 
   const [copyToast, setCopyToast] = useState(false)
+  const [deletionModal, setDeletionModal] = useState(false)
 
   const scheduledStartAt = new Date(microSession.scheduledStartAt)
   const scheduledEndAt = new Date(microSession.scheduledEndAt)
@@ -57,7 +59,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   )
 
   return (
-    <div className="p-2 border border-solid rounded h-44 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
+    <div className="p-2 border border-solid rounded h-48 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
       <div className="flex flex-row items-center justify-between">
         <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
           {microSession.name || ''}
@@ -111,6 +113,20 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           <Button.Label>Micro-Session bearbeiten</Button.Label>
         </Button>
       )}
+
+      {microSession.status === MicroSessionStatus.Draft && (
+        <Button
+          basic
+          className={{ root: 'text-red-600' }}
+          onClick={() => setDeletionModal(true)}
+        >
+          <Button.Icon>
+            <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
+          </Button.Icon>
+          <Button.Label>Lernelement löschen</Button.Label>
+        </Button>
+      )}
+
       <Toast
         openExternal={copyToast}
         setOpenExternal={setCopyToast}
@@ -120,6 +136,12 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         Der Link zur Micro-Session wurde erfolgreich in die Zwischenablage
         kopiert.
       </Toast>
+      <MicroSessionDeletionModal
+        sessionId={microSession.id}
+        title={microSession.name}
+        open={deletionModal}
+        setOpen={setDeletionModal}
+      />
     </div>
   )
 }

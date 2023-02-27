@@ -783,7 +783,7 @@ export async function deleteLearningElement(
   }
 
   // delete learning element
-  await ctx.prisma.learningElement.delete({
+  const deletedItem = await ctx.prisma.learningElement.delete({
     where: {
       id,
     },
@@ -794,5 +794,5 @@ export async function deleteLearningElement(
     id,
   })
 
-  return element
+  return deletedItem
 }

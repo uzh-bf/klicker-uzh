@@ -1,27 +1,27 @@
 import { useMutation } from '@apollo/client'
 import {
-  DeleteLearningElementDocument,
+  DeleteMicroSessionDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 
-interface LearningElementDeletionModalProps {
-  elementId: string
+interface MicroSessionDeletionModalProps {
+  sessionId: string
   title: string
   open: boolean
   setOpen: (value: boolean) => void
 }
 
-function LearningElementDeletionModal({
-  elementId,
+function MicroSessionDeletionModal({
+  sessionId,
   title,
   open,
   setOpen,
-}: LearningElementDeletionModalProps) {
+}: MicroSessionDeletionModalProps) {
   // TODO: implement more efficiently with working update instead of expensive refetch
-  const [deleteLearningElement] = useMutation(DeleteLearningElementDocument, {
-    variables: { id: elementId },
+  const [deleteMicroSession] = useMutation(DeleteMicroSessionDocument, {
+    variables: { id: sessionId },
     refetchQueries: [GetSingleCourseDocument],
   })
 
@@ -30,7 +30,7 @@ function LearningElementDeletionModal({
       onPrimaryAction={
         <Button
           onClick={async () => {
-            await deleteLearningElement()
+            await deleteMicroSession()
             setOpen(false)
           }}
           className={{
@@ -49,22 +49,22 @@ function LearningElementDeletionModal({
       className={{ content: 'w-[40rem] h-max self-center pt-0' }}
     >
       <div>
-        <H2>Lernelement löschen</H2>
+        <H2>Micro-Session löschen</H2>
         <div>
-          Sind Sie sich sicher, dass Sie das folgende Lernelement löschen
+          Sind Sie sich sicher, dass Sie die folgende Micro-Session löschen
           möchten?
         </div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{title}</H3>
         </div>
         <div className="mt-6 mb-2 text-sm italic">
-          Das Löschen eines Lernelements ist nur möglich, solange es nicht in
-          einem aktiven Kurs verwendet wird. Gelöschte Lernelemente können nicht
-          zu einem späteren Zeitpunkt wiederhergestellt werden.
+          Das Löschen einer Micro-Session ist nur möglich, solange sie noch
+          nicht läuft und in einem Kurs genutzt wird. Gelöschte Micro-Sessions
+          können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.
         </div>
       </div>
     </Modal>
   )
 }
 
-export default LearningElementDeletionModal
+export default MicroSessionDeletionModal
