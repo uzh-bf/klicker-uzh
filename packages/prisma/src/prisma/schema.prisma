@@ -442,7 +442,7 @@ model MicroSession {
   displayName      String
   pointsMultiplier Int                @default(1)
   description      String?
-  status           MicroSessionStatus @default(PUBLISHED)
+  status           MicroSessionStatus @default(DRAFT)
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
