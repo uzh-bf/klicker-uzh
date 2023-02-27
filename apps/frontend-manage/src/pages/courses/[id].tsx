@@ -239,7 +239,7 @@ function CourseOverviewPage() {
           <div className="mb-4">
             <H3>Sessionen</H3>
             {course.sessions && course.sessions.length > 0 ? (
-              <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
+              <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
                 {sort((a, b) => {
                   return (
                     sortingOrderSessions[a.status] -
@@ -256,7 +256,7 @@ function CourseOverviewPage() {
           <div className="mb-4">
             <H3>Lernelemente</H3>
             {course.learningElements && course.learningElements.length > 0 ? (
-              <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
+              <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
                 {course.learningElements.map((learningElement) => (
                   <LearningElementTile
                     courseId={course.id}
@@ -272,7 +272,7 @@ function CourseOverviewPage() {
           <div className="mb-4">
             <H3>Micro-Sessions</H3>
             {course.microSessions && course.microSessions.length > 0 ? (
-              <div className="flex flex-col gap-2 overflow-x-scroll sm:flex-row">
+              <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
                 {course.microSessions.map((microSession) => (
                   <MicroSessionTile
                     microSession={microSession}

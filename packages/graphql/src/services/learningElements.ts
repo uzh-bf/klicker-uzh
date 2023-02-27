@@ -7,6 +7,7 @@ import {
 } from '@klicker-uzh/grading'
 import {
   Attachment,
+  LearningElementStatus,
   OrderType,
   Question,
   QuestionInstance,
@@ -508,7 +509,7 @@ export async function getLearningElementData(
     },
   })
 
-  if (!element) return null
+  if (!element || element.status === LearningElementStatus.DRAFT) return null
 
   const instancesWithoutSolution = element.instances.reduce<{
     instances: QuestionInstance[]
