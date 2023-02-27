@@ -25,7 +25,7 @@
     "@klicker-uzh/markdown": "^3.0.0-alpha.0",
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "@next/font": "13.1.6",
-    "@radix-ui/react-tabs": "1.0.1",
+    "@radix-ui/react-tabs": "1.0.2",
     "@socialgouv/matomo-next": "1.6.1",
     "@uzh-bf/design-system": "1.5.2",
     "body-parser": "1.20.1",
