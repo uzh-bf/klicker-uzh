@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.63...v3.0.0-alpha.64) (2023-02-27)
+
+
+### Bug Fixes
+
+* **packages/graphql:** create a participation if none exists for a past klicker participant in a new course ([fce0be4](https://github.com/uzh-bf/klicker-uzh/commit/fce0be4a230a0723531d674a6df0a89337c9a9d9))
+
+
+### Refactors
+
+* replace number fields through new design-system implementation ([#3406](https://github.com/uzh-bf/klicker-uzh/issues/3406)) ([a9244a0](https://github.com/uzh-bf/klicker-uzh/commit/a9244a0d66ae3d6a0a068f7a655f99292bc0d47e))
+
 ## [3.0.0-alpha.63](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.62...v3.0.0-alpha.63) (2023-02-24)
 
 
