@@ -415,7 +415,7 @@ model LearningElement {
   pointsMultiplier Int                   @default(1)
   resetTimeDays    Int                   @default(6)
   orderType        OrderType             @default(SEQUENTIAL)
-  status           LearningElementStatus @default(PUBLISHED)
+  status           LearningElementStatus @default(DRAFT)
 
   instances QuestionInstance[]
 
