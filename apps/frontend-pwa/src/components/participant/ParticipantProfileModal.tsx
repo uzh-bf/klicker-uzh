@@ -12,9 +12,6 @@ interface ParticipantProfileModalProps {
   top10Participants: string[]
 }
 
-//TODO: compare participant's achievements with all possible achievements and grey out the ones that are not achieved yet
-//TODO: handle overflow in achivevements container in case there are more achievements than the current ones (=5)
-
 function ParticipantProfileModal({
   isProfileModalOpen,
   closeProfileModal,
@@ -68,6 +65,7 @@ function ParticipantProfileModal({
           avatar={participant.avatar}
           username={participant.username}
           achievements={participant.achievements}
+          possibleAchievements={achievements}
         />
         <div className="grid grid-cols-10 pt-5 justify-items-center">
           {top10Participants.map((p, index) => (
