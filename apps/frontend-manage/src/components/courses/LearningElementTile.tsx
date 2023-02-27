@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import {
   faLink,
   faPencil,
@@ -8,18 +7,19 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   LearningElement,
   LearningElementStatus,
-  PublishLearningElementDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, ThemeContext, Toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import PublishConfirmationModal from './PublishConfirmationModal'
 import StatusTag from './StatusTag'
 
 interface LearningElementTileProps {
   courseId: string
-  learningElement: Partial<LearningElement> & Pick<LearningElement, 'id'>
+  learningElement: Partial<LearningElement> &
+    Pick<LearningElement, 'id' | 'name'>
 }
 
 function LearningElementTile({
@@ -27,10 +27,9 @@ function LearningElementTile({
   learningElement,
 }: LearningElementTileProps) {
   const [copyToast, setCopyToast] = useState(false)
+  const [publishModal, setPublishModal] = useState(false)
   const theme = useContext(ThemeContext)
   const router = useRouter()
-
-  const [publishLearningElement] = useMutation(PublishLearningElementDocument)
 
   return (
     <div className="flex flex-col justify-between p-2 border border-solid rounded h-36 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
@@ -98,11 +97,7 @@ function LearningElementTile({
           <Button
             basic
             className={{ root: theme.primaryText }}
-            onClick={() =>
-              publishLearningElement({
-                variables: { id: learningElement.id },
-              })
-            }
+            onClick={() => setPublishModal(true)}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
@@ -120,6 +115,12 @@ function LearningElementTile({
           Der Link zum Lernelement wurde erfolgreich in die Zwischenablage
           kopiert.
         </Toast>
+        <PublishConfirmationModal
+          elementId={learningElement.id}
+          title={learningElement.name}
+          open={publishModal}
+          setOpen={setPublishModal}
+        />
       </div>
       <div className="flex flex-row gap-2"></div>
     </div>
