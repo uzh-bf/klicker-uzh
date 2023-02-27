@@ -381,6 +381,7 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
+  deleteLearningElement(id: String!): LearningElement
   deleteQuestion(id: Int!): Question
   deleteTag(id: Int!): Tag
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession

@@ -1,3 +1,4 @@
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faLink,
   faPencil,
@@ -13,7 +14,8 @@ import { Button, ThemeContext, Toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import PublishConfirmationModal from './PublishConfirmationModal'
+import LearningElementDeletionModal from './modals/LearningElementDeletionModal'
+import PublishConfirmationModal from './modals/PublishConfirmationModal'
 import StatusTag from './StatusTag'
 
 interface LearningElementTileProps {
@@ -28,11 +30,12 @@ function LearningElementTile({
 }: LearningElementTileProps) {
   const [copyToast, setCopyToast] = useState(false)
   const [publishModal, setPublishModal] = useState(false)
+  const [deletionModal, setDeletionModal] = useState(false)
   const theme = useContext(ThemeContext)
   const router = useRouter()
 
   return (
-    <div className="flex flex-col justify-between p-2 border border-solid rounded h-36 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
+    <div className="flex flex-col justify-between p-2 border border-solid rounded h-44 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
       <div>
         <div className="flex flex-row justify-between">
           <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
@@ -106,6 +109,19 @@ function LearningElementTile({
           </Button>
         )}
 
+        {learningElement.status === LearningElementStatus.Draft && (
+          <Button
+            basic
+            className={{ root: 'text-red-600' }}
+            onClick={() => setDeletionModal(true)}
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
+            </Button.Icon>
+            <Button.Label>Lernelement löschen</Button.Label>
+          </Button>
+        )}
+
         <Toast
           openExternal={copyToast}
           setOpenExternal={setCopyToast}
@@ -120,6 +136,12 @@ function LearningElementTile({
           title={learningElement.name}
           open={publishModal}
           setOpen={setPublishModal}
+        />
+        <LearningElementDeletionModal
+          elementId={learningElement.id}
+          title={learningElement.name}
+          open={deletionModal}
+          setOpen={setDeletionModal}
         />
       </div>
       <div className="flex flex-row gap-2"></div>

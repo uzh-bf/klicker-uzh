@@ -761,3 +761,38 @@ export async function publishLearningElement(
     numOfInstances: learningElement.instances.length,
   }
 }
+
+interface DeleteLearningElementArgs {
+  id: string
+}
+
+export async function deleteLearningElement(
+  { id }: DeleteLearningElementArgs,
+  ctx: ContextWithUser
+) {
+  // fetch learning element first to check if it exists and meets the draft condition
+  const element = await ctx.prisma.learningElement.findUnique({
+    where: {
+      id,
+      status: LearningElementStatus.DRAFT,
+    },
+  })
+
+  if (!element) {
+    return null
+  }
+
+  // delete learning element
+  await ctx.prisma.learningElement.delete({
+    where: {
+      id,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'LearningElement',
+    id,
+  })
+
+  return element
+}
