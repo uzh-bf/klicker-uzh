@@ -336,19 +336,23 @@ export async function deleteMicroSession(
   { id }: DeleteMicroSessionArgs,
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.microSession.findUnique({
-    where: { id, status: MicroSessionStatus.DRAFT },
-  })
+  try {
+    const deletedItem = await ctx.prisma.microSession.delete({
+      where: { id, status: MicroSessionStatus.DRAFT },
+    })
 
-  if (!session) {
-    return null
+    ctx.emitter.emit('invalidate', { typename: 'MicroSession', id })
+
+    return deletedItem
+  } catch (e) {
+    // TODO: resolve type issue by first testing for prisma error
+    if (e?.code === 'P2025') {
+      console.log(
+        'The micro-session is already published and cannot be deleted anymore.'
+      )
+      return null
+    }
+
+    throw e
   }
-
-  const deletedItem = await ctx.prisma.microSession.delete({
-    where: { id },
-  })
-
-  ctx.emitter.emit('invalidate', { typename: 'MicroSession', id })
-
-  return deletedItem
 }
