@@ -770,29 +770,29 @@ export async function deleteLearningElement(
   { id }: DeleteLearningElementArgs,
   ctx: ContextWithUser
 ) {
-  // fetch learning element first to check if it exists and meets the draft condition
-  const element = await ctx.prisma.learningElement.findUnique({
-    where: {
-      id,
-      status: LearningElementStatus.DRAFT,
-    },
-  })
+  try {
+    const deletedItem = await ctx.prisma.learningElement.delete({
+      where: {
+        id,
+        status: LearningElementStatus.DRAFT,
+      },
+    })
 
-  if (!element) {
-    return null
+    ctx.emitter.emit('invalidate', {
+      typename: 'LearningElement',
+      id,
+    })
+
+    return deletedItem
+  } catch (e) {
+    // TODO: resolve type issue by first testing for prisma error
+    if (e?.code === 'P2025') {
+      console.log(
+        'The learning element is not in draft status and cannot be deleted.'
+      )
+      return null
+    }
+
+    throw e
   }
-
-  // delete learning element
-  const deletedItem = await ctx.prisma.learningElement.delete({
-    where: {
-      id,
-    },
-  })
-
-  ctx.emitter.emit('invalidate', {
-    typename: 'LearningElement',
-    id,
-  })
-
-  return deletedItem
 }
