@@ -321,6 +321,7 @@ type LearningElement {
   previousScore: Float
   previouslyAnswered: Int
   resetTimeDays: Int
+  status: LearningElementStatus!
   totalTrials: Int
 }
 
@@ -328,6 +329,11 @@ enum LearningElementOrderType {
   LAST_RESPONSE
   SEQUENTIAL
   SHUFFLED
+}
+
+enum LearningElementStatus {
+  DRAFT
+  PUBLISHED
 }
 
 type LeaveCourseParticipation {

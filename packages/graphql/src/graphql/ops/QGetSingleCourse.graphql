@@ -30,6 +30,7 @@ query GetSingleCourse($courseId: String!) {
       id
       name
       displayName
+      status
       numOfInstances
     }
     microSessions {

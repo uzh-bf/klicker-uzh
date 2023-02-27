@@ -72,7 +72,7 @@
    "GetRunningSessions": "db9601297d4de1b497598ff8a2a58c286492ec65cec0116b63f630d1bd8c86b7",
    "GetSessionEvaluation": "7b738682851c7ec891cacac7fc20e2090ab007a32d26f49eac56cf48051b6d8b",
    "GetSessionLeaderboard": "09404af10f91c8da107743b4ba18a43e35507163176a8cd8ac6542feaa08bb91",
-   "GetSingleCourse": "81e6c101f89a31ca930c58acd25185760612d734c84b0babf71adfd26c535d93",
+   "GetSingleCourse": "8855c4927f4dfd44190ca21a4e2d20c739ce40908483b88ddd02a9d3ce5dba95",
    "GetSingleLiveSession": "3ebf973ce79f5c1cb600b44ee7c9cf5bdbab05032ecf9f3adabb8059e0c18e21",
    "GetSingleMicroSession": "82055cdbf1a9dbac18be093e3fa2c17ca275340d412f79cf93fa67c006415b36",
    "GetSingleQuestion": "7dc31840363ebe35f3acd91c83234fbf5f30df9b8b418b6412e61c1b51b3187b",
