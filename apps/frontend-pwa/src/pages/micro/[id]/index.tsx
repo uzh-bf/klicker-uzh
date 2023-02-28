@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { Button, H3, Prose } from '@uzh-bf/design-system'
+import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
@@ -29,8 +29,18 @@ function MicroSessionIntroduction({ id }: Props) {
     variables: { id },
   })
 
-  if (loading || !data?.microSession)
-    return <p>{t('shared.generic.loading')}</p>
+  if (loading) return <p>{t('shared.generic.loading')}</p>
+  if (!data?.microSession) {
+    return (
+      <Layout>
+        <UserNotification
+          notificationType="error"
+          message="Unter diesem Link existiert keine Micro-Session oder diese ist noch
+          nicht aktiv"
+        />
+      </Layout>
+    )
+  }
   if (error) return <p>Oh no... {error.message}</p>
 
   return (

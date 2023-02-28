@@ -113,7 +113,8 @@ export async function getSingleMicroSession(
     },
   })
 
-  if (!microSession) return null
+  if (!microSession || microSession.status === MicroSessionStatus.DRAFT)
+    return null
 
   return microSession
 }
