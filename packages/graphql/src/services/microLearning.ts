@@ -257,6 +257,9 @@ export async function editMicroSession(
   if (!oldSession) {
     throw new GraphQLError('Micro-Session not found')
   }
+  if (oldSession.status === MicroSessionStatus.PUBLISHED) {
+    throw new GraphQLError('Micro-Session is already published')
+  }
 
   await ctx.prisma.questionInstance.deleteMany({
     where: {
