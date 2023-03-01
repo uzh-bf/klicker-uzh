@@ -7,6 +7,7 @@ import {
 } from '@klicker-uzh/grading'
 import {
   Attachment,
+  LearningElementStatus,
   OrderType,
   Question,
   QuestionInstance,
@@ -159,22 +160,23 @@ export async function respondToQuestionInstance(
       where: { id },
       // if the participant is logged in, fetch the last response of the participant
       // the response will not be counted and will only yield points if not within the past week
-      include: ctx.user?.sub
-        ? {
-            responses: {
-              where: {
-                participant: {
-                  id: ctx.user.sub,
+      include:
+        ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+          ? {
+              responses: {
+                where: {
+                  participant: {
+                    id: ctx.user.sub,
+                  },
                 },
+                take: 1,
               },
-              take: 1,
+            }
+          : {
+              responses: {
+                take: 1,
+              },
             },
-          }
-        : {
-            responses: {
-              take: 1,
-            },
-          },
     })
 
     if (!instance) {
@@ -484,26 +486,37 @@ export async function getLearningElementData(
   ctx: Context
 ) {
   const element = await ctx.prisma.learningElement.findUnique({
-    where: { id },
+    where: {
+      id,
+      OR: [
+        {
+          status: LearningElementStatus.PUBLISHED,
+        },
+        {
+          ownerId: ctx.user?.sub,
+        },
+      ],
+    },
     include: {
       course: true,
       instances: {
         orderBy: {
           questionId: 'asc',
         },
-        include: ctx.user?.sub
-          ? {
-              responses: {
-                where: {
-                  participantId: ctx.user.sub,
+        include:
+          ctx.user?.sub && ctx.user?.role === UserRole.PARTICIPANT
+            ? {
+                responses: {
+                  where: {
+                    participantId: ctx.user.sub,
+                  },
+                  orderBy: {
+                    lastAwardedAt: 'asc',
+                  },
+                  take: 1,
                 },
-                orderBy: {
-                  lastAwardedAt: 'asc',
-                },
-                take: 1,
-              },
-            }
-          : undefined,
+              }
+            : undefined,
       },
     },
   })
@@ -733,4 +746,65 @@ export async function getBookmarksLearningElement(
   })
 
   return participation?.bookmarkedQuestions
+}
+
+interface PublishLearningElementArgs {
+  id: string
+}
+
+export async function publishLearningElement(
+  { id }: PublishLearningElementArgs,
+  ctx: ContextWithUser
+) {
+  const learningElement = await ctx.prisma.learningElement.update({
+    where: {
+      id,
+    },
+    data: {
+      status: LearningElementStatus.PUBLISHED,
+    },
+    include: {
+      instances: true,
+    },
+  })
+
+  return {
+    ...learningElement,
+    numOfInstances: learningElement.instances.length,
+  }
+}
+
+interface DeleteLearningElementArgs {
+  id: string
+}
+
+export async function deleteLearningElement(
+  { id }: DeleteLearningElementArgs,
+  ctx: ContextWithUser
+) {
+  try {
+    const deletedItem = await ctx.prisma.learningElement.delete({
+      where: {
+        id,
+        status: LearningElementStatus.DRAFT,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'LearningElement',
+      id,
+    })
+
+    return deletedItem
+  } catch (e) {
+    // TODO: resolve type issue by first testing for prisma error
+    if (e?.code === 'P2025') {
+      console.log(
+        'The learning element is not in draft status and cannot be deleted.'
+      )
+      return null
+    }
+
+    throw e
+  }
 }

@@ -259,6 +259,7 @@ function QuestionEditModal({
         attachments: null,
         hasSampleSolution: false,
         hasAnswerFeedbacks: false,
+        pointsMultiplier: '1',
       }
 
       switch (questionType) {
@@ -303,6 +304,7 @@ function QuestionEditModal({
     return dataQuestion?.question?.questionData
       ? {
           ...dataQuestion.question,
+          pointsMultiplier: String(dataQuestion.question.pointsMultiplier),
           explanation: dataQuestion.question.explanation ?? '',
           displayMode:
             dataQuestion.question.displayMode ?? QuestionDisplayMode.List,
@@ -321,7 +323,6 @@ function QuestionEditModal({
 
   return (
     <Formik
-      // validateOnChange={false}
       isInitialValid={mode === 'EDIT'}
       enableReinitialize={true}
       initialValues={question}
@@ -337,6 +338,7 @@ function QuestionEditModal({
           attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
           tags: values.tags,
           displayMode: values.displayMode,
+          pointsMultiplier: parseInt(values.pointsMultiplier),
         }
         switch (questionType) {
           case QuestionType.Sc:
@@ -564,6 +566,47 @@ function QuestionEditModal({
                       Temporarily required formatting: Enter tags separated by
                       commas e.g.: Tag1,Tag2,Tag3
                     </div>
+                  </div>
+
+                  <div className="z-0 flex flex-row">
+                    <Label
+                      label="Multiplier"
+                      className={{
+                        root: 'mr-2 text-lg font-bold w-32',
+                        tooltip:
+                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                      }}
+                      tooltip="// TODO: tooltip content"
+                      showTooltipSymbol
+                      required
+                    />
+
+                    {typeof values.pointsMultiplier !== 'undefined' && (
+                      <FastField
+                        name="pointsMultiplier"
+                        shouldUpdate={(next, prev) =>
+                          next?.formik.values.pointsMultiplier !==
+                            prev?.formik.values.pointsMultiplier ||
+                          next?.pointsMultiplier !== prev?.pointsMultiplier
+                        }
+                      >
+                        {({ field, meta }: FastFieldProps) => (
+                          <Select
+                            items={[
+                              { label: 'x1', value: '1' },
+                              { label: 'x2', value: '2' },
+                              { label: 'x3', value: '3' },
+                              { label: 'x4', value: '4' },
+                            ]}
+                            onChange={(newValue: string) =>
+                              setFieldValue('pointsMultiplier', newValue)
+                            }
+                            value={field.value}
+                            data={{ cy: 'select-multiplier' }}
+                          />
+                        )}
+                      </FastField>
+                    )}
                   </div>
 
                   <div className="mt-4">

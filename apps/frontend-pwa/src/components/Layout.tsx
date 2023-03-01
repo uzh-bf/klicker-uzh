@@ -41,7 +41,7 @@ function Layout({
     global?.window?.location !== global?.window?.parent.location
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <>
       <Head>
         <title>
           {course?.displayName
@@ -59,35 +59,31 @@ function Layout({
         ></meta>
       </Head>
 
-      <div className={twMerge('h-full overflow-y-none', className)}>
-        <div className="fixed top-0 z-10 w-full">
-          <Header
-            participant={dataParticipant?.self || undefined}
-            title={displayName}
-            course={course}
-          />
-        </div>
-
-        <div
-          className={twMerge(
-            'flex flex-col p-4 mt-16 md:mb-0 [height:_calc(100%-4rem)] overflow-y-auto',
-            dataParticipant?.self &&
-              '[height:_calc(100%-7.5rem)] md:[height:_calc(100%-4rem)] mb-14',
-            pageInFrame && 'px-0'
-          )}
-        >
-          {children}
-        </div>
-
-        <div className="fixed bottom-0 w-full h-14 md:hidden">
-          <MobileMenuBar
-            menuItems={mobileMenuItems}
-            onClick={setActiveMobilePage}
-            participantMissing={!dataParticipant?.self}
-          />
-        </div>
+      <div className="flex-none">
+        <Header
+          participant={dataParticipant?.self || undefined}
+          title={displayName}
+          course={course}
+        />
       </div>
-    </div>
+
+      <div
+        className={twMerge(
+          'flex-1 flex flex-col p-4 min-h-0 overflow-y-auto',
+          pageInFrame && 'px-0'
+        )}
+      >
+        {children}
+      </div>
+
+      <div className="flex-none md:hidden">
+        <MobileMenuBar
+          menuItems={mobileMenuItems}
+          onClick={setActiveMobilePage}
+          participantMissing={!dataParticipant?.self}
+        />
+      </div>
+    </>
   )
 }
 

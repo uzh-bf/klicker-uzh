@@ -6,6 +6,7 @@ mutation ManipulateFreeTextQuestion(
   $options: OptionsFreeTextInput
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
+  $pointsMultiplier: Int
   $attachments: [AttachmentInput!]
   $tags: [String!]
 ) {
@@ -18,6 +19,7 @@ mutation ManipulateFreeTextQuestion(
     options: $options
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
+    pointsMultiplier: $pointsMultiplier
     attachments: $attachments
     tags: $tags
   ) {
@@ -28,6 +30,7 @@ mutation ManipulateFreeTextQuestion(
     explanation
     hasSampleSolution
     hasAnswerFeedbacks
+    pointsMultiplier
 
     questionData {
       ... on ChoicesQuestionData {

@@ -13,6 +13,10 @@ export const LearningElementOrderType = builder.enumType(
   }
 )
 
+export const LearningElementStatus = builder.enumType('LearningElementStatus', {
+  values: Object.values(DB.LearningElementStatus),
+})
+
 export interface ILearningElement extends DB.LearningElement {
   previouslyAnswered?: number
   previousScore?: number
@@ -30,6 +34,7 @@ export const LearningElement = LearningElementRef.implement({
 
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
+    status: t.expose('status', { type: LearningElementStatus }),
     description: t.exposeString('description', { nullable: true }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     resetTimeDays: t.exposeInt('resetTimeDays', { nullable: true }),

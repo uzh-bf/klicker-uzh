@@ -415,7 +415,7 @@ model LearningElement {
   pointsMultiplier Int                   @default(1)
   resetTimeDays    Int                   @default(6)
   orderType        OrderType             @default(SEQUENTIAL)
-  status           LearningElementStatus @default(PUBLISHED)
+  status           LearningElementStatus @default(DRAFT)
 
   instances QuestionInstance[]
 
@@ -442,7 +442,7 @@ model MicroSession {
   displayName      String
   pointsMultiplier Int                @default(1)
   description      String?
-  status           MicroSessionStatus @default(PUBLISHED)
+  status           MicroSessionStatus @default(DRAFT)
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime

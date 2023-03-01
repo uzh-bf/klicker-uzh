@@ -17,6 +17,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
+import StatusTag from './StatusTag'
 
 interface SessionTileProps {
   session: Partial<Session>
@@ -100,22 +101,21 @@ function SessionTile({ session }: SessionTileProps) {
 
       <div className="flex flex-row gap-2 ">
         {session.isGamificationEnabled && (
-          <div className="py-0.5 px-1 text-sm rounded bg-uzh-red-40 flex flex-row items-center gap-1">
-            <div>Gamified</div>
-            <FontAwesomeIcon icon={faTrophy} />
-          </div>
+          <StatusTag color="bg-uzh-red-40" status="Gamified" icon={faTrophy} />
         )}
         {session.accessMode === 'PUBLIC' && (
-          <div className="py-0.5 px-1 text-sm rounded bg-green-300 flex flex-row items-center gap-1">
-            <div>Access Public</div>
-            <FontAwesomeIcon icon={faUserGroup} />
-          </div>
+          <StatusTag
+            color="bg-green-300"
+            status="Access Public"
+            icon={faUserGroup}
+          />
         )}
         {session.accessMode === 'RESTRICTED' && (
-          <div className="py-0.5 px-1 text-sm rounded bg-red-300 flex flex-row items-center gap-1">
-            <div>Access Restricted</div>
-            <FontAwesomeIcon icon={faLock} />
-          </div>
+          <StatusTag
+            color="bg-red-300"
+            status="Access Restricted"
+            icon={faLock}
+          />
         )}
       </div>
     </div>
