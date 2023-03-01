@@ -48,6 +48,7 @@ function Header({
       {title && !course?.displayName && (
         <H1 className={{ root: 'mb-0 text-base' }}>{title}</H1>
       )}
+
       <div className="flex flex-row items-center gap-2 sm:gap-4">
         <div className="flex flex-row text-black bg-transparent rounded">
           <Select
@@ -95,7 +96,7 @@ function Header({
               {t('shared.generic.back')}
             </Button>
           ) : (
-            <Link href="/" legacyBehavior>
+            <Link href="/">
               <Button
                 className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               >
@@ -104,14 +105,14 @@ function Header({
             </Link>
           ))
         ) : (
-          <Link href="/login" legacyBehavior>
+          <Link href="/login">
             <Button className={{ root: 'text-white bg-slate-800' }}>
               {t('shared.generic.login')}
             </Button>
           </Link>
         )}
         {participant && !participant?.avatar && (
-          <Link href="/editProfile" legacyBehavior>
+          <Link href="/editProfile">
             <Button
               className={{
                 root: 'hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block',
@@ -121,20 +122,21 @@ function Header({
             </Button>
           </Link>
         )}
-        <Link
-          href={participant ? '/profile' : '/login'}
-          className=""
-          legacyBehavior
-        >
-          <Image
-            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-              participant?.avatar ?? 'placeholder'
-            }.svg`}
-            alt=""
-            width="45"
-            height="45"
-            className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
-          />
+        <Link href={participant ? '/profile' : '/login'} className="">
+          <Button basic className={{ root: 'relative' }}>
+            <Image
+              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+                participant?.avatar ?? 'placeholder'
+              }.svg`}
+              alt=""
+              width="45"
+              height="45"
+              className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
+            />
+            <div className="absolute bottom-0 right-0 w-4 h-4 text-xs font-bold bg-white rounded-full text-slate-600">
+              {participant?.level ?? 0}
+            </div>
+          </Button>
         </Link>
       </div>
     </div>
