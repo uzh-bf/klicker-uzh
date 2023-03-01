@@ -142,6 +142,7 @@
       "coursePinRequired": "Bitte geben Sie den Kurs-PIN ein."
     },
     "learningElement": {
+      "notFound": "Unter diesem Link existiert kein Lernelement oder dieses ist noch nicht publiziert.",
       "repetitionTitle": "Repetition Lernelemente",
       "numOfQuestions": "Anzahl Fragen: {number}",
       "orderLAST_RESPONSE": "Reihenfolge: zuletzt beantwortete Fragen am Ende",
@@ -167,7 +168,8 @@
       "submitFeedback": "Feedback abschicken",
       "feedbackTransmitted": "Ihr Feedback wurde erfolgreich übermittelt."
     },
-    "microlearning": {
+    "microSession": {
+      "notFound": "Unter diesem Link existiert keine Micro-Session oder diese ist noch nicht aktiv.",
       "solvedMicrolearning": "Du hast das Microlearning <it>{name}</it> erfolgreich absolviert."
     },
     "session": {

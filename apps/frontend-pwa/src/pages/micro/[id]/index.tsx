@@ -35,8 +35,7 @@ function MicroSessionIntroduction({ id }: Props) {
       <Layout>
         <UserNotification
           notificationType="error"
-          message="Unter diesem Link existiert keine Micro-Session oder diese ist noch
-          nicht aktiv"
+          message={t('pwa.microSession.notFound')}
         />
       </Layout>
     )

@@ -102,7 +102,12 @@ export async function getSingleMicroSession(
   ctx: Context
 ) {
   const microSession = await ctx.prisma.microSession.findUnique({
-    where: { id },
+    where: {
+      id,
+      scheduledStartAt: { lte: new Date() },
+      scheduledEndAt: { gte: new Date() },
+      status: MicroSessionStatus.PUBLISHED,
+    },
     include: {
       course: true,
       instances: {
@@ -113,8 +118,9 @@ export async function getSingleMicroSession(
     },
   })
 
-  if (!microSession || microSession.status === MicroSessionStatus.DRAFT)
-    return null
+  // TODO: handle here if already responded to the element? goal with micro = one try
+
+  if (!microSession) return null
 
   return microSession
 }

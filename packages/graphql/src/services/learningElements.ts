@@ -485,7 +485,10 @@ export async function getLearningElementData(
   ctx: Context
 ) {
   const element = await ctx.prisma.learningElement.findUnique({
-    where: { id },
+    where: {
+      id,
+      status: LearningElementStatus.PUBLISHED,
+    },
     include: {
       course: true,
       instances: {
@@ -509,7 +512,7 @@ export async function getLearningElementData(
     },
   })
 
-  if (!element || element.status === LearningElementStatus.DRAFT) return null
+  if (!element) return null
 
   const instancesWithoutSolution = element.instances.reduce<{
     instances: QuestionInstance[]
