@@ -20,17 +20,5 @@ query Self {
         name
       }
     }
-    achievements {
-      id
-      achievedAt
-      achievedCount
-      achievement {
-        id
-        name
-        description
-        icon
-        iconColor
-      }
-    }
   }
 }

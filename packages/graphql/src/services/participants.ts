@@ -474,8 +474,30 @@ export async function getParticipantDetails(
       },
     },
   })
+
+  return participant
+}
+
+export async function getParticipantWithAchievements(ctx: ContextWithUser) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+    include: {
+      levelData: {
+        include: {
+          nextLevel: true,
+        },
+      },
+      achievements: {
+        include: {
+          achievement: true,
+        },
+      },
+    },
+  })
   if (!participant) return null
+
   const achievements = await ctx.prisma.achievement.findMany()
+
   return {
     participant,
     achievements,

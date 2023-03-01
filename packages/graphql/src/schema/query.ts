@@ -62,9 +62,17 @@ export const Query = builder.queryType({
           })
         },
       }),
-      participantDetails: asParticipant.field({
+      selfWithAchievements: asParticipant.field({
         nullable: true,
         type: ParticipantWithAchievements,
+        async resolve(_, __, ctx) {
+          if (!ctx.user?.sub) return null
+          return ParticipantService.getParticipantWithAchievements(ctx)
+        },
+      }),
+      participantDetails: asParticipant.field({
+        nullable: true,
+        type: Participant,
         args: {
           participantId: t.arg.string({ required: true }),
         },

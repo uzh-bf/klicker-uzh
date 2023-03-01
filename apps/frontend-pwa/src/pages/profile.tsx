@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   LogoutParticipantDocument,
-  SelfDocument,
+  SelfWithAchievementsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -12,12 +12,13 @@ import ProfileData from '../components/participant/ProfileData'
 
 const Profile = () => {
   const t = useTranslations()
-  const { data, loading } = useQuery(SelfDocument)
+  const { data, loading } = useQuery(SelfWithAchievementsDocument)
   const [logoutParticipant] = useMutation(LogoutParticipantDocument)
   const router = useRouter()
 
-  if (loading || !data?.self) return <div>loading...</div>
+  if (loading || !data?.selfWithAchievements) return <div>loading...</div>
 
+  const { participant, achievements } = data.selfWithAchievements
   const pageInFrame = window && window?.location !== window?.parent.location
 
   return (
@@ -28,14 +29,15 @@ const Profile = () => {
       <div className="flex flex-col items-center gap-4 p-4 border rounded md:mx-auto md:w-max">
         <ProfileData
           isSelf={true}
-          username={data.self.username}
-          avatar={data.self.avatar}
-          xp={data.self.xp}
-          level={data.self.levelData}
-          achievements={data.self.achievements}
+          username={participant.username}
+          avatar={participant.avatar}
+          xp={participant.xp}
+          level={participant.levelData}
+          achievements={participant.achievements}
+          possibleAchievements={achievements}
         />
 
-        <div className="flex flex-row justify-between space-x-2 md:w-full">
+        <div className="flex flex-row justify-between w-full px-4 space-x-2">
           <Button
             onClick={() => router.push('/editProfile')}
             className={{ root: 'mt-2' }}

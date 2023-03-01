@@ -29,7 +29,7 @@ function ParticipantProfileModal({
 
   if (loading || !data?.participantDetails) return <div>loading...</div>
 
-  const { participant, achievements } = data.participantDetails
+  const participant = data.participantDetails
 
   const onNext = () => {
     const nextIndex = (currentIndex + 1) % top10Participants.length
@@ -65,7 +65,6 @@ function ParticipantProfileModal({
           avatar={participant.avatar}
           username={participant.username}
           achievements={participant.achievements}
-          possibleAchievements={achievements}
         />
         <div className="grid w-full grid-cols-10 pt-5 justify-items-center">
           {top10Participants.map((p, index) => (

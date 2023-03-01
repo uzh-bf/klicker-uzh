@@ -8721,7 +8721,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "ParticipantWithAchievements",
+              "name": "Participant",
               "ofType": null
             },
             "isDeprecated": false,
@@ -8899,6 +8899,18 @@
             "type": {
               "kind": "OBJECT",
               "name": "Participant",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "selfWithAchievements",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "ParticipantWithAchievements",
               "ofType": null
             },
             "isDeprecated": false,
