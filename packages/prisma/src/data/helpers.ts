@@ -269,6 +269,7 @@ export async function prepareLearningElement({
   ownerId: string
   courseId: string
   questions: BaseQuestionData[]
+  status: Prisma.LearningElementStatus
 }) {
   const questionData = await Promise.all(questions)
 
@@ -433,6 +434,7 @@ export async function prepareMicroSession({
   courseId: string
   ownerId: string
   questions: BaseQuestionData[]
+  status: Prisma.MicroSessionStatus
 }) {
   const questionData = await Promise.all(questions)
 

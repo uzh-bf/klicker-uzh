@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.0.0-alpha.60",
+  "version": "3.0.0-alpha.66",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,6 +21,7 @@
     "prisma:deploy": "doppler run --config dev -- npm run prisma:deploy:raw",
     "prisma:deploy:qa": "doppler run --config stg -- npm run prisma:deploy:raw",
     "prisma:deploy:prod": "doppler run --config prd -- npm run prisma:deploy:raw",
+    "prisma:resolve:prod": "doppler run --config prd -- prisma migrate resolve --schema=src/prisma/schema.prisma",
     "prisma:push:raw": "prisma db push --schema=src/prisma/schema.prisma",
     "prisma:push": "doppler run --config dev -- npm run prisma:push:raw",
     "prisma:push:qa": "doppler run --config stg -- npm run prisma:push:raw",
@@ -45,6 +46,7 @@
     "seed:prod:ami": "npm run seed:qa:ami",
     "seed:prod:achievements": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedAchievements.ts",
     "seed:prod:user": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedUser.ts",
+    "seed:prod:levels": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedLevels.ts",
     "seed:prod:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/importQuestions.ts",
     "size": "size-limit"
   },

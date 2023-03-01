@@ -8,6 +8,7 @@ mutation ManipulateChoicesQuestion(
   $displayMode: QuestionDisplayMode
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
+  $pointsMultiplier: Int
   $attachments: [AttachmentInput!]
   $tags: [String!]
 ) {
@@ -21,6 +22,7 @@ mutation ManipulateChoicesQuestion(
     displayMode: $displayMode
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
+    pointsMultiplier: $pointsMultiplier
     attachments: $attachments
     tags: $tags
   ) {
@@ -32,6 +34,7 @@ mutation ManipulateChoicesQuestion(
     displayMode
     hasSampleSolution
     hasAnswerFeedbacks
+    pointsMultiplier
 
     questionData {
       ... on ChoicesQuestionData {

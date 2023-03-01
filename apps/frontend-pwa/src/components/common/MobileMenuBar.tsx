@@ -40,18 +40,18 @@ function MobileMenuBar({
   }
 
   return (
-    <div className="flex flex-row justify-between w-full gap-1 text-white h-14 bg-slate-800">
+    <div className="flex flex-row justify-between w-full gap-1 py-1 text-white bg-slate-800">
       {items.map((item: any) => (
         <NotificationBadgeWrapper
           count={item.unseenItems}
           showBadge={item.showBadge}
           className={{ root: 'flex flex-1' }}
           key={item.value}
-          size="md"
+          size="sm"
         >
           <Button
             className={{
-              root: 'flex justify-center flex-1 my-0.5 flex-col gap-0 bg-grey-60 border-0 shadow-none',
+              root: 'flex justify-center flex-1 flex-col gap-0 bg-grey-60 border-0 shadow-none',
             }}
             key={item.value}
             onClick={() => {

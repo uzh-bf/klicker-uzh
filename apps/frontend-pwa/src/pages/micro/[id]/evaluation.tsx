@@ -45,7 +45,7 @@ function Evaluation() {
         <div>
           <H3>{t('shared.generic.congrats')}</H3>
           <p>
-            {t.rich('pwa.microlearning.solvedMicrolearning', {
+            {t.rich('pwa.microSession.solvedMicrolearning', {
               name: data.microSession.displayName,
               it: (text) => <span className="italic">{text}</span>,
             })}

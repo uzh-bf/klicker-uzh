@@ -6,7 +6,7 @@ import {
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import { Router } from 'next/router'
+import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
 import ProfileData from '../components/participant/ProfileData'
 
@@ -14,6 +14,7 @@ const Profile = () => {
   const t = useTranslations()
   const { data, loading } = useQuery(SelfDocument)
   const [logoutParticipant] = useMutation(LogoutParticipantDocument)
+  const router = useRouter()
 
   if (loading || !data?.self) return <div>loading...</div>
 
@@ -24,8 +25,9 @@ const Profile = () => {
       course={{ displayName: 'KlickerUZH' }}
       displayName={t('pwa.profile.myProfile')}
     >
-      <div className="flex flex-col items-center gap-8 md:mx-auto md:w-full">
+      <div className="flex flex-col items-center gap-4 p-4 border rounded md:mx-auto md:w-max">
         <ProfileData
+          isSelf={true}
           username={data.self.username}
           avatar={data.self.avatar}
           xp={data.self.xp}
@@ -33,9 +35,9 @@ const Profile = () => {
           achievements={data.self.achievements}
         />
 
-        <div className="space-x-2">
+        <div className="flex flex-row justify-between space-x-2 md:w-full">
           <Button
-            onClick={() => Router.replace('/editProfile')}
+            onClick={() => router.push('/editProfile')}
             className={{ root: 'mt-2' }}
           >
             {t('pwa.profile.editProfile')}
@@ -45,7 +47,7 @@ const Profile = () => {
             <Button
               onClick={async () => {
                 await logoutParticipant()
-                Router.replace('/login')
+                router.push('/login')
               }}
               className={{ root: 'mt-2' }}
             >

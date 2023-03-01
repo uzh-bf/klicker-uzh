@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.0.0-alpha.60",
+  "version": "3.0.0-alpha.66",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3003",
@@ -24,7 +24,7 @@
     "@next/font": "13.1.6",
     "@sentry/nextjs": "7.37.2",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "1.4.3",
+    "@uzh-bf/design-system": "1.5.2",
     "body-parser": "1.20.1",
     "cross-env": "7.0.3",
     "dayjs": "1.11.7",

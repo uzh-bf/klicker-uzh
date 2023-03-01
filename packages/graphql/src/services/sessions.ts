@@ -227,6 +227,13 @@ export async function editSession(
   if (!oldSession) {
     throw new GraphQLError('Session not found')
   }
+  if (
+    oldSession.status === SessionStatus.RUNNING ||
+    oldSession.status === SessionStatus.COMPLETED
+  ) {
+    throw new GraphQLError('Cannot edit a running or completed session')
+  }
+
   const oldQuestionInstances = oldSession!.blocks.reduce<QuestionInstance[]>(
     (acc, block) => [...acc, ...block.instances],
     []
@@ -478,10 +485,24 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                 },
               },
               participation: {
-                connect: {
-                  courseId_participantId: {
-                    courseId: session.courseId!,
-                    participantId,
+                connectOrCreate: {
+                  where: {
+                    courseId_participantId: {
+                      courseId: session.courseId!,
+                      participantId,
+                    },
+                  },
+                  create: {
+                    course: {
+                      connect: {
+                        id: session.courseId!,
+                      },
+                    },
+                    participant: {
+                      connect: {
+                        id: participantId,
+                      },
+                    },
                   },
                 },
               },

@@ -6,6 +6,7 @@ query GetSingleQuestion($id: Int!) {
     content
     explanation
     displayMode
+    pointsMultiplier
 
     hasSampleSolution
     hasAnswerFeedbacks

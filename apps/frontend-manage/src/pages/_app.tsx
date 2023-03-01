@@ -30,7 +30,7 @@ function App({ Component, pageProps }: AppProps) {
   }, [])
 
   return (
-    <div id="__app" className={`${sourceSansPro.variable} font-sans h-full`}>
+    <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
       <Head>
         <link
           rel="stylesheet"

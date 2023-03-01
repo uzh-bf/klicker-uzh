@@ -110,6 +110,8 @@ export interface IInstanceEvaluation {
   pointsAwarded?: number
   percentile?: number
   newPointsFrom?: Date
+  xpAwarded?: number
+  newXpFrom?: Date
 }
 export const InstanceEvaluation = builder
   .objectRef<IInstanceEvaluation>('InstanceEvaluation')
@@ -128,6 +130,11 @@ export const InstanceEvaluation = builder
       pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
       percentile: t.exposeFloat('percentile', { nullable: true }),
       newPointsFrom: t.expose('newPointsFrom', {
+        type: 'Date',
+        nullable: true,
+      }),
+      xpAwarded: t.exposeInt('xpAwarded', { nullable: true }),
+      newXpFrom: t.expose('newXpFrom', {
         type: 'Date',
         nullable: true,
       }),

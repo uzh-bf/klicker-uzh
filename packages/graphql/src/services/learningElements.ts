@@ -7,6 +7,7 @@ import {
 } from '@klicker-uzh/grading'
 import {
   Attachment,
+  LearningElementStatus,
   OrderType,
   Question,
   QuestionInstance,
@@ -159,22 +160,23 @@ export async function respondToQuestionInstance(
       where: { id },
       // if the participant is logged in, fetch the last response of the participant
       // the response will not be counted and will only yield points if not within the past week
-      include: ctx.user?.sub
-        ? {
-            responses: {
-              where: {
-                participant: {
-                  id: ctx.user.sub,
+      include:
+        ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+          ? {
+              responses: {
+                where: {
+                  participant: {
+                    id: ctx.user.sub,
+                  },
                 },
+                take: 1,
               },
-              take: 1,
+            }
+          : {
+              responses: {
+                take: 1,
+              },
             },
-          }
-        : {
-            responses: {
-              take: 1,
-            },
-          },
     })
 
     if (!instance) {
@@ -266,11 +268,13 @@ export async function respondToQuestionInstance(
     updatedInstance.pointsMultiplier
   )
   const score = evaluation?.score || 0
+  const xp = evaluation?.xp || 0
   let pointsAwarded
   let newPointsFrom
   let lastAwardedAt
   let lastXpAwardedAt
   let xpAwarded
+  let newXpFrom
   const promises = []
 
   // if the user is logged in and the last response was not within the past 6 days
@@ -301,29 +305,34 @@ export async function respondToQuestionInstance(
         )
 
       if (previousXpResponseOutsideTimeframe) {
-        lastXpAwardedAt = new Date()
-        xpAwarded = evaluation?.xp
+        xpAwarded = xp
       } else {
-        lastXpAwardedAt = instance.responses[0].lastXpAwardedAt
         xpAwarded = 0
       }
 
       lastAwardedAt = previousResponseOutsideTimeframe
         ? new Date()
         : instance.responses[0].lastAwardedAt
+      lastXpAwardedAt = previousXpResponseOutsideTimeframe
+        ? new Date()
+        : instance.responses[0].lastXpAwardedAt
       newPointsFrom = dayjs(lastAwardedAt)
         .add(instance?.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
+      newXpFrom = dayjs(lastXpAwardedAt)
+        .add(XP_AWARD_TIMEFRAME_DAYS, 'days')
+        .toDate()
     } else {
       pointsAwarded = score
+      xpAwarded = xp
 
       lastAwardedAt = new Date()
       newPointsFrom = dayjs(lastAwardedAt)
         .add(instance?.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
-
-      lastXpAwardedAt = new Date()
-      xpAwarded = evaluation?.xp
+      newXpFrom = dayjs(lastAwardedAt)
+        .add(XP_AWARD_TIMEFRAME_DAYS, 'days')
+        .toDate()
     }
 
     promises.push(
@@ -396,18 +405,23 @@ export async function respondToQuestionInstance(
             },
           },
         },
-      }),
-      ctx.prisma.participant.update({
-        where: {
-          id: ctx.user.sub,
-        },
-        data: {
-          xp: {
-            increment: xpAwarded,
-          },
-        },
       })
     )
+
+    if (typeof xpAwarded === 'number' && xpAwarded > 0) {
+      promises.push(
+        ctx.prisma.participant.update({
+          where: {
+            id: ctx.user.sub,
+          },
+          data: {
+            xp: {
+              increment: xpAwarded,
+            },
+          },
+        })
+      )
+    }
 
     if (typeof pointsAwarded === 'number') {
       promises.push(
@@ -460,6 +474,8 @@ export async function respondToQuestionInstance(
           ...evaluation,
           pointsAwarded,
           newPointsFrom,
+          xpAwarded,
+          newXpFrom,
         }
       : null,
   }
@@ -470,26 +486,37 @@ export async function getLearningElementData(
   ctx: Context
 ) {
   const element = await ctx.prisma.learningElement.findUnique({
-    where: { id },
+    where: {
+      id,
+      OR: [
+        {
+          status: LearningElementStatus.PUBLISHED,
+        },
+        {
+          ownerId: ctx.user?.sub,
+        },
+      ],
+    },
     include: {
       course: true,
       instances: {
         orderBy: {
           questionId: 'asc',
         },
-        include: ctx.user?.sub
-          ? {
-              responses: {
-                where: {
-                  participantId: ctx.user.sub,
+        include:
+          ctx.user?.sub && ctx.user?.role === UserRole.PARTICIPANT
+            ? {
+                responses: {
+                  where: {
+                    participantId: ctx.user.sub,
+                  },
+                  orderBy: {
+                    lastAwardedAt: 'asc',
+                  },
+                  take: 1,
                 },
-                orderBy: {
-                  lastAwardedAt: 'asc',
-                },
-                take: 1,
-              },
-            }
-          : undefined,
+              }
+            : undefined,
       },
     },
   })
@@ -719,4 +746,65 @@ export async function getBookmarksLearningElement(
   })
 
   return participation?.bookmarkedQuestions
+}
+
+interface PublishLearningElementArgs {
+  id: string
+}
+
+export async function publishLearningElement(
+  { id }: PublishLearningElementArgs,
+  ctx: ContextWithUser
+) {
+  const learningElement = await ctx.prisma.learningElement.update({
+    where: {
+      id,
+    },
+    data: {
+      status: LearningElementStatus.PUBLISHED,
+    },
+    include: {
+      instances: true,
+    },
+  })
+
+  return {
+    ...learningElement,
+    numOfInstances: learningElement.instances.length,
+  }
+}
+
+interface DeleteLearningElementArgs {
+  id: string
+}
+
+export async function deleteLearningElement(
+  { id }: DeleteLearningElementArgs,
+  ctx: ContextWithUser
+) {
+  try {
+    const deletedItem = await ctx.prisma.learningElement.delete({
+      where: {
+        id,
+        status: LearningElementStatus.DRAFT,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'LearningElement',
+      id,
+    })
+
+    return deletedItem
+  } catch (e) {
+    // TODO: resolve type issue by first testing for prisma error
+    if (e?.code === 'P2025') {
+      console.log(
+        'The learning element is not in draft status and cannot be deleted.'
+      )
+      return null
+    }
+
+    throw e
+  }
 }

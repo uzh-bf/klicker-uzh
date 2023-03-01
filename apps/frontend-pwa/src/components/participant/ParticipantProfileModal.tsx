@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import { GetParticipantDetailsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import ProfileData from './ProfileData'
 
 interface ParticipantProfileModalProps {
@@ -12,14 +13,8 @@ interface ParticipantProfileModalProps {
 }
 
 //TODO: compare participant's achievements with all possible achievements and grey out the ones that are not achieved yet
-//TODO: bugfix - the modal opens when clicking on 'Austreten'
-//TODO: Make profile visible after leaving the leaderboard
-//TODO: move close button to top right
-//TODO: remove scroll bar on the right site
 //TODO: handle overflow in achivevements container in case there are more achievements than the current ones (=5)
-//TODO: fix modal for group leader board
-//TODO: make modal responsive for mobile apps
-//TODO: optional - implement new design for the carousel (e.g. 3D carousel where you can see the next and previous participant in the background)
+
 function ParticipantProfileModal({
   isProfileModalOpen,
   closeProfileModal,
@@ -57,29 +52,38 @@ function ParticipantProfileModal({
       open={isProfileModalOpen}
       onClose={closeProfileModal}
       className={{
-        content: 'flex flex-col items-center w-[500px] h-[700px]',
+        content: 'w-[500px] h-max my-auto',
         title: 'text-3xl',
+        onNext: 'hidden md:block',
+        onPrev: 'hidden md:block',
       }}
       onNext={onNext}
       onPrev={onPrev}
       title="Top 10"
     >
-      <ProfileData
-        level={participant.levelData}
-        xp={participant.xp}
-        avatar={participant.avatar}
-        username={participant.username}
-        achievements={participant.achievements}
-      />
-      <div className="grid grid-cols-10 pt-5 justify-items-center">
-        {top10Participants.map((p, index) => (
-          <div
-            key={index}
-            className={`w-2 h-2 rounded-full ${
-              index === currentIndex ? 'bg-black' : 'bg-gray-300'
-            }`}
-          />
-        ))}
+      <div className="items-center w-full px-auto">
+        <ProfileData
+          level={participant.levelData}
+          xp={participant.xp}
+          avatar={participant.avatar}
+          username={participant.username}
+          achievements={participant.achievements}
+        />
+        <div className="grid grid-cols-10 pt-5 justify-items-center">
+          {top10Participants.map((p, index) => (
+            <div
+              key={index}
+              className={twMerge(
+                'w-2 h-2 rounded-full hover:cursor-pointer',
+                index === currentIndex ? 'bg-black' : 'bg-gray-300'
+              )}
+              onClick={() => {
+                setCurrentIndex(index)
+                setSelectedParticipant(top10Participants[index])
+              }}
+            />
+          ))}
+        </div>
       </div>
     </Modal>
   )

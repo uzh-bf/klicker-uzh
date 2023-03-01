@@ -73,7 +73,10 @@
       "leave": "Leave",
       "documentation": "Documentation",
       "features": "Features",
-      "groupActivities": "Group activities"
+      "groupActivities": "Group activities",
+      "experiencePoints": "Experience points",
+      "level": "Level",
+      "levelX": "Level: {number}"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -139,6 +142,7 @@
       "coursePinRequired": "Please enter the course PIN."
     },
     "learningElement": {
+      "notFound": "The corresponding learning element is either not available or not yet published.",
       "repetitionTitle": "Repetition learning elements",
       "numOfQuestions": "Number of questions: {number}",
       "orderLAST_RESPONSE": "Order: last answered questions at the end",
@@ -155,7 +159,7 @@
       "totalPoints": "Total points (collected): {points}",
       "questionTypeNotSupported": "This question type is currently not available for learning elements",
       "questionProgress": "Question: {current}/{total}",
-      "newPointsFrom": "New points from:",
+      "newPointsFrom": "New points/XP from:",
       "othersAnswered": "Others answered as follows",
       "flagQuestion": "Report question",
       "flagQuestionText": "This feedback form is intended to allow you to make a direct comment on the individual questions of a learning element / micro-session, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.",
@@ -164,7 +168,8 @@
       "submitFeedback": "Submit feedback",
       "feedbackTransmitted": "Your feedback has been transmitted successfully."
     },
-    "microlearning": {
+    "microSession": {
+      "notFound": "The corresponding micro session is either not available or not yet active.",
       "solvedMicrolearning": "You have successfully completed the microlearning <it>{name}</it>."
     },
     "session": {

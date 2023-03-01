@@ -1,7 +1,10 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
 import { faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Session } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LearningElementOrderType,
+  Session,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Progress } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import React, { useState } from 'react'
@@ -44,6 +47,8 @@ export interface MicroSessionFormValues {
   endDate: string
   multiplier: string
   courseId: string
+  order: LearningElementOrderType
+  resetTimeDays: string
 }
 
 export interface LearningElementFormValues {

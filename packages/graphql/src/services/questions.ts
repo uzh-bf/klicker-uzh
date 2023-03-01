@@ -55,6 +55,7 @@ export async function manipulateQuestion(
     options,
     hasSampleSolution,
     hasAnswerFeedbacks,
+    pointsMultiplier,
     attachments,
     tags,
     displayMode,
@@ -87,6 +88,7 @@ export async function manipulateQuestion(
     } | null
     hasSampleSolution?: boolean | null
     hasAnswerFeedbacks?: boolean | null
+    pointsMultiplier?: number | null
     attachments?: { id: string }[] | null
     tags?: string[] | null
     displayMode?: DB.QuestionDisplayMode | null
@@ -95,36 +97,37 @@ export async function manipulateQuestion(
 ) {
   let tagsToDelete: string[] = []
 
-  const questionPrev = id
-    ? await ctx.prisma.question.findUnique({
-        where: {
-          id: id,
-        },
-        include: {
-          tags: true,
-          attachments: true,
-        },
-      })
-    : undefined
+  const questionPrev =
+    typeof id === 'undefined'
+      ? await ctx.prisma.question.findUnique({
+          where: {
+            id: id,
+          },
+          include: {
+            tags: true,
+            attachments: true,
+          },
+        })
+      : undefined
 
-  if (questionPrev && questionPrev?.tags) {
+  if (questionPrev?.tags) {
     tagsToDelete = questionPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
   }
 
-  // TODO: replace the conditional implementation above with the single upsert below - up to now it failed because "where did not receive an argument when id was undefined"
   const question = await ctx.prisma.question.upsert({
     where: {
-      id: id || -1,
+      id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
     create: {
       type: type,
-      name: name ?? 'Missing Question Title',
-      content: content ?? 'Missing Question Content',
+      name: name,
+      content: content,
       explanation: explanation ?? undefined,
       hasSampleSolution: hasSampleSolution ?? false,
       hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
+      pointsMultiplier: pointsMultiplier ?? 1,
       displayMode: displayMode ?? undefined,
       options: options || {},
       owner: {
@@ -154,6 +157,7 @@ export async function manipulateQuestion(
       explanation: explanation ?? undefined,
       hasSampleSolution: hasSampleSolution ?? false,
       hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
+      pointsMultiplier: pointsMultiplier ?? 1,
       options: options ?? undefined,
       displayMode: displayMode ?? undefined,
       tags: {
