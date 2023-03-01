@@ -10,6 +10,11 @@ export interface IMicroSession extends DB.MicroSession {
   course?: ICourse | null
   instances?: IQuestionInstance[]
 }
+
+export const MicroSessionStatus = builder.enumType('MicroSessionStatus', {
+  values: Object.values(DB.MicroSessionStatus),
+})
+
 export const MicroSessionRef = builder.objectRef<IMicroSession>('MicroSession')
 export const MicroSession = MicroSessionRef.implement({
   fields: (t) => ({
@@ -17,6 +22,7 @@ export const MicroSession = MicroSessionRef.implement({
 
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
+    status: t.expose('status', { type: MicroSessionStatus }),
     description: t.exposeString('description', { nullable: true }),
     pointsMultiplier: t.exposeFloat('pointsMultiplier'),
 

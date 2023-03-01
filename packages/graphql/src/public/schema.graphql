@@ -100,9 +100,9 @@ type ClassAchievementInstance {
 }
 
 type ConfusionSummary {
-  difficulty: Int!
+  difficulty: Float!
   numberOfParticipants: Int
-  speed: Int!
+  speed: Float!
 }
 
 type ConfusionTimestep {
@@ -121,7 +121,8 @@ type Course {
   displayName: String!
   endDate: Date!
   id: ID!
-  isArchived: Boolean
+  isArchived: Boolean!
+  isGamificationEnabled: Boolean!
   leaderboard: [LeaderboardEntry!]
   learningElements: [LearningElement!]
   microSessions: [MicroSession!]
@@ -264,9 +265,11 @@ type InstanceEvaluation {
   choices: Json
   feedbacks: [QuestionFeedback!]
   newPointsFrom: Date
+  newXpFrom: Date
   percentile: Float
   pointsAwarded: Float
   score: Float!
+  xpAwarded: Int
 }
 
 type InstanceResult {
@@ -318,6 +321,7 @@ type LearningElement {
   previousScore: Float
   previouslyAnswered: Int
   resetTimeDays: Int
+  status: LearningElementStatus!
   totalTrials: Int
 }
 
@@ -327,9 +331,23 @@ enum LearningElementOrderType {
   SHUFFLED
 }
 
+enum LearningElementStatus {
+  DRAFT
+  PUBLISHED
+}
+
 type LeaveCourseParticipation {
   id: String!
   participation: Participation!
+}
+
+type Level {
+  avatar: String
+  id: Int!
+  index: Int!
+  name: String
+  nextLevel: Level
+  requiredXp: Int!
 }
 
 type MicroSession {
@@ -343,6 +361,12 @@ type MicroSession {
   pointsMultiplier: Float!
   scheduledEndAt: Date!
   scheduledStartAt: Date!
+  status: MicroSessionStatus!
+}
+
+enum MicroSessionStatus {
+  DRAFT
+  PUBLISHED
 }
 
 type Mutation {
@@ -363,6 +387,8 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
+  deleteLearningElement(id: String!): LearningElement
+  deleteMicroSession(id: String!): MicroSession
   deleteQuestion(id: Int!): Question
   deleteTag(id: Int!): Tag
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
@@ -381,12 +407,14 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
-  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String!], type: QuestionType!): Question
-  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String!], type: QuestionType!): Question
+  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
+  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
+  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
+  publishLearningElement(id: String!): LearningElement
+  publishMicroSession(id: String!): MicroSession
   registerParticipantFromLTI(courseId: String!, participantId: String!): ParticipantLearningData
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
@@ -466,6 +494,7 @@ type Participant {
   isSelf: Boolean
   lastLoginAt: Date
   level: Int!
+  levelData: Level
   participantGroups: [ParticipantGroup!]
   rank: Int
   score: Float
@@ -502,6 +531,11 @@ type ParticipantLearningData {
   participation: Participation
 }
 
+type ParticipantWithAchievements {
+  achievements: [Achievement!]!
+  participant: Participant!
+}
+
 type Participation {
   bookmarkedQuestions: [QuestionInstance!]
   completedMicroSessions: [String!]!
@@ -535,6 +569,7 @@ type Query {
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
+  participantDetails(participantId: String!): ParticipantWithAchievements
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session

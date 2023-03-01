@@ -1,10 +1,9 @@
 import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ThemeContext } from '@uzh-bf/design-system'
+import { NumberField, ThemeContext } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
-import NumberField from './NumberField'
 
 export interface NUMERICALAnswerOptionsProps {
   disabled?: boolean
@@ -59,6 +58,7 @@ export function NUMERICALAnswerOptions({
           disabled={disabled}
           accuracy={accuracy}
           className={{
+            root: 'w-full',
             input: twMerge(
               theme.primaryBorderFocus,
               unit && '!rounded-r-none',

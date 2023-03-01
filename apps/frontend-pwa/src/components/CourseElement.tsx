@@ -12,6 +12,7 @@ import { twMerge } from 'tailwind-merge'
 import LinkButton from './common/LinkButton'
 
 interface CourseElementProps {
+  disabled?: boolean
   course: {
     id: string
     startDate: string
@@ -24,6 +25,7 @@ interface CourseElementProps {
 }
 
 function CourseElement({
+  disabled,
   course,
   pushDisabled,
   onSubscribeClick,
@@ -35,14 +37,16 @@ function CourseElement({
   return (
     <div key={course.id} className="flex flex-row w-full">
       <LinkButton
+        disabled={disabled}
         icon={(isFuture && faCalendar) || (isPast && faCheck) || faBolt}
         className={{
           root: twMerge(
             'flex-1 rounded-r-none border-r-0 h-full',
-            isPast && 'text-slate-600'
+            isPast && 'text-slate-600',
+            disabled && 'text-slate-600 hover:bg-slate-200'
           ),
         }}
-        href={`/course/${course.id}`}
+        href={disabled ? '' : `/course/${course.id}`}
       >
         <div>
           <div>{course.displayName}</div>
@@ -72,7 +76,10 @@ function CourseElement({
             ),
           }}
           disabled={course.isSubscribed || !!pushDisabled}
-          onClick={() => onSubscribeClick(course.isSubscribed, course.id)}
+          onClick={() => {
+            if (disabled) return
+            onSubscribeClick(course.isSubscribed, course.id)
+          }}
         >
           {course.isSubscribed ? (
             <FontAwesomeIcon

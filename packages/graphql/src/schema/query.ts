@@ -17,6 +17,7 @@ import {
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
+  ParticipantWithAchievements,
   Participation,
 } from './participant'
 import { Question, QuestionInstance, Tag } from './question'
@@ -51,7 +52,39 @@ export const Query = builder.queryType({
           if (!ctx.user?.sub) return null
           return ctx.prisma.participant.findUnique({
             where: { id: ctx.user.sub },
+            include: {
+              levelData: {
+                include: {
+                  nextLevel: true,
+                },
+              },
+            },
           })
+        },
+      }),
+      participantDetails: asParticipant.field({
+        nullable: true,
+        type: ParticipantWithAchievements,
+        args: {
+          participantId: t.arg.string({ required: true }),
+        },
+        async resolve(_, args, ctx) {
+          const participant = await ctx.prisma.participant.findUnique({
+            where: { id: args.participantId },
+            include: {
+              levelData: {
+                include: {
+                  nextLevel: true,
+                },
+              },
+            },
+          })
+          if (!participant) return null
+          const achievements = await ctx.prisma.achievement.findMany()
+          return {
+            participant,
+            achievements,
+          }
         },
       }),
       controlCourse: asUser.field({
@@ -327,7 +360,7 @@ export const Query = builder.queryType({
           return ParticipantGroupService.getGroupActivityDetails(args, ctx)
         },
       }),
-      getBookmarkedQuestions: asParticipant.field({
+      getBookmarkedQuestions: t.field({
         nullable: true,
         type: [QuestionInstance],
         args: {

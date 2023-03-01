@@ -227,6 +227,13 @@ export async function editSession(
   if (!oldSession) {
     throw new GraphQLError('Session not found')
   }
+  if (
+    oldSession.status === SessionStatus.RUNNING ||
+    oldSession.status === SessionStatus.COMPLETED
+  ) {
+    throw new GraphQLError('Cannot edit a running or completed session')
+  }
+
   const oldQuestionInstances = oldSession!.blocks.reduce<QuestionInstance[]>(
     (acc, block) => [...acc, ...block.instances],
     []
@@ -478,10 +485,24 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                 },
               },
               participation: {
-                connect: {
-                  courseId_participantId: {
-                    courseId: session.courseId!,
-                    participantId,
+                connectOrCreate: {
+                  where: {
+                    courseId_participantId: {
+                      courseId: session.courseId!,
+                      participantId,
+                    },
+                  },
+                  create: {
+                    course: {
+                      connect: {
+                        id: session.courseId!,
+                      },
+                    },
+                    participant: {
+                      connect: {
+                        id: participantId,
+                      },
+                    },
                   },
                 },
               },
@@ -495,11 +516,31 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
           })
         )
       )
+
+      const sessionXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
+
+      if (sessionXP) {
+        await ctx.prisma.$transaction(
+          Object.entries(sessionXP).map(([participantId, xp]) =>
+            ctx.prisma.participant.update({
+              where: {
+                id: participantId,
+              },
+              data: {
+                xp: {
+                  increment: Number(xp),
+                },
+              },
+            })
+          )
+        )
+      }
     }
   }
 
   ctx.redisExec.unlink(`s:${id}:meta`)
   ctx.redisExec.unlink(`s:${id}:lb`)
+  ctx.redisExec.unlink(`s:${id}:xp`)
 
   return ctx.prisma.session.update({
     where: {

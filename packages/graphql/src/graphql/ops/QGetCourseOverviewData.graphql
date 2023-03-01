@@ -5,6 +5,8 @@ query GetCourseOverviewData($courseId: String!) {
       id
       avatar
       username
+      xp
+      level
     }
     participation {
       id
@@ -15,6 +17,7 @@ query GetCourseOverviewData($courseId: String!) {
       displayName
       color
       description
+      isGamificationEnabled
 
       awards {
         id

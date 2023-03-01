@@ -66,6 +66,7 @@ const Index = function () {
       isSubscribed: boolean
       startDate: string
       endDate: string
+      isGamificationEnabled: boolean
     }[]
     oldCourses: {
       id: string
@@ -100,6 +101,8 @@ const Index = function () {
                   displayName: participation.course?.displayName,
                   startDate: participation.course?.startDate,
                   endDate: participation.course?.endDate,
+                  isGamificationEnabled:
+                    participation.course?.isGamificationEnabled,
                   isSubscribed:
                     participation.subscriptions &&
                     participation.subscriptions.length > 0,
@@ -252,9 +255,13 @@ const Index = function () {
               {activeMicrolearning.map((micro) => (
                 <LinkButton
                   icon={micro.isCompleted ? faCheck : faBookOpenReader}
-                  href={`/micro/${micro.id}/`}
+                  href={micro.isCompleted ? '' : `/micro/${micro.id}/`}
                   key={micro.id}
-                  className={{ root: micro.isCompleted && 'hover:bg-unset' }}
+                  disabled={micro.isCompleted}
+                  className={{
+                    root:
+                      micro.isCompleted && 'hover:bg-unset cursor-not-allowed',
+                  }}
                 >
                   <div>{micro.displayName}</div>
                   <div className="flex flex-row items-end justify-between">
@@ -276,6 +283,9 @@ const Index = function () {
           <div className="flex flex-col gap-2">
             {courses.map((course) => (
               <CourseElement
+                disabled={
+                  !course?.isGamificationEnabled && !course?.description
+                }
                 key={course.id}
                 course={course}
                 onSubscribeClick={onSubscribeClick}

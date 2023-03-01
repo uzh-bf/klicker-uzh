@@ -9,12 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import {
-  Button,
-  FormikNumberField,
-  Modal,
-  ThemeContext,
-} from '@uzh-bf/design-system'
+import { Button, Modal, NumberField, ThemeContext } from '@uzh-bf/design-system'
 import { move as RamdaMove } from 'ramda'
 import { useContext, useState } from 'react'
 import { useDrop } from 'react-dnd'
@@ -224,7 +219,7 @@ function SessionCreationBlock({
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>
       <Modal open={openSettings} onClose={() => setOpenSettings(false)}>
-        <FormikNumberField
+        <NumberField
           label="Zeit-Limit"
           tooltip={`Zeit-Limit für Block ${index + 1} in Sekunden`}
           id={`timeLimits.${index}`}

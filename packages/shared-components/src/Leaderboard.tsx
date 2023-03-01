@@ -9,7 +9,7 @@ interface LeaderboardProps {
   activeParticipation?: boolean
   onJoin?: () => void
   onLeave?: () => void
-  onParitcipantClick?: (participantId: string, isSelf: boolean) => void
+  onParticipantClick?: (participantId: string, isSelf: boolean) => void
   participant?: Participant
   hidePodium?: boolean
   hideAvatars?: boolean
@@ -27,7 +27,7 @@ function Leaderboard({
   activeParticipation,
   onJoin,
   onLeave,
-  onParitcipantClick,
+  onParticipantClick,
   participant,
   hidePodium,
   hideAvatars,
@@ -87,8 +87,8 @@ function Leaderboard({
                 onJoinCourse={onJoin}
                 onLeaveCourse={onLeave}
                 onClick={
-                  onParitcipantClick
-                    ? () => onParitcipantClick(entry.participantId, true)
+                  onParticipantClick
+                    ? () => onParticipantClick(entry.participantId, true)
                     : undefined
                 }
               />
@@ -101,8 +101,8 @@ function Leaderboard({
                 withAvatar={!hideAvatars}
                 points={entry.score}
                 onClick={
-                  onParitcipantClick
-                    ? () => onParitcipantClick(entry.participantId, false)
+                  onParticipantClick
+                    ? () => onParticipantClick(entry.participantId, false)
                     : undefined
                 }
                 className={className?.listItem}
@@ -121,8 +121,8 @@ function Leaderboard({
             onJoinCourse={onJoin}
             onLeaveCourse={onLeave}
             onClick={
-              onParitcipantClick
-                ? () => onParitcipantClick(participant.id, true)
+              onParticipantClick
+                ? () => onParticipantClick(participant.id, true)
                 : undefined
             }
           />

@@ -33,20 +33,20 @@ function Header({
     <div
       style={{ borderColor: course?.color || undefined }}
       className={twMerge(
-        'flex flex-row items-center justify-between h-16 px-4 text-white bg-slate-800 border-b-8',
+        'flex flex-row items-center justify-between px-4 text-white bg-slate-800 border-b-8 py-1',
         !course?.color && 'border-uzh-red-60'
       )}
     >
       {title && course?.displayName && (
         <div>
-          <H1 className={{ root: 'm-0 text-sm text-uzh-grey-60' }}>
+          <H1 className={{ root: 'm-0 text-xs text-uzh-grey-60' }}>
             {course.displayName}
           </H1>
-          <H2 className={{ root: 'm-0 text-base' }}>{title}</H2>
+          <H2 className={{ root: 'm-0 text-sm' }}>{title}</H2>
         </div>
       )}
       {title && !course?.displayName && (
-        <H1 className={{ root: 'mb-0 text-xl' }}>{title}</H1>
+        <H1 className={{ root: 'mb-0 text-base' }}>{title}</H1>
       )}
       <div className="grid grid-cols-1">
         <div className="flex justify-between gap-1 text-sm">

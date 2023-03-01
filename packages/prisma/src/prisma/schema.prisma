@@ -237,15 +237,16 @@ model Course {
 
   isArchived Boolean @default(false)
 
-  pinCode Int @unique @default(123456789)
+  pinCode Int @unique
 
-  name              String
-  displayName       String
-  description       String?
-  color             String?  @default("#eaa07d")
-  startDate         DateTime
-  endDate           DateTime
-  notificationEmail String?
+  name                  String
+  displayName           String
+  description           String?
+  color                 String?  @default("#eaa07d")
+  startDate             DateTime
+  endDate               DateTime
+  notificationEmail     String?
+  isGamificationEnabled Boolean  @default(true)
 
   sessions          Session[]
   learningElements  LearningElement[]
@@ -400,15 +401,21 @@ enum OrderType {
   LAST_RESPONSE
 }
 
+enum LearningElementStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model LearningElement {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
   description      String?
-  pointsMultiplier Int       @default(1)
-  resetTimeDays    Int       @default(6)
-  orderType        OrderType @default(SEQUENTIAL)
+  pointsMultiplier Int                   @default(1)
+  resetTimeDays    Int                   @default(6)
+  orderType        OrderType             @default(SEQUENTIAL)
+  status           LearningElementStatus @default(DRAFT)
 
   instances QuestionInstance[]
 
@@ -423,13 +430,19 @@ model LearningElement {
 
 // ----- MICROLEARNING -----
 
+enum MicroSessionStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model MicroSession {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
-  pointsMultiplier Int     @default(1)
+  pointsMultiplier Int                @default(1)
   description      String?
+  status           MicroSessionStatus @default(DRAFT)
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
@@ -635,6 +648,7 @@ model Participant {
   avatar         String?
   avatarSettings Json?
   level          Int     @default(1)
+  levelData      Level   @relation(fields: [level], references: [index])
   xp             Int     @default(0)
 
   lastLoginAt DateTime?
@@ -829,7 +843,9 @@ model QuestionResponse {
   trialsCount        Int       @default(0)
   totalScore         Float     @default(0)
   totalPointsAwarded Float     @default(0)
+  totalXpAwarded     Float     @default(0)
   lastAwardedAt      DateTime?
+  lastXpAwardedAt    DateTime?
 
   response Json
 
@@ -853,6 +869,7 @@ model QuestionResponseDetail {
 
   score         Float @default(0)
   pointsAwarded Float @default(0)
+  xpAwarded     Float @default(0)
 
   response Json
 
@@ -922,4 +939,20 @@ model AwardEntry {
 
   @@unique([courseId, type, order])
   @@unique([courseId, type, name])
+}
+
+// ----- LEVELS -----
+model Level {
+  id Int @id @default(autoincrement())
+
+  index      Int     @unique
+  name       String?
+  requiredXp Int
+  avatar     String?
+
+  nextLevel   Level?  @relation("level", fields: [nextLevelIx], references: [index])
+  nextLevelIx Int?
+  prevLevel   Level[] @relation("level")
+
+  participants Participant[]
 }

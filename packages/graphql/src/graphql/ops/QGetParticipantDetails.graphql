@@ -1,0 +1,45 @@
+query GetParticipantDetails($id: String!) {
+  participantDetails(participantId: $id) {
+    participant {
+      id
+      username
+      avatar
+      avatarSettings
+      level
+      levelData {
+        id
+        avatar
+        name
+        index
+        requiredXp
+        nextLevel {
+          id
+          index
+          avatar
+          requiredXp
+          name
+        }
+      }
+      xp
+      achievements {
+        id
+        achievedAt
+        achievedCount
+        achievement {
+          id
+          name
+          description
+          icon
+          iconColor
+        }
+      }
+    }
+    achievements {
+      id
+      name
+      description
+      icon
+      iconColor
+    }
+  }
+}

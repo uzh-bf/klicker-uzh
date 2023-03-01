@@ -1,0 +1,9 @@
+mutation PublishLearningElement($id: String!) {
+  publishLearningElement(id: $id) {
+    id
+    name
+    displayName
+    status
+    numOfInstances
+  }
+}

@@ -34,7 +34,8 @@ export const Course = builder.objectType(CourseRef, {
 
     color: t.exposeString('color', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
-    isArchived: t.exposeBoolean('isArchived', { nullable: true }),
+    isArchived: t.exposeBoolean('isArchived'),
+    isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
 
     numOfParticipants: t.exposeInt('numOfParticipants', {
       nullable: true,
