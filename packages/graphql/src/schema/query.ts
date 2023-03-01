@@ -69,27 +69,7 @@ export const Query = builder.queryType({
           participantId: t.arg.string({ required: true }),
         },
         async resolve(_, args, ctx) {
-          const participant = await ctx.prisma.participant.findUnique({
-            where: { id: args.participantId },
-            include: {
-              levelData: {
-                include: {
-                  nextLevel: true,
-                },
-              },
-              achievements: {
-                include: {
-                  achievement: true,
-                },
-              },
-            },
-          })
-          if (!participant) return null
-          const achievements = await ctx.prisma.achievement.findMany()
-          return {
-            participant,
-            achievements,
-          }
+          return ParticipantService.getParticipantDetails(args, ctx)
         },
       }),
       controlCourse: asUser.field({

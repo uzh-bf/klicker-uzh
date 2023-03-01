@@ -454,3 +454,30 @@ export async function flagQuestion(
 
   return 'OK'
 }
+
+export async function getParticipantDetails(
+  args: { participantId: string },
+  ctx: ContextWithUser
+) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: args.participantId },
+    include: {
+      levelData: {
+        include: {
+          nextLevel: true,
+        },
+      },
+      achievements: {
+        include: {
+          achievement: true,
+        },
+      },
+    },
+  })
+  if (!participant) return null
+  const achievements = await ctx.prisma.achievement.findMany()
+  return {
+    participant,
+    achievements,
+  }
+}
