@@ -516,11 +516,31 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
           })
         )
       )
+
+      const sessionXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
+
+      if (sessionXP) {
+        await ctx.prisma.$transaction(
+          Object.entries(sessionXP).map(([participantId, xp]) =>
+            ctx.prisma.participant.update({
+              where: {
+                id: participantId,
+              },
+              data: {
+                xp: {
+                  increment: Number(xp),
+                },
+              },
+            })
+          )
+        )
+      }
     }
   }
 
   ctx.redisExec.unlink(`s:${id}:meta`)
   ctx.redisExec.unlink(`s:${id}:lb`)
+  ctx.redisExec.unlink(`s:${id}:xp`)
 
   return ctx.prisma.session.update({
     where: {

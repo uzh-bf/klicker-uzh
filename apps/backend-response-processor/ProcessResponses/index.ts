@@ -1,6 +1,7 @@
 import type { AzureFunction, Context } from '@azure/functions'
 import {
   computeAwardedPoints,
+  computeAwardedXp,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
   gradeQuestionMC,
@@ -126,6 +127,7 @@ const serviceBusTrigger: AzureFunction = async function (
     }
 
     let pointsAwarded: number | string = 0
+    let xpAwarded: number = 0
 
     switch (type) {
       case 'SC':
@@ -166,6 +168,10 @@ const serviceBusTrigger: AzureFunction = async function (
             pointsPercentage,
             pointsMultiplier,
           })
+          xpAwarded = computeAwardedXp({
+            pointsPercentage,
+            multiplier: parseFloat(pointsMultiplier),
+          })
 
           if (
             pointsPercentage !== null &&
@@ -195,6 +201,7 @@ const serviceBusTrigger: AzureFunction = async function (
             participantData.sub,
             pointsAwarded
           )
+          redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
         }
         break
       }
@@ -225,6 +232,10 @@ const serviceBusTrigger: AzureFunction = async function (
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
             pointsMultiplier,
           })
+          xpAwarded = computeAwardedXp({
+            pointsPercentage: answerCorrect ?? 0,
+            multiplier: parseFloat(pointsMultiplier),
+          })
 
           if (parsedSolutions && answerCorrect && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
@@ -250,6 +261,7 @@ const serviceBusTrigger: AzureFunction = async function (
             participantData.sub,
             pointsAwarded
           )
+          redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
         }
         break
       }
@@ -280,6 +292,10 @@ const serviceBusTrigger: AzureFunction = async function (
             defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
             pointsMultiplier,
           })
+          xpAwarded = computeAwardedXp({
+            pointsPercentage: answerCorrect ?? 0,
+            multiplier: parseFloat(pointsMultiplier),
+          })
 
           if (answerCorrect && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
@@ -305,6 +321,7 @@ const serviceBusTrigger: AzureFunction = async function (
             participantData.sub,
             pointsAwarded
           )
+          redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
         }
         break
       }
