@@ -112,7 +112,7 @@ function ProfileData({
               <div>{t('pwa.profile.noAchievements')}</div>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 pb-3 h-[200px] overflow-auto justify-items-center">
+          <div className="grid grid-cols-1 gap-3 pt-3 pb-3 md:grid-cols-2 justify-items-center">
             {achievements?.map((achievement) => (
               <ReceivedAchievementTile
                 key={achievement.id}
