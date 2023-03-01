@@ -95,19 +95,37 @@ export async function manipulateQuestion(
   },
   ctx: ContextWithUser
 ) {
+  console.log('manipulateQuestion', {
+    id,
+    type,
+    name,
+    content,
+    explanation,
+    options,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
+    pointsMultiplier,
+    attachments,
+    tags,
+    displayMode,
+  })
+
   let tagsToDelete: string[] = []
 
-  const questionPrev = id
-    ? await ctx.prisma.question.findUnique({
-        where: {
-          id: id,
-        },
-        include: {
-          tags: true,
-          attachments: true,
-        },
-      })
-    : undefined
+  const questionPrev =
+    typeof id === 'undefined'
+      ? await ctx.prisma.question.findUnique({
+          where: {
+            id: id,
+          },
+          include: {
+            tags: true,
+            attachments: true,
+          },
+        })
+      : undefined
+
+  console.log('previous question', questionPrev)
 
   if (questionPrev && questionPrev?.tags) {
     tagsToDelete = questionPrev.tags
@@ -118,7 +136,7 @@ export async function manipulateQuestion(
   // TODO: replace the conditional implementation above with the single upsert below - up to now it failed because "where did not receive an argument when id was undefined"
   const question = await ctx.prisma.question.upsert({
     where: {
-      id: id || -1,
+      id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
     create: {
       type: type,
