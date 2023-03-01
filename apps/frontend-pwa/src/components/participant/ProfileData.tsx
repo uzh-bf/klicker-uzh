@@ -119,12 +119,13 @@ function ProfileData({
                 instance={achievement}
               />
             ))}
-            {remainingAchievements?.map((achievement) => (
-              <PossibleAchievementsTile
-                key={achievement.id}
-                achievement={achievement}
-              />
-            ))}
+            {isSelf &&
+              remainingAchievements?.map((achievement) => (
+                <PossibleAchievementsTile
+                  key={achievement.id}
+                  achievement={achievement}
+                />
+              ))}
           </div>
         </div>
       </div>

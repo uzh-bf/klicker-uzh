@@ -10,21 +10,18 @@ function PossibleAchievementsTile({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-row w-full gap-6 p-2 pl-4 border rounded">
-      <div className="relative flex-initial w-10">
-        <Image
-          src={achievement.icon}
-          fill
-          alt=""
-          className="contain"
-          style={{ filter: 'grayscale(100%)' }}
-        />
-      </div>
+    <div className="flex flex-row items-center w-full gap-4 px-3 py-2 border rounded">
+      <Image
+        src={achievement.icon}
+        width={45}
+        height={45}
+        alt=""
+        className="contain"
+        style={{ filter: 'grayscale(100%)' }}
+      />
 
-      <div className="flex-1">
-        <div className="text-sm font-bold text-gray-500">
-          {t('pwa.achievements.notAchievedYet')}
-        </div>
+      <div className="text-sm font-bold text-gray-500">
+        {t('pwa.achievements.notAchievedYet')}
       </div>
     </div>
   )
