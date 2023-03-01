@@ -46,7 +46,7 @@ function CourseElement({
             disabled && 'text-slate-600 hover:bg-slate-200'
           ),
         }}
-        href={`/course/${course.id}`}
+        href={disabled ? '' : `/course/${course.id}`}
       >
         <div>
           <div>{course.displayName}</div>
@@ -76,7 +76,10 @@ function CourseElement({
             ),
           }}
           disabled={course.isSubscribed || !!pushDisabled}
-          onClick={() => onSubscribeClick(course.isSubscribed, course.id)}
+          onClick={() => {
+            if (disabled) return
+            onSubscribeClick(course.isSubscribed, course.id)
+          }}
         >
           {course.isSubscribed ? (
             <FontAwesomeIcon
