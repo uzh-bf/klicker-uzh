@@ -55,6 +55,7 @@ export async function manipulateQuestion(
     options,
     hasSampleSolution,
     hasAnswerFeedbacks,
+    pointsMultiplier,
     attachments,
     tags,
     displayMode,
@@ -87,6 +88,7 @@ export async function manipulateQuestion(
     } | null
     hasSampleSolution?: boolean | null
     hasAnswerFeedbacks?: boolean | null
+    pointsMultiplier?: number | null
     attachments?: { id: string }[] | null
     tags?: string[] | null
     displayMode?: DB.QuestionDisplayMode | null
@@ -125,6 +127,7 @@ export async function manipulateQuestion(
       explanation: explanation ?? undefined,
       hasSampleSolution: hasSampleSolution ?? false,
       hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
+      pointsMultiplier: pointsMultiplier ?? 1,
       displayMode: displayMode ?? undefined,
       options: options || {},
       owner: {
@@ -154,6 +157,7 @@ export async function manipulateQuestion(
       explanation: explanation ?? undefined,
       hasSampleSolution: hasSampleSolution ?? false,
       hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
+      pointsMultiplier: pointsMultiplier ?? 1,
       options: options ?? undefined,
       displayMode: displayMode ?? undefined,
       tags: {

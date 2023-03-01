@@ -5872,6 +5872,18 @@
                 "deprecationReason": null
               },
               {
+                "name": "pointsMultiplier",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "tags",
                 "description": null,
                 "type": {
@@ -6025,6 +6037,18 @@
                 "deprecationReason": null
               },
               {
+                "name": "pointsMultiplier",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "tags",
                 "description": null,
                 "type": {
@@ -6171,6 +6195,18 @@
                 "type": {
                   "kind": "INPUT_OBJECT",
                   "name": "OptionsNumericalInput",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "pointsMultiplier",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
                   "ofType": null
                 },
                 "defaultValue": null,
