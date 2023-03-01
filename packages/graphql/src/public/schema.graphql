@@ -414,6 +414,7 @@ type Mutation {
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   publishLearningElement(id: String!): LearningElement
+  publishMicroSession(id: String!): MicroSession
   registerParticipantFromLTI(courseId: String!, participantId: String!): ParticipantLearningData
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback

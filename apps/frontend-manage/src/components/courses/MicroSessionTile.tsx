@@ -1,4 +1,4 @@
-import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
   faHourglassEnd,
@@ -6,6 +6,7 @@ import {
   faLink,
   faPencil,
   faPlay,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { MicroSession, MicroSessionStatus } from '@klicker-uzh/graphql/dist/ops'
@@ -15,6 +16,8 @@ import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MicroSessionDeletionModal from './modals/MicroSessionDeletionModal'
+import PublishConfirmationModal from './modals/PublishConfirmationModal'
+import StatusTag from './StatusTag'
 
 interface MicroSessionProps {
   microSession: Partial<MicroSession> & Pick<MicroSession, 'id' | 'name'>
@@ -24,6 +27,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   const theme = useContext(ThemeContext)
   const router = useRouter()
 
+  const [publishModal, setPublishModal] = useState(false)
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
 
@@ -50,14 +54,6 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
     year: 'numeric',
   })
 
-  const statusIcon = isFuture ? (
-    <FontAwesomeIcon icon={faClock} />
-  ) : isRunning ? (
-    <FontAwesomeIcon icon={faPlay} />
-  ) : (
-    <FontAwesomeIcon icon={faCheck} />
-  )
-
   return (
     <div className="p-2 border border-solid rounded h-48 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
       <div className="flex flex-row items-center justify-between">
@@ -65,7 +61,16 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           {microSession.name || ''}
         </Ellipsis>
 
-        {statusIcon}
+        {microSession.status === MicroSessionStatus.Draft && (
+          <StatusTag color="bg-gray-200" status="Draft" icon={faPencil} />
+        )}
+        {microSession.status === MicroSessionStatus.Published && (
+          <StatusTag
+            color="bg-green-300"
+            status="Published"
+            icon={isRunning ? faPlay : faCheck}
+          />
+        )}
       </div>
       <div className="mb-1 italic">
         {microSession.numOfInstances || '0'} Fragen
@@ -117,13 +122,26 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
       {microSession.status === MicroSessionStatus.Draft && (
         <Button
           basic
+          className={{ root: theme.primaryText }}
+          onClick={() => setPublishModal(true)}
+        >
+          <Button.Icon>
+            <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
+          </Button.Icon>
+          <Button.Label>Micro-Session veröffentlichen</Button.Label>
+        </Button>
+      )}
+
+      {microSession.status === MicroSessionStatus.Draft && (
+        <Button
+          basic
           className={{ root: 'text-red-600' }}
           onClick={() => setDeletionModal(true)}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
           </Button.Icon>
-          <Button.Label>Lernelement löschen</Button.Label>
+          <Button.Label>Micro-Session löschen</Button.Label>
         </Button>
       )}
 
@@ -136,6 +154,13 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         Der Link zur Micro-Session wurde erfolgreich in die Zwischenablage
         kopiert.
       </Toast>
+      <PublishConfirmationModal
+        elementType="MICRO_SESSION"
+        elementId={microSession.id}
+        title={microSession.name}
+        open={publishModal}
+        setOpen={setPublishModal}
+      />
       <MicroSessionDeletionModal
         sessionId={microSession.id}
         title={microSession.name}

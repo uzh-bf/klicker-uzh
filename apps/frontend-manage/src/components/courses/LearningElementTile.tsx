@@ -132,6 +132,7 @@ function LearningElementTile({
           kopiert.
         </Toast>
         <PublishConfirmationModal
+          elementType="LEARNING_ELEMENT"
           elementId={learningElement.id}
           title={learningElement.name}
           open={publishModal}

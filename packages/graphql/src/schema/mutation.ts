@@ -782,6 +782,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      publishMicroSession: asUser.field({
+        nullable: true,
+        type: MicroSession,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.publishMicroSession(args, ctx)
+        },
+      }),
+
       deleteMicroSession: asUser.field({
         nullable: true,
         type: MicroSession,

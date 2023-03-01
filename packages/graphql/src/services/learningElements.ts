@@ -160,22 +160,23 @@ export async function respondToQuestionInstance(
       where: { id },
       // if the participant is logged in, fetch the last response of the participant
       // the response will not be counted and will only yield points if not within the past week
-      include: ctx.user?.sub
-        ? {
-            responses: {
-              where: {
-                participant: {
-                  id: ctx.user.sub,
+      include:
+        ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+          ? {
+              responses: {
+                where: {
+                  participant: {
+                    id: ctx.user.sub,
+                  },
                 },
+                take: 1,
               },
-              take: 1,
+            }
+          : {
+              responses: {
+                take: 1,
+              },
             },
-          }
-        : {
-            responses: {
-              take: 1,
-            },
-          },
     })
 
     if (!instance) {
@@ -487,7 +488,12 @@ export async function getLearningElementData(
   const element = await ctx.prisma.learningElement.findUnique({
     where: {
       id,
-      status: LearningElementStatus.PUBLISHED,
+      OR: {
+        status: LearningElementStatus.PUBLISHED,
+        owner: {
+          id: ctx.user?.sub,
+        },
+      },
     },
     include: {
       course: true,
@@ -495,19 +501,20 @@ export async function getLearningElementData(
         orderBy: {
           questionId: 'asc',
         },
-        include: ctx.user?.sub
-          ? {
-              responses: {
-                where: {
-                  participantId: ctx.user.sub,
+        include:
+          ctx.user?.sub && ctx.user?.role === UserRole.PARTICIPANT
+            ? {
+                responses: {
+                  where: {
+                    participantId: ctx.user.sub,
+                  },
+                  orderBy: {
+                    lastAwardedAt: 'asc',
+                  },
+                  take: 1,
                 },
-                orderBy: {
-                  lastAwardedAt: 'asc',
-                },
-                take: 1,
-              },
-            }
-          : undefined,
+              }
+            : undefined,
       },
     },
   })

@@ -1,0 +1,9 @@
+mutation PublishMicroSession($id: String!) {
+  publishMicroSession(id: $id) {
+    id
+    name
+    displayName
+    status
+    numOfInstances
+  }
+}

@@ -104,9 +104,14 @@ export async function getSingleMicroSession(
   const microSession = await ctx.prisma.microSession.findUnique({
     where: {
       id,
-      scheduledStartAt: { lte: new Date() },
-      scheduledEndAt: { gte: new Date() },
-      status: MicroSessionStatus.PUBLISHED,
+      OR: {
+        AND: {
+          scheduledStartAt: { lte: new Date() },
+          scheduledEndAt: { gte: new Date() },
+          status: MicroSessionStatus.PUBLISHED,
+        },
+        ownerId: ctx.user?.sub,
+      },
     },
     include: {
       course: true,
@@ -336,6 +341,32 @@ export async function editMicroSession(
   ctx.emitter.emit('invalidate', { typename: 'MicroSession', id: session.id })
 
   return session
+}
+
+interface PublishMicroSessionArgs {
+  id: string
+}
+
+export async function publishMicroSession(
+  { id }: PublishMicroSessionArgs,
+  ctx: ContextWithUser
+) {
+  const microSession = await ctx.prisma.microSession.update({
+    where: {
+      id,
+    },
+    data: {
+      status: MicroSessionStatus.PUBLISHED,
+    },
+    include: {
+      instances: true,
+    },
+  })
+
+  return {
+    ...microSession,
+    numOfInstances: microSession.instances.length,
+  }
 }
 
 interface DeleteMicroSessionArgs {
