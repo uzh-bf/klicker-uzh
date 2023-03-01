@@ -1,19 +1,25 @@
 import { faStar } from '@fortawesome/free-regular-svg-icons'
 import { faShieldHeart, faTrophy } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Level } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Achievement,
+  Level,
+  ParticipantAchievementInstance,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Label, Progress } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import { useMemo } from 'react'
+import PossibleAchievementsTile from './PossibleAchievementsTile'
+import ReceivedAchievementTile from './ReceivedAchievementTile'
 
 interface ProfileProps {
   isSelf?: boolean
   username: string
   xp: number
   level?: Level | null
-  achievements?: any[] | null
-  possibleAchievements?: any[] | null
+  achievements?: ParticipantAchievementInstance[] | null
+  possibleAchievements?: Achievement[] | null
   avatar?: string | null
 }
 
@@ -28,13 +34,13 @@ function ProfileData({
 }: ProfileProps) {
   const t = useTranslations()
 
-  const isAchieved = (achievementId: string) => {
-    return achievements?.some((a) => a.id === achievementId)
-  }
-
-  const findAchievement = (achievementId: string) => {
-    return achievements?.find((a) => a.id === achievementId)
-  }
+  const remainingAchievements = useMemo(
+    () =>
+      possibleAchievements?.filter(
+        (a) => !achievements?.some((b) => b.achievement.id === a.id)
+      ),
+    [achievements, possibleAchievements]
+  )
 
   return (
     <div className="flex flex-col items-center w-full max-w-xl p-4 mx-auto md:min-w-[400px]">
@@ -107,52 +113,17 @@ function ProfileData({
             )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 pb-3 h-[200px] overflow-auto justify-items-center">
-            {possibleAchievements?.map((achievement) => (
-              <div
+            {achievements?.map((achievement) => (
+              <ReceivedAchievementTile
                 key={achievement.id}
-                className={'flex flex-row gap-6 p-2 pl-4 border rounded'}
-              >
-                <div className="relative flex-initial w-10">
-                  <Image
-                    src={achievement.icon}
-                    fill
-                    alt=""
-                    style={{
-                      filter: isAchieved(achievement.id)
-                        ? achievement.iconColor
-                        : 'grayscale(100%)',
-                      objectFit: 'contain',
-                    }}
-                  />
-                </div>
-
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-ellipsis">
-                    {achievement.name}
-                  </div>
-                  <div className="text-xs">{achievement.description}</div>
-                  <div className="flex flex-row justify-between pt-1 mt-1 text-xs border-t">
-                    {isAchieved(achievement.id) ? (
-                      <div>
-                        {findAchievement(achievement.id).achievedCount}x
-                      </div>
-                    ) : (
-                      <div>0x</div>
-                    )}
-                    {isAchieved(achievement.id) ? (
-                      <div>
-                        {dayjs(
-                          findAchievement(achievement.id).achievedAt
-                        ).format('DD.MM.YYYY')}
-                      </div>
-                    ) : (
-                      <div>
-                        {dayjs(achievement.achievedAt).format('DD.MM.YYYY')}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                instance={achievement}
+              />
+            ))}
+            {remainingAchievements?.map((achievement) => (
+              <PossibleAchievementsTile
+                key={achievement.id}
+                achievement={achievement}
+              />
             ))}
           </div>
         </div>

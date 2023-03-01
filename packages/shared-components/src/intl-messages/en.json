@@ -244,6 +244,9 @@
       "shirt": "Shirt",
       "dressShirt": "Suit",
       "dress": "Dress"
+    },
+    "achievements": {
+      "notAchievedYet": "Not achieved yet"
     }
   },
   "manage": {},

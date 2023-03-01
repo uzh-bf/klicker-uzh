@@ -77,6 +77,11 @@ export const Query = builder.queryType({
                   nextLevel: true,
                 },
               },
+              achievements: {
+                include: {
+                  achievement: true,
+                },
+              },
             },
           })
           if (!participant) return null
