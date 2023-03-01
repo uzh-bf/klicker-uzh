@@ -662,6 +662,7 @@ export const Mutation = builder.mutationType({
           displayMode: t.arg({ required: false, type: QuestionDisplayMode }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
             type: OptionsChoicesInput,
@@ -686,6 +687,7 @@ export const Mutation = builder.mutationType({
           explanation: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
             type: OptionsNumericalInput,
@@ -710,6 +712,7 @@ export const Mutation = builder.mutationType({
           explanation: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
             type: OptionsFreeTextInput,
