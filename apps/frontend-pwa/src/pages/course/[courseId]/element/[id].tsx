@@ -113,8 +113,18 @@ function LearningElement({ courseId, id }: Props) {
     )
   }, [data?.learningElement?.instances])
 
-  if (loading || !data?.learningElement)
-    return <p>{t('shared.generic.loading')}</p>
+  if (loading) return <p>{t('shared.generic.loading')}</p>
+
+  if (!data?.learningElement) {
+    return (
+      <Layout>
+        <UserNotification
+          notificationType="error"
+          message={t('pwa.learningElement.notFound')}
+        />
+      </Layout>
+    )
+  }
   if (error) return <p>Oh no... {error.message}</p>
 
   const isEvaluation = !!currentInstance?.evaluation
@@ -500,15 +510,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         }
       : undefined,
   })
-
-  if (!result.data.learningElement) {
-    return {
-      redirect: {
-        destination: '/404',
-        statusCode: 302,
-      },
-    }
-  }
 
   return addApolloState(apolloClient, {
     props: {

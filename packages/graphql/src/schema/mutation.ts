@@ -759,6 +759,50 @@ export const Mutation = builder.mutationType({
           return CourseService.changeCourseDates(args, ctx)
         },
       }),
+
+      publishLearningElement: asUser.field({
+        nullable: true,
+        type: LearningElement,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.publishLearningElement(args, ctx)
+        },
+      }),
+
+      deleteLearningElement: asUser.field({
+        nullable: true,
+        type: LearningElement,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.deleteLearningElement(args, ctx)
+        },
+      }),
+
+      publishMicroSession: asUser.field({
+        nullable: true,
+        type: MicroSession,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.publishMicroSession(args, ctx)
+        },
+      }),
+
+      deleteMicroSession: asUser.field({
+        nullable: true,
+        type: MicroSession,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.deleteMicroSession(args, ctx)
+        },
+      }),
     }
   },
 })

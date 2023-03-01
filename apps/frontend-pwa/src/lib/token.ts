@@ -21,7 +21,7 @@ export async function getParticipantToken({
 
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
-  let participantToken = cookies['participant_token']
+  let participantToken = cookies['participant_token'] || cookies['user_token']
 
   try {
     if (!participantToken && req.method === 'POST') {

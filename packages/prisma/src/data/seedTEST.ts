@@ -120,6 +120,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...data,
           ownerId: USER_ID_TEST,
           courseId: COURSE_ID_TEST,
+          status: Prisma.MicroSessionStatus.PUBLISHED,
           questions: questionsTest
             .filter((q) => data.questions.includes(q.id))
             .map(async (q) => q),

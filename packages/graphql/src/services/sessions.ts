@@ -227,6 +227,13 @@ export async function editSession(
   if (!oldSession) {
     throw new GraphQLError('Session not found')
   }
+  if (
+    oldSession.status === SessionStatus.RUNNING ||
+    oldSession.status === SessionStatus.COMPLETED
+  ) {
+    throw new GraphQLError('Cannot edit a running or completed session')
+  }
+
   const oldQuestionInstances = oldSession!.blocks.reduce<QuestionInstance[]>(
     (acc, block) => [...acc, ...block.instances],
     []
