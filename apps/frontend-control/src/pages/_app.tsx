@@ -27,7 +27,7 @@ function App({ Component, pageProps }: AppProps) {
   }, [])
 
   return (
-    <div className={`${sourceSansPro.variable} font-sans h-full`}>
+    <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
       <NextIntlProvider messages={pageProps.messages}>
         <ErrorBoundary>
           <ApolloProvider client={apolloClient}>
@@ -60,6 +60,11 @@ function App({ Component, pageProps }: AppProps) {
       <style jsx global>{`
         :root {
           --source-sans-pro: ${sourceSansPro.variable};
+        }
+
+        #__app {
+          min-height: 100%;
+          height: 100%;
         }
       `}</style>
     </div>

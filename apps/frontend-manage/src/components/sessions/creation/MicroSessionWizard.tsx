@@ -27,7 +27,7 @@ interface MicroSessionWizardProps {
     label: string
     value: string
   }[]
-  initialValues?: Partial<MicroSession>
+  initialValues?: MicroSession
 }
 
 const stepOneValidationSchema = yup.object().shape({
@@ -162,8 +162,8 @@ function MicroSessionWizard({
                 hasSampleSolution: instance.questionData.hasSampleSolution,
               }
             }) || [],
-          startDate: initialValues?.scheduledStartAt || '',
-          endDate: initialValues?.scheduledEndAt || '',
+          startDate: initialValues?.scheduledStartAt.substr(0, 16) || '',
+          endDate: initialValues?.scheduledEndAt.substr(0, 16) || '',
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)
             : '1',
