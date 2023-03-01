@@ -108,8 +108,12 @@ function ProfileData({
             />
           </div>
           <div>
-            {(!possibleAchievements || possibleAchievements?.length == 0) && (
-              <div>{t('pwa.profile.noAchievements')}</div>
+            {((!isSelf && (!achievements || achievements.length === 0)) ||
+              (isSelf &&
+                (!achievements || achievements.length === 0) &&
+                (!possibleAchievements ||
+                  possibleAchievements.length === 0))) && (
+              <div>{t('pwa.achievements.noAchievements')}</div>
             )}
           </div>
           <div className="grid grid-cols-1 gap-3 pt-3 pb-3 md:grid-cols-2 justify-items-center">

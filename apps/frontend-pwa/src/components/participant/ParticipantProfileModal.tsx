@@ -49,7 +49,7 @@ function ParticipantProfileModal({
       open={isProfileModalOpen}
       onClose={closeProfileModal}
       className={{
-        content: 'w-[500px] my-auto max-h-full',
+        content: 'w-[500px] my-auto max-h-full overflow-auto',
         title: 'text-3xl',
         onNext: 'hidden md:block',
         onPrev: 'hidden md:block',
@@ -58,7 +58,7 @@ function ParticipantProfileModal({
       onPrev={onPrev}
       title="Top 10"
     >
-      <div className="items-center w-full px-auto">
+      <div className="flex flex-col items-center justify-between w-full h-full px-auto">
         <ProfileData
           level={participant.levelData}
           xp={participant.xp}
@@ -67,7 +67,7 @@ function ParticipantProfileModal({
           achievements={participant.achievements}
           possibleAchievements={achievements}
         />
-        <div className="grid grid-cols-10 pt-5 justify-items-center">
+        <div className="grid w-full grid-cols-10 pt-5 justify-items-center">
           {top10Participants.map((p, index) => (
             <div
               key={index}
