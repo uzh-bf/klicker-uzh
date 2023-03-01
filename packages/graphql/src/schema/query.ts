@@ -360,7 +360,7 @@ export const Query = builder.queryType({
           return ParticipantGroupService.getGroupActivityDetails(args, ctx)
         },
       }),
-      getBookmarkedQuestions: asParticipant.field({
+      getBookmarkedQuestions: t.field({
         nullable: true,
         type: [QuestionInstance],
         args: {

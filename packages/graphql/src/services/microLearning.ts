@@ -1,5 +1,6 @@
 import {
   Attachment,
+  MicroSessionStatus,
   Question,
   QuestionInstanceType,
   QuestionType,
@@ -101,7 +102,21 @@ export async function getSingleMicroSession(
   ctx: Context
 ) {
   const microSession = await ctx.prisma.microSession.findUnique({
-    where: { id },
+    where: {
+      id,
+      OR: [
+        {
+          AND: {
+            scheduledStartAt: { lte: new Date() },
+            scheduledEndAt: { gte: new Date() },
+            status: MicroSessionStatus.PUBLISHED,
+          },
+        },
+        {
+          ownerId: ctx.user?.sub,
+        },
+      ],
+    },
     include: {
       course: true,
       instances: {
@@ -111,6 +126,8 @@ export async function getSingleMicroSession(
       },
     },
   })
+
+  // TODO: handle here if already responded to the element? goal with micro = one try
 
   if (!microSession) return null
 
@@ -255,6 +272,9 @@ export async function editMicroSession(
   if (!oldSession) {
     throw new GraphQLError('Micro-Session not found')
   }
+  if (oldSession.status === MicroSessionStatus.PUBLISHED) {
+    throw new GraphQLError('Micro-Session is already published')
+  }
 
   await ctx.prisma.questionInstance.deleteMany({
     where: {
@@ -325,4 +345,59 @@ export async function editMicroSession(
   ctx.emitter.emit('invalidate', { typename: 'MicroSession', id: session.id })
 
   return session
+}
+
+interface PublishMicroSessionArgs {
+  id: string
+}
+
+export async function publishMicroSession(
+  { id }: PublishMicroSessionArgs,
+  ctx: ContextWithUser
+) {
+  const microSession = await ctx.prisma.microSession.update({
+    where: {
+      id,
+    },
+    data: {
+      status: MicroSessionStatus.PUBLISHED,
+    },
+    include: {
+      instances: true,
+    },
+  })
+
+  return {
+    ...microSession,
+    numOfInstances: microSession.instances.length,
+  }
+}
+
+interface DeleteMicroSessionArgs {
+  id: string
+}
+
+export async function deleteMicroSession(
+  { id }: DeleteMicroSessionArgs,
+  ctx: ContextWithUser
+) {
+  try {
+    const deletedItem = await ctx.prisma.microSession.delete({
+      where: { id, status: MicroSessionStatus.DRAFT },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'MicroSession', id })
+
+    return deletedItem
+  } catch (e) {
+    // TODO: resolve type issue by first testing for prisma error
+    if (e?.code === 'P2025') {
+      console.log(
+        'The micro-session is already published and cannot be deleted anymore.'
+      )
+      return null
+    }
+
+    throw e
+  }
 }

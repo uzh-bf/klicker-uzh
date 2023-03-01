@@ -255,9 +255,13 @@ const Index = function () {
               {activeMicrolearning.map((micro) => (
                 <LinkButton
                   icon={micro.isCompleted ? faCheck : faBookOpenReader}
-                  href={`/micro/${micro.id}/`}
+                  href={micro.isCompleted ? '' : `/micro/${micro.id}/`}
                   key={micro.id}
-                  className={{ root: micro.isCompleted && 'hover:bg-unset' }}
+                  disabled={micro.isCompleted}
+                  className={{
+                    root:
+                      micro.isCompleted && 'hover:bg-unset cursor-not-allowed',
+                  }}
                 >
                   <div>{micro.displayName}</div>
                   <div className="flex flex-row items-end justify-between">

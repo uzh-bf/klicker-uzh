@@ -148,10 +148,6 @@
   height: 2rem
 }
 
-.h-9 {
-  height: 2.25rem
-}
-
 .h-\[60px\] {
   height: 60px
 }
@@ -230,10 +226,6 @@
 
 .flex-initial {
   flex: 0 1 auto
-}
-
-.cursor-not-allowed {
-  cursor: not-allowed
 }
 
 .cursor-pointer {
