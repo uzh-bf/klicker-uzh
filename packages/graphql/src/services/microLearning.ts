@@ -104,14 +104,18 @@ export async function getSingleMicroSession(
   const microSession = await ctx.prisma.microSession.findUnique({
     where: {
       id,
-      OR: {
-        AND: {
-          scheduledStartAt: { lte: new Date() },
-          scheduledEndAt: { gte: new Date() },
-          status: MicroSessionStatus.PUBLISHED,
+      OR: [
+        {
+          AND: {
+            scheduledStartAt: { lte: new Date() },
+            scheduledEndAt: { gte: new Date() },
+            status: MicroSessionStatus.PUBLISHED,
+          },
         },
-        ownerId: ctx.user?.sub,
-      },
+        {
+          ownerId: ctx.user?.sub,
+        },
+      ],
     },
     include: {
       course: true,

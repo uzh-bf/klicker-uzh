@@ -35,7 +35,7 @@ function LearningElementTile({
   const router = useRouter()
 
   return (
-    <div className="flex flex-col justify-between p-2 border border-solid rounded h-44 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
+    <div className="flex flex-col justify-between p-2 border border-solid rounded w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
       <div>
         <div className="flex flex-row justify-between">
           <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>

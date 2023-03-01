@@ -55,7 +55,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   })
 
   return (
-    <div className="p-2 border border-solid rounded h-48 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
+    <div className="p-2 border border-solid rounded w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
       <div className="flex flex-row items-center justify-between">
         <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
           {microSession.name || ''}

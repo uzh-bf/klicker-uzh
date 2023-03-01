@@ -488,12 +488,14 @@ export async function getLearningElementData(
   const element = await ctx.prisma.learningElement.findUnique({
     where: {
       id,
-      OR: {
-        status: LearningElementStatus.PUBLISHED,
-        owner: {
-          id: ctx.user?.sub,
+      OR: [
+        {
+          status: LearningElementStatus.PUBLISHED,
         },
-      },
+        {
+          ownerId: ctx.user?.sub,
+        },
+      ],
     },
     include: {
       course: true,
