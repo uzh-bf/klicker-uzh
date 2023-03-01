@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.65](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.64...v3.0.0-alpha.65) (2023-03-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** fix pre-filling fields when editing micro sessions ([#3418](https://github.com/uzh-bf/klicker-uzh/issues/3418)) ([f7aad42](https://github.com/uzh-bf/klicker-uzh/commit/f7aad4223a43d2c4210f489f9c0fdb10df58ff3e))
+
+
+### Refactors
+
+* flex-based layout for PWA ([0be2fff](https://github.com/uzh-bf/klicker-uzh/commit/0be2fffd5f55774c093de23e3bf5c0542ee8279c))
+
 ## [3.0.0-alpha.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.63...v3.0.0-alpha.64) (2023-02-27)
 
 
