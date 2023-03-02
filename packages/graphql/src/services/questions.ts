@@ -97,17 +97,18 @@ export async function manipulateQuestion(
 ) {
   let tagsToDelete: string[] = []
 
-  const questionPrev = id
-    ? await ctx.prisma.question.findUnique({
-        where: {
-          id: id,
-        },
-        include: {
-          tags: true,
-          attachments: true,
-        },
-      })
-    : undefined
+  const questionPrev =
+    typeof id !== 'undefined' && id !== null
+      ? await ctx.prisma.question.findUnique({
+          where: {
+            id: id,
+          },
+          include: {
+            tags: true,
+            attachments: true,
+          },
+        })
+      : undefined
 
   if (questionPrev?.tags) {
     tagsToDelete = questionPrev.tags
@@ -117,7 +118,7 @@ export async function manipulateQuestion(
 
   const question = await ctx.prisma.question.upsert({
     where: {
-      id: id || -1,
+      id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
     create: {
       type: type,
