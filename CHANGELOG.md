@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.68](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.67...v3.0.0-alpha.68) (2023-03-02)
+
+
+### Bug Fixes
+
+* **packages/graphql:** undo ID changes in question manipulation ([386deb0](https://github.com/uzh-bf/klicker-uzh/commit/386deb0ce5f2f8fc097d665a7205d4487a4c5c27))
+
 ## [3.0.0-alpha.67](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.66...v3.0.0-alpha.67) (2023-03-01)
 
 
