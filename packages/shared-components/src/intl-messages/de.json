@@ -189,7 +189,6 @@
     "profile": {
       "editProfile": "Profil editieren",
       "achievements": "Errungenschaften",
-      "noAchievements": "Bisher keine Errungenschaften.",
       "myProfile": "Mein Profil",
       "usernameMinLength": "Der Benutzername muss mindestens {length} Zeichen lang sein.",
       "usernameMaxLength": "Der Benutzername darf nicht länger als {length} Zeichen sein.",
@@ -246,6 +245,10 @@
       "shirt": "Shirt",
       "dressShirt": "Anzug",
       "dress": "Kleid"
+    },
+    "achievements": {
+      "noAchievements": "Bisher keine Errungenschaften.",
+      "notAchievedYet": "Noch nicht erreicht"
     }
   },
   "manage": {},

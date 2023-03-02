@@ -189,7 +189,6 @@
     "profile": {
       "editProfile": "Edit profile",
       "achievements": "Achievements",
-      "noAchievements": "No achievements yet.",
       "myProfile": "My Profile",
       "usernameMinLength": "The username must be at least {length} characters long.",
       "usernameMaxLength": "The username must not be longer than {length} characters.",
@@ -246,6 +245,10 @@
       "shirt": "Shirt",
       "dressShirt": "Suit",
       "dress": "Dress"
+    },
+    "achievements": {
+      "notAchievedYet": "Not achieved yet",
+      "noAchievements": "No achievements yet."
     }
   },
   "manage": {},

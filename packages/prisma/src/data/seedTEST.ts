@@ -157,6 +157,139 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       )
     })
   )
+
+  const pilotAchievement = await prisma.achievement.upsert({
+    where: { id: 2 },
+    create: {
+      id: 2,
+      name: 'Explorer',
+      description:
+        'Du warst Teil des KlickerUZH im ersten Semester. Dankeschön!',
+      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pilot-penguin.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pilot-penguin.svg',
+    },
+  })
+
+  const solvedEverythingAchievement = await prisma.achievement.upsert({
+    where: { id: 3 },
+    create: {
+      id: 3,
+      name: 'Fleisspreis',
+      description:
+        'Du hast alle verfügbaren Microlearnings und Lernelemente gelöst.',
+      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/fleisspreis.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/fleisspreis.svg',
+    },
+  })
+
+  const groupTaskPassedAchievement = await prisma.achievement.upsert({
+    where: { id: 8 },
+    create: {
+      id: 8,
+      name: 'Dream Team',
+      description:
+        'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
+      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/dreamteam.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/dreamteam.svg',
+    },
+  })
+
+  const groupTaskDoneAchievement = await prisma.achievement.upsert({
+    where: { id: 9 },
+    create: {
+      id: 9,
+      name: 'Teamgeist',
+      description: 'Du hast einen Gruppentask absolviert.',
+      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/teamgeist.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/teamgeist.svg',
+    },
+  })
+
+  const fewQuestionsAchievement = await prisma.achievement.upsert({
+    where: { id: 10 },
+    create: {
+      id: 10,
+      name: 'Unerschrocken',
+      description:
+        'Du hast eine Woche vor Ende der Vorlesung noch keine 6 Fragen beantwortet.',
+      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pirate-penguin.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pirate-penguin.svg',
+    },
+  })
+
+  const awardedPilotAchievements = PARTICIPANT_IDS.map(
+    async (participantId) => {
+      await prisma.participantAchievementInstance.upsert({
+        where: {
+          participantId_achievementId: {
+            participantId: participantId,
+            achievementId: pilotAchievement.id,
+          },
+        },
+        create: {
+          participant: {
+            connect: {
+              id: participantId,
+            },
+          },
+          achievement: {
+            connect: {
+              id: pilotAchievement.id,
+            },
+          },
+          achievedAt: new Date(),
+          achievedCount: 1,
+        },
+        update: {},
+      })
+    }
+  )
+
+  const awardedAchievements = [
+    solvedEverythingAchievement,
+    groupTaskPassedAchievement,
+    groupTaskDoneAchievement,
+    fewQuestionsAchievement,
+  ].map(async (achievement) => {
+    await prisma.participantAchievementInstance.upsert({
+      where: {
+        participantId_achievementId: {
+          participantId: PARTICIPANT_IDS[0],
+          achievementId: achievement.id,
+        },
+      },
+      create: {
+        participant: {
+          connect: {
+            id: PARTICIPANT_IDS[0],
+          },
+        },
+        achievement: {
+          connect: {
+            id: achievement.id,
+          },
+        },
+        achievedAt: new Date(),
+        achievedCount: 1,
+      },
+      update: {},
+    })
+  })
 }
 
 const prismaClient = new Prisma.PrismaClient()

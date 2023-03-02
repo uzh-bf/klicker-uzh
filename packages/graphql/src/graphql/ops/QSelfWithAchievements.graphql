@@ -1,0 +1,45 @@
+query SelfWithAchievements {
+  selfWithAchievements {
+    participant {
+      id
+      username
+      avatar
+      avatarSettings
+      xp
+      level
+      levelData {
+        id
+        index
+        name
+        avatar
+        requiredXp
+        nextLevel {
+          id
+          index
+          requiredXp
+          avatar
+          name
+        }
+      }
+      achievements {
+        id
+        achievedAt
+        achievedCount
+        achievement {
+          id
+          name
+          description
+          icon
+          iconColor
+        }
+      }
+    }
+    achievements {
+      id
+      name
+      description
+      icon
+      iconColor
+    }
+  }
+}

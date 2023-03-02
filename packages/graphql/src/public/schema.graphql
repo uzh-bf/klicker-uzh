@@ -569,13 +569,14 @@ type Query {
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
-  participantDetails(participantId: String!): ParticipantWithAchievements
+  participantDetails(participantId: String!): Participant
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
   question(id: Int!): Question
   runningSessions(shortname: String!): [Session!]
   self: Participant
+  selfWithAchievements: ParticipantWithAchievements
   session(id: String!): Session
   sessionEvaluation(id: String!): SessionEvaluation
   sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]

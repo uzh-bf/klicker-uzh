@@ -98,7 +98,10 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
       ) : (
         <Button
           className={{ root: 'text-sm' }}
-          onClick={props.onJoinCourse ? () => props.onJoinCourse!() : undefined}
+          onClick={(e) => {
+            e?.stopPropagation()
+            props.onJoinCourse!()
+          }}
         >
           {t('shared.generic.join')}
         </Button>

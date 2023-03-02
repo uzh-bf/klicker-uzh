@@ -12,9 +12,6 @@ interface ParticipantProfileModalProps {
   top10Participants: string[]
 }
 
-//TODO: compare participant's achievements with all possible achievements and grey out the ones that are not achieved yet
-//TODO: handle overflow in achivevements container in case there are more achievements than the current ones (=5)
-
 function ParticipantProfileModal({
   isProfileModalOpen,
   closeProfileModal,
@@ -32,7 +29,7 @@ function ParticipantProfileModal({
 
   if (loading || !data?.participantDetails) return <div>loading...</div>
 
-  const { participant, achievements } = data.participantDetails
+  const participant = data.participantDetails
 
   const onNext = () => {
     const nextIndex = (currentIndex + 1) % top10Participants.length
@@ -52,7 +49,7 @@ function ParticipantProfileModal({
       open={isProfileModalOpen}
       onClose={closeProfileModal}
       className={{
-        content: 'w-[500px] h-max my-auto',
+        content: 'w-[500px] my-auto max-h-full overflow-auto',
         title: 'text-3xl',
         onNext: 'hidden md:block',
         onPrev: 'hidden md:block',
@@ -61,7 +58,7 @@ function ParticipantProfileModal({
       onPrev={onPrev}
       title="Top 10"
     >
-      <div className="items-center w-full px-auto">
+      <div className="flex flex-col items-center justify-between w-full h-full px-auto">
         <ProfileData
           level={participant.levelData}
           xp={participant.xp}
@@ -69,7 +66,7 @@ function ParticipantProfileModal({
           username={participant.username}
           achievements={participant.achievements}
         />
-        <div className="grid grid-cols-10 pt-5 justify-items-center">
+        <div className="grid w-full grid-cols-10 pt-5 justify-items-center">
           {top10Participants.map((p, index) => (
             <div
               key={index}

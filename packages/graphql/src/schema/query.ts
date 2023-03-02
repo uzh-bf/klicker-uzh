@@ -62,29 +62,22 @@ export const Query = builder.queryType({
           })
         },
       }),
-      participantDetails: asParticipant.field({
+      selfWithAchievements: asParticipant.field({
         nullable: true,
         type: ParticipantWithAchievements,
+        async resolve(_, __, ctx) {
+          if (!ctx.user?.sub) return null
+          return ParticipantService.getParticipantWithAchievements(ctx)
+        },
+      }),
+      participantDetails: asParticipant.field({
+        nullable: true,
+        type: Participant,
         args: {
           participantId: t.arg.string({ required: true }),
         },
         async resolve(_, args, ctx) {
-          const participant = await ctx.prisma.participant.findUnique({
-            where: { id: args.participantId },
-            include: {
-              levelData: {
-                include: {
-                  nextLevel: true,
-                },
-              },
-            },
-          })
-          if (!participant) return null
-          const achievements = await ctx.prisma.achievement.findMany()
-          return {
-            participant,
-            achievements,
-          }
+          return ParticipantService.getParticipantDetails(args, ctx)
         },
       }),
       controlCourse: asUser.field({
