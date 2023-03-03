@@ -1751,3 +1751,36 @@ export async function cancelSession({ id }: { id: string }, ctx: Context) {
 
   return updatedSession
 }
+
+export async function deleteSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  try {
+    const deletedItem = await ctx.prisma.session.delete({
+      where: {
+        id,
+        status: {
+          in: [SessionStatus.PREPARED, SessionStatus.SCHEDULED],
+        },
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'Session',
+      id,
+    })
+
+    return deletedItem
+  } catch (e) {
+    // TODO: resolve type issue by first testing for prisma error
+    if (e?.code === 'P2025') {
+      console.log(
+        'The learning element is not in draft status and cannot be deleted.'
+      )
+      return null
+    }
+
+    throw e
+  }
+}

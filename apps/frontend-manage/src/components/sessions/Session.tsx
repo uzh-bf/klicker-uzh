@@ -1,4 +1,5 @@
 import { useMutation } from '@apollo/client'
+import LiveSessionDeletionModal from '@components/courses/modals/LiveSessionDeletionModal'
 import {
   faArrowUpRightFromSquare,
   faCalendarDays,
@@ -7,7 +8,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  DeleteSessionDocument,
   GetRunningSessionsDocument,
+  GetUserSessionsDocument,
   Session as SessionType,
   SessionBlock,
   StartSessionDocument,
@@ -31,11 +34,23 @@ interface SessionProps {
 
 function Session({ session }: SessionProps) {
   const theme = useContext(ThemeContext)
-  const [startSession] = useMutation(StartSessionDocument)
+  const [startSession] = useMutation(StartSessionDocument, {
+    variables: { id: session.id },
+    refetchQueries: [
+      {
+        query: GetRunningSessionsDocument,
+      },
+    ],
+  })
+  const [deleteSession] = useMutation(DeleteSessionDocument, {
+    variables: { id: session.id || '' },
+    refetchQueries: [GetUserSessionsDocument],
+  })
 
   const [showDetails, setShowDetails] = useState<boolean>(false)
   const [selectedSession, setSelectedSession] = useState<string>('')
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
+  const [deletionModal, setDeletionModal] = useState<boolean>(false)
 
   const router = useRouter()
 
@@ -122,14 +137,7 @@ function Session({ session }: SessionProps) {
                 <Button
                   basic
                   onClick={async () => {
-                    await startSession({
-                      variables: { id: session.id },
-                      refetchQueries: [
-                        {
-                          query: GetRunningSessionsDocument,
-                        },
-                      ],
-                    })
+                    await startSession()
                     router.push(`sessions/${session.id}/cockpit`)
                   }}
                 >
@@ -190,9 +198,16 @@ function Session({ session }: SessionProps) {
         </div>
         {(SESSION_STATUS.PREPARED === session.status ||
           SESSION_STATUS.SCHEDULED === session.status) && (
-          <div>
+          <div className="flex flex-row float-right gap-3">
             <Button
-              className={{ root: 'float-right' }}
+              className={{
+                root: 'bg-red-600 font-bold text-white',
+              }}
+              onClick={() => setDeletionModal(true)}
+            >
+              Session löschen
+            </Button>
+            <Button
               onClick={() =>
                 router.push({
                   pathname: '/',
@@ -205,6 +220,12 @@ function Session({ session }: SessionProps) {
           </div>
         )}
       </Collapsible>
+      <LiveSessionDeletionModal
+        deleteSession={deleteSession}
+        title={session.name}
+        open={deletionModal}
+        setOpen={setDeletionModal}
+      />
     </div>
   )
 }

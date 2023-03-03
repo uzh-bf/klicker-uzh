@@ -1,5 +1,5 @@
 import { useMutation } from '@apollo/client'
-import { faClock } from '@fortawesome/free-regular-svg-icons'
+import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowUpRightFromSquare,
   faCalculator,
@@ -13,6 +13,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  DeleteSessionDocument,
+  GetSingleCourseDocument,
   Session,
   SessionAccessMode,
   SessionStatus,
@@ -22,8 +24,9 @@ import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import LiveSessionDeletionModal from './modals/LiveSessionDeletionModal'
 import StatusTag from './StatusTag'
 
 interface SessionTileProps {
@@ -32,8 +35,16 @@ interface SessionTileProps {
 
 function SessionTile({ session }: SessionTileProps) {
   const theme = useContext(ThemeContext)
+
   const [startSession] = useMutation(StartSessionDocument)
+  const [deleteSession] = useMutation(DeleteSessionDocument, {
+    variables: { id: session.id || '' },
+    refetchQueries: [GetSingleCourseDocument],
+  })
+  const [deletionModal, setDeletionModal] = useState(false)
+
   const router = useRouter()
+
   const statusMap = {
     PREPARED: <FontAwesomeIcon icon={faClock} />,
     SCHEDULED: <FontAwesomeIcon icon={faCalculator} />,
@@ -44,7 +55,7 @@ function SessionTile({ session }: SessionTileProps) {
   return (
     <div
       key={session.id}
-      className="p-2 border border-solid rounded h-40 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80 flex flex-col justify-between"
+      className="p-2 border border-solid rounded h-44 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80 flex flex-col justify-between"
     >
       <div>
         <div className="flex flex-row justify-between">
@@ -93,6 +104,16 @@ function SessionTile({ session }: SessionTileProps) {
                 <FontAwesomeIcon icon={faPlay} />
               </Button.Icon>
               <Button.Label>Session starten</Button.Label>
+            </Button>
+            <Button
+              basic
+              className={{ root: 'text-red-600' }}
+              onClick={() => setDeletionModal(true)}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faTrashCan} />
+              </Button.Icon>
+              <Button.Label>Session löschen</Button.Label>
             </Button>
           </div>
         )}
@@ -148,6 +169,12 @@ function SessionTile({ session }: SessionTileProps) {
           />
         )}
       </div>
+      <LiveSessionDeletionModal
+        deleteSession={deleteSession}
+        title={session.name || ''}
+        open={deletionModal}
+        setOpen={setDeletionModal}
+      />
     </div>
   )
 }
