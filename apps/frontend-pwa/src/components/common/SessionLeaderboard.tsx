@@ -11,15 +11,15 @@ import { twMerge } from 'tailwind-merge'
 import { ParticipantOther } from '../participant/Participant'
 import { Podium } from '../participant/Podium'
 
-interface LeaderboardProps {
+interface SessionLeaderboardProps {
   sessionId: string
   className?: string
 }
 
-function Leaderboard({
+function SessionLeaderboard({
   sessionId,
   className,
-}: LeaderboardProps): React.ReactElement {
+}: SessionLeaderboardProps): React.ReactElement {
   const { data: selfData } = useQuery(SelfDocument, {
     fetchPolicy: 'cache-only',
   })
@@ -78,7 +78,7 @@ function Leaderboard({
   }
 
   return (
-    <div className={twMerge(className, '')}>
+    <div className={className}>
       <div className="space-y-4">
         <H2>{t('shared.leaderboard.sessionTitle')}</H2>
         <div>
@@ -131,4 +131,4 @@ function Leaderboard({
   )
 }
 
-export default Leaderboard
+export default SessionLeaderboard
