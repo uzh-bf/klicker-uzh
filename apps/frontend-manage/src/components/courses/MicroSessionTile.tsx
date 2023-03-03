@@ -34,10 +34,6 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   const scheduledStartAt = new Date(microSession.scheduledStartAt)
   const scheduledEndAt = new Date(microSession.scheduledEndAt)
 
-  const isFuture = scheduledStartAt.getTime() > Date.now()
-  const now = new Date()
-  const isRunning = now >= scheduledStartAt && now <= scheduledEndAt
-
   // format scheduled start and end times as strings
   const scheduledStartAtString = scheduledStartAt.toLocaleString('de-CH', {
     hour: '2-digit',
@@ -68,7 +64,11 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           <StatusTag
             color="bg-green-300"
             status="Published"
-            icon={isRunning ? faPlay : faCheck}
+            icon={
+              microSession.status === MicroSessionStatus.Published
+                ? faPlay
+                : faCheck
+            }
           />
         )}
       </div>
@@ -98,7 +98,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
         <div>Zugriffslink kopieren</div>
       </Button>
-      {isFuture && (
+      {microSession.status === MicroSessionStatus.Draft && (
         <Button
           basic
           className={{ root: theme.primaryText }}
