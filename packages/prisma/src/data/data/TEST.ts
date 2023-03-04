@@ -181,8 +181,15 @@ export const LEARNING_ELEMENTS = [
     id: '4968ad33-c15c-4b24-9e1f-c31f2d5578f1',
     name: 'Test Lernelement',
     displayName: 'Test Lernelement',
+    description: 'Welcome to this **learning element**.',
     orderType: 'SHUFFLED',
-    questions: [0, 1, 2, 3, 4],
+    stacks: [
+      [0, 1],
+      [2, 'Text in between elements', 3],
+      ['Pure Text block - could also be Intro'],
+      [4],
+      ['Text block 1', 'Text block 2, following text block 1'],
+    ],
   },
   {
     id: '011b1f9e-1b45-4447-8b88-b76fce089389',
@@ -196,7 +203,7 @@ And it can be done everyday!
     pointsMultiplier: 2,
     resetTimeDays: 1,
     orderType: 'LAST_RESPONSE',
-    questions: [0, 1, 2, 3, 4],
+    stacks: [[0], [1], [2], [3], [4]],
   },
 ]
 

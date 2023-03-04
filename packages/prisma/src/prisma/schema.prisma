@@ -237,8 +237,8 @@ model QuestionStack {
 
   elements StackElement[]
 
-  learningElement   LearningElement? @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  learningElementId String?          @db.Uuid
+  learningElement   LearningElement @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  learningElementId String          @db.Uuid
 }
 
 model StackElement {
@@ -251,8 +251,7 @@ model StackElement {
 
   mdContent String?
 
-  questionInstance   QuestionInstance?
-  questionInstanceId Int?
+  questionInstance QuestionInstance?
 }
 
 // ----- COURSES -----

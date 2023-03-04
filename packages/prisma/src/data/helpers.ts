@@ -258,63 +258,108 @@ interface BaseQuestionData {
 }
 
 export async function prepareLearningElement({
-  questions,
+  stacks,
   ...args
 }: {
   id: string
   name: string
   displayName: string
+  description?: string
   pointsMultiplier?: number
   resetTimeDays?: number
+  orderType?: Prisma.LearningElementOrderType
   ownerId: string
   courseId: string
-  questions: BaseQuestionData[]
-  status: Prisma.LearningElementStatus
+  stacks: (BaseQuestionData | String)[][]
+  status?: Prisma.LearningElementStatus
 }) {
-  const questionData = await Promise.all(questions)
-
-  if (R.any(R.isNil, questionData)) {
-    throw new Error('Invalid question data')
-  }
-
-  const preparedInstances = questionData.map((question, ix) =>
-    prepareQuestionInstance({
-      order: ix,
-      question,
-      pointsMultiplier: args.pointsMultiplier
-        ? args.pointsMultiplier * question.pointsMultiplier
-        : undefined,
-      resetTimeDays: args.resetTimeDays,
-      type: QuestionInstanceType.LEARNING_ELEMENT,
-    })
-  )
-
   return {
     where: {
       id: args.id,
     },
     create: {
-      ...args,
-      instances: {
-        create: preparedInstances,
+      id: args.id,
+      name: args.name,
+      displayName: args.displayName,
+      description: args.description,
+      pointsMultiplier: args.pointsMultiplier,
+      resetTimeDays: args.resetTimeDays,
+      status: args.status,
+      orderType: args.orderType,
+      owner: {
+        connect: {
+          id: args.ownerId,
+        },
+      },
+      course: {
+        connect: {
+          id: args.courseId,
+        },
+      },
+      stacks: {
+        create: await Promise.all(
+          stacks.map(async (stack, ix) => ({
+            order: ix,
+            elements: {
+              create: stack.map((element, ixInner) => {
+                if (typeof element === 'string') {
+                  return { order: ixInner, mdContent: element }
+                }
+                return {
+                  order: ixInner,
+                  questionInstance: {
+                    create: prepareQuestionInstance({
+                      order: 0,
+                      question: element,
+                      pointsMultiplier: args.pointsMultiplier
+                        ? args.pointsMultiplier * element.pointsMultiplier
+                        : undefined,
+                      resetTimeDays: args.resetTimeDays,
+                      type: QuestionInstanceType.LEARNING_ELEMENT,
+                    }),
+                  },
+                }
+              }),
+            },
+          }))
+        ),
       },
     },
     update: {
-      ...args,
-      instances: {
-        upsert: preparedInstances.map((instance) => ({
-          where: {
-            type_learningElementId_order: {
-              type: QuestionInstanceType.LEARNING_ELEMENT,
-              learningElementId: args.id,
-              order: instance.order,
+      name: args.name,
+      displayName: args.displayName,
+      description: args.description,
+      pointsMultiplier: args.pointsMultiplier,
+      resetTimeDays: args.resetTimeDays,
+      status: args.status,
+      orderType: args.orderType,
+      stacks: {
+        create: await Promise.all(
+          stacks.map(async (stack, ix) => ({
+            order: ix,
+            elements: {
+              create: stack.map((element, ixInner) => {
+                if (typeof element === 'string') {
+                  return { order: ixInner, mdContent: element }
+                }
+                return {
+                  order: ixInner,
+                  questionInstance: {
+                    create: prepareQuestionInstance({
+                      order: 0,
+                      question: element,
+                      pointsMultiplier: args.pointsMultiplier
+                        ? args.pointsMultiplier * element.pointsMultiplier
+                        : undefined,
+                      resetTimeDays: args.resetTimeDays,
+                      type: QuestionInstanceType.LEARNING_ELEMENT,
+                    }),
+                  },
+                }
+              }),
             },
-          },
-          create: instance,
-          update: {
-            ...R.pick([], instance),
-          },
-        })),
+          }))
+        ),
       },
     },
   }
