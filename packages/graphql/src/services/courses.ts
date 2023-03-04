@@ -428,11 +428,6 @@ export async function getCourseData(
         },
       },
       learningElements: {
-        include: {
-          _count: {
-            select: { instances: true },
-          },
-        },
         orderBy: {
           createdAt: 'asc',
         },
@@ -475,15 +470,6 @@ export async function getCourseData(
       ),
     }
   })
-
-  const reducedLearningElements = course?.learningElements.map(
-    (learningElement) => {
-      return {
-        ...learningElement,
-        numOfInstances: learningElement._count.instances,
-      }
-    }
-  )
 
   const reducedMicroSessions = course?.microSessions.map((microSession) => {
     return {
@@ -535,7 +521,7 @@ export async function getCourseData(
   return {
     ...course,
     sessions: reducedSessions,
-    learningElements: reducedLearningElements,
+    learningElements: course?.learningElements,
     microSessions: reducedMicroSessions,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries?.length ?? [],
