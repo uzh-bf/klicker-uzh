@@ -129,15 +129,14 @@ export const StudentQuestion = ({
     }
   }
 
-  const onNumericalValueChange = (inputValue: any): void => {
-    const inputEmpty =
-      inputValue !== 0 && (!inputValue || inputValue.length === 0)
+  const onNumericalValueChange = (inputValue: string): void => {
+    const inputEmpty = !inputValue || inputValue.length === 0
 
     let validator = Yup.number().required()
-    if (currentQuestion.options?.restrictions?.min) {
+    if (typeof currentQuestion.options?.restrictions?.min !== 'undefined') {
       validator = validator.min(currentQuestion.options?.restrictions?.min)
     }
-    if (currentQuestion.options?.restrictions?.max) {
+    if (typeof currentQuestion.options?.restrictions?.max !== 'undefined') {
       validator = validator.max(currentQuestion.options?.restrictions?.max)
     }
     const schema = Yup.object().shape({
