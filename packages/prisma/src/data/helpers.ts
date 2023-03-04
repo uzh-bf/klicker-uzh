@@ -267,7 +267,7 @@ export async function prepareLearningElement({
   description?: string
   pointsMultiplier?: number
   resetTimeDays?: number
-  orderType?: Prisma.LearningElementOrderType
+  orderType?: Prisma.OrderType
   ownerId: string
   courseId: string
   stacks: (BaseQuestionData | String)[][]
