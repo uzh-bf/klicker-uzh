@@ -1,15 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
-import {
-  faBookmark,
-  faQuestionCircle,
-  faTimesCircle,
-} from '@fortawesome/free-regular-svg-icons'
-import {
-  faBookmark as faBookmarkSolid,
-  faCheck,
-  faRepeat,
-  faShuffle,
-} from '@fortawesome/free-solid-svg-icons'
+import { faBookmark } from '@fortawesome/free-regular-svg-icons'
+import { faBookmark as faBookmarkSolid } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   BookmarkQuestionDocument,
@@ -24,7 +15,6 @@ import { Button, H3, Progress, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSideProps } from 'next'
 import { useTranslations } from 'next-intl'
-import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import Footer from '../../../../components/common/Footer'
@@ -32,22 +22,14 @@ import OptionsDisplay from '../../../../components/common/OptionsDisplay'
 import EvaluationDisplay from '../../../../components/evaluation/EvaluationDisplay'
 import FlagQuestionModal from '../../../../components/flags/FlagQuestionModal'
 import Layout from '../../../../components/Layout'
+import DynamicMarkdown from '../../../../components/learningElements/DynamicMarkdown'
+import ElementOverview from '../../../../components/learningElements/ElementOverview'
 import formatResponse from '../../../../lib/formatResponse'
 
 interface Props {
   courseId: string
   id: string
 }
-
-const DynamicMarkdown = dynamic(
-  async () => {
-    const { Markdown } = await import('@klicker-uzh/markdown')
-    return Markdown
-  },
-  {
-    ssr: false,
-  }
-)
 
 // TODO: leaderboard and points screen after all questions have been completed?
 // TODO: different question types (FREE and RANGE)
@@ -156,92 +138,21 @@ function LearningElement({ courseId, id }: Props) {
       <div className="flex-1">
         <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
           {currentIx === -1 && (
-            <div className="flex flex-col space-y-4">
-              <div className="border-b">
-                <H3 className={{ root: 'mb-0' }}>
-                  {data.learningElement.displayName}
-                </H3>
-              </div>
-
-              {data.learningElement.description && (
-                <DynamicMarkdown content={data.learningElement.description} />
-              )}
-
-              <div className="flex flex-col gap-2 text-sm md:gap-16 md:flex-row">
-                <div className="flex-1 space-y-2">
-                  <div className="flex flex-row items-center gap-2">
-                    <FontAwesomeIcon icon={faQuestionCircle} />
-                    <div>
-                      {t('pwa.learningElement.numOfQuestions', {
-                        number: data.learningElement.instances?.length,
-                      })}
-                    </div>
-                  </div>
-                  <div className="flex flex-row items-center gap-2">
-                    <FontAwesomeIcon icon={faShuffle} />
-                    <div>
-                      {t(
-                        `pwa.learningElement.order${data.learningElement.orderType}`
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-row items-center gap-2">
-                    <FontAwesomeIcon icon={faRepeat} />
-                    {data.learningElement.resetTimeDays === 1 ? (
-                      <>{t('pwa.learningElement.repetitionDaily')}</>
-                    ) : (
-                      <>
-                        {t('pwa.learningElement.repetitionXDays', {
-                          days: data.learningElement.resetTimeDays,
-                        })}
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex-1 space-y-2">
-                  {/* <div className="flex flex-row items-center gap-2">
-                  <div>
-                    Punkte (berechnet): {data.learningElement.previousScore}
-                  </div>
-                </div>
-                <div className="flex flex-row items-center gap-2">
-                  <div>
-                    Punkte (gesammelt):{' '}
-                    {data.learningElement.previousPointsAwarded}
-                  </div>
-                </div> */}
-                  <div className="flex flex-row items-center gap-2">
-                    <FontAwesomeIcon icon={faCheck} />
-                    <div>
-                      {t('pwa.learningElement.answeredMinOnce', {
-                        answered: data.learningElement.previouslyAnswered,
-                        total: data.learningElement.instances?.length,
-                      })}
-                    </div>
-                  </div>
-                  {/* <div className="flex flex-row items-center gap-2">
-                  Anzahl Antworten:{' '}
-                  <div>{data.learningElement.totalTrials}</div>
-                </div> */}
-                  <div className="flex flex-row items-center gap-2">
-                    <FontAwesomeIcon icon={faTimesCircle} />
-                    <div>
-                      {t('pwa.learningElement.multiplicatorPoints', {
-                        mult: data.learningElement.pointsMultiplier,
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                className={{ root: 'self-end text-lg' }}
-                onClick={() => setCurrentIx(0)}
-              >
-                {t('shared.generic.start')}
-              </Button>
-            </div>
+            <ElementOverview
+              displayName={data.learningElement.displayName}
+              description={data.learningElement.description ?? undefined}
+              numOfQuestions={data.learningElement.numOfQuestions ?? undefined}
+              orderType={data.learningElement.orderType}
+              resetTimeDays={data.learningElement.resetTimeDays ?? undefined}
+              previouslyAnswered={
+                data.learningElement.previouslyAnswered ?? undefined
+              }
+              stacksWithQuestions={
+                data.learningElement.stacksWithQuestions ?? undefined
+              }
+              pointsMultiplier={data.learningElement.pointsMultiplier}
+              setCurrentIx={setCurrentIx}
+            />
           )}
 
           {currentIx >= 0 && !currentInstance && (
@@ -447,13 +358,13 @@ function LearningElement({ courseId, id }: Props) {
                 nonLinear
                 isMaxVisible
                 displayOffset={
-                  (data.learningElement?.instances?.length ?? 0) > 15
+                  (data.learningElement?.stacksWithQuestions ?? 0) > 15
                     ? 3
                     : undefined
                 }
                 formatter={(v) => v}
                 value={currentIx}
-                max={data.learningElement?.instances?.length ?? 0}
+                max={data.learningElement?.stacksWithQuestions ?? 0}
                 onItemClick={(ix: number) => setCurrentIx(ix)}
               />
             </div>
