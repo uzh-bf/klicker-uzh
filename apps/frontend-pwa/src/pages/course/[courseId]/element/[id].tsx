@@ -176,13 +176,13 @@ function LearningElement({ courseId, id }: Props) {
                 nonLinear
                 isMaxVisible
                 displayOffset={
-                  (data.learningElement?.stacksWithQuestions ?? 0) > 15
+                  (data.learningElement?.stacks?.length ?? 0) > 15
                     ? 3
                     : undefined
                 }
                 formatter={(v) => v}
                 value={currentIx}
-                max={data.learningElement?.stacksWithQuestions ?? 0}
+                max={data.learningElement?.stacks?.length ?? 0}
                 onItemClick={(ix: number) => setCurrentIx(ix)}
               />
             </div>
