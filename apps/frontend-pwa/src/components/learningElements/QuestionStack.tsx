@@ -69,29 +69,40 @@ function QuestionStack({
   //   })
   // }
 
+  console.log(stack)
+
   return (
     <div>
       {stack.elements?.map((element) => {
         if (element.mdContent) {
           return (
-            <DynamicMarkdown key={element.id} content={element.mdContent} />
+            <div
+              key={element.id}
+              className="py-2 my-4 border-b-2 border-red-400 border-solid last:border-none"
+            >
+              <DynamicMarkdown content={element.mdContent} />
+            </div>
           )
         }
         if (element.questionInstance) {
           return (
-            <SingleQuestion
+            <div
               key={element.id}
-              instance={element.questionInstance}
-              currentStep={currentStep}
-              totalSteps={totalSteps}
-              response={responses[element.id]}
-              setResponse={(response) =>
-                setResponses((prev) => ({
-                  ...prev,
-                  [element.id]: response,
-                }))
-              }
-            />
+              className="py-2 my-4 border-b-2 border-red-400 border-solid last:border-none"
+            >
+              <SingleQuestion
+                instance={element.questionInstance}
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                response={responses[element.id]}
+                setResponse={(response) =>
+                  setResponses((prev) => ({
+                    ...prev,
+                    [element.id]: response,
+                  }))
+                }
+              />
+            </div>
           )
         }
         return <div key={element.id}>Loading...</div>
