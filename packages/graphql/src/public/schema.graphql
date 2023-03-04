@@ -312,15 +312,15 @@ type LearningElement {
   description: String
   displayName: String!
   id: String!
-  instances: [QuestionInstance!]
   name: String!
-  numOfInstances: Int
   orderType: LearningElementOrderType!
   pointsMultiplier: Int!
   previousPointsAwarded: Float
   previousScore: Float
   previouslyAnswered: Int
   resetTimeDays: Int
+  stacks: [QuestionStack!]
+  stacksWithQuestions: Int
   status: LearningElementStatus!
   totalTrials: Int
 }
@@ -647,6 +647,12 @@ type QuestionResponseDetail {
   id: Int!
 }
 
+type QuestionStack {
+  elements: [StackElement!]
+  id: Int!
+  order: Int
+}
+
 enum QuestionType {
   FREE_TEXT
   KPRIM
@@ -732,6 +738,13 @@ enum SessionStatus {
 input SolutionRangeInput {
   max: Float
   min: Float
+}
+
+type StackElement {
+  id: Int!
+  mdContent: String
+  order: Int
+  questionInstance: QuestionInstance
 }
 
 type Statistics {

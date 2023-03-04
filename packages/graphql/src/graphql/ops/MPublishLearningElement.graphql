@@ -4,6 +4,6 @@ mutation PublishLearningElement($id: String!) {
     name
     displayName
     status
-    numOfInstances
+    stacksWithQuestions
   }
 }

@@ -17,13 +17,47 @@ export const LearningElementStatus = builder.enumType('LearningElementStatus', {
   values: Object.values(DB.LearningElementStatus),
 })
 
+export interface IQuestionStack extends DB.QuestionStack {
+  elements: IStackElement[]
+}
+export const QuestionStackRef =
+  builder.objectRef<IQuestionStack>('QuestionStack')
+export const QuestionStack = QuestionStackRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    order: t.exposeInt('order', { nullable: true }),
+
+    elements: t.expose('elements', {
+      type: [StackElement],
+      nullable: true,
+    }),
+  }),
+})
+
+export interface IStackElement extends DB.StackElement {
+  questionInstance?: IQuestionInstance
+}
+export const StackElementRef = builder.objectRef<IStackElement>('StackElement')
+export const StackElement = StackElementRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    order: t.exposeInt('order', { nullable: true }),
+
+    mdContent: t.exposeString('mdContent', { nullable: true }),
+    questionInstance: t.expose('questionInstance', {
+      type: QuestionInstance,
+      nullable: true,
+    }),
+  }),
+})
+
 export interface ILearningElement extends DB.LearningElement {
   previouslyAnswered?: number
   previousScore?: number
   previousPointsAwarded?: number
   totalTrials?: number
-  instances?: IQuestionInstance[]
-  numOfInstances?: number
+  stacks?: IQuestionStack[]
+  stacksWithQuestions?: number
   course?: ICourse | null
 }
 export const LearningElementRef =
@@ -45,12 +79,14 @@ export const LearningElement = LearningElementRef.implement({
       nullable: true,
     }),
     totalTrials: t.exposeInt('totalTrials', { nullable: true }),
-
-    instances: t.expose('instances', {
-      type: [QuestionInstance],
+    stacksWithQuestions: t.exposeInt('stacksWithQuestions', {
       nullable: true,
     }),
-    numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),
+
+    stacks: t.expose('stacks', {
+      type: [QuestionStack],
+      nullable: true,
+    }),
 
     course: t.expose('course', {
       type: Course,
