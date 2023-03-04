@@ -1,5 +1,5 @@
 import Prisma from '@klicker-uzh/prisma'
-const { AttachmentType, QuestionType, SessionStatus } = Prisma
+const { AttachmentType, QuestionType, SessionStatus, OrderType } = Prisma
 
 export const ATTACHMENTS = [
   {
@@ -182,7 +182,7 @@ export const LEARNING_ELEMENTS = [
     name: 'Test Lernelement',
     displayName: 'Test Lernelement',
     description: 'Welcome to this **learning element**.',
-    orderType: 'SHUFFLED',
+    orderType: OrderType.SHUFFLED,
     stacks: [
       [0, 1],
       [2, 'Text in between elements', 3],
@@ -202,7 +202,7 @@ And it can be done everyday!
 `,
     pointsMultiplier: 2,
     resetTimeDays: 1,
-    orderType: 'LAST_RESPONSE',
+    orderType: OrderType.LAST_RESPONSE,
     stacks: [[0], [1], [2], [3], [4]],
   },
 ]

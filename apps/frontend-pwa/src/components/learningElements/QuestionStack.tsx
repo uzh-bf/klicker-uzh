@@ -76,8 +76,6 @@ function QuestionStack({
     }
   }, [stack])
 
-  console.log(responses)
-
   const handleSubmitResponse = async () => {
     const responsePromises = Object.keys(responses).map((key) => {
       const element = stack.elements?.find((el) => el.id === parseInt(key))

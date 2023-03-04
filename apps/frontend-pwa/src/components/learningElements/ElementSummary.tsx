@@ -28,55 +28,55 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
             return element.questionInstance
           })
         })
-        .map((stack) =>
-          stack.elements
-            ?.filter((element) => {
-              if (element.mdContent) return
-              return element
-            })
-            .reduce<{
-              id: number
-              name?: string
-              elements: StackElement[]
-              pointsAwarded: number
-              score: number
-              pointsPossible: number
-              solved: boolean
-            }>(
-              (acc, element) => {
-                if (element.questionInstance) {
-                  return {
-                    ...acc,
-                    elements: [...acc.elements, element],
-                    pointsAwarded:
-                      acc.pointsAwarded +
-                      (element.questionInstance.evaluation?.pointsAwarded ?? 0),
-                    score:
-                      acc.score +
-                      (element.questionInstance.evaluation?.score ?? 0),
-                    pointsPossible:
-                      acc.pointsPossible +
-                      element.questionInstance.pointsMultiplier * 10,
-                    solved:
-                      acc.solved ||
-                      (typeof element.questionInstance.evaluation !==
-                        'undefined' &&
-                        element.questionInstance.evaluation !== null),
+        .map((stack) => {
+          return {
+            ...stack,
+            ...stack.elements
+              ?.filter((element) => {
+                if (element.mdContent) return
+                return element
+              })
+              .reduce<{
+                elements: StackElement[]
+                pointsAwarded: number
+                score: number
+                pointsPossible: number
+                solved: boolean
+              }>(
+                (acc, element) => {
+                  if (element.questionInstance) {
+                    return {
+                      ...acc,
+                      elements: [...acc.elements, element],
+                      pointsAwarded:
+                        acc.pointsAwarded +
+                        (element.questionInstance.evaluation?.pointsAwarded ??
+                          0),
+                      score:
+                        acc.score +
+                        (element.questionInstance.evaluation?.score ?? 0),
+                      pointsPossible:
+                        acc.pointsPossible +
+                        element.questionInstance.pointsMultiplier * 10,
+                      solved:
+                        acc.solved ||
+                        (typeof element.questionInstance.evaluation !==
+                          'undefined' &&
+                          element.questionInstance.evaluation !== null),
+                    }
                   }
+                  return acc
+                },
+                {
+                  elements: [],
+                  pointsAwarded: 0,
+                  score: 0,
+                  pointsPossible: 0,
+                  solved: false,
                 }
-                return acc
-              },
-              {
-                id: stack.id,
-                name: undefined,
-                elements: [],
-                pointsAwarded: 0,
-                score: 0,
-                pointsPossible: 0,
-                solved: false,
-              }
-            )
-        ),
+              ),
+          }
+        }),
     [stacks]
   )
 
@@ -105,14 +105,12 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
           </H3>
         </div>
         <div>
-          {/* // TODO: add optional name on questionStack, which is shown here (and possibly on the stack page) - if no name is specified, just use the first question and ,... if multiple are part of the definition */}
-
           {gradedStacks.map((stack) => (
             <div className="flex flex-row justify-between" key={stack?.id}>
               <div>
-                {stack?.name || (stack?.elements.length || 1) > 1
-                  ? `${stack?.elements[0].questionInstance?.questionData.name}, ...`
-                  : `${stack?.elements[0].questionInstance?.questionData.name}`}
+                {(stack?.elements?.length || 1) > 1
+                  ? `${stack?.elements?.[0].questionInstance?.questionData.name}, ...`
+                  : `${stack?.elements?.[0].questionInstance?.questionData.name}`}
               </div>
               {stack?.solved ? (
                 <div>
