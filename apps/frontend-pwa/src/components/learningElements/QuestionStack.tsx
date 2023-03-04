@@ -32,6 +32,7 @@ function QuestionStack({
     Record<string, {} | number[] | string | null>
   >({})
   const [isEvaluation, setIsEvaluation] = useState(false)
+  const [informationOnly, setInformationOnly] = useState(true)
 
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
@@ -42,6 +43,7 @@ function QuestionStack({
       if (element.mdContent) return
 
       const questionType = element.questionInstance?.questionData.type
+      setInformationOnly(false)
       if (
         questionType === QuestionType.Sc ||
         questionType === QuestionType.Mc
@@ -70,6 +72,7 @@ function QuestionStack({
     return () => {
       setResponses({})
       setIsEvaluation(false)
+      setInformationOnly(true)
     }
   }, [stack])
 
@@ -136,12 +139,12 @@ function QuestionStack({
       <Button
         className={{ root: 'float-right' }}
         onClick={
-          isEvaluation
+          isEvaluation || informationOnly
             ? () => handleNextQuestion()
             : () => handleSubmitResponse()
         }
       >
-        {isEvaluation
+        {isEvaluation || informationOnly
           ? t('shared.generic.continue')
           : t('shared.generic.sendAnswer')}
       </Button>
