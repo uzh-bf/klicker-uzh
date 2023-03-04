@@ -19,7 +19,7 @@ import {
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
-import { pick } from 'ramda'
+import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
@@ -528,11 +528,6 @@ export async function getLearningElementData(
 
   if (!element) return null
 
-  // reduce stacks to contain all elements that the stacks contain and in addition the following props
-  // - previouslyAnswered: number of stacks that have a stackElement with a questionInstance with at least one response
-  // - previousScore: sum of all scores of all responses of all questionInstances of all stackElements
-  // - previousPointsAwarded: sum of all pointsAwarded of all responses of all questionInstances of all stackElements
-  // - totalTrials: sum of all trialsCount of all responses of all questionInstances of all stackElements
   const stacksWithStatistics = element.stacks.reduce<{
     stacks: QuestionStack[]
     previouslyAnswered: number
@@ -578,8 +573,60 @@ export async function getLearningElementData(
         }
       )
 
+      const stackInstancesWithoutSolution = stack.elements.map((element) => {
+        if (!element.questionInstance) {
+          return element
+        }
+
+        const questionData =
+          element.questionInstance.questionData?.valueOf() as AllQuestionTypeData
+
+        switch (questionData?.type) {
+          case QuestionType.SC:
+          case QuestionType.MC:
+          case QuestionType.KPRIM:
+            return {
+              ...element,
+              questionInstance: {
+                ...element.questionInstance,
+                questionData: {
+                  ...questionData,
+                  options: {
+                    ...questionData.options,
+                    choices: questionData.options.choices.map(
+                      R.pick(['ix', 'value'])
+                    ),
+                  },
+                },
+              },
+            }
+
+          case QuestionType.NUMERICAL:
+          case QuestionType.FREE_TEXT:
+            return {
+              ...element,
+              questionInstance: {
+                ...element.questionInstance,
+                questionData: {
+                  ...questionData,
+                  options: {
+                    restrictions: questionData.options.restrictions,
+                  },
+                },
+              },
+            }
+
+          default: {
+            return element
+          }
+        }
+      })
+
       return {
-        stacks: [...acc.stacks, stack],
+        stacks: [
+          ...acc.stacks,
+          { ...stack, questionInstances: stackInstancesWithoutSolution },
+        ],
         previouslyAnswered:
           acc.previouslyAnswered + (stackStatistics.totalTrials > 0 ? 1 : 0),
         previousScore: acc.previousScore + stackStatistics.previousScore,
@@ -601,81 +648,6 @@ export async function getLearningElementData(
       stacksWithQuestions: 0,
     }
   )
-
-  // console.log(stacksWithStatistics)
-
-  // const instancesWithoutSolution = element.instances.reduce<{
-  //   instances: QuestionInstance[]
-  //   previouslyAnswered: number
-  //   previousScore: number
-  //   previousPointsAwarded: number
-  //   totalTrials: number
-  // }>(
-  //   (acc, instance) => {
-  //     const questionData =
-  //       instance.questionData?.valueOf() as AllQuestionTypeData
-  //     if (
-  //       !questionData ||
-  //       typeof questionData !== 'object' ||
-  //       Array.isArray(questionData)
-  //     )
-  //       return {
-  //         ...acc,
-  //         instances: [...acc.instances, instance],
-  //       }
-
-  //     switch (questionData.type) {
-  //       case QuestionType.SC:
-  //       case QuestionType.MC:
-  //       case QuestionType.KPRIM:
-  //         const response = instance.responses?.[0]
-  //         return {
-  //           previouslyAnswered: acc.previouslyAnswered + Number(!!response),
-  //           previousScore: acc.previousScore + (response?.totalScore ?? 0),
-  //           previousPointsAwarded:
-  //             acc.previousPointsAwarded + (response?.totalPointsAwarded ?? 0),
-  //           totalTrials: acc.totalTrials + (response?.trialsCount ?? 0),
-  //           instances: [
-  //             ...acc.instances,
-  //             {
-  //               ...instance,
-  //               lastResponse: response?.lastAwardedAt,
-  //               questionData: {
-  //                 ...questionData,
-  //                 options: {
-  //                   ...questionData.options,
-  //                   choices: questionData.options.choices.map(
-  //                     R.pick(['ix', 'value'])
-  //                   ),
-  //                 },
-  //               },
-  //             },
-  //           ],
-  //         }
-
-  //       case QuestionType.FREE_TEXT:
-  //       case QuestionType.NUMERICAL:
-  //       default: {
-  //         const response = instance.responses?.[0]
-  //         return {
-  //           previouslyAnswered: acc.previouslyAnswered + Number(!!response),
-  //           previousScore: acc.previousScore + (response?.totalScore ?? 0),
-  //           previousPointsAwarded:
-  //             acc.previousPointsAwarded + (response?.totalPointsAwarded ?? 0),
-  //           totalTrials: acc.totalTrials + (response?.trialsCount ?? 0),
-  //           instances: [...acc.instances, instance],
-  //         }
-  //       }
-  //     }
-  //   },
-  //   {
-  //     instances: [],
-  //     previouslyAnswered: 0,
-  //     previousScore: 0,
-  //     previousPointsAwarded: 0,
-  //     totalTrials: 0,
-  //   }
-  // )
 
   // TODO: reintroduce ordering
   // if (element.orderType === OrderType.LAST_RESPONSE) {
@@ -701,7 +673,7 @@ export async function getLearningElementData(
 
   return {
     ...element,
-    ...instancesWithoutSolution,
+    ...stacksWithStatistics,
   }
 }
 
@@ -761,7 +733,7 @@ export async function createLearningElement(
           const question = questionMap[questionId]
           const processedQuestionData = processQuestionData(question)
           const questionAttachmentInstances = question.attachments.map(
-            pick(['type', 'href', 'name', 'description', 'originalName'])
+            R.pick(['type', 'href', 'name', 'description', 'originalName'])
           )
           return {
             order: ix,
