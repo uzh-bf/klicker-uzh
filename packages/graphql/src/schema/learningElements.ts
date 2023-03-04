@@ -56,8 +56,9 @@ export interface ILearningElement extends DB.LearningElement {
   previousScore?: number
   previousPointsAwarded?: number
   totalTrials?: number
-  stacks?: IQuestionStack[]
   stacksWithQuestions?: number
+  numOfQuestions?: number
+  stacks?: IQuestionStack[]
   course?: ICourse | null
 }
 export const LearningElementRef =
@@ -82,6 +83,7 @@ export const LearningElement = LearningElementRef.implement({
     stacksWithQuestions: t.exposeInt('stacksWithQuestions', {
       nullable: true,
     }),
+    numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
 
     stacks: t.expose('stacks', {
       type: [QuestionStack],

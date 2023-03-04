@@ -313,6 +313,7 @@ type LearningElement {
   displayName: String!
   id: String!
   name: String!
+  numOfQuestions: Int
   orderType: LearningElementOrderType!
   pointsMultiplier: Int!
   previousPointsAwarded: Float

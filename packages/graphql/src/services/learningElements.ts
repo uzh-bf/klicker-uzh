@@ -535,6 +535,7 @@ export async function getLearningElementData(
     previousPointsAwarded: number
     totalTrials: number
     stacksWithQuestions: number
+    numOfQuestions: number
   }>(
     (acc, stack) => {
       const stackStatistics = stack.elements.reduce<{
@@ -543,6 +544,7 @@ export async function getLearningElementData(
         previousScore: number
         previousPointsAwarded: number
         totalTrials: number
+        numOfInstances: number
       }>(
         (acc, stackElement) => {
           const questionInstance =
@@ -562,6 +564,7 @@ export async function getLearningElementData(
               acc.previousPointsAwarded +
               (lastResponse?.totalPointsAwarded ?? 0),
             totalTrials: lastResponse?.trialsCount ?? 0,
+            numOfInstances: acc.numOfInstances + 1,
           }
         },
         {
@@ -570,6 +573,7 @@ export async function getLearningElementData(
           previousScore: 0,
           previousPointsAwarded: 0,
           totalTrials: 0,
+          numOfInstances: 0,
         }
       )
 
@@ -637,6 +641,7 @@ export async function getLearningElementData(
           : acc.totalTrials,
         stacksWithQuestions:
           acc.stacksWithQuestions + (stackStatistics.containsQuestions ? 1 : 0),
+        numOfQuestions: acc.numOfQuestions + stackStatistics.numOfInstances,
       }
     },
     {
@@ -646,6 +651,7 @@ export async function getLearningElementData(
       previousPointsAwarded: 0,
       totalTrials: 0,
       stacksWithQuestions: 0,
+      numOfQuestions: 0,
     }
   )
 

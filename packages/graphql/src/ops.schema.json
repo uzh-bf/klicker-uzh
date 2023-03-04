@@ -3379,6 +3379,18 @@
             "deprecationReason": null
           },
           {
+            "name": "numOfQuestions",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "orderType",
             "description": null,
             "args": [],

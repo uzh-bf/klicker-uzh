@@ -13,6 +13,7 @@ query GetLearningElement($id: String!) {
     previousPointsAwarded
     totalTrials
     stacksWithQuestions
+    numOfQuestions
 
     course {
       id
