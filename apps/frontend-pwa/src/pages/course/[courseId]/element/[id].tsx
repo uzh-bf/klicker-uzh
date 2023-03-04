@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import QuestionStack from '@components/learningElements/QuestionStack'
 import {
   BookmarkQuestionDocument,
   GetBookmarkedQuestionsDocument,
@@ -7,14 +6,16 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { H3, Progress, UserNotification } from '@uzh-bf/design-system'
+import { Progress, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Footer from '../../../../components/common/Footer'
 import Layout from '../../../../components/Layout'
 import ElementOverview from '../../../../components/learningElements/ElementOverview'
+import ElementSummary from '../../../../components/learningElements/ElementSummary'
+import QuestionStack from '../../../../components/learningElements/QuestionStack'
 
 interface Props {
   courseId: string
@@ -55,14 +56,6 @@ function LearningElement({ courseId, id }: Props) {
     //   ? true
     //   : false,
   }
-
-  const totalPointsAwarded = useMemo(() => {
-    if (!data?.learningElement) return 0
-    return data.learningElement.instances?.reduce(
-      (acc, instance) => acc + (instance?.evaluation?.pointsAwarded ?? 0),
-      0
-    )
-  }, [data?.learningElement?.instances])
 
   if (loading) return <p>{t('shared.generic.loading')}</p>
 
@@ -118,56 +111,10 @@ function LearningElement({ courseId, id }: Props) {
           )}
 
           {currentIx >= 0 && !currentStack && (
-            <div className="space-y-3">
-              <div>
-                <H3>{t('shared.generic.congrats')}</H3>
-                <p>
-                  {t.rich('pwa.learningElement.solvedLearningElement', {
-                    name: data.learningElement.displayName,
-                    it: (text) => <span className="italic">{text}</span>,
-                  })}
-                </p>
-              </div>
-              <div>
-                <div className="flex flex-row items-center justify-between">
-                  <H3
-                    className={{
-                      root: 'flex flex-row justify-between text-sm',
-                    }}
-                  >
-                    {t('shared.generic.evaluation')}
-                  </H3>
-                  <H3 className={{ root: 'text-sm' }}>
-                    {t('pwa.learningElement.pointsCollectedPossible')}
-                  </H3>
-                </div>
-                <div>
-                  {data.learningElement.instances?.map((instance) => (
-                    <div
-                      className="flex flex-row justify-between"
-                      key={instance.id}
-                    >
-                      <div>{instance.questionData.name}</div>
-                      {instance.evaluation ? (
-                        <div>
-                          {instance.evaluation.pointsAwarded} /{' '}
-                          {instance.evaluation.score} /{' '}
-                          {instance.pointsMultiplier * 10}
-                        </div>
-                      ) : (
-                        <div>{t('pwa.learningElement.notAttempted')}</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <H3 className={{ root: 'mt-4 text-right text-base' }}>
-                  {t('pwa.learningElement.totalPoints', {
-                    points: totalPointsAwarded,
-                  })}
-                </H3>
-              </div>
-            </div>
+            <ElementSummary
+              displayName={data.learningElement.displayName}
+              stacks={data.learningElement.stacks}
+            />
           )}
 
           {(currentIx === -1 || currentStack) && (
