@@ -39,10 +39,10 @@ function Header({
     >
       {title && course?.displayName && (
         <div>
-          <H1 className={{ root: 'm-0 text-xs text-uzh-grey-60' }}>
+          <H1 className={{ root: 'm-0 text-xs md:text-sm text-uzh-grey-60' }}>
             {course.displayName}
           </H1>
-          <H2 className={{ root: 'm-0 text-sm' }}>{title}</H2>
+          <H2 className={{ root: 'm-0 text-sm md:text-base' }}>{title}</H2>
         </div>
       )}
       {title && !course?.displayName && (
