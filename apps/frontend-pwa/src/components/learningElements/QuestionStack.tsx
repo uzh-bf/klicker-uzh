@@ -83,8 +83,13 @@ function QuestionStack({
               instance={element.questionInstance}
               currentStep={currentStep}
               totalSteps={totalSteps}
-              response={''}
-              setResponse={(value: any) => null}
+              response={responses[element.id]}
+              setResponse={(response) =>
+                setResponses((prev) => ({
+                  ...prev,
+                  [element.id]: response,
+                }))
+              }
             />
           )
         }

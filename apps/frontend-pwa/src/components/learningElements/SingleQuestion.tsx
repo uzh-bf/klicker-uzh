@@ -5,7 +5,7 @@ import { QuestionInstance } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import OptionsDisplay from '../common/OptionsDisplay'
 import EvaluationDisplay from '../evaluation/EvaluationDisplay'
 import FlagQuestionModal from '../flags/FlagQuestionModal'
@@ -29,6 +29,11 @@ function SingleQuestion({
   const t = useTranslations()
 
   const [modalOpen, setModalOpen] = useState(false)
+  const [questionResponse, setQuestionResponse] = useState(response)
+
+  useEffect(() => {
+    setResponse(questionResponse)
+  }, [questionResponse])
 
   const questionData = instance.questionData
 
@@ -99,8 +104,8 @@ function SingleQuestion({
             key={instance.id}
             isEvaluation={!!instance.evaluation}
             evaluation={instance.evaluation}
-            response={response}
-            onChangeResponse={setResponse}
+            response={questionResponse}
+            onChangeResponse={setQuestionResponse}
             questionType={questionData.type}
             options={questionData.options}
             displayMode={questionData.displayMode}
