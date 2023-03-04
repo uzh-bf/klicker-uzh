@@ -362,8 +362,8 @@ interface OptionsDisplayProps {
   evaluation: any
   options: any
   response: any
-  onChangeResponse: any
-  onSubmitResponse: any
+  onChangeResponse: (value: any) => void
+  onSubmitResponse?: any
   isEvaluation?: boolean
   displayMode?: QuestionDisplayMode | null
 }
@@ -398,35 +398,38 @@ function OptionsDisplay({
           displayMode={displayMode}
         />
       </div>
-      <div
-        className={twMerge(
-          'flex flex-col items-end',
-          isEvaluation && 'order-1 md:order-2 border-b md:border-0 pb-4 md:pb-0'
-        )}
-      >
-        <Button
-          className={{ root: 'text-lg' }}
-          disabled={
-            (!isEvaluation &&
-              questionType !== QuestionType.Kprim &&
-              response?.length === 0) ||
-            (questionType === QuestionType.Kprim &&
-              response &&
-              Object.keys(response).length !== options.choices.length) ||
-            (questionType === QuestionType.Numerical &&
-              !validateNumericalResponse({
-                response,
-                min: options?.restrictions?.min,
-                max: options?.restrictions?.max,
-              }))
-          }
-          onClick={onSubmitResponse}
+      {(isEvaluation || onSubmitResponse) && (
+        <div
+          className={twMerge(
+            'flex flex-col items-end',
+            isEvaluation &&
+              'order-1 md:order-2 border-b md:border-0 pb-4 md:pb-0'
+          )}
         >
-          {isEvaluation
-            ? t('shared.generic.continue')
-            : t('shared.generic.sendAnswer')}
-        </Button>
-      </div>
+          <Button
+            className={{ root: 'text-lg' }}
+            disabled={
+              (!isEvaluation &&
+                questionType !== QuestionType.Kprim &&
+                response?.length === 0) ||
+              (questionType === QuestionType.Kprim &&
+                response &&
+                Object.keys(response).length !== options.choices.length) ||
+              (questionType === QuestionType.Numerical &&
+                !validateNumericalResponse({
+                  response,
+                  min: options?.restrictions?.min,
+                  max: options?.restrictions?.max,
+                }))
+            }
+            onClick={onSubmitResponse}
+          >
+            {isEvaluation
+              ? t('shared.generic.continue')
+              : t('shared.generic.sendAnswer')}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
