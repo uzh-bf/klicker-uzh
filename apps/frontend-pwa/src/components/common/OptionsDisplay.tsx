@@ -398,7 +398,7 @@ function OptionsDisplay({
           displayMode={displayMode}
         />
       </div>
-      {(isEvaluation || onSubmitResponse) && (
+      {onSubmitResponse && (
         <div
           className={twMerge(
             'flex flex-col items-end',
