@@ -49,6 +49,7 @@ function QuestionStack({
         }))
       }
     })
+    return () => setResponses({})
   }, [stack])
 
   console.log(responses)
