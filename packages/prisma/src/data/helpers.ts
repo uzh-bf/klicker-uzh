@@ -1,4 +1,4 @@
-import Prisma from '@klicker-uzh/prisma'
+import Prisma, { QuestionStackType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
 import { QuestionInstanceType } from '../client'
@@ -306,6 +306,7 @@ export async function prepareLearningElement({
                   return { order: ixInner, mdContent: element }
                 }
                 return {
+                  type: QuestionStackType.LEARNING_ELEMENT,
                   order: ixInner,
                   questionInstance: {
                     create: prepareQuestionInstance({
@@ -343,6 +344,7 @@ export async function prepareLearningElement({
                   return { order: ixInner, mdContent: element }
                 }
                 return {
+                  type: QuestionStackType.LEARNING_ELEMENT,
                   order: ixInner,
                   questionInstance: {
                     create: prepareQuestionInstance({
