@@ -30,6 +30,7 @@ export async function getSingleQuestion(
   const question = await ctx.prisma.question.findUnique({
     where: {
       id,
+      ownerId: ctx.user.sub,
     },
     include: {
       tags: true,

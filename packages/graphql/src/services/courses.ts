@@ -129,7 +129,7 @@ export async function leaveCourse(
 
 export async function getCourseOverviewData(
   { courseId }: { courseId: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   if (ctx.user?.sub) {
     const participation = await ctx.prisma.participation.findUnique({
@@ -411,7 +411,7 @@ export async function getCourseData(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, ownerId: ctx.user.sub },
     include: {
       sessions: {
         include: {
@@ -550,7 +550,7 @@ export async function getControlCourse(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, ownerId: ctx.user.sub },
     include: {
       sessions: {
         include: {
