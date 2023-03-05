@@ -113,7 +113,7 @@ function SingleQuestion({
         </div>
 
         {instance.evaluation && (
-          <div className="flex-1 pt-4 space-y-4 border-t md:p-4 md:border md:rounded md:bg-gray-50 basis-1/3">
+          <div className="flex-1 pt-4 space-y-4 border-t md:p-4 md:border md:rounded md:bg-slate-50 basis-1/3">
             <div className="flex justify-between">
               <div className="flex flex-row gap-2">
                 {t.rich('pwa.learningElement.multiplicatorEval', {

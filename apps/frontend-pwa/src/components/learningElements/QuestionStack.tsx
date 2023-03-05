@@ -1,4 +1,6 @@
 import { useMutation } from '@apollo/client'
+import { faSync } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   QuestionStack,
   QuestionType,
@@ -77,45 +79,45 @@ function QuestionStack({
   }, [stack])
 
   const handleSubmitResponse = async () => {
-    const responsePromises = Object.keys(responses).map((key) => {
-      const element = stack.elements?.find((el) => el.id === parseInt(key))
-      if (!element?.questionInstance) return
+    const responsePromises = Object.entries(responses).map(
+      ([key, response]) => {
+        const element = stack.elements?.find((el) => el.id === parseInt(key))
+        if (!element?.questionInstance) return
 
-      return respondToQuestionInstance({
-        variables: {
-          courseId: router.query.courseId as string,
-          id: element.questionInstance.id,
-          response: formatResponse(
-            element.questionInstance.questionData,
-            responses[key]
-          ),
-        },
-      })
-    })
+        return respondToQuestionInstance({
+          variables: {
+            courseId: router.query.courseId as string,
+            id: element.questionInstance.id,
+            response: formatResponse(
+              element.questionInstance.questionData,
+              response
+            ),
+          },
+        })
+      }
+    )
 
     await Promise.all(responsePromises)
   }
 
   return (
     <div>
-      <div>
+      <div className="">
         {stack.elements?.map((element) => {
           if (element.mdContent) {
             return (
-              <div
-                key={element.id}
-                className="py-2 my-4 border-b-2 border-red-400 border-solid last:border-none"
-              >
-                <DynamicMarkdown content={element.mdContent} />
+              <div className="gap-8 md:flex md:flex-row" key={element.id}>
+                <div className="flex-1 py-4 my-8 basis-2/3 border-y">
+                  <DynamicMarkdown content={element.mdContent} />
+                </div>
+                <div className="flex-1 basis-1/3"></div>
               </div>
             )
           }
+
           if (element.questionInstance) {
             return (
-              <div
-                key={element.id}
-                className="py-2 my-4 border-b-2 border-red-400 border-solid last:border-none"
-              >
+              <div key={element.id} className="">
                 <SingleQuestion
                   instance={element.questionInstance}
                   currentStep={currentStep}
@@ -131,7 +133,15 @@ function QuestionStack({
               </div>
             )
           }
-          return <div key={element.id}>Loading...</div>
+
+          return (
+            <div
+              className="flex flex-col items-center justify-center h-28"
+              key={element.id}
+            >
+              <FontAwesomeIcon icon={faSync} />
+            </div>
+          )
         })}
       </div>
       <Button

@@ -23,6 +23,8 @@ query GetLearningElement($id: String!) {
 
     stacks {
       id
+      displayName
+      description
       order
       elements {
         id

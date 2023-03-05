@@ -2,9 +2,9 @@ import * as DB from '@klicker-uzh/prisma'
 
 import builder from '../builder'
 import type { ICourse } from './course'
-import { Course } from './course'
+import { CourseRef } from './course'
 import type { IQuestionInstance } from './question'
-import { QuestionInstance } from './question'
+import { QuestionInstanceRef } from './question'
 
 export const LearningElementOrderType = builder.enumType(
   'LearningElementOrderType',
@@ -25,6 +25,8 @@ export const QuestionStackRef =
 export const QuestionStack = QuestionStackRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
+    displayName: t.exposeString('displayName', { nullable: true }),
+    description: t.exposeString('description', { nullable: true }),
     order: t.exposeInt('order', { nullable: true }),
 
     elements: t.expose('elements', {
@@ -45,7 +47,7 @@ export const StackElement = StackElementRef.implement({
 
     mdContent: t.exposeString('mdContent', { nullable: true }),
     questionInstance: t.expose('questionInstance', {
-      type: QuestionInstance,
+      type: QuestionInstanceRef,
       nullable: true,
     }),
   }),
@@ -86,12 +88,12 @@ export const LearningElement = LearningElementRef.implement({
     numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
 
     stacks: t.expose('stacks', {
-      type: [QuestionStack],
+      type: [QuestionStackRef],
       nullable: true,
     }),
 
     course: t.expose('course', {
-      type: Course,
+      type: CourseRef,
       nullable: true,
     }),
     courseId: t.exposeString('courseId', { nullable: true }),
