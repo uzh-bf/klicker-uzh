@@ -11,6 +11,7 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import DynamicMarkdown from './DynamicMarkdown'
 import SingleQuestion from './SingleQuestion'
 
@@ -107,10 +108,15 @@ function QuestionStack({
           if (element.mdContent) {
             return (
               <div className="gap-8 md:flex md:flex-row" key={element.id}>
-                <div className="flex-1 py-4 my-8 basis-2/3 border-y">
+                <div
+                  className={twMerge(
+                    'flex-1 py-4 my-8 border-y',
+                    isEvaluation && 'basis-2/3'
+                  )}
+                >
                   <DynamicMarkdown content={element.mdContent} />
                 </div>
-                <div className="flex-1 basis-1/3"></div>
+                {isEvaluation && <div className="flex-1 basis-1/3"></div>}
               </div>
             )
           }

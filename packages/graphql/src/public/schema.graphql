@@ -650,6 +650,8 @@ type QuestionResponseDetail {
 }
 
 type QuestionStack {
+  description: String
+  displayName: String
   elements: [StackElement!]
   id: Int!
   order: Int
