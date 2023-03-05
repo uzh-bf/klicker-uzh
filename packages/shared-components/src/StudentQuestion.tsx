@@ -130,7 +130,10 @@ export const StudentQuestion = ({
   }
 
   const onNumericalValueChange = (inputValue: string): void => {
-    const inputEmpty = !inputValue || inputValue.length === 0
+    const inputEmpty =
+      typeof inputValue === 'undefined' ||
+      inputValue === null ||
+      inputValue === ''
 
     let validator = Yup.number().required()
     if (

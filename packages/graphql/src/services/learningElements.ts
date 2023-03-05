@@ -220,7 +220,9 @@ export async function respondToQuestionInstance(
 
       case QuestionType.NUMERICAL: {
         if (
-          !response.value ||
+          typeof response.value === 'undefined' ||
+          response.value === null ||
+          response.value === '' ||
           parseFloat(response.value) < questionData.options.restrictions.min ||
           parseFloat(response.value) > questionData.options.restrictions.max
         ) {
