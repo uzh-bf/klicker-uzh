@@ -58,6 +58,12 @@ function Session({ session }: SessionProps) {
         },
       })
     },
+    optimisticResponse: {
+      deleteSession: {
+        __typename: 'Session',
+        id: session.id,
+      },
+    },
   })
 
   const [showDetails, setShowDetails] = useState<boolean>(false)
