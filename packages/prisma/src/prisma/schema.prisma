@@ -235,6 +235,9 @@ model QuestionStack {
 
   order Int?
 
+  displayName String?
+  description String?
+
   elements StackElement[]
 
   learningElement   LearningElement @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
