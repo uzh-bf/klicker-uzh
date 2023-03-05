@@ -169,7 +169,7 @@ function Index({ id }: Props) {
         >
           {!activeBlock ? (
             isGamificationEnabled ? (
-              <div className={twMerge('bg-white min-h-full flex-1 md:p-8')}>
+              <div className={twMerge('bg-white min-h-full flex-1')}>
                 <SessionLeaderboard sessionId={id} />
               </div>
             ) : (

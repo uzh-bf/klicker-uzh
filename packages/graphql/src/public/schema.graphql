@@ -391,6 +391,7 @@ type Mutation {
   deleteLearningElement(id: String!): LearningElement
   deleteMicroSession(id: String!): MicroSession
   deleteQuestion(id: Int!): Question
+  deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
