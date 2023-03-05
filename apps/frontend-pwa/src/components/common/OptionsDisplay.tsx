@@ -40,6 +40,10 @@ function validateNumericalResponse({
     return false
   }
 
+  if (response === '-' || response === '' || response === '.') {
+    return false
+  }
+
   return true
 }
 interface ChoiceOptionsProps {
