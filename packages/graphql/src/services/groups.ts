@@ -11,7 +11,7 @@ interface CreateParticipantGroupArgs {
 
 export async function createParticipantGroup(
   { courseId, name }: CreateParticipantGroupArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const code = 100000 + Math.floor(Math.random() * 900000)
 
@@ -56,7 +56,7 @@ interface JoinParticipantGroupArgs {
 
 export async function joinParticipantGroup(
   { courseId, code }: JoinParticipantGroupArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   // find participantgroup with code
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
@@ -72,7 +72,7 @@ export async function joinParticipantGroup(
   })
 
   // if no participant group with the provided id exists in this course or at all, return null
-  if (!participantGroup || participantGroup.course.id !== courseId) return null
+  if (!participantGroup || participantGroup.course?.id !== courseId) return null
 
   // otherwise update the participant group with the current participant and return it
   const updatedParticipantGroup = await ctx.prisma.participantGroup.update({

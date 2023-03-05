@@ -574,10 +574,13 @@ export async function getControlCourse(
 
 export async function changeCourseDescription(
   { courseId, input }: { courseId: string; input: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
     data: {
       description: input,
     },
@@ -588,10 +591,13 @@ export async function changeCourseDescription(
 
 export async function changeCourseColor(
   { courseId, color }: { courseId: string; color: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
     data: {
       color,
     },
@@ -611,7 +617,10 @@ export async function changeCourseDates(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
     data: {
       ...(startDate && { startDate }),
       ...(endDate && { endDate }),

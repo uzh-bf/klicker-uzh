@@ -1,5 +1,5 @@
 import { UserRole } from '@klicker-uzh/prisma'
-import { Context } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 
 export async function getFeedbacks({ id }: { id: string }, ctx: Context) {
   const sessionWithFeedbacks = await ctx.prisma.session.findUnique({
@@ -78,7 +78,7 @@ export async function createFeedback(
       },
       participant: isLoggedInParticipant
         ? {
-            connect: { id: ctx.user.sub },
+            connect: { id: ctx.user?.sub },
           }
         : undefined,
     },
@@ -98,7 +98,7 @@ export async function createFeedback(
 // add response to an existing feedback
 export async function respondToFeedback(
   { id, responseContent }: { id: number; responseContent: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const feedback = await ctx.prisma.feedback.update({
     where: { id },
@@ -161,7 +161,7 @@ export async function addConfusionTimestep(
 // publish / unpublish a feedback to be visible to students
 export async function publishFeedback(
   { id, isPublished }: { id: number; isPublished: boolean },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const feedback = await ctx.prisma.feedback.update({
     where: {
@@ -192,7 +192,7 @@ export async function publishFeedback(
 // pin / unpin a feedback on the lecturers running session screen
 export async function pinFeedback(
   { id, isPinned }: { id: number; isPinned: boolean },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const feedback = await ctx.prisma.feedback.update({
     where: {
@@ -219,7 +219,7 @@ export async function pinFeedback(
 // resolve / unresolve a feedback
 export async function resolveFeedback(
   { id, isResolved }: { id: number; isResolved: boolean },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const feedback = await ctx.prisma.feedback.update({
     where: { id },
@@ -243,7 +243,10 @@ export async function resolveFeedback(
 }
 
 // deletes a feedback (and all its responses through cascade)
-export async function deleteFeedback({ id }: { id: number }, ctx: Context) {
+export async function deleteFeedback(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
   const feedback = await ctx.prisma.feedback.delete({
     where: { id },
   })
@@ -261,7 +264,7 @@ export async function deleteFeedback({ id }: { id: number }, ctx: Context) {
 // deletes a feedback response
 export async function deleteFeedbackResponse(
   { id }: { id: number },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const feedbackResponse = await ctx.prisma.feedbackResponse.delete({
     where: { id },

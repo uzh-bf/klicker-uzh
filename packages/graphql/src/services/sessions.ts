@@ -214,7 +214,10 @@ export async function editSession(
 ) {
   // find all instances belonging to the old session and delete them as the content of the questions might have changed
   const oldSession = await ctx.prisma.session.findUnique({
-    where: { id },
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
     include: {
       blocks: {
         include: {
@@ -563,7 +566,10 @@ export async function activateSessionBlock(
   ctx: ContextWithUser
 ) {
   const session = await ctx.prisma.session.findUnique({
-    where: { id: sessionId },
+    where: {
+      id: sessionId,
+      ownerId: ctx.user.sub,
+    },
     include: {
       blocks: {
         orderBy: {
@@ -819,6 +825,7 @@ export async function deactivateSessionBlock(
   const session = await ctx.prisma.session.findUnique({
     where: {
       id: sessionId,
+      ownerId: ctx.user.sub,
     },
     include: {
       activeBlock: {
@@ -1164,10 +1171,13 @@ export async function changeSessionSettings(
     isModerationEnabled,
     isGamificationEnabled,
   }: SessionSettingArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const session = await ctx.prisma.session.update({
-    where: { id },
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
     data: {
       isLiveQAEnabled: isLiveQAEnabled ?? undefined,
       isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
@@ -1666,9 +1676,15 @@ export async function getSessionEvaluation(
   }
 }
 
-export async function cancelSession({ id }: { id: string }, ctx: Context) {
+export async function cancelSession(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
   const session = await ctx.prisma.session.findUnique({
-    where: { id },
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
     include: {
       activeBlock: true,
       blocks: {
@@ -1774,6 +1790,7 @@ export async function deleteSession(
     const deletedItem = await ctx.prisma.session.delete({
       where: {
         id,
+        ownerId: ctx.user.sub,
         status: {
           in: [SessionStatus.PREPARED, SessionStatus.SCHEDULED],
         },
