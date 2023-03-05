@@ -49,7 +49,7 @@ function ParticipantProfileModal({
       open={isProfileModalOpen}
       onClose={closeProfileModal}
       className={{
-        content: 'w-[500px] my-auto max-h-full overflow-auto',
+        content: 'w-[500px] my-auto h-max max-h-full overflow-auto',
         title: 'text-3xl',
         onNext: 'hidden md:block',
         onPrev: 'hidden md:block',

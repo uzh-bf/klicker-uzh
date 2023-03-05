@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.69](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.68...v3.0.0-alpha.69) (2023-03-03)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** base ui solely on draft logic and not on dates ([#3429](https://github.com/uzh-bf/klicker-uzh/issues/3429)) ([fd4a574](https://github.com/uzh-bf/klicker-uzh/commit/fd4a574375fcf2b79e14dbf91a3ab6b8e28feedf))
+* **apps/frontend-manage:** fix micro session times to local time ([#3428](https://github.com/uzh-bf/klicker-uzh/issues/3428)) ([bfd3667](https://github.com/uzh-bf/klicker-uzh/commit/bfd3667d93be6a38586ab48857cdceccdf2bffbd))
+* **packages/graphql:** connectOrCreate in deactivate question block ([e6b8ad7](https://github.com/uzh-bf/klicker-uzh/commit/e6b8ad7e3e701d4a1b0a17cba5fa6286cb1b3bf6))
+* **packages/graphql:** fix bug in editing questions with zero index ([#3427](https://github.com/uzh-bf/klicker-uzh/issues/3427)) ([1e1f496](https://github.com/uzh-bf/klicker-uzh/commit/1e1f49664bc9eac3948a2efda3a394fb2585e621))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** show achievements on student views and augment seeding function ([#3416](https://github.com/uzh-bf/klicker-uzh/issues/3416)) ([2640fbd](https://github.com/uzh-bf/klicker-uzh/commit/2640fbd11b18e6712d30d695916047948f7ecc4a))
+
 ## [3.0.0-alpha.68](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.67...v3.0.0-alpha.68) (2023-03-02)
 
 
