@@ -230,18 +230,28 @@ model QuestionInstance {
   @@unique([type, groupActivityId, order])
 }
 
+// TODO: think about usage of question stacks for group activities
+enum QuestionStackType {
+  LEARNING_ELEMENT
+  MICRO_SESSION
+  LIVE_SESSION
+  GROUP_ACTIVITY
+}
+
 model QuestionStack {
   id Int @id @default(autoincrement())
 
-  order Int?
-
+  type        QuestionStackType
   displayName String?
   description String?
+  order       Int?
 
   elements StackElement[]
 
-  learningElement   LearningElement @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  learningElementId String          @db.Uuid
+  learningElement   LearningElement? @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  learningElementId String?          @db.Uuid
+
+  @@unique([type, learningElementId, order])
 }
 
 model StackElement {
