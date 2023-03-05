@@ -1,7 +1,7 @@
-import Prisma, { QuestionStackType } from '@klicker-uzh/prisma'
+import Prisma from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
-import { QuestionInstanceType } from '../client'
+import { QuestionInstanceType, QuestionStackType } from '../client'
 
 export async function prepareUser({
   password,
@@ -299,6 +299,7 @@ export async function prepareLearningElement({
       stacks: {
         create: await Promise.all(
           stacks.map(async (stack, ix) => ({
+            type: QuestionStackType.LEARNING_ELEMENT,
             order: ix,
             elements: {
               create: stack.map((element, ixInner) => {
@@ -306,7 +307,6 @@ export async function prepareLearningElement({
                   return { order: ixInner, mdContent: element }
                 }
                 return {
-                  type: QuestionStackType.LEARNING_ELEMENT,
                   order: ixInner,
                   questionInstance: {
                     create: prepareQuestionInstance({
@@ -337,6 +337,7 @@ export async function prepareLearningElement({
       stacks: {
         create: await Promise.all(
           stacks.map(async (stack, ix) => ({
+            type: QuestionStackType.LEARNING_ELEMENT,
             order: ix,
             elements: {
               create: stack.map((element, ixInner) => {
@@ -344,7 +345,6 @@ export async function prepareLearningElement({
                   return { order: ixInner, mdContent: element }
                 }
                 return {
-                  type: QuestionStackType.LEARNING_ELEMENT,
                   order: ixInner,
                   questionInstance: {
                     create: prepareQuestionInstance({
