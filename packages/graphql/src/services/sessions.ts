@@ -938,10 +938,24 @@ export async function deactivateSessionBlock(
                 },
                 score: Number(score),
                 sessionParticipation: {
-                  connect: {
-                    courseId_participantId: {
-                      courseId: session.courseId as string,
-                      participantId: id,
+                  connectOrCreate: {
+                    where: {
+                      courseId_participantId: {
+                        courseId: session.courseId as string,
+                        participantId: id,
+                      },
+                    },
+                    create: {
+                      course: {
+                        connect: {
+                          id: session.courseId!,
+                        },
+                      },
+                      participant: {
+                        connect: {
+                          id,
+                        },
+                      },
                     },
                   },
                 },
