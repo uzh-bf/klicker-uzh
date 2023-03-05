@@ -94,7 +94,7 @@ function SessionTile({ session }: SessionTileProps) {
                   await startSession({
                     variables: { id: session.id || '' },
                   })
-                  router.push(`/sessions/${session.id}`)
+                  router.push(`/sessions/${session.id}/cockpit`)
                 } catch (error) {
                   console.log(error)
                 }
