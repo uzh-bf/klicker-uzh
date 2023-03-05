@@ -785,6 +785,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      deleteSession: asUser.field({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.deleteSession(args, ctx)
+        },
+      }),
+
       publishMicroSession: asUser.field({
         nullable: true,
         type: MicroSession,
