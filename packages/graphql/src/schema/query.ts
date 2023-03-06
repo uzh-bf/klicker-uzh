@@ -20,7 +20,7 @@ import {
   ParticipantWithAchievements,
   Participation,
 } from './participant'
-import { Question, QuestionInstance, Tag } from './question'
+import { Question, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
 import { User } from './user'
 
@@ -366,7 +366,7 @@ export const Query = builder.queryType({
 
       getBookmarksLearningElement: asParticipant.field({
         nullable: true,
-        type: [QuestionInstance],
+        type: [QuestionStack],
         args: {
           elementId: t.arg.string({ required: true }),
           courseId: t.arg.string({ required: true }),

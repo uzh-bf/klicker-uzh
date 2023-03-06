@@ -804,7 +804,7 @@ export async function getBookmarksLearningElement(
       },
     },
     include: {
-      bookmarkedQuestions: {
+      bookmarkedStacks: {
         where: {
           learningElementId: elementId,
         },
@@ -812,7 +812,7 @@ export async function getBookmarksLearningElement(
     },
   })
 
-  return participation?.bookmarkedQuestions
+  return participation?.bookmarkedStacks
 }
 
 interface PublishLearningElementArgs {

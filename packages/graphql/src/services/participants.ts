@@ -396,7 +396,15 @@ export async function getBookmarkedQuestions(
       },
     },
     include: {
-      bookmarkedStacks: true,
+      bookmarkedStacks: {
+        include: {
+          elements: {
+            include: {
+              questionInstance: true,
+            },
+          },
+        },
+      },
     },
   })
 

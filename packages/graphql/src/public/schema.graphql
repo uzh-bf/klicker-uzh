@@ -562,7 +562,7 @@ type Query {
   course(id: String!): Course
   feedbacks(id: String!): [Feedback!]
   getBookmarkedQuestions(courseId: String!): [QuestionStack!]
-  getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionInstance!]
+  getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionStack!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails

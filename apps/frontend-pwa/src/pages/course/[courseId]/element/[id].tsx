@@ -26,32 +26,11 @@ function LearningElement({ courseId, id }: Props) {
 
   const [currentIx, setCurrentIx] = useState(-1)
 
-  // const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
-  //   refetchQueries: [
-  //     // TODO: replace with more efficient UPDATE instead of refetching everything
-  //     { query: GetBookmarkedQuestionsDocument, variables: { courseId } },
-  //   ],
-  // })
-  // const { data: bookmarks } = useQuery(GetBookmarkedQuestionsDocument, {
-  //   variables: { courseId: router.query.courseId as string },
-  //   skip: !router.query.courseId,
-  // })
-
   const { loading, error, data } = useQuery(GetLearningElementDocument, {
     variables: { id },
   })
 
-  const currentStack = data?.learningElement?.stacks?.[currentIx] && {
-    ...data.learningElement.stacks[currentIx],
-    // TODO: fix bookmarking
-    isBookmarked: false,
-    // isBookmarked: bookmarks?.getBookmarkedQuestions?.find(
-    //   (question) =>
-    //     question.id === data?.learningElement?.instances?.[currentIx]?.id
-    // )
-    //   ? true
-    //   : false,
-  }
+  const currentStack = data?.learningElement?.stacks?.[currentIx]
 
   if (loading) return <p>{t('shared.generic.loading')}</p>
 
@@ -99,6 +78,7 @@ function LearningElement({ courseId, id }: Props) {
 
           {currentStack && (
             <QuestionStack
+              elementId={data.learningElement.id}
               stack={currentStack}
               currentStep={currentIx + 1}
               totalSteps={data.learningElement.stacksWithQuestions ?? 0}

@@ -7,7 +7,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   BookmarkQuestionDocument,
-  GetBookmarkedQuestionsDocument,
+  GetBookmarksLearningElementDocument,
   QuestionStack,
   QuestionType,
   ResponseToQuestionInstanceDocument,
@@ -22,6 +22,7 @@ import DynamicMarkdown from './DynamicMarkdown'
 import SingleQuestion from './SingleQuestion'
 
 interface QuestionStackProps {
+  elementId: string
   stack: QuestionStack
   currentStep: number
   totalSteps: number
@@ -29,6 +30,7 @@ interface QuestionStackProps {
 }
 
 function QuestionStack({
+  elementId,
   stack,
   currentStep,
   totalSteps,
@@ -47,17 +49,20 @@ function QuestionStack({
     ResponseToQuestionInstanceDocument
   )
 
-  const { data } = useQuery(GetBookmarkedQuestionsDocument, {
-    variables: { courseId: router.query.courseId as string },
+  const { data } = useQuery(GetBookmarksLearningElementDocument, {
+    variables: {
+      courseId: router.query.courseId as string,
+      elementId: elementId,
+    },
     skip: !router.query.courseId,
   })
 
   const isBookmarked = useMemo(() => {
-    if (!data || !data.getBookmarkedQuestions) {
+    if (!data || !data.getBookmarksLearningElement) {
       return false
     }
 
-    return data.getBookmarkedQuestions
+    return data.getBookmarksLearningElement
       .map((entry) => entry.id)
       .includes(stack.id)
   }, [data, stack.id])
@@ -70,19 +75,19 @@ function QuestionStack({
     },
     update(cache) {
       const data = cache.readQuery({
-        query: GetBookmarkedQuestionsDocument,
-        variables: { courseId: router.query.courseId as string },
+        query: GetBookmarksLearningElementDocument,
+        variables: { courseId: router.query.courseId as string, elementId },
       })
       cache.writeQuery({
-        query: GetBookmarkedQuestionsDocument,
-        variables: { courseId: router.query.courseId as string },
+        query: GetBookmarksLearningElementDocument,
+        variables: { courseId: router.query.courseId as string, elementId },
         data: {
-          getBookmarkedQuestions: isBookmarked
-            ? (data?.getBookmarkedQuestions ?? []).filter(
+          getBookmarksLearningElement: isBookmarked
+            ? (data?.getBookmarksLearningElement ?? []).filter(
                 (entry) => entry.id !== stack.id
               )
             : [
-                ...(data?.getBookmarkedQuestions ?? []),
+                ...(data?.getBookmarksLearningElement ?? []),
                 {
                   __typename: 'QuestionStack',
                   id: stack.id,
@@ -93,9 +98,11 @@ function QuestionStack({
     },
     optimisticResponse: {
       bookmarkQuestion: isBookmarked
-        ? data?.getBookmarkedQuestions?.filter((entry) => entry.id !== stack.id)
+        ? data?.getBookmarksLearningElement?.filter(
+            (entry) => entry.id !== stack.id
+          )
         : [
-            ...(data?.getBookmarkedQuestions ?? []),
+            ...(data?.getBookmarksLearningElement ?? []),
             {
               __typename: 'QuestionStack',
               id: stack.id,
@@ -172,7 +179,7 @@ function QuestionStack({
           <div
             className={twMerge(
               'flex flex-row gap-2',
-              !data?.getBookmarkedQuestions && 'hidden'
+              !data?.getBookmarksLearningElement && 'hidden'
             )}
           >
             {/* // TODO: better integration into overall design necessary... */}
