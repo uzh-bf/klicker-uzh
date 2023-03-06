@@ -4076,7 +4076,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "instanceId",
+                "name": "stackId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -8291,7 +8291,7 @@
         "description": null,
         "fields": [
           {
-            "name": "bookmarkedQuestions",
+            "name": "bookmarkedStacks",
             "description": null,
             "args": [],
             "type": {
@@ -8302,7 +8302,7 @@
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "QuestionInstance",
+                  "name": "QuestionStack",
                   "ofType": null
                 }
               }

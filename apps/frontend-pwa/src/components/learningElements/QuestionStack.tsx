@@ -1,7 +1,9 @@
 import { useMutation } from '@apollo/client'
+import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import { faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  BookmarkQuestionDocument,
   QuestionStack,
   QuestionType,
   ResponseToQuestionInstanceDocument,
@@ -40,6 +42,41 @@ function QuestionStack({
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
   )
+
+  // TODO: fetch bookmarks
+  // TODO: use useMemo hook or somehting like this to compute isBookmarked from the fetched data
+  const isBookmarked = false
+
+  const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
+    variables: {
+      stackId: stack.id,
+      courseId: router.query.courseId as string,
+      bookmarked: !isBookmarked,
+    },
+    // TODO
+    // update(cache) {
+    //   const data = cache.readQuery({
+    //     query: GetUserSessionsDocument,
+    //   })
+    //   cache.writeQuery({
+    //     query: GetUserSessionsDocument,
+    //     data: {
+    //       userSessions:
+    //         data?.userSessions?.filter((e) => e.id !== session.id) ?? [],
+    //     },
+    //   })
+    // },
+    // optimisticResponse: {
+    //   deleteSession: {
+    //     __typename: 'Session',
+    //     id: session.id,
+    //   },
+    // },
+    // refetchQueries: [
+    //   // TODO: replace with more efficient UPDATE instead of refetching everything
+    //   { query: GetBookmarkedQuestionsDocument, variables: { courseId } },
+    // ],
+  })
 
   useEffect(() => {
     stack.elements?.map((element) => {
@@ -103,7 +140,28 @@ function QuestionStack({
 
   return (
     <div>
-      <div className="">
+      <div className="flex flex-col">
+        <div className="flex flex-row items-center justify-between">
+          <div>{stack.displayName}</div>
+          <div className="flex flex-row gap-2">
+            {/* // TODO: better integration into overall design necessary... */}
+            <div>Bookmark QuestionStack</div>
+            <Button basic onClick={() => bookmarkQuestion()}>
+              {isBookmarked ? (
+                <FontAwesomeIcon
+                  className="text-red-600 hover:text-red-500"
+                  icon={faBookmark}
+                />
+              ) : (
+                <FontAwesomeIcon
+                  className="hover:text-red-400"
+                  icon={faBookmark}
+                />
+              )}
+            </Button>
+          </div>
+        </div>
+        <DynamicMarkdown content={stack.description ?? undefined} />
         {stack.elements?.map((element) => {
           if (element.mdContent) {
             return (
@@ -123,7 +181,7 @@ function QuestionStack({
 
           if (element.questionInstance) {
             return (
-              <div key={element.id} className="">
+              <div key={element.id}>
                 <SingleQuestion
                   instance={element.questionInstance}
                   currentStep={currentStep}

@@ -731,7 +731,7 @@ export const Mutation = builder.mutationType({
         type: Participation,
         args: {
           courseId: t.arg.string({ required: true }),
-          instanceId: t.arg.int({ required: true }),
+          stackId: t.arg.int({ required: true }),
           bookmarked: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {

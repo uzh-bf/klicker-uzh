@@ -1,8 +1,5 @@
-import { faBookmark } from '@fortawesome/free-regular-svg-icons'
-import { faBookmark as faBookmarkSolid } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { QuestionInstance } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { H3, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -50,32 +47,6 @@ function SingleQuestion({
                   total: totalSteps,
                 })}
               </div>
-              <Button
-                basic
-                disabled
-                className={{ root: 'mb-1' }}
-                onClick={() => {
-                  //   bookmarkQuestion({
-                  //     variables: {
-                  //       instanceId: currentInstance.id!,
-                  //       courseId: courseId,
-                  //       bookmarked: !currentInstance.isBookmarked,
-                  //     },
-                  //   })
-                }}
-              >
-                {instance.isBookmarked ? (
-                  <FontAwesomeIcon
-                    className="text-red-600 hover:text-red-500"
-                    icon={faBookmarkSolid}
-                  />
-                ) : (
-                  <FontAwesomeIcon
-                    className="hover:text-red-400"
-                    icon={faBookmark}
-                  />
-                )}
-              </Button>
               <FlagQuestionModal
                 open={modalOpen}
                 setOpen={setModalOpen}

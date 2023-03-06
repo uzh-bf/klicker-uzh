@@ -1,9 +1,5 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  BookmarkQuestionDocument,
-  GetBookmarkedQuestionsDocument,
-  GetLearningElementDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import { GetLearningElementDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { Progress, UserNotification } from '@uzh-bf/design-system'
@@ -30,16 +26,16 @@ function LearningElement({ courseId, id }: Props) {
 
   const [currentIx, setCurrentIx] = useState(-1)
 
-  const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
-    refetchQueries: [
-      // TODO: replace with more efficient UPDATE instead of refetching everything
-      { query: GetBookmarkedQuestionsDocument, variables: { courseId } },
-    ],
-  })
-  const { data: bookmarks } = useQuery(GetBookmarkedQuestionsDocument, {
-    variables: { courseId: router.query.courseId as string },
-    skip: !router.query.courseId,
-  })
+  // const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
+  //   refetchQueries: [
+  //     // TODO: replace with more efficient UPDATE instead of refetching everything
+  //     { query: GetBookmarkedQuestionsDocument, variables: { courseId } },
+  //   ],
+  // })
+  // const { data: bookmarks } = useQuery(GetBookmarkedQuestionsDocument, {
+  //   variables: { courseId: router.query.courseId as string },
+  //   skip: !router.query.courseId,
+  // })
 
   const { loading, error, data } = useQuery(GetLearningElementDocument, {
     variables: { id },
@@ -113,7 +109,7 @@ function LearningElement({ courseId, id }: Props) {
           {currentIx >= 0 && !currentStack && (
             <ElementSummary
               displayName={data.learningElement.displayName}
-              stacks={data.learningElement.stacks}
+              stacks={data.learningElement.stacks || []}
             />
           )}
 

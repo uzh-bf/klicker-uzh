@@ -345,16 +345,15 @@ export async function createParticipantAndJoinCourse(
 }
 
 interface BookmarkQuestionArgs {
-  instanceId: number
+  stackId: number
   courseId: string
   bookmarked: boolean
 }
 
 export async function bookmarkQuestion(
-  { instanceId, courseId, bookmarked }: BookmarkQuestionArgs,
+  { stackId, courseId, bookmarked }: BookmarkQuestionArgs,
   ctx: Context
 ) {
-  console.log('received args', { instanceId, courseId, bookmarked })
   const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
@@ -363,14 +362,14 @@ export async function bookmarkQuestion(
       },
     },
     data: {
-      bookmarkedQuestions: {
+      bookmarkedStacks: {
         [bookmarked ? 'connect' : 'disconnect']: {
-          id: instanceId,
+          id: stackId,
         },
       },
     },
     include: {
-      bookmarkedQuestions: true,
+      bookmarkedStacks: true,
     },
   })
 

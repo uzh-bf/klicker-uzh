@@ -18,7 +18,7 @@ export const LearningElementStatus = builder.enumType('LearningElementStatus', {
 })
 
 export interface IQuestionStack extends DB.QuestionStack {
-  elements: IStackElement[]
+  elements?: IStackElement[]
 }
 export const QuestionStackRef =
   builder.objectRef<IQuestionStack>('QuestionStack')
