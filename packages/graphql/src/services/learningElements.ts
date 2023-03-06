@@ -216,6 +216,7 @@ export async function respondToQuestionInstance(
           }),
           results.choices as Record<string, number>
         )
+        break
       }
 
       case QuestionType.NUMERICAL: {
@@ -239,6 +240,7 @@ export async function respondToQuestionInstance(
         } else {
           updatedResults = { ...results, [value]: 1 }
         }
+        break
       }
 
       case QuestionType.FREE_TEXT: {
