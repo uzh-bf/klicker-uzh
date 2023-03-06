@@ -133,9 +133,11 @@ function Header({
               height="45"
               className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
             />
-            <div className="absolute bottom-0 right-0 w-4 h-4 text-xs font-bold bg-white rounded-full text-slate-600">
-              {participant?.level ?? 0}
-            </div>
+            {participant?.level && (
+              <div className="absolute bottom-0 right-0 w-4 h-4 text-xs font-bold bg-white rounded-full text-slate-600">
+                {participant?.level ?? 0}
+              </div>
+            )}
           </Button>
         </Link>
       </div>
