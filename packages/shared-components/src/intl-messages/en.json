@@ -144,6 +144,7 @@
     "learningElement": {
       "notFound": "The corresponding learning element is either not available or not yet published.",
       "repetitionTitle": "Repetition learning elements",
+      "noRepetition": "There are currently no learning elements available for repetition.",
       "numOfQuestions": "Number of questions: {number}",
       "orderLAST_RESPONSE": "Order: last answered questions at the end",
       "orderSHUFFLED": "Order: random order",

@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetLearningElementsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
@@ -43,6 +43,12 @@ function Repetition() {
             </Button>
           </Link>
         ))}
+        {(!data?.learningElements || data?.learningElements?.length === 0) && (
+          <UserNotification
+            notificationType="info"
+            message={t('pwa.learningElement.noRepetition')}
+          />
+        )}
       </div>
     </Layout>
   )
