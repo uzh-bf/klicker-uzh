@@ -257,6 +257,12 @@ interface BaseQuestionData {
   options?: any
 }
 
+interface StackData {
+  displayName?: string
+  description?: string
+  elements: (BaseQuestionData | String)[]
+}
+
 export async function prepareLearningElement({
   stacks,
   ...args
@@ -270,7 +276,7 @@ export async function prepareLearningElement({
   orderType?: Prisma.OrderType
   ownerId: string
   courseId: string
-  stacks: (BaseQuestionData | String)[][]
+  stacks: StackData[]
   status?: Prisma.LearningElementStatus
 }) {
   return {
@@ -301,8 +307,10 @@ export async function prepareLearningElement({
           stacks.map(async (stack, ix) => ({
             type: QuestionStackType.LEARNING_ELEMENT,
             order: ix,
+            displayName: stack.displayName,
+            description: stack.description,
             elements: {
-              create: stack.map((element, ixInner) => {
+              create: stack.elements.map((element, ixInner) => {
                 if (typeof element === 'string') {
                   return { order: ixInner, mdContent: element }
                 }
@@ -339,8 +347,10 @@ export async function prepareLearningElement({
           stacks.map(async (stack, ix) => ({
             type: QuestionStackType.LEARNING_ELEMENT,
             order: ix,
+            displayName: stack.displayName,
+            description: stack.description,
             elements: {
-              create: stack.map((element, ixInner) => {
+              create: stack.elements.map((element, ixInner) => {
                 if (typeof element === 'string') {
                   return { order: ixInner, mdContent: element }
                 }

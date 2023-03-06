@@ -88,14 +88,17 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...data,
           ownerId: USER_ID_TEST,
           courseId: COURSE_ID_TEST,
-          stacks: data.stacks.map((stack) =>
-            stack.map((element) => {
-              if (typeof element !== 'string') {
-                return questionsTest.find((q) => q.id === element) as Question
-              }
-              return element
-            })
-          ),
+          stacks: data.stacks.map((stack) => {
+            return {
+              ...stack,
+              elements: stack.elements.map((element) => {
+                if (typeof element !== 'string') {
+                  return questionsTest.find((q) => q.id === element) as Question
+                }
+                return element
+              }),
+            }
+          }),
         })
       )
     )

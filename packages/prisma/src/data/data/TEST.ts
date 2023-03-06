@@ -184,11 +184,23 @@ export const LEARNING_ELEMENTS = [
     description: 'Welcome to this **learning element**.',
     orderType: OrderType.SHUFFLED,
     stacks: [
-      [0, 1],
-      [2, 'Text in between elements', 3],
-      ['Pure Text block - could also be Intro'],
-      [4],
-      ['Text block 1', 'Text block 2, following text block 1'],
+      {
+        displayName: 'Stack 1',
+        description: 'Description for stack 1',
+        elements: [0, 1],
+      },
+      { elements: [2, 'Text in between elements', 3] },
+      {
+        displayName: 'Name for stack with only one md element',
+        description: 'Description for stack with only one md element',
+        elements: ['Pure Text block - could also be Intro'],
+      },
+      {
+        displayName: 'Name for stack with only one question element',
+        description: 'Description for stack with only one question element',
+        elements: [4],
+      },
+      { elements: ['Text block 1', 'Text block 2, following text block 1'] },
     ],
   },
   {
@@ -203,7 +215,17 @@ And it can be done everyday!
     pointsMultiplier: 2,
     resetTimeDays: 1,
     orderType: OrderType.LAST_RESPONSE,
-    stacks: [[0], [1], [2], [3], [4]],
+    stacks: [
+      {
+        displayName: 'Stack 1',
+        description: 'Description for stack 1',
+        elements: [0],
+      },
+      { elements: [1] },
+      { elements: [2] },
+      { elements: [3] },
+      { elements: [4] },
+    ],
   },
 ]
 
