@@ -373,7 +373,7 @@ export async function bookmarkQuestion(
     },
   })
 
-  return participation
+  return participation.bookmarkedStacks
 }
 
 interface GetBookmarkedQuestionsArgs {

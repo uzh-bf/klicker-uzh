@@ -9,9 +9,5 @@ mutation BookmarkQuestion(
     bookmarked: $bookmarked
   ) {
     id
-    isActive
-    bookmarkedStacks {
-      id
-    }
   }
 }

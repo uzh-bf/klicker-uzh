@@ -16,7 +16,11 @@ import {
   GroupActivityDetails,
   GroupActivityInstance,
 } from './groupActivity'
-import { LearningElement, LearningElementOrderType } from './learningElements'
+import {
+  LearningElement,
+  LearningElementOrderType,
+  QuestionStack,
+} from './learningElements'
 import { MicroSession } from './microSession'
 import {
   AvatarSettingsInput,
@@ -728,7 +732,7 @@ export const Mutation = builder.mutationType({
 
       bookmarkQuestion: asParticipant.field({
         nullable: true,
-        type: Participation,
+        type: [QuestionStack],
         args: {
           courseId: t.arg.string({ required: true }),
           stackId: t.arg.int({ required: true }),

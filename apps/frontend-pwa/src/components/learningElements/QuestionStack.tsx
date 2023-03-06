@@ -91,17 +91,17 @@ function QuestionStack({
         },
       })
     },
-    // optimisticResponse: {
-    //   bookmarkQuestion: isBookmarked
-    //     ? data?.getBookmarkedQuestions?.filter((entry) => entry.id !== stack.id)
-    //     : [
-    //         ...(data?.getBookmarkedQuestions ?? []),
-    //         {
-    //           __typename: 'QuestionStack',
-    //           id: stack.id,
-    //         },
-    //       ],
-    // },
+    optimisticResponse: {
+      bookmarkQuestion: isBookmarked
+        ? data?.getBookmarkedQuestions?.filter((entry) => entry.id !== stack.id)
+        : [
+            ...(data?.getBookmarkedQuestions ?? []),
+            {
+              __typename: 'QuestionStack',
+              id: stack.id,
+            },
+          ],
+    },
   })
 
   useEffect(() => {
