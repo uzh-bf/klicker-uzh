@@ -1,5 +1,8 @@
 import { useQuery } from '@apollo/client'
-import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetBasicCourseInformationDocument,
+  GetBookmarkedQuestionsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -9,11 +12,10 @@ function Bookmarks() {
   const t = useTranslations()
   const router = useRouter()
 
-  // TODO: maybe even write new query and reduce this getbookmarkedquestsions to only contain the id for the bookmark highlighting
-  // const { data } = useQuery(GetBookmarkedQuestionsDocument, {
-  //   variables: { courseId: router.query.courseId as string },
-  //   skip: !router.query.courseId,
-  // })
+  const { data } = useQuery(GetBookmarkedQuestionsDocument, {
+    variables: { courseId: router.query.courseId as string },
+    skip: !router.query.courseId,
+  })
 
   const { data: courseData } = useQuery(GetBasicCourseInformationDocument, {
     variables: { courseId: router.query.courseId as string },
