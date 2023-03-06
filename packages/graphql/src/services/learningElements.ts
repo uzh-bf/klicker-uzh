@@ -823,15 +823,9 @@ export async function publishLearningElement(
     data: {
       status: LearningElementStatus.PUBLISHED,
     },
-    include: {
-      instances: true,
-    },
   })
 
-  return {
-    ...learningElement,
-    numOfInstances: learningElement.instances.length,
-  }
+  return learningElement
 }
 
 interface DeleteLearningElementArgs {
