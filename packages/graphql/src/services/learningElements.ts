@@ -219,9 +219,16 @@ export async function respondToQuestionInstance(
       }
 
       case QuestionType.NUMERICAL: {
-        if (!response.value) {
-          break
+        if (
+          typeof response.value === 'undefined' ||
+          response.value === null ||
+          response.value === '' ||
+          parseFloat(response.value) < questionData.options.restrictions.min ||
+          parseFloat(response.value) > questionData.options.restrictions.max
+        ) {
+          return null
         }
+
         const value = String(parseFloat(response.value))
 
         if (Object.keys(results).includes(value)) {
