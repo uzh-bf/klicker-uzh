@@ -169,7 +169,12 @@ function QuestionStack({
       <div className="flex flex-col">
         <div className="flex flex-row items-center justify-between">
           <div>{stack.displayName}</div>
-          <div className="flex flex-row gap-2">
+          <div
+            className={twMerge(
+              'flex flex-row gap-2',
+              !data?.getBookmarkedQuestions && 'hidden'
+            )}
+          >
             {/* // TODO: better integration into overall design necessary... */}
             <div>Bookmark QuestionStack</div>
             <Button basic onClick={() => bookmarkQuestion()}>

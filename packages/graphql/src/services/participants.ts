@@ -384,7 +384,9 @@ export async function getBookmarkedQuestions(
   { courseId }: GetBookmarkedQuestionsArgs,
   ctx: Context
 ) {
-  if (!ctx.user?.sub || ctx.user.role != UserRole.PARTICIPANT) return []
+  if (!ctx.user?.sub || ctx.user.role != UserRole.PARTICIPANT) {
+    return null
+  }
 
   const participation = await ctx.prisma.participation.findUnique({
     where: {
