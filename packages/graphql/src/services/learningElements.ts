@@ -527,7 +527,13 @@ export async function getLearningElementData(
                     : undefined,
               },
             },
+            orderBy: {
+              order: 'asc',
+            },
           },
+        },
+        orderBy: {
+          order: 'asc',
         },
       },
     },
