@@ -431,6 +431,17 @@ export async function getCourseData(
         orderBy: {
           createdAt: 'asc',
         },
+        include: {
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  questionInstance: true,
+                },
+              },
+            },
+          },
+        },
       },
       microSessions: {
         include: {
@@ -518,10 +529,35 @@ export async function getCourseData(
   const averageScore = totalCount > 0 ? totalSum / totalCount : 0
   const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
 
+  const reducedLearningElements = course?.learningElements.map((element) => {
+    return {
+      ...element,
+      ...element.stacks.reduce(
+        (acc, stack) => {
+          const stackQuestions = stack.elements.reduce((acc, stackElem) => {
+            if (stackElem.questionInstance) {
+              return acc + 1
+            }
+            return acc
+          }, 0)
+
+          if (stackQuestions > 0) {
+            return {
+              stacksWithQuestions: acc.stacksWithQuestions + 1,
+              numOfQuestions: acc.numOfQuestions + stackQuestions,
+            }
+          }
+          return acc
+        },
+        { stacksWithQuestions: 0, numOfQuestions: 0 }
+      ),
+    }
+  })
+
   return {
     ...course,
     sessions: reducedSessions,
-    learningElements: course?.learningElements,
+    learningElements: reducedLearningElements,
     microSessions: reducedMicroSessions,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries?.length ?? [],
