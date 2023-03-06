@@ -802,8 +802,12 @@ interface GetBookMarksLearningElement {
 
 export async function getBookmarksLearningElement(
   { elementId, courseId }: GetBookMarksLearningElement,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
+  if (!ctx.user?.sub) {
+    return null
+  }
+
   const participation = await ctx.prisma.participation.findUnique({
     where: {
       courseId_participantId: {

@@ -353,7 +353,7 @@ export const Query = builder.queryType({
           return ParticipantGroupService.getGroupActivityDetails(args, ctx)
         },
       }),
-      getBookmarkedQuestions: t.field({
+      getBookmarkedQuestions: asParticipant.field({
         nullable: true,
         type: [QuestionStack],
         args: {
@@ -364,7 +364,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getBookmarksLearningElement: asParticipant.field({
+      getBookmarksLearningElement: t.field({
         nullable: true,
         type: [QuestionStack],
         args: {

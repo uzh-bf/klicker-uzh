@@ -1,9 +1,4 @@
-import {
-  MicroSessionStatus,
-  SessionStatus,
-  SSOType,
-  UserRole,
-} from '@klicker-uzh/prisma'
+import { MicroSessionStatus, SessionStatus, SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
 import * as R from 'ramda'
@@ -382,12 +377,8 @@ interface GetBookmarkedQuestionsArgs {
 
 export async function getBookmarkedQuestions(
   { courseId }: GetBookmarkedQuestionsArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
-  if (!ctx.user?.sub || ctx.user.role != UserRole.PARTICIPANT) {
-    return null
-  }
-
   const participation = await ctx.prisma.participation.findUnique({
     where: {
       courseId_participantId: {
