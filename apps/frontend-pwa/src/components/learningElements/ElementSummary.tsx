@@ -93,14 +93,8 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
       </div>
       <div>
         <div className="flex flex-row items-center justify-between">
-          <H3
-            className={{
-              root: 'flex flex-row justify-between text-sm',
-            }}
-          >
-            {t('shared.generic.evaluation')}
-          </H3>
-          <H3 className={{ root: 'text-sm' }}>
+          <H3>{t('shared.generic.evaluation')}</H3>
+          <H3 className={{ root: 'text-base' }}>
             {t('pwa.learningElement.pointsCollectedPossible')}
           </H3>
         </div>
@@ -108,9 +102,10 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
           {gradedStacks.map((stack) => (
             <div className="flex flex-row justify-between" key={stack?.id}>
               <div>
-                {(stack?.elements?.length || 1) > 1
-                  ? `${stack?.elements?.[0].questionInstance?.questionData.name}, ...`
-                  : `${stack?.elements?.[0].questionInstance?.questionData.name}`}
+                {stack.displayName ??
+                  ((stack?.elements?.length || 1) > 1
+                    ? `${stack?.elements?.[0].questionInstance?.questionData.name}, ...`
+                    : `${stack?.elements?.[0].questionInstance?.questionData.name}`)}
               </div>
               {stack?.solved ? (
                 <div>
