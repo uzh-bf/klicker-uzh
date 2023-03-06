@@ -8,6 +8,8 @@ import Layout from '../../../components/Layout'
 function Bookmarks() {
   const t = useTranslations()
   const router = useRouter()
+
+  // TODO: maybe even write new query and reduce this getbookmarkedquestsions to only contain the id for the bookmark highlighting
   // const { data } = useQuery(GetBookmarkedQuestionsDocument, {
   //   variables: { courseId: router.query.courseId as string },
   //   skip: !router.query.courseId,

@@ -8695,7 +8695,7 @@
                 "name": null,
                 "ofType": {
                   "kind": "OBJECT",
-                  "name": "QuestionInstance",
+                  "name": "QuestionStack",
                   "ofType": null
                 }
               }

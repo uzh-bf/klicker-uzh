@@ -394,11 +394,11 @@ export async function getBookmarkedQuestions(
       },
     },
     include: {
-      bookmarkedQuestions: true,
+      bookmarkedStacks: true,
     },
   })
 
-  return participation?.bookmarkedQuestions ?? []
+  return participation?.bookmarkedStacks ?? []
 }
 
 export async function flagQuestion(

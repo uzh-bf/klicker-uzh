@@ -1,9 +1,13 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
-import { faSync } from '@fortawesome/free-solid-svg-icons'
+import {
+  faBookmark as faBookmarkFilled,
+  faSync,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   BookmarkQuestionDocument,
+  GetBookmarkedQuestionsDocument,
   QuestionStack,
   QuestionType,
   ResponseToQuestionInstanceDocument,
@@ -12,7 +16,7 @@ import formatResponse from '@lib/formatResponse'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import DynamicMarkdown from './DynamicMarkdown'
 import SingleQuestion from './SingleQuestion'
@@ -43,9 +47,20 @@ function QuestionStack({
     ResponseToQuestionInstanceDocument
   )
 
-  // TODO: fetch bookmarks
-  // TODO: use useMemo hook or somehting like this to compute isBookmarked from the fetched data
-  const isBookmarked = false
+  const { data } = useQuery(GetBookmarkedQuestionsDocument, {
+    variables: { courseId: router.query.courseId as string },
+    skip: !router.query.courseId,
+  })
+
+  const isBookmarked = useMemo(() => {
+    if (!data || !data.getBookmarkedQuestions) {
+      return false
+    }
+
+    return data.getBookmarkedQuestions
+      .map((entry) => entry.id)
+      .includes(stack.id)
+  }, [data, stack.id])
 
   const [bookmarkQuestion] = useMutation(BookmarkQuestionDocument, {
     variables: {
@@ -53,29 +68,40 @@ function QuestionStack({
       courseId: router.query.courseId as string,
       bookmarked: !isBookmarked,
     },
-    // TODO
-    // update(cache) {
-    //   const data = cache.readQuery({
-    //     query: GetUserSessionsDocument,
-    //   })
-    //   cache.writeQuery({
-    //     query: GetUserSessionsDocument,
-    //     data: {
-    //       userSessions:
-    //         data?.userSessions?.filter((e) => e.id !== session.id) ?? [],
-    //     },
-    //   })
-    // },
+    update(cache) {
+      const data = cache.readQuery({
+        query: GetBookmarkedQuestionsDocument,
+        variables: { courseId: router.query.courseId as string },
+      })
+      cache.writeQuery({
+        query: GetBookmarkedQuestionsDocument,
+        variables: { courseId: router.query.courseId as string },
+        data: {
+          getBookmarkedQuestions: isBookmarked
+            ? (data?.getBookmarkedQuestions ?? []).filter(
+                (entry) => entry.id !== stack.id
+              )
+            : [
+                ...(data?.getBookmarkedQuestions ?? []),
+                {
+                  __typename: 'QuestionStack',
+                  id: stack.id,
+                },
+              ],
+        },
+      })
+    },
     // optimisticResponse: {
-    //   deleteSession: {
-    //     __typename: 'Session',
-    //     id: session.id,
-    //   },
+    //   bookmarkQuestion: isBookmarked
+    //     ? data?.getBookmarkedQuestions?.filter((entry) => entry.id !== stack.id)
+    //     : [
+    //         ...(data?.getBookmarkedQuestions ?? []),
+    //         {
+    //           __typename: 'QuestionStack',
+    //           id: stack.id,
+    //         },
+    //       ],
     // },
-    // refetchQueries: [
-    //   // TODO: replace with more efficient UPDATE instead of refetching everything
-    //   { query: GetBookmarkedQuestionsDocument, variables: { courseId } },
-    // ],
   })
 
   useEffect(() => {
@@ -150,7 +176,7 @@ function QuestionStack({
               {isBookmarked ? (
                 <FontAwesomeIcon
                   className="text-red-600 hover:text-red-500"
-                  icon={faBookmark}
+                  icon={faBookmarkFilled}
                 />
               ) : (
                 <FontAwesomeIcon

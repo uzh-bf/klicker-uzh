@@ -561,7 +561,7 @@ type Query {
   controlSession(id: String!): Session
   course(id: String!): Course
   feedbacks(id: String!): [Feedback!]
-  getBookmarkedQuestions(courseId: String!): [QuestionInstance!]
+  getBookmarkedQuestions(courseId: String!): [QuestionStack!]
   getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionInstance!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
