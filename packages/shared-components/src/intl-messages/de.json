@@ -76,7 +76,8 @@
       "groupActivities": "Gruppenaktivitäten",
       "experiencePoints": "Erfahrungspunkte",
       "level": "Level",
-      "levelX": "Level: {number}"
+      "levelX": "Level: {number}",
+      "sampleSolution": "Musterlösung"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
