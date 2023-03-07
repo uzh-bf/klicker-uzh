@@ -6,6 +6,13 @@ import {
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import {
+  validateFreeTextResponse,
+  validateKprimResponse,
+  validateMcResponse,
+  validateNumericalResponse,
+  validateScResponse,
+} from '@lib/validateResponse'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { indexBy } from 'ramda'
@@ -13,76 +20,6 @@ import { useContext, useMemo } from 'react'
 import FREETextAnswerOptions from 'shared-components/src/questions/FREETextAnswerOptions'
 import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
 import { twMerge } from 'tailwind-merge'
-
-function validateScResponse(response: number[]) {
-  return (
-    typeof response !== 'undefined' && response !== null && response.length > 0
-  )
-}
-
-function validateMcResponse(response?: number[]) {
-  return (
-    typeof response !== 'undefined' && response !== null && response.length > 0
-  )
-}
-
-function validateKprimResponse(response: Record<number, boolean>) {
-  return (
-    typeof response !== 'undefined' &&
-    response !== null &&
-    Object.values(response).length === 4
-  )
-}
-
-function validateNumericalResponse({
-  response,
-  min,
-  max,
-}: {
-  response: string
-  min?: number
-  max?: number
-}) {
-  if (!response) return false
-
-  if (
-    typeof min !== 'undefined' &&
-    min !== null &&
-    parseFloat(response) < min
-  ) {
-    return false
-  }
-
-  if (
-    typeof max !== 'undefined' &&
-    max !== null &&
-    parseFloat(response) > max
-  ) {
-    return false
-  }
-
-  if (response === '-' || response === '' || response === '.') {
-    return false
-  }
-
-  return true
-}
-
-function validateFreeTextResponse({
-  response,
-  maxLength,
-}: {
-  response: string
-  maxLength?: number
-}) {
-  return (
-    typeof response !== 'undefined' &&
-    response !== null &&
-    response !== '' &&
-    response.length !== 0 &&
-    (maxLength ? response.length <= maxLength : true)
-  )
-}
 
 interface ChoiceOptionsProps {
   disabled?: boolean

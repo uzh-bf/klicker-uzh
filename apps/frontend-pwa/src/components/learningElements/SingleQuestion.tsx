@@ -1,4 +1,11 @@
 import { QuestionInstance, QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  validateFreeTextResponse,
+  validateKprimResponse,
+  validateMcResponse,
+  validateNumericalResponse,
+  validateScResponse,
+} from '@lib/validateResponse'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -33,10 +40,7 @@ function SingleQuestion({
 
     switch (instance.questionData.type) {
       case QuestionType.Sc:
-        if (
-          typeof questionResponse !== 'undefined' &&
-          questionResponse?.length > 0
-        ) {
+        if (validateScResponse(questionResponse)) {
           setInputValid(true)
           break
         }
@@ -44,10 +48,7 @@ function SingleQuestion({
         break
 
       case QuestionType.Mc:
-        if (
-          typeof questionResponse !== 'undefined' &&
-          questionResponse?.length > 0
-        ) {
+        if (validateMcResponse(questionResponse)) {
           setInputValid(true)
           break
         }
@@ -55,13 +56,7 @@ function SingleQuestion({
         break
 
       case QuestionType.Kprim:
-        if (
-          typeof questionResponse !== 'undefined' &&
-          Object.values(questionResponse).length === 4 &&
-          Object.values(questionResponse).every(
-            (value) => typeof value === 'boolean'
-          )
-        ) {
+        if (validateKprimResponse(questionResponse)) {
           setInputValid(true)
           break
         }
@@ -70,10 +65,11 @@ function SingleQuestion({
 
       case QuestionType.Numerical:
         if (
-          typeof questionResponse !== 'undefined' &&
-          questionResponse !== '' &&
-          questionResponse >= instance.questionData.options.restrictions.min &&
-          questionResponse <= instance.questionData.options.restrictions.max
+          validateNumericalResponse({
+            response: questionResponse,
+            min: instance.questionData.options.restrictions.min,
+            max: instance.questionData.options.restrictions.max,
+          })
         ) {
           setInputValid(true)
           break
@@ -83,10 +79,10 @@ function SingleQuestion({
 
       case QuestionType.FreeText:
         if (
-          typeof questionResponse !== 'undefined' &&
-          questionResponse !== '' &&
-          questionResponse.length <=
-            instance.questionData.options.restrictions.maxLength
+          validateFreeTextResponse({
+            response: questionResponse,
+            maxLength: instance.questionData.options.restrictions.maxLength,
+          })
         ) {
           setInputValid(true)
           break
