@@ -243,7 +243,6 @@ function QuestionStack({
                 >
                   <DynamicMarkdown content={element.mdContent} />
                 </div>
-                {isEvaluation && <div className="flex-1 basis-1/3"></div>}
               </div>
             )
           }

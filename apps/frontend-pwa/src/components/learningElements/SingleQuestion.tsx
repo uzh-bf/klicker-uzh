@@ -1,12 +1,12 @@
 import { QuestionInstance, QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import { H3, UserNotification } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import OptionsDisplay from '../common/OptionsDisplay'
 import EvaluationDisplay from '../evaluation/EvaluationDisplay'
 import FlagQuestionModal from '../flags/FlagQuestionModal'
 import DynamicMarkdown from './DynamicMarkdown'
+import LearningElementPoints from './LearningElementPoints'
 
 interface SingleQuestionProps {
   instance: QuestionInstance
@@ -147,68 +147,10 @@ function SingleQuestion({
 
         {instance.evaluation && (
           <div className="flex-1 pt-4 space-y-4 border-t md:p-4 md:border md:rounded md:bg-slate-50 basis-1/3">
-            <div className="flex justify-between">
-              <div className="flex flex-row gap-2">
-                {t.rich('pwa.learningElement.multiplicatorEval', {
-                  mult: instance.pointsMultiplier,
-                  b: (text) => <span className="font-bold">{text}</span>,
-                })}
-              </div>
-            </div>
-            <div className="flex flex-row gap-4 md:flex-wrap">
-              <div>
-                <div className="font-bold">
-                  {t('shared.leaderboard.computed')}
-                </div>
-                <div className="float-left text-lg">
-                  {instance.evaluation.score} {t('shared.leaderboard.points')}
-                </div>
-              </div>
-              {(instance.evaluation.pointsAwarded !== null ||
-                instance.evaluation.xpAwarded !== null) && (
-                <div>
-                  <div className="font-bold">
-                    {t('shared.leaderboard.collected')}
-                  </div>
-                  <div>
-                    {instance.evaluation.pointsAwarded !== null && (
-                      <div className="text-lg">
-                        {instance.evaluation.pointsAwarded}{' '}
-                        {t('shared.leaderboard.points')}
-                      </div>
-                    )}
-                    {instance.evaluation.xpAwarded !== null && (
-                      <div className="text-lg">
-                        {instance.evaluation.xpAwarded} XP
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {(instance.evaluation.newPointsFrom !== null ||
-              instance.evaluation.newXpFrom !== null) && (
-              <div>
-                <div className="font-bold">
-                  {t('pwa.learningElement.newPointsFrom')}
-                </div>
-                {instance.evaluation.newPointsFrom !== null && (
-                  <div className="text-lg">
-                    {dayjs(instance.evaluation.newPointsFrom).format(
-                      'DD.MM.YYYY HH:mm'
-                    )}
-                  </div>
-                )}
-                {instance.evaluation.newXpFrom !== null && (
-                  <div className="text-lg">
-                    {dayjs(instance.evaluation.newXpFrom).format(
-                      'DD.MM.YYYY HH:mm'
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            <LearningElementPoints
+              evaluation={instance.evaluation}
+              pointsMultiplier={instance.pointsMultiplier}
+            />
 
             <EvaluationDisplay
               options={questionData.options}
