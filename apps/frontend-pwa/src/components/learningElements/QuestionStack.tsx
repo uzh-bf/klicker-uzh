@@ -13,7 +13,7 @@ import {
   ResponseToQuestionInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import formatResponse from '@lib/formatResponse'
-import { Button } from '@uzh-bf/design-system'
+import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
@@ -205,11 +205,13 @@ function QuestionStack({
     await Promise.all(responsePromises)
   }
 
+  console.log(responses)
+
   return (
     <div>
       <div className="flex flex-col">
         <div className="flex flex-row items-center justify-between">
-          <div>{stack.displayName}</div>
+          <H2>{stack.displayName}</H2>
           <div
             className={twMerge(
               'flex flex-row gap-2',

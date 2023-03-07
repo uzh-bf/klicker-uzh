@@ -82,7 +82,15 @@ function SingleQuestion({
         break
 
       case QuestionType.FreeText:
-        // TODO: implement
+        if (
+          typeof questionResponse !== 'undefined' &&
+          questionResponse !== '' &&
+          questionResponse.length <=
+            instance.questionData.options.restrictions.maxLength
+        ) {
+          setInputValid(true)
+          break
+        }
         setInputValid(false)
         break
 

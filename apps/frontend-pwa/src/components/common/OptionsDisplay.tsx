@@ -10,6 +10,7 @@ import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { indexBy } from 'ramda'
 import { useContext, useMemo } from 'react'
+import FREETextAnswerOptions from 'shared-components/src/questions/FREETextAnswerOptions'
 import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
 import { twMerge } from 'tailwind-merge'
 
@@ -348,8 +349,19 @@ export function Options({
 
     default:
       return (
-        <div className="text-red-600">
-          {t('pwa.learningElement.questionTypeNotSupported')}
+        <div>
+          {withGuidance && (
+            <div className="mb-4 italic">
+              {t.rich(`shared.${QuestionType.FreeText}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
+            </div>
+          )}
+          <FREETextAnswerOptions
+            onChange={onChangeResponse}
+            maxLength={options.restrictions?.maxLength}
+            value={response}
+          />
         </div>
       )
   }
