@@ -158,6 +158,7 @@
       "pointsCollectedPossible": "Punkte (gesammelt/berechnet/möglich)",
       "notAttempted": "Nicht gelöst",
       "totalPoints": "Total Punkte (gesammelt): {points}",
+      "questionTypeNotSupported": "Dieser Fragetyp ist aktuell für Lernelemente nicht verfügbar.",
       "questionProgress": "Frage: {current}/{total}",
       "newPointsFrom": "Erneute Punkte/XP ab:",
       "othersAnswered": "So haben andere geantwortet",

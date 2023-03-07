@@ -158,6 +158,7 @@
       "pointsCollectedPossible": "Points (collected/computed/available)",
       "notAttempted": "Not attempted",
       "totalPoints": "Total points (collected): {points}",
+      "questionTypeNotSupported": "This question type is currently not available for learning elements",
       "questionProgress": "Question: {current}/{total}",
       "newPointsFrom": "New points/XP from:",
       "othersAnswered": "Others answered as follows",

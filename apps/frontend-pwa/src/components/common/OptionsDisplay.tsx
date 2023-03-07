@@ -14,6 +14,26 @@ import FREETextAnswerOptions from 'shared-components/src/questions/FREETextAnswe
 import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
 import { twMerge } from 'tailwind-merge'
 
+function validateScResponse(response: number[]) {
+  return (
+    typeof response !== 'undefined' && response !== null && response.length > 0
+  )
+}
+
+function validateMcResponse(response?: number[]) {
+  return (
+    typeof response !== 'undefined' && response !== null && response.length > 0
+  )
+}
+
+function validateKprimResponse(response: Record<number, boolean>) {
+  return (
+    typeof response !== 'undefined' &&
+    response !== null &&
+    Object.values(response).length === 4
+  )
+}
+
 function validateNumericalResponse({
   response,
   min,
@@ -47,6 +67,23 @@ function validateNumericalResponse({
 
   return true
 }
+
+function validateFreeTextResponse({
+  response,
+  maxLength,
+}: {
+  response: string
+  maxLength?: number
+}) {
+  return (
+    typeof response !== 'undefined' &&
+    response !== null &&
+    response !== '' &&
+    response.length !== 0 &&
+    (maxLength ? response.length <= maxLength : true)
+  )
+}
+
 interface ChoiceOptionsProps {
   disabled?: boolean
   choices: Choice[]
@@ -347,7 +384,7 @@ export function Options({
       )
     }
 
-    default:
+    case QuestionType.FreeText:
       return (
         <div>
           {withGuidance && (
@@ -364,6 +401,9 @@ export function Options({
           />
         </div>
       )
+
+    default:
+      return <div>{t('pwa.learningElement.questionTypeNotSupported')}</div>
   }
 }
 
@@ -425,18 +465,26 @@ function OptionsDisplay({
           <Button
             className={{ root: 'text-lg' }}
             disabled={
-              (!isEvaluation &&
-                questionType !== QuestionType.Kprim &&
-                response?.length === 0) ||
-              (questionType === QuestionType.Kprim &&
-                response &&
-                Object.keys(response).length !== options.choices.length) ||
-              (questionType === QuestionType.Numerical &&
-                !validateNumericalResponse({
-                  response,
-                  min: options?.restrictions?.min,
-                  max: options?.restrictions?.max,
-                }))
+              !(
+                isEvaluation ||
+                (questionType === QuestionType.Sc &&
+                  validateScResponse(response)) ||
+                (questionType === QuestionType.Mc &&
+                  validateMcResponse(response)) ||
+                (questionType === QuestionType.Kprim &&
+                  validateKprimResponse(response)) ||
+                (questionType === QuestionType.Numerical &&
+                  validateNumericalResponse({
+                    response,
+                    min: options?.restrictions?.min,
+                    max: options?.restrictions?.max,
+                  })) ||
+                (questionType === QuestionType.FreeText &&
+                  validateFreeTextResponse({
+                    response,
+                    maxLength: options.restrictions?.maxLength,
+                  }))
+              )
             }
             onClick={onSubmitResponse}
           >
