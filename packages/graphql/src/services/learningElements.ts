@@ -244,8 +244,30 @@ export async function respondToQuestionInstance(
       }
 
       case QuestionType.FREE_TEXT: {
+        if (
+          typeof response.value === 'undefined' ||
+          response.value === null ||
+          response.value === '' ||
+          response.value.length > questionData.options.restrictions.maxLength
+        ) {
+          return null
+        }
+
+        const value = R.toLower(R.trim(response.value))
+
+        if (Object.keys(results).includes(value)) {
+          updatedResults = {
+            ...results,
+            [value]: (results as FreeTextQuestionResults)[value] + 1,
+          }
+        } else {
+          updatedResults = { ...results, [value]: 1 }
+        }
         break
       }
+
+      default:
+        break
     }
 
     const updatedInstance = await prisma.questionInstance.update({

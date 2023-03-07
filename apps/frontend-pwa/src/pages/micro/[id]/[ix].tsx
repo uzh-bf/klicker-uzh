@@ -67,7 +67,7 @@ function MicroSessionInstance() {
     if (!response) return
     respondToQuestionInstance({
       variables: {
-        courseId: data.microSession!.course.id as string,
+        courseId: data.microSession!.course?.id as string,
         id: currentInstance?.id as number,
         response: formatResponse(questionData, response),
       },
