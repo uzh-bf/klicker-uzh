@@ -179,8 +179,7 @@ function QuestionStack({
           <div
             className={twMerge(
               'flex flex-row gap-2',
-              (!data?.getBookmarksLearningElement || informationOnly) &&
-                'hidden'
+              !data?.getBookmarksLearningElement && 'hidden'
             )}
           >
             {/* // TODO: better integration into overall design necessary... */}
