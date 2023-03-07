@@ -411,9 +411,17 @@ export async function flagQuestion(
       id: args.questionInstanceId,
     },
     include: {
-      learningElement: {
+      stackElement: {
         include: {
-          course: true,
+          stack: {
+            include: {
+              learningElement: {
+                include: {
+                  course: true,
+                },
+              },
+            },
+          },
         },
       },
       microSession: {
@@ -425,7 +433,8 @@ export async function flagQuestion(
   })
 
   if (
-    !questionInstance?.learningElement?.course?.notificationEmail &&
+    !questionInstance?.stackElement?.stack?.learningElement?.course
+      ?.notificationEmail &&
     !questionInstance?.microSession?.course?.notificationEmail
   )
     return null
@@ -437,14 +446,14 @@ export async function flagQuestion(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      elementType: questionInstance?.learningElement
+      elementType: questionInstance?.stackElement?.stack.learningElement
         ? 'Learning Element'
         : 'Micro-Session',
       elementId:
-        questionInstance?.learningElement?.id ||
+        questionInstance?.stackElement?.stack?.learningElement?.id ||
         questionInstance?.microSession?.id,
       elementName:
-        questionInstance?.learningElement?.name ||
+        questionInstance?.stackElement?.stack?.learningElement?.name ||
         questionInstance?.microSession?.name,
       questionId: questionInstance.questionId,
       questionName: (
@@ -454,7 +463,8 @@ export async function flagQuestion(
       participantId: ctx.user.sub,
       secret: process.env.NOTIFICATION_SECRET,
       notificationEmail:
-        questionInstance.learningElement?.course?.notificationEmail ||
+        questionInstance.stackElement?.stack?.learningElement?.course
+          ?.notificationEmail ||
         questionInstance.microSession?.course?.notificationEmail,
     }),
   })
