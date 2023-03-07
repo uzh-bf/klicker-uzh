@@ -336,6 +336,7 @@ export async function respondToQuestionInstance(
       xpAwarded = xp
 
       lastAwardedAt = new Date()
+      lastXpAwardedAt = new Date()
       newPointsFrom = dayjs(lastAwardedAt)
         .add(instance?.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
