@@ -160,38 +160,55 @@ function SingleQuestion({
                 <div className="font-bold">
                   {t('shared.leaderboard.computed')}
                 </div>
-                <div className="text-lg">
+                <div className="float-left text-lg">
                   {instance.evaluation.score} {t('shared.leaderboard.points')}
                 </div>
               </div>
-              <div>
-                <div className="font-bold">
-                  {t('shared.leaderboard.collected')}
+              {(instance.evaluation.pointsAwarded !== null ||
+                instance.evaluation.xpAwarded !== null) && (
+                <div>
+                  <div className="font-bold">
+                    {t('shared.leaderboard.collected')}
+                  </div>
+                  <div>
+                    {instance.evaluation.pointsAwarded !== null && (
+                      <div className="text-lg">
+                        {instance.evaluation.pointsAwarded}{' '}
+                        {t('shared.leaderboard.points')}
+                      </div>
+                    )}
+                    {instance.evaluation.xpAwarded !== null && (
+                      <div className="text-lg">
+                        {instance.evaluation.xpAwarded} XP
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="text-lg">
-                  {instance.evaluation.pointsAwarded}{' '}
-                  {t('shared.leaderboard.points')}
-                </div>
-                <div className="text-lg">
-                  {instance.evaluation.xpAwarded} XP
-                </div>
-              </div>
+              )}
+            </div>
+
+            {(instance.evaluation.newPointsFrom !== null ||
+              instance.evaluation.newXpFrom !== null) && (
               <div>
                 <div className="font-bold">
                   {t('pwa.learningElement.newPointsFrom')}
                 </div>
-                <div className="text-lg">
-                  {dayjs(instance.evaluation.newPointsFrom).format(
-                    'DD.MM.YYYY HH:mm'
-                  )}
-                </div>
-                <div className="text-lg">
-                  {dayjs(instance.evaluation.newXpFrom).format(
-                    'DD.MM.YYYY HH:mm'
-                  )}
-                </div>
+                {instance.evaluation.newPointsFrom !== null && (
+                  <div className="text-lg">
+                    {dayjs(instance.evaluation.newPointsFrom).format(
+                      'DD.MM.YYYY HH:mm'
+                    )}
+                  </div>
+                )}
+                {instance.evaluation.newXpFrom !== null && (
+                  <div className="text-lg">
+                    {dayjs(instance.evaluation.newXpFrom).format(
+                      'DD.MM.YYYY HH:mm'
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             <EvaluationDisplay
               options={questionData.options}

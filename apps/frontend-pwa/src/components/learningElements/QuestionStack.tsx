@@ -210,12 +210,11 @@ function QuestionStack({
           <div>{stack.displayName}</div>
           <div
             className={twMerge(
-              'flex flex-row gap-2',
+              'flex flex-row gap-2 mb-3',
               !data?.getBookmarksLearningElement && 'hidden'
             )}
           >
-            {/* // TODO: better integration into overall design necessary... */}
-            <div>Bookmark QuestionStack</div>
+            <div>Bookmark</div>
             <Button basic onClick={() => bookmarkQuestion()}>
               {isBookmarked ? (
                 <FontAwesomeIcon
