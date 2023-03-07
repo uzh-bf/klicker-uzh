@@ -1,5 +1,6 @@
 import {
   computeAwardedXp,
+  gradeQuestionFreeText,
   gradeQuestionKPRIM,
   gradeQuestionMC,
   gradeQuestionNumerical,
@@ -125,6 +126,26 @@ function evaluateQuestionResponse(
       })
 
       // TODO: add feedbacks here once they are implemented for specified solution ranges
+      return {
+        feedbacks: [],
+        answers: results ?? [],
+        score: correct ? correct * 10 * (multiplier ?? 1) : 0,
+        xp: computeAwardedXp({
+          pointsPercentage: correct,
+          multiplier: multiplier ?? 1,
+        }),
+      }
+    }
+
+    case QuestionType.FREE_TEXT: {
+      const data = questionData as FreeTextQuestionData
+      const solutions = data.options.solutions
+
+      const correct = gradeQuestionFreeText({
+        response: response.value ?? '',
+        solutions: solutions ?? [],
+      })
+
       return {
         feedbacks: [],
         answers: results ?? [],
