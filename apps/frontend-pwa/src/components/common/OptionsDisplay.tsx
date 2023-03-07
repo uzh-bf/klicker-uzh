@@ -328,7 +328,7 @@ export function Options({
             </div>
           )}
           <NUMERICALAnswerOptions
-            disabled={disabled}
+            disabled={disabled || isEvaluation}
             accuracy={options?.accuracy}
             placeholder={options?.placeholder}
             unit={options?.unit}
