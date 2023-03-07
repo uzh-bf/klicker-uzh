@@ -236,13 +236,13 @@ function QuestionStack({
 
         <div
           className={twMerge(
-            'w-full grid grid-cols-2',
-            isEvaluation && 'grid-cols-3'
+            'w-full grid grid-cols-1 md:grid-cols-2',
+            isEvaluation && 'md:grid-cols-3'
           )}
         >
           {stack.elements?.map((element) => {
             return [
-              <div className="col-span-2 py-4 mr-2" key={element.id}>
+              <div className="py-4 mr-2 md:col-span-2" key={element.id}>
                 {element.mdContent && (
                   <div key={element.id}>
                     <div className="w-full py-4 border-y">
