@@ -18,7 +18,9 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import EvaluationDisplay from '../evaluation/EvaluationDisplay'
 import DynamicMarkdown from './DynamicMarkdown'
+import LearningElementPoints from './LearningElementPoints'
 import SingleQuestion from './SingleQuestion'
 
 interface QuestionStackProps {
@@ -210,7 +212,7 @@ function QuestionStack({
           <div>{stack.displayName}</div>
           <div
             className={twMerge(
-              'flex flex-row gap-2 mb-3',
+              'flex flex-row gap-2',
               !data?.getBookmarksLearningElement && 'hidden'
             )}
           >
@@ -231,56 +233,88 @@ function QuestionStack({
           </div>
         </div>
         <DynamicMarkdown content={stack.description ?? undefined} />
-        {stack.elements?.map((element) => {
-          if (element.mdContent) {
-            return (
-              <div className="gap-8 md:flex md:flex-row" key={element.id}>
+
+        <div
+          className={twMerge(
+            'w-full grid grid-cols-2',
+            isEvaluation && 'grid-cols-3'
+          )}
+        >
+          {stack.elements?.map((element) => {
+            return [
+              <div className="col-span-2 py-4 mr-2" key={element.id}>
+                {element.mdContent && (
+                  <div key={element.id}>
+                    <div className="w-full py-4 border-y">
+                      <DynamicMarkdown content={element.mdContent} />
+                    </div>
+                  </div>
+                )}
+                {element.questionInstance && (
+                  <SingleQuestion
+                    instance={element.questionInstance}
+                    currentStep={currentStep}
+                    totalSteps={totalSteps}
+                    response={responses[element.id]}
+                    setResponse={(response) =>
+                      setResponses((prev) => ({
+                        ...prev,
+                        [element.id]: response,
+                      }))
+                    }
+                    setInputValid={(valid: boolean) =>
+                      setInputValid((prev) => ({
+                        ...prev,
+                        [element.id]: valid,
+                      }))
+                    }
+                  />
+                )}
+                {!element.mdContent && !element.questionInstance && (
+                  <div
+                    className="flex flex-col items-center justify-center h-20"
+                    key={element.id}
+                  >
+                    <FontAwesomeIcon icon={faSync} />
+                  </div>
+                )}
+              </div>,
+              isEvaluation && (
                 <div
-                  className={twMerge(
-                    'flex-1 py-4 my-8 border-y',
-                    isEvaluation && 'basis-2/3'
-                  )}
+                  className="col-span-1 py-4 ml-2 border border-solid md:bg-slate-50"
+                  key={element.id}
                 >
-                  <DynamicMarkdown content={element.mdContent} />
+                  {element.mdContent && <div key={element.id} />}
+                  {element.questionInstance &&
+                    element.questionInstance.evaluation && (
+                      <div
+                        className="flex flex-col gap-4 md:px-4"
+                        key={element.id}
+                      >
+                        <LearningElementPoints
+                          evaluation={element.questionInstance.evaluation}
+                          pointsMultiplier={
+                            element.questionInstance.pointsMultiplier
+                          }
+                        />
+
+                        <EvaluationDisplay
+                          options={
+                            element.questionInstance.questionData.options
+                          }
+                          questionType={
+                            element.questionInstance.questionData.type
+                          }
+                          evaluation={element.questionInstance.evaluation}
+                          reference={String(responses[element.id])}
+                        />
+                      </div>
+                    )}
                 </div>
-              </div>
-            )
-          }
-
-          if (element.questionInstance) {
-            return (
-              <div key={element.id}>
-                <SingleQuestion
-                  instance={element.questionInstance}
-                  currentStep={currentStep}
-                  totalSteps={totalSteps}
-                  response={responses[element.id]}
-                  setResponse={(response) =>
-                    setResponses((prev) => ({
-                      ...prev,
-                      [element.id]: response,
-                    }))
-                  }
-                  setInputValid={(valid: boolean) =>
-                    setInputValid((prev) => ({
-                      ...prev,
-                      [element.id]: valid,
-                    }))
-                  }
-                />
-              </div>
-            )
-          }
-
-          return (
-            <div
-              className="flex flex-col items-center justify-center h-28"
-              key={element.id}
-            >
-              <FontAwesomeIcon icon={faSync} />
-            </div>
-          )
-        })}
+              ),
+            ]
+          })}
+        </div>
       </div>
       <Button
         className={{ root: 'float-right mt-4' }}

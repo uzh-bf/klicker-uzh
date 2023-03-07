@@ -3,10 +3,8 @@ import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import OptionsDisplay from '../common/OptionsDisplay'
-import EvaluationDisplay from '../evaluation/EvaluationDisplay'
 import FlagQuestionModal from '../flags/FlagQuestionModal'
 import DynamicMarkdown from './DynamicMarkdown'
-import LearningElementPoints from './LearningElementPoints'
 
 interface SingleQuestionProps {
   instance: QuestionInstance
@@ -144,22 +142,6 @@ function SingleQuestion({
             displayMode={questionData.displayMode}
           />
         </div>
-
-        {instance.evaluation && (
-          <div className="flex-1 pt-4 space-y-4 border-t md:p-4 md:border md:rounded md:bg-slate-50 basis-1/3">
-            <LearningElementPoints
-              evaluation={instance.evaluation}
-              pointsMultiplier={instance.pointsMultiplier}
-            />
-
-            <EvaluationDisplay
-              options={questionData.options}
-              questionType={questionData.type}
-              evaluation={instance.evaluation}
-              reference={String(response)}
-            />
-          </div>
-        )}
       </div>
     </div>
   )
