@@ -44,6 +44,8 @@ function QuestionStack({
   >({})
   const [isEvaluation, setIsEvaluation] = useState(false)
   const [informationOnly, setInformationOnly] = useState(true)
+  const [inputValid, setInputValid] = useState<Record<number, boolean>>({})
+  const [allValid, setAllValid] = useState(false)
 
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
@@ -149,6 +151,36 @@ function QuestionStack({
     }
   }, [stack])
 
+  useEffect(() => {
+    stack.elements?.map((element) => {
+      if (element.mdContent) return
+
+      return setInputValid((prev) => ({
+        ...prev,
+        [element.id]: false,
+      }))
+    })
+
+    return () => {
+      setInputValid({})
+    }
+  }, [stack])
+
+  useEffect(() => {
+    if (
+      Object.keys(inputValid).length === 0 ||
+      Object.values(inputValid).every((v) => v)
+    ) {
+      setAllValid(true)
+    } else {
+      setAllValid(false)
+    }
+
+    return () => {
+      setAllValid(false)
+    }
+  }, [inputValid])
+
   const handleSubmitResponse = async () => {
     const responsePromises = Object.entries(responses).map(
       ([key, response]) => {
@@ -231,6 +263,12 @@ function QuestionStack({
                       [element.id]: response,
                     }))
                   }
+                  setInputValid={(valid: boolean) =>
+                    setInputValid((prev) => ({
+                      ...prev,
+                      [element.id]: valid,
+                    }))
+                  }
                 />
               </div>
             )
@@ -247,12 +285,13 @@ function QuestionStack({
         })}
       </div>
       <Button
-        className={{ root: 'float-right' }}
+        className={{ root: 'float-right mt-4' }}
         onClick={
           isEvaluation || informationOnly
             ? () => handleNextQuestion()
             : () => handleSubmitResponse()
         }
+        disabled={!allValid && !isEvaluation}
       >
         {isEvaluation || informationOnly
           ? t('shared.generic.continue')

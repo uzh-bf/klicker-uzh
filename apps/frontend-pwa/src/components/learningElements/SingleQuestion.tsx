@@ -1,4 +1,4 @@
-import { QuestionInstance } from '@klicker-uzh/graphql/dist/ops'
+import { QuestionInstance, QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -14,6 +14,7 @@ interface SingleQuestionProps {
   totalSteps: number
   response: any
   setResponse: (response: any) => void
+  setInputValid: (valid: boolean) => void
 }
 
 function SingleQuestion({
@@ -22,6 +23,7 @@ function SingleQuestion({
   totalSteps,
   response,
   setResponse,
+  setInputValid,
 }: SingleQuestionProps) {
   const t = useTranslations()
 
@@ -30,7 +32,67 @@ function SingleQuestion({
 
   useEffect(() => {
     setResponse(questionResponse)
-  }, [questionResponse])
+
+    switch (instance.questionData.type) {
+      case QuestionType.Sc:
+        if (
+          typeof questionResponse !== 'undefined' &&
+          questionResponse?.length > 0
+        ) {
+          setInputValid(true)
+          break
+        }
+        setInputValid(false)
+        break
+
+      case QuestionType.Mc:
+        if (
+          typeof questionResponse !== 'undefined' &&
+          questionResponse?.length > 0
+        ) {
+          setInputValid(true)
+          break
+        }
+        setInputValid(false)
+        break
+
+      case QuestionType.Kprim:
+        if (
+          typeof questionResponse !== 'undefined' &&
+          Object.values(questionResponse).length === 4 &&
+          Object.values(questionResponse).every(
+            (value) => typeof value === 'boolean'
+          )
+        ) {
+          setInputValid(true)
+          break
+        }
+        setInputValid(false)
+        break
+
+      case QuestionType.Numerical:
+        if (
+          typeof questionResponse !== 'undefined' &&
+          questionResponse !== '' &&
+          questionResponse >= instance.questionData.options.restrictions.min &&
+          questionResponse <= instance.questionData.options.restrictions.max
+        ) {
+          setInputValid(true)
+          break
+        }
+        setInputValid(false)
+        break
+
+      case QuestionType.FreeText:
+        // TODO: implement
+        setInputValid(false)
+        break
+
+      default:
+        setInputValid(false)
+        break
+    }
+  }, [instance, questionResponse])
 
   const questionData = instance.questionData
 
