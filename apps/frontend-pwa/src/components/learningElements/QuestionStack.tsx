@@ -211,7 +211,7 @@ function QuestionStack({
     <div>
       <div className="flex flex-col">
         <div className="flex flex-row items-center justify-between">
-          <H2>{stack.displayName}</H2>
+          <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
           <div
             className={twMerge(
               'flex flex-row gap-2',
@@ -234,7 +234,12 @@ function QuestionStack({
             </Button>
           </div>
         </div>
-        <DynamicMarkdown content={stack.description ?? undefined} />
+
+        {stack.description && (
+          <div className="mb-4">
+            <DynamicMarkdown content={stack.description} />
+          </div>
+        )}
 
         <div
           className={twMerge(
@@ -244,7 +249,10 @@ function QuestionStack({
         >
           {stack.elements?.map((element) => {
             return [
-              <div className="py-4 mr-2 md:col-span-2" key={element.id}>
+              <div
+                className="py-4 mr-2 first:pt-0 last:pb-0 md:col-span-2"
+                key={element.id}
+              >
                 {element.mdContent && (
                   <div key={element.id}>
                     <div className="w-full py-4 border-y">
