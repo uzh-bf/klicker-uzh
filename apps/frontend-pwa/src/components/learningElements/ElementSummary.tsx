@@ -153,7 +153,11 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
           })}
         </H3>
 
-        <div>XP Awarded: {totalXpAwarded}</div>
+        <H3 className={{ root: 'text-right text-base' }}>
+          {t('pwa.learningElement.totalXp', {
+            xp: totalXpAwarded,
+          })}
+        </H3>
       </div>
     </div>
   )
