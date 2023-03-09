@@ -99,6 +99,7 @@ function Question({
                 onKeyDown={() => setIsModificationModalOpen(true)}
               >
                 {type} - {title}
+                {/* {title} */}
               </a>
             </div>
 
@@ -131,6 +132,7 @@ function Question({
               <Button
                 className={{ root: 'w-36' }}
                 onClick={(): void => setIsModificationModalOpen(true)}
+                data={{ cy: 'edit-question' }}
               >
                 Bearbeiten
               </Button>

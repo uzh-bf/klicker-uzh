@@ -268,6 +268,7 @@ function StepTwo(props: StepProps) {
             placeholder="Kurs auswählen"
             items={[{ label: 'Kein Kurs', value: '' }, ...props.courses]}
             hideError
+            data={{ cy: 'select-course' }}
           />
           <ErrorMessage
             name="courseId"
