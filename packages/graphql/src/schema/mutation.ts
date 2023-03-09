@@ -821,6 +821,12 @@ export const Mutation = builder.mutationType({
           return MicroLearningService.deleteMicroSession(args, ctx)
         },
       }),
+
+      updateGroupAverageScores: t.boolean({
+        resolve(_, __, ctx) {
+          return ParticipantGroupService.updateGroupAverageScores(ctx)
+        },
+      }),
     }
   },
 })
