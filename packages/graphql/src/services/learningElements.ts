@@ -1,5 +1,6 @@
 import {
   computeAwardedXp,
+  gradeQuestionFreeText,
   gradeQuestionKPRIM,
   gradeQuestionMC,
   gradeQuestionNumerical,
@@ -12,15 +13,15 @@ import {
   Question,
   QuestionInstance,
   QuestionInstanceType,
+  QuestionResponse as PrismaQuestionResponse,
+  QuestionStack,
   QuestionType,
   UserRole,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
-import { pick } from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
-import { shuffle } from '../util'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
@@ -136,6 +137,26 @@ function evaluateQuestionResponse(
       }
     }
 
+    case QuestionType.FREE_TEXT: {
+      const data = questionData as FreeTextQuestionData
+      const solutions = data.options.solutions
+
+      const correct = gradeQuestionFreeText({
+        response: response.value ?? '',
+        solutions: solutions ?? [],
+      })
+
+      return {
+        feedbacks: [],
+        answers: results ?? [],
+        score: correct ? correct * 10 * (multiplier ?? 1) : 0,
+        xp: computeAwardedXp({
+          pointsPercentage: correct,
+          multiplier: multiplier ?? 1,
+        }),
+      }
+    }
+
     default:
       return null
   }
@@ -216,6 +237,7 @@ export async function respondToQuestionInstance(
           }),
           results.choices as Record<string, number>
         )
+        break
       }
 
       case QuestionType.NUMERICAL: {
@@ -239,11 +261,34 @@ export async function respondToQuestionInstance(
         } else {
           updatedResults = { ...results, [value]: 1 }
         }
+        break
       }
 
       case QuestionType.FREE_TEXT: {
+        if (
+          typeof response.value === 'undefined' ||
+          response.value === null ||
+          response.value === '' ||
+          response.value.length > questionData.options.restrictions.maxLength
+        ) {
+          return null
+        }
+
+        const value = R.toLower(R.trim(response.value))
+
+        if (Object.keys(results).includes(value)) {
+          updatedResults = {
+            ...results,
+            [value]: (results as FreeTextQuestionResults)[value] + 1,
+          }
+        } else {
+          updatedResults = { ...results, [value]: 1 }
+        }
         break
       }
+
+      default:
+        break
     }
 
     const updatedInstance = await prisma.questionInstance.update({
@@ -334,6 +379,7 @@ export async function respondToQuestionInstance(
       xpAwarded = xp
 
       lastAwardedAt = new Date()
+      lastXpAwardedAt = new Date()
       newPointsFrom = dayjs(lastAwardedAt)
         .add(instance?.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS, 'days')
         .toDate()
@@ -506,66 +552,106 @@ export async function getLearningElementData(
     },
     include: {
       course: true,
-      instances: {
-        orderBy: {
-          questionId: 'asc',
+      stacks: {
+        include: {
+          elements: {
+            include: {
+              questionInstance: {
+                include:
+                  ctx.user?.sub && ctx.user?.role === UserRole.PARTICIPANT
+                    ? {
+                        responses: {
+                          where: {
+                            participantId: ctx.user.sub,
+                          },
+                          orderBy: {
+                            lastAwardedAt: 'asc',
+                          },
+                          take: 1,
+                        },
+                      }
+                    : undefined,
+              },
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
-        include:
-          ctx.user?.sub && ctx.user?.role === UserRole.PARTICIPANT
-            ? {
-                responses: {
-                  where: {
-                    participantId: ctx.user.sub,
-                  },
-                  orderBy: {
-                    lastAwardedAt: 'asc',
-                  },
-                  take: 1,
-                },
-              }
-            : undefined,
+        orderBy: {
+          order: 'asc',
+        },
       },
     },
   })
 
   if (!element) return null
 
-  const instancesWithoutSolution = element.instances.reduce<{
-    instances: QuestionInstance[]
+  const stacksWithStatistics = element.stacks.reduce<{
+    stacks: QuestionStack[]
     previouslyAnswered: number
     previousScore: number
     previousPointsAwarded: number
     totalTrials: number
+    stacksWithQuestions: number
+    numOfQuestions: number
   }>(
-    (acc, instance) => {
-      const questionData =
-        instance.questionData?.valueOf() as AllQuestionTypeData
-      if (
-        !questionData ||
-        typeof questionData !== 'object' ||
-        Array.isArray(questionData)
+    (acc, stack) => {
+      const stackStatistics = stack.elements.reduce<{
+        answered: boolean
+        containsQuestions: boolean
+        previousScore: number
+        previousPointsAwarded: number
+        totalTrials: number
+        numOfInstances: number
+      }>(
+        (acc, stackElement) => {
+          const questionInstance =
+            stackElement.questionInstance?.valueOf() as QuestionInstance & {
+              responses?: PrismaQuestionResponse[]
+            }
+
+          // if the stack only contains description elements, the statistics remain unchanged
+          if (!questionInstance) return acc
+
+          const lastResponse = questionInstance.responses?.[0]
+          return {
+            answered: !!lastResponse,
+            containsQuestions: true,
+            previousScore: acc.previousScore + (lastResponse?.totalScore ?? 0),
+            previousPointsAwarded:
+              acc.previousPointsAwarded +
+              (lastResponse?.totalPointsAwarded ?? 0),
+            totalTrials: lastResponse?.trialsCount ?? 0,
+            numOfInstances: acc.numOfInstances + 1,
+          }
+        },
+        {
+          answered: false,
+          containsQuestions: false,
+          previousScore: 0,
+          previousPointsAwarded: 0,
+          totalTrials: 0,
+          numOfInstances: 0,
+        }
       )
-        return {
-          ...acc,
-          instances: [...acc.instances, instance],
+
+      const stackInstancesWithoutSolution = stack.elements.map((element) => {
+        if (!element.questionInstance) {
+          return element
         }
 
-      switch (questionData.type) {
-        case QuestionType.SC:
-        case QuestionType.MC:
-        case QuestionType.KPRIM:
-          const response = instance.responses?.[0]
-          return {
-            previouslyAnswered: acc.previouslyAnswered + Number(!!response),
-            previousScore: acc.previousScore + (response?.totalScore ?? 0),
-            previousPointsAwarded:
-              acc.previousPointsAwarded + (response?.totalPointsAwarded ?? 0),
-            totalTrials: acc.totalTrials + (response?.trialsCount ?? 0),
-            instances: [
-              ...acc.instances,
-              {
-                ...instance,
-                lastResponse: response?.lastAwardedAt,
+        const questionData =
+          element.questionInstance.questionData?.valueOf() as AllQuestionTypeData
+
+        switch (questionData?.type) {
+          case QuestionType.SC:
+          case QuestionType.MC:
+          case QuestionType.KPRIM:
+            return {
+              ...element,
+              questionInstance: {
+                ...element.questionInstance,
                 questionData: {
                   ...questionData,
                   options: {
@@ -576,57 +662,83 @@ export async function getLearningElementData(
                   },
                 },
               },
-            ],
-          }
+            }
 
-        case QuestionType.FREE_TEXT:
-        case QuestionType.NUMERICAL:
-        default: {
-          const response = instance.responses?.[0]
-          return {
-            previouslyAnswered: acc.previouslyAnswered + Number(!!response),
-            previousScore: acc.previousScore + (response?.totalScore ?? 0),
-            previousPointsAwarded:
-              acc.previousPointsAwarded + (response?.totalPointsAwarded ?? 0),
-            totalTrials: acc.totalTrials + (response?.trialsCount ?? 0),
-            instances: [...acc.instances, instance],
+          case QuestionType.NUMERICAL:
+          case QuestionType.FREE_TEXT:
+            return {
+              ...element,
+              questionInstance: {
+                ...element.questionInstance,
+                questionData: {
+                  ...questionData,
+                  options: {
+                    restrictions: questionData.options.restrictions,
+                  },
+                },
+              },
+            }
+
+          default: {
+            return element
           }
         }
+      })
+
+      return {
+        stacks: [
+          ...acc.stacks,
+          { ...stack, questionInstances: stackInstancesWithoutSolution },
+        ],
+        previouslyAnswered:
+          acc.previouslyAnswered + (stackStatistics.totalTrials > 0 ? 1 : 0),
+        previousScore: acc.previousScore + stackStatistics.previousScore,
+        previousPointsAwarded:
+          acc.previousPointsAwarded + stackStatistics.previousPointsAwarded,
+        totalTrials: stackStatistics.answered
+          ? stackStatistics.totalTrials
+          : acc.totalTrials,
+        stacksWithQuestions:
+          acc.stacksWithQuestions + (stackStatistics.containsQuestions ? 1 : 0),
+        numOfQuestions: acc.numOfQuestions + stackStatistics.numOfInstances,
       }
     },
     {
-      instances: [],
+      stacks: [],
       previouslyAnswered: 0,
       previousScore: 0,
       previousPointsAwarded: 0,
       totalTrials: 0,
+      stacksWithQuestions: 0,
+      numOfQuestions: 0,
     }
   )
 
-  if (element.orderType === OrderType.LAST_RESPONSE) {
-    const orderedInstances = R.sort(
-      (a, b) => (a.lastResponse ?? 0) - (b.lastResponse ?? 0),
-      shuffle(instancesWithoutSolution.instances)
-    )
+  // TODO: reintroduce ordering
+  // if (element.orderType === OrderType.LAST_RESPONSE) {
+  //   const orderedInstances = R.sort(
+  //     (a, b) => (a.lastResponse ?? 0) - (b.lastResponse ?? 0),
+  //     shuffle(instancesWithoutSolution.instances)
+  //   )
 
-    return {
-      ...element,
-      ...instancesWithoutSolution,
-      instances: orderedInstances,
-    }
-  }
+  //   return {
+  //     ...element,
+  //     ...instancesWithoutSolution,
+  //     instances: orderedInstances,
+  //   }
+  // }
 
-  if (element.orderType === OrderType.SHUFFLED) {
-    return {
-      ...element,
-      ...instancesWithoutSolution,
-      instances: shuffle(instancesWithoutSolution.instances),
-    }
-  }
+  // if (element.orderType === OrderType.SHUFFLED) {
+  //   return {
+  //     ...element,
+  //     ...instancesWithoutSolution,
+  //     instances: shuffle(instancesWithoutSolution.instances),
+  //   }
+  // }
 
   return {
     ...element,
-    ...instancesWithoutSolution,
+    ...stacksWithStatistics,
   }
 }
 
@@ -686,7 +798,7 @@ export async function createLearningElement(
           const question = questionMap[questionId]
           const processedQuestionData = processQuestionData(question)
           const questionAttachmentInstances = question.attachments.map(
-            pick(['type', 'href', 'name', 'description', 'originalName'])
+            R.pick(['type', 'href', 'name', 'description', 'originalName'])
           )
           return {
             order: ix,
@@ -734,8 +846,12 @@ interface GetBookMarksLearningElement {
 
 export async function getBookmarksLearningElement(
   { elementId, courseId }: GetBookMarksLearningElement,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
+  if (!ctx.user?.sub) {
+    return null
+  }
+
   const participation = await ctx.prisma.participation.findUnique({
     where: {
       courseId_participantId: {
@@ -744,7 +860,7 @@ export async function getBookmarksLearningElement(
       },
     },
     include: {
-      bookmarkedQuestions: {
+      bookmarkedStacks: {
         where: {
           learningElementId: elementId,
         },
@@ -752,7 +868,7 @@ export async function getBookmarksLearningElement(
     },
   })
 
-  return participation?.bookmarkedQuestions
+  return participation?.bookmarkedStacks
 }
 
 interface PublishLearningElementArgs {
@@ -770,15 +886,9 @@ export async function publishLearningElement(
     data: {
       status: LearningElementStatus.PUBLISHED,
     },
-    include: {
-      instances: true,
-    },
   })
 
-  return {
-    ...learningElement,
-    numOfInstances: learningElement.instances.length,
-  }
+  return learningElement
 }
 
 interface DeleteLearningElementArgs {
