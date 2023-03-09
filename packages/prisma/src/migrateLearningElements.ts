@@ -45,6 +45,17 @@ async function migrate() {
       })
     )
   )
+
+  const questionInstances = await prisma.questionInstance.updateMany({
+    where: {
+      learningElementId: {
+        not: null,
+      },
+    },
+    data: {
+      learningElementId: null,
+    },
+  })
 }
 
 migrate()
