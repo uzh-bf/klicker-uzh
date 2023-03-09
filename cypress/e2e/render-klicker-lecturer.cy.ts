@@ -261,6 +261,110 @@ describe('Render the homepage for lecturer', () => {
   //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
   //   cy.get('[data-cy="evaluate-next-question"]').click();
   //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
-  // })
+  // }),
+
+  it('10. Create and publish a learning element', () => {
+    const randomNumber = Math.round(Math.random() * 1000);
+    const questionTitle = 'A Single Choice with solution' + randomNumber;
+    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber;
+    const learningElementName = 'Test Lernelement ' + randomNumber;
+    const learningElementDisplayName = 'Displayed Name ' + randomNumber;
+    const description = 'This is the official descriptioin of ' + randomNumber
+
+    // set up question with solution
+    cy.get('[data-cy="create-question"]').click();
+    cy.get('[data-cy="insert-question-title"]').click().type(questionTitle);
+    cy.get('[data-cy="insert-question-text"]').click().type(question);
+    cy.get('[data-cy="configure-sample-solution"]').click();
+    cy.get('[data-cy="insert-answer-field"]').click().type('50%');
+    cy.get('[data-cy="set-correctness"]').click({force: true});
+    cy.get('[data-cy="add-new-answer"]').click({force: true});
+    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%');
+    cy.get('[data-cy="save-new-question"]').click({force: true});
+    
+    // create learning element
+    cy.get('[data-cy="create-learning-element"]').click();
+    
+    cy.get('[data-cy="insert-learning-element-name"]').click().type(learningElementName);
+    cy.get('[data-cy="insert-learning-element-display-name"]').click().type(learningElementDisplayName);
+    cy.get('[data-cy="insert-learning-element-description"]').click().type(description)
+    cy.get('[data-cy="next-or-submit"]').click();
+
+    // cy.get('[data-cy="select-course"]').should('exist'); //TODO: fix bug and extend test
+    // cy.get('[data-cy="select-multiplier"]').should('exist'); //TODO: fix bug and extend test
+    cy.get('[data-cy="insert-reset-time-days"]').clear().type('4');
+    // cy.get('[data-cy="select-order"]').should('exist'); //TODO: fix bug and extend test
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    const dataTransfer = new DataTransfer();
+    cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
+      dataTransfer
+    });
+    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      dataTransfer
+    });
+    cy.get('[data-cy="next-or-submit"]').click();
+
+    cy.get('[data-cy="load-session-list"]').click();
+    cy.get('[data-cy="learning-element"]').contains(learningElementName);
+    cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').contains('Draft');
+
+    // publish learning element
+    cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').find('[data-cy="publish-learning-element"]').click();
+    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').contains('Published');
+  }),
+
+  it('11. Create and publish a micro session', () => {
+    const randomNumber = Math.round(Math.random() * 1000);
+    const questionTitle = 'A Single Choice with solution' + randomNumber;
+    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber;
+    const microSessionName = 'Test Micro-Session ' + randomNumber;
+    const microSessionDisplayName = 'Displayed Name ' + randomNumber;
+    const description = 'This is the official descriptioin of ' + randomNumber
+
+    // set up question
+    cy.get('[data-cy="create-question"]').click();
+    cy.get('[data-cy="insert-question-title"]').click().type(questionTitle);
+    cy.get('[data-cy="insert-question-text"]').click().type(question);
+    cy.get('[data-cy="configure-sample-solution"]').click();
+    cy.get('[data-cy="insert-answer-field"]').click().type('50%');
+    cy.get('[data-cy="set-correctness"]').click({force: true});
+    cy.get('[data-cy="add-new-answer"]').click({force: true});
+    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%');
+    cy.get('[data-cy="save-new-question"]').click({force: true});
+    
+    // create a micro-session
+    cy.get('[data-cy="create-micro-session"]').click();
+    
+    cy.get('[data-cy="insert-micro-session-name"]').click().type(microSessionName);
+    cy.get('[data-cy="insert-micro-session-display-name"]').click().type(microSessionDisplayName);
+    cy.get('[data-cy="insert-micro-session-description"]').click().type(description)
+    cy.get('[data-cy="next-or-submit"]').click();
+
+    // cy.get('[data-cy="select-course"]').should('exist'); //TODO: fix bug and extend test
+    cy.get('[data-cy="select-start-date"]').click().type("2024-01-01T18:00");
+    cy.get('[data-cy="select-end-date"]').click().type("2024-12-31T18:00");
+    //cy.get('[data-cy="select-multiplier"]').should('exist'); //TODO: fix bug and extend test
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    const dataTransfer = new DataTransfer();
+    cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
+      dataTransfer
+    });
+    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      dataTransfer
+    });
+    cy.get('[data-cy="next-or-submit"]').click();
+
+    cy.get('[data-cy="load-session-list"]').click();
+    cy.get('[data-cy="micro-session"]').contains(microSessionName);
+    cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Draft');
+
+    // publish a micro-session
+    cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
+    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
+  })
 
 })

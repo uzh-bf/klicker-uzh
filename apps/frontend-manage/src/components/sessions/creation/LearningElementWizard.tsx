@@ -191,6 +191,7 @@ function StepOne(_: StepProps) {
         label="Name"
         tooltip="Der Name soll Ihnen ermöglichen, dieses Lernelement von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
         className={{ root: 'mb-1' }}
+        data-cy="insert-learning-element-name"
       />
       <FormikTextField
         required
@@ -199,12 +200,14 @@ function StepOne(_: StepProps) {
         label="Anzeigename"
         tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
         className={{ root: 'mb-1' }}
+        data-cy="insert-learning-element-display-name"
       />
 
       <EditorField
         label="Beschreibung"
         tooltip="Fügen Sie eine Beschreibung zu Ihrer Micro-Session hinzu, welche den Teilnehmern zu Beginn angezeigt wird."
         fieldName="description"
+        data_cy="insert-learning-element-description"
       />
 
       <div className="w-full text-right">
@@ -229,6 +232,7 @@ function StepTwo(props: StepProps) {
           required
           tooltip="Für die Erstellung einer Micro-Session ist die Auswahl des zugehörigen Kurses erforderlich."
           label="Kurs"
+          data={{ cy: 'select-course' }}
         />
         <ErrorMessage
           name="courseId"
@@ -250,6 +254,7 @@ function StepTwo(props: StepProps) {
             { label: 'Dreifach (3x)', value: '3' },
             { label: 'Vierfach (4x)', value: '4' },
           ]}
+          data={{ cy: 'select-multiplier' }}
         />
         <ErrorMessage
           name="multiplier"
@@ -268,6 +273,7 @@ function StepTwo(props: StepProps) {
           }}
           required
           hideError={true}
+          data={{ cy: 'insert-reset-time-days' }}
         />
         <ErrorMessage
           name="resetTimeDays"
@@ -286,6 +292,7 @@ function StepTwo(props: StepProps) {
             return { value: key, label: LEARNING_ELEMENT_ORDERS[key] }
           })}
           required
+          data={{ cy: 'select-order' }}
         />
         <ErrorMessage
           name="order"

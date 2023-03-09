@@ -88,6 +88,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
               disabled={courseSelection?.length === 0}
+              data={{ cy: 'create-micro-session' }}
             />
             <Tab
               key="learningElement"
@@ -99,6 +100,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
               disabled={courseSelection?.length === 0}
+              data={{ cy: 'create-learning-element' }}
             />
           </TabList>
           <TabContent

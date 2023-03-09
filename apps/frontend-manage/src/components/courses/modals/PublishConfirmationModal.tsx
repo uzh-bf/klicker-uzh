@@ -53,6 +53,7 @@ function PublishConfirmationModal({
           className={{
             root: twMerge('font-bold text-white', theme.primaryBgDark),
           }}
+          data={{ cy: 'verify-publish-action' }}
         >
           Bestätigen
         </Button>
