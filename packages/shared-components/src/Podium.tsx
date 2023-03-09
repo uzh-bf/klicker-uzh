@@ -8,11 +8,13 @@ function SinglePodium({
   avatar,
   score,
   rank,
+  noEntries,
 }: {
   username?: string
   avatar?: string
   score?: number
   rank?: number
+  noEntries?: boolean
 }): React.ReactElement {
   const image = useMemo(() => {
     if (rank === 1) return '/first.svg'
@@ -30,23 +32,25 @@ function SinglePodium({
         height={300}
         className="relative"
       />
-      <Image
-        src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-          avatar || 'placeholder'
-        }.svg`}
-        alt="User avatar"
-        height={25}
-        width={30}
-        className="absolute"
-        style={{
-          top: twMerge(
-            rank === 1 && '26%',
-            rank === 2 && '23%',
-            rank === 3 && '30%'
-          ),
-          left: '43%',
-        }}
-      />
+      {!noEntries && (
+        <Image
+          src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+            avatar || 'placeholder'
+          }.svg`}
+          alt="User avatar"
+          height={25}
+          width={30}
+          className="absolute"
+          style={{
+            top: twMerge(
+              rank === 1 && '26%',
+              rank === 2 && '23%',
+              rank === 3 && '30%'
+            ),
+            left: '43%',
+          }}
+        />
+      )}
 
       <div className="w-full mx-auto italic">{username}</div>
     </div>
@@ -70,6 +74,14 @@ export function Podium({ leaderboard, className }: PodiumProps) {
     }
   }, [leaderboard])
 
+  const emptyLeaderboard = useMemo(() => {
+    return (
+      typeof rank1?.avatar === 'undefined' &&
+      typeof rank2?.avatar === 'undefined' &&
+      typeof rank3?.avatar === 'undefined'
+    )
+  }, [rank1, rank2, rank3])
+
   return (
     <div className="flex flex-row items-end">
       <SinglePodium
@@ -77,6 +89,7 @@ export function Podium({ leaderboard, className }: PodiumProps) {
         username={rank2?.username}
         avatar={rank2?.avatar as string}
         score={rank2?.score}
+        noEntries={emptyLeaderboard}
       />
 
       <SinglePodium
@@ -84,6 +97,7 @@ export function Podium({ leaderboard, className }: PodiumProps) {
         username={rank1?.username}
         avatar={rank1?.avatar as string}
         score={rank1?.score}
+        noEntries={emptyLeaderboard}
       />
 
       <SinglePodium
@@ -91,6 +105,7 @@ export function Podium({ leaderboard, className }: PodiumProps) {
         username={rank3?.username}
         avatar={rank3?.avatar as string}
         score={rank3?.score}
+        noEntries={emptyLeaderboard}
       />
     </div>
   )
