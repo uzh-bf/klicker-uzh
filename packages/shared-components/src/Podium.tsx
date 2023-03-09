@@ -2,6 +2,23 @@ import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
 import Image from 'next/image'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { ParticipantOther } from './Participant'
+
+const rankHeights: Record<number, string> = {
+  1: 'order-1 h-[80px] md:order-2',
+  2: 'order-2 h-[70px] md:order-1',
+  3: 'order-3 h-[60px]',
+}
+
+interface SinglePodiumProps {
+  username: string
+  avatar?: string
+  score?: number
+  rank: number
+  noEntries?: boolean
+  simple?: boolean
+  className?: string
+}
 
 function SinglePodium({
   username,
@@ -9,13 +26,29 @@ function SinglePodium({
   score,
   rank,
   noEntries,
-}: {
-  username?: string
-  avatar?: string
-  score?: number
-  rank?: number
-  noEntries?: boolean
-}): React.ReactElement {
+  simple,
+  className,
+}: SinglePodiumProps): React.ReactElement {
+  if (simple) {
+    return (
+      <div
+        className={twMerge(
+          'flex-1 md:border-b-4 bg-slate-300 md:border-slate-500 rounded-t-md text-sm',
+          rankHeights[rank],
+          className
+        )}
+      >
+        <ParticipantOther
+          className="bg-white shadow border-slate-400"
+          pseudonym={username}
+          avatar={avatar}
+          points={score ?? 0}
+          withAvatar={!!avatar}
+        />{' '}
+      </div>
+    )
+  }
+
   const image = useMemo(() => {
     if (rank === 1) return '/first.svg'
     if (rank === 2) return '/second.svg'
@@ -59,12 +92,17 @@ function SinglePodium({
 
 interface PodiumProps {
   leaderboard: Partial<LeaderboardEntry>[]
+  simple?: boolean
   className?: {
     root?: string
     single?: string
   }
 }
-export function Podium({ leaderboard, className }: PodiumProps) {
+export function Podium({
+  leaderboard,
+  simple = false,
+  className,
+}: PodiumProps) {
   const { rank1, rank2, rank3 } = useMemo(() => {
     if (!leaderboard) return {}
     return {
@@ -83,29 +121,35 @@ export function Podium({ leaderboard, className }: PodiumProps) {
   }, [rank1, rank2, rank3])
 
   return (
-    <div className="flex flex-row items-end">
+    <div className={twMerge('flex flex-row items-end', simple && 'gap-4')}>
       <SinglePodium
         rank={2}
-        username={rank2?.username}
+        username={rank2?.username || ''}
         avatar={rank2?.avatar as string}
         score={rank2?.score}
         noEntries={emptyLeaderboard}
+        simple={simple}
+        className={className?.single}
       />
 
       <SinglePodium
         rank={1}
-        username={rank1?.username}
+        username={rank1?.username || ''}
         avatar={rank1?.avatar as string}
         score={rank1?.score}
         noEntries={emptyLeaderboard}
+        simple={simple}
+        className={className?.single}
       />
 
       <SinglePodium
         rank={3}
-        username={rank3?.username}
+        username={rank3?.username || ''}
         avatar={rank3?.avatar as string}
         score={rank3?.score}
         noEntries={emptyLeaderboard}
+        simple={simple}
+        className={className?.single}
       />
     </div>
   )

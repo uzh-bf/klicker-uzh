@@ -1,4 +1,4 @@
-import { Participant } from '@klicker-uzh/graphql/dist/ops'
+import { LeaderboardEntry, Participant } from '@klicker-uzh/graphql/dist/ops'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'
@@ -70,11 +70,12 @@ function Leaderboard({
                 root: className?.podium,
                 single: className?.podiumSingle,
               }}
+              simple={hideAvatars}
             />
           )}
         </div>
         <div className={twMerge('space-y-1', className?.list)}>
-          {top10.map((entry) =>
+          {top10.map((entry: LeaderboardEntry) =>
             entry.isSelf === true && onLeave ? (
               <ParticipantSelf
                 key={entry.id}
