@@ -47,7 +47,7 @@ function SinglePodium({
               rank === 2 && '23%',
               rank === 3 && '30%'
             ),
-            left: '43%',
+            left: '42.5%',
           }}
         />
       )}
