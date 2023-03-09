@@ -1,6 +1,7 @@
 import Prisma from '@klicker-uzh/prisma'
 import * as DATA_TEST from './data/TEST'
 
+import { Question } from '../client'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 import {
   prepareCourse,
@@ -65,13 +66,13 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const questionsTest = await Promise.all(
+  const questionsTest = (await Promise.all(
     DATA_TEST.QUESTIONS.map((data) =>
       prisma.question.upsert(
         prepareQuestion({ ownerId: USER_ID_TEST, ...data })
       )
     )
-  )
+  )) as Question[]
 
   const questionCount = await prisma.question.findFirst({
     orderBy: { id: 'desc' },
@@ -79,6 +80,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await prisma.$executeRawUnsafe(
     `ALTER SEQUENCE "Question_id_seq" RESTART WITH ${questionCount.id + 1}`
   )
+
   const learningElementsTest = await Promise.all(
     DATA_TEST.LEARNING_ELEMENTS.map(async (data) =>
       prisma.learningElement.upsert(
@@ -86,9 +88,17 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...data,
           ownerId: USER_ID_TEST,
           courseId: COURSE_ID_TEST,
-          questions: questionsTest
-            .filter((q) => data.questions.includes(q.id))
-            .map(async (q) => q),
+          stacks: data.stacks.map((stack) => {
+            return {
+              ...stack,
+              elements: stack.elements.map((element) => {
+                if (typeof element !== 'string') {
+                  return questionsTest.find((q) => q.id === element) as Question
+                }
+                return element
+              }),
+            }
+          }),
         })
       )
     )

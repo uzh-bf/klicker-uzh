@@ -76,7 +76,8 @@
       "groupActivities": "Gruppenaktivitäten",
       "experiencePoints": "Erfahrungspunkte",
       "level": "Level",
-      "levelX": "Level: {number}"
+      "levelX": "Level: {number}",
+      "sampleSolution": "Musterlösung"
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -144,6 +145,7 @@
     "learningElement": {
       "notFound": "Unter diesem Link existiert kein Lernelement oder dieses ist noch nicht publiziert.",
       "repetitionTitle": "Repetition Lernelemente",
+      "noRepetition": "Aktuell sind keine Lernelemente zur Repetition verfügbar.",
       "numOfQuestions": "Anzahl Fragen: {number}",
       "orderLAST_RESPONSE": "Reihenfolge: zuletzt beantwortete Fragen am Ende",
       "orderSHUFFLED": "Reihenfolge: zufällige Reihenfolge",
@@ -157,7 +159,7 @@
       "pointsCollectedPossible": "Punkte (gesammelt/berechnet/möglich)",
       "notAttempted": "Nicht gelöst",
       "totalPoints": "Total Punkte (gesammelt): {points}",
-      "questionTypeNotSupported": "Dieser Fragetyp ist für Lernelemente nicht verfügbar.",
+      "questionTypeNotSupported": "Dieser Fragetyp ist aktuell für Lernelemente nicht verfügbar.",
       "questionProgress": "Frage: {current}/{total}",
       "newPointsFrom": "Erneute Punkte/XP ab:",
       "othersAnswered": "So haben andere geantwortet",

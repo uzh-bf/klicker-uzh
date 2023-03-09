@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import ParticipantProfileModal from '@components/participant/ParticipantProfileModal'
 import {
   CreateParticipantGroupDocument,
   GetCourseOverviewDataDocument,
@@ -23,6 +22,7 @@ import { twMerge } from 'tailwind-merge'
 import Tabs from '../../../components/common/Tabs'
 import Layout from '../../../components/Layout'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
+import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 
 // TODO: replace fields in this component through our own design system components
 

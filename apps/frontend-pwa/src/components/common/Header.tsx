@@ -46,7 +46,7 @@ function Header({
         </div>
       )}
       {title && !course?.displayName && (
-        <H1 className={{ root: 'mb-0 text-base' }}>{title}</H1>
+        <H1 className={{ root: 'mb-0 text-base md:text-lg' }}>{title}</H1>
       )}
 
       <div className="flex flex-row items-center gap-2 sm:gap-4">
@@ -133,9 +133,11 @@ function Header({
               height="45"
               className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
             />
-            <div className="absolute bottom-0 right-0 w-4 h-4 text-xs font-bold bg-white rounded-full text-slate-600">
-              {participant?.level ?? 0}
-            </div>
+            {participant?.level && (
+              <div className="absolute bottom-0 right-0 w-4 h-4 text-xs font-bold bg-white rounded-full text-slate-600">
+                {participant.level}
+              </div>
+            )}
           </Button>
         </Link>
       </div>

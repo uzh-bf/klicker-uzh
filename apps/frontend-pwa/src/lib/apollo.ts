@@ -151,6 +151,7 @@ function createApolloClient(ctx?: GetServerSidePropsContext) {
     ssrMode: typeof window === 'undefined',
     link: createIsomorphLink(),
     cache: new InMemoryCache(),
+    connectToDevTools: process.env.NODE_ENV === 'development',
   })
 }
 
