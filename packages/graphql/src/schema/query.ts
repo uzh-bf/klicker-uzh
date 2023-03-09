@@ -385,10 +385,7 @@ export const Query = builder.queryType({
           return ParticipantGroupService.getGroupActivityDetails(args, ctx)
         },
       }),
-<<<<<<< HEAD
 
-=======
->>>>>>> b4e219bfd9c21175b858c67a840eb9305176b0d3
       getBookmarkedQuestions: asParticipant.field({
         nullable: true,
         type: [QuestionStack],
