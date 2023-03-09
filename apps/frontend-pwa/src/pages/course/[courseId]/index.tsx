@@ -349,7 +349,10 @@ function CourseOverview({ courseId }: any) {
                         </div>
                       </div>
                     </div>
-                    <GroupVisualization participants={group.participants} />
+                    <GroupVisualization
+                      groupName={group.name}
+                      participants={group.participants}
+                    />
                   </div>
 
                   {/* // TODO: add internationlized strings, once the hard-coded implementation has been updated */}

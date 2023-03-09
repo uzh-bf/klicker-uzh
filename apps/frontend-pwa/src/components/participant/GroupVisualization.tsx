@@ -1,3 +1,4 @@
+import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import Image from 'next/image'
 
 export const POSITIONS = [
@@ -8,7 +9,17 @@ export const POSITIONS = [
   [55, 55],
 ]
 
-function GroupVisualization({ participants, scaleFactor }) {
+interface GroupVisualizationProps {
+  groupName: string
+  participants: Partial<Participant>[]
+  scaleFactor?: number
+}
+
+function GroupVisualization({
+  groupName,
+  participants,
+  scaleFactor = 1.7,
+}: GroupVisualizationProps) {
   const height = 351 * scaleFactor
   const width = 248 * scaleFactor
 
@@ -47,11 +58,11 @@ function GroupVisualization({ participants, scaleFactor }) {
           width={16 * scaleFactor}
         />
       ))}
+      <div className="absolute top-[64.5px] w-40 text-center left-[130px] text-sm">
+        {groupName}
+      </div>
     </div>
   )
-}
-GroupVisualization.defaultProps = {
-  scaleFactor: 1.7,
 }
 
 export default GroupVisualization
