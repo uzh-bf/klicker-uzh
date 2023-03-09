@@ -243,91 +243,93 @@ function QuestionStack({
 
         <div
           className={twMerge(
-            'w-full grid grid-cols-1 md:grid-cols-2',
+            'w-full grid grid-cols-1 md:grid-cols-2 md:gap-6',
             isEvaluation && 'md:grid-cols-3'
           )}
         >
-          {stack.elements?.map((element) => {
-            return [
-              <div
-                className="py-4 mr-2 first:pt-0 last:pb-0 md:col-span-2"
-                key={element.id}
-              >
-                {element.mdContent && (
-                  <div key={element.id}>
-                    <div className="w-full py-4 border-y">
-                      <DynamicMarkdown content={element.mdContent} />
-                    </div>
-                  </div>
-                )}
-                {element.questionInstance && (
-                  <SingleQuestion
-                    instance={element.questionInstance}
-                    currentStep={currentStep}
-                    totalSteps={totalSteps}
-                    response={responses[element.id]}
-                    setResponse={(response) =>
-                      setResponses((prev) => ({
-                        ...prev,
-                        [element.id]: response,
-                      }))
-                    }
-                    setInputValid={(valid: boolean) =>
-                      setInputValid((prev) => ({
-                        ...prev,
-                        [element.id]: valid,
-                      }))
-                    }
-                  />
-                )}
-                {!element.mdContent && !element.questionInstance && (
-                  <div
-                    className="flex flex-col items-center justify-center h-20"
-                    key={element.id}
-                  >
-                    <FontAwesomeIcon icon={faSync} />
-                  </div>
-                )}
-              </div>,
-              isEvaluation && (
+          {stack.elements?.flatMap((element) => {
+            return (
+              <>
                 <div
-                  className="col-span-1 py-4 ml-2 border border-solid md:bg-slate-50"
+                  className="py-4 mr-2 first:pt-0 last:pb-0 md:col-span-2"
                   key={element.id}
                 >
-                  {element.mdContent && <div key={element.id} />}
-                  {element.questionInstance &&
-                    element.questionInstance.evaluation && (
-                      <div
-                        className="flex flex-col gap-4 md:px-4"
-                        key={element.id}
-                      >
-                        <LearningElementPoints
-                          evaluation={element.questionInstance.evaluation}
-                          pointsMultiplier={
-                            element.questionInstance.pointsMultiplier
-                          }
-                        />
-
-                        <EvaluationDisplay
-                          options={
-                            element.questionInstance.questionData.options
-                          }
-                          questionType={
-                            element.questionInstance.questionData.type
-                          }
-                          evaluation={element.questionInstance.evaluation}
-                          reference={String(responses[element.id])}
-                        />
+                  {element.mdContent && (
+                    <div key={element.id}>
+                      <div className="w-full py-4 border-y">
+                        <DynamicMarkdown content={element.mdContent} />
                       </div>
-                    )}
+                    </div>
+                  )}
+                  {element.questionInstance && (
+                    <SingleQuestion
+                      instance={element.questionInstance}
+                      currentStep={currentStep}
+                      totalSteps={totalSteps}
+                      response={responses[element.id]}
+                      setResponse={(response) =>
+                        setResponses((prev) => ({
+                          ...prev,
+                          [element.id]: response,
+                        }))
+                      }
+                      setInputValid={(valid: boolean) =>
+                        setInputValid((prev) => ({
+                          ...prev,
+                          [element.id]: valid,
+                        }))
+                      }
+                    />
+                  )}
+                  {!element.mdContent && !element.questionInstance && (
+                    <div
+                      className="flex flex-col items-center justify-center h-20"
+                      key={element.id}
+                    >
+                      <FontAwesomeIcon icon={faSync} />
+                    </div>
+                  )}
                 </div>
-              ),
-            ]
+                {isEvaluation && (
+                  <div
+                    className="col-span-1 py-4 ml-2 border border-solid md:bg-slate-50"
+                    key={element.id}
+                  >
+                    {element.mdContent && <div key={element.id} />}
+                    {element.questionInstance &&
+                      element.questionInstance.evaluation && (
+                        <div
+                          className="flex flex-col gap-4 md:px-4"
+                          key={element.id}
+                        >
+                          <LearningElementPoints
+                            evaluation={element.questionInstance.evaluation}
+                            pointsMultiplier={
+                              element.questionInstance.pointsMultiplier
+                            }
+                          />
+
+                          <EvaluationDisplay
+                            options={
+                              element.questionInstance.questionData.options
+                            }
+                            questionType={
+                              element.questionInstance.questionData.type
+                            }
+                            evaluation={element.questionInstance.evaluation}
+                            reference={String(responses[element.id])}
+                          />
+                        </div>
+                      )}
+                  </div>
+                )}
+              </>
+            )
           })}
         </div>
       </div>
       <Button
-        className={{ root: 'float-right mt-4' }}
+        className={{ root: 'float-right mt-4 text-lg' }}
         onClick={
           isEvaluation || informationOnly
             ? () => handleNextQuestion()

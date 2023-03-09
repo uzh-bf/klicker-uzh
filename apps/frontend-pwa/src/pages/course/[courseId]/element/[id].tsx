@@ -56,61 +56,58 @@ function LearningElement({ courseId, id }: Props) {
       displayName={data.learningElement.displayName}
       course={data.learningElement.course ?? undefined}
     >
-      <div className="flex-1">
-        <div className="flex flex-col gap-6 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
-          {currentIx === -1 && (
-            <ElementOverview
-              displayName={data.learningElement.displayName}
-              description={data.learningElement.description ?? undefined}
-              numOfQuestions={data.learningElement.numOfQuestions ?? undefined}
-              orderType={data.learningElement.orderType}
-              resetTimeDays={data.learningElement.resetTimeDays ?? undefined}
-              previouslyAnswered={
-                data.learningElement.previouslyAnswered ?? undefined
+      <div className="flex-1 space-y-4 md:max-w-7xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+        {(currentIx === -1 || currentStack) && (
+          <div>
+            <Progress
+              nonLinear
+              isMaxVisible
+              displayOffset={
+                (data.learningElement?.stacks?.length ?? 0) > 15 ? 3 : undefined
               }
-              stacksWithQuestions={
-                data.learningElement.stacksWithQuestions ?? undefined
-              }
-              pointsMultiplier={data.learningElement.pointsMultiplier}
-              setCurrentIx={setCurrentIx}
+              formatter={(v) => v}
+              value={currentIx}
+              max={data.learningElement?.stacks?.length ?? 0}
+              onItemClick={(ix: number) => setCurrentIx(ix)}
             />
-          )}
+          </div>
+        )}
 
-          {currentStack && (
-            <QuestionStack
-              elementId={data.learningElement.id}
-              stack={currentStack}
-              currentStep={currentIx + 1}
-              totalSteps={data.learningElement.stacksWithQuestions ?? 0}
-              handleNextQuestion={handleNextQuestion}
-            />
-          )}
+        {currentIx === -1 && (
+          <ElementOverview
+            displayName={data.learningElement.displayName}
+            description={data.learningElement.description ?? undefined}
+            numOfQuestions={data.learningElement.numOfQuestions ?? undefined}
+            orderType={data.learningElement.orderType}
+            resetTimeDays={data.learningElement.resetTimeDays ?? undefined}
+            previouslyAnswered={
+              data.learningElement.previouslyAnswered ?? undefined
+            }
+            stacksWithQuestions={
+              data.learningElement.stacksWithQuestions ?? undefined
+            }
+            pointsMultiplier={data.learningElement.pointsMultiplier}
+            setCurrentIx={setCurrentIx}
+          />
+        )}
 
-          {currentIx >= 0 && !currentStack && (
-            <ElementSummary
-              displayName={data.learningElement.displayName}
-              stacks={data.learningElement.stacks || []}
-            />
-          )}
+        {currentStack && (
+          <QuestionStack
+            key={currentStack.id}
+            elementId={data.learningElement.id}
+            stack={currentStack}
+            currentStep={currentIx + 1}
+            totalSteps={data.learningElement.stacksWithQuestions ?? 0}
+            handleNextQuestion={handleNextQuestion}
+          />
+        )}
 
-          {(currentIx === -1 || currentStack) && (
-            <div className="order-1 md:order-2">
-              <Progress
-                nonLinear
-                isMaxVisible
-                displayOffset={
-                  (data.learningElement?.stacks?.length ?? 0) > 15
-                    ? 3
-                    : undefined
-                }
-                formatter={(v) => v}
-                value={currentIx}
-                max={data.learningElement?.stacks?.length ?? 0}
-                onItemClick={(ix: number) => setCurrentIx(ix)}
-              />
-            </div>
-          )}
-        </div>
+        {currentIx >= 0 && !currentStack && (
+          <ElementSummary
+            displayName={data.learningElement.displayName}
+            stacks={data.learningElement.stacks || []}
+          />
+        )}
       </div>
 
       <Footer
