@@ -1,11 +1,16 @@
 query GetBookmarkedQuestions($courseId: String!) {
   getBookmarkedQuestions(courseId: $courseId) {
     id
-    questionData {
+    elements {
       id
-      name
-      type
-      content
+      questionInstance {
+        id
+        questionData {
+          id
+          name
+          type
+        }
+      }
     }
   }
 }

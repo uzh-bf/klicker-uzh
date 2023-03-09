@@ -12,30 +12,45 @@ query GetLearningElement($id: String!) {
     previousScore
     previousPointsAwarded
     totalTrials
+    stacksWithQuestions
+    numOfQuestions
+
     course {
       id
       displayName
       color
     }
-    instances {
+
+    stacks {
       id
-      pointsMultiplier
-      ...QuestionData
-      evaluation {
-        feedbacks {
-          ix
-          feedback
-          correct
-          value
+      displayName
+      description
+      order
+      elements {
+        id
+        order
+        mdContent
+        questionInstance {
+          id
+          pointsMultiplier
+          ...QuestionData
+          evaluation {
+            feedbacks {
+              ix
+              feedback
+              correct
+              value
+            }
+            choices
+            answers
+            score
+            pointsAwarded
+            percentile
+            newPointsFrom
+            xpAwarded
+            newXpFrom
+          }
         }
-        choices
-        answers
-        score
-        pointsAwarded
-        percentile
-        newPointsFrom
-        xpAwarded
-        newXpFrom
       }
     }
   }

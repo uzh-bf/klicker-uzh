@@ -6,46 +6,21 @@ import {
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import {
+  validateFreeTextResponse,
+  validateKprimResponse,
+  validateMcResponse,
+  validateNumericalResponse,
+  validateScResponse,
+} from '@lib/validateResponse'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { indexBy } from 'ramda'
 import { useContext, useMemo } from 'react'
+import FREETextAnswerOptions from 'shared-components/src/questions/FREETextAnswerOptions'
 import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
 import { twMerge } from 'tailwind-merge'
 
-function validateNumericalResponse({
-  response,
-  min,
-  max,
-}: {
-  response: string
-  min?: number
-  max?: number
-}) {
-  if (!response) return false
-
-  if (
-    typeof min !== 'undefined' &&
-    min !== null &&
-    parseFloat(response) < min
-  ) {
-    return false
-  }
-
-  if (
-    typeof max !== 'undefined' &&
-    max !== null &&
-    parseFloat(response) > max
-  ) {
-    return false
-  }
-
-  if (response === '-' || response === '' || response === '.') {
-    return false
-  }
-
-  return true
-}
 interface ChoiceOptionsProps {
   disabled?: boolean
   choices: Choice[]
@@ -328,7 +303,7 @@ export function Options({
             </div>
           )}
           <NUMERICALAnswerOptions
-            disabled={disabled}
+            disabled={disabled || isEvaluation}
             accuracy={options?.accuracy}
             placeholder={options?.placeholder}
             unit={options?.unit}
@@ -346,12 +321,26 @@ export function Options({
       )
     }
 
-    default:
+    case QuestionType.FreeText:
       return (
-        <div className="text-red-600">
-          {t('pwa.learningElement.questionTypeNotSupported')}
+        <div>
+          {withGuidance && (
+            <div className="mb-4 italic">
+              {t.rich(`shared.${QuestionType.FreeText}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
+            </div>
+          )}
+          <FREETextAnswerOptions
+            onChange={onChangeResponse}
+            maxLength={options.restrictions?.maxLength}
+            value={response}
+          />
         </div>
       )
+
+    default:
+      return <div>{t('pwa.learningElement.questionTypeNotSupported')}</div>
   }
 }
 
@@ -366,8 +355,8 @@ interface OptionsDisplayProps {
   evaluation: any
   options: any
   response: any
-  onChangeResponse: any
-  onSubmitResponse: any
+  onChangeResponse: (value: any) => void
+  onSubmitResponse?: any
   isEvaluation?: boolean
   displayMode?: QuestionDisplayMode | null
 }
@@ -402,35 +391,46 @@ function OptionsDisplay({
           displayMode={displayMode}
         />
       </div>
-      <div
-        className={twMerge(
-          'flex flex-col items-end',
-          isEvaluation && 'order-1 md:order-2 border-b md:border-0 pb-4 md:pb-0'
-        )}
-      >
-        <Button
-          className={{ root: 'text-lg' }}
-          disabled={
-            (!isEvaluation &&
-              questionType !== QuestionType.Kprim &&
-              response?.length === 0) ||
-            (questionType === QuestionType.Kprim &&
-              response &&
-              Object.keys(response).length !== options.choices.length) ||
-            (questionType === QuestionType.Numerical &&
-              !validateNumericalResponse({
-                response,
-                min: options?.restrictions?.min,
-                max: options?.restrictions?.max,
-              }))
-          }
-          onClick={onSubmitResponse}
+      {onSubmitResponse && (
+        <div
+          className={twMerge(
+            'flex flex-col items-end',
+            isEvaluation &&
+              'order-1 md:order-2 border-b md:border-0 pb-4 md:pb-0'
+          )}
         >
-          {isEvaluation
-            ? t('shared.generic.continue')
-            : t('shared.generic.sendAnswer')}
-        </Button>
-      </div>
+          <Button
+            className={{ root: 'text-lg' }}
+            disabled={
+              !(
+                isEvaluation ||
+                (questionType === QuestionType.Sc &&
+                  validateScResponse(response)) ||
+                (questionType === QuestionType.Mc &&
+                  validateMcResponse(response)) ||
+                (questionType === QuestionType.Kprim &&
+                  validateKprimResponse(response)) ||
+                (questionType === QuestionType.Numerical &&
+                  validateNumericalResponse({
+                    response,
+                    min: options?.restrictions?.min,
+                    max: options?.restrictions?.max,
+                  })) ||
+                (questionType === QuestionType.FreeText &&
+                  validateFreeTextResponse({
+                    response,
+                    maxLength: options.restrictions?.maxLength,
+                  }))
+              )
+            }
+            onClick={onSubmitResponse}
+          >
+            {isEvaluation
+              ? t('shared.generic.continue')
+              : t('shared.generic.sendAnswer')}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

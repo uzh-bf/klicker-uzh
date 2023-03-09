@@ -46,7 +46,7 @@ function Header({
         </div>
       )}
       {title && !course?.displayName && (
-        <H1 className={{ root: 'mb-0 text-base' }}>{title}</H1>
+        <H1 className={{ root: 'mb-0 text-base md:text-lg' }}>{title}</H1>
       )}
 
       <div className="flex flex-row items-center gap-2 sm:gap-4">
