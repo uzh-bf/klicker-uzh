@@ -11,14 +11,36 @@ interface ElementSummaryProps {
 function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
   const t = useTranslations()
 
-  const totalPointsAwarded = stacks.reduce((acc, stack) => {
-    return (
-      acc +
-      (stack.elements?.reduce((acc, element) => {
-        return acc + (element.questionInstance?.evaluation?.pointsAwarded ?? 0)
-      }, 0) || 0)
-    )
-  }, 0)
+  const { totalPointsAwarded, totalXpAwarded } = stacks.reduce<{
+    totalPointsAwarded: number
+    totalXpAwarded: number
+  }>(
+    (acc, stack) => {
+      const temp = stack.elements?.reduce<{
+        totalPointsAwarded: number
+        totalXpAwarded: number
+      }>(
+        (acc, element) => {
+          return {
+            totalPointsAwarded:
+              acc.totalPointsAwarded +
+              (element.questionInstance?.evaluation?.pointsAwarded ?? 0),
+            totalXpAwarded:
+              acc.totalPointsAwarded +
+              (element.questionInstance?.evaluation?.xpAwarded ?? 0),
+          }
+        },
+        { totalPointsAwarded: 0, totalXpAwarded: 0 }
+      )
+
+      return {
+        totalPointsAwarded:
+          acc.totalPointsAwarded + (temp?.totalPointsAwarded || 0),
+        totalXpAwarded: acc.totalXpAwarded + (temp?.totalXpAwarded || 0),
+      }
+    },
+    { totalPointsAwarded: 0, totalXpAwarded: 0 }
+  )
 
   const gradedStacks = useMemo(
     () =>
@@ -39,6 +61,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
               .reduce<{
                 elements: StackElement[]
                 pointsAwarded: number
+                xpAwarded: number
                 score: number
                 pointsPossible: number
                 solved: boolean
@@ -52,6 +75,9 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
                         acc.pointsAwarded +
                         (element.questionInstance.evaluation?.pointsAwarded ??
                           0),
+                      xpAwarded:
+                        acc.xpAwarded +
+                        (element.questionInstance.evaluation?.xpAwarded ?? 0),
                       score:
                         acc.score +
                         (element.questionInstance.evaluation?.score ?? 0),
@@ -70,6 +96,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
                 {
                   elements: [],
                   pointsAwarded: 0,
+                  xpAwarded: 0,
                   score: 0,
                   pointsPossible: 0,
                   solved: false,
@@ -79,6 +106,8 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
         }),
     [stacks]
   )
+
+  console.log(gradedStacks)
 
   return (
     <div className="space-y-3">
@@ -123,6 +152,8 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
             points: totalPointsAwarded,
           })}
         </H3>
+
+        <div>XP Awarded: {totalXpAwarded}</div>
       </div>
     </div>
   )

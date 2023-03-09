@@ -205,8 +205,6 @@ function QuestionStack({
     await Promise.all(responsePromises)
   }
 
-  console.log(responses)
-
   return (
     <div>
       <div className="flex flex-col">
