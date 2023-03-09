@@ -11,7 +11,7 @@ const rankHeights: Record<number, string> = {
 }
 
 interface SinglePodiumProps {
-  username: string
+  username?: string
   avatar?: string
   score?: number
   rank: number
@@ -124,7 +124,7 @@ export function Podium({
     <div className={twMerge('flex flex-row items-end', simple && 'gap-4')}>
       <SinglePodium
         rank={2}
-        username={rank2?.username || ''}
+        username={rank2?.username}
         avatar={rank2?.avatar as string}
         score={rank2?.score}
         noEntries={emptyLeaderboard}
@@ -134,7 +134,7 @@ export function Podium({
 
       <SinglePodium
         rank={1}
-        username={rank1?.username || ''}
+        username={rank1?.username}
         avatar={rank1?.avatar as string}
         score={rank1?.score}
         noEntries={emptyLeaderboard}
@@ -144,7 +144,7 @@ export function Podium({
 
       <SinglePodium
         rank={3}
-        username={rank3?.username || ''}
+        username={rank3?.username}
         avatar={rank3?.avatar as string}
         score={rank3?.score}
         noEntries={emptyLeaderboard}
