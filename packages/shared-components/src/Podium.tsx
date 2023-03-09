@@ -33,7 +33,7 @@ function SinglePodium({
 }
 
 interface PodiumProps {
-  leaderboard: LeaderboardEntry[]
+  leaderboard: Partial<LeaderboardEntry>[]
   className?: {
     root?: string
     single?: string
