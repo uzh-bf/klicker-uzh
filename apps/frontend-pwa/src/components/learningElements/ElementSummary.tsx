@@ -1,6 +1,7 @@
 import { QuestionStack, StackElement } from '@klicker-uzh/graphql/dist/ops'
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Image from 'next/image'
 import { useMemo } from 'react'
 
 interface ElementSummaryProps {
@@ -153,11 +154,24 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
           })}
         </H3>
 
-        <H3 className={{ root: 'text-right text-base' }}>
-          {t('pwa.learningElement.totalXp', {
-            xp: totalXpAwarded,
-          })}
-        </H3>
+        <div className="max-w-3xl mx-auto mt-6 w-max">
+          <div className="flex flex-row items-center justify-between">
+            <div>prev level</div>
+            <Image
+              src="/eating_bubbel.svg"
+              alt="Eating Bubbel"
+              width={300}
+              height={200}
+              className="mx-10"
+            />
+            <div>new level</div>
+          </div>
+          <H3 className={{ root: 'text-center' }}>
+            {t('pwa.learningElement.totalXp', {
+              xp: totalXpAwarded,
+            })}
+          </H3>
+        </div>
       </div>
     </div>
   )
