@@ -31,7 +31,7 @@ function Ellipsis({
   children,
   maxLength,
   maxLines,
-  withoutPopup,
+  withoutPopup = false,
   className,
 }: EllipsisProps): React.ReactElement {
   if (maxLines) {
@@ -172,10 +172,6 @@ function Ellipsis({
       )}
     </span>
   )
-}
-
-Ellipsis.defaultProps = {
-  withoutPopup: false,
 }
 
 export default Ellipsis

@@ -126,10 +126,10 @@ export function Options({
   isEvaluation,
   feedbacks,
   response,
-  isResponseValid,
+  isResponseValid = true,
   onChangeResponse,
-  withGuidance,
-  isCompact,
+  withGuidance = true,
+  isCompact = false,
   displayMode,
 }: OptionsProps) {
   const t = useTranslations()
@@ -342,12 +342,6 @@ export function Options({
     default:
       return <div>{t('pwa.learningElement.questionTypeNotSupported')}</div>
   }
-}
-
-Options.defaultProps = {
-  withGuidance: true,
-  isCompact: false,
-  isResponseValid: true,
 }
 
 interface OptionsDisplayProps {
