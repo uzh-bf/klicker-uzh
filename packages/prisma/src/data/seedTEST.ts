@@ -37,8 +37,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const userTest = await prisma.user.upsert(
     await prepareUser({
       id: USER_ID_TEST,
-      email: 'lecturer@bf.uzh.ch',
-      shortname: 'lecturer',
+      email: process.env.USER_EMAIL ?? 'lecturer@bf.uzh.ch',
+      shortname: process.env.USER_SHORTNAME ?? 'lecturer',
       password: process.env.INITIAL_PASSWORD as string,
     })
   )

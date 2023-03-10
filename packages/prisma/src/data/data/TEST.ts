@@ -180,7 +180,7 @@ export const LEARNING_ELEMENTS = [
   {
     id: '01c623df-0e73-4812-bef5-e3eb6c2d860e',
     name: 'BFII Modul 2',
-    displayName: 'BFII Modul 1 - Lernfragen',
+    displayName: 'BFII Modul 2 - Lernfragen',
     description: '',
     orderType: OrderType.LAST_RESPONSE,
     stacks: [
@@ -188,13 +188,13 @@ export const LEARNING_ELEMENTS = [
         elements: [421],
       },
       {
-        displayName: 'Bondpreis',
+        displayName: 'Modul 2 - Bondpreis',
         description: `
 Gegeben ist folgende Ausgangslage:
 
 ![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul2_Ausgangslage_Bondpreis.png)
 
-[Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul2_%20Bondpreis.xlsx)
+[Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul2_Bondpreis.xlsx)
         `,
         elements: [649],
       },
@@ -208,7 +208,7 @@ Gegeben ist folgende Ausgangslage:
         elements: [424],
       },
       {
-        displayName: 'Enterprise Value',
+        displayName: 'Modul 2 - Enterprise Value',
         description: `
 Gegeben ist folgende Bilanz der Rason AG (in Mio. CHF):
 
@@ -223,13 +223,13 @@ Der Umsatz der Rason AG beträgt 150 Mio. CHF und der EV/Sales Multiple von Unte
         elements: [650, 651],
       },
       {
-        displayName: 'Dividendenwachstumsmodell',
+        displayName: 'Modul 2 - Dividendenwachstumsmodell',
         description: `
 Gegeben ist folgende Ausgangslage:
 
-![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul2_Ausgangslage_Bondpreis.png)
+![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul2_Ausgangslage_Dividendenwachstumsmodell.png)
 
-[Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul2_%20Bondpreis.xlsx)
+[Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul2_Dividendenwachstumsmodell.xlsx)
         `,
         elements: [652],
       },
@@ -249,7 +249,7 @@ Gegeben ist folgende Ausgangslage:
         elements: [429],
       },
       {
-        displayName: 'Call-Option',
+        displayName: 'Modul 2 - Call-Option',
         description: `
 Der Investor Felix kaufte vor einem Jahr europäische Call-Optionen auf die Schwyz-Aktie. Die Angaben dazu sind wie folgt:
 

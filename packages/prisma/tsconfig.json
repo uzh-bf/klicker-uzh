@@ -9,7 +9,7 @@
     "moduleTypes": {
       "src/seed/*": "esm",
       "src/data/*": "esm",
-      "src/migrateLearningElements.ts": "esm"
+      "src/scripts/*": "esm"
     }
   }
 }

@@ -1,4 +1,4 @@
-import { PrismaClient } from './client'
+import { PrismaClient } from '../client'
 
 async function migrate() {
   const prisma = new PrismaClient()

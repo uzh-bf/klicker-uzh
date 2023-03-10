@@ -6,3 +6,4 @@ dist
 
 src/prisma/ERD.svg
 src/data/exported_questions.json
+.env
