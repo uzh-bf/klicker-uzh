@@ -174,9 +174,9 @@ export async function respondToQuestionInstance(
     instance,
     updatedInstance,
   }: {
-    instance: QuestionInstance | null
-    updatedInstance: QuestionInstance
-  } | null = await ctx.prisma.$transaction(async (prisma) => {
+    instance: QuestionInstance | null | undefined
+    updatedInstance: QuestionInstance | undefined
+  } = await ctx.prisma.$transaction(async (prisma) => {
     const instance = await prisma.questionInstance.findUnique({
       where: { id },
       // if the participant is logged in, fetch the last response of the participant
@@ -201,7 +201,7 @@ export async function respondToQuestionInstance(
     })
 
     if (!instance) {
-      return null
+      return {}
     }
 
     // if the participant had already responded, don't track the new response
@@ -218,7 +218,9 @@ export async function respondToQuestionInstance(
       instance?.questionData?.valueOf() as AllQuestionTypeData
     const results = instance?.results?.valueOf() as AllQuestionResults
 
-    if (!questionData) return null
+    if (!questionData) {
+      return {}
+    }
 
     let updatedResults:
       | {
@@ -244,14 +246,23 @@ export async function respondToQuestionInstance(
         if (
           typeof response.value === 'undefined' ||
           response.value === null ||
-          response.value === '' ||
-          parseFloat(response.value) < questionData.options.restrictions.min ||
-          parseFloat(response.value) > questionData.options.restrictions.max
+          response.value === ''
         ) {
-          return null
+          return {}
         }
 
-        const value = String(parseFloat(response.value))
+        const parsedValue = parseFloat(response.value)
+        if (
+          isNaN(parsedValue) ||
+          (typeof questionData.options.restrictions!.min === 'number' &&
+            parsedValue < questionData.options.restrictions!.min) ||
+          (typeof questionData.options.restrictions!.max === 'number' &&
+            parsedValue > questionData.options.restrictions!.max)
+        ) {
+          return {}
+        }
+
+        const value = String(parsedValue)
 
         if (Object.keys(results).includes(value)) {
           updatedResults = {
@@ -269,9 +280,11 @@ export async function respondToQuestionInstance(
           typeof response.value === 'undefined' ||
           response.value === null ||
           response.value === '' ||
-          response.value.length > questionData.options.restrictions.maxLength
+          (typeof questionData.options.restrictions!.maxLength === 'number' &&
+            response.value.length >
+              questionData.options.restrictions!.maxLength)
         ) {
-          return null
+          return {}
         }
 
         const value = R.toLower(R.trim(response.value))
