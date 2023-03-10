@@ -2,7 +2,11 @@ import Prisma from '@klicker-uzh/prisma'
 import { Question } from '../client/index.js'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 import * as DATA_TEST from './data/TEST.js'
-import { prepareLearningElement, prepareUser } from './helpers.js'
+import {
+  prepareLearningElement,
+  prepareQuestionInstance,
+  prepareUser,
+} from './helpers.js'
 
 // export const PARTICIPANT_IDS = [
 //   '6f45065c-667f-4259-818c-c6f6b477eb48',
@@ -95,6 +99,151 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       )
     )
   )
+
+  const GROUP_ACTIVITY_ID = 'b83657a5-4d19-449d-b378-208b7cb2e8e0'
+  const groupActivity1BF2 = await prisma.groupActivity.upsert({
+    where: {
+      id: GROUP_ACTIVITY_ID,
+    },
+    create: {
+      id: GROUP_ACTIVITY_ID,
+      name: 'BFII Gruppenquest 1',
+      displayName: 'BFII Gruppenquest 1',
+      description: `
+Du und deine Kolleg:innen bonden oft über Bonds. Auch heute seid ihr zusammengekommen, um aktuelle Anleihen zu untersuchen und einen Bond zu wählen, den ihr kaufen werdet. Zur Auswahl stehen die euch zugeteilten Anleihen. Um genauere Angaben zu den Bonds zu finden, durchsucht ihr die Marktdaten der SIX.
+
+[Marktdaten der SIX](https://www.six-group.com/de/products-services/the-swiss-stock-exchange/market-data/bonds/bond-explorer.html)
+
+Für die Aufgaben geben wir euch noch die folgenden Tipps:
+`,
+      scheduledStartAt: new Date('2023-03-10T11:00:00.000Z'),
+      scheduledEndAt: new Date('2023-03-17T11:00:00.000Z'),
+      parameters: {},
+      clues: {
+        connectOrCreate: [
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond1',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond1',
+              displayName: 'CH0009755197',
+              value: 'Schweizer Eidgenossenschaft',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond2',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond2',
+              displayName: 'CH0591979668',
+              value: 'Credit Suisse',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond3',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond3',
+              displayName: 'CH0326213912',
+              value: 'Kinderspital Zürich',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond4',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond4',
+              displayName: 'CH1154887140',
+              value: 'Holcim',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond5',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond5',
+              displayName: 'CH0237552101',
+              value: 'Givaudan',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond6',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond6',
+              displayName: 'CH0564642079',
+              value: 'Lindt',
+            },
+          },
+        ],
+      },
+      instances: {
+        connectOrCreate: await Promise.all(
+          [655, 656, 657, 658].map(async (qId, ix) => {
+            const question = await prisma.question.findUnique({
+              where: { id: qId },
+            })
+
+            return {
+              where: {
+                type_groupActivityId_order: {
+                  type: 'GROUP_ACTIVITY',
+                  groupActivityId: GROUP_ACTIVITY_ID,
+                  order: ix,
+                },
+              },
+              create: prepareQuestionInstance({
+                question,
+                type: 'GROUP_ACTIVITY',
+                order: ix,
+              }),
+            }
+          })
+        ),
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+  })
 
   // const sessionsTest = await Promise.all(
   //   DATA_TEST.SESSIONS.map(async (data) =>
