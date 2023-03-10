@@ -1,7 +1,7 @@
 import Prisma from '@klicker-uzh/prisma'
 import { Question } from '../client/index.js'
-import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
-import * as DATA_TEST from './data/TEST.js'
+import { COURSE_ID_BF2, USER_ID_BF2 } from './constants.js'
+import * as DATA_BF2 from './data/BF2.js'
 import { prepareLearningElement, prepareQuestionInstance } from './helpers.js'
 
 async function seed(prisma: Prisma.PrismaClient) {
@@ -9,15 +9,18 @@ async function seed(prisma: Prisma.PrismaClient) {
 
   const questions = await prisma.question.findMany({
     orderBy: { id: 'desc' },
+    where: {
+      ownerId: USER_ID_BF2,
+    },
   })
 
   const learningElements = await Promise.all(
-    DATA_TEST.LEARNING_ELEMENTS.map(async (data) =>
+    DATA_BF2.LEARNING_ELEMENTS.map(async (data) =>
       prisma.learningElement.upsert(
         await prepareLearningElement({
           ...data,
-          ownerId: USER_ID_TEST,
-          courseId: COURSE_ID_TEST,
+          ownerId: USER_ID_BF2,
+          courseId: COURSE_ID_BF2,
           stacks: data.stacks.map((stack) => {
             return {
               ...stack,
@@ -172,12 +175,12 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
       },
       owner: {
         connect: {
-          id: USER_ID_TEST,
+          id: USER_ID_BF2,
         },
       },
       course: {
         connect: {
-          id: COURSE_ID_TEST,
+          id: COURSE_ID_BF2,
         },
       },
     },
