@@ -3,7 +3,7 @@ describe('Render the homepage for lecturer', () => {
     cy.visit(Cypress.env('URL_LECTURER'));
     cy.get('[data-cy="login-logo"]').should('exist');
     cy.get('[data-cy="email-field"]').type('lecturer@bf.uzh.ch');
-    cy.get('[data-cy="password-field"]').type('abcd');
+    cy.get('[data-cy="password-field"]').type('Golfplatz2022');
     cy.get('[data-cy="submit-login"]').click();
   }),
 
@@ -158,7 +158,7 @@ describe('Render the homepage for lecturer', () => {
     cy.get('[data-cy="question-block"]').contains(question).should('exist');
     cy.get('[data-cy="edit-question"]').first().click(); // TODO Risky at the moment, but no problem once we work with empty database before every test
     cy.get('[data-cy="free-text-response-input"]').should('exist');
-  })
+  }),
 
   // it('9. Workflow of running a session and answering questions', () => {
   //   const randomNumber = Math.round(Math.random() * 1000);
