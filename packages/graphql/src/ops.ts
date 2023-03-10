@@ -260,7 +260,7 @@ export type GroupActivityClueInstance = {
 export type GroupActivityDecisionInput = {
   id: Scalars['Int'];
   response?: InputMaybe<Scalars['String']>;
-  selectedOptions: Array<Scalars['Int']>;
+  selectedOptions?: InputMaybe<Array<Scalars['Int']>>;
 };
 
 export type GroupActivityDetails = {

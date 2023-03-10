@@ -5,7 +5,7 @@ import PrismaPlugin from '@pothos/plugin-prisma'
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ValidationPlugin from '@pothos/plugin-validation'
 import { GraphQLError } from 'graphql'
-import { DateTimeResolver, JSONObjectResolver } from 'graphql-scalars'
+import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
 import { Context, ContextWithUser } from './lib/context'
 
 const prisma = new PrismaClient({})
@@ -58,6 +58,6 @@ const builder = new SchemaBuilder<{
 })
 
 export const DateScalar = builder.addScalarType('Date', DateTimeResolver, {})
-export const JsonScalar = builder.addScalarType('Json', JSONObjectResolver, {})
+export const JsonScalar = builder.addScalarType('Json', JSONResolver, {})
 
 export default builder

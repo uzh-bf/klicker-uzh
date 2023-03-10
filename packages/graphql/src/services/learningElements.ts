@@ -174,8 +174,8 @@ export async function respondToQuestionInstance(
     instance,
     updatedInstance,
   }: {
-    instance: QuestionInstance | null | undefined
-    updatedInstance: QuestionInstance | undefined
+    instance?: QuestionInstance | null
+    updatedInstance?: QuestionInstance
   } = await ctx.prisma.$transaction(async (prisma) => {
     const instance = await prisma.questionInstance.findUnique({
       where: { id },
@@ -324,7 +324,7 @@ export async function respondToQuestionInstance(
     updatedInstance?.questionData?.valueOf() as AllQuestionTypeData
   const results = updatedInstance?.results?.valueOf() as AllQuestionResults
 
-  if (!questionData) return null
+  if (!instance || !updatedInstance || !questionData) return null
 
   const evaluation = evaluateQuestionResponse(
     questionData,
@@ -543,7 +543,7 @@ export async function respondToQuestionInstance(
           xpAwarded,
           newXpFrom,
         }
-      : null,
+      : undefined,
   }
 }
 

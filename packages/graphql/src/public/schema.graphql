@@ -224,7 +224,7 @@ type GroupActivityClueInstance {
 input GroupActivityDecisionInput {
   id: Int!
   response: String
-  selectedOptions: [Int!]!
+  selectedOptions: [Int!]
 }
 
 type GroupActivityDetails {
