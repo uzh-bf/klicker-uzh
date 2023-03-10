@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.70](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.69...v3.0.0-alpha.70) (2023-03-10)
+
+
+### Features
+
+* question stacks on learning elements ([#3431](https://github.com/uzh-bf/klicker-uzh/issues/3431)) ([b4e219b](https://github.com/uzh-bf/klicker-uzh/commit/b4e219bfd9c21175b858c67a840eb9305176b0d3))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** do not display level on avatar for missing participant ([#3443](https://github.com/uzh-bf/klicker-uzh/issues/3443)) ([afaea01](https://github.com/uzh-bf/klicker-uzh/commit/afaea013e775c61fef4c00a6fd9794524554e981))
+* **packages/prisma:** ensure tags are deleted on user deletion ([33e72d1](https://github.com/uzh-bf/klicker-uzh/commit/33e72d15282ebc9805908eb2bf9ba6cb172f56ee))
+* update validation logic for numerical questions ([#3432](https://github.com/uzh-bf/klicker-uzh/issues/3432)) ([66a477b](https://github.com/uzh-bf/klicker-uzh/commit/66a477b9c2a5f25d6fad54ba4a432a89f4d55bd8))
+
+
+### Other
+
+* **apps/frontend-pwa:** ensure that header text in pwa layout is only small on mobile ([#3433](https://github.com/uzh-bf/klicker-uzh/issues/3433)) ([4601afe](https://github.com/uzh-bf/klicker-uzh/commit/4601afe817025083a4247e737911d3856f8f5157))
+
+
+### Enhancements
+
+* add possibility to delete live sessions ([#3430](https://github.com/uzh-bf/klicker-uzh/issues/3430)) ([efffb76](https://github.com/uzh-bf/klicker-uzh/commit/efffb7626fd5dc008e66f7984e523d4b9b2e476c))
+* migrate learning elements to new stack-based approach ([#3446](https://github.com/uzh-bf/klicker-uzh/issues/3446)) ([9d0a7a1](https://github.com/uzh-bf/klicker-uzh/commit/9d0a7a170b83e68499c2edde992146cde565e459))
+
 ## [3.0.0-alpha.69](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.68...v3.0.0-alpha.69) (2023-03-03)
 
 

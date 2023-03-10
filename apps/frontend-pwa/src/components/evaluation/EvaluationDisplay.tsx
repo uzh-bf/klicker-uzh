@@ -106,7 +106,34 @@ function EvaluationDisplay({
     }
 
     case QuestionType.FREE_TEXT:
-      return <div></div>
+      const answers = Object.entries(
+        evaluation.answers as Record<string, number>
+      ).reduce(
+        (acc, [value, count]) => ({ ...acc, [value]: { value, count } }),
+        {}
+      ) as Record<string, Record<string, string | number>>
+      const solutions = options.solutions
+
+      return (
+        <div>
+          <div className="mb-4">
+            <div className="font-bold">
+              {t('pwa.learningElement.othersAnswered')}
+            </div>
+            <div>
+              {Object.keys(answers)
+                .map((key) => `${key} (${answers[key].count})`)
+                .join(', ')}
+            </div>
+          </div>
+          <div>
+            <div className="font-bold">
+              {t('shared.generic.sampleSolution')}
+            </div>
+            <div>{solutions.join(', ')}</div>
+          </div>
+        </div>
+      )
 
     case QuestionType.NUMERICAL:
       const results = Object.entries(

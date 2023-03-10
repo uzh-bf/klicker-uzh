@@ -428,13 +428,19 @@ export async function getCourseData(
         },
       },
       learningElements: {
-        include: {
-          _count: {
-            select: { instances: true },
-          },
-        },
         orderBy: {
           createdAt: 'asc',
+        },
+        include: {
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  questionInstance: true,
+                },
+              },
+            },
+          },
         },
       },
       microSessions: {
@@ -475,15 +481,6 @@ export async function getCourseData(
       ),
     }
   })
-
-  const reducedLearningElements = course?.learningElements.map(
-    (learningElement) => {
-      return {
-        ...learningElement,
-        numOfInstances: learningElement._count.instances,
-      }
-    }
-  )
 
   const reducedMicroSessions = course?.microSessions.map((microSession) => {
     return {
@@ -531,6 +528,31 @@ export async function getCourseData(
   const totalCount = course?.participations.length || 0
   const averageScore = totalCount > 0 ? totalSum / totalCount : 0
   const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
+
+  const reducedLearningElements = course?.learningElements.map((element) => {
+    return {
+      ...element,
+      ...element.stacks.reduce(
+        (acc, stack) => {
+          const stackQuestions = stack.elements.reduce((acc, stackElem) => {
+            if (stackElem.questionInstance) {
+              return acc + 1
+            }
+            return acc
+          }, 0)
+
+          if (stackQuestions > 0) {
+            return {
+              stacksWithQuestions: acc.stacksWithQuestions + 1,
+              numOfQuestions: acc.numOfQuestions + stackQuestions,
+            }
+          }
+          return acc
+        },
+        { stacksWithQuestions: 0, numOfQuestions: 0 }
+      ),
+    }
+  })
 
   return {
     ...course,

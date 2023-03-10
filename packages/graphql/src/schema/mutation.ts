@@ -16,7 +16,11 @@ import {
   GroupActivityDetails,
   GroupActivityInstance,
 } from './groupActivity'
-import { LearningElement, LearningElementOrderType } from './learningElements'
+import {
+  LearningElement,
+  LearningElementOrderType,
+  QuestionStack,
+} from './learningElements'
 import { MicroSession } from './microSession'
 import {
   AvatarSettingsInput,
@@ -728,10 +732,10 @@ export const Mutation = builder.mutationType({
 
       bookmarkQuestion: asParticipant.field({
         nullable: true,
-        type: Participation,
+        type: [QuestionStack],
         args: {
           courseId: t.arg.string({ required: true }),
-          instanceId: t.arg.int({ required: true }),
+          stackId: t.arg.int({ required: true }),
           bookmarked: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -739,7 +743,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      flagQuestion: asParticipant.string({
+      flagQuestion: t.string({
         nullable: true,
         args: {
           questionInstanceId: t.arg.int({ required: true }),
@@ -815,6 +819,12 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return MicroLearningService.deleteMicroSession(args, ctx)
+        },
+      }),
+
+      updateGroupAverageScores: t.boolean({
+        resolve(_, __, ctx) {
+          return ParticipantGroupService.updateGroupAverageScores(ctx)
         },
       }),
     }

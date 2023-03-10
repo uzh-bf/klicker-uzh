@@ -56,7 +56,7 @@ function LearningElementTile({
           )}
         </div>
         <div className="mb-1 italic">
-          {learningElement.numOfInstances || '0'} Fragen
+          {learningElement.numOfQuestions || '0'} Fragen
         </div>
 
         <Button

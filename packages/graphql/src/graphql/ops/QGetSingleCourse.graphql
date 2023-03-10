@@ -31,7 +31,8 @@ query GetSingleCourse($courseId: String!) {
       name
       displayName
       status
-      numOfInstances
+      stacksWithQuestions
+      numOfQuestions
     }
     microSessions {
       id
