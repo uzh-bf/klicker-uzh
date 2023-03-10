@@ -110,11 +110,16 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       name: 'BFII Gruppenquest 1',
       displayName: 'BFII Gruppenquest 1',
       description: `
-Du und deine Kolleg:innen bonden oft über Bonds. Auch heute seid ihr zusammengekommen, um aktuelle Anleihen zu untersuchen und einen Bond zu wählen, den ihr kaufen werdet. Zur Auswahl stehen die euch zugeteilten Anleihen. Um genauere Angaben zu den Bonds zu finden, durchsucht ihr die Marktdaten der SIX.
+![](https://sos-ch-dk-2.exo.io/klicker-prod/img/bf2/bf2_group_activity_1.png)
+
+Du und deine Kolleg:innen bonden oft über Bonds. Auch heute seid ihr zusammengekommen, um aktuelle Anleihen zu untersuchen und einen Bond zu wählen, den ihr kaufen werdet. Zur Auswahl stehen die euch zugeteilten Anleihen. Um genauere Angaben zu den Bonds zu finden, durchsucht ihr die Marktdaten der SIX unter folgendem Link:
 
 [Marktdaten der SIX](https://www.six-group.com/de/products-services/the-swiss-stock-exchange/market-data/bonds/bond-explorer.html)
 
 Für die Aufgaben geben wir euch noch die folgenden Tipps:
+
+1. Denomination kann als Synonym von Nennwert verstanden werden.
+2. Auch das Rating der jeweiligen Anleihen sollte ein wichtiger Indikator für eure Entscheidung sein.
 `,
       scheduledStartAt: new Date('2023-03-10T11:00:00.000Z'),
       scheduledEndAt: new Date('2023-03-17T11:00:00.000Z'),
@@ -131,8 +136,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: 'STRING',
               name: 'bond1',
-              displayName: 'CH0009755197',
-              value: 'Schweizer Eidgenossenschaft',
+              displayName: 'Bond 1',
+              value: 'Schweizer Eidgenossenschaft, CH0009755197',
             },
           },
           {
@@ -145,8 +150,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: 'STRING',
               name: 'bond2',
-              displayName: 'CH0591979668',
-              value: 'Credit Suisse',
+              displayName: 'Bond 2',
+              value: 'Credit Suisse, CH0591979668',
             },
           },
           {
@@ -159,8 +164,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: 'STRING',
               name: 'bond3',
-              displayName: 'CH0326213912',
-              value: 'Kinderspital Zürich',
+              displayName: 'Bond 3',
+              value: 'Kinderspital Zürich, CH0326213912',
             },
           },
           {
@@ -173,8 +178,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: 'STRING',
               name: 'bond4',
-              displayName: 'CH1154887140',
-              value: 'Holcim',
+              displayName: 'Bond 4',
+              value: 'Holcim, CH1154887140',
             },
           },
           {
@@ -187,8 +192,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: 'STRING',
               name: 'bond5',
-              displayName: 'CH0237552101',
-              value: 'Givaudan',
+              displayName: 'Bond 5',
+              value: 'Givaudan, CH0237552101',
             },
           },
           {
@@ -201,8 +206,8 @@ Für die Aufgaben geben wir euch noch die folgenden Tipps:
             create: {
               type: 'STRING',
               name: 'bond6',
-              displayName: 'CH0564642079',
-              value: 'Lindt',
+              displayName: 'Bond 6',
+              value: 'Lindt, CH0564642079',
             },
           },
         ],
