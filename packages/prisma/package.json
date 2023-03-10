@@ -16,6 +16,8 @@
     "build:watch": "NODE_ENV=development tsup --watch",
     "format": "prettier --write .",
     "generate": "prisma generate --schema=src/prisma/schema.prisma",
+    "migrate:learningElements": "ENV=development doppler run --config dev -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/migrateLearningElements.ts",
+    "migrate:learningElements:prod": "ENV=development doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/migrateLearningElements.ts",
     "prisma:migrate": "doppler run --config dev -- prisma migrate dev --schema=src/prisma/schema.prisma",
     "prisma:deploy:raw": "prisma migrate deploy --schema=src/prisma/schema.prisma",
     "prisma:deploy": "doppler run --config dev -- npm run prisma:deploy:raw",

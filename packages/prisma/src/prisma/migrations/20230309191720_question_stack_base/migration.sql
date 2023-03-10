@@ -1,10 +1,8 @@
 /*
   Warnings:
-
   - A unique constraint covering the columns `[questionStackId]` on the table `GroupActivity` will be added. If there are existing duplicate values, this will fail.
   - A unique constraint covering the columns `[stackElementId]` on the table `QuestionInstance` will be added. If there are existing duplicate values, this will fail.
   - A unique constraint covering the columns `[type,stackElementId,order]` on the table `QuestionInstance` will be added. If there are existing duplicate values, this will fail.
-
 */
 -- CreateEnum
 CREATE TYPE "QuestionStackType" AS ENUM ('LEARNING_ELEMENT', 'MICRO_SESSION', 'LIVE_SESSION', 'GROUP_ACTIVITY');
