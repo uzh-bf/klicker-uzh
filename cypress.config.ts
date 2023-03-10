@@ -4,6 +4,10 @@ export default defineConfig({
   env: {
     URL_STUDENT: "http://127.0.0.1:3001",
     URL_LECTURER: "http://127.0.0.1:3002",
+    LECTURER_EMAIL: "lecturer@bf.uzh.ch",
+    LECTURER_PASSWORD: "abcd",
+    STUDENT_USERNAME: "testuser1",
+    STUDENT_PASSWORD: "testing",
   },
 
   e2e: {

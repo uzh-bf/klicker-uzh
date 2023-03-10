@@ -74,7 +74,7 @@ function Question({
   })
 
   return (
-    <div className="flex w-full mb-4 h-max flex-col-2">
+    <div className="flex w-full mb-4 h-max flex-col-2" data-cy="question-block">
       <div className="min-h-full my-auto mr-2">
         <Checkbox checked={checked} onCheck={onCheck} />
       </div>
@@ -84,7 +84,6 @@ function Question({
           collectedProps.isDragging && 'opacity-50'
         )}
         ref={drag}
-        data-cy="question-block"
       >
         <div className="flex flex-row flex-1">
           <div className="flex flex-col flex-1">
@@ -97,9 +96,9 @@ function Question({
                 type="button"
                 onClick={() => setIsModificationModalOpen(true)}
                 onKeyDown={() => setIsModificationModalOpen(true)}
+                data-cy="question-title"
               >
                 {type} - {title}
-                {/* {title} */}
               </a>
             </div>
 
