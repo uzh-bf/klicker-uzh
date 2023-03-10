@@ -290,6 +290,7 @@ function StepTwo(props: StepProps) {
             { label: 'Vierfach (4x)', value: '4' },
           ]}
           required
+          data={{ cy: 'select-multiplier' }}
         />
         <ErrorMessage
           name="multiplier"
@@ -304,6 +305,7 @@ function StepTwo(props: StepProps) {
           tooltip="Bestimmen Sie, ob Gamification für diese Session aktiviert sein soll. Gamifizierte Sessionen sollten nur für gamifizierte Kurse verwendet werden."
           required
           standardLabel
+          data={{ cy: 'set-gamification' }}
         />
         <ErrorMessage
           name="isGamificationEnabled"

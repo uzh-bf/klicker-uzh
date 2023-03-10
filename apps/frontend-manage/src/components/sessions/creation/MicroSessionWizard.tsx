@@ -306,6 +306,7 @@ function StepTwo(props: StepProps) {
             { label: 'Dreifach (3x)', value: '3' },
             { label: 'Vierfach (4x)', value: '4' },
           ]}
+          data={{ cy: 'select-multiplier' }}
         />
         <ErrorMessage
           name="multiplier"

@@ -75,7 +75,7 @@ function Session({ session }: SessionProps) {
 
   return (
     <>
-      <div key={session.id} className="p-2 border rounded">
+      <div key={session.id} className="p-2 border rounded" data-cy="session">
         <Collapsible
           className={{ root: 'border-0' }}
           key={session.id}
@@ -131,6 +131,7 @@ function Session({ session }: SessionProps) {
                         'flex flex-row items-center gap-2 text-sm cursor-pointer',
                         theme.primaryTextHover
                       )}
+                      data-cy="session-cockpit"
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>Dozierenden Cockpit</div>
@@ -161,6 +162,7 @@ function Session({ session }: SessionProps) {
                       await startSession()
                       router.push(`sessions/${session.id}/cockpit`)
                     }}
+                    data={{ cy: 'start-session' }}
                   >
                     <div
                       className={twMerge(
