@@ -2,7 +2,7 @@ import Prisma from '@klicker-uzh/prisma'
 import * as DATA_TEST from './data/TEST'
 
 import { Question } from '../client'
-import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
+import { COURSE_ID_TEST, USER_ID_TEST, XpForLevel } from './constants.js'
 import {
   prepareCourse,
   prepareLearningElement,
@@ -35,7 +35,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       create: {
         index,
         name: `Level ${index}`,
-        requiredXp: 100 * index,
+        requiredXp: XpForLevel(index),
         avatar: `https://sos-ch-dk-2.exo.io/klicker-prod/img/levels/level_${index}.svg`,
         nextLevel: index < 11 ? { connect: { index: index + 1 } } : undefined,
       },
