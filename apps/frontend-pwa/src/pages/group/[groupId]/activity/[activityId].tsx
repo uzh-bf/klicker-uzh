@@ -68,7 +68,7 @@ function GroupActivityDetails() {
   if (!data.groupActivityDetails) {
     return (
       <Layout>
-        Die Gruppenquest wird am 07.11.2022 ab 17:00 freigeschalten.
+        Die Gruppenquest ist nicht aktiv oder noch nicht freigeschalten.
       </Layout>
     )
   }

@@ -1,4 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateParticipantGroupDocument,
   GetCourseOverviewDataDocument,
@@ -15,6 +17,7 @@ import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import Leaderboard from 'shared-components/src/Leaderboard'
@@ -354,20 +357,20 @@ function CourseOverview({ courseId }: any) {
 
                   {/* // TODO: add internationlized strings, once the hard-coded implementation has been updated */}
                   {data.getCourseOverviewData?.course?.id ===
-                    '2b302436-4fc3-4d5d-bbfb-1e13b4ee11b2' && (
+                    'f7ceeba0-ef5a-4d0b-a992-a44a1395cbf9' && (
                     <div className="mt-8">
                       <H4>Gruppenaktivitäten</H4>
-                      {/* <Link
-                      href={`/group/${group.id}/activity/dd522580-393a-4839-a193-2871feb2d98f`}
-                      className="inline-flex items-center gap-2 hover:text-orange-700"
-                    > */}
-                      <div>
-                        {/* <FontAwesomeIcon icon={faExternalLink} /> */}
-                        <span className="text-gray-600">
-                          Gruppenquest - 07.11.22 17:00 bis 13.11.22 23:00
-                        </span>
-                      </div>
-                      {/* </Link> */}
+                      <Link
+                        href={`/group/${group.id}/activity/b83657a5-4d19-449d-b378-208b7cb2e8e0`}
+                        className="inline-flex items-center gap-2 hover:text-orange-700"
+                      >
+                        <div>
+                          <FontAwesomeIcon icon={faExternalLink} />
+                          <span className="text-gray-600">
+                            Gruppenquest 1 - 10.03.23 12:00 bis 17.03.23 12:00
+                          </span>
+                        </div>
+                      </Link>
                     </div>
                   )}
                 </div>

@@ -1,33 +1,20 @@
 /*
   Warnings:
-
-  - You are about to drop the column `learningElementId` on the `QuestionInstance` table. All the data in the column will be lost.
-  - You are about to drop the `_ParticipationToQuestionInstance` table. If the table is not empty, all the data it contains will be lost.
+  - A unique constraint covering the columns `[questionStackId]` on the table `GroupActivity` will be added. If there are existing duplicate values, this will fail.
   - A unique constraint covering the columns `[stackElementId]` on the table `QuestionInstance` will be added. If there are existing duplicate values, this will fail.
   - A unique constraint covering the columns `[type,stackElementId,order]` on the table `QuestionInstance` will be added. If there are existing duplicate values, this will fail.
-
 */
 -- CreateEnum
 CREATE TYPE "QuestionStackType" AS ENUM ('LEARNING_ELEMENT', 'MICRO_SESSION', 'LIVE_SESSION', 'GROUP_ACTIVITY');
 
 -- DropForeignKey
-ALTER TABLE "QuestionInstance" DROP CONSTRAINT "QuestionInstance_learningElementId_fkey";
-
--- DropForeignKey
-ALTER TABLE "_ParticipationToQuestionInstance" DROP CONSTRAINT "_ParticipationToQuestionInstance_A_fkey";
-
--- DropForeignKey
-ALTER TABLE "_ParticipationToQuestionInstance" DROP CONSTRAINT "_ParticipationToQuestionInstance_B_fkey";
-
--- DropIndex
-DROP INDEX "QuestionInstance_type_learningElementId_order_key";
+ALTER TABLE "Tag" DROP CONSTRAINT "Tag_ownerId_fkey";
 
 -- AlterTable
-ALTER TABLE "QuestionInstance" DROP COLUMN "learningElementId",
-ADD COLUMN     "stackElementId" INTEGER;
+ALTER TABLE "GroupActivity" ADD COLUMN     "questionStackId" INTEGER;
 
--- DropTable
-DROP TABLE "_ParticipationToQuestionInstance";
+-- AlterTable
+ALTER TABLE "QuestionInstance" ADD COLUMN     "stackElementId" INTEGER;
 
 -- CreateTable
 CREATE TABLE "QuestionStack" (
@@ -67,10 +54,16 @@ CREATE UNIQUE INDEX "_ParticipationToQuestionStack_AB_unique" ON "_Participation
 CREATE INDEX "_ParticipationToQuestionStack_B_index" ON "_ParticipationToQuestionStack"("B");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "GroupActivity_questionStackId_key" ON "GroupActivity"("questionStackId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "QuestionInstance_stackElementId_key" ON "QuestionInstance"("stackElementId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "QuestionInstance_type_stackElementId_order_key" ON "QuestionInstance"("type", "stackElementId", "order");
+
+-- AddForeignKey
+ALTER TABLE "Tag" ADD CONSTRAINT "Tag_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "QuestionInstance" ADD CONSTRAINT "QuestionInstance_stackElementId_fkey" FOREIGN KEY ("stackElementId") REFERENCES "StackElement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -80,6 +73,9 @@ ALTER TABLE "QuestionStack" ADD CONSTRAINT "QuestionStack_learningElementId_fkey
 
 -- AddForeignKey
 ALTER TABLE "StackElement" ADD CONSTRAINT "StackElement_stackId_fkey" FOREIGN KEY ("stackId") REFERENCES "QuestionStack"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GroupActivity" ADD CONSTRAINT "GroupActivity_questionStackId_fkey" FOREIGN KEY ("questionStackId") REFERENCES "QuestionStack"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_ParticipationToQuestionStack" ADD CONSTRAINT "_ParticipationToQuestionStack_A_fkey" FOREIGN KEY ("A") REFERENCES "Participation"("id") ON DELETE CASCADE ON UPDATE CASCADE;

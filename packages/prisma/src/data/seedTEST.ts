@@ -1,8 +1,6 @@
-import Prisma from '@klicker-uzh/prisma'
-import * as DATA_TEST from './data/TEST'
-
-import { Question } from '../client'
+import Prisma, { Question } from '@klicker-uzh/prisma'
 import { COURSE_ID_TEST, USER_ID_TEST, XpForLevel } from './constants.js'
+import * as DATA_TEST from './data/TEST'
 import {
   prepareCourse,
   prepareLearningElement,
@@ -77,6 +75,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const questionCount = await prisma.question.findFirst({
     orderBy: { id: 'desc' },
   })
+
   await prisma.$executeRawUnsafe(
     `ALTER SEQUENCE "Question_id_seq" RESTART WITH ${questionCount.id + 1}`
   )
