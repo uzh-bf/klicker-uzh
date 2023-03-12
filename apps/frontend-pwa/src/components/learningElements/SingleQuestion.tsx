@@ -132,7 +132,12 @@ function SingleQuestion({
               }}
             >
               <div className="font-bold">{t('shared.generic.explanation')}</div>
-              <DynamicMarkdown content={questionData.explanation} />
+              <DynamicMarkdown
+                className={{
+                  root: 'prose prose-sm max-w-none text-green-800 prose-p:mt-0 prose-p:mb-1',
+                }}
+                content={questionData.explanation}
+              />
             </UserNotification>
           )}
           <OptionsDisplay

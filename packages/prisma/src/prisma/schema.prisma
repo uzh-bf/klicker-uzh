@@ -173,7 +173,7 @@ model Tag {
 
   questions Question[]
 
-  owner   User   @relation(fields: [ownerId], references: [id])
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
   createdAt DateTime @default(now())
@@ -204,16 +204,19 @@ model QuestionInstance {
   detailResponses  QuestionResponseDetail[]
   resetTimeDays    Int?
 
-  sessionBlock    SessionBlock?  @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionBlockId  Int?
-  stackElement    StackElement?  @relation(fields: [stackElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  stackElementId  Int?           @unique
-  microSession    MicroSession?  @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  microSessionId  String?        @db.Uuid
-  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  groupActivityId String?        @db.Uuid
+  sessionBlock      SessionBlock?    @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionBlockId    Int?
+  learningElement   LearningElement? @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  learningElementId String?          @db.Uuid
+  stackElement      StackElement?    @relation(fields: [stackElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  stackElementId    Int?             @unique
+  microSession      MicroSession?    @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microSessionId    String?          @db.Uuid
+  groupActivity     GroupActivity?   @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId   String?          @db.Uuid
 
-  attachments AttachmentInstance[]
+  attachments  AttachmentInstance[]
+  bookmarkedBy Participation[]
 
   question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questionId Int?
@@ -223,6 +226,7 @@ model QuestionInstance {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([type, learningElementId, order])
   @@unique([type, sessionBlockId, order])
   @@unique([type, stackElementId, order])
   @@unique([type, microSessionId, order])
@@ -249,6 +253,7 @@ model QuestionStack {
 
   learningElement   LearningElement? @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   learningElementId String?          @db.Uuid
+  groupActivity     GroupActivity?
 
   bookmarkedBy Participation[]
 
@@ -455,7 +460,8 @@ model LearningElement {
   orderType        OrderType             @default(SEQUENTIAL)
   status           LearningElementStatus @default(DRAFT)
 
-  stacks QuestionStack[]
+  instances QuestionInstance[]
+  stacks    QuestionStack[]
 
   owner    User    @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String  @db.Uuid
@@ -561,6 +567,9 @@ model GroupActivity {
   description      String?
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
+
+  questionStack   QuestionStack? @relation(fields: [questionStackId], references: [id])
+  questionStackId Int?           @unique
 
   parameters        GroupActivityParameter[]
   clues             GroupActivityClue[]
@@ -753,8 +762,8 @@ model Participation {
   detailResponses        QuestionResponseDetail[]
   subscriptions          PushSubscription[]
   completedMicroSessions String[]
-
-  bookmarkedStacks QuestionStack[]
+  bookmarkedQuestions    QuestionInstance[]
+  bookmarkedStacks       QuestionStack[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
