@@ -17,7 +17,7 @@ export const GroupActivityDecisionInput = builder.inputType(
     fields: (t) => ({
       id: t.int({ required: true }),
 
-      selectedOptions: t.intList({ required: true }),
+      selectedOptions: t.intList({ required: false }),
       response: t.string({ required: false }),
     }),
   }

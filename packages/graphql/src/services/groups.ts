@@ -331,7 +331,7 @@ export async function getGroupActivityDetails(
 
   // before the active date, return null
   if (dayjs(groupActivity.scheduledStartAt).isAfter(dayjs())) {
-    return null
+    // return null
   }
 
   const activityInstance = await ctx.prisma.groupActivityInstance.findUnique({
@@ -518,7 +518,7 @@ interface SubmitGroupActivityDecisionsArgs {
   decisions: {
     id: number
     response?: string | null
-    selectedOptions?: number[]
+    selectedOptions?: number[] | null
   }[]
 }
 

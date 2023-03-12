@@ -178,40 +178,14 @@ export const QUESTIONS = [
 
 export const LEARNING_ELEMENTS = [
   {
-    id: '4968ad33-c15c-4b24-9e1f-c31f2d5578f1',
-    name: 'Test Lernelement',
-    displayName: 'Test Lernelement',
-    description: 'Welcome to this **learning element**.',
-    orderType: OrderType.SHUFFLED,
-    stacks: [
-      {
-        displayName: 'Stack 1',
-        description: 'Description for stack 1',
-        elements: [0, 1],
-      },
-      { elements: [2, 'Text in between elements', 3] },
-      {
-        displayName: 'Name for stack with only one md element',
-        description: 'Description for stack with only one md element',
-        elements: ['Pure Text block - could also be Intro'],
-      },
-      {
-        displayName: 'Name for stack with only one question element',
-        description: 'Description for stack with only one question element',
-        elements: [4],
-      },
-      { elements: ['Text block 1', 'Text block 2, following text block 1'] },
-    ],
-  },
-  {
     id: '011b1f9e-1b45-4447-8b88-b76fce089389',
     name: 'Test Lernelement x2',
     displayName: 'Test Lernelement x2',
     description: `
-Welcome to this **learning element**.
-This learning element yields 2x the points.
-And it can be done everyday!
-`,
+  Welcome to this **learning element**.
+  This learning element yields 2x the points.
+  And it can be done everyday!
+  `,
     pointsMultiplier: 2,
     resetTimeDays: 1,
     orderType: OrderType.LAST_RESPONSE,
