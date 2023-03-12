@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
+import { levelFromXp } from '../util'
 import { Achievement, ParticipantAchievementInstance } from './achievement'
 import type {
   ICourse,
@@ -77,6 +78,7 @@ export interface IParticipant extends DB.Participant {
   isSelf?: boolean
   achievements?: DB.ParticipantAchievementInstance[]
   participantGroups?: IParticipantGroup[]
+  level?: number
   levelData?: ILevel
 }
 export const ParticipantRef = builder.objectRef<IParticipant>('Participant')
@@ -92,8 +94,20 @@ export const Participant = ParticipantRef.implement({
     }),
 
     xp: t.exposeInt('xp'),
-    level: t.exposeInt('level'),
-    levelData: t.expose('levelData', { type: LevelRef, nullable: true }),
+    level: t.int({
+      nullable: true,
+      resolve: (participant) => levelFromXp(participant.xp),
+    }),
+    levelData: t.field({
+      type: Level,
+      nullable: true,
+      resolve: (participant, args, ctx) =>
+        ctx.prisma.level.findUnique({
+          where: {
+            index: levelFromXp(participant.xp),
+          },
+        }),
+    }),
 
     participantGroups: t.expose('participantGroups', {
       type: [ParticipantGroupRef],

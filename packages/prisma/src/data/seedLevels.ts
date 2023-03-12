@@ -1,5 +1,5 @@
 import Prisma from '@klicker-uzh/prisma'
-import { XpForLevel } from './constants'
+import { xpForLevel } from './constants'
 
 async function seedLevels(prisma: Prisma.PrismaClient) {
   for (let index of [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) {
@@ -8,7 +8,7 @@ async function seedLevels(prisma: Prisma.PrismaClient) {
       create: {
         index,
         name: `Level ${index}`,
-        requiredXp: XpForLevel(index),
+        requiredXp: xpForLevel(index),
         avatar: `https://sos-ch-dk-2.exo.io/klicker-prod/img/levels/level_${index}.svg`,
         nextLevel: index < 11 ? { connect: { index: index + 1 } } : undefined,
       },
