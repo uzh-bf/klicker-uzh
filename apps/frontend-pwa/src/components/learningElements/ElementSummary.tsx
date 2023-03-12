@@ -180,13 +180,13 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
               alt="Eating Bubbel"
               width={300}
               height={200}
-              className="mx-0"
+              className="mx-2"
             />
             <Image
               src={
                 (levelUp
-                  ? participant?.self?.levelData?.avatar
-                  : participant?.self?.levelData?.nextLevel?.avatar) ?? ''
+                  ? participant?.self?.levelData?.nextLevel?.avatar
+                  : participant?.self?.levelData?.avatar) ?? ''
               }
               alt="Start Level"
               width={50}
