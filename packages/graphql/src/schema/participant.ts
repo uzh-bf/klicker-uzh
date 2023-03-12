@@ -55,7 +55,7 @@ export const SubscriptionObjectInput = builder.inputType(
 )
 
 export interface ILevel extends DB.Level {
-  nextLevel?: ILevel
+  nextLevel?: DB.Level | null
 }
 export const LevelRef = builder.objectRef<ILevel>('Level')
 export const Level = LevelRef.implement({
@@ -99,12 +99,15 @@ export const Participant = ParticipantRef.implement({
       resolve: (participant) => levelFromXp(participant.xp),
     }),
     levelData: t.field({
-      type: Level,
+      type: LevelRef,
       nullable: true,
-      resolve: (participant, args, ctx) =>
+      resolve: (participant, _, ctx) =>
         ctx.prisma.level.findUnique({
           where: {
             index: levelFromXp(participant.xp),
+          },
+          include: {
+            nextLevel: true,
           },
         }),
     }),
