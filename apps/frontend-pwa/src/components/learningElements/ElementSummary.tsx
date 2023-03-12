@@ -1,4 +1,10 @@
-import { QuestionStack, StackElement } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import {
+  QuestionStack,
+  SelfDocument,
+  StackElement,
+} from '@klicker-uzh/graphql/dist/ops'
+import { levelFromXp } from '@klicker-uzh/graphql/dist/util'
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -11,6 +17,8 @@ interface ElementSummaryProps {
 
 function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
   const t = useTranslations()
+
+  const { data: participant } = useQuery(SelfDocument)
 
   const { totalPointsAwarded, totalXpAwarded } = stacks.reduce<{
     totalPointsAwarded: number
@@ -108,7 +116,12 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
     [stacks]
   )
 
-  console.log(gradedStacks)
+  const levelUp = useMemo(
+    () =>
+      levelFromXp(participant?.self?.xp ?? 0) <
+      levelFromXp((participant?.self?.xp ?? 0) + totalXpAwarded),
+    [participant?.self, totalXpAwarded]
+  )
 
   return (
     <div className="space-y-3">
@@ -156,15 +169,29 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
 
         <div className="max-w-3xl mx-auto mt-6 w-max">
           <div className="flex flex-row items-center justify-between">
-            <div>prev level</div>
+            <Image
+              src={participant?.self?.levelData?.avatar ?? ''}
+              alt="Start Level"
+              width={50}
+              height={50}
+            />
             <Image
               src="/eating_bubbel.svg"
               alt="Eating Bubbel"
               width={300}
               height={200}
-              className="mx-10"
+              className="mx-0"
             />
-            <div>new level</div>
+            <Image
+              src={
+                (levelUp
+                  ? participant?.self?.levelData?.avatar
+                  : participant?.self?.levelData?.nextLevel?.avatar) ?? ''
+              }
+              alt="Start Level"
+              width={50}
+              height={50}
+            />
           </div>
           <H3 className={{ root: 'text-center' }}>
             {t('pwa.learningElement.totalXp', {
