@@ -55,7 +55,7 @@ export const SubscriptionObjectInput = builder.inputType(
 )
 
 export interface ILevel extends DB.Level {
-  nextLevel?: DB.Level | null
+  nextLevel?: ILevel | null
 }
 export const LevelRef = builder.objectRef<ILevel>('Level')
 export const Level = LevelRef.implement({
