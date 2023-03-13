@@ -52,16 +52,10 @@ export const Query = builder.queryType({
           if (!ctx.user?.sub) return null
           return ctx.prisma.participant.findUnique({
             where: { id: ctx.user.sub },
-            include: {
-              levelData: {
-                include: {
-                  nextLevel: true,
-                },
-              },
-            },
           })
         },
       }),
+
       selfWithAchievements: asParticipant.field({
         nullable: true,
         type: ParticipantWithAchievements,
@@ -70,6 +64,7 @@ export const Query = builder.queryType({
           return ParticipantService.getParticipantWithAchievements(ctx)
         },
       }),
+
       participantDetails: asParticipant.field({
         nullable: true,
         type: Participant,
@@ -80,6 +75,7 @@ export const Query = builder.queryType({
           return ParticipantService.getParticipantDetails(args, ctx)
         },
       }),
+
       controlCourse: asUser.field({
         nullable: true,
         type: Course,
@@ -90,6 +86,7 @@ export const Query = builder.queryType({
           return CourseService.getControlCourse(args, ctx)
         },
       }),
+
       basicCourseInformation: t.field({
         nullable: true,
         type: Course,
@@ -100,6 +97,7 @@ export const Query = builder.queryType({
           return CourseService.getBasicCourseInformation(args, ctx)
         },
       }),
+
       getLoginToken: asUser.prismaField({
         nullable: true,
         type: User,
@@ -107,6 +105,7 @@ export const Query = builder.queryType({
           return AccountService.getLoginToken(args, ctx)
         },
       }),
+
       userTags: asUser.prismaField({
         nullable: true,
         type: [Tag],
@@ -114,6 +113,7 @@ export const Query = builder.queryType({
           return QuestionService.getUserTags(ctx)
         },
       }),
+
       feedbacks: t.prismaField({
         nullable: true,
         type: [Feedback],
@@ -124,6 +124,7 @@ export const Query = builder.queryType({
           return FeedbackService.getFeedbacks(args, ctx)
         },
       }),
+
       userProfile: asUser.prismaField({
         nullable: true,
         type: User,
@@ -131,6 +132,7 @@ export const Query = builder.queryType({
           return AccountService.getUserProfile(ctx)
         },
       }),
+
       userQuestions: asUser.prismaField({
         nullable: true,
         type: [Question],
@@ -138,6 +140,7 @@ export const Query = builder.queryType({
           return QuestionService.getUserQuestions(ctx)
         },
       }),
+
       userCourses: asUser.field({
         nullable: true,
         type: [Course],
@@ -145,6 +148,7 @@ export const Query = builder.queryType({
           return CourseService.getUserCourses(ctx)
         },
       }),
+
       participantCourses: asParticipant.field({
         nullable: true,
         type: [Course],
@@ -152,6 +156,7 @@ export const Query = builder.queryType({
           return CourseService.getParticipantCourses(ctx)
         },
       }),
+
       unassignedSessions: asUser.field({
         nullable: true,
         type: [Session],
@@ -159,6 +164,7 @@ export const Query = builder.queryType({
           return SessionService.getUnassignedSessions(ctx)
         },
       }),
+
       runningSessions: t.field({
         nullable: true,
         type: [Session],
@@ -169,6 +175,7 @@ export const Query = builder.queryType({
           return SessionService.getRunningSessions(args, ctx)
         },
       }),
+
       controlCourses: asUser.field({
         nullable: true,
         type: [Course],
@@ -176,13 +183,15 @@ export const Query = builder.queryType({
           return CourseService.getControlCourses(ctx)
         },
       }),
+
       userSessions: asUser.field({
         nullable: true,
         type: [Session],
         resolve(_, __, ctx) {
-          return SessionService.getUserSessions({ userId: ctx.user.sub }, ctx)
+          return SessionService.getUserSessions(ctx)
         },
       }),
+
       cockpitSession: asUser.field({
         nullable: true,
         type: Session,
@@ -193,6 +202,7 @@ export const Query = builder.queryType({
           return SessionService.getCockpitSession(args, ctx)
         },
       }),
+
       controlSession: asUser.field({
         nullable: true,
         type: Session,
@@ -203,6 +213,7 @@ export const Query = builder.queryType({
           return SessionService.getControlSession(args, ctx)
         },
       }),
+
       learningElement: t.field({
         nullable: true,
         type: LearningElement,
@@ -214,6 +225,7 @@ export const Query = builder.queryType({
           return LearningElementService.getLearningElementData(args, ctx) as any
         },
       }),
+
       learningElements: asParticipant.field({
         nullable: true,
         type: [LearningElement],
@@ -221,6 +233,7 @@ export const Query = builder.queryType({
           return CourseService.getUserLearningElements(ctx)
         },
       }),
+
       microSession: t.field({
         nullable: true,
         type: MicroSession,
@@ -231,6 +244,7 @@ export const Query = builder.queryType({
           return MicroSessionService.getSingleMicroSession(args, ctx)
         },
       }),
+
       participantGroups: asAuthenticated.field({
         nullable: true,
         type: [ParticipantGroup],
@@ -241,6 +255,7 @@ export const Query = builder.queryType({
           return ParticipantGroupService.getParticipantGroups(args, ctx)
         },
       }),
+
       session: t.field({
         nullable: true,
         type: Session,
@@ -251,6 +266,7 @@ export const Query = builder.queryType({
           return SessionService.getRunningSession(args, ctx)
         },
       }),
+
       pinnedFeedbacks: asUser.field({
         nullable: true,
         type: Session,
@@ -261,7 +277,8 @@ export const Query = builder.queryType({
           return SessionService.getPinnedFeedbacks(args, ctx)
         },
       }),
-      course: asAuthenticated.field({
+
+      course: asUser.field({
         nullable: true,
         type: Course,
         args: {
@@ -271,7 +288,8 @@ export const Query = builder.queryType({
           return CourseService.getCourseData(args, ctx)
         },
       }),
-      liveSession: t.field({
+
+      liveSession: asUser.field({
         nullable: true,
         type: Session,
         args: {
@@ -281,6 +299,7 @@ export const Query = builder.queryType({
           return SessionService.getLiveSessionData(args, ctx)
         },
       }),
+
       question: asUser.prismaField({
         nullable: true,
         type: Question,
@@ -291,7 +310,8 @@ export const Query = builder.queryType({
           return QuestionService.getSingleQuestion(args, ctx)
         },
       }),
-      singleMicroSession: asAuthenticated.field({
+
+      singleMicroSession: asUser.field({
         nullable: true,
         type: MicroSession,
         args: {
@@ -301,6 +321,7 @@ export const Query = builder.queryType({
           return MicroSessionService.getSingleMicroSession(args, ctx)
         },
       }),
+
       sessionEvaluation: asUser.field({
         nullable: true,
         type: SessionEvaluation,
@@ -311,6 +332,7 @@ export const Query = builder.queryType({
           return SessionService.getSessionEvaluation(args, ctx)
         },
       }),
+
       sessionLeaderboard: t.field({
         nullable: true,
         type: [LeaderboardEntry],
@@ -321,6 +343,7 @@ export const Query = builder.queryType({
           return SessionService.getLeaderboard(args, ctx)
         },
       }),
+
       participations: asParticipant.field({
         nullable: true,
         type: [Participation],
@@ -331,7 +354,8 @@ export const Query = builder.queryType({
           return ParticipantService.getParticipations(args, ctx)
         },
       }),
-      getCourseOverviewData: asAuthenticated.field({
+
+      getCourseOverviewData: asParticipant.field({
         nullable: true,
         type: ParticipantLearningData,
         args: {
@@ -342,6 +366,7 @@ export const Query = builder.queryType({
           return CourseService.getCourseOverviewData(args, ctx) as any
         },
       }),
+
       groupActivityDetails: asParticipant.field({
         nullable: true,
         type: GroupActivityDetails,
@@ -353,6 +378,7 @@ export const Query = builder.queryType({
           return ParticipantGroupService.getGroupActivityDetails(args, ctx)
         },
       }),
+
       getBookmarkedQuestions: asParticipant.field({
         nullable: true,
         type: [QuestionStack],

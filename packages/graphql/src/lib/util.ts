@@ -7,3 +7,5 @@ export function shuffle<T>(array: Array<T>): Array<T> {
   }
   return a
 }
+
+export { levelFromXp } from '@klicker-uzh/prisma/dist/util'

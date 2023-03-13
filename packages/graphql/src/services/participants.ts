@@ -347,13 +347,13 @@ interface BookmarkQuestionArgs {
 
 export async function bookmarkQuestion(
   { stackId, courseId, bookmarked }: BookmarkQuestionArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
         courseId,
-        participantId: ctx.user!.sub,
+        participantId: ctx.user.sub,
       },
     },
     data: {
@@ -479,11 +479,6 @@ export async function getParticipantDetails(
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: args.participantId },
     include: {
-      levelData: {
-        include: {
-          nextLevel: true,
-        },
-      },
       achievements: {
         include: {
           achievement: true,
@@ -499,11 +494,6 @@ export async function getParticipantWithAchievements(ctx: ContextWithUser) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
-      levelData: {
-        include: {
-          nextLevel: true,
-        },
-      },
       achievements: {
         include: {
           achievement: true,

@@ -895,6 +895,7 @@ export async function publishLearningElement(
   const learningElement = await ctx.prisma.learningElement.update({
     where: {
       id,
+      ownerId: ctx.user.sub,
     },
     data: {
       status: LearningElementStatus.PUBLISHED,
@@ -916,6 +917,7 @@ export async function deleteLearningElement(
     const deletedItem = await ctx.prisma.learningElement.delete({
       where: {
         id,
+        ownerId: ctx.user.sub,
         status: LearningElementStatus.DRAFT,
       },
     })

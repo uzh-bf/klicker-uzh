@@ -108,6 +108,7 @@ function ElementOverview({
       <Button
         className={{ root: 'self-end text-lg' }}
         onClick={() => setCurrentIx(0)}
+        data={{ cy: 'start-learning-element' }}
       >
         {t('shared.generic.start')}
       </Button>
