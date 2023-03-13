@@ -162,7 +162,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
         </div>
         {participant?.self?.levelData?.nextLevel?.requiredXp && (
           <Progress
-            value={participant?.self?.xp}
+            value={participant?.self?.xp + totalXpAwarded}
             max={participant?.self?.levelData.nextLevel.requiredXp}
             formatter={Number}
           />
