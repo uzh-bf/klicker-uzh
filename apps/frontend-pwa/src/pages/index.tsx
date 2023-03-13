@@ -247,7 +247,7 @@ const Index = function () {
           </div>
         </div>
         {activeMicrolearning.length > 0 && (
-          <div>
+          <div data-cy="micro-learnings">
             <H1 className={{ root: 'text-xl mb-2' }}>
               {t('shared.generic.microlearning')}
             </H1>

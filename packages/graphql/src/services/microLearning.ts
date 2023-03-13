@@ -263,7 +263,10 @@ export async function editMicroSession(
 ) {
   // find all instances belonging to the old micro session and delete them as the content of the questions might have changed
   const oldSession = await ctx.prisma.microSession.findUnique({
-    where: { id },
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
     include: {
       instances: true,
     },
@@ -358,6 +361,7 @@ export async function publishMicroSession(
   const microSession = await ctx.prisma.microSession.update({
     where: {
       id,
+      ownerId: ctx.user.sub,
     },
     data: {
       status: MicroSessionStatus.PUBLISHED,
@@ -383,7 +387,11 @@ export async function deleteMicroSession(
 ) {
   try {
     const deletedItem = await ctx.prisma.microSession.delete({
-      where: { id, status: MicroSessionStatus.DRAFT },
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+        status: MicroSessionStatus.DRAFT,
+      },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'MicroSession', id })

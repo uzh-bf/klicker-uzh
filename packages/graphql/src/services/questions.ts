@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { Context, ContextWithUser } from '../lib/context'
+import { ContextWithUser } from '../lib/context'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -30,6 +30,7 @@ export async function getSingleQuestion(
   const question = await ctx.prisma.question.findUnique({
     where: {
       id,
+      ownerId: ctx.user.sub,
     },
     include: {
       tags: true,
@@ -102,6 +103,7 @@ export async function manipulateQuestion(
       ? await ctx.prisma.question.findUnique({
           where: {
             id: id,
+            ownerId: ctx.user.sub,
           },
           include: {
             tags: true,
@@ -203,10 +205,14 @@ export async function manipulateQuestion(
   }
 }
 
-export async function deleteQuestion({ id }: { id: number }, ctx: Context) {
+export async function deleteQuestion(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
   const question = await ctx.prisma.question.delete({
     where: {
       id: id,
+      ownerId: ctx.user.sub,
     },
   })
 
@@ -237,11 +243,12 @@ export async function getUserTags(ctx: ContextWithUser) {
 
 export async function editTag(
   { id, name }: { id: number; name: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const tag = await ctx.prisma.tag.update({
     where: {
       id: id,
+      ownerId: ctx.user.sub,
     },
     data: {
       name: name,
@@ -251,10 +258,11 @@ export async function editTag(
   return tag
 }
 
-export async function deleteTag({ id }: { id: number }, ctx: Context) {
+export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
   const tag = await ctx.prisma.tag.delete({
     where: {
       id: id,
+      ownerId: ctx.user.sub,
     },
   })
 

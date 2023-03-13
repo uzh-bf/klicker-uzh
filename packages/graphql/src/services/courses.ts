@@ -129,7 +129,7 @@ export async function leaveCourse(
 
 export async function getCourseOverviewData(
   { courseId }: { courseId: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   if (ctx.user?.sub) {
     const participation = await ctx.prisma.participation.findUnique({
@@ -411,7 +411,7 @@ export async function getCourseData(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, ownerId: ctx.user.sub },
     include: {
       sessions: {
         include: {
@@ -572,7 +572,7 @@ export async function getControlCourse(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, ownerId: ctx.user.sub },
     include: {
       sessions: {
         include: {
@@ -596,10 +596,13 @@ export async function getControlCourse(
 
 export async function changeCourseDescription(
   { courseId, input }: { courseId: string; input: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
     data: {
       description: input,
     },
@@ -610,10 +613,13 @@ export async function changeCourseDescription(
 
 export async function changeCourseColor(
   { courseId, color }: { courseId: string; color: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
     data: {
       color,
     },
@@ -633,7 +639,10 @@ export async function changeCourseDates(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
     data: {
       ...(startDate && { startDate }),
       ...(endDate && { endDate }),

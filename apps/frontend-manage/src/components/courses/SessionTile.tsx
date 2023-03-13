@@ -56,6 +56,7 @@ function SessionTile({ session }: SessionTileProps) {
     <div
       key={session.id}
       className="p-2 border border-solid rounded h-44 w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80 flex flex-col justify-between"
+      data-cy="session"
     >
       <div>
         <div className="flex flex-row justify-between">
