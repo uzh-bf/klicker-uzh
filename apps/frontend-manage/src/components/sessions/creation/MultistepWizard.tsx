@@ -122,7 +122,10 @@ function MultistepWizard({
                   : 'Element erfolgreich erstellt/modifiziert.'}
               </div>
               <div className="space-x-2">
-                <Button onClick={onViewElement}>
+                <Button
+                  onClick={onViewElement}
+                  data={{ cy: 'load-session-list' }}
+                >
                   <Button.Icon>
                     <FontAwesomeIcon icon={faEye} />
                   </Button.Icon>
@@ -165,7 +168,11 @@ function MultistepWizard({
                 formatter={(step) => `Schritt ${step + 1}`}
               />
 
-              <Button disabled={isSubmitting && !isValid} type="submit">
+              <Button
+                disabled={isSubmitting && !isValid}
+                type="submit"
+                data={{ cy: 'next-or-submit' }}
+              >
                 {isLastStep ? 'Erstellen' : 'Weiter'}
               </Button>
             </div>

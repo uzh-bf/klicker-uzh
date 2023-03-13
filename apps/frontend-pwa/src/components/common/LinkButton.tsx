@@ -13,7 +13,7 @@ interface LinkButtonProps {
 
 function LinkButton({ href, children, icon, ...props }: LinkButtonProps) {
   return (
-    <Link href={href} className='w-full'>
+    <Link href={href} className="w-full">
       <Button
         {...props}
         fluid

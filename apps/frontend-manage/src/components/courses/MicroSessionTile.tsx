@@ -51,7 +51,10 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   })
 
   return (
-    <div className="p-2 border border-solid rounded w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
+    <div
+      className="p-2 border border-solid rounded w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80"
+      data-cy="micro-session"
+    >
       <div className="flex flex-row items-center justify-between">
         <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
           {microSession.name || ''}
@@ -124,6 +127,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           basic
           className={{ root: theme.primaryText }}
           onClick={() => setPublishModal(true)}
+          data={{ cy: 'publish-micro-session' }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />

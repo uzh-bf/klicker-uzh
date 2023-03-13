@@ -70,6 +70,7 @@ function ChoiceOptions({
             }}
             fluid
             onClick={() => onChange(choice.ix)}
+            data={{ cy: 'choice-option' }}
           >
             <Button.Label>
               <Markdown content={choice.value} />
@@ -424,6 +425,7 @@ function OptionsDisplay({
               )
             }
             onClick={onSubmitResponse}
+            data={{ cy: 'send-answer' }}
           >
             {isEvaluation
               ? t('shared.generic.continue')

@@ -35,7 +35,10 @@ function LearningElementTile({
   const router = useRouter()
 
   return (
-    <div className="flex flex-col justify-between p-2 border border-solid rounded w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80">
+    <div
+      className="flex flex-col justify-between p-2 border border-solid rounded w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80"
+      data-cy="learning-element"
+    >
       <div>
         <div className="flex flex-row justify-between">
           <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
@@ -101,6 +104,7 @@ function LearningElementTile({
             basic
             className={{ root: theme.primaryText }}
             onClick={() => setPublishModal(true)}
+            data={{ cy: 'publish-learning-element' }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />

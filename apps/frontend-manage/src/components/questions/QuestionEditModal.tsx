@@ -737,6 +737,7 @@ function QuestionEditModal({
                         validateForm()
                       }}
                       label="Musterlösung"
+                      data={{ cy: 'configure-sample-solution' }}
                     />
                     {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                       <Switch
@@ -861,6 +862,7 @@ function QuestionEditModal({
                                                 newValue
                                               )
                                             }}
+                                            data={{ cy: 'set-correctness' }}
                                           />
                                         )}
                                       </FastField>

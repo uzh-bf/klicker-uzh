@@ -46,6 +46,7 @@ function AddQuestionField({ push }: AddQuestionFieldProps) {
       )}
       id="add-question"
       ref={drop}
+      data-cy="drop-questions-here"
     >
       <FontAwesomeIcon icon={faPlus} size="lg" />
       <div>Neue Frage</div>
