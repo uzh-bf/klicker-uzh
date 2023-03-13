@@ -1,6 +1,7 @@
 import { defineConfig } from "cypress";
 
 export default defineConfig({
+  projectId: 'y436dx',
   env: {
     URL_STUDENT: "http://127.0.0.1:3001",
     URL_LECTURER: "http://127.0.0.1:3002",
