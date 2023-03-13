@@ -347,13 +347,13 @@ interface BookmarkQuestionArgs {
 
 export async function bookmarkQuestion(
   { stackId, courseId, bookmarked }: BookmarkQuestionArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
         courseId,
-        participantId: ctx.user!.sub,
+        participantId: ctx.user.sub,
       },
     },
     data: {
