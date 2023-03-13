@@ -1,5 +1,6 @@
 import Prisma, { Question } from '@klicker-uzh/prisma'
-import { COURSE_ID_TEST, USER_ID_TEST, xpForLevel } from './constants.js'
+import { xpForLevel } from '../util'
+import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 import * as DATA_TEST from './data/TEST'
 import {
   prepareCourse,

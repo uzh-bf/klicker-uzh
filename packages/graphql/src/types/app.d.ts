@@ -1,3 +1,5 @@
+declare module '@klicker-uzh/prisma/dist/util'
+
 interface QuestionData<Type, Options> {
   id: number
   name: string

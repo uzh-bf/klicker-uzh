@@ -1,5 +1,5 @@
 import Prisma from '@klicker-uzh/prisma'
-import { xpForLevel } from './constants'
+import { xpForLevel } from '../util'
 
 async function seedLevels(prisma: Prisma.PrismaClient) {
   for (let index of [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) {
