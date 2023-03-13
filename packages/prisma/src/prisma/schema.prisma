@@ -694,8 +694,6 @@ model Participant {
   password       String
   avatar         String?
   avatarSettings Json?
-  level          Int     @default(1)
-  levelData      Level   @relation(fields: [level], references: [index])
   xp             Int     @default(0)
 
   lastLoginAt DateTime?
@@ -1000,6 +998,4 @@ model Level {
   nextLevel   Level?  @relation("level", fields: [nextLevelIx], references: [index])
   nextLevelIx Int?
   prevLevel   Level[] @relation("level")
-
-  participants Participant[]
 }

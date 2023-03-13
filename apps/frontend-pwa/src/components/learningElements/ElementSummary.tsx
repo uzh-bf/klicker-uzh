@@ -1,6 +1,13 @@
-import { QuestionStack, StackElement } from '@klicker-uzh/graphql/dist/ops'
-import { H3 } from '@uzh-bf/design-system'
+import { useQuery } from '@apollo/client'
+import {
+  QuestionStack,
+  SelfDocument,
+  StackElement,
+} from '@klicker-uzh/graphql/dist/ops'
+import { levelFromXp } from '@klicker-uzh/graphql/dist/util'
+import { H3, Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Image from 'next/image'
 import { useMemo } from 'react'
 
 interface ElementSummaryProps {
@@ -11,14 +18,38 @@ interface ElementSummaryProps {
 function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
   const t = useTranslations()
 
-  const totalPointsAwarded = stacks.reduce((acc, stack) => {
-    return (
-      acc +
-      (stack.elements?.reduce((acc, element) => {
-        return acc + (element.questionInstance?.evaluation?.pointsAwarded ?? 0)
-      }, 0) || 0)
-    )
-  }, 0)
+  const { data: participant } = useQuery(SelfDocument)
+
+  const { totalPointsAwarded, totalXpAwarded } = stacks.reduce<{
+    totalPointsAwarded: number
+    totalXpAwarded: number
+  }>(
+    (acc, stack) => {
+      const temp = stack.elements?.reduce<{
+        totalPointsAwarded: number
+        totalXpAwarded: number
+      }>(
+        (acc, element) => {
+          return {
+            totalPointsAwarded:
+              acc.totalPointsAwarded +
+              (element.questionInstance?.evaluation?.pointsAwarded ?? 0),
+            totalXpAwarded:
+              acc.totalPointsAwarded +
+              (element.questionInstance?.evaluation?.xpAwarded ?? 0),
+          }
+        },
+        { totalPointsAwarded: 0, totalXpAwarded: 0 }
+      )
+
+      return {
+        totalPointsAwarded:
+          acc.totalPointsAwarded + (temp?.totalPointsAwarded || 0),
+        totalXpAwarded: acc.totalXpAwarded + (temp?.totalXpAwarded || 0),
+      }
+    },
+    { totalPointsAwarded: 0, totalXpAwarded: 0 }
+  )
 
   const gradedStacks = useMemo(
     () =>
@@ -39,6 +70,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
               .reduce<{
                 elements: StackElement[]
                 pointsAwarded: number
+                xpAwarded: number
                 score: number
                 pointsPossible: number
                 solved: boolean
@@ -52,6 +84,9 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
                         acc.pointsAwarded +
                         (element.questionInstance.evaluation?.pointsAwarded ??
                           0),
+                      xpAwarded:
+                        acc.xpAwarded +
+                        (element.questionInstance.evaluation?.xpAwarded ?? 0),
                       score:
                         acc.score +
                         (element.questionInstance.evaluation?.score ?? 0),
@@ -70,6 +105,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
                 {
                   elements: [],
                   pointsAwarded: 0,
+                  xpAwarded: 0,
                   score: 0,
                   pointsPossible: 0,
                   solved: false,
@@ -80,8 +116,15 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
     [stacks]
   )
 
+  const levelUp = useMemo(
+    () =>
+      levelFromXp(participant?.self?.xp ?? 0) <
+      levelFromXp((participant?.self?.xp ?? 0) + totalXpAwarded),
+    [participant?.self, totalXpAwarded]
+  )
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-8 w-max">
       <div>
         <H3>{t('shared.generic.congrats')}</H3>
         <p>
@@ -90,6 +133,45 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
             it: (text) => <span className="italic">{text}</span>,
           })}
         </p>
+      </div>
+      <div className="mx-auto space-y-2">
+        <div className="flex flex-row items-center justify-between">
+          <Image
+            src={participant?.self?.levelData?.avatar ?? ''}
+            alt="Start Level"
+            width={50}
+            height={50}
+          />
+          <Image
+            src="/eating_bubbel.svg"
+            alt="Eating Bubbel"
+            width={300}
+            height={200}
+            className="mx-2"
+          />
+          <Image
+            src={
+              (levelUp
+                ? participant?.self?.levelData?.nextLevel?.avatar
+                : participant?.self?.levelData?.avatar) ?? ''
+            }
+            alt="Start Level"
+            width={50}
+            height={50}
+          />
+        </div>
+        {participant?.self?.levelData?.nextLevel?.requiredXp && (
+          <Progress
+            value={participant?.self?.xp + totalXpAwarded}
+            max={participant?.self?.levelData.nextLevel.requiredXp}
+            formatter={Number}
+          />
+        )}
+        <div className="text-center">
+          {t('pwa.learningElement.totalXp', {
+            xp: totalXpAwarded,
+          })}
+        </div>
       </div>
       <div>
         <div className="flex flex-row items-center justify-between">

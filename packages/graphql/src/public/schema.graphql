@@ -496,7 +496,7 @@ type Participant {
   id: ID!
   isSelf: Boolean
   lastLoginAt: Date
-  level: Int!
+  level: Int
   levelData: Level
   participantGroups: [ParticipantGroup!]
   rank: Int

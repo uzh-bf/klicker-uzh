@@ -52,13 +52,6 @@ export const Query = builder.queryType({
           if (!ctx.user?.sub) return null
           return ctx.prisma.participant.findUnique({
             where: { id: ctx.user.sub },
-            include: {
-              levelData: {
-                include: {
-                  nextLevel: true,
-                },
-              },
-            },
           })
         },
       }),
