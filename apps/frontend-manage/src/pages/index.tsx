@@ -93,7 +93,7 @@ function Index() {
   const [searchInput, setSearchInput] = useState('')
   return (
     <Layout displayName="Fragepool" scrollable={false}>
-      <div className="flex flex-col gap-6" id="homepage">
+      <div className="flex flex-col gap-6" id="homepage" data-cy="homepage">
         <div className="flex-none">
           <SessionCreation
             sessionId={router.query.sessionId as string}

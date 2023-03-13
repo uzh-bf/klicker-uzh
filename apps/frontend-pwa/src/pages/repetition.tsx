@@ -33,6 +33,7 @@ function Repetition() {
                   'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 hover:bg-uzh-grey-40'
                 ),
               }}
+              data={{ cy: 'repetition-element' }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faBookOpenReader} />
