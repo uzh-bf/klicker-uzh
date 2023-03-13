@@ -7,6 +7,7 @@ import { GetServerSideProps } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import Footer from '../../../../components/common/Footer'
 import Layout from '../../../../components/Layout'
 import ElementOverview from '../../../../components/learningElements/ElementOverview'
@@ -56,7 +57,12 @@ function LearningElement({ courseId, id }: Props) {
       displayName={data.learningElement.displayName}
       course={data.learningElement.course ?? undefined}
     >
-      <div className="flex-1 space-y-4 md:max-w-7xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div
+        className={twMerge(
+          'flex-1 space-y-4 md:max-w-6xl md:mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded',
+          currentStack && 'md:w-full'
+        )}
+      >
         {(currentIx === -1 || currentStack) && (
           <div>
             <Progress

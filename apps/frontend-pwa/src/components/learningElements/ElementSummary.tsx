@@ -5,7 +5,7 @@ import {
   StackElement,
 } from '@klicker-uzh/graphql/dist/ops'
 import { levelFromXp } from '@klicker-uzh/graphql/dist/util'
-import { H3 } from '@uzh-bf/design-system'
+import { H3, Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useMemo } from 'react'
@@ -124,7 +124,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
   )
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-8 w-max">
       <div>
         <H3>{t('shared.generic.congrats')}</H3>
         <p>
@@ -133,6 +133,45 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
             it: (text) => <span className="italic">{text}</span>,
           })}
         </p>
+      </div>
+      <div className="mx-auto space-y-2">
+        <div className="flex flex-row items-center justify-between">
+          <Image
+            src={participant?.self?.levelData?.avatar ?? ''}
+            alt="Start Level"
+            width={50}
+            height={50}
+          />
+          <Image
+            src="/eating_bubbel.svg"
+            alt="Eating Bubbel"
+            width={300}
+            height={200}
+            className="mx-2"
+          />
+          <Image
+            src={
+              (levelUp
+                ? participant?.self?.levelData?.nextLevel?.avatar
+                : participant?.self?.levelData?.avatar) ?? ''
+            }
+            alt="Start Level"
+            width={50}
+            height={50}
+          />
+        </div>
+        {participant?.self?.levelData?.nextLevel?.requiredXp && (
+          <Progress
+            value={participant?.self?.xp}
+            max={participant?.self?.levelData.nextLevel.requiredXp}
+            formatter={Number}
+          />
+        )}
+        <div className="text-center">
+          {t('pwa.learningElement.totalXp', {
+            xp: totalXpAwarded,
+          })}
+        </div>
       </div>
       <div>
         <div className="flex flex-row items-center justify-between">
@@ -166,39 +205,6 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
             points: totalPointsAwarded,
           })}
         </H3>
-
-        <div className="max-w-3xl mx-auto mt-6 w-max">
-          <div className="flex flex-row items-center justify-between">
-            <Image
-              src={participant?.self?.levelData?.avatar ?? ''}
-              alt="Start Level"
-              width={50}
-              height={50}
-            />
-            <Image
-              src="/eating_bubbel.svg"
-              alt="Eating Bubbel"
-              width={300}
-              height={200}
-              className="mx-2"
-            />
-            <Image
-              src={
-                (levelUp
-                  ? participant?.self?.levelData?.nextLevel?.avatar
-                  : participant?.self?.levelData?.avatar) ?? ''
-              }
-              alt="Start Level"
-              width={50}
-              height={50}
-            />
-          </div>
-          <H3 className={{ root: 'text-center' }}>
-            {t('pwa.learningElement.totalXp', {
-              xp: totalXpAwarded,
-            })}
-          </H3>
-        </div>
       </div>
     </div>
   )
