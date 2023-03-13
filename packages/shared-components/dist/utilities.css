@@ -2,6 +2,10 @@
   pointer-events: none
 }
 
+.absolute {
+  position: absolute
+}
+
 .relative {
   position: relative
 }
@@ -611,14 +615,6 @@
 
   .md\:max-w-full {
     max-width: 100%
-  }
-
-  .md\:flex-row {
-    flex-direction: row
-  }
-
-  .md\:items-end {
-    align-items: flex-end
   }
 
   .md\:border-b-4 {
