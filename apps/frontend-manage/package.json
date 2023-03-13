@@ -53,7 +53,7 @@
     "sharp": "0.31.3",
     "slate": "0.90.0",
     "slate-history": "0.86.0",
-    "slate-react": "0.90.0",
+    "slate-react": "0.91.10",
     "tailwind-merge": "1.9.1",
     "yup": "1.0.0"
   },
