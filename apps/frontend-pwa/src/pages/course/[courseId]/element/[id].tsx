@@ -60,7 +60,7 @@ function LearningElement({ courseId, id }: Props) {
       <div
         className={twMerge(
           'flex-1 space-y-4 md:max-w-6xl md:mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded',
-          currentStack && 'md:w-full'
+          (currentIx === -1 || currentStack) && 'md:w-full'
         )}
       >
         {(currentIx === -1 || currentStack) && (
