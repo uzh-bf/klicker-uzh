@@ -1,4 +1,5 @@
 import Prisma from '@klicker-uzh/prisma'
+import { LearningElementStatus } from '../../client'
 const { AttachmentType, QuestionType, SessionStatus, OrderType } = Prisma
 
 export const ATTACHMENTS = [
@@ -183,6 +184,7 @@ export const LEARNING_ELEMENTS = [
     displayName: 'Test Lernelement',
     description: 'Welcome to this **learning element**.',
     orderType: OrderType.SHUFFLED,
+    status: LearningElementStatus.PUBLISHED,
     stacks: [
       {
         displayName: 'Stack 1',
@@ -215,6 +217,7 @@ export const LEARNING_ELEMENTS = [
     pointsMultiplier: 2,
     resetTimeDays: 1,
     orderType: OrderType.LAST_RESPONSE,
+    status: LearningElementStatus.PUBLISHED,
     stacks: [
       {
         displayName: 'Stack 1',
