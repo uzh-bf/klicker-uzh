@@ -5,7 +5,10 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
+import QuestionFolders from '@components/questions/QuestionFolders'
 import {
+  faFolder,
+  faList,
   faMagnifyingGlass,
   faSort,
   faSortAsc,
@@ -26,6 +29,10 @@ function Index() {
     new Array<boolean>()
   )
   const theme = useContext(ThemeContext)
+
+  const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
+    useState(false)
+  const [listMode, setListMode] = useState<number | undefined>(0)
 
   const {
     loading: loadingQuestions,
@@ -67,9 +74,6 @@ function Index() {
     }
     return
   }, [dataQuestions?.userQuestions, filters, index, sort])
-
-  const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
-    useState(false)
 
   const dropdownItems = [
     { value: 'CREATED', label: 'Datum' },
@@ -190,6 +194,14 @@ function Index() {
                         handleSortByChange(newSortBy)
                       }}
                     />
+                    <Button.IconGroup
+                      state={listMode}
+                      setState={setListMode}
+                      className={{ root: 'ml-3', children: 'px-2' }}
+                    >
+                      <FontAwesomeIcon icon={faList} />
+                      <FontAwesomeIcon icon={faFolder} />
+                    </Button.IconGroup>
                   </div>
                   <Button
                     onClick={() =>
@@ -216,16 +228,19 @@ function Index() {
                   />
                 )}
                 <div className="overflow-y-auto [height:_calc(100vh-500px)]">
-                  <QuestionList
-                    questions={processedQuestions}
-                    selectedQuestions={selectedQuestions}
-                    setSelectedQuestions={(index: number) => {
-                      const tempQuestions = [...selectedQuestions]
-                      tempQuestions[index] = !tempQuestions[index]
-                      setSelectedQuestions(tempQuestions)
-                    }}
-                    tagfilter={filters.tags}
-                  />
+                  {(listMode === 0 || typeof listMode === 'undefined') && (
+                    <QuestionList
+                      questions={processedQuestions}
+                      selectedQuestions={selectedQuestions}
+                      setSelectedQuestions={(index: number) => {
+                        const tempQuestions = [...selectedQuestions]
+                        tempQuestions[index] = !tempQuestions[index]
+                        setSelectedQuestions(tempQuestions)
+                      }}
+                      tagfilter={filters.tags}
+                    />
+                  )}
+                  {listMode === 1 && <QuestionFolders />}
                 </div>
               </div>
             )}
