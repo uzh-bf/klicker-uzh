@@ -240,7 +240,12 @@ function Index() {
                       tagfilter={filters.tags}
                     />
                   )}
-                  {listMode === 1 && <QuestionFolders />}
+                  {listMode === 1 && (
+                    <QuestionFolders
+                      tags={filters.tags}
+                      handleTagClick={handleTagClick}
+                    />
+                  )}
                 </div>
               </div>
             )}

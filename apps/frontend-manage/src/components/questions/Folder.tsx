@@ -4,14 +4,16 @@ import { Button } from '@uzh-bf/design-system'
 
 interface FolderProps {
   name: string
+  onClick: () => void
 }
 
-function Folder({ name }: FolderProps): React.ReactElement {
+function Folder({ name, onClick }: FolderProps): React.ReactElement {
   return (
     <Button
       className={{
         root: 'w-full flex flex-col items-center group',
       }}
+      onClick={onClick}
       basic
     >
       <Button.Icon className={{ root: 'w-32 -mb-2' }}>

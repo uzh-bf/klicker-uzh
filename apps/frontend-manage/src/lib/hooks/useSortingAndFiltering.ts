@@ -134,7 +134,7 @@ function useSortingAndFiltering(): any {
     handleSortOrderToggle: (): void => dispatch({ type: 'SORT_ORDER' }),
     handleToggleArchive: (newValue: boolean): void =>
       dispatch({ type: 'TOGGLE_ARCHIVE', newValue }),
-    handleTagClick: (tagName: string, questionType): void =>
+    handleTagClick: (tagName?: string, questionType?: string): void =>
       dispatch({ type: 'TAG_CLICK', tagName, questionType }),
     handleSampleSolutionClick: (newValue: boolean): void =>
       dispatch({ type: 'SAMPLE_SOLUTION', newValue }),
