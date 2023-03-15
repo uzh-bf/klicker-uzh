@@ -166,11 +166,11 @@ jobs:
         ports:
           - 6379:6379
       frontend-manage:
-        image: ${{ github.repository }}/frontend-manage
+        image: ${{ github.repository }}/frontend-manage:3.0.0-alpha.70
         ports:
           - 3002:3000
       frontend-pwa:
-        image: ${{ github.repository }}/frontend-pwa
+        image: ${{ github.repository }}/frontend-pwa:3.0.0-alpha.70
         ports:
           - 3001:3000
         
