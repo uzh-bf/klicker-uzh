@@ -1,8 +1,10 @@
 name: Klicker automated testing with cypress
 on:
   push:
-    branches:
-      - 'Klicker-Testing-v3'
+    branches: ['v3']
+  pull_request:
+    branches: ["v3"]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 env:
