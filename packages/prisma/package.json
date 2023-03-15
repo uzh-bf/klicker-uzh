@@ -15,6 +15,7 @@
     "build:copy": "node src/copy.js",
     "build:watch": "NODE_ENV=development tsup --watch",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "generate": "prisma generate --schema=src/prisma/schema.prisma",
     "migrate:learningElements": "ENV=development doppler run --config dev -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/migrateLearningElements.ts",
     "migrate:learningElements:prod": "ENV=development doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/migrateLearningElements.ts",

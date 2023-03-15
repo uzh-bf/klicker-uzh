@@ -19,6 +19,7 @@
     "dev:tailwind": "tailwindcss -i src/globals.css -o src/public/tailwind.css -w",
     "dev:ts": "NODE_ENV=development tsup --watch",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "size": "size-limit"
   },
   "engines": {

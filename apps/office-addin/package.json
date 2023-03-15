@@ -28,7 +28,8 @@
     "dev:tailwind": "tailwindcss -i ./src/content/content.css -o ./src/content/output.css --watch",
     "dev-addin": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
     "predev": "npm run clear",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@fluentui/react": "8.105.7",

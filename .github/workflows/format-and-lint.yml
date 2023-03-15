@@ -4,7 +4,7 @@ on:
   push:
     branches: ["v3"]
   pull_request:
-    branches: ["v3"]
+    branches: ["v3", opened, synchronize, reopened]
 
 jobs:
   format:
@@ -16,7 +16,7 @@ jobs:
         shell: bash
         run: |
           npm install
-          npm run format
+          npm run format:check
   lint:
     runs-on: ubuntu-latest
     steps:

@@ -8,6 +8,7 @@
     "build": "next build",
     "build:test": "cross-env NODE_ENV=test next build",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "start": "next start --port 3003",
     "start:test": "cross-env NODE_ENV=test npm start",
     "lint": "next lint"

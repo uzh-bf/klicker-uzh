@@ -4,6 +4,12 @@
     "format": {
       "cache": false
     },
+    "format:check": {
+      "cache": false
+    },
+    "lint": {
+      "cache": false
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**"]

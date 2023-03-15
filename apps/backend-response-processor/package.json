@@ -15,6 +15,7 @@
     "dev:ts": "tsup --watch",
     "dev:func": "func start -p 7073",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "start": "func start -p 7073",
     "start:test": "npm start"
   },
