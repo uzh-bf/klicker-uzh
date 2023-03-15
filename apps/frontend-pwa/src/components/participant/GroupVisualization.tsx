@@ -31,10 +31,10 @@ function GroupVisualization({
         width,
       }}
     >
-      <div className="absolute top-0 left-0 right-0">
+      <div className="absolute">
         <Image
-          className="border rounded-lg shadow"
-          src="/bubbelgroup.svg"
+          className=""
+          src="/Bus.svg"
           width={width}
           height={height}
           alt=""
@@ -58,7 +58,7 @@ function GroupVisualization({
           width={16 * scaleFactor}
         />
       ))}
-      <div className="absolute top-[64.5px] w-40 text-center left-[130px] text-sm">
+      <div className="absolute top-[64.5px] w-40 text-center left-[130px] text-md">
         {groupName}
       </div>
     </div>
