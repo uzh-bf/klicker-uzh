@@ -165,6 +165,15 @@ jobs:
         image: redis:6
         ports:
           - 6379:6379
+      frontend-manage:
+        image: ${{ github.repository }}/frontend-manage
+        ports:
+          - 3002:3000
+      frontend-pwa:
+        image: ${{ github.repository }}/frontend-pwa
+        ports:
+          - 3001:3000
+        
 
     runs-on: ubuntu-latest
     # strategy:
@@ -189,7 +198,7 @@ jobs:
           SERVICE_BUS_CONNECTION: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
           SERVICE_BUS_QUEUE: "q-gh-actions"
         run: |
-          mv packages/prisma/.env.cypress packages/prisma/.env
+          # mv packages/prisma/.env.cypress packages/prisma/.env
           mv apps/backend-docker/.env.template apps/backend-docker/.env
           mv apps/backend-response-processor/local.settings.json.template apps/backend-response-processor/local.settings.json
           mv apps/backend-responses/local.settings.json.template apps/backend-responses/local.settings.json
@@ -198,8 +207,8 @@ jobs:
         run: |
           npm run build:test
           cd packages/prisma
-          npm run prisma:reset -- -f
-          npm run seed:cypress
+          npm run prisma:reset:seed -- -f
+          # npm run seed:cypress
       - name: Cypress run
         uses: cypress-io/github-action@v5
         timeout-minutes: 20
