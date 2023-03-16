@@ -165,6 +165,11 @@ jobs:
         image: redis:6
         ports:
           - 6379:6379
+      sendria:
+        image: msztolcman/sendria:v2.2.2.0
+        ports:
+          - 1025:1025
+          - 1080:1080    
       frontend-manage:
         image: ghcr.io/${{ github.repository }}/frontend-manage:v3.0.0-alpha.70
         credentials:
@@ -179,6 +184,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
         ports:
           - 3001:3000
+      backend:
+        image: ghcr.io/${{ github.repository }}/backend-docker:v3.0.0-alpha.70
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 3000:3000
         
 
     runs-on: ubuntu-latest
