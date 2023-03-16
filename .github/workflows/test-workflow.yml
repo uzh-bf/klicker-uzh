@@ -1,0 +1,16 @@
+name: test workflow
+on:
+  push:
+    branches: ['v3']
+  pull_request:
+    branches: ["v3"]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: test docker docker
+        shell: bash
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
