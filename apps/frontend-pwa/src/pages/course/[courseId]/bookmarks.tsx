@@ -31,6 +31,7 @@ function Bookmarks() {
       return [
         ...acc,
         {
+          id: questionStack.id,
           displayName: questionStack.displayName,
           questionNamesString,
         },
@@ -38,8 +39,6 @@ function Bookmarks() {
     },
     []
   )
-
-  console.log(reducedStacks)
 
   return (
     <Layout
@@ -49,7 +48,10 @@ function Bookmarks() {
       <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className={{ root: 'text-xl' }}>{t('shared.generic.bookmarks')}</H1>
         {reducedStacks?.map((stack) => (
-          <LinkButton key={stack.displayName} href="// TODO">
+          <LinkButton
+            key={stack.displayName}
+            href={`/course/${router.query.courseId}/bookmark/${stack.id}`}
+          >
             <div>
               {stack.displayName || stack.questionNamesString.length !== 0
                 ? stack.questionNamesString
