@@ -159,9 +159,19 @@ jobs:
           - 5432:5432
       redis_cache:
         image: redis:6
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
         ports:
           - 6380:6380
       redis_exec:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5      
         image: redis:6
         ports:
           - 6379:6379
@@ -216,8 +226,8 @@ jobs:
       - name: Prepare .env and local.settings.json files
         # TODO: does it work like this?
         env:
-          SERVICE_BUS_CONNECTION: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
-          SERVICE_BUS_QUEUE: "q-gh-actions"
+          SERVICE_BUS_CONNECTION_STRING: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
+          SERVICE_BUS_QUEUE_NAME: ${{ secrets.SERVICE_BUS_QUEUE_NAME }}
         run: |
           mv packages/prisma/.env.template packages/prisma/.env
           mv apps/backend-docker/.env.template apps/backend-docker/.env
