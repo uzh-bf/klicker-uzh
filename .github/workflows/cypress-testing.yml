@@ -251,5 +251,13 @@ jobs:
           # parallel: true # Runs test in parallel using settings above
           browser: chrome
         env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }} 
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_CACHE_HOST: ${{ secrets.REDIS_CACHE_HOST }}
+          REDIS_CACHE_PORT: ${{ secrets.REDIS_CACHE_PORT }}
+          API_DOMAIN: ${{ secrets.API_DOMAIN }}
+          COOKIE_DOMAIN: ${{ secrets.COOKIE_DOMAIN }}
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
