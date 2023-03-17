@@ -1,6 +1,6 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["src"],
+  "include": ["src", "types/typings.d.ts"],
   "compilerOptions": {
     "module": "ESNext"
   },
