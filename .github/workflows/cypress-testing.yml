@@ -209,20 +209,7 @@ jobs:
       - name: Install dependencies
         uses: bahmutov/npm-install@v1
         with:
-          working-directory: |
-            ./
-            apps/frontend-manage
-            apps/frontend-pwa
-            apps/backend-docker
-            apps/backend-response-processor
-            apps/backend-responses
-            packages/prisma
-            packages/shared-components
-            packages/markdown
-            packages/graphql
-            packages/grading
-            packages/lti
-
+          args: ci
       - name: Install azure-functions-core-tools
         # TODO: caching
         run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
