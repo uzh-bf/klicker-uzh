@@ -261,3 +261,16 @@ jobs:
           COOKIE_DOMAIN: ${{ secrets.COOKIE_DOMAIN }}
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SERVICE_BUS_CONNECTION_STRING: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
+          SERVICE_BUS_QUEUE_NAME: ${{ secrets.SERVICE_BUS_QUEUE_NAME }}
+          S3_PATHNAME: "/klicker-prod/**"
+          S3_HOSTNAME: "sos-ch-dk-2.exo.io"
+          NEXT_PUBLIC_AVATAR_BASE_PATH: "https://$S3_HOSTNAME/klicker-prod/avatars"
+          NEXT_PUBLIC_IMAGE_BASE_PATH: "https://$S3_HOSTNAME/klicker-prod/img"
+          NEXT_PUBLIC_ADD_RESPONSE_URL: http://127.0.0.1:7072/api/AddResponse"
+          NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000/api/graphql"
+          NEXT_PUBLIC_API_URL_SSR: "http://127.0.0.1:3000/api/graphql"
+          NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY: "BFTs2KshUdSwCqQgZzaaCZK7h3L4pd8hjJoLk1jv1-iPN9c-_7JdLkQi5IV_k3Ml4rrx12HOkcANwVk39L_RTOM"
+          NEXT_PUBLIC_PWA_URL: "http://127.0.0.1:3001"
+          NEXT_PUBLIC_MANAGE_URL: "http://127.0.0.1:3002"
+          NEXT_PUBLIC_CONTROL_URL: "http://127.0.0.1:3003"
