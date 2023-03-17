@@ -940,3 +940,31 @@ export async function deleteLearningElement(
     throw e
   }
 }
+
+interface GetQuestionStackArgs {
+  id: number
+}
+
+export async function getQuestionStack(
+  { id }: GetQuestionStackArgs,
+  ctx: ContextWithUser
+) {
+  if (id === -1) {
+    return null
+  }
+
+  const stack = await ctx.prisma.questionStack.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      elements: {
+        include: {
+          questionInstance: true,
+        },
+      },
+    },
+  })
+
+  return stack
+}

@@ -577,6 +577,7 @@ type Query {
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
   question(id: Int!): Question
+  questionStack(id: Int!): QuestionStack
   runningSessions(shortname: String!): [Session!]
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
@@ -656,6 +657,14 @@ type QuestionStack {
   elements: [StackElement!]
   id: Int!
   order: Int
+  type: QuestionStackType!
+}
+
+enum QuestionStackType {
+  GROUP_ACTIVITY
+  LEARNING_ELEMENT
+  LIVE_SESSION
+  MICRO_SESSION
 }
 
 enum QuestionType {
