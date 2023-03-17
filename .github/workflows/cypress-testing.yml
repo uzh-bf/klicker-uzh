@@ -228,7 +228,7 @@ jobs:
         run: |
           # npm run build
           cd packages/prisma
-          npm run prisma:resetCypress -- -f
+          npm run prisma:reset:raw -- -f
           npm run seed:test
           # npm run seed:cypress
       - name: Cypress run
