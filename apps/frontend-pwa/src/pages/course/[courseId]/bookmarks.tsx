@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import LinkButton from '@components/common/LinkButton'
+import { faBookmark } from '@fortawesome/free-solid-svg-icons'
 import {
   GetBasicCourseInformationDocument,
   GetBookmarkedQuestionsDocument,
@@ -49,6 +50,7 @@ function Bookmarks() {
         <H1 className={{ root: 'text-xl' }}>{t('shared.generic.bookmarks')}</H1>
         {reducedStacks?.map((stack) => (
           <LinkButton
+            icon={faBookmark}
             key={stack.displayName}
             href={`/course/${router.query.courseId}/bookmark/${stack.id}`}
           >
