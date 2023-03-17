@@ -290,7 +290,7 @@ function QuestionStack({
                 </div>
                 {isEvaluation && (
                   <div
-                    className="col-span-1 py-4 ml-2 border border-solid md:bg-slate-50"
+                    className="col-span-1 px-2 py-4 mr-2 border border-solid md:px-0 md:ml-2 md:mr-0 bg-slate-50"
                     key={element.id}
                   >
                     {element.mdContent && <div key={element.id} />}
