@@ -1,3 +1,4 @@
+// @ts-ignore
 import Prisma, { Question } from '@klicker-uzh/prisma'
 import { xpForLevel } from '../util'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
