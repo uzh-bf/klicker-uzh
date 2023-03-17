@@ -226,8 +226,8 @@ jobs:
       - name: Apply migrations and seed the database
         # TODO: caching with turbo? why does it run twice?
         run: |
-          npm run build
           cd packages/prisma
+          npm run build
           npm run prisma:reset:raw -- -f
           npm run seed:test
       - name: Cypress run
