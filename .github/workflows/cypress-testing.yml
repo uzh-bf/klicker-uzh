@@ -223,19 +223,13 @@ jobs:
           mv apps/backend-docker/.env.template apps/backend-docker/.env
           mv apps/backend-response-processor/local.settings.json.template apps/backend-response-processor/local.settings.json
           mv apps/backend-responses/local.settings.json.template apps/backend-responses/local.settings.json
-      # - name: Install doppler # TODO: discuss whether to use doppler directly: https://docs.doppler.com/docs/github-actions
-      #   run: |
-      #     (curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh || wget -t 3 -qO- https://cli.doppler.com/install.sh) | sudo sh
       - name: Apply migrations and seed the database
         # TODO: caching with turbo? why does it run twice?
         run: |
-          rm -rf node_modules
-          npm ci
           npm run build
           cd packages/prisma
           npm run prisma:reset:raw -- -f
           npm run seed:test
-          # npm run seed:cypress
       - name: Cypress run
         uses: cypress-io/github-action@v5
         timeout-minutes: 20
