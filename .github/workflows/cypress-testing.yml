@@ -206,10 +206,10 @@ jobs:
           node-version: 18
       - name: Check out repository code
         uses: actions/checkout@v3
-      # - name: Install dependencies
-      #   uses: bahmutov/npm-install@v1
-      #   with:
-      #     args: ci
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+        with:
+          args: ci
       - name: Install azure-functions-core-tools
         # TODO: caching
         run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
