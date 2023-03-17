@@ -169,29 +169,29 @@ jobs:
         image: msztolcman/sendria:v2.2.2.0
         ports:
           - 1025:1025
-          - 1080:1080    
-      frontend-manage:
-        image: ghcr.io/${{ github.repository }}/frontend-manage:v3.0.0-alpha.70
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 3002:3000
-      frontend-pwa:
-        image: ghcr.io/${{ github.repository }}/frontend-pwa:v3.0.0-alpha.70
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 3001:3000
-      backend:
-        image: ghcr.io/${{ github.repository }}/backend-docker:v3.0.0-alpha.70
-        credentials:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        ports:
-          - 3000:3000
-        
+          - 1080:1080
+      # frontend-manage:
+      #   image: ghcr.io/${{ github.repository }}/frontend-manage:v3.0.0-alpha.70
+      #   credentials:
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      #   ports:
+      #     - 3002:3000
+      # frontend-pwa:
+      #   image: ghcr.io/${{ github.repository }}/frontend-pwa:v3.0.0-alpha.70
+      #   credentials:
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      #   ports:
+      #     - 3001:3000
+      # backend:
+      #   image: ghcr.io/${{ github.repository }}/backend-docker:v3.0.0-alpha.70
+      #   credentials:
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      #   ports:
+      #     - 3000:3000
+
 
     runs-on: ubuntu-latest
     # strategy:
@@ -225,7 +225,7 @@ jobs:
           mv apps/backend-responses/local.settings.json.template apps/backend-responses/local.settings.json
       # - name: Install doppler # TODO: discuss whether to use doppler directly: https://docs.doppler.com/docs/github-actions
       #   run: |
-      #     (curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh || wget -t 3 -qO- https://cli.doppler.com/install.sh) | sudo sh    
+      #     (curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh || wget -t 3 -qO- https://cli.doppler.com/install.sh) | sudo sh
       - name: Apply migrations and seed the database
         # TODO: caching with turbo? why does it run twice?
         run: |
