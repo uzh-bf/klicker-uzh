@@ -30,6 +30,7 @@
     "prisma:push:qa": "doppler run --config stg -- npm run prisma:push:raw",
     "prisma:reset:raw": "prisma migrate reset --schema=src/prisma/schema.prisma --skip-seed",
     "prisma:reset": "doppler run --config dev -- npm run prisma:reset:raw",
+    "prisma:resetCypress": "npm run prisma:reset:raw",
     "prisma:reset:seed": "doppler run --config dev -- prisma migrate reset --schema=src/prisma/schema.prisma",
     "prisma:reset:qa": "doppler run --config stg -- npm run prisma:reset:raw",
     "prisma:setup": "run-s prisma:reset prisma:push seed",
