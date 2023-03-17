@@ -1,6 +1,7 @@
 query GetBookmarkedQuestions($courseId: String!) {
   getBookmarkedQuestions(courseId: $courseId) {
     id
+    displayName
     elements {
       id
       questionInstance {

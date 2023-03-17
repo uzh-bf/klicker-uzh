@@ -1,9 +1,10 @@
 import { useQuery } from '@apollo/client'
+import LinkButton from '@components/common/LinkButton'
 import {
   GetBasicCourseInformationDocument,
   GetBookmarkedQuestionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H1, UserNotification } from '@uzh-bf/design-system'
+import { H1 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import Layout from '../../../components/Layout'
@@ -21,8 +22,24 @@ function Bookmarks() {
     variables: { courseId: router.query.courseId as string },
   })
 
-  // TODO: replace with learning element implementation including all questions
-  // TODO: add navigation that is possible by name
+  const reducedStacks = data?.getBookmarkedQuestions?.reduce(
+    (acc: any, questionStack: any) => {
+      const questionNamesString = questionStack.elements
+        .map((element: any) => element.questionInstance?.questionData.name)
+        .filter((name: any) => (name ? name : undefined))
+        .join(', ')
+      return [
+        ...acc,
+        {
+          displayName: questionStack.displayName,
+          questionNamesString,
+        },
+      ]
+    },
+    []
+  )
+
+  console.log(reducedStacks)
 
   return (
     <Layout
@@ -31,14 +48,15 @@ function Bookmarks() {
     >
       <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className={{ root: 'text-xl' }}>{t('shared.generic.bookmarks')}</H1>
-        <UserNotification
-          // TODO: delete this translation, once the notification is replaced with the bookmarked questions
-          message={t('pwa.general.bookmarksPlaceholder')}
-          notificationType="info"
-        />
-        {/* {data?.getBookmarkedQuestions?.map((question) => (
-          <div key={question.id}>{question.questionData.name}</div>
-        ))} */}
+        {reducedStacks?.map((stack) => (
+          <LinkButton key={stack.displayName} href="// TODO">
+            <div>
+              {stack.displayName || stack.questionNamesString.length !== 0
+                ? stack.questionNamesString
+                : 'Information Element // TODO TRANSLATE'}
+            </div>
+          </LinkButton>
+        ))}
       </div>
     </Layout>
   )
