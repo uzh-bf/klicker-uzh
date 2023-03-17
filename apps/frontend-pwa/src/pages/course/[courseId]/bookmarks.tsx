@@ -53,7 +53,7 @@ function Bookmarks() {
             <div>
               {stack.displayName || stack.questionNamesString.length !== 0
                 ? stack.questionNamesString
-                : 'Information Element // TODO TRANSLATE'}
+                : t('pwa.learningElement.infoStack')}
             </div>
           </LinkButton>
         ))}

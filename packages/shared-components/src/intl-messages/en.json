@@ -168,7 +168,8 @@
       "addFeedback": "Add feedback",
       "feedbackRequired": "Please add a text to your feedback.",
       "submitFeedback": "Submit feedback",
-      "feedbackTransmitted": "Your feedback has been transmitted successfully."
+      "feedbackTransmitted": "Your feedback has been transmitted successfully.",
+      "infoStack": "Information element"
     },
     "microSession": {
       "notFound": "The corresponding micro session is either not available or not yet active.",

@@ -168,7 +168,8 @@
       "addFeedback": "Feedback hinzufügen",
       "feedbackRequired": "Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu",
       "submitFeedback": "Feedback abschicken",
-      "feedbackTransmitted": "Ihr Feedback wurde erfolgreich übermittelt."
+      "feedbackTransmitted": "Ihr Feedback wurde erfolgreich übermittelt.",
+      "infoStack": "Informationselement"
     },
     "microSession": {
       "notFound": "Unter diesem Link existiert keine Micro-Session oder diese ist noch nicht aktiv.",
