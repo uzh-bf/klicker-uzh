@@ -8,11 +8,11 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       name: 'Explorer',
       description:
         'Du warst Teil des KlickerUZH im ersten Semester. Dankeschön!',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pilot-penguin.svg',
+      icon: '/achievements/Erkunden.svg',
       type: 'PARTICIPANT',
     },
     update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pilot-penguin.svg',
+      icon: '/achievements/Erkunden.svg',
     },
   })
 
@@ -23,11 +23,11 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       name: 'Fleisspreis',
       description:
         'Du hast alle verfügbaren Microlearnings und Lernelemente gelöst.',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/fleisspreis.svg',
+      icon: '/achievements/Fleisspreis.svg',
       type: 'PARTICIPANT',
     },
     update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/fleisspreis.svg',
+      icon: '/achievements/Fleisspreis.svg',
     },
   })
 
@@ -181,11 +181,11 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       name: 'Dream Team',
       description:
         'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/dreamteam.svg',
+      icon: '/achievements/Dreamteam.svg',
       type: 'PARTICIPANT',
     },
     update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/dreamteam.svg',
+      icon: '/achievements/Dreamteam.svg',
     },
   })
 
@@ -210,11 +210,11 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       name: 'Unerschrocken',
       description:
         'Du hast eine Woche vor Ende der Vorlesung noch keine 6 Fragen beantwortet.',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pirate-penguin.svg',
+      icon: '/achievements/Unerschrocken.svg',
       type: 'PARTICIPANT',
     },
     update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pirate-penguin.svg',
+      icon: '/achievements/Unerschrocken.svg',
     },
   })
 }
