@@ -32,7 +32,7 @@
       "outputs": ["dist/**", ".next/**"]
     },
     "start:test": {
-      "dependsOn": ["^build", "build:test"],
+      "dependsOn": ["^build:test", "build:test"],
       "outputs": ["dist/**", ".next/**"]
     }
   }
