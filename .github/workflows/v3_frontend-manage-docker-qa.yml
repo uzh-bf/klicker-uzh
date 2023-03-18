@@ -8,7 +8,7 @@ on:
       - "apps/frontend-manage/**"
       - ".github/workflows/v3_frontend-manage**"
   pull_request:
-    branches: [ "v3" ]
+    # branches: [ "v3" ]
     paths:
       - "apps/frontend-manage/**"
       - ".github/workflows/v3_frontend-manage**"
