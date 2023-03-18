@@ -11,6 +11,10 @@ import { ParticipantOther } from 'shared-components/src/Participant'
 import { Podium } from 'shared-components/src/Podium'
 import { twMerge } from 'tailwind-merge'
 
+import Rank1Img from '../../../public/rank1.svg'
+import Rank2Img from '../../../public/rank2.svg'
+import Rank3Img from '../../../public/rank3.svg'
+
 interface SessionLeaderboardProps {
   sessionId: string
   className?: string
@@ -84,7 +88,14 @@ function SessionLeaderboard({
         <div>
           {data.sessionLeaderboard?.length &&
             data.sessionLeaderboard.length > 0 && (
-              <Podium leaderboard={data.sessionLeaderboard?.slice(0, 3)} />
+              <Podium
+                leaderboard={data.sessionLeaderboard?.slice(0, 3)}
+                imgSrc={{
+                  rank1: Rank1Img,
+                  rank2: Rank2Img,
+                  rank3: Rank3Img,
+                }}
+              />
             )}
         </div>
         <div className="space-y-1">

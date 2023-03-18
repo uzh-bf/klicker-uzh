@@ -16,8 +16,8 @@ interface SinglePodiumProps {
   score?: number
   rank: number
   noEntries?: boolean
-  simple?: boolean
   className?: string
+  imgSrc?: any
 }
 
 function SinglePodium({
@@ -26,10 +26,10 @@ function SinglePodium({
   score,
   rank,
   noEntries,
-  simple,
   className,
+  imgSrc,
 }: SinglePodiumProps): React.ReactElement {
-  if (simple) {
+  if (!imgSrc) {
     return (
       <div
         className={twMerge(
@@ -44,48 +44,45 @@ function SinglePodium({
           avatar={avatar}
           points={score ?? 0}
           withAvatar={!!avatar}
-        />{' '}
+        />
       </div>
     )
   }
 
-  const image = useMemo(() => {
-    if (rank === 1) return '/first.svg'
-    if (rank === 2) return '/second.svg'
-    if (rank === 3) return '/third.svg'
-    return '/first.svg'
-  }, [rank])
-
   return (
     <div className="relative text-center">
       <Image
-        src={image}
+        src={imgSrc}
         alt={`Podium position ${rank}`}
         width={300}
         height={300}
-        className="relative"
+        className="opacity-80"
       />
+
       {!noEntries && (
         <Image
           src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
             avatar || 'placeholder'
           }.svg`}
           alt="User avatar"
-          height={25}
-          width={30}
-          className="absolute"
+          height={50}
+          width={50}
+          className="absolute bg-white rounded-full bg-opacity-60"
           style={{
             top: twMerge(
-              rank === 1 && '26%',
-              rank === 2 && '23%',
-              rank === 3 && '30%'
+              rank === 1 && '24%',
+              rank === 2 && '28%',
+              rank === 3 && '28%'
             ),
-            left: '42.5%',
+            left: '38%',
+            width: '25%',
           }}
         />
       )}
 
-      <div className="w-full mx-auto italic">{username}</div>
+      <div className="absolute bottom-0 w-full mx-auto text-xs lg:text-sm text-slate-700">
+        {username}
+      </div>
     </div>
   )
 }
@@ -97,11 +94,17 @@ interface PodiumProps {
     root?: string
     single?: string
   }
+  imgSrc?: {
+    rank1: any
+    rank2: any
+    rank3: any
+  }
 }
 export function Podium({
   leaderboard,
   simple = false,
   className,
+  imgSrc,
 }: PodiumProps) {
   const { rank1, rank2, rank3 } = useMemo(() => {
     if (!leaderboard) return {}
@@ -121,15 +124,15 @@ export function Podium({
   }, [rank1, rank2, rank3])
 
   return (
-    <div className={twMerge('flex flex-row items-end', simple && 'gap-4')}>
+    <div className={twMerge('flex flex-row items-end gap-4')}>
       <SinglePodium
         rank={2}
         username={rank2?.username}
         avatar={rank2?.avatar as string}
         score={rank2?.score}
         noEntries={emptyLeaderboard}
-        simple={simple}
         className={className?.single}
+        imgSrc={imgSrc?.rank2}
       />
 
       <SinglePodium
@@ -138,8 +141,8 @@ export function Podium({
         avatar={rank1?.avatar as string}
         score={rank1?.score}
         noEntries={emptyLeaderboard}
-        simple={simple}
         className={className?.single}
+        imgSrc={imgSrc?.rank1}
       />
 
       <SinglePodium
@@ -148,8 +151,8 @@ export function Podium({
         avatar={rank3?.avatar as string}
         score={rank3?.score}
         noEntries={emptyLeaderboard}
-        simple={simple}
         className={className?.single}
+        imgSrc={imgSrc?.rank3}
       />
     </div>
   )

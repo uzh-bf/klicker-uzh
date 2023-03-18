@@ -10,6 +10,10 @@
   position: relative
 }
 
+.bottom-0 {
+  bottom: 0px
+}
+
 .order-1 {
   order: 1
 }
@@ -304,6 +308,10 @@
   border-radius: 0.25rem
 }
 
+.rounded-full {
+  border-radius: 9999px
+}
+
 .rounded-md {
   border-radius: 0.375rem
 }
@@ -414,6 +422,10 @@
   --tw-bg-opacity: 0.5
 }
 
+.bg-opacity-60 {
+  --tw-bg-opacity: 0.6
+}
+
 .object-contain {
   -o-object-fit: contain;
      object-fit: contain
@@ -465,6 +477,10 @@
 
 .text-right {
   text-align: right
+}
+
+.\!font-serif {
+  font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif !important
 }
 
 .text-lg {

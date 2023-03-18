@@ -2,11 +2,11 @@ import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import Image from 'next/image'
 
 export const POSITIONS = [
-  [55, 156],
-  [55, 132.5],
-  [55, 107.5],
-  [55, 83.5],
-  [55, 55],
+  [46, 67],
+  [46, 52],
+  [46, 37],
+  [46, 23],
+  [46, 6],
 ]
 
 interface GroupVisualizationProps {
@@ -18,9 +18,9 @@ interface GroupVisualizationProps {
 function GroupVisualization({
   groupName,
   participants,
-  scaleFactor = 1.7,
+  scaleFactor = 1.3,
 }: GroupVisualizationProps) {
-  const height = 351 * scaleFactor
+  const height = 132 * scaleFactor
   const width = 248 * scaleFactor
 
   return (
@@ -47,18 +47,23 @@ function GroupVisualization({
           key={participant.avatar}
           className="absolute"
           style={{
-            top: `${POSITIONS[ix][0] * scaleFactor}px`,
-            left: `${POSITIONS[ix][1] * scaleFactor}px`,
+            top: `${POSITIONS[ix][0]}%`,
+            left: `${POSITIONS[ix][1]}%`,
+            width: '10%',
           }}
           src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
             participant.avatar ?? 'placeholder'
           }.svg`}
           alt=""
-          height={16 * scaleFactor}
-          width={16 * scaleFactor}
+          height={50}
+          width={50}
         />
       ))}
-      <div className="absolute top-[64.5px] w-40 text-center left-[130px] text-md">
+
+      <div
+        className="absolute w-full text-sm font-bold text-center text-slate-700"
+        style={{ top: '29%' }}
+      >
         {groupName}
       </div>
     </div>
