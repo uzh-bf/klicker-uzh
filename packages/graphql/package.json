@@ -15,6 +15,7 @@
     "dev:ts": "NODE_ENV=development doppler run --config dev -- tsup --watch --dts",
     "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch '**/**.graphql' --watch '**/**.ts'",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "generate": "graphql-codegen --config codegen.ts",
     "push": "ts-node --esm src/lib/push.ts",
     "size": "size-limit"

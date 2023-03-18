@@ -14,6 +14,7 @@
     "build": "cross-env NODE_ENV=production tsup",
     "build:test": "npm run build",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
     "start:test": "npm start"
   },

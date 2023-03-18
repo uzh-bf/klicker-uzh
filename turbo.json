@@ -4,6 +4,12 @@
     "format": {
       "cache": false
     },
+    "format:check": {
+      "cache": false
+    },
+    "lint": {
+      "cache": false
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**"]
@@ -26,7 +32,7 @@
       "outputs": ["dist/**", ".next/**"]
     },
     "start:test": {
-      "dependsOn": ["^build", "build:test"],
+      "dependsOn": ["^build:test", "build:test"],
       "outputs": ["dist/**", ".next/**"]
     }
   }

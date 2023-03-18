@@ -1,4 +1,7 @@
 import Prisma, { Question } from '@klicker-uzh/prisma'
+// const klickerUZHPrisma = require('@klicker-uzh/prisma')
+// const Prisma = klickerUZHPrisma.Prisma
+// const Question = klickerUZHPrisma.Question
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 import * as DATA_TEST from './data/TEST'
 import {

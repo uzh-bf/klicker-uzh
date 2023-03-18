@@ -34,6 +34,7 @@
     "docusaurus": "docusaurus",
     "examples": "docusaurus-examples",
     "format": "prettier --write src/",
+    "format:check": "prettier --check .",
     "rename-version": "docusaurus-rename-version",
     "serve": "docusaurus serve",
     "start": "docusaurus start  --port 5000",

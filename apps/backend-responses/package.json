@@ -10,13 +10,12 @@
   ],
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
-    "build:test": "npm run build",
     "dev": "npm-run-all --parallel dev:ts dev:func",
     "dev:ts": "tsup --watch",
     "dev:func": "func start -p 7072",
     "format": "prettier --write .",
-    "start": "func start -p 7072",
-    "start:test": "npm start"
+    "format:check": "prettier --check .",
+    "start": "func start -p 7072"
   },
   "dependencies": {
     "@azure/service-bus": "7.8.0",
