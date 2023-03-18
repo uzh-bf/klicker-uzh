@@ -13,8 +13,8 @@ function ReceivedAchievementTile({
     <div className="flex flex-row items-center w-full gap-4 px-3 py-2 border rounded">
       <Image
         src={achievement.icon}
-        width={45}
-        height={45}
+        width={80}
+        height={80}
         alt=""
         className="contain"
       />

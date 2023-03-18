@@ -17,7 +17,7 @@ interface ParticipantProps {
 
 function Participant({
   avatar,
-  withAvatar,
+  withAvatar = true,
   pseudonym,
   isHighlighted,
   onClick,
@@ -64,10 +64,6 @@ function Participant({
       )}
     </div>
   )
-}
-
-Participant.defaultProps = {
-  withAvatar: true,
 }
 
 export function ParticipantOther(props: ParticipantProps) {

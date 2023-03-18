@@ -1,45 +1,111 @@
 import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
+import Image from 'next/image'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther } from './Participant'
+
+const rankHeights: Record<number, string> = {
+  1: 'order-1 h-[80px] md:order-2',
+  2: 'order-2 h-[70px] md:order-1',
+  3: 'order-3 h-[60px]',
+}
+
+interface SinglePodiumProps {
+  username?: string
+  avatar?: string
+  score?: number
+  rank: number
+  noEntries?: boolean
+  className?: string
+  imgSrc?: any
+}
 
 function SinglePodium({
   username,
   avatar,
   score,
+  rank,
+  noEntries,
   className,
-}: {
-  username?: string
-  avatar?: string
-  score?: number
-  className?: string
-}): React.ReactElement {
+  imgSrc,
+}: SinglePodiumProps): React.ReactElement {
+  if (!imgSrc) {
+    return (
+      <div
+        className={twMerge(
+          'flex-1 md:border-b-4 bg-slate-300 md:border-slate-500 rounded-t-md text-sm',
+          rankHeights[rank],
+          className
+        )}
+      >
+        <ParticipantOther
+          className="bg-white shadow border-slate-400"
+          pseudonym={username}
+          avatar={avatar}
+          points={score ?? 0}
+          withAvatar={!!avatar}
+        />
+      </div>
+    )
+  }
+
   return (
-    <div
-      className={twMerge(
-        'flex-1 md:border-b-4 bg-slate-300 md:border-slate-500 rounded-t-md text-sm',
-        className
-      )}
-    >
-      <ParticipantOther
-        className="bg-white shadow border-slate-400"
-        pseudonym={username}
-        avatar={avatar}
-        points={score ?? 0}
-        withAvatar={!!avatar}
+    <div className="relative text-center">
+      <Image
+        src={imgSrc}
+        alt={`Podium position ${rank}`}
+        width={300}
+        height={300}
+        className="opacity-80"
       />
+
+      {!noEntries && (
+        <Image
+          src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
+            avatar || 'placeholder'
+          }.svg`}
+          alt="User avatar"
+          height={50}
+          width={50}
+          className="absolute bg-white rounded-full bg-opacity-60"
+          style={{
+            top: twMerge(
+              rank === 1 && '24%',
+              rank === 2 && '28%',
+              rank === 3 && '28%'
+            ),
+            left: '38%',
+            width: '25%',
+          }}
+        />
+      )}
+
+      <div className="absolute bottom-0 w-full mx-auto text-xs lg:text-sm text-slate-700">
+        {username}
+      </div>
     </div>
   )
 }
 
 interface PodiumProps {
-  leaderboard: LeaderboardEntry[]
+  leaderboard: Partial<LeaderboardEntry>[]
+  simple?: boolean
   className?: {
     root?: string
     single?: string
   }
+  imgSrc?: {
+    rank1: any
+    rank2: any
+    rank3: any
+  }
 }
-export function Podium({ leaderboard, className }: PodiumProps) {
+export function Podium({
+  leaderboard,
+  simple = false,
+  className,
+  imgSrc,
+}: PodiumProps) {
   const { rank1, rank2, rank3 } = useMemo(() => {
     if (!leaderboard) return {}
     return {
@@ -49,27 +115,44 @@ export function Podium({ leaderboard, className }: PodiumProps) {
     }
   }, [leaderboard])
 
+  const emptyLeaderboard = useMemo(() => {
+    return (
+      typeof rank1?.avatar === 'undefined' &&
+      typeof rank2?.avatar === 'undefined' &&
+      typeof rank3?.avatar === 'undefined'
+    )
+  }, [rank1, rank2, rank3])
+
   return (
-    <div className="flex flex-col gap-4 md:items-end md:flex-row">
+    <div className={twMerge('flex flex-row items-end gap-4')}>
       <SinglePodium
-        className={twMerge('order-2 h-[70px] md:order-1', className?.single)}
+        rank={2}
         username={rank2?.username}
         avatar={rank2?.avatar as string}
         score={rank2?.score}
+        noEntries={emptyLeaderboard}
+        className={className?.single}
+        imgSrc={imgSrc?.rank2}
       />
 
       <SinglePodium
-        className={twMerge('order-1 h-[80px] md:order-2', className?.single)}
+        rank={1}
         username={rank1?.username}
         avatar={rank1?.avatar as string}
         score={rank1?.score}
+        noEntries={emptyLeaderboard}
+        className={className?.single}
+        imgSrc={imgSrc?.rank1}
       />
 
       <SinglePodium
-        className={twMerge('order-3 h-[60px]', className?.single)}
+        rank={3}
         username={rank3?.username}
         avatar={rank3?.avatar as string}
         score={rank3?.score}
+        noEntries={emptyLeaderboard}
+        className={className?.single}
+        imgSrc={imgSrc?.rank3}
       />
     </div>
   )
