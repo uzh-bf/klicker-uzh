@@ -269,15 +269,15 @@ jobs:
           record: true
           browser: electron
         env:
-          INITIAL_PASSWORD: abcd
+          INITIAL_PASSWORD: "abcd"
           DATABASE_URL: "postgres://klicker:klicker@localhost:5432/main"
-          APP_SECRET: abcd
-          REDIS_HOST: localhost
-          REDIS_PORT: 6380
-          REDIS_CACHE_HOST: localhost
-          REDIS_CACHE_PORT: 6379
-          API_DOMAIN: 127.0.0.1
-          COOKIE_DOMAIN: 127.0.0.1
+          APP_SECRET: "abcd"
+          REDIS_HOST: "127.0.0.1"
+          REDIS_PORT: "6380"
+          REDIS_CACHE_HOST: "127.0.0.1"
+          REDIS_CACHE_PORT: "6379"
+          API_DOMAIN: "127.0.0.1"
+          COOKIE_DOMAIN: "127.0.0.1"
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           S3_PATHNAME: "/klicker-prod/**"
