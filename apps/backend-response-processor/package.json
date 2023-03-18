@@ -10,14 +10,12 @@
   ],
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
-    "build:test": "npm run build",
     "dev": "npm-run-all --parallel dev:ts dev:func",
     "dev:ts": "tsup --watch",
     "dev:func": "func start -p 7073",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "start": "func start -p 7073",
-    "start:test": "npm start"
+    "start": "func start -p 7073"
   },
   "dependencies": {
     "@klicker-uzh/grading": "^3.0.0-alpha.0",
