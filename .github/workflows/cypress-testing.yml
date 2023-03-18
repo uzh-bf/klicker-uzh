@@ -248,7 +248,8 @@ jobs:
         with:
           install: false
           start: npm run start:test
-          wait-on: 'http://127.0.0.1:3000'
+          wait-on: 'http://127.0.0.1:3000, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003'
+          wait-on-timeout: 120
           record: true
           browser: electron
         env:
