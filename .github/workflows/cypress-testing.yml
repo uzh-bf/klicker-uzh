@@ -145,7 +145,7 @@ jobs:
     #   - build-frontend-pwa
     services:
       postgres:
-        image: postgres:14.3
+        image: postgres:15
         env:
           POSTGRES_USER: klicker
           POSTGRES_PASSWORD: klicker
@@ -158,7 +158,7 @@ jobs:
         ports:
           - 5432:5432
       redis_cache:
-        image: redis:6
+        image: redis:7
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -172,14 +172,14 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        image: redis:6
+        image: redis:7
         ports:
           - 6379:6379
-      sendria:
-        image: msztolcman/sendria:v2.2.2.0
-        ports:
-          - 1025:1025
-          - 1080:1080
+      # sendria:
+      #   image: msztolcman/sendria:v2.2.2.0
+      #   ports:
+      #     - 1025:1025
+      #     - 1080:1080
       # frontend-manage:
       #   image: ghcr.io/${{ github.repository }}/frontend-manage:v3.0.0-alpha.70
       #   credentials:
