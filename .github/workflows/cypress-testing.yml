@@ -133,16 +133,18 @@ jobs:
   #         tags: ${{ env.REGISTRY }}/${{ github.repository }}/frontend-pwa:cypress
   #         labels: ${{ steps.meta.outputs.labels }}
 
-  # TODO:
-  # build-frontend-control
-
-  # fill-database:
 
   cypress-run:
+    env:
+       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+       TURBO_REMOTE_ONLY: true
+
     # needs:
     #   - build-backend
     #   - build-frontend-manage
     #   - build-frontend-pwa
+
     services:
       postgres:
         image: postgres:15
@@ -175,6 +177,7 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
+
       # sendria:
       #   image: msztolcman/sendria:v2.2.2.0
       #   ports:
@@ -261,7 +264,7 @@ jobs:
         with:
           install: false
           start: npm run start:test
-          wait-on: 'http://127.0.0.1:3000, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003'
+          wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003'
           wait-on-timeout: 120
           record: true
           browser: electron
