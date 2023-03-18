@@ -2,6 +2,9 @@ import Prisma, { QuestionType } from '@klicker-uzh/prisma'
 import { readFile } from 'fs/promises'
 // import { fromString } from 'uuidv4'
 
+// const ADDITIONAL_TAGS = ['From=Dogan']
+const ADDITIONAL_TAGS: string[] = []
+
 interface ImportedQuestion {
   id: string
   title: string
@@ -38,7 +41,10 @@ async function importQuestions(prisma: Prisma.PrismaClient) {
     await readFile(new URL('./exported_questions.json', import.meta.url))
   )
 
-  const tags = [...new Set(questionData.flatMap((q) => q.tags))]
+  const tags = [
+    ...new Set(questionData.flatMap((q) => q.tags)),
+    ...ADDITIONAL_TAGS,
+  ]
 
   await prisma.$transaction(
     tags.map((tag) =>
@@ -51,54 +57,57 @@ async function importQuestions(prisma: Prisma.PrismaClient) {
   )
 
   await prisma.$transaction(
-    questionData.map((question) => {
-      console.log(question)
+    questionData
+      .map((question) => {
+        console.log(question)
 
-      let hasSampleSolution = false
-      let options = {}
-      if (['SC', 'MC'].includes(question.type)) {
-        options = {
-          choices: question.version.options[question.type].choices.map(
-            (choice, ix) => {
-              if (choice.correct) hasSampleSolution = true
-              return {
-                ix,
-                value: choice.name,
-                correct: choice.correct,
-                feedback: '',
+        const result = {
+          data: {
+            name: question.title,
+            type: QuestionTypeMap[question.type],
+            content: question.version.content,
+            options: {},
+            hasSampleSolution: false,
+            tags: {
+              connect: question.tags.map((tag) => ({
+                ownerId_name: { ownerId: user.id, name: tag },
+              })),
+            },
+            owner: {
+              connect: { id: user.id },
+            },
+          },
+        }
+
+        if (['SC', 'MC'].includes(question.type)) {
+          result.data.options = {
+            choices: question.version.options[question.type].choices.map(
+              (choice, ix) => {
+                if (choice.correct) result.data.hasSampleSolution = true
+                return {
+                  ix,
+                  value: choice.name,
+                  correct: choice.correct,
+                  feedback: '',
+                }
               }
-            }
-          ),
+            ),
+          }
+          return result
+        } else if (question.type === 'NR') {
+          // TODO
+          throw new Error('Unsupported question type (NR)')
+        } else if (question.type === 'FREE') {
+          result.data.options = {
+            restrictions: {},
+            solutions: [],
+          }
+          return result
+        } else {
+          throw new Error('Unknown question type')
         }
-      } else if (question.type === 'NR') {
-        // TODO
-        throw new Error('Unsupported question type (NR)')
-      } else if (question.type === 'FREE') {
-        options = {
-          restrictions: {},
-          solutions: [],
-        }
-      } else {
-        throw new Error('Unknown question type')
-      }
-      return prisma.question.create({
-        data: {
-          name: question.title,
-          type: QuestionTypeMap[question.type],
-          content: question.version.content,
-          options,
-          hasSampleSolution,
-          tags: {
-            connect: question.tags.map((tag) => ({
-              ownerId_name: { ownerId: user.id, name: tag },
-            })),
-          },
-          owner: {
-            connect: { id: user.id },
-          },
-        },
       })
-    })
+      .map(prisma.question.create)
   )
 }
 
