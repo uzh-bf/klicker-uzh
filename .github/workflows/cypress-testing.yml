@@ -221,8 +221,6 @@ jobs:
 
       - name: Install dependencies
         uses: bahmutov/npm-install@v1
-        with:
-          args: ci
 
       - name: Install azure-functions-core-tools
         run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
