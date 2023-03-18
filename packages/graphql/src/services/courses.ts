@@ -1,4 +1,4 @@
-import { LearningElementStatus } from '@klicker-uzh/prisma'
+import { GroupActivityStatus, LearningElementStatus } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 
@@ -150,6 +150,11 @@ export async function getCourseOverviewData(
               },
               orderBy: {
                 order: 'asc',
+              },
+            },
+            groupActivities: {
+              where: {
+                status: GroupActivityStatus.PUBLISHED,
               },
             },
           },

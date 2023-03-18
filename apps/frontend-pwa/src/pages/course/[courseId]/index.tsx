@@ -27,6 +27,7 @@ import Layout from '../../../components/Layout'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 
+import dayjs from 'dayjs'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
@@ -372,24 +373,41 @@ function CourseOverview({ courseId }: any) {
                     />
                   </div>
 
-                  {/* // TODO: add internationlized strings, once the hard-coded implementation has been updated */}
-                  {data.getCourseOverviewData?.course?.id ===
-                    'f7ceeba0-ef5a-4d0b-a992-a44a1395cbf9' && (
-                    <div className="mt-8">
-                      <H4>Gruppenaktivitäten</H4>
-                      <Link
-                        href={`/group/${group.id}/activity/b83657a5-4d19-449d-b378-208b7cb2e8e0`}
-                        className="inline-flex items-center gap-2 hover:text-orange-700"
-                      >
-                        <div>
-                          <FontAwesomeIcon icon={faExternalLink} />
-                          <span className="text-gray-600">
-                            Gruppenquest 1 - 10.03.23 12:00 bis 17.03.23 12:00
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-                  )}
+                  <div className="mt-8">
+                    <H4>{t('shared.generic.groupActivities')}</H4>
+                    {course.groupActivities?.map((activity) => (
+                      <div key={activity.id} className="">
+                        <Link
+                          href={`/group/${group.id}/activity/${activity.id}`}
+                          className="inline-flex items-center gap-2 hover:text-orange-700"
+                        >
+                          <Button
+                            className={{ root: 'gap-4 text-left text-sm' }}
+                            disabled={
+                              dayjs().isBefore(activity.scheduledStartAt) ||
+                              dayjs().isAfter(activity.scheduledEndAt)
+                            }
+                          >
+                            <Button.Icon>
+                              <FontAwesomeIcon icon={faExternalLink} />
+                            </Button.Icon>
+                            <Button.Label>
+                              <div>{activity.displayName}</div>
+                              <div className="text-xs">
+                                {dayjs(activity.scheduledStartAt).format(
+                                  'DD.MM.YYYY HH:mm'
+                                )}{' '}
+                                -{' '}
+                                {dayjs(activity.scheduledEndAt).format(
+                                  'DD.MM.YYYY HH:mm'
+                                )}
+                              </div>
+                            </Button.Label>
+                          </Button>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </Tabs.TabContent>
             ))}

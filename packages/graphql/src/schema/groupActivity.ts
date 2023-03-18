@@ -26,6 +26,12 @@ export const GroupActivityDecisionInput = builder.inputType(
 export const GroupActivity = builder.prismaObject('GroupActivity', {
   fields: (t) => ({
     id: t.exposeID('id'),
+
+    displayName: t.exposeString('displayName'),
+    description: t.exposeString('description', { nullable: true }),
+
+    scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
+    scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
   }),
 })
 

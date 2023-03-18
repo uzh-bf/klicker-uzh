@@ -35,6 +35,14 @@ query GetCourseOverviewData($courseId: String!) {
           name
         }
       }
+
+      groupActivities {
+        id
+        displayName
+        description
+        scheduledStartAt
+        scheduledEndAt
+      }
     }
     leaderboard {
       id

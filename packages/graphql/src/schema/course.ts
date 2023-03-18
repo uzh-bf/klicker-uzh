@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
+import { GroupActivity } from './groupActivity'
 import type { ILearningElement } from './learningElements'
 import { LearningElementRef } from './learningElements'
 import type { IMicroSession } from './microSession'
@@ -19,6 +20,7 @@ export interface ICourse extends DB.Course {
   sessions?: ISession[]
   learningElements?: ILearningElement[]
   microSessions?: IMicroSession[]
+  groupActivities?: DB.GroupActivity[]
   leaderboard?: ILeaderboardEntry[]
   awards?: DB.AwardEntry[]
   owner?: DB.User
@@ -67,6 +69,10 @@ export const Course = builder.objectType(CourseRef, {
     }),
     microSessions: t.expose('microSessions', {
       type: [MicroSessionRef],
+      nullable: true,
+    }),
+    groupActivities: t.expose('groupActivities', {
+      type: [GroupActivity],
       nullable: true,
     }),
     leaderboard: t.expose('leaderboard', {
