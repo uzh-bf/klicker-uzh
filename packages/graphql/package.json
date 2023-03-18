@@ -33,8 +33,6 @@
     }
   ],
   "peerDependencies": {
-    "@klicker-uzh/grading": "^3.0.0-alpha.0",
-    "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "graphql-yoga": "^3.6.0"
   },
   "devDependencies": {
@@ -75,6 +73,8 @@
     "@pothos/plugin-prisma": "3.41.0",
     "@pothos/plugin-scope-auth": "3.18.0",
     "@pothos/plugin-validation": "3.9.0",
+    "@klicker-uzh/grading": "*",
+    "@klicker-uzh/prisma": "*",
     "bcryptjs": "2.4.3",
     "dayjs": "1.11.7",
     "generate-password": "1.7.0",
