@@ -219,6 +219,19 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
 
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/apps/frontend-pwa/.next/cache
+            ${{ github.workspace }}/apps/frontend-manage/.next/cache
+            ${{ github.workspace }}/apps/frontend-control/.next/cache
+          # Generate a new cache whenever packages or source files change.
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          # If source files changed but packages didn't, rebuild from a prior cache.
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
       - name: Install dependencies
         uses: bahmutov/npm-install@v1
 
