@@ -267,26 +267,8 @@ jobs:
           wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003'
           wait-on-timeout: 120
           record: true
-          browser: electron
+          browser: chrome
         env:
           INITIAL_PASSWORD: "abcd"
-          DATABASE_URL: "postgres://klicker:klicker@localhost:5432/main"
-          APP_SECRET: "abcd"
-          REDIS_HOST: "127.0.0.1"
-          REDIS_PORT: "6380"
-          REDIS_CACHE_HOST: "127.0.0.1"
-          REDIS_CACHE_PORT: "6379"
-          API_DOMAIN: "127.0.0.1"
-          COOKIE_DOMAIN: "127.0.0.1"
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          S3_PATHNAME: "/klicker-prod/**"
-          S3_HOSTNAME: "sos-ch-dk-2.exo.io"
-          NEXT_PUBLIC_AVATAR_BASE_PATH: "https://$S3_HOSTNAME/klicker-prod/avatars"
-          NEXT_PUBLIC_IMAGE_BASE_PATH: "https://$S3_HOSTNAME/klicker-prod/img"
-          NEXT_PUBLIC_ADD_RESPONSE_URL: http://127.0.0.1:7072/api/AddResponse"
-          NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000/api/graphql"
-          NEXT_PUBLIC_API_URL_SSR: "http://127.0.0.1:3000/api/graphql"
-          NEXT_PUBLIC_PWA_URL: "http://127.0.0.1:3001"
-          NEXT_PUBLIC_MANAGE_URL: "http://127.0.0.1:3002"
-          NEXT_PUBLIC_CONTROL_URL: "http://127.0.0.1:3003"
