@@ -479,10 +479,6 @@
   text-align: right
 }
 
-.\!font-serif {
-  font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif !important
-}
-
 .text-lg {
   font-size: 1.125rem;
   line-height: 1.75rem
@@ -491,6 +487,11 @@
 .text-sm {
   font-size: 0.875rem;
   line-height: 1.25rem
+}
+
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem
 }
 
 .font-bold {
@@ -655,5 +656,10 @@
 
   .lg\:w-56 {
     width: 14rem
+  }
+
+  .lg\:text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem
   }
 }
