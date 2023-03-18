@@ -10,6 +10,7 @@ import {
   prepareMicroSession,
   prepareParticipant,
   prepareQuestion,
+  prepareQuestionInstance,
   prepareSession,
   prepareUser,
 } from './helpers.js'
@@ -129,6 +130,76 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       )
     )
   )
+
+  const GROUP_ACTIVITY_ID = '06e53b6b-97b1-4e29-b70f-e5309a2a3369'
+  const groupActivityTest = await prisma.groupActivity.upsert({
+    where: {
+      id: GROUP_ACTIVITY_ID,
+    },
+    create: {
+      id: GROUP_ACTIVITY_ID,
+      name: 'Gruppenquest 1',
+      displayName: 'Gruppenquest 1',
+      description: `testing it`,
+      status: 'PUBLISHED',
+      scheduledStartAt: new Date('2020-03-10T11:00:00.000Z'),
+      scheduledEndAt: new Date('2025-03-17T11:00:00.000Z'),
+      parameters: {},
+      clues: {
+        connectOrCreate: [
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond1',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond1',
+              displayName: 'Bond 1',
+              value: 'Schweiz',
+            },
+          },
+        ],
+      },
+      instances: {
+        connectOrCreate: await Promise.all(
+          [0, 1].map(async (qId, ix) => {
+            const question = await prisma.question.findUnique({
+              where: { id: qId },
+            })
+
+            return {
+              where: {
+                type_groupActivityId_order: {
+                  type: 'GROUP_ACTIVITY',
+                  groupActivityId: GROUP_ACTIVITY_ID,
+                  order: ix,
+                },
+              },
+              create: prepareQuestionInstance({
+                question,
+                type: 'GROUP_ACTIVITY',
+                order: ix,
+              }),
+            }
+          })
+        ),
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+  })
 
   const participantsTesting = await Promise.all(
     PARTICIPANT_IDS.map(async (id, ix) => {

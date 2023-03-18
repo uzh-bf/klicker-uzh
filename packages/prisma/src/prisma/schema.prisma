@@ -558,11 +558,17 @@ model GroupActivityClueInstance {
   @@unique([groupActivityInstanceId, name])
 }
 
+enum GroupActivityStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model GroupActivity {
   id String @id @default(uuid()) @db.Uuid
 
   name        String
   displayName String
+  status      GroupActivityStatus @default(DRAFT)
 
   description      String?
   scheduledStartAt DateTime
