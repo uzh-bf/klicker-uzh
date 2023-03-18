@@ -27,6 +27,10 @@ import Layout from '../../../components/Layout'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 
+import Rank1Img from 'public/rank1.svg'
+import Rank2Img from 'public/rank2.svg'
+import Rank3Img from 'public/rank3.svg'
+
 // TODO: replace fields in this component through our own design system components
 
 const DynamicMarkdown = dynamic(
@@ -175,6 +179,11 @@ function CourseOverview({ courseId }: any) {
                       onLeave={leaveCourse}
                       participant={participant ?? undefined}
                       onParticipantClick={openProfileModal}
+                      podiumImgSrc={{
+                        rank1: Rank1Img,
+                        rank2: Rank2Img,
+                        rank3: Rank3Img,
+                      }}
                     />
 
                     <div className="mt-4 mb-2 text-sm text-right text-slate-600">
@@ -335,6 +344,11 @@ function CourseOverview({ courseId }: any) {
                           setSelectedTab('global')
                         }}
                         hidePodium
+                        podiumImgSrc={{
+                          rank1: Rank1Img,
+                          rank2: Rank2Img,
+                          rank3: Rank3Img,
+                        }}
                       />
 
                       <div className="self-end mt-6 text-sm w-60 text-slate-600">
@@ -352,7 +366,10 @@ function CourseOverview({ courseId }: any) {
                         </div>
                       </div>
                     </div>
-                    <GroupVisualization participants={group.participants} />
+                    <GroupVisualization
+                      groupName={group.name}
+                      participants={group.participants}
+                    />
                   </div>
 
                   {/* // TODO: add internationlized strings, once the hard-coded implementation has been updated */}

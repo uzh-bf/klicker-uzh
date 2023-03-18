@@ -124,7 +124,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
   )
 
   return (
-    <div className="space-y-8 w-max">
+    <div className="space-y-8">
       <div>
         <H3>{t('shared.generic.congrats')}</H3>
         <p>

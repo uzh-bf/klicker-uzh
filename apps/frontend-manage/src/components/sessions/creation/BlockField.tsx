@@ -4,13 +4,10 @@ import AddQuestionField from './AddQuestionField'
 import QuestionBlock from './QuestionBlock'
 import WizardErrorMessage from './WizardErrorMessage'
 interface BlockFieldProps {
-  label?: string
   fieldName: string
-  tooltip?: string
-  className?: string
 }
 
-function BlockField({ label, fieldName, tooltip, className }: BlockFieldProps) {
+function BlockField({ fieldName }: BlockFieldProps) {
   const [field, meta, helpers] = useField(fieldName)
 
   return (
