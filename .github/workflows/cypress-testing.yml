@@ -171,7 +171,7 @@ jobs:
           --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5      
+          --health-retries 5
         image: redis:6
         ports:
           - 6379:6379
@@ -210,48 +210,49 @@ jobs:
     #     containers: [1, 2] # Uses 2 parallel instances
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+
       - name: Define node version
         uses: actions/setup-node@v3
         with:
           node-version: 18
+
       - name: Check out repository code
         uses: actions/checkout@v3
+
       - name: Install dependencies
         uses: bahmutov/npm-install@v1
         with:
           args: ci
+
       - name: Install azure-functions-core-tools
-        # TODO: caching
         run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
+
       - name: Prepare .env and local.settings.json files
-        # TODO: does it work like this?
-        env:
-          SERVICE_BUS_CONNECTION_STRING: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
-          SERVICE_BUS_QUEUE_NAME: ${{ secrets.SERVICE_BUS_QUEUE_NAME }}
         run: |
           mv packages/prisma/.env.template packages/prisma/.env
           mv apps/backend-docker/.env.template apps/backend-docker/.env
           mv apps/backend-response-processor/local.settings.json.template apps/backend-response-processor/local.settings.json
           mv apps/backend-responses/local.settings.json.template apps/backend-responses/local.settings.json
+
       - name: Apply migrations and seed the database
-        # TODO: caching with turbo? why does it run twice?
         run: |
           cd packages/prisma
           npm run build
           npm run prisma:reset:raw -- -f
           npm run seed:test
+
       - name: Cypress run
         uses: cypress-io/github-action@v5
         timeout-minutes: 20
         with:
           install: false
           start: npm run start:test
-          wait-on: 'http://localhost:3000' # Waits for above
+          wait-on: 'http://localhost:3001'
           record: true
-          # parallel: true # Runs test in parallel using settings above
-          browser: chrome
+          browser: electron
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }} 
+          INITIAL_PASSWORD: ${{ secrets.INITIAL_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           APP_SECRET: ${{ secrets.APP_SECRET }}
           REDIS_HOST: ${{ secrets.REDIS_HOST }}
           REDIS_PORT: ${{ secrets.REDIS_PORT }}
@@ -270,7 +271,6 @@ jobs:
           NEXT_PUBLIC_ADD_RESPONSE_URL: http://127.0.0.1:7072/api/AddResponse"
           NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000/api/graphql"
           NEXT_PUBLIC_API_URL_SSR: "http://127.0.0.1:3000/api/graphql"
-          NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY: "BFTs2KshUdSwCqQgZzaaCZK7h3L4pd8hjJoLk1jv1-iPN9c-_7JdLkQi5IV_k3Ml4rrx12HOkcANwVk39L_RTOM"
           NEXT_PUBLIC_PWA_URL: "http://127.0.0.1:3001"
           NEXT_PUBLIC_MANAGE_URL: "http://127.0.0.1:3002"
           NEXT_PUBLIC_CONTROL_URL: "http://127.0.0.1:3003"
