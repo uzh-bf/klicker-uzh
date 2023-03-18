@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.73](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.72...v3.0.0-alpha.73) (2023-03-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** rename eating bubble image ([1bbdadf](https://github.com/uzh-bf/klicker-uzh/commit/1bbdadf1ba81938770b12277e614517ff15b6b2e))
+
 ## [3.0.0-alpha.72](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.71...v3.0.0-alpha.72) (2023-03-18)
 
 ## [3.0.0-alpha.71](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.70...v3.0.0-alpha.71) (2023-03-18)
