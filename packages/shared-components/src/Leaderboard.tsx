@@ -10,7 +10,7 @@ interface LeaderboardProps {
   onJoin?: () => void
   onLeave?: () => void
   onParticipantClick?: (participantId: string, isSelf: boolean) => void
-  participant?: Participant
+  participant?: Participant | null
   hidePodium?: boolean
   hideAvatars?: boolean
   className?: {
@@ -20,7 +20,7 @@ interface LeaderboardProps {
     list?: string
     listItem?: string
   }
-  podiumImgSrc: {
+  podiumImgSrc?: {
     rank1: any
     rank2: any
     rank3: any
