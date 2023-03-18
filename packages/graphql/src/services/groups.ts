@@ -330,8 +330,11 @@ export async function getGroupActivityDetails(
   }
 
   // before the active date, return null
-  if (dayjs(groupActivity.scheduledStartAt).isAfter(dayjs())) {
-    // return null
+  if (
+    dayjs().isBefore(groupActivity.scheduledStartAt) ||
+    dayjs().isAfter(groupActivity.scheduledEndAt)
+  ) {
+    return null
   }
 
   const activityInstance = await ctx.prisma.groupActivityInstance.findUnique({
@@ -423,6 +426,14 @@ export async function startGroupActivity(
   // ensure that the requesting participant is part of the group
   if (
     !group.participants.some((participant) => participant.id === ctx.user.sub)
+  ) {
+    return null
+  }
+
+  // before the active date, return null
+  if (
+    dayjs().isBefore(groupActivity.scheduledStartAt) ||
+    dayjs().isAfter(groupActivity.scheduledEndAt)
   ) {
     return null
   }
@@ -530,6 +541,7 @@ export async function submitGroupActivityDecisions(
     await ctx.prisma.groupActivityInstance.findUnique({
       where: { id: activityInstanceId },
       include: {
+        groupActivity: true,
         group: {
           include: {
             participants: {
@@ -548,6 +560,14 @@ export async function submitGroupActivityDecisions(
     !groupActivityInstance ||
     groupActivityInstance.group.participants.length === 0 ||
     !!groupActivityInstance.decisionsSubmittedAt
+  ) {
+    return null
+  }
+
+  // before the active date, return null
+  if (
+    dayjs().isBefore(groupActivityInstance.groupActivity.scheduledStartAt) ||
+    dayjs().isAfter(groupActivityInstance.groupActivity.scheduledEndAt)
   ) {
     return null
   }
