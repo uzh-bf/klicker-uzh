@@ -24,6 +24,7 @@ import * as Yup from 'yup'
 
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Markdown } from '@klicker-uzh/markdown'
 import {
   Button,
   FormikSelectField,
@@ -1202,6 +1203,29 @@ function QuestionEditModal({
                     setInputState={setInputState}
                   />
                 </div>
+                {values.explanation && (
+                  <div className="mt-4">
+                    <H3>Erklärung</H3>
+                    <Markdown content={values.explanation} />
+                  </div>
+                )}
+                {QUESTION_GROUPS.CHOICES.includes(questionType) && (
+                  <div className="mt-4">
+                    <H3>Feedbacks</H3>
+                    {values.options?.choices?.map((choice, index) => (
+                      <div
+                        key={index}
+                        className="pt-1 pb-1 border-b last:border-b-0"
+                      >
+                        {choice.feedback ? (
+                          <Markdown content={choice.feedback} />
+                        ) : (
+                          'Kein Feedback definiert'
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </Modal>
