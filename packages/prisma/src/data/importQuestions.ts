@@ -3,20 +3,20 @@ import { readFile } from 'fs/promises'
 // import { fromString } from 'uuidv4'
 
 // const ADDITIONAL_TAGS = ['From=Dogan']
-const ADDITIONAL_TAGS: string[] = []
+const ADDITIONAL_TAGS: string[] = ['From=GianLuca']
 
 interface ImportedQuestion {
   id: string
   title: string
-  type: 'SC' | 'MC' | 'NR' | 'FREE'
+  type: 'SC' | 'MC' | 'FREE_RANGE' | 'FREE'
   tags: string[]
   version: {
     content: string
     options: {
       SC?: any
       MC?: any
-      NR?: any
-      FT?: any
+      FREE_RANGE?: any
+      FREE?: any
     }
   }
 }
@@ -24,7 +24,7 @@ interface ImportedQuestion {
 const QuestionTypeMap: Record<string, QuestionType> = {
   SC: 'SC',
   MC: 'MC',
-  NR: 'NUMERICAL',
+  FREE_RANGE: 'NUMERICAL',
   FREE: 'FREE_TEXT',
 }
 
@@ -69,7 +69,7 @@ async function importQuestions(prisma: Prisma.PrismaClient) {
             options: {},
             hasSampleSolution: false,
             tags: {
-              connect: question.tags.map((tag) => ({
+              connect: [...question.tags, ...ADDITIONAL_TAGS].map((tag) => ({
                 ownerId_name: { ownerId: user.id, name: tag },
               })),
             },
@@ -94,9 +94,16 @@ async function importQuestions(prisma: Prisma.PrismaClient) {
             ),
           }
           return result
-        } else if (question.type === 'NR') {
-          // TODO
-          throw new Error('Unsupported question type (NR)')
+        } else if (question.type === 'FREE_RANGE') {
+          throw new Error('Unsupported question type NR')
+          result.data.options = {
+            restrictions: {
+              min: question.version.options.FREE_RANGE?.min ?? undefined,
+              max: question.version.options.FREE_RANGE?.max ?? undefined,
+            },
+            solutions: [],
+          }
+          return result
         } else if (question.type === 'FREE') {
           result.data.options = {
             restrictions: {},
