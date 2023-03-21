@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.74](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.73...v3.0.0-alpha.74) (2023-03-21)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** dispay explanation and feedback in preview ([9fdeb11](https://github.com/uzh-bf/klicker-uzh/commit/9fdeb11d993a5f3db9ff04a197c68f70e8ff2ce0))
+
 ## [3.0.0-alpha.73](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.72...v3.0.0-alpha.73) (2023-03-18)
 
 

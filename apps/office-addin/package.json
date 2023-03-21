@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.0.0-alpha.73",
+  "version": "3.0.0-alpha.74",
   "license": "AGPL-3.0",
   "config": {
     "app_to_debug": "powerpoint",
