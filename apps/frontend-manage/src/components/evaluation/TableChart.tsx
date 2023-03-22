@@ -1,3 +1,5 @@
+import { faRepeat } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Choice,
   ChoicesQuestionData,
@@ -6,8 +8,8 @@ import {
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import { Table } from '@uzh-bf/design-system'
-import React, { useMemo } from 'react'
+import { Button, Table } from '@uzh-bf/design-system'
+import React, { useMemo, useRef } from 'react'
 import { QUESTION_GROUPS } from 'shared-components/src/constants'
 
 interface TableChartProps {
@@ -21,6 +23,8 @@ function TableChart({
   showSolution,
   textSize,
 }: TableChartProps): React.ReactElement {
+  const ref = useRef<{ reset: () => void }>(null)
+
   const tableData = useMemo(() => {
     if (QUESTION_GROUPS.CHOICES.includes(data.questionData.type)) {
       return (data.questionData as ChoicesQuestionData).options.choices.map(
@@ -77,15 +81,27 @@ function TableChart({
     columns.push({ label: 'T/F', accessor: 'correct', sortable: true })
 
   return (
-    <Table
-      data={tableData}
-      columns={columns}
-      className={{
-        root: 'pb-4',
-        tableHeader: textSize,
-        body: `${textSize}`,
-      }}
-    />
+    <div>
+      <Table
+        ref={ref}
+        data={tableData}
+        columns={columns}
+        className={{
+          root: 'pb-4',
+          tableHeader: textSize,
+          body: `${textSize}`,
+        }}
+      />
+      <Button
+        onClick={() => ref.current?.reset()}
+        className={{ root: 'float-right' }}
+      >
+        <Button.Icon className={{ root: 'mr-1.5' }}>
+          <FontAwesomeIcon icon={faRepeat} />
+        </Button.Icon>
+        <Button.Label>Reset Filters</Button.Label>
+      </Button>
+    </div>
   )
 }
 
