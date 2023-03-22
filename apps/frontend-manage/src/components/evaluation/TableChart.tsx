@@ -80,6 +80,11 @@ function TableChart({
   if (showSolution)
     columns.push({ label: 'T/F', accessor: 'correct', sortable: true })
 
+  const anythingSortable = columns.reduce(
+    (acc, curr) => acc || curr.sortable,
+    false
+  )
+
   return (
     <div>
       <Table
@@ -92,15 +97,17 @@ function TableChart({
           body: `${textSize}`,
         }}
       />
-      <Button
-        onClick={() => ref.current?.reset()}
-        className={{ root: 'float-right' }}
-      >
-        <Button.Icon className={{ root: 'mr-1.5' }}>
-          <FontAwesomeIcon icon={faRepeat} />
-        </Button.Icon>
-        <Button.Label>Reset Filters</Button.Label>
-      </Button>
+      {anythingSortable && (
+        <Button
+          onClick={() => ref.current?.reset()}
+          className={{ root: 'float-right' }}
+        >
+          <Button.Icon className={{ root: 'mr-1.5' }}>
+            <FontAwesomeIcon icon={faRepeat} />
+          </Button.Icon>
+          <Button.Label>Reset Sorting</Button.Label>
+        </Button>
+      )}
     </div>
   )
 }
