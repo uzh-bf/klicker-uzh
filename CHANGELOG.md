@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.76](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.75...v3.0.0-alpha.76) (2023-03-23)
+
+
+### Bug Fixes
+
+* **packages/prisma:** fix invalid include on learning element creation ([c0cc4a1](https://github.com/uzh-bf/klicker-uzh/commit/c0cc4a1240a292e2642eec5245fcd70bd81f1787))
+
 ## [3.0.0-alpha.75](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.74...v3.0.0-alpha.75) (2023-03-23)
 
 
