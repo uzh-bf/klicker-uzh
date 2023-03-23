@@ -68,8 +68,7 @@ describe('Different learning element workflows', () => {
         // sign in as student
         cy.clearAllCookies();
         cy.visit(Cypress.env('URL_STUDENT'));
-        // wait up to 30 (default = 4) seconds before continuing the test
-        cy.get('[data-cy="username-field"]', { timeout: 30000 } ).click().type(Cypress.env('STUDENT_USERNAME'));
+        cy.get('[data-cy="username-field"]').click().type(Cypress.env('STUDENT_USERNAME'));
         cy.get('[data-cy="password-field"]').click().type(Cypress.env('STUDENT_PASSWORD'));
         cy.get('[data-cy="submit-login"]').click();
 

@@ -10,7 +10,6 @@ describe('Login workflows for lecturer and students', () => {
   
   it('signs in into lecturer account', () => {
     cy.visit(Cypress.env('URL_LECTURER'));
-    cy.wait(20000);
     cy.get('[data-cy="login-logo"]').should('exist');
     cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'));
     cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'));
