@@ -858,9 +858,6 @@ export async function createLearningElement(
           }
         : undefined,
     },
-    include: {
-      instances: true,
-    },
   })
 
   ctx.emitter.emit('invalidate', {
