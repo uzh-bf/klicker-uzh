@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 
-const nextConfig = withPWA({
+const nextConfig = {
   transpilePackages: ['shared-components'],
   i18n: {
     locales: ['en', 'de'],
@@ -55,7 +55,7 @@ const nextConfig = withPWA({
     APP_SECRET: process.env.APP_SECRET,
     COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   },
-})
+}
 
 if (process.env.NODE_ENV !== 'test') {
   const withPWA = require('next-pwa')({
