@@ -7,9 +7,9 @@ services:
       args:
         NODE_ENV: development
         COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_ADD_RESPONSE_URL: "http://127.0.0.1:7072/api/AddResponse"
-        NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000/api/graphql"
-        NEXT_PUBLIC_API_URL_SSR: "http://backend:3000/api/graphql"
+        NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://127.0.0.1:7072/api/AddResponse'
+        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
     environment:
       APP_SECRET: abcd
     ports:
@@ -25,8 +25,8 @@ services:
       args:
         NODE_ENV: development
         COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000/api/graphql"
-        NEXT_PUBLIC_API_URL_SSR: "http://backend:3000/api/graphql"
+        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
     ports:
       - 3002:3000
     networks:
@@ -40,8 +40,8 @@ services:
       args:
         NODE_ENV: development
         COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_API_URL: "http://127.0.0.1:3000/api/graphql"
-        NEXT_PUBLIC_API_URL_SSR: "http://backend:3000/api/graphql"
+        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
     ports:
       - 3003:3000
     networks:
@@ -53,16 +53,16 @@ services:
     build:
       context: apps/backend-docker
       args:
-        NODE_ENV: "development"
+        NODE_ENV: 'development'
     environment:
-      DATABASE_URL: "postgres://klicker:klicker@postgres:5432/main"
-      APP_SECRET: "abcd"
-      REDIS_HOST: "redis_exec"
+      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
+      APP_SECRET: 'abcd'
+      REDIS_HOST: 'redis_exec'
       REDIS_PORT: 6379
-      REDIS_CACHE_HOST: "redis_cache"
+      REDIS_CACHE_HOST: 'redis_cache'
       REDIS_CACHE_PORT: 6379
-      API_DOMAIN: "127.0.0.1"
-      COOKIE_DOMAIN: "127.0.0.1"
+      API_DOMAIN: '127.0.0.1'
+      COOKIE_DOMAIN: '127.0.0.1'
     ports:
       - 3000:3000
     networks:
@@ -70,7 +70,7 @@ services:
 
   # main database
   postgres:
-    image: docker.io/library/postgres:14.3
+    image: docker.io/library/postgres:15
     environment:
       POSTGRES_USER: klicker
       POSTGRES_PASSWORD: klicker
@@ -82,7 +82,7 @@ services:
 
     # redis instance to support session execution
   redis_exec:
-    image: docker.io/library/redis:6
+    image: docker.io/library/redis:7
     ports:
       - 6379:6379
     networks:
@@ -92,7 +92,7 @@ services:
 
   # redis instance for page caching and rate limiting
   redis_cache:
-    image: docker.io/library/redis:6
+    image: docker.io/library/redis:7
     ports:
       - 6380:6379
     networks:
