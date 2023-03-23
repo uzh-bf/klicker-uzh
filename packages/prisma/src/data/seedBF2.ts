@@ -2,7 +2,7 @@ import Prisma from '@klicker-uzh/prisma'
 import { Question } from '../client/index.js'
 import { COURSE_ID_BF2, USER_ID_BF2 } from './constants.js'
 import * as DATA_BF2 from './data/BF2.js'
-import { prepareLearningElement } from './helpers.js'
+import { prepareLearningElement, prepareQuestionInstance } from './helpers.js'
 
 async function seed(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)
@@ -186,6 +186,148 @@ async function seed(prisma: Prisma.PrismaClient) {
   //     },
   //     update: {},
   //   })
+
+  const GROUP_ACTIVITY_ID = '9f5850a4-f58d-4144-94d6-68adb3ab0466'
+  const groupActivity1BF2 = await prisma.groupActivity.upsert({
+    where: {
+      id: GROUP_ACTIVITY_ID,
+    },
+    create: {
+      id: GROUP_ACTIVITY_ID,
+      name: 'BFII Gruppenquest 2',
+      displayName: 'BFII Gruppenquest 2',
+      description: `
+![](https://sos-ch-dk-2.exo.io/klicker-prod/img/bf2/bf2_group_activity_2.png)
+
+Du und deine Kolleg:innen sharen euer Wissen über Shares. Auch heute seid ihr zusammengekommen, um aktuelle Aktien zu analysieren und eine auszuwählen, welche ihr kaufen werdet. Zur Auswahl stehen die folgenden Aktientitel der Pharmabranche:
+
+- Novartis AG (NOVN.SW)
+- Sanofi (SNY)
+- Bristol-Myers Squibb Company (BMY)
+
+Um genauere Angaben zu diesen Titeln zu finden, durchsucht ihr Yahoo Finance. Für die Aufgaben geben wir euch noch die folgenden Tipps:
+
+- Net Income kann als Synonym von Reingewinn verstanden werden.
+- Nutzt für alle Berechnungen den Stichtag 30.12.2022 und die Daten des jeweils aktuellsten Jahresabschlusses (2022), welchen ihr auf Yahoo Finance findet.
+- Vernachlässigt Währungsunterschiede.
+- Nutzt bei der relativen Bewertung jeweils die Multiples der zwei anderen Unternehmen, um den theoretischen Kurs eures Zielunternehmens zu bestimmen.
+- Ihr könnt folgende Eigenkapitalkostensätze für eure Berechnungen verwenden: Novartis AG: 8.40%, Sanofi: 11.00%, Bristol-Myers: 9.60%.
+
+`,
+      scheduledStartAt: new Date('2023-03-24T11:00:00.000Z'),
+      scheduledEndAt: new Date('2023-03-31T22:00:00.000Z'),
+      parameters: {},
+      clues: {
+        connectOrCreate: [
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'method1',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'method1',
+              displayName: 'Methode 1',
+              value: 'Dividendendiskontierungsmodell',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'method2',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'method2',
+              displayName: 'Methode 2',
+              value: 'Dividendenwachstumsmodell',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'method3',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'method3',
+              displayName: 'Methode 3',
+              value: 'Gewinnmodell',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'method4',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'method4',
+              displayName: 'Methode 4',
+              value: 'P/E Multiple',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'method5',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'method5',
+              displayName: 'Methode 5',
+              value: 'EV/Sales Multiple',
+            },
+          },
+        ],
+      },
+      instances: {
+        connectOrCreate: await Promise.all(
+          [745, 746, 747, 748, 749, 750, 751, 752].map(async (qId, ix) => {
+            const question = await prisma.question.findUnique({
+              where: { id: qId },
+            })
+
+            return {
+              where: {
+                type_groupActivityId_order: {
+                  type: 'GROUP_ACTIVITY',
+                  groupActivityId: GROUP_ACTIVITY_ID,
+                  order: ix,
+                },
+              },
+              create: prepareQuestionInstance({
+                question,
+                type: 'GROUP_ACTIVITY',
+                order: ix,
+              }),
+            }
+          })
+        ),
+      },
+      owner: {
+        connect: {
+          id: USER_ID_BF2,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_BF2,
+        },
+      },
+    },
+    update: {},
+  })
 }
 
 const prismaClient = new Prisma.PrismaClient()
