@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.75](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.74...v3.0.0-alpha.75) (2023-03-23)
+
+
+### Bug Fixes
+
+* **cypress:** fix failing CI tests ([#3486](https://github.com/uzh-bf/klicker-uzh/issues/3486)) ([75a1457](https://github.com/uzh-bf/klicker-uzh/commit/75a145791d795c2c57764498bd1970ad2da60cba))
+
 ## [3.0.0-alpha.74](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.73...v3.0.0-alpha.74) (2023-03-21)
 
 
