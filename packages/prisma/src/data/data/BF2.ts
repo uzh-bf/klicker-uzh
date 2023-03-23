@@ -86,4 +86,82 @@ Der Investor Felix kaufte vor einem Jahr europäische Call-Optionen auf die Schw
       },
     ],
   },
+  {
+    id: '4d1a25d0-1696-4094-a9b4-165006b54871',
+    name: 'BFII Modul 3',
+    displayName: 'BFII Modul 3 - Lernfragen',
+    description: '',
+    orderType: OrderType.LAST_RESPONSE,
+    stacks: [
+      {
+        displayName: 'Modul 3 - Kapitalgewinn- und Dividendenrendite',
+        description: `
+Gegeben ist folgende Ausgangslage:
+
+![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul3_Ausgangslage_Kapitalgewinnrendite.png)
+
+[Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul3_Kapitalgewinnrendite.xlsx)
+        `,
+        elements: [732, 733],
+      },
+      {
+        displayName:
+          'Modul 3 - Arithmetisches und geometrisches Mittel von Renditen',
+        description: `
+        Gegeben ist folgende Ausgangslage:
+
+        ![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul3_Ausgangslage_Renditen.png)
+
+        [Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul3_Renditen.xlsx)
+                `,
+        elements: [734, 735, 736],
+      },
+      {
+        elements: [558],
+      },
+      {
+        displayName: 'Modul 3 - Statistische Grössen',
+        description: `
+        Gegeben ist folgende Ausgangslage:
+
+        ![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul3_Ausgangslage_Statistik.png)
+
+        [Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul3_Statistik.xlsx)
+                `,
+        elements: [737, 738, 739, 740],
+      },
+      // TODO: was ist mit standardabweichung?
+      {
+        elements: [559],
+      },
+      {
+        elements: [560],
+      },
+      {
+        displayName: 'Modul 3 - Portfoliorendite und -standardabweichung',
+        description: `
+        Gegeben ist folgende Ausgangslage:
+
+        ![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul3_Ausgangslage_Portfoliorendite.png)
+
+        [Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul3_Portfoliorendite.xlsx)
+                `,
+        elements: [741, 742],
+      },
+      {
+        elements: [561],
+      },
+      {
+        displayName: 'Modul 3 - Tangentialportfolio',
+        description: `
+        Gegeben ist folgende Ausgangslage:
+
+        ![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul3_Ausgangslage_Portfoliorendite.png)
+
+        [Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul3_Portfoliorendite.xlsx)
+                `,
+        elements: [743, 744],
+      },
+    ],
+  },
 ]
