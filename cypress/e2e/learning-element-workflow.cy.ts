@@ -68,13 +68,14 @@ describe('Different learning element workflows', () => {
         // sign in as student
         cy.clearAllCookies();
         cy.visit(Cypress.env('URL_STUDENT'));
-        cy.get('[data-cy="username-field"]').click().type(Cypress.env('STUDENT_USERNAME'));
+        // wait up to 30 (default = 4) seconds before continuing the test
+        cy.get('[data-cy="username-field"]', { timeout: 30000 } ).click().type(Cypress.env('STUDENT_USERNAME'));
         cy.get('[data-cy="password-field"]').click().type(Cypress.env('STUDENT_PASSWORD'));
         cy.get('[data-cy="submit-login"]').click();
 
         cy.findByText('Repetition').click();
         cy.get('[data-cy="repetition-element"]').contains(learningElementDisplayName).click();
         cy.get('[data-cy="start-learning-element"]').click();
-        // TODO: answer one question once bug is fixed (questions in learning elements are currently not correctly fetched)
+        // TODO: answer one question once bug is fixed (questions in learning elements are currently not correctly fetched) 
     })
 })
