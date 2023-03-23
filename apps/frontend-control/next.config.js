@@ -1,13 +1,5 @@
 /** @type {import('next').NextConfig} */
 
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  skipWaiting: true,
-  dynamicStartUrlRedirect: true,
-  disable:
-    process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
-})
-
 const nextConfig = withPWA({
   transpilePackages: ['shared-components'],
   i18n: {
@@ -65,4 +57,14 @@ const nextConfig = withPWA({
   },
 })
 
-module.exports = nextConfig
+if (process.env.NODE_ENV !== 'test') {
+  const withPWA = require('next-pwa')({
+    dest: 'public',
+    skipWaiting: true,
+    dynamicStartUrlRedirect: true,
+    disable: process.env.NODE_ENV === 'development',
+  })
+  module.exports = withPWA(nextConfig)
+} else {
+  module.exports = nextConfig
+}
