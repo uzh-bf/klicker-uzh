@@ -5,9 +5,9 @@ generator client {
   binaryTargets   = ["native", "windows", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x"]
 }
 
-generator erd {
-  provider = "prisma-erd-generator"
-}
+// generator erd {
+//   provider = "prisma-erd-generator"
+// }
 
 generator pothos {
   provider     = "prisma-pothos-types"
