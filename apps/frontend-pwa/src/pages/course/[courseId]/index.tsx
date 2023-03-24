@@ -409,18 +409,27 @@ function CourseOverview({ courseId }: any) {
                               indexedGroupActivityInstances[activity.id]
                                 ?.results && (
                                 <div>
-                                  <div className="text-sm">
-                                    {t('shared.generic.points')}:{' '}
-                                    {
-                                      indexedGroupActivityInstances[activity.id]
-                                        .results.points
-                                    }
-                                    /
-                                    {
-                                      indexedGroupActivityInstances[activity.id]
-                                        .results.maxPoints
-                                    }
-                                  </div>
+                                  {typeof indexedGroupActivityInstances[
+                                    activity.id
+                                  ].results.points === 'number' &&
+                                    typeof indexedGroupActivityInstances[
+                                      activity.id
+                                    ].results.maxPoints === 'number' && (
+                                      <div className="text-sm">
+                                        {t('shared.generic.points')}:{' '}
+                                        {
+                                          indexedGroupActivityInstances[
+                                            activity.id
+                                          ].results.points
+                                        }
+                                        /
+                                        {
+                                          indexedGroupActivityInstances[
+                                            activity.id
+                                          ].results.maxPoints
+                                        }
+                                      </div>
+                                    )}
 
                                   {indexedGroupActivityInstances[activity.id]
                                     .results.message && (
