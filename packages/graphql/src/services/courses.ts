@@ -159,7 +159,11 @@ export async function getCourseOverviewData(
             },
           },
         },
-        participant: true,
+        participant: {
+          include: {
+            participantGroups: true,
+          },
+        },
         courseLeaderboard: true,
       },
     })
@@ -171,7 +175,8 @@ export async function getCourseOverviewData(
     const groupActivityInstances = ctx.prisma.groupActivityInstance.findMany({
       where: {
         groupId: {
-          in: participation?.course.participantGroups.map((g) => g.id) ?? [],
+          in:
+            participation?.participant.participantGroups.map((g) => g.id) ?? [],
         },
       },
     })
