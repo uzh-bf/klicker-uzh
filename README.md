@@ -53,3 +53,5 @@ We welcome any contributions to the KlickerUZH project. Before considering any c
 ## License
 
 The KlickerUZH and all of its subprojects are licensed under the [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.de.html).
+
+[![klicker-uzh](https://img.shields.io/endpoint?url=https://cloud.cypress.io/badge/simple/y436dx/v3&style=for-the-badge&logo=cypress)](https://cloud.cypress.io/projects/y436dx/runs)
