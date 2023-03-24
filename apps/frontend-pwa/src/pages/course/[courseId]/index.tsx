@@ -5,6 +5,7 @@ import {
   CreateParticipantGroupDocument,
   GetCourseOverviewDataDocument,
   GetParticipantGroupsDocument,
+  GroupActivityInstance,
   JoinCourseDocument,
   JoinParticipantGroupDocument,
   LeaveCourseDocument,
@@ -16,11 +17,11 @@ import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
 import { GetServerSideProps } from 'next'
 import { useTranslations } from 'next-intl'
-import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import Leaderboard from 'shared-components/src/Leaderboard'
+import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import { twMerge } from 'tailwind-merge'
 import Tabs from '../../../components/common/Tabs'
 import Layout from '../../../components/Layout'
@@ -33,16 +34,6 @@ import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 
 // TODO: replace fields in this component through our own design system components
-
-const DynamicMarkdown = dynamic(
-  async () => {
-    const { Markdown } = await import('@klicker-uzh/markdown')
-    return Markdown
-  },
-  {
-    ssr: false,
-  }
-)
 
 function CourseOverview({ courseId }: any) {
   const t = useTranslations()
@@ -84,6 +75,7 @@ function CourseOverview({ courseId }: any) {
     leaderboardStatistics,
     groupLeaderboard,
     groupLeaderboardStatistics,
+    groupActivityInstances,
   } = data.getCourseOverviewData
 
   const filteredGroupLeaderboard = groupLeaderboard?.filter(
@@ -93,6 +85,17 @@ function CourseOverview({ courseId }: any) {
   const top10Participants = leaderboard
     ? leaderboard.map((entry) => entry.participantId)
     : []
+
+  const indexedGroupActivityInstances =
+    groupActivityInstances?.reduce<Record<string, GroupActivityInstance>>(
+      (acc, groupActivityInstance) => {
+        return {
+          ...acc,
+          [groupActivityInstance.groupActivityId]: groupActivityInstance,
+        }
+      },
+      {}
+    ) ?? {}
 
   const openProfileModal = (id: string, isSelf: boolean) => {
     if (isSelf) {
@@ -146,6 +149,7 @@ function CourseOverview({ courseId }: any) {
               ))}
 
             {course?.isGamificationEnabled &&
+              !course?.isGroupDeadlinePassed &&
               (data.participantGroups?.length ?? 0) < 1 && (
                 <Tabs.Tab
                   key="create"
@@ -333,17 +337,23 @@ function CourseOverview({ courseId }: any) {
                       <Leaderboard
                         leaderboard={group.participants}
                         participant={participant}
-                        onLeave={() => {
-                          leaveParticipantGroup({
-                            variables: {
-                              courseId,
-                              groupId: group.id,
-                            },
-                            refetchQueries: [GetCourseOverviewDataDocument],
-                          })
+                        onLeave={
+                          course?.isGroupDeadlinePassed
+                            ? undefined
+                            : () => {
+                                leaveParticipantGroup({
+                                  variables: {
+                                    courseId,
+                                    groupId: group.id,
+                                  },
+                                  refetchQueries: [
+                                    GetCourseOverviewDataDocument,
+                                  ],
+                                })
 
-                          setSelectedTab('global')
-                        }}
+                                setSelectedTab('global')
+                              }
+                        }
                         hidePodium
                         podiumImgSrc={{
                           rank1: Rank1Img,
@@ -373,25 +383,16 @@ function CourseOverview({ courseId }: any) {
                     />
                   </div>
 
-                  <div className="mt-8">
-                    <H4>{t('shared.generic.groupActivities')}</H4>
-                    {course.groupActivities?.map((activity) => (
-                      <div key={activity.id} className="">
-                        <Link
-                          href={`/group/${group.id}/activity/${activity.id}`}
-                          className="inline-flex items-center gap-2 hover:text-orange-700"
-                        >
-                          <Button
-                            className={{ root: 'gap-4 text-left text-sm' }}
-                            disabled={
-                              dayjs().isBefore(activity.scheduledStartAt) ||
-                              dayjs().isAfter(activity.scheduledEndAt)
-                            }
+                  {course?.groupActivities?.length > 0 && (
+                    <div className="mt-8">
+                      <H4>{t('shared.generic.groupActivities')}</H4>
+                      <div className="flex-col pt-2 border-t">
+                        {course.groupActivities?.map((activity) => (
+                          <div
+                            key={activity.id}
+                            className="flex flex-row justify-between flex-1 gap-8 border-b last:border-b-0"
                           >
-                            <Button.Icon>
-                              <FontAwesomeIcon icon={faExternalLink} />
-                            </Button.Icon>
-                            <Button.Label>
+                            <div>
                               <div>{activity.displayName}</div>
                               <div className="text-xs">
                                 {dayjs(activity.scheduledStartAt).format(
@@ -402,12 +403,74 @@ function CourseOverview({ courseId }: any) {
                                   'DD.MM.YYYY HH:mm'
                                 )}
                               </div>
-                            </Button.Label>
-                          </Button>
-                        </Link>
+                            </div>
+
+                            {dayjs().isAfter(activity.scheduledEndAt) &&
+                              indexedGroupActivityInstances[activity.id]
+                                ?.results && (
+                                <div>
+                                  <div className="text-sm">
+                                    {t('shared.generic.points')}:{' '}
+                                    {
+                                      indexedGroupActivityInstances[activity.id]
+                                        .results.points
+                                    }
+                                    /
+                                    {
+                                      indexedGroupActivityInstances[activity.id]
+                                        .results.maxPoints
+                                    }
+                                  </div>
+
+                                  {indexedGroupActivityInstances[activity.id]
+                                    .results.message && (
+                                    <DynamicMarkdown
+                                      content={
+                                        indexedGroupActivityInstances[
+                                          activity.id
+                                        ].results.message
+                                      }
+                                      className={{
+                                        root: 'prose-sm prose prose-p:m-0',
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              )}
+
+                            <div>
+                              {dayjs().isAfter(activity.scheduledStartAt) &&
+                                dayjs().isBefore(activity.scheduledEndAt) && (
+                                  <Link
+                                    href={`/group/${group.id}/activity/${activity.id}`}
+                                    className="inline-flex items-center gap-2 hover:text-orange-700"
+                                  >
+                                    <Button
+                                      className={{
+                                        root: 'gap-4 text-left text-sm',
+                                      }}
+                                    >
+                                      <Button.Icon>
+                                        <FontAwesomeIcon
+                                          icon={faExternalLink}
+                                        />
+                                      </Button.Icon>
+                                      <Button.Label>
+                                        <div>
+                                          {t(
+                                            'pwa.groupActivity.openGroupActivity'
+                                          )}
+                                        </div>
+                                      </Button.Label>
+                                    </Button>
+                                  </Link>
+                                )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </Tabs.TabContent>
             ))}

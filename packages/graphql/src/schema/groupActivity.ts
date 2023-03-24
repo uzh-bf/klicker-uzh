@@ -48,10 +48,12 @@ export const GroupActivityInstance = GroupActivityInstanceRef.implement({
       type: 'Date',
       nullable: true,
     }),
+    results: t.expose('results', { type: 'Json', nullable: true }),
     clues: t.expose('clues', {
       type: [GroupActivityClueInstanceRef],
       nullable: true,
     }),
+    groupActivityId: t.exposeID('groupActivityId'),
   }),
 })
 

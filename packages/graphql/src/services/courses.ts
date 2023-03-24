@@ -168,6 +168,14 @@ export async function getCourseOverviewData(
       where: { id: courseId },
     })
 
+    const groupActivityInstances = ctx.prisma.groupActivityInstance.findMany({
+      where: {
+        groupId: {
+          in: participation?.course.participantGroups.map((g) => g.id) ?? [],
+        },
+      },
+    })
+
     const lbEntries =
       (await course.participations({
         where: {
@@ -269,6 +277,7 @@ export async function getCourseOverviewData(
               ? allGroupEntries.sum / allGroupEntries.count
               : 0,
         },
+        groupActivityInstances,
       }
     }
   }

@@ -53,6 +53,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pinCode: 123456789,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2024-01-01T23:59'),
+      groupDeadlineDate: new Date('2024-01-01T00:01'),
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )
@@ -165,7 +166,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       },
       instances: {
         connectOrCreate: await Promise.all(
-          [0, 1].map(async (qId, ix) => {
+          [0].map(async (qId, ix) => {
             const question = await prisma.question.findUnique({
               where: { id: qId },
             })

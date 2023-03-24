@@ -73,7 +73,7 @@ export function ParticipantOther(props: ParticipantProps) {
 interface ParticipantSelfProps extends ParticipantProps {
   isActive: boolean
   onJoinCourse?: () => void
-  onLeaveCourse: () => void
+  onLeaveCourse?: () => void
 }
 
 export function ParticipantSelf(props: ParticipantSelfProps) {
@@ -81,7 +81,7 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
 
   return (
     <Participant isHighlighted {...props}>
-      {props.isActive ? (
+      {props.isActive && typeof props.onLeaveCourse !== 'undefined' && (
         <Button
           className={{ root: 'text-sm' }}
           onClick={(e) => {
@@ -91,7 +91,8 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
         >
           {t('shared.generic.leave')}
         </Button>
-      ) : (
+      )}
+      {!props.isActive && typeof props.onJoinCourse !== 'undefined' && (
         <Button
           className={{ root: 'text-sm' }}
           onClick={(e) => {

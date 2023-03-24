@@ -14,7 +14,10 @@ import {
   LeaderboardEntry,
   LeaderboardStatistics,
 } from './course'
-import { IQuestionStack, QuestionStackRef } from './learningElements'
+import type { IGroupActivityInstance } from './groupActivity'
+import { GroupActivityInstanceRef } from './groupActivity'
+import type { IQuestionStack } from './learningElements'
+import { QuestionStackRef } from './learningElements'
 
 export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
   fields: (t) => ({
@@ -208,6 +211,7 @@ export interface IParticipantLearningData {
   leaderboardStatistics?: ILeaderboardStatistics
   groupLeaderboard?: IGroupLeaderboardEntry[]
   groupLeaderboardStatistics?: ILeaderboardStatistics
+  groupActivityInstances?: IGroupActivityInstance[]
 }
 export const ParticipantLearningDataRef =
   builder.objectRef<IParticipantLearningData>('ParticipantLearningData')
@@ -249,6 +253,11 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
 
     groupLeaderboardStatistics: t.expose('groupLeaderboardStatistics', {
       type: LeaderboardStatistics,
+      nullable: true,
+    }),
+
+    groupActivityInstances: t.expose('groupActivityInstances', {
+      type: [GroupActivityInstanceRef],
       nullable: true,
     }),
   }),

@@ -18,6 +18,8 @@ query GetCourseOverviewData($courseId: String!) {
       color
       description
       isGamificationEnabled
+      groupDeadlineDate
+      isGroupDeadlinePassed
 
       awards {
         id
@@ -65,6 +67,12 @@ query GetCourseOverviewData($courseId: String!) {
     groupLeaderboardStatistics {
       participantCount
       averageScore
+    }
+    groupActivityInstances {
+      id
+      decisionsSubmittedAt
+      results
+      groupActivityId
     }
   }
   participantGroups(courseId: $courseId) {
