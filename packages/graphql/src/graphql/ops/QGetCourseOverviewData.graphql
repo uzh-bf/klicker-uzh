@@ -68,6 +68,12 @@ query GetCourseOverviewData($courseId: String!) {
       participantCount
       averageScore
     }
+    groupActivityInstances {
+      id
+      decisionsSubmittedAt
+      results
+      groupActivityId
+    }
   }
   participantGroups(courseId: $courseId) {
     id
