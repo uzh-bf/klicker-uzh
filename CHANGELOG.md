@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.77](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.76...v3.0.0-alpha.77) (2023-03-24)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** allow users to reset table sorting ([#3485](https://github.com/uzh-bf/klicker-uzh/issues/3485)) ([56ebd4b](https://github.com/uzh-bf/klicker-uzh/commit/56ebd4baf4db8c391eafe7b2bdad6e0354cad8ea))
+* implement group deadline and activity results display ([#3488](https://github.com/uzh-bf/klicker-uzh/issues/3488)) ([2c700ed](https://github.com/uzh-bf/klicker-uzh/commit/2c700ed6032c84a6bdc61c2728ccc17f85d7b4f7))
+
 ## [3.0.0-alpha.76](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.75...v3.0.0-alpha.76) (2023-03-23)
 
 
