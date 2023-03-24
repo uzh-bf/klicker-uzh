@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.78](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.77...v3.0.0-alpha.78) (2023-03-24)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** only display points if they have been set ([ee88704](https://github.com/uzh-bf/klicker-uzh/commit/ee8870402654eb08efa9f9b7a4b692bfba50fec1))
+* **packages/graphql:** use participants groups instead of course groups ([44259dd](https://github.com/uzh-bf/klicker-uzh/commit/44259dd4135407cf838500dcd5d683d35ed773e4))
+
 ## [3.0.0-alpha.77](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.76...v3.0.0-alpha.77) (2023-03-24)
 
 
