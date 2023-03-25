@@ -25,27 +25,23 @@ function TableChart({
 }: TableChartProps): React.ReactElement {
   const ref = useRef<{ reset: () => void }>(null)
 
+  const formatCorrect = (value: boolean | undefined | null): string => {
+    if (value === true) return 'T'
+    if (value === false) return 'F'
+    return '--'
+  }
+
   const tableData = useMemo(() => {
     if (QUESTION_GROUPS.CHOICES.includes(data.questionData.type)) {
       return (data.questionData as ChoicesQuestionData).options.choices.map(
         (choice: Choice, index: number) => {
           return {
             count: data.results[index].count,
-            value: (
-              <Markdown
-                content={choice.value}
-                className={{ img: 'max-h-32' }}
-              />
-            ),
-            correct: choice.correct ? 'T' : 'F',
+            value: choice.value,
+            correct: formatCorrect(choice.correct),
             percentage: data.participants
-              ? String(
-                  (
-                    (data.results[index].count / data.participants) *
-                    100
-                  ).toFixed()
-                ) + ' %'
-              : '0 %',
+              ? data.results[index].count / data.participants
+              : 0,
           }
         }
       )
@@ -56,16 +52,8 @@ function TableChart({
         return {
           count: result.count,
           value: result.value,
-          correct:
-            result.correct === undefined
-              ? '--'
-              : result.correct === true
-              ? 'T'
-              : 'F',
-          percentage: data.participants
-            ? String(((result.count / data.participants) * 100).toFixed()) +
-              ' %'
-            : '0 %',
+          correct: formatCorrect(result.correct),
+          percentage: data.participants ? result.count / data.participants : 0,
         }
       })
     }
@@ -73,8 +61,23 @@ function TableChart({
 
   const columns = [
     { label: 'Count', accessor: 'count', sortable: true },
-    { label: 'Value', accessor: 'value', sortable: true },
-    { label: '%', accessor: 'percentage', sortable: true },
+    {
+      label: 'Value',
+      accessor: 'value',
+      sortable: true,
+      formatter: (value: string | number) => {
+        if (typeof value === 'string')
+          return <Markdown content={value} className={{ img: 'max-h-32' }} />
+        return value
+      },
+    },
+    {
+      label: '%',
+      accessor: 'percentage',
+      sortable: true,
+      transformer: (value: number) => value * 100,
+      formatter: (value: number) => `${String(value.toFixed())} %`,
+    },
   ]
 
   if (showSolution)
