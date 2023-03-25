@@ -1,13 +1,14 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.0.0-alpha.70",
+  "version": "3.0.0-alpha.78",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3003",
     "build": "next build",
     "build:test": "cross-env NODE_ENV=test next build",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "start": "next start --port 3003",
     "start:test": "cross-env NODE_ENV=test npm start",
     "lint": "next lint"
@@ -24,7 +25,7 @@
     "@next/font": "13.1.6",
     "@sentry/nextjs": "7.37.2",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "1.5.3",
+    "@uzh-bf/design-system": "1.5.4",
     "body-parser": "1.20.1",
     "cross-env": "7.0.3",
     "dayjs": "1.11.7",

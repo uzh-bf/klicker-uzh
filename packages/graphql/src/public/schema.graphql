@@ -120,9 +120,12 @@ type Course {
   description: String
   displayName: String!
   endDate: Date!
+  groupActivities: [GroupActivity!]
+  groupDeadlineDate: Date
   id: ID!
   isArchived: Boolean!
   isGamificationEnabled: Boolean!
+  isGroupDeadlinePassed: Boolean
   leaderboard: [LeaderboardEntry!]
   learningElements: [LearningElement!]
   microSessions: [MicroSession!]
@@ -198,7 +201,11 @@ type GroupAchievementInstance {
 }
 
 type GroupActivity {
+  description: String
+  displayName: String!
   id: ID!
+  scheduledEndAt: Date!
+  scheduledStartAt: Date!
 }
 
 type GroupActivityClue {
@@ -245,7 +252,9 @@ type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
   decisionsSubmittedAt: Date
+  groupActivityId: ID!
   id: Int!
+  results: Json
 }
 
 type GroupActivityParameter {
@@ -524,6 +533,7 @@ type ParticipantGroup {
 
 type ParticipantLearningData {
   course: Course
+  groupActivityInstances: [GroupActivityInstance!]
   groupLeaderboard: [GroupLeaderboardEntry!]
   groupLeaderboardStatistics: LeaderboardStatistics
   id: String!

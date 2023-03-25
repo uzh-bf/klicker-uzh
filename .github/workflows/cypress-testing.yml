@@ -1,9 +1,11 @@
 name: Klicker automated testing with cypress
 on:
   push:
-    branches:
-      - 'Klicker-Testing-v3'
-  workflow_dispatch:
+    branches: ['v3']
+  pull_request:
+    branches: ["v3"]
+    types: [opened, synchronize, reopened]
+  # workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -131,19 +133,21 @@ jobs:
   #         tags: ${{ env.REGISTRY }}/${{ github.repository }}/frontend-pwa:cypress
   #         labels: ${{ steps.meta.outputs.labels }}
 
-  # TODO:
-  # build-frontend-control
-
-  # fill-database:
 
   cypress-run:
+    env:
+       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+       TURBO_REMOTE_ONLY: true
+
     # needs:
     #   - build-backend
     #   - build-frontend-manage
     #   - build-frontend-pwa
+
     services:
       postgres:
-        image: postgres:14.3
+        image: postgres:15
         env:
           POSTGRES_USER: klicker
           POSTGRES_PASSWORD: klicker
@@ -156,13 +160,51 @@ jobs:
         ports:
           - 5432:5432
       redis_cache:
-        image: redis:6
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
         ports:
-          - 6380:6380
+          - 6380:6379
       redis_exec:
-        image: redis:6
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
         ports:
           - 6379:6379
+
+      # sendria:
+      #   image: msztolcman/sendria:v2.2.2.0
+      #   ports:
+      #     - 1025:1025
+      #     - 1080:1080
+      # frontend-manage:
+      #   image: ghcr.io/${{ github.repository }}/frontend-manage:v3.0.0-alpha.70
+      #   credentials:
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      #   ports:
+      #     - 3002:3000
+      # frontend-pwa:
+      #   image: ghcr.io/${{ github.repository }}/frontend-pwa:v3.0.0-alpha.70
+      #   credentials:
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      #   ports:
+      #     - 3001:3000
+      # backend:
+      #   image: ghcr.io/${{ github.repository }}/backend-docker:v3.0.0-alpha.70
+      #   credentials:
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      #   ports:
+      #     - 3000:3000
+
 
     runs-on: ubuntu-latest
     # strategy:
@@ -171,43 +213,63 @@ jobs:
     #     containers: [1, 2] # Uses 2 parallel instances
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+
       - name: Define node version
         uses: actions/setup-node@v3
         with:
           node-version: 18
+
       - name: Check out repository code
         uses: actions/checkout@v3
-      - uses: bahmutov/npm-install@v1
-      - name: Install azure-functions-core-tools
-        # TODO: caching
-        run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/apps/frontend-pwa/.next/cache
+            ${{ github.workspace }}/apps/frontend-manage/.next/cache
+            ${{ github.workspace }}/apps/frontend-control/.next/cache
+          # Generate a new cache whenever packages or source files change.
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          # If source files changed but packages didn't, rebuild from a prior cache.
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+
+      # - name: Install azure-functions-core-tools
+      #   run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
+
       - name: Prepare .env and local.settings.json files
-        # TODO: does it work like this?
-        env:
-          SERVICE_BUS_CONNECTION: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
-          SERVICE_BUS_QUEUE: "q-gh-actions"
         run: |
-          mv packages/prisma/.env.cypress packages/prisma/.env
+          mv packages/prisma/.env.template packages/prisma/.env
           mv apps/backend-docker/.env.template apps/backend-docker/.env
-          mv apps/backend-response-processor/local.settings.json.template apps/backend-response-processor/local.settings.json
-          mv apps/backend-responses/local.settings.json.template apps/backend-responses/local.settings.json
+          echo "$FUNC_RESPONSES_SETTINGS" > apps/backend-responses/local.settings.json
+          echo "$FUNC_RESPONSE_PROCESSOR_SETTINGS" > apps/backend-response-processor/local.settings.json
+        env:
+          FUNC_RESPONSES_SETTINGS: ${{ secrets.FUNC_RESPONSES_SETTINGS }}
+          FUNC_RESPONSE_PROCESSOR_SETTINGS: ${{ secrets.FUNC_RESPONSE_PROCESSOR_SETTINGS }}
+
       - name: Apply migrations and seed the database
-        # TODO: caching with turbo? why does it run twice?
         run: |
-          npm run build:test
           cd packages/prisma
-          npm run prisma:reset -- -f
-          npm run seed:cypress
+          npm run build
+          npm run prisma:reset:raw -- -f
+          npm run seed:test
+
       - name: Cypress run
         uses: cypress-io/github-action@v5
         timeout-minutes: 20
         with:
           install: false
           start: npm run start:test
-          wait-on: 'http://localhost:3000' # Waits for above
+          wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003'
+          wait-on-timeout: 120
           record: true
-          # parallel: true # Runs test in parallel using settings above
           browser: chrome
         env:
+          INITIAL_PASSWORD: "abcd"
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_ENV: production

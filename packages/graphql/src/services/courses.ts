@@ -1,4 +1,4 @@
-import { LearningElementStatus } from '@klicker-uzh/prisma'
+import { GroupActivityStatus, LearningElementStatus } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 
@@ -152,15 +152,33 @@ export async function getCourseOverviewData(
                 order: 'asc',
               },
             },
+            groupActivities: {
+              where: {
+                status: GroupActivityStatus.PUBLISHED,
+              },
+            },
           },
         },
-        participant: true,
+        participant: {
+          include: {
+            participantGroups: true,
+          },
+        },
         courseLeaderboard: true,
       },
     })
 
     const course = ctx.prisma.course.findUnique({
       where: { id: courseId },
+    })
+
+    const groupActivityInstances = ctx.prisma.groupActivityInstance.findMany({
+      where: {
+        groupId: {
+          in:
+            participation?.participant.participantGroups.map((g) => g.id) ?? [],
+        },
+      },
     })
 
     const lbEntries =
@@ -264,6 +282,7 @@ export async function getCourseOverviewData(
               ? allGroupEntries.sum / allGroupEntries.count
               : 0,
         },
+        groupActivityInstances,
       }
     }
   }

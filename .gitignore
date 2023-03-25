@@ -22,3 +22,4 @@ cypress/screenshots/*
 .vscode
 packages/prisma/src/seed
 !packages/prisma/.env
+.turbo

@@ -2,6 +2,82 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.78](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.77...v3.0.0-alpha.78) (2023-03-24)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** only display points if they have been set ([ee88704](https://github.com/uzh-bf/klicker-uzh/commit/ee8870402654eb08efa9f9b7a4b692bfba50fec1))
+* **packages/graphql:** use participants groups instead of course groups ([44259dd](https://github.com/uzh-bf/klicker-uzh/commit/44259dd4135407cf838500dcd5d683d35ed773e4))
+
+## [3.0.0-alpha.77](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.76...v3.0.0-alpha.77) (2023-03-24)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** allow users to reset table sorting ([#3485](https://github.com/uzh-bf/klicker-uzh/issues/3485)) ([56ebd4b](https://github.com/uzh-bf/klicker-uzh/commit/56ebd4baf4db8c391eafe7b2bdad6e0354cad8ea))
+* implement group deadline and activity results display ([#3488](https://github.com/uzh-bf/klicker-uzh/issues/3488)) ([2c700ed](https://github.com/uzh-bf/klicker-uzh/commit/2c700ed6032c84a6bdc61c2728ccc17f85d7b4f7))
+
+## [3.0.0-alpha.76](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.75...v3.0.0-alpha.76) (2023-03-23)
+
+
+### Bug Fixes
+
+* **packages/prisma:** fix invalid include on learning element creation ([c0cc4a1](https://github.com/uzh-bf/klicker-uzh/commit/c0cc4a1240a292e2642eec5245fcd70bd81f1787))
+
+## [3.0.0-alpha.75](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.74...v3.0.0-alpha.75) (2023-03-23)
+
+
+### Bug Fixes
+
+* **cypress:** fix failing CI tests ([#3486](https://github.com/uzh-bf/klicker-uzh/issues/3486)) ([75a1457](https://github.com/uzh-bf/klicker-uzh/commit/75a145791d795c2c57764498bd1970ad2da60cba))
+
+## [3.0.0-alpha.74](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.73...v3.0.0-alpha.74) (2023-03-21)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** dispay explanation and feedback in preview ([9fdeb11](https://github.com/uzh-bf/klicker-uzh/commit/9fdeb11d993a5f3db9ff04a197c68f70e8ff2ce0))
+
+## [3.0.0-alpha.73](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.72...v3.0.0-alpha.73) (2023-03-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** rename eating bubble image ([1bbdadf](https://github.com/uzh-bf/klicker-uzh/commit/1bbdadf1ba81938770b12277e614517ff15b6b2e))
+
+## [3.0.0-alpha.72](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.71...v3.0.0-alpha.72) (2023-03-18)
+
+## [3.0.0-alpha.71](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.70...v3.0.0-alpha.71) (2023-03-18)
+
+
+### Bug Fixes
+
+* **packages/prisma:** mark src/util.ts as ESM to allow usage in seed ([6a45d86](https://github.com/uzh-bf/klicker-uzh/commit/6a45d86e22c3b3923ab86d5d04eeb655046106cc))
+* **packages/shared-components:** fix type issues ([e4e3ab1](https://github.com/uzh-bf/klicker-uzh/commit/e4e3ab1dd133dfdb9a945b143a061cf663da87a2))
+
+
+### Dependencies
+
+* fix turbo DAG by making grading and prisma direct dependencies of the graphql package ([9707a06](https://github.com/uzh-bf/klicker-uzh/commit/9707a0607eaa73ae873538f8b373ec2ead852421))
+
+
+### Other
+
+* add GH workflows for cypress execution, lint, and format check ([#3465](https://github.com/uzh-bf/klicker-uzh/issues/3465)) ([e3f641f](https://github.com/uzh-bf/klicker-uzh/commit/e3f641f658df5d5caf7bced1eefacbd77ff8655c))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** integrate new visualizations ([#3444](https://github.com/uzh-bf/klicker-uzh/issues/3444)) ([cd32743](https://github.com/uzh-bf/klicker-uzh/commit/cd327435092f69a47f6b5de869d980b040fba7e5))
+* **cypress:** refactor and extend current cypress test suite ([#3447](https://github.com/uzh-bf/klicker-uzh/issues/3447)) ([8df4376](https://github.com/uzh-bf/klicker-uzh/commit/8df43767a16ff2ac39883c91a5743a123960297e))
+* enable simplified learning element creation ([#3467](https://github.com/uzh-bf/klicker-uzh/issues/3467)) ([6687145](https://github.com/uzh-bf/klicker-uzh/commit/6687145523f1a6db52566ac0784064bb16b8ad64))
+* fetch and display available group activities dynamically ([035aec1](https://github.com/uzh-bf/klicker-uzh/commit/035aec140ea29e2f3e921dc445e405f950cfea2e))
+* implement derived levels and display collected XP after learning element completion ([#3445](https://github.com/uzh-bf/klicker-uzh/issues/3445)) ([1ab4de6](https://github.com/uzh-bf/klicker-uzh/commit/1ab4de6882800368baac2ba6b7f0a03e1c396583))
+* **packages/graphql:** add date restrictions on group activities ([8c8e51c](https://github.com/uzh-bf/klicker-uzh/commit/8c8e51c08b5588e4e2b150e6541a34ff892e6dd8))
+* **packages/graphql:** ensure that authentication is implemented correctly ([#3434](https://github.com/uzh-bf/klicker-uzh/issues/3434)) ([442958d](https://github.com/uzh-bf/klicker-uzh/commit/442958d95cca14838afbdbcd3de25d25d740c3ee))
+* **packages/prisma:** add status to group activity ([70061a5](https://github.com/uzh-bf/klicker-uzh/commit/70061a5c25f506e8accf046fc71cb729a65729c2))
+
 ## [3.0.0-alpha.70](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.69...v3.0.0-alpha.70) (2023-03-10)
 
 

@@ -37,7 +37,6 @@ const Index = function () {
   )
 
   const { data, loading, error } = useQuery(ParticipationsDocument, {
-    skip: pushDisabled === null,
     variables: { endpoint: subscription?.endpoint },
     fetchPolicy: 'network-only',
   })

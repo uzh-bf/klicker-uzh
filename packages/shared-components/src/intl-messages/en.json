@@ -26,6 +26,7 @@
       "richtext": "Please enter a <b>number</b>."
     },
     "generic": {
+      "points": "Points",
       "title": "KlickerUZH",
       "send": "Send",
       "save": "Save",
@@ -252,6 +253,9 @@
     "achievements": {
       "notAchievedYet": "Not achieved yet",
       "noAchievements": "No achievements yet."
+    },
+    "groupActivity": {
+      "openGroupActivity": "Open Group Activity"
     }
   },
   "manage": {},

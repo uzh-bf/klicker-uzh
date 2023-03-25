@@ -1,5 +1,7 @@
 import Prisma, { Question } from '@klicker-uzh/prisma'
-import { xpForLevel } from '../util'
+// const klickerUZHPrisma = require('@klicker-uzh/prisma')
+// const Prisma = klickerUZHPrisma.Prisma
+// const Question = klickerUZHPrisma.Question
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 import * as DATA_TEST from './data/TEST'
 import {
@@ -8,9 +10,11 @@ import {
   prepareMicroSession,
   prepareParticipant,
   prepareQuestion,
+  prepareQuestionInstance,
   prepareSession,
   prepareUser,
 } from './helpers.js'
+import { seedLevels } from './seedLevels'
 
 export const PARTICIPANT_IDS = [
   '6f45065c-667f-4259-818c-c6f6b477eb48',
@@ -28,19 +32,7 @@ export const PARTICIPANT_IDS = [
 async function seedTest(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)
 
-  for (let index of [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) {
-    await prisma.level.upsert({
-      where: { index },
-      create: {
-        index,
-        name: `Level ${index}`,
-        requiredXp: xpForLevel(index),
-        avatar: `https://sos-ch-dk-2.exo.io/klicker-prod/img/levels/level_${index}.svg`,
-        nextLevel: index < 11 ? { connect: { index: index + 1 } } : undefined,
-      },
-      update: {},
-    })
-  }
+  await seedLevels(prisma)
 
   const userTest = await prisma.user.upsert(
     await prepareUser({
@@ -61,6 +53,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       pinCode: 123456789,
       startDate: new Date('2023-01-01T00:00'),
       endDate: new Date('2024-01-01T23:59'),
+      groupDeadlineDate: new Date('2024-01-01T00:01'),
       notificationEmail: process.env.NOTIFICATION_EMAIL as string,
     })
   )
@@ -139,6 +132,76 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     )
   )
 
+  const GROUP_ACTIVITY_ID = '06e53b6b-97b1-4e29-b70f-e5309a2a3369'
+  const groupActivityTest = await prisma.groupActivity.upsert({
+    where: {
+      id: GROUP_ACTIVITY_ID,
+    },
+    create: {
+      id: GROUP_ACTIVITY_ID,
+      name: 'Gruppenquest 1',
+      displayName: 'Gruppenquest 1',
+      description: `testing it`,
+      status: 'PUBLISHED',
+      scheduledStartAt: new Date('2020-03-10T11:00:00.000Z'),
+      scheduledEndAt: new Date('2025-03-17T11:00:00.000Z'),
+      parameters: {},
+      clues: {
+        connectOrCreate: [
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond1',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond1',
+              displayName: 'Bond 1',
+              value: 'Schweiz',
+            },
+          },
+        ],
+      },
+      instances: {
+        connectOrCreate: await Promise.all(
+          [0].map(async (qId, ix) => {
+            const question = await prisma.question.findUnique({
+              where: { id: qId },
+            })
+
+            return {
+              where: {
+                type_groupActivityId_order: {
+                  type: 'GROUP_ACTIVITY',
+                  groupActivityId: GROUP_ACTIVITY_ID,
+                  order: ix,
+                },
+              },
+              create: prepareQuestionInstance({
+                question,
+                type: 'GROUP_ACTIVITY',
+                order: ix,
+              }),
+            }
+          })
+        ),
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+  })
+
   const participantsTesting = await Promise.all(
     PARTICIPANT_IDS.map(async (id, ix) => {
       return prisma.participant.upsert(
@@ -175,11 +238,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       name: 'Explorer',
       description:
         'Du warst Teil des KlickerUZH im ersten Semester. Dankeschön!',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pilot-penguin.svg',
+      icon: '/achievements/Erkunden.svg',
       type: 'PARTICIPANT',
     },
     update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pilot-penguin.svg',
+      icon: '/achievements/Erkunden.svg',
     },
   })
 
@@ -190,11 +253,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       name: 'Fleisspreis',
       description:
         'Du hast alle verfügbaren Microlearnings und Lernelemente gelöst.',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/fleisspreis.svg',
+      icon: '/achievements/Fleisspreis.svg',
       type: 'PARTICIPANT',
     },
     update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/fleisspreis.svg',
+      icon: '/achievements/Fleisspreis.svg',
     },
   })
 
@@ -205,11 +268,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       name: 'Dream Team',
       description:
         'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/dreamteam.svg',
+      icon: '/achievements/Dreamteam.svg',
       type: 'PARTICIPANT',
     },
     update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/dreamteam.svg',
+      icon: '/achievements/Dreamteam.svg',
     },
   })
 
@@ -234,11 +297,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       name: 'Unerschrocken',
       description:
         'Du hast eine Woche vor Ende der Vorlesung noch keine 6 Fragen beantwortet.',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pirate-penguin.svg',
+      icon: '/achievements/Unerschrocken.svg',
       type: 'PARTICIPANT',
     },
     update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/pirate-penguin.svg',
+      icon: '/achievements/Unerschrocken.svg',
     },
   })
 

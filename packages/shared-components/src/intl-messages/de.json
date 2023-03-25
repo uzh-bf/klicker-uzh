@@ -26,6 +26,7 @@
       "richtext": "Bitte eine <b>Zahl</b> eingeben."
     },
     "generic": {
+      "points": "Punkte",
       "title": "KlickerUZH",
       "send": "Absenden",
       "save": "Speichern",
@@ -252,6 +253,9 @@
     "achievements": {
       "noAchievements": "Bisher keine Errungenschaften.",
       "notAchievedYet": "Noch nicht erreicht"
+    },
+    "groupActivity": {
+      "openGroupActivity": "Zur Gruppenaktivität"
     }
   },
   "manage": {},

@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.0.0-alpha.70",
+  "version": "3.0.0-alpha.78",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -38,6 +38,8 @@
     "build": "turbo run build",
     "publish": "turbo run publish",
     "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "lint": "turbo run lint",
     "//release": "standard-version --dry-run",
     "//release:dry": "standard-version --dry-run",
     "release:alpha": "standard-version --prerelease alpha --no-verify",

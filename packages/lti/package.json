@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/lti",
-  "version": "3.0.0-alpha.70",
+  "version": "3.0.0-alpha.78",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,6 +12,7 @@
     "build": "NODE_ENV=production tsup",
     "build:watch": "NODE_ENV=development tsup --watch",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "size": "size-limit"
   },
   "engines": {

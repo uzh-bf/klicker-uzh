@@ -75,6 +75,6 @@ describe('Different learning element workflows', () => {
         cy.findByText('Repetition').click();
         cy.get('[data-cy="repetition-element"]').contains(learningElementDisplayName).click();
         cy.get('[data-cy="start-learning-element"]').click();
-        // TODO: answer one question once bug is fixed (questions in learning elements are currently not correctly fetched)
+        // TODO: answer one question once bug is fixed (questions in learning elements are currently not correctly fetched) 
     })
 })

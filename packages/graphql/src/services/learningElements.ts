@@ -15,6 +15,7 @@ import {
   QuestionInstanceType,
   QuestionResponse as PrismaQuestionResponse,
   QuestionStack,
+  QuestionStackType,
   QuestionType,
   UserRole,
 } from '@klicker-uzh/prisma'
@@ -806,29 +807,47 @@ export async function createLearningElement(
       pointsMultiplier: multiplier,
       orderType: order,
       resetTimeDays: resetTimeDays,
-      instances: {
-        create: questions.map((questionId, ix) => {
-          const question = questionMap[questionId]
-          const processedQuestionData = processQuestionData(question)
-          const questionAttachmentInstances = question.attachments.map(
-            R.pick(['type', 'href', 'name', 'description', 'originalName'])
-          )
-          return {
-            order: ix,
-            type: QuestionInstanceType.LEARNING_ELEMENT,
-            questionData: processedQuestionData,
-            results: prepareInitialInstanceResults(processedQuestionData),
-            question: {
-              connect: { id: questionId },
-            },
-            owner: {
-              connect: { id: ctx.user.sub },
-            },
-            attachments: {
-              create: questionAttachmentInstances,
-            },
-          }
-        }),
+      stacks: {
+        create: await Promise.all(
+          questions.map(async (questionId, ix) => {
+            const question = questionMap[questionId]
+            const processedQuestionData = processQuestionData(question)
+            const questionAttachmentInstances = question.attachments.map(
+              R.pick(['type', 'href', 'name', 'description', 'originalName'])
+            )
+
+            return {
+              type: QuestionStackType.LEARNING_ELEMENT,
+              order: ix,
+              elements: {
+                create: [
+                  {
+                    order: 0,
+                    questionInstance: {
+                      create: {
+                        order: ix,
+                        type: QuestionInstanceType.LEARNING_ELEMENT,
+                        questionData: processedQuestionData,
+                        results: prepareInitialInstanceResults(
+                          processedQuestionData
+                        ),
+                        question: {
+                          connect: { id: questionId },
+                        },
+                        owner: {
+                          connect: { id: ctx.user.sub },
+                        },
+                        attachments: {
+                          create: questionAttachmentInstances,
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            }
+          })
+        ),
       },
       owner: {
         connect: { id: ctx.user.sub },
@@ -838,9 +857,6 @@ export async function createLearningElement(
             connect: { id: courseId },
           }
         : undefined,
-    },
-    include: {
-      instances: true,
     },
   })
 

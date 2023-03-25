@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.0.0-alpha.70",
+  "version": "3.0.0-alpha.78",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,6 +15,7 @@
     "dev:ts": "NODE_ENV=development doppler run --config dev -- tsup --watch --dts",
     "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch '**/**.graphql' --watch '**/**.ts'",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "generate": "graphql-codegen --config codegen.ts",
     "push": "ts-node --esm src/lib/push.ts",
     "size": "size-limit"
@@ -33,8 +34,6 @@
     }
   ],
   "peerDependencies": {
-    "@klicker-uzh/grading": "^3.0.0-alpha.0",
-    "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "graphql-yoga": "^3.6.0"
   },
   "devDependencies": {
@@ -75,6 +74,8 @@
     "@pothos/plugin-prisma": "3.41.0",
     "@pothos/plugin-scope-auth": "3.18.0",
     "@pothos/plugin-validation": "3.9.0",
+    "@klicker-uzh/grading": "*",
+    "@klicker-uzh/prisma": "*",
     "bcryptjs": "2.4.3",
     "dayjs": "1.11.7",
     "generate-password": "1.7.0",
