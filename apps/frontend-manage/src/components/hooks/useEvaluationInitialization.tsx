@@ -29,7 +29,7 @@ function useEvaluationInitialization({
     if (typeof questionIx === 'number') {
       setSelectedInstanceIndex(questionIx)
     }
-  }, [questionIx])
+  }, [questionIx, setSelectedInstanceIndex])
 
   useEffect(() => {
     if (instanceResults?.[selectedInstanceIndex]) {
@@ -59,6 +59,7 @@ function useEvaluationInitialization({
     } else {
       setSelectedInstance('')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instanceResults, selectedInstanceIndex])
 }
 
