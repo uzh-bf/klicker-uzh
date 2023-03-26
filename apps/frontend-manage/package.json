@@ -56,7 +56,7 @@
     "slate": "0.90.0",
     "slate-history": "0.86.0",
     "slate-react": "0.90.0",
-    "tailwind-merge": "1.9.1",
+    "tailwind-merge": "1.10.0",
     "yup": "1.0.0"
   },
   "devDependencies": {
