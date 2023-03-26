@@ -20,7 +20,8 @@
     "dev:ts": "NODE_ENV=development tsup --watch",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "size": "size-limit"
+    "size": "size-limit",
+    "check": "tsc --noEmit"
   },
   "engines": {
     "node": "=18"

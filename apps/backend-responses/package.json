@@ -15,7 +15,8 @@
     "dev:func": "func start -p 7072",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "start": "func start -p 7072"
+    "start": "func start -p 7072",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@azure/service-bus": "7.8.0",

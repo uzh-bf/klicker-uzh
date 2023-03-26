@@ -1,14 +1,15 @@
 {
   "$schema": "https://turborepo.org/schema.json",
   "pipeline": {
-    "format": {
-      "cache": false
-    },
+    "format": {},
     "format:check": {
-      "cache": false
+      "outputMode": "errors-only"
     },
     "lint": {
-      "cache": false
+      "outputMode": "errors-only"
+    },
+    "check": {
+      "outputMode": "errors-only"
     },
     "build": {
       "dependsOn": ["^build"],
@@ -21,7 +22,8 @@
     "dev": {
       "cache": false,
       "outputs": ["dist/**", ".next/**"],
-      "dependsOn": ["@klicker-uzh/prisma#build", "@klicker-uzh/markdown#build"]
+      "dependsOn": ["@klicker-uzh/prisma#build", "@klicker-uzh/markdown#build"],
+      "persistent": true
     },
     "publish": {
       "cache": false,
@@ -29,11 +31,13 @@
     },
     "start": {
       "dependsOn": ["^build", "build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**"],
+      "persistent": true
     },
     "start:test": {
       "dependsOn": ["^build:test", "build:test"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**"],
+      "persistent": true
     }
   }
 }

@@ -1,6 +1,6 @@
 name: Check file formatting and linting
 
-on: 
+on:
   push:
     branches: ["v3"]
   pull_request:
@@ -16,7 +16,7 @@ jobs:
       - name: Check formatting
         shell: bash
         run: |
-          npm install
+          npm ci
           npm run format:check
   lint:
     runs-on: ubuntu-latest
@@ -26,6 +26,15 @@ jobs:
       - name: Check linting
         shell: bash
         run: |
-          npm install
+          npm ci
           npm run lint
-    
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Check types
+        shell: bash
+        run: |
+          npm ci
+          npm run check

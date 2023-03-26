@@ -54,7 +54,8 @@
     "seed:prod:user": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedUser.ts",
     "seed:prod:levels": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedLevels.ts",
     "seed:prod:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/importQuestions.ts",
-    "size": "size-limit"
+    "size": "size-limit",
+    "check": "tsc --noEmit"
   },
   "prisma": {
     "seed": "npm run seed"
