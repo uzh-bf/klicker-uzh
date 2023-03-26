@@ -6,8 +6,8 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="KlickerUZH Control"/>
   <Description DefaultValue="Control KlickerUZH Sessions"/>
-  <IconUrl DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/assets/icon-64.png"/>
+  <IconUrl DefaultValue="https://www.klicker.uzh.ch/office-addin/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://www.klicker.uzh.ch/office-addin/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://www.klicker.uzh.ch"/>
   <AppDomains>
     <AppDomain>https://control.klicker.uzh.ch</AppDomain>
@@ -62,13 +62,13 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/assets/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/assets/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/assets/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://www.klicker.uzh.ch/office-addin/assets/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://www.klicker.uzh.ch/office-addin/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://www.klicker.uzh.ch/office-addin/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://go.microsoft.com/fwlink/?LinkId=276812"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/taskpane.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://www.klicker.uzh.ch/office-addin/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started!"/>
