@@ -4,13 +4,13 @@
   <Version>1.0.0.0</Version>
   <ProviderName>KlickerUZH</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="KlickerUZH"/>
-  <Description DefaultValue="KlickerUZH PowerPoint Add-in to control sessions"/>
-  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png"/>
-  <SupportUrl DefaultValue="https://klicker.uzh.ch"/>
+  <DisplayName DefaultValue="KlickerUZH Control"/>
+  <Description DefaultValue="Control KlickerUZH Sessions"/>
+  <IconUrl DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/assets/icon-64.png"/>
+  <SupportUrl DefaultValue="https://www.klicker.uzh.ch"/>
   <AppDomains>
-    <AppDomain>https://control.klicker-qa.bf-app.ch</AppDomain>
+    <AppDomain>https://control.klicker.uzh.ch</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Presentation"/>
@@ -62,13 +62,13 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3000/assets/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3000/assets/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/assets/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://go.microsoft.com/fwlink/?LinkId=276812"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://www.klicker.uzh.ch/add-in-taskpane/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Get started!"/>
