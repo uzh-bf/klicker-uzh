@@ -29,7 +29,8 @@
     "dev-addin": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
     "predev": "npm run clear",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@fluentui/react": "8.105.7",

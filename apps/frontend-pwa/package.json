@@ -13,7 +13,8 @@
     "start:test": "cross-env NODE_ENV=test npm start",
     "lint": "next lint",
     "pushTest": "node src/testPush.js",
-    "generateAvatars": "ts-node --esm src/utils/generateAvatars.ts"
+    "generateAvatars": "ts-node --esm src/utils/generateAvatars.ts",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@apollo/client": "3.7.7",
