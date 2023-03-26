@@ -26,11 +26,11 @@ function Evaluation() {
 
   const totalPointsAwarded = useMemo(() => {
     if (!data?.microSession) return 0
-    return data.microSession.instances.reduce(
-      (acc, instance) => acc + instance.evaluation?.pointsAwarded,
+    return data.microSession?.instances?.reduce(
+      (acc, instance) => acc + (instance?.evaluation?.pointsAwarded ?? 0),
       0
     )
-  }, [data?.microSession?.instances])
+  }, [data?.microSession])
 
   if (loading || !data?.microSession) {
     return <div>{t('shared.generic.loading')}</div>
