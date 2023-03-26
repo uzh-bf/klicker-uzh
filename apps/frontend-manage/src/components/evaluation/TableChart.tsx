@@ -66,7 +66,7 @@ function TableChart({
       label: 'Value',
       accessor: 'value',
       sortable: true,
-      formatter: (row: RowType) => {
+      formatter: ({ row }: { row: RowType }) => {
         if (typeof row['value'] === 'string')
           return (
             <Markdown content={row['value']} className={{ img: 'max-h-32' }} />
@@ -78,8 +78,9 @@ function TableChart({
       label: '%',
       accessor: 'percentage',
       sortable: true,
-      transformer: (row: RowType) => row['percentage'] * 100,
-      formatter: (row: RowType) => `${String(row['percentage'].toFixed())} %`,
+      transformer: ({ row }: { row: RowType }) => row['percentage'] * 100,
+      formatter: ({ row }: { row: RowType }) =>
+        `${String(row['percentage'].toFixed())} %`,
     },
     ...(showSolution
       ? [
@@ -87,7 +88,7 @@ function TableChart({
             label: 'T/F',
             accessor: 'correct',
             sortable: false,
-            formatter: (row: RowType) => {
+            formatter: ({ row }: { row: RowType }) => {
               if (row['correct'] === true)
                 return (
                   <FontAwesomeIcon icon={faCheck} className="text-green-700" />
