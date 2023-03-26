@@ -1,4 +1,4 @@
-import { faRepeat } from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faRepeat, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Choice,
@@ -15,7 +15,7 @@ import { QUESTION_GROUPS } from 'shared-components/src/constants'
 type RowType = {
   count: number
   value: string | number
-  correct: string
+  correct: boolean
   percentage: number
 }
 
@@ -32,12 +32,6 @@ function TableChart({
 }: TableChartProps): React.ReactElement {
   const ref = useRef<{ reset: () => void }>(null)
 
-  const formatCorrect = (value: boolean | undefined | null): string => {
-    if (value === true) return 'T'
-    if (value === false) return 'F'
-    return '--'
-  }
-
   const tableData = useMemo(() => {
     if (QUESTION_GROUPS.CHOICES.includes(data.questionData.type)) {
       return (data.questionData as ChoicesQuestionData).options.choices.map(
@@ -45,7 +39,7 @@ function TableChart({
           return {
             count: data.results[index].count,
             value: choice.value,
-            correct: formatCorrect(choice.correct),
+            correct: choice.correct,
             percentage: data.participants
               ? data.results[index].count / data.participants
               : 0,
@@ -59,14 +53,14 @@ function TableChart({
         return {
           count: result.count,
           value: result.value,
-          correct: formatCorrect(result.correct),
+          correct: result.correct,
           percentage: data.participants ? result.count / data.participants : 0,
         }
       })
     }
   }, [data])
 
-  const columns = [
+  let columns = [
     { label: 'Count', accessor: 'count', sortable: true },
     {
       label: 'Value',
@@ -87,10 +81,25 @@ function TableChart({
       transformer: (row: RowType) => row['percentage'] * 100,
       formatter: (row: RowType) => `${String(row['percentage'].toFixed())} %`,
     },
+    ...(showSolution
+      ? [
+          {
+            label: 'T/F',
+            accessor: 'correct',
+            sortable: false,
+            formatter: (row: RowType) => {
+              if (row['correct'] === true)
+                return (
+                  <FontAwesomeIcon icon={faCheck} className="text-green-700" />
+                )
+              if (row['correct'] === false)
+                return <FontAwesomeIcon icon={faX} className="text-red-600" />
+              return <>--</>
+            },
+          },
+        ]
+      : []),
   ]
-
-  if (showSolution)
-    columns.push({ label: 'T/F', accessor: 'correct', sortable: false })
 
   const anythingSortable = columns.reduce(
     (acc, curr) => acc || curr.sortable,
