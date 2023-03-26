@@ -12,6 +12,13 @@ import { Button, Table } from '@uzh-bf/design-system'
 import React, { useMemo, useRef } from 'react'
 import { QUESTION_GROUPS } from 'shared-components/src/constants'
 
+type RowType = {
+  count: number
+  value: string | number
+  correct: string
+  percentage: number
+}
+
 interface TableChartProps {
   data: InstanceResult
   showSolution: boolean
@@ -65,23 +72,25 @@ function TableChart({
       label: 'Value',
       accessor: 'value',
       sortable: true,
-      formatter: (value: string | number) => {
-        if (typeof value === 'string')
-          return <Markdown content={value} className={{ img: 'max-h-32' }} />
-        return value
+      formatter: (row: RowType) => {
+        if (typeof row['value'] === 'string')
+          return (
+            <Markdown content={row['value']} className={{ img: 'max-h-32' }} />
+          )
+        return row['value']
       },
     },
     {
       label: '%',
       accessor: 'percentage',
       sortable: true,
-      transformer: (value: number) => value * 100,
-      formatter: (value: number) => `${String(value.toFixed())} %`,
+      transformer: (row: RowType) => row['percentage'] * 100,
+      formatter: (row: RowType) => `${String(row['percentage'].toFixed())} %`,
     },
   ]
 
   if (showSolution)
-    columns.push({ label: 'T/F', accessor: 'correct', sortable: true })
+    columns.push({ label: 'T/F', accessor: 'correct', sortable: false })
 
   const anythingSortable = columns.reduce(
     (acc, curr) => acc || curr.sortable,
@@ -91,7 +100,7 @@ function TableChart({
   return (
     <div>
       <Table
-        ref={ref}
+        forwardedRef={ref}
         data={tableData}
         columns={columns}
         className={{
