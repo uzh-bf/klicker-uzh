@@ -22,8 +22,7 @@
     "dev": {
       "cache": false,
       "outputs": ["dist/**", ".next/**"],
-      "dependsOn": ["@klicker-uzh/prisma#build", "@klicker-uzh/markdown#build"],
-      "persistent": true
+      "dependsOn": ["@klicker-uzh/prisma#build", "@klicker-uzh/markdown#build"]
     },
     "publish": {
       "cache": false,
@@ -31,13 +30,11 @@
     },
     "start": {
       "dependsOn": ["^build", "build"],
-      "outputs": ["dist/**", ".next/**"],
-      "persistent": true
+      "outputs": ["dist/**", ".next/**"]
     },
     "start:test": {
       "dependsOn": ["^build:test", "build:test"],
-      "outputs": ["dist/**", ".next/**"],
-      "persistent": true
+      "outputs": ["dist/**", ".next/**"]
     }
   }
 }
