@@ -100,9 +100,9 @@ type ClassAchievementInstance {
 }
 
 type ConfusionSummary {
-  difficulty: Int!
+  difficulty: Float!
   numberOfParticipants: Int
-  speed: Int!
+  speed: Float!
 }
 
 type ConfusionTimestep {
@@ -120,8 +120,12 @@ type Course {
   description: String
   displayName: String!
   endDate: Date!
+  groupActivities: [GroupActivity!]
+  groupDeadlineDate: Date
   id: ID!
-  isArchived: Boolean
+  isArchived: Boolean!
+  isGamificationEnabled: Boolean!
+  isGroupDeadlinePassed: Boolean
   leaderboard: [LeaderboardEntry!]
   learningElements: [LearningElement!]
   microSessions: [MicroSession!]
@@ -197,7 +201,11 @@ type GroupAchievementInstance {
 }
 
 type GroupActivity {
+  description: String
+  displayName: String!
   id: ID!
+  scheduledEndAt: Date!
+  scheduledStartAt: Date!
 }
 
 type GroupActivityClue {
@@ -223,7 +231,7 @@ type GroupActivityClueInstance {
 input GroupActivityDecisionInput {
   id: Int!
   response: String
-  selectedOptions: [Int!]!
+  selectedOptions: [Int!]
 }
 
 type GroupActivityDetails {
@@ -244,7 +252,9 @@ type GroupActivityInstance {
   clues: [GroupActivityClueInstance!]
   decisions: Json
   decisionsSubmittedAt: Date
+  groupActivityId: ID!
   id: Int!
+  results: Json
 }
 
 type GroupActivityParameter {
@@ -264,9 +274,11 @@ type InstanceEvaluation {
   choices: Json
   feedbacks: [QuestionFeedback!]
   newPointsFrom: Date
+  newXpFrom: Date
   percentile: Float
   pointsAwarded: Float
   score: Float!
+  xpAwarded: Int
 }
 
 type InstanceResult {
@@ -281,7 +293,7 @@ type InstanceResult {
 }
 
 """
-The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
 scalar Json
 
@@ -309,15 +321,17 @@ type LearningElement {
   description: String
   displayName: String!
   id: String!
-  instances: [QuestionInstance!]
   name: String!
-  numOfInstances: Int
+  numOfQuestions: Int
   orderType: LearningElementOrderType!
   pointsMultiplier: Int!
   previousPointsAwarded: Float
   previousScore: Float
   previouslyAnswered: Int
   resetTimeDays: Int
+  stacks: [QuestionStack!]
+  stacksWithQuestions: Int
+  status: LearningElementStatus!
   totalTrials: Int
 }
 
@@ -327,9 +341,23 @@ enum LearningElementOrderType {
   SHUFFLED
 }
 
+enum LearningElementStatus {
+  DRAFT
+  PUBLISHED
+}
+
 type LeaveCourseParticipation {
   id: String!
   participation: Participation!
+}
+
+type Level {
+  avatar: String
+  id: Int!
+  index: Int!
+  name: String
+  nextLevel: Level
+  requiredXp: Int!
 }
 
 type MicroSession {
@@ -343,12 +371,18 @@ type MicroSession {
   pointsMultiplier: Float!
   scheduledEndAt: Date!
   scheduledStartAt: Date!
+  status: MicroSessionStatus!
+}
+
+enum MicroSessionStatus {
+  DRAFT
+  PUBLISHED
 }
 
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
-  bookmarkQuestion(bookmarked: Boolean!, courseId: String!, instanceId: Int!): Participation
+  bookmarkQuestion(bookmarked: Boolean!, courseId: String!, stackId: Int!): [QuestionStack!]
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDates(courseId: String!, endDate: Date, startDate: Date): Course
@@ -363,7 +397,10 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
+  deleteLearningElement(id: String!): LearningElement
+  deleteMicroSession(id: String!): MicroSession
   deleteQuestion(id: Int!): Question
+  deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
@@ -381,12 +418,14 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, tags: [String!], type: QuestionType!): Question
-  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, tags: [String!], type: QuestionType!): Question
-  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, tags: [String!], type: QuestionType!): Question
+  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
+  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
+  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
+  publishLearningElement(id: String!): LearningElement
+  publishMicroSession(id: String!): MicroSession
   registerParticipantFromLTI(courseId: String!, participantId: String!): ParticipantLearningData
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
@@ -395,6 +434,7 @@ type Mutation {
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
+  updateGroupAverageScores: Boolean!
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
@@ -465,7 +505,8 @@ type Participant {
   id: ID!
   isSelf: Boolean
   lastLoginAt: Date
-  level: Int!
+  level: Int
+  levelData: Level
   participantGroups: [ParticipantGroup!]
   rank: Int
   score: Float
@@ -492,6 +533,7 @@ type ParticipantGroup {
 
 type ParticipantLearningData {
   course: Course
+  groupActivityInstances: [GroupActivityInstance!]
   groupLeaderboard: [GroupLeaderboardEntry!]
   groupLeaderboardStatistics: LeaderboardStatistics
   id: String!
@@ -502,8 +544,13 @@ type ParticipantLearningData {
   participation: Participation
 }
 
+type ParticipantWithAchievements {
+  achievements: [Achievement!]!
+  participant: Participant!
+}
+
 type Participation {
-  bookmarkedQuestions: [QuestionInstance!]
+  bookmarkedStacks: [QuestionStack!]
   completedMicroSessions: [String!]!
   course: Course
   id: Int!
@@ -525,8 +572,8 @@ type Query {
   controlSession(id: String!): Session
   course(id: String!): Course
   feedbacks(id: String!): [Feedback!]
-  getBookmarkedQuestions(courseId: String!): [QuestionInstance!]
-  getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionInstance!]
+  getBookmarkedQuestions(courseId: String!): [QuestionStack!]
+  getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionStack!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
@@ -535,12 +582,14 @@ type Query {
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
+  participantDetails(participantId: String!): Participant
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
   question(id: Int!): Question
   runningSessions(shortname: String!): [Session!]
   self: Participant
+  selfWithAchievements: ParticipantWithAchievements
   session(id: String!): Session
   sessionEvaluation(id: String!): SessionEvaluation
   sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
@@ -589,8 +638,8 @@ enum QuestionDisplayMode {
 }
 
 type QuestionFeedback {
-  correct: Boolean!
-  feedback: String!
+  correct: Boolean
+  feedback: String
   ix: Int!
   value: String!
 }
@@ -609,6 +658,14 @@ type QuestionResponse {
 
 type QuestionResponseDetail {
   id: Int!
+}
+
+type QuestionStack {
+  description: String
+  displayName: String
+  elements: [StackElement!]
+  id: Int!
+  order: Int
 }
 
 enum QuestionType {
@@ -696,6 +753,13 @@ enum SessionStatus {
 input SolutionRangeInput {
   max: Float
   min: Float
+}
+
+type StackElement {
+  id: Int!
+  mdContent: String
+  order: Int
+  questionInstance: QuestionInstance
 }
 
 type Statistics {

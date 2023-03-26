@@ -2,9 +2,9 @@ import * as DB from '@klicker-uzh/prisma'
 
 import builder from '../builder'
 import type { ICourse } from './course'
-import { Course } from './course'
+import { CourseRef } from './course'
 import type { IQuestionInstance } from './question'
-import { QuestionInstance } from './question'
+import { QuestionInstanceRef } from './question'
 
 export const LearningElementOrderType = builder.enumType(
   'LearningElementOrderType',
@@ -13,13 +13,54 @@ export const LearningElementOrderType = builder.enumType(
   }
 )
 
+export const LearningElementStatus = builder.enumType('LearningElementStatus', {
+  values: Object.values(DB.LearningElementStatus),
+})
+
+export interface IQuestionStack extends DB.QuestionStack {
+  elements?: IStackElement[]
+}
+export const QuestionStackRef =
+  builder.objectRef<IQuestionStack>('QuestionStack')
+export const QuestionStack = QuestionStackRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    displayName: t.exposeString('displayName', { nullable: true }),
+    description: t.exposeString('description', { nullable: true }),
+    order: t.exposeInt('order', { nullable: true }),
+
+    elements: t.expose('elements', {
+      type: [StackElement],
+      nullable: true,
+    }),
+  }),
+})
+
+export interface IStackElement extends DB.StackElement {
+  questionInstance?: IQuestionInstance
+}
+export const StackElementRef = builder.objectRef<IStackElement>('StackElement')
+export const StackElement = StackElementRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    order: t.exposeInt('order', { nullable: true }),
+
+    mdContent: t.exposeString('mdContent', { nullable: true }),
+    questionInstance: t.expose('questionInstance', {
+      type: QuestionInstanceRef,
+      nullable: true,
+    }),
+  }),
+})
+
 export interface ILearningElement extends DB.LearningElement {
   previouslyAnswered?: number
   previousScore?: number
   previousPointsAwarded?: number
   totalTrials?: number
-  instances?: IQuestionInstance[]
-  numOfInstances?: number
+  stacksWithQuestions?: number
+  numOfQuestions?: number
+  stacks?: IQuestionStack[]
   course?: ICourse | null
 }
 export const LearningElementRef =
@@ -30,6 +71,7 @@ export const LearningElement = LearningElementRef.implement({
 
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
+    status: t.expose('status', { type: LearningElementStatus }),
     description: t.exposeString('description', { nullable: true }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     resetTimeDays: t.exposeInt('resetTimeDays', { nullable: true }),
@@ -40,15 +82,18 @@ export const LearningElement = LearningElementRef.implement({
       nullable: true,
     }),
     totalTrials: t.exposeInt('totalTrials', { nullable: true }),
-
-    instances: t.expose('instances', {
-      type: [QuestionInstance],
+    stacksWithQuestions: t.exposeInt('stacksWithQuestions', {
       nullable: true,
     }),
-    numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),
+    numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
+
+    stacks: t.expose('stacks', {
+      type: [QuestionStackRef],
+      nullable: true,
+    }),
 
     course: t.expose('course', {
-      type: Course,
+      type: CourseRef,
       nullable: true,
     }),
     courseId: t.exposeString('courseId', { nullable: true }),

@@ -1,8 +1,9 @@
 import { useQuery } from '@apollo/client'
 import { GetMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { Button, H3, Prose } from '@uzh-bf/design-system'
+import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticProps } from 'next'
+import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import Layout from '../../../components/Layout'
@@ -22,11 +23,23 @@ interface Props {
 }
 
 function MicroSessionIntroduction({ id }: Props) {
+  const t = useTranslations()
+
   const { loading, error, data } = useQuery(GetMicroSessionDocument, {
     variables: { id },
   })
 
-  if (loading || !data?.microSession) return <p>Loading...</p>
+  if (loading) return <p>{t('shared.generic.loading')}</p>
+  if (!data?.microSession) {
+    return (
+      <Layout>
+        <UserNotification
+          notificationType="error"
+          message={t('pwa.microSession.notFound')}
+        />
+      </Layout>
+    )
+  }
   if (error) return <p>Oh no... {error.message}</p>
 
   return (
@@ -48,8 +61,9 @@ function MicroSessionIntroduction({ id }: Props) {
             className={{
               root: 'justify-center w-full text-lg md:w-auto md:self-end',
             }}
+            data={{ cy: 'start-micro-session' }}
           >
-            Beginnen
+            {t('shared.generic.begin')}
           </Button>
         </Link>
       </div>
@@ -87,6 +101,9 @@ export const getStaticProps: GetStaticProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
+      messages: {
+        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+      },
     },
     revalidate: 60,
   })

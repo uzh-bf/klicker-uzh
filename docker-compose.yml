@@ -70,7 +70,7 @@ services:
 
   # main database
   postgres:
-    image: docker.io/library/postgres:14.3
+    image: docker.io/library/postgres:15
     environment:
       POSTGRES_USER: klicker
       POSTGRES_PASSWORD: klicker
@@ -82,7 +82,7 @@ services:
 
     # redis instance to support session execution
   redis_exec:
-    image: docker.io/library/redis:6
+    image: docker.io/library/redis:7
     ports:
       - 6379:6379
     networks:
@@ -92,9 +92,17 @@ services:
 
   # redis instance for page caching and rate limiting
   redis_cache:
-    image: docker.io/library/redis:6
+    image: docker.io/library/redis:7
     ports:
       - 6380:6379
+    networks:
+      - klicker-dev
+
+  sendria:
+    image: msztolcman/sendria:v2.2.2.0
+    ports:
+      - 1025:1025
+      - 1080:1080
     networks:
       - klicker-dev
 

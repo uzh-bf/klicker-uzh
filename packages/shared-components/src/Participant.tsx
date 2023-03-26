@@ -1,4 +1,5 @@
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -16,7 +17,7 @@ interface ParticipantProps {
 
 function Participant({
   avatar,
-  withAvatar,
+  withAvatar = true,
   pseudonym,
   isHighlighted,
   onClick,
@@ -25,6 +26,8 @@ function Participant({
   points,
   rank,
 }: PropsWithChildren<ParticipantProps>) {
+  const t = useTranslations()
+
   return (
     <div
       className={twMerge(
@@ -49,7 +52,9 @@ function Participant({
           </div>
         )}
 
-        <div className="first:ml-2 text-slate-700">{pseudonym ?? 'Frei'}</div>
+        <div className="first:ml-2 text-slate-700">
+          {pseudonym ?? t('shared.generic.free')}
+        </div>
         <div className="flex-1 text-right">{children}</div>
       </div>
       {typeof points === 'number' && (
@@ -61,10 +66,6 @@ function Participant({
   )
 }
 
-Participant.defaultProps = {
-  withAvatar: true,
-}
-
 export function ParticipantOther(props: ParticipantProps) {
   return <Participant {...props}></Participant>
 }
@@ -72,25 +73,34 @@ export function ParticipantOther(props: ParticipantProps) {
 interface ParticipantSelfProps extends ParticipantProps {
   isActive: boolean
   onJoinCourse?: () => void
-  onLeaveCourse: () => void
+  onLeaveCourse?: () => void
 }
 
 export function ParticipantSelf(props: ParticipantSelfProps) {
+  const t = useTranslations()
+
   return (
     <Participant isHighlighted {...props}>
-      {props.isActive ? (
+      {props.isActive && typeof props.onLeaveCourse !== 'undefined' && (
         <Button
           className={{ root: 'text-sm' }}
-          onClick={() => props.onLeaveCourse()}
+          onClick={(e) => {
+            e?.stopPropagation()
+            props.onLeaveCourse()
+          }}
         >
-          Austreten
+          {t('shared.generic.leave')}
         </Button>
-      ) : (
+      )}
+      {!props.isActive && typeof props.onJoinCourse !== 'undefined' && (
         <Button
           className={{ root: 'text-sm' }}
-          onClick={props.onJoinCourse ? () => props.onJoinCourse!() : undefined}
+          onClick={(e) => {
+            e?.stopPropagation()
+            props.onJoinCourse!()
+          }}
         >
-          Beitreten
+          {t('shared.generic.join')}
         </Button>
       )}
     </Participant>

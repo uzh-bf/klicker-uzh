@@ -1,4 +1,4 @@
-import { Participant } from '@klicker-uzh/graphql/dist/ops'
+import { LeaderboardEntry, Participant } from '@klicker-uzh/graphql/dist/ops'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'
@@ -9,8 +9,8 @@ interface LeaderboardProps {
   activeParticipation?: boolean
   onJoin?: () => void
   onLeave?: () => void
-  onParitcipantClick?: (participantId: string, isSelf: boolean) => void
-  participant?: Participant
+  onParticipantClick?: (participantId: string, isSelf: boolean) => void
+  participant?: Participant | null
   hidePodium?: boolean
   hideAvatars?: boolean
   className?: {
@@ -20,6 +20,11 @@ interface LeaderboardProps {
     list?: string
     listItem?: string
   }
+  podiumImgSrc?: {
+    rank1: any
+    rank2: any
+    rank3: any
+  }
 }
 
 function Leaderboard({
@@ -27,11 +32,12 @@ function Leaderboard({
   activeParticipation,
   onJoin,
   onLeave,
-  onParitcipantClick,
+  onParticipantClick,
   participant,
   hidePodium,
   hideAvatars,
   className,
+  podiumImgSrc,
 }: LeaderboardProps): React.ReactElement {
   const { top10, inTop10, selfEntry } = useMemo(
     () =>
@@ -70,11 +76,13 @@ function Leaderboard({
                 root: className?.podium,
                 single: className?.podiumSingle,
               }}
+              simple={hideAvatars}
+              imgSrc={podiumImgSrc}
             />
           )}
         </div>
         <div className={twMerge('space-y-1', className?.list)}>
-          {top10.map((entry) =>
+          {top10.map((entry: LeaderboardEntry) =>
             entry.isSelf === true && onLeave ? (
               <ParticipantSelf
                 key={entry.id}
@@ -87,8 +95,8 @@ function Leaderboard({
                 onJoinCourse={onJoin}
                 onLeaveCourse={onLeave}
                 onClick={
-                  onParitcipantClick
-                    ? () => onParitcipantClick(entry.participantId, true)
+                  onParticipantClick
+                    ? () => onParticipantClick(entry.participantId, true)
                     : undefined
                 }
               />
@@ -101,8 +109,8 @@ function Leaderboard({
                 withAvatar={!hideAvatars}
                 points={entry.score}
                 onClick={
-                  onParitcipantClick
-                    ? () => onParitcipantClick(entry.participantId, false)
+                  onParticipantClick
+                    ? () => onParticipantClick(entry.participantId, false)
                     : undefined
                 }
                 className={className?.listItem}
@@ -121,8 +129,8 @@ function Leaderboard({
             onJoinCourse={onJoin}
             onLeaveCourse={onLeave}
             onClick={
-              onParitcipantClick
-                ? () => onParitcipantClick(participant.id, true)
+              onParticipantClick
+                ? () => onParticipantClick(participant.id, true)
                 : undefined
             }
           />

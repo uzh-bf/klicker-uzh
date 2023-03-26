@@ -2,12 +2,8 @@ import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import type { ICourse } from './course'
 import { Course } from './course'
-import {
-  IParticipant,
-  IParticipantGroup,
-  ParticipantGroup,
-  ParticipantRef,
-} from './participant'
+import type { IParticipant, IParticipantGroup } from './participant'
+import { ParticipantGroup, ParticipantRef } from './participant'
 import type { IQuestionInstance } from './question'
 import { QuestionInstance } from './question'
 
@@ -21,7 +17,7 @@ export const GroupActivityDecisionInput = builder.inputType(
     fields: (t) => ({
       id: t.int({ required: true }),
 
-      selectedOptions: t.intList({ required: true }),
+      selectedOptions: t.intList({ required: false }),
       response: t.string({ required: false }),
     }),
   }
@@ -30,6 +26,12 @@ export const GroupActivityDecisionInput = builder.inputType(
 export const GroupActivity = builder.prismaObject('GroupActivity', {
   fields: (t) => ({
     id: t.exposeID('id'),
+
+    displayName: t.exposeString('displayName'),
+    description: t.exposeString('description', { nullable: true }),
+
+    scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
+    scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
   }),
 })
 
@@ -46,10 +48,12 @@ export const GroupActivityInstance = GroupActivityInstanceRef.implement({
       type: 'Date',
       nullable: true,
     }),
+    results: t.expose('results', { type: 'Json', nullable: true }),
     clues: t.expose('clues', {
       type: [GroupActivityClueInstanceRef],
       nullable: true,
     }),
+    groupActivityId: t.exposeID('groupActivityId'),
   }),
 })
 

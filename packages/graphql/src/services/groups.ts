@@ -11,7 +11,7 @@ interface CreateParticipantGroupArgs {
 
 export async function createParticipantGroup(
   { courseId, name }: CreateParticipantGroupArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const code = 100000 + Math.floor(Math.random() * 900000)
 
@@ -56,7 +56,7 @@ interface JoinParticipantGroupArgs {
 
 export async function joinParticipantGroup(
   { courseId, code }: JoinParticipantGroupArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   // find participantgroup with code
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
@@ -72,7 +72,7 @@ export async function joinParticipantGroup(
   })
 
   // if no participant group with the provided id exists in this course or at all, return null
-  if (!participantGroup || participantGroup.course.id !== courseId) return null
+  if (!participantGroup || participantGroup.course?.id !== courseId) return null
 
   // otherwise update the participant group with the current participant and return it
   const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
@@ -330,7 +330,10 @@ export async function getGroupActivityDetails(
   }
 
   // before the active date, return null
-  if (dayjs(groupActivity.scheduledStartAt).isAfter(dayjs())) {
+  if (
+    dayjs().isBefore(groupActivity.scheduledStartAt) ||
+    dayjs().isAfter(groupActivity.scheduledEndAt)
+  ) {
     return null
   }
 
@@ -427,6 +430,14 @@ export async function startGroupActivity(
     return null
   }
 
+  // before the active date, return null
+  if (
+    dayjs().isBefore(groupActivity.scheduledStartAt) ||
+    dayjs().isAfter(groupActivity.scheduledEndAt)
+  ) {
+    return null
+  }
+
   const groupMemberCount = group.participants.length
   if (groupMemberCount < 2) return null
 
@@ -518,7 +529,7 @@ interface SubmitGroupActivityDecisionsArgs {
   decisions: {
     id: number
     response?: string | null
-    selectedOptions?: number[]
+    selectedOptions?: number[] | null
   }[]
 }
 
@@ -530,6 +541,7 @@ export async function submitGroupActivityDecisions(
     await ctx.prisma.groupActivityInstance.findUnique({
       where: { id: activityInstanceId },
       include: {
+        groupActivity: true,
         group: {
           include: {
             participants: {
@@ -548,6 +560,14 @@ export async function submitGroupActivityDecisions(
     !groupActivityInstance ||
     groupActivityInstance.group.participants.length === 0 ||
     !!groupActivityInstance.decisionsSubmittedAt
+  ) {
+    return null
+  }
+
+  // before the active date, return null
+  if (
+    dayjs().isBefore(groupActivityInstance.groupActivity.scheduledStartAt) ||
+    dayjs().isAfter(groupActivityInstance.groupActivity.scheduledEndAt)
   ) {
     return null
   }

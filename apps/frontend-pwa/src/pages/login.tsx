@@ -8,16 +8,12 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-
-const loginSchema = Yup.object().shape({
-  username: Yup.string().required('Enter your username'),
-  password: Yup.string().required('Enter your password'),
-})
 
 interface BeforeInstallPromptEventReturn {
   userChoice: string
@@ -29,6 +25,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 function LoginForm() {
+  const t = useTranslations()
+
   const router = useRouter()
   const theme = useContext(ThemeContext)
 
@@ -39,6 +37,11 @@ function LoginForm() {
   const deferredPrompt = useRef<undefined | BeforeInstallPromptEvent>(undefined)
 
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
+
+  const loginSchema = Yup.object().shape({
+    username: Yup.string().required(t('shared.generic.usernameError')),
+    password: Yup.string().required(t('shared.generic.passwordError')),
+  })
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
@@ -74,7 +77,7 @@ function LoginForm() {
       })
       const userID: string | null = result.data!.loginParticipant
       if (!userID) {
-        setError('Wrong username or password')
+        setError(t('shared.generic.loginError'))
         setSubmitting(false)
         resetForm()
       } else {
@@ -85,9 +88,7 @@ function LoginForm() {
       }
     } catch (e) {
       console.error(e)
-      setError(
-        'A problem occurred while signing you in. Please try again later.'
-      )
+      setError(t('shared.generic.systemError'))
       setSubmitting(false)
       resetForm()
     }
@@ -113,14 +114,14 @@ function LoginForm() {
                   data-cy="login-logo"
                 />
               </div>
-              <H1>Login</H1>
+              <H1>{t('shared.generic.login')}</H1>
               <div className="mb-10">
                 <Form className="w-72 sm:w-96">
                   <RadixLabel.Root
                     htmlFor="username"
                     className="text-sm leading-7 text-gray-600"
                   >
-                    Username
+                    {t('shared.generic.username')}
                   </RadixLabel.Root>
                   <Field
                     name="username"
@@ -144,7 +145,7 @@ function LoginForm() {
                     className="text-sm leading-7 text-gray-600"
                     htmlFor="password"
                   >
-                    Passwort
+                    {t('shared.generic.password')}
                   </RadixLabel.Root>
                   <Field
                     name="password"
@@ -174,20 +175,24 @@ function LoginForm() {
                       className={{ root: 'mt-2 border-uzh-grey-80' }}
                       data={{ cy: 'submit-login' }}
                     >
-                      <Button.Label>Anmelden</Button.Label>
+                      <Button.Label>{t('shared.generic.signin')}</Button.Label>
                     </Button>
                   </div>
                   {onChrome && (
                     <div className="flex flex-col justify-center md:hidden mt-7">
                       <UserNotification
                         notificationType="info"
-                        message="Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind."
+                        message={t('pwa.login.installPWA')}
                       >
                         <Button
-                          className={{ root: 'mt-2 w-fit border-uzh-grey-80' }}
+                          className={{
+                            root: 'mt-2 w-fit border-uzh-grey-80',
+                          }}
                           onClick={onInstallClick}
                         >
-                          <Button.Label>Jetzt installieren</Button.Label>
+                          <Button.Label>
+                            {t('pwa.login.installButton')}
+                          </Button.Label>
                         </Button>
                       </UserNotification>
                     </div>
@@ -196,7 +201,7 @@ function LoginForm() {
                     <UserNotification
                       className={{ root: 'mt-4' }}
                       notificationType="info"
-                      message="Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+                      message={t('pwa.login.installHomeScreen')}
                     />
                   )}
                 </Form>
@@ -207,6 +212,16 @@ function LoginForm() {
       </Formik>
     </div>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
 }
 
 export default LoginForm

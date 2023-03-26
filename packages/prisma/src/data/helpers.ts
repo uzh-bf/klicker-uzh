@@ -1,7 +1,7 @@
 import Prisma from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
-import { QuestionInstanceType } from '../client'
+import { QuestionInstanceType, QuestionStackType } from '../client'
 
 export async function prepareUser({
   password,
@@ -257,63 +257,121 @@ interface BaseQuestionData {
   options?: any
 }
 
+interface StackData {
+  displayName?: string
+  description?: string
+  elements: (BaseQuestionData | String)[]
+}
+
 export async function prepareLearningElement({
-  questions,
+  stacks,
   ...args
 }: {
   id: string
   name: string
   displayName: string
+  description?: string
   pointsMultiplier?: number
   resetTimeDays?: number
+  orderType?: Prisma.OrderType
   ownerId: string
   courseId: string
-  questions: BaseQuestionData[]
+  stacks: StackData[]
+  status?: Prisma.LearningElementStatus
 }) {
-  const questionData = await Promise.all(questions)
-
-  if (R.any(R.isNil, questionData)) {
-    throw new Error('Invalid question data')
-  }
-
-  const preparedInstances = questionData.map((question, ix) =>
-    prepareQuestionInstance({
-      order: ix,
-      question,
-      pointsMultiplier: args.pointsMultiplier
-        ? args.pointsMultiplier * question.pointsMultiplier
-        : undefined,
-      resetTimeDays: args.resetTimeDays,
-      type: QuestionInstanceType.LEARNING_ELEMENT,
-    })
-  )
-
   return {
     where: {
       id: args.id,
     },
     create: {
-      ...args,
-      instances: {
-        create: preparedInstances,
+      id: args.id,
+      name: args.name,
+      displayName: args.displayName,
+      description: args.description,
+      pointsMultiplier: args.pointsMultiplier,
+      resetTimeDays: args.resetTimeDays,
+      status: args.status,
+      orderType: args.orderType,
+      owner: {
+        connect: {
+          id: args.ownerId,
+        },
+      },
+      course: {
+        connect: {
+          id: args.courseId,
+        },
+      },
+      stacks: {
+        create: await Promise.all(
+          stacks.map(async (stack, ix) => ({
+            type: QuestionStackType.LEARNING_ELEMENT,
+            order: ix,
+            displayName: stack.displayName,
+            description: stack.description,
+            elements: {
+              create: stack.elements.map((element, ixInner) => {
+                if (typeof element === 'string') {
+                  return { order: ixInner, mdContent: element }
+                }
+                return {
+                  order: ixInner,
+                  questionInstance: {
+                    create: prepareQuestionInstance({
+                      order: 0,
+                      question: element,
+                      pointsMultiplier: args.pointsMultiplier
+                        ? args.pointsMultiplier * element.pointsMultiplier
+                        : undefined,
+                      resetTimeDays: args.resetTimeDays,
+                      type: QuestionInstanceType.LEARNING_ELEMENT,
+                    }),
+                  },
+                }
+              }),
+            },
+          }))
+        ),
       },
     },
     update: {
-      ...args,
-      instances: {
-        upsert: preparedInstances.map((instance) => ({
-          where: {
-            type_learningElementId_order: {
-              type: QuestionInstanceType.LEARNING_ELEMENT,
-              learningElementId: args.id,
-              order: instance.order,
+      name: args.name,
+      displayName: args.displayName,
+      description: args.description,
+      pointsMultiplier: args.pointsMultiplier,
+      resetTimeDays: args.resetTimeDays,
+      status: args.status,
+      orderType: args.orderType,
+      stacks: {
+        create: await Promise.all(
+          stacks.map(async (stack, ix) => ({
+            type: QuestionStackType.LEARNING_ELEMENT,
+            order: ix,
+            displayName: stack.displayName,
+            description: stack.description,
+            elements: {
+              create: stack.elements.map((element, ixInner) => {
+                if (typeof element === 'string') {
+                  return { order: ixInner, mdContent: element }
+                }
+                return {
+                  order: ixInner,
+                  questionInstance: {
+                    create: prepareQuestionInstance({
+                      order: 0,
+                      question: element,
+                      pointsMultiplier: args.pointsMultiplier
+                        ? args.pointsMultiplier * element.pointsMultiplier
+                        : undefined,
+                      resetTimeDays: args.resetTimeDays,
+                      type: QuestionInstanceType.LEARNING_ELEMENT,
+                    }),
+                  },
+                }
+              }),
             },
-          },
-          create: instance,
-          update: {
-            ...R.pick([], instance),
-          },
-        })),
+          }))
+        ),
       },
     },
   }
@@ -433,6 +491,7 @@ export async function prepareMicroSession({
   courseId: string
   ownerId: string
   questions: BaseQuestionData[]
+  status: Prisma.MicroSessionStatus
 }) {
   const questionData = await Promise.all(questions)
 

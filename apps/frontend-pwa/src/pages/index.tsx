@@ -16,6 +16,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import LinkButton from '../components/common/LinkButton'
 import CourseElement from '../components/CourseElement'
@@ -26,6 +27,7 @@ import {
 } from '../utils/push'
 
 const Index = function () {
+  const t = useTranslations()
   const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
   const [userInfo, setUserInfo] = useState<string>('')
   const [registration, setRegistration] =
@@ -35,7 +37,6 @@ const Index = function () {
   )
 
   const { data, loading, error } = useQuery(ParticipationsDocument, {
-    skip: pushDisabled === null,
     variables: { endpoint: subscription?.endpoint },
     fetchPolicy: 'network-only',
   })
@@ -64,6 +65,7 @@ const Index = function () {
       isSubscribed: boolean
       startDate: string
       endDate: string
+      isGamificationEnabled: boolean
     }[]
     oldCourses: {
       id: string
@@ -98,6 +100,8 @@ const Index = function () {
                   displayName: participation.course?.displayName,
                   startDate: participation.course?.startDate,
                   endDate: participation.course?.endDate,
+                  isGamificationEnabled:
+                    participation.course?.isGamificationEnabled,
                   isSubscribed:
                     participation.subscriptions &&
                     participation.subscriptions.length > 0,
@@ -202,14 +206,16 @@ const Index = function () {
   }
 
   return (
-    <Layout displayName="KlickerUZH">
+    <Layout displayName={t('shared.generic.title')}>
       <div
         className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded"
         data-cy="homepage"
       >
         {activeSessions.length !== 0 && (
           <div>
-            <H1 className={{ root: 'text-xl mb-2' }}>Aktive Sessions</H1>
+            <H1 className={{ root: 'text-xl mb-2' }}>
+              {t('shared.generic.activeSessions')}
+            </H1>
             <div className="flex flex-col gap-2">
               {activeSessions.map((session) => (
                 <LinkButton
@@ -226,29 +232,35 @@ const Index = function () {
             </div>
           </div>
         )}
-
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>Lernelemente</H1>
+          <H1 className={{ root: 'text-xl mb-2' }}>
+            {t('shared.generic.learningElements')}
+          </H1>
           <div className="flex flex-col gap-2">
             <LinkButton href="/repetition" icon={faGraduationCap}>
-              Repetition
+              {t('shared.generic.repetition')}
             </LinkButton>
             <LinkButton href="/bookmarks" icon={faBookmark}>
-              Meine Bookmarks
+              {t('pwa.general.myBookmarks')}
             </LinkButton>
           </div>
         </div>
-
         {activeMicrolearning.length > 0 && (
-          <div>
-            <H1 className={{ root: 'text-xl mb-2' }}>Microlearning</H1>
+          <div data-cy="micro-learnings">
+            <H1 className={{ root: 'text-xl mb-2' }}>
+              {t('shared.generic.microlearning')}
+            </H1>
             <div className="flex flex-col gap-2">
               {activeMicrolearning.map((micro) => (
                 <LinkButton
                   icon={micro.isCompleted ? faCheck : faBookOpenReader}
-                  href={`/micro/${micro.id}/`}
+                  href={micro.isCompleted ? '' : `/micro/${micro.id}/`}
                   key={micro.id}
-                  className={{ root: micro.isCompleted && 'hover:bg-unset' }}
+                  disabled={micro.isCompleted}
+                  className={{
+                    root:
+                      micro.isCompleted && 'hover:bg-unset cursor-not-allowed',
+                  }}
                 >
                   <div>{micro.displayName}</div>
                   <div className="flex flex-row items-end justify-between">
@@ -263,12 +275,16 @@ const Index = function () {
             </div>
           </div>
         )}
-
         <div>
-          <H1 className={{ root: 'text-xl mb-2' }}>Meine Kurse</H1>
+          <H1 className={{ root: 'text-xl mb-2' }}>
+            {t('pwa.general.myCourses')}
+          </H1>
           <div className="flex flex-col gap-2">
             {courses.map((course) => (
               <CourseElement
+                disabled={
+                  !course?.isGamificationEnabled && !course?.description
+                }
                 key={course.id}
                 course={course}
                 onSubscribeClick={onSubscribeClick}
@@ -278,19 +294,27 @@ const Index = function () {
               <CourseElement key={course.id} course={course} />
             ))}
             <LinkButton icon={faCirclePlus} href="/join">
-              Kurs beitreten
+              {t('pwa.general.joinCourse')}
             </LinkButton>
           </div>
         </div>
-
         {userInfo && (
           <UserNotification notificationType="info" message={userInfo} />
         )}
-
         {/* <SurveyPromotion courseId={courses?.[0]?.id} /> */}
       </div>
     </Layout>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
 }
 
 export default Index

@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/backend-response-processor",
-  "version": "3.0.0-alpha.58",
+  "version": "3.0.0-alpha.78",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -10,13 +10,13 @@
   ],
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
-    "build:test": "npm run build",
     "dev": "npm-run-all --parallel dev:ts dev:func",
     "dev:ts": "tsup --watch",
     "dev:func": "func start -p 7073",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "start": "func start -p 7073",
-    "start:test": "npm start"
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@klicker-uzh/grading": "^3.0.0-alpha.0",
@@ -34,7 +34,7 @@
     "@types/md5": "2.3.2",
     "@types/node": "^18.0.0",
     "@types/ramda": "^0.28.15",
-    "@uzh-bf/design-system": "1.4.2",
+    "@uzh-bf/design-system": "1.5.4",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "husky": "8.0.3",

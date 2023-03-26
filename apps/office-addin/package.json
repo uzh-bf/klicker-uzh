@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.0.0-alpha.58",
+  "version": "3.0.0-alpha.78",
   "license": "AGPL-3.0",
   "config": {
     "app_to_debug": "powerpoint",
@@ -28,11 +28,13 @@
     "dev:tailwind": "tailwindcss -i ./src/content/content.css -o ./src/content/output.css --watch",
     "dev-addin": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
     "predev": "npm run clear",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@fluentui/react": "8.105.7",
-    "@uzh-bf/design-system": "1.4.2",
+    "@uzh-bf/design-system": "1.5.4",
     "core-js": "3.27.2",
     "es6-promise": "4.2.8",
     "formik": "2.2.9",

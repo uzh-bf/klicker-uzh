@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { Context, ContextWithUser } from '../lib/context'
+import { ContextWithUser } from '../lib/context'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -30,6 +30,7 @@ export async function getSingleQuestion(
   const question = await ctx.prisma.question.findUnique({
     where: {
       id,
+      ownerId: ctx.user.sub,
     },
     include: {
       tags: true,
@@ -55,6 +56,7 @@ export async function manipulateQuestion(
     options,
     hasSampleSolution,
     hasAnswerFeedbacks,
+    pointsMultiplier,
     attachments,
     tags,
     displayMode,
@@ -87,6 +89,7 @@ export async function manipulateQuestion(
     } | null
     hasSampleSolution?: boolean | null
     hasAnswerFeedbacks?: boolean | null
+    pointsMultiplier?: number | null
     attachments?: { id: string }[] | null
     tags?: string[] | null
     displayMode?: DB.QuestionDisplayMode | null
@@ -95,28 +98,29 @@ export async function manipulateQuestion(
 ) {
   let tagsToDelete: string[] = []
 
-  const questionPrev = id
-    ? await ctx.prisma.question.findUnique({
-        where: {
-          id: id,
-        },
-        include: {
-          tags: true,
-          attachments: true,
-        },
-      })
-    : undefined
+  const questionPrev =
+    typeof id !== 'undefined' && id !== null
+      ? await ctx.prisma.question.findUnique({
+          where: {
+            id: id,
+            ownerId: ctx.user.sub,
+          },
+          include: {
+            tags: true,
+            attachments: true,
+          },
+        })
+      : undefined
 
-  if (questionPrev && questionPrev?.tags) {
+  if (questionPrev?.tags) {
     tagsToDelete = questionPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
   }
 
-  // TODO: replace the conditional implementation above with the single upsert below - up to now it failed because "where did not receive an argument when id was undefined"
   const question = await ctx.prisma.question.upsert({
     where: {
-      id: id || -1,
+      id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
     create: {
       type: type,
@@ -125,6 +129,7 @@ export async function manipulateQuestion(
       explanation: explanation ?? undefined,
       hasSampleSolution: hasSampleSolution ?? false,
       hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
+      pointsMultiplier: pointsMultiplier ?? 1,
       displayMode: displayMode ?? undefined,
       options: options || {},
       owner: {
@@ -154,6 +159,7 @@ export async function manipulateQuestion(
       explanation: explanation ?? undefined,
       hasSampleSolution: hasSampleSolution ?? false,
       hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
+      pointsMultiplier: pointsMultiplier ?? 1,
       options: options ?? undefined,
       displayMode: displayMode ?? undefined,
       tags: {
@@ -199,10 +205,14 @@ export async function manipulateQuestion(
   }
 }
 
-export async function deleteQuestion({ id }: { id: number }, ctx: Context) {
+export async function deleteQuestion(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
   const question = await ctx.prisma.question.delete({
     where: {
       id: id,
+      ownerId: ctx.user.sub,
     },
   })
 
@@ -233,11 +243,12 @@ export async function getUserTags(ctx: ContextWithUser) {
 
 export async function editTag(
   { id, name }: { id: number; name: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const tag = await ctx.prisma.tag.update({
     where: {
       id: id,
+      ownerId: ctx.user.sub,
     },
     data: {
       name: name,
@@ -247,10 +258,11 @@ export async function editTag(
   return tag
 }
 
-export async function deleteTag({ id }: { id: number }, ctx: Context) {
+export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
   const tag = await ctx.prisma.tag.delete({
     where: {
       id: id,
+      ownerId: ctx.user.sub,
     },
   })
 

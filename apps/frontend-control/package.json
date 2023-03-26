@@ -1,16 +1,18 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.0.0-alpha.58",
+  "version": "3.0.0-alpha.78",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3003",
     "build": "next build",
     "build:test": "cross-env NODE_ENV=test next build",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "start": "next start --port 3003",
     "start:test": "cross-env NODE_ENV=test npm start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@apollo/client": "3.7.7",
@@ -24,7 +26,7 @@
     "@next/font": "13.1.6",
     "@sentry/nextjs": "7.37.2",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "1.4.2",
+    "@uzh-bf/design-system": "1.5.4",
     "body-parser": "1.20.1",
     "cross-env": "7.0.3",
     "dayjs": "1.11.7",
@@ -34,6 +36,7 @@
     "jsonwebtoken": "9.0.0",
     "localforage": "1.10.0",
     "next": "13.1.6",
+    "next-intl": "2.10.4",
     "next-pwa": "5.6.0",
     "nookies": "2.5.2",
     "ramda": "0.28.0",

@@ -1,7 +1,10 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
 import { faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Session } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LearningElementOrderType,
+  Session,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Progress } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import React, { useState } from 'react'
@@ -44,6 +47,8 @@ export interface MicroSessionFormValues {
   endDate: string
   multiplier: string
   courseId: string
+  order: LearningElementOrderType
+  resetTimeDays: string
 }
 
 export interface LearningElementFormValues {
@@ -117,7 +122,10 @@ function MultistepWizard({
                   : 'Element erfolgreich erstellt/modifiziert.'}
               </div>
               <div className="space-x-2">
-                <Button onClick={onViewElement}>
+                <Button
+                  onClick={onViewElement}
+                  data={{ cy: 'load-session-list' }}
+                >
                   <Button.Icon>
                     <FontAwesomeIcon icon={faEye} />
                   </Button.Icon>
@@ -160,7 +168,11 @@ function MultistepWizard({
                 formatter={(step) => `Schritt ${step + 1}`}
               />
 
-              <Button disabled={isSubmitting && !isValid} type="submit">
+              <Button
+                disabled={isSubmitting && !isValid}
+                type="submit"
+                data={{ cy: 'next-or-submit' }}
+              >
                 {isLastStep ? 'Erstellen' : 'Weiter'}
               </Button>
             </div>

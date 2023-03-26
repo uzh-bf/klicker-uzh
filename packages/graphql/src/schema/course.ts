@@ -1,5 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
+import dayjs from 'dayjs'
 import builder from '../builder'
+import { GroupActivity } from './groupActivity'
 import type { ILearningElement } from './learningElements'
 import { LearningElementRef } from './learningElements'
 import type { IMicroSession } from './microSession'
@@ -15,10 +17,12 @@ export interface ICourse extends DB.Course {
   numOfActiveParticipants?: number
   averageScore?: number
   averageActiveScore?: number
+  isGroupDeadlinePassed?: boolean
 
   sessions?: ISession[]
   learningElements?: ILearningElement[]
   microSessions?: IMicroSession[]
+  groupActivities?: DB.GroupActivity[]
   leaderboard?: ILeaderboardEntry[]
   awards?: DB.AwardEntry[]
   owner?: DB.User
@@ -34,7 +38,8 @@ export const Course = builder.objectType(CourseRef, {
 
     color: t.exposeString('color', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
-    isArchived: t.exposeBoolean('isArchived', { nullable: true }),
+    isArchived: t.exposeBoolean('isArchived'),
+    isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
 
     numOfParticipants: t.exposeInt('numOfParticipants', {
       nullable: true,
@@ -53,6 +58,19 @@ export const Course = builder.objectType(CourseRef, {
 
     startDate: t.expose('startDate', { type: 'Date' }),
     endDate: t.expose('endDate', { type: 'Date' }),
+
+    groupDeadlineDate: t.expose('groupDeadlineDate', {
+      type: 'Date',
+      nullable: true,
+    }),
+    isGroupDeadlinePassed: t.boolean({
+      resolve(course: ICourse) {
+        if (typeof course.groupDeadlineDate === 'undefined') return null
+        return dayjs().isAfter(course.groupDeadlineDate)
+      },
+      nullable: true,
+    }),
+
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
 
@@ -66,6 +84,10 @@ export const Course = builder.objectType(CourseRef, {
     }),
     microSessions: t.expose('microSessions', {
       type: [MicroSessionRef],
+      nullable: true,
+    }),
+    groupActivities: t.expose('groupActivities', {
+      type: [GroupActivity],
       nullable: true,
     }),
     leaderboard: t.expose('leaderboard', {

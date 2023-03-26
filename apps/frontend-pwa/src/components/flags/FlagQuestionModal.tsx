@@ -1,10 +1,10 @@
 import { useMutation } from '@apollo/client'
-import { faFlag } from '@fortawesome/free-regular-svg-icons'
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
+import { faEnvelope, faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlagQuestionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H4, Modal, ThemeContext, Toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
@@ -16,6 +16,8 @@ interface FlagErrorToastProps {
 }
 
 function FlagErrorToast({ open, setOpen, content }: FlagErrorToastProps) {
+  const t = useTranslations()
+
   return (
     <Toast
       duration={5000}
@@ -23,7 +25,7 @@ function FlagErrorToast({ open, setOpen, content }: FlagErrorToastProps) {
       openExternal={open}
       setOpenExternal={setOpen}
     >
-      <H4>Fehler</H4>
+      <H4>{t('shared.generic.error')}</H4>
       <div>{content}</div>
     </Toast>
   )
@@ -35,6 +37,8 @@ interface FlagSuccessToastProps {
 }
 
 function FlagSuccessToast({ open, setOpen }: FlagSuccessToastProps) {
+  const t = useTranslations()
+
   return (
     <Toast
       duration={5000}
@@ -42,8 +46,8 @@ function FlagSuccessToast({ open, setOpen }: FlagSuccessToastProps) {
       openExternal={open}
       setOpenExternal={setOpen}
     >
-      <H4>Vielen Dank!</H4>
-      <div>Ihr Feedback wurde Übermittelt.</div>
+      <H4>{t('shared.generic.thanks')}</H4>
+      <div>{t('pwa.learningElement.feedbackTransmitted')}</div>
     </Toast>
   )
 }
@@ -59,6 +63,8 @@ function FlagQuestionModal({
   setOpen,
   instanceId,
 }: FlagQuestionModalProps) {
+  const t = useTranslations()
+
   const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
 
@@ -67,7 +73,7 @@ function FlagQuestionModal({
 
   const flagQuestionSchema = Yup.object().shape({
     description: Yup.string().test({
-      message: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
+      message: t('pwa.learningElement.feedbackRequired'),
       test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
     }),
   })
@@ -97,15 +103,18 @@ function FlagQuestionModal({
   return (
     <div>
       <Modal
-        title="Frage melden"
+        title={t('pwa.learningElement.flagQuestion')}
         className={{
           content: 'z-20 max-w-lg h-max',
           overlay: 'z-10',
         }}
         open={open}
         trigger={
-          <Button onClick={() => setOpen(true)} basic>
-            <FontAwesomeIcon icon={faFlag} className="hover:text-red-500" />
+          <Button basic onClick={() => setOpen(true)}>
+            <FontAwesomeIcon
+              icon={faWarning}
+              className="text-red-600 hover:text-red-500"
+            />
           </Button>
         }
         onClose={() => setOpen(false)}
@@ -113,11 +122,7 @@ function FlagQuestionModal({
         escapeDisabled
       >
         <div className="mb-4 prose max-w-none">
-          Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen
-          eines Lernelements / einer Micro-Session eine direkte Anmerkung
-          abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der
-          Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte
-          versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.
+          {t('pwa.learningElement.flagQuestionText')}
         </div>
         <Formik
           initialValues={{ feedback: '' }}
@@ -132,7 +137,7 @@ function FlagQuestionModal({
               <Form>
                 <textarea
                   className="w-full h-24 rounded-md"
-                  placeholder="Feedback hinzufügen"
+                  placeholder={t('pwa.learningElement.addFeedback')}
                   value={values.feedback}
                   onChange={(e) => setFieldValue('feedback', e.target.value)}
                 />
@@ -149,7 +154,7 @@ function FlagQuestionModal({
                     onClick={() => setOpen(false)}
                     className={{ root: 'order-2 md:order-1' }}
                   >
-                    Abbrechen
+                    {t('shared.generic.cancel')}
                   </Button>
                   <Button
                     className={{
@@ -168,7 +173,9 @@ function FlagQuestionModal({
                     >
                       <FontAwesomeIcon icon={faEnvelope} />
                     </Button.Icon>
-                    <Button.Label>Feedback abschicken</Button.Label>
+                    <Button.Label>
+                      {t('pwa.learningElement.submitFeedback')}
+                    </Button.Label>
                   </Button>
                 </div>
               </Form>
@@ -181,7 +188,7 @@ function FlagQuestionModal({
       <FlagErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}
-        content={error?.message ?? 'Fehler'}
+        content={error?.message ?? t('shared.generic.systemError')}
       />
     </div>
   )

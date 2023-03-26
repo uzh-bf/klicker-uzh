@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.0.0-alpha.58",
+  "version": "3.0.0-alpha.78",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,8 +14,10 @@
     "build": "cross-env NODE_ENV=production tsup",
     "build:test": "npm run build",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "npm start"
+    "start:test": "npm start",
+    "check": "tsc --noEmit"
   },
   "engines": {
     "node": "=18"
@@ -38,7 +40,7 @@
     "@types/node": "^18.0.0",
     "@types/passport": "^1.0.10",
     "@types/passport-jwt": "^3.0.6",
-    "@uzh-bf/design-system": "1.4.2",
+    "@uzh-bf/design-system": "1.5.4",
     "axios": "1.3.2",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
@@ -68,7 +70,7 @@
     "express": "4.18.2",
     "graphql": "16.6.0",
     "graphql-ws": "5.11.3",
-    "graphql-yoga": "3.6.0",
+    "graphql-yoga": "3.7.3",
     "ioredis": "5.3.1",
     "jsonwebtoken": "9.0.0",
     "passport": "0.6.0",

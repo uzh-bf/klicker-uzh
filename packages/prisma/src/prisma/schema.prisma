@@ -5,9 +5,9 @@ generator client {
   binaryTargets   = ["native", "windows", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x"]
 }
 
-generator erd {
-  provider = "prisma-erd-generator"
-}
+// generator erd {
+//   provider = "prisma-erd-generator"
+// }
 
 generator pothos {
   provider     = "prisma-pothos-types"
@@ -173,7 +173,7 @@ model Tag {
 
   questions Question[]
 
-  owner   User   @relation(fields: [ownerId], references: [id])
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
   createdAt DateTime @default(now())
@@ -204,14 +204,14 @@ model QuestionInstance {
   detailResponses  QuestionResponseDetail[]
   resetTimeDays    Int?
 
-  sessionBlock      SessionBlock?    @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionBlockId    Int?
-  learningElement   LearningElement? @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  learningElementId String?          @db.Uuid
-  microSession      MicroSession?    @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  microSessionId    String?          @db.Uuid
-  groupActivity     GroupActivity?   @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  groupActivityId   String?          @db.Uuid
+  sessionBlock    SessionBlock?  @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionBlockId  Int?
+  stackElement    StackElement?  @relation(fields: [stackElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  stackElementId  Int?           @unique
+  microSession    MicroSession?  @relation(fields: [microSessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microSessionId  String?        @db.Uuid
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String?        @db.Uuid
 
   attachments  AttachmentInstance[]
   bookmarkedBy Participation[]
@@ -225,9 +225,49 @@ model QuestionInstance {
   updatedAt DateTime @updatedAt
 
   @@unique([type, sessionBlockId, order])
-  @@unique([type, learningElementId, order])
+  @@unique([type, stackElementId, order])
   @@unique([type, microSessionId, order])
   @@unique([type, groupActivityId, order])
+}
+
+// TODO: think about usage of question stacks for group activities
+enum QuestionStackType {
+  LEARNING_ELEMENT
+  MICRO_SESSION
+  LIVE_SESSION
+  GROUP_ACTIVITY
+}
+
+model QuestionStack {
+  id Int @id @default(autoincrement())
+
+  type        QuestionStackType
+  displayName String?
+  description String?
+  order       Int?
+
+  elements StackElement[]
+
+  learningElement   LearningElement? @relation(fields: [learningElementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  learningElementId String?          @db.Uuid
+  groupActivity     GroupActivity?
+
+  bookmarkedBy Participation[]
+
+  @@unique([type, learningElementId, order])
+}
+
+model StackElement {
+  id Int @id @default(autoincrement())
+
+  order Int?
+
+  stack   QuestionStack @relation(fields: [stackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  stackId Int
+
+  mdContent String?
+
+  questionInstance QuestionInstance?
 }
 
 // ----- COURSES -----
@@ -237,15 +277,17 @@ model Course {
 
   isArchived Boolean @default(false)
 
-  pinCode Int @unique @default(123456789)
+  pinCode Int @unique
 
-  name              String
-  displayName       String
-  description       String?
-  color             String?  @default("#eaa07d")
-  startDate         DateTime
-  endDate           DateTime
-  notificationEmail String?
+  name                  String
+  displayName           String
+  description           String?
+  color                 String?   @default("#eaa07d")
+  startDate             DateTime
+  endDate               DateTime
+  groupDeadlineDate     DateTime?
+  notificationEmail     String?
+  isGamificationEnabled Boolean   @default(true)
 
   sessions          Session[]
   learningElements  LearningElement[]
@@ -400,17 +442,23 @@ enum OrderType {
   LAST_RESPONSE
 }
 
+enum LearningElementStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model LearningElement {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
   description      String?
-  pointsMultiplier Int       @default(1)
-  resetTimeDays    Int       @default(6)
-  orderType        OrderType @default(SEQUENTIAL)
+  pointsMultiplier Int                   @default(1)
+  resetTimeDays    Int                   @default(6)
+  orderType        OrderType             @default(SEQUENTIAL)
+  status           LearningElementStatus @default(DRAFT)
 
-  instances QuestionInstance[]
+  stacks QuestionStack[]
 
   owner    User    @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String  @db.Uuid
@@ -423,13 +471,19 @@ model LearningElement {
 
 // ----- MICROLEARNING -----
 
+enum MicroSessionStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model MicroSession {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
-  pointsMultiplier Int     @default(1)
+  pointsMultiplier Int                @default(1)
   description      String?
+  status           MicroSessionStatus @default(DRAFT)
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
@@ -501,15 +555,24 @@ model GroupActivityClueInstance {
   @@unique([groupActivityInstanceId, name])
 }
 
+enum GroupActivityStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model GroupActivity {
   id String @id @default(uuid()) @db.Uuid
 
   name        String
   displayName String
+  status      GroupActivityStatus @default(DRAFT)
 
   description      String?
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
+
+  questionStack   QuestionStack? @relation(fields: [questionStackId], references: [id])
+  questionStackId Int?           @unique
 
   parameters        GroupActivityParameter[]
   clues             GroupActivityClue[]
@@ -634,7 +697,6 @@ model Participant {
   password       String
   avatar         String?
   avatarSettings Json?
-  level          Int     @default(1)
   xp             Int     @default(0)
 
   lastLoginAt DateTime?
@@ -701,8 +763,8 @@ model Participation {
   detailResponses        QuestionResponseDetail[]
   subscriptions          PushSubscription[]
   completedMicroSessions String[]
-
-  bookmarkedQuestions QuestionInstance[]
+  bookmarkedQuestions    QuestionInstance[]
+  bookmarkedStacks       QuestionStack[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -829,7 +891,9 @@ model QuestionResponse {
   trialsCount        Int       @default(0)
   totalScore         Float     @default(0)
   totalPointsAwarded Float     @default(0)
+  totalXpAwarded     Float     @default(0)
   lastAwardedAt      DateTime?
+  lastXpAwardedAt    DateTime?
 
   response Json
 
@@ -853,6 +917,7 @@ model QuestionResponseDetail {
 
   score         Float @default(0)
   pointsAwarded Float @default(0)
+  xpAwarded     Float @default(0)
 
   response Json
 
@@ -922,4 +987,18 @@ model AwardEntry {
 
   @@unique([courseId, type, order])
   @@unique([courseId, type, name])
+}
+
+// ----- LEVELS -----
+model Level {
+  id Int @id @default(autoincrement())
+
+  index      Int     @unique
+  name       String?
+  requiredXp Int
+  avatar     String?
+
+  nextLevel   Level?  @relation("level", fields: [nextLevelIx], references: [index])
+  nextLevelIx Int?
+  prevLevel   Level[] @relation("level")
 }

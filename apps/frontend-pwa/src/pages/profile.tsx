@@ -1,102 +1,61 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   LogoutParticipantDocument,
-  SelfDocument,
+  SelfWithAchievementsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, H2 } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
+import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import Router from 'next/router'
+import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
+import ProfileData from '../components/participant/ProfileData'
 
 const Profile = () => {
-  const { data, loading } = useQuery(SelfDocument)
+  const t = useTranslations()
+  const { data, loading } = useQuery(SelfWithAchievementsDocument)
   const [logoutParticipant] = useMutation(LogoutParticipantDocument)
+  const router = useRouter()
 
-  if (loading || !data?.self) return <div>loading...</div>
+  if (loading || !data?.selfWithAchievements) return <div>loading...</div>
 
+  const { participant, achievements } = data.selfWithAchievements
   const pageInFrame = window && window?.location !== window?.parent.location
 
   return (
-    <Layout course={{ displayName: 'KlickerUZH' }} displayName="Mein Profil">
-      <div className="flex flex-col gap-8 md:max-w-3xl md:border md:rounded md:p-4 md:mx-auto md:w-full">
-        <div className="flex flex-row gap-4">
-          <div className="relative flex-none border-b-4 w-36 h-36 ">
-            <Image
-              className="bg-white"
-              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-                data.self.avatar ?? 'placeholder'
-              }.svg`}
-              alt=""
-              fill
-            />
-          </div>
-          <div className="flex-1">
-            <H1>{data.self.username}</H1>
+    <Layout
+      course={{ displayName: 'KlickerUZH' }}
+      displayName={t('pwa.profile.myProfile')}
+    >
+      <div className="flex flex-col items-center gap-4 p-4 border rounded md:mx-auto md:w-max">
+        <ProfileData
+          isSelf={true}
+          username={participant.username}
+          avatar={participant.avatar}
+          xp={participant.xp}
+          level={participant.levelData}
+          achievements={participant.achievements}
+          possibleAchievements={achievements}
+        />
 
+        <div className="flex flex-row justify-between w-full px-4 space-x-2">
+          <Button
+            onClick={() => router.push('/editProfile')}
+            className={{ root: 'mt-2' }}
+          >
+            {t('pwa.profile.editProfile')}
+          </Button>
+
+          {!pageInFrame && (
             <Button
-              fluid
-              onClick={() => Router.replace('/editProfile')}
+              onClick={async () => {
+                await logoutParticipant()
+                router.push('/login')
+              }}
               className={{ root: 'mt-2' }}
             >
-              Profil editieren
+              {t('shared.generic.logout')}
             </Button>
-
-            {!pageInFrame && (
-              <Button
-                fluid
-                onClick={async () => {
-                  await logoutParticipant()
-                  Router.replace('/login')
-                }}
-                className={{ root: 'mt-2' }}
-              >
-                Ausloggen
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <H2>Errungenschaften</H2>
-          {!data.self.achievements ||
-            (data.self.achievements?.length == 0 && (
-              <div>Bisher keine Errungenschaften</div>
-            ))}
-          <div className="grid gap-4 mt-2 md:grid-cols-2">
-            {data.self.achievements?.map((achievement) => (
-              <div
-                key={achievement.id}
-                className="flex flex-row gap-6 p-2 pl-4 border rounded"
-              >
-                <div className="relative flex-initial w-10">
-                  <Image
-                    src={achievement.achievement.icon}
-                    fill
-                    alt=""
-                    style={{
-                      filter: achievement.achievement.iconColor,
-                    }}
-                  />
-                </div>
-
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-ellipsis">
-                    {achievement.achievement.name}
-                  </div>
-                  <div className="text-xs">
-                    {achievement.achievement.description}
-                  </div>
-                  <div className="flex flex-row justify-between pt-1 mt-1 text-xs border-t">
-                    <div>{achievement.achievedCount}x</div>
-                    <div>
-                      {dayjs(achievement.achievedAt).format('DD.MM.YYYY')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          )}
         </div>
 
         <div className="self-center mt-8">
@@ -111,4 +70,15 @@ const Profile = () => {
     </Layout>
   )
 }
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
+}
+
 export default Profile

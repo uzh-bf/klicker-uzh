@@ -87,8 +87,8 @@ export const ResponseInput = builder.inputType('ResponseInput', {
 
 export interface IQuestionFeedback {
   ix: number
-  feedback: string
-  correct: boolean
+  feedback?: string
+  correct?: boolean
   value: string
 }
 export const QuestionFeedback = builder
@@ -96,8 +96,8 @@ export const QuestionFeedback = builder
   .implement({
     fields: (t) => ({
       ix: t.exposeInt('ix'),
-      feedback: t.exposeString('feedback'),
-      correct: t.exposeBoolean('correct'),
+      feedback: t.exposeString('feedback', { nullable: true }),
+      correct: t.exposeBoolean('correct', { nullable: true }),
       value: t.exposeString('value'),
     }),
   })
@@ -110,6 +110,8 @@ export interface IInstanceEvaluation {
   pointsAwarded?: number
   percentile?: number
   newPointsFrom?: Date
+  xpAwarded?: number
+  newXpFrom?: Date
 }
 export const InstanceEvaluation = builder
   .objectRef<IInstanceEvaluation>('InstanceEvaluation')
@@ -128,6 +130,11 @@ export const InstanceEvaluation = builder
       pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
       percentile: t.exposeFloat('percentile', { nullable: true }),
       newPointsFrom: t.expose('newPointsFrom', {
+        type: 'Date',
+        nullable: true,
+      }),
+      xpAwarded: t.exposeInt('xpAwarded', { nullable: true }),
+      newXpFrom: t.expose('newXpFrom', {
         type: 'Date',
         nullable: true,
       }),

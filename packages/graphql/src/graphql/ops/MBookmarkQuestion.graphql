@@ -1,17 +1,13 @@
 mutation BookmarkQuestion(
-  $instanceId: Int!
+  $stackId: Int!
   $courseId: String!
   $bookmarked: Boolean!
 ) {
   bookmarkQuestion(
-    instanceId: $instanceId
+    stackId: $stackId
     courseId: $courseId
     bookmarked: $bookmarked
   ) {
     id
-    isActive
-    bookmarkedQuestions {
-      id
-    }
   }
 }

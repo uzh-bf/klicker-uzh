@@ -14,7 +14,7 @@ import { twMerge } from 'tailwind-merge'
 
 import { useQuery } from '@apollo/client'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { getParticipantToken } from '@lib/token'
+import { useTranslations } from 'next-intl'
 import getConfig from 'next/config'
 import SessionLeaderboard from '../../components/common/SessionLeaderboard'
 import Layout from '../../components/Layout'
@@ -51,6 +51,7 @@ interface Props {
 
 function Index({ id }: Props) {
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
+  const t = useTranslations()
 
   const { data, subscribeToMore } = useQuery(GetRunningSessionDocument, {
     variables: { id },
@@ -125,7 +126,7 @@ function Index({ id }: Props) {
   }[] = [
     {
       value: 'questions',
-      label: 'Questions',
+      label: t('shared.generic.questions'),
       icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
       unseenItems: activeBlock?.instances?.length,
     },
@@ -134,14 +135,14 @@ function Index({ id }: Props) {
   if (isLiveQAEnabled || isConfusionFeedbackEnabled) {
     mobileMenuItems.push({
       value: 'feedbacks',
-      label: 'Feedbacks',
+      label: t('shared.generic.feedbacks'),
       icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
     })
   }
   if (selfData?.self && isGamificationEnabled) {
     mobileMenuItems.push({
       value: 'leaderboard',
-      label: 'Leaderboard',
+      label: t('shared.generic.leaderboard'),
       icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
     })
   }
@@ -152,7 +153,6 @@ function Index({ id }: Props) {
       course={course ?? { name: 'KlickerUZH' }}
       mobileMenuItems={mobileMenuItems}
       setActiveMobilePage={setActiveMobilePage}
-      pageNotFound={!id}
     >
       <Subscriber id={id} subscribeToMore={subscribeToMore} />
 
@@ -169,11 +169,11 @@ function Index({ id }: Props) {
         >
           {!activeBlock ? (
             isGamificationEnabled ? (
-              <div className={twMerge('bg-white min-h-full flex-1 md:p-8')}>
+              <div className={twMerge('bg-white min-h-full flex-1')}>
                 <SessionLeaderboard sessionId={id} />
               </div>
             ) : (
-              <div>Keine Frage aktiv.</div>
+              <div>{t('pwa.session.noActiveQuestion')}</div>
             )
           ) : (
             <QuestionArea
@@ -237,11 +237,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   const apolloClient = initializeApollo()
 
-  const { participantToken, participant } = await getParticipantToken({
-    apolloClient,
-    ctx,
-  })
-
   await Promise.all([
     apolloClient.query({
       query: GetRunningSessionDocument,
@@ -260,6 +255,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
+      messages: {
+        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+      },
     },
   })
 }

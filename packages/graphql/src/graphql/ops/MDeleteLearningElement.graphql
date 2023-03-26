@@ -1,0 +1,5 @@
+mutation DeleteLearningElement($id: String!) {
+  deleteLearningElement(id: $id) {
+    id
+  }
+}

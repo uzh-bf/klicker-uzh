@@ -27,7 +27,7 @@ interface MicroSessionWizardProps {
     label: string
     value: string
   }[]
-  initialValues?: Partial<MicroSession>
+  initialValues?: MicroSession
 }
 
 const stepOneValidationSchema = yup.object().shape({
@@ -162,8 +162,14 @@ function MicroSessionWizard({
                 hasSampleSolution: instance.questionData.hasSampleSolution,
               }
             }) || [],
-          startDate: initialValues?.scheduledStartAt || '',
-          endDate: initialValues?.scheduledEndAt || '',
+          startDate:
+            dayjs(initialValues?.scheduledStartAt)
+              .local()
+              .format('YYYY-MM-DDThh:mm') || '',
+          endDate:
+            dayjs(initialValues?.scheduledEndAt)
+              .local()
+              .format('YYYY-MM-DDThh:mm') || '',
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)
             : '1',
@@ -216,6 +222,7 @@ function StepOne(_: StepProps) {
         label="Name"
         tooltip="Der Name soll Ihnen ermöglichen, diese Micro-Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
         className={{ root: 'mb-1' }}
+        data-cy="insert-micro-session-name"
       />
       <FormikTextField
         required
@@ -224,12 +231,14 @@ function StepOne(_: StepProps) {
         label="Anzeigename"
         tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
         className={{ root: 'mb-1' }}
+        data-cy="insert-micro-session-display-name"
       />
 
       <EditorField
         label="Beschreibung"
         tooltip="Fügen Sie eine Beschreibung zu Ihrer Micro-Session hinzu, welche den Teilnehmern zu Beginn angezeigt wird."
         fieldName="description"
+        data_cy="insert-micro-session-description"
       />
 
       <div className="w-full text-right">
@@ -254,6 +263,7 @@ function StepTwo(props: StepProps) {
           required
           tooltip="Für die Erstellung einer Micro-Session ist die Auswahl des zugehörigen Kurses erforderlich."
           label="Kurs"
+          data={{ cy: 'select-course' }}
         />
         <ErrorMessage
           name="courseId"
@@ -270,6 +280,7 @@ function StepTwo(props: StepProps) {
           root: 'w-[24rem]',
           input: 'bg-uzh-grey-20',
         }}
+        data={{ cy: 'select-start-date' }}
       />
       <FormikDateField
         label="Enddatum"
@@ -280,6 +291,7 @@ function StepTwo(props: StepProps) {
           root: 'w-[24rem]',
           input: 'bg-uzh-grey-20',
         }}
+        data={{ cy: 'select-end-date' }}
       />
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
@@ -294,6 +306,7 @@ function StepTwo(props: StepProps) {
             { label: 'Dreifach (3x)', value: '3' },
             { label: 'Vierfach (4x)', value: '4' },
           ]}
+          data={{ cy: 'select-multiplier' }}
         />
         <ErrorMessage
           name="multiplier"

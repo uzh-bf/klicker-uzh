@@ -22,10 +22,12 @@ import SessionCreation from '../components/sessions/creation/SessionCreation'
 
 function Index() {
   const router = useRouter()
+  const theme = useContext(ThemeContext)
+
+  const [searchInput, setSearchInput] = useState('')
   const [selectedQuestions, setSelectedQuestions] = useState(
     new Array<boolean>()
   )
-  const theme = useContext(ThemeContext)
 
   const {
     loading: loadingQuestions,
@@ -90,10 +92,9 @@ function Index() {
     return faSortDesc
   }, [sortBy, sort.asc])
 
-  const [searchInput, setSearchInput] = useState('')
   return (
     <Layout displayName="Fragepool" scrollable={false}>
-      <div className="flex flex-col gap-6" id="homepage">
+      <div className="flex flex-col gap-6" id="homepage" data-cy="homepage">
         <div className="flex-none">
           <SessionCreation
             sessionId={router.query.sessionId as string}
@@ -234,6 +235,16 @@ function Index() {
       </div>
     </Layout>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
 }
 
 export default Index

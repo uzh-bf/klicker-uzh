@@ -1,5 +1,5 @@
 import { UserRole } from '@klicker-uzh/prisma'
-import { Context } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 
 export async function getFeedbacks({ id }: { id: string }, ctx: Context) {
   const sessionWithFeedbacks = await ctx.prisma.session.findUnique({
@@ -78,7 +78,7 @@ export async function createFeedback(
       },
       participant: isLoggedInParticipant
         ? {
-            connect: { id: ctx.user.sub },
+            connect: { id: ctx.user?.sub },
           }
         : undefined,
     },
@@ -98,9 +98,18 @@ export async function createFeedback(
 // add response to an existing feedback
 export async function respondToFeedback(
   { id, responseContent }: { id: number; responseContent: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
-  const feedback = await ctx.prisma.feedback.update({
+  const feedback = await ctx.prisma.feedback.findUnique({
+    where: { id },
+    include: {
+      session: true,
+    },
+  })
+
+  if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
+
+  const updatedFeedback = await ctx.prisma.feedback.update({
     where: { id },
     data: {
       isPublished: true,
@@ -118,14 +127,14 @@ export async function respondToFeedback(
     },
   })
 
-  ctx.pubSub.publish('feedbackUpdated', feedback)
+  ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
 
   ctx.emitter.emit('invalidate', {
     typename: 'Session',
-    id: feedback.sessionId,
+    id: updatedFeedback.sessionId,
   })
 
-  return feedback
+  return updatedFeedback
 }
 
 // add confusion timestep to session
@@ -161,9 +170,18 @@ export async function addConfusionTimestep(
 // publish / unpublish a feedback to be visible to students
 export async function publishFeedback(
   { id, isPublished }: { id: number; isPublished: boolean },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
-  const feedback = await ctx.prisma.feedback.update({
+  const feedback = await ctx.prisma.feedback.findUnique({
+    where: { id },
+    include: {
+      session: true,
+    },
+  })
+
+  if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
+
+  const updatedFeedback = await ctx.prisma.feedback.update({
     where: {
       id,
     },
@@ -176,25 +194,34 @@ export async function publishFeedback(
   })
 
   if (isPublished) {
-    ctx.pubSub.publish('feedbackAdded', feedback)
+    ctx.pubSub.publish('feedbackAdded', updatedFeedback)
   } else {
-    ctx.pubSub.publish('feedbackRemoved', feedback)
+    ctx.pubSub.publish('feedbackRemoved', updatedFeedback)
   }
 
   ctx.emitter.emit('invalidate', {
     typename: 'Session',
-    id: feedback.sessionId,
+    id: updatedFeedback.sessionId,
   })
 
-  return feedback
+  return updatedFeedback
 }
 
 // pin / unpin a feedback on the lecturers running session screen
 export async function pinFeedback(
   { id, isPinned }: { id: number; isPinned: boolean },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
-  const feedback = await ctx.prisma.feedback.update({
+  const feedback = await ctx.prisma.feedback.findUnique({
+    where: { id },
+    include: {
+      session: true,
+    },
+  })
+
+  if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
+
+  const updatedFeedback = await ctx.prisma.feedback.update({
     where: {
       id,
     },
@@ -206,22 +233,31 @@ export async function pinFeedback(
     },
   })
 
-  ctx.pubSub.publish('feedbackUpdated', feedback)
+  ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
 
   ctx.emitter.emit('invalidate', {
     typename: 'Session',
-    id: feedback.sessionId,
+    id: updatedFeedback.sessionId,
   })
 
-  return feedback
+  return updatedFeedback
 }
 
 // resolve / unresolve a feedback
 export async function resolveFeedback(
   { id, isResolved }: { id: number; isResolved: boolean },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
-  const feedback = await ctx.prisma.feedback.update({
+  const feedback = await ctx.prisma.feedback.findUnique({
+    where: { id },
+    include: {
+      session: true,
+    },
+  })
+
+  if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
+
+  const updatedFeedback = await ctx.prisma.feedback.update({
     where: { id },
     data: {
       isResolved: isResolved,
@@ -232,38 +268,70 @@ export async function resolveFeedback(
     },
   })
 
-  ctx.pubSub.publish('feedbackUpdated', feedback)
+  ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
 
   ctx.emitter.emit('invalidate', {
     typename: 'Session',
-    id: feedback.sessionId,
+    id: updatedFeedback.sessionId,
   })
 
-  return feedback
+  return updatedFeedback
 }
 
 // deletes a feedback (and all its responses through cascade)
-export async function deleteFeedback({ id }: { id: number }, ctx: Context) {
-  const feedback = await ctx.prisma.feedback.delete({
+export async function deleteFeedback(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const feedback = await ctx.prisma.feedback.findUnique({
+    where: { id },
+    include: {
+      session: true,
+    },
+  })
+
+  if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
+
+  const deletedFeedback = await ctx.prisma.feedback.delete({
     where: { id },
   })
 
-  ctx.pubSub.publish('feedbackRemoved', { id, sessionId: feedback.sessionId })
+  ctx.pubSub.publish('feedbackRemoved', {
+    id,
+    sessionId: deletedFeedback.sessionId,
+  })
 
   ctx.emitter.emit('invalidate', {
     typename: 'Session',
-    id: feedback.sessionId,
+    id: deletedFeedback.sessionId,
   })
 
-  return feedback
+  return deletedFeedback
 }
 
 // deletes a feedback response
 export async function deleteFeedbackResponse(
   { id }: { id: number },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
-  const feedbackResponse = await ctx.prisma.feedbackResponse.delete({
+  const feedbackResponse = await ctx.prisma.feedbackResponse.findUnique({
+    where: { id },
+    include: {
+      feedback: {
+        include: {
+          session: true,
+        },
+      },
+    },
+  })
+
+  if (
+    !feedbackResponse ||
+    feedbackResponse.feedback.session.ownerId !== ctx.user.sub
+  )
+    return null
+
+  const deletedFeedbackResponse = await ctx.prisma.feedbackResponse.delete({
     where: { id },
     include: {
       feedback: {
@@ -274,12 +342,12 @@ export async function deleteFeedbackResponse(
     },
   })
 
-  ctx.pubSub.publish('feedbackUpdated', feedbackResponse.feedback)
+  ctx.pubSub.publish('feedbackUpdated', deletedFeedbackResponse.feedback)
 
   ctx.emitter.emit('invalidate', {
     typename: 'Session',
-    id: feedbackResponse.feedback.sessionId,
+    id: deletedFeedbackResponse.feedback.sessionId,
   })
 
-  return feedbackResponse.feedback
+  return deletedFeedbackResponse.feedback
 }

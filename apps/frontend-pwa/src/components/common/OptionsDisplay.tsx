@@ -5,42 +5,22 @@ import {
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
-import {Markdown} from '@klicker-uzh/markdown'
+import { Markdown } from '@klicker-uzh/markdown'
+import {
+  validateFreeTextResponse,
+  validateKprimResponse,
+  validateMcResponse,
+  validateNumericalResponse,
+  validateScResponse,
+} from '@lib/validateResponse'
 import { Button, ThemeContext } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { indexBy } from 'ramda'
 import { useContext, useMemo } from 'react'
+import FREETextAnswerOptions from 'shared-components/src/questions/FREETextAnswerOptions'
 import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
 import { twMerge } from 'tailwind-merge'
 
-function validateNumericalResponse({
-  response,
-  min,
-  max,
-}: {
-  response: string
-  min?: number
-  max?: number
-}) {
-  if (!response) return false
-
-  if (
-    typeof min !== 'undefined' &&
-    min !== null &&
-    parseFloat(response) < min
-  ) {
-    return false
-  }
-
-  if (
-    typeof max !== 'undefined' &&
-    max !== null &&
-    parseFloat(response) > max
-  ) {
-    return false
-  }
-
-  return true
-}
 interface ChoiceOptionsProps {
   disabled?: boolean
   choices: Choice[]
@@ -90,6 +70,7 @@ function ChoiceOptions({
             }}
             fluid
             onClick={() => onChange(choice.ix)}
+            data={{ cy: 'choice-option' }}
           >
             <Button.Label>
               <Markdown content={choice.value} />
@@ -146,20 +127,23 @@ export function Options({
   isEvaluation,
   feedbacks,
   response,
-  isResponseValid,
+  isResponseValid = true,
   onChangeResponse,
-  withGuidance,
-  isCompact,
+  withGuidance = true,
+  isCompact = false,
   displayMode,
 }: OptionsProps) {
+  const t = useTranslations()
+
   switch (questionType) {
     case QuestionType.Sc: {
       return (
         <div>
           {withGuidance && (
             <div className="mb-4 italic">
-              Wähle <span className="font-bold">eine</span> der folgenden
-              Optionen:
+              {t.rich(`shared.${QuestionType.Sc}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
             </div>
           )}
           <ChoiceOptions
@@ -181,8 +165,9 @@ export function Options({
         <div>
           {withGuidance && (
             <div className="mb-4 italic">
-              Wähle <span className="font-bold">eine oder mehrere</span> der
-              folgenden Optionen:
+              {t.rich(`shared.${QuestionType.Mc}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
             </div>
           )}
           <ChoiceOptions
@@ -213,8 +198,9 @@ export function Options({
         <div>
           {withGuidance && (
             <div className="mb-4 italic">
-              Beurteile folgende Aussagen auf ihre{' '}
-              <span className="font-bold">Richtigkeit</span>:
+              {t.rich(`shared.${QuestionType.Kprim}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
             </div>
           )}
           <div className="space-y-1">
@@ -310,14 +296,15 @@ export function Options({
         <div>
           {withGuidance && (
             <div className="mb-2 italic">
-              Gib eine <span className="font-bold">Zahl</span> ein
-              {options?.accuracy &&
-                ` (gerundet auf ${options.accuracy} Nachkommastellen)`}
-              :
+              {t.rich(`shared.${QuestionType.Numerical}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
+              {options.accuracy &&
+                t('shared.questions.roundedTo', { accuracy: options.accuracy })}
             </div>
           )}
           <NUMERICALAnswerOptions
-            disabled={disabled}
+            disabled={disabled || isEvaluation}
             accuracy={options?.accuracy}
             placeholder={options?.placeholder}
             unit={options?.unit}
@@ -335,19 +322,27 @@ export function Options({
       )
     }
 
-    default:
+    case QuestionType.FreeText:
       return (
-        <div className="text-red-600">
-          Dieser Fragetyp ist für Lernelemente nicht verfügbar.
+        <div>
+          {withGuidance && (
+            <div className="mb-4 italic">
+              {t.rich(`shared.${QuestionType.FreeText}.richtext`, {
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
+            </div>
+          )}
+          <FREETextAnswerOptions
+            onChange={onChangeResponse}
+            maxLength={options.restrictions?.maxLength}
+            value={response}
+          />
         </div>
       )
-  }
-}
 
-Options.defaultProps = {
-  withGuidance: true,
-  isCompact: false,
-  isResponseValid: true,
+    default:
+      return <div>{t('pwa.learningElement.questionTypeNotSupported')}</div>
+  }
 }
 
 interface OptionsDisplayProps {
@@ -355,8 +350,8 @@ interface OptionsDisplayProps {
   evaluation: any
   options: any
   response: any
-  onChangeResponse: any
-  onSubmitResponse: any
+  onChangeResponse: (value: any) => void
+  onSubmitResponse?: any
   isEvaluation?: boolean
   displayMode?: QuestionDisplayMode | null
 }
@@ -371,6 +366,7 @@ function OptionsDisplay({
   options,
   displayMode,
 }: OptionsDisplayProps) {
+  const t = useTranslations()
   const feedbacks = useMemo(() => {
     if (evaluation) {
       return indexBy((feedback: any) => feedback.ix, evaluation.feedbacks)
@@ -378,40 +374,71 @@ function OptionsDisplay({
   }, [evaluation])
 
   return (
-    <div className="flex flex-col">
-      <Options
-        feedbacks={feedbacks}
-        questionType={questionType}
-        response={response}
-        isEvaluation={isEvaluation}
-        options={options}
-        onChangeResponse={onChangeResponse}
-        displayMode={displayMode}
-      />
-      <div className="self-end mt-4">
-        <Button
-          className={{ root: 'text-lg' }}
-          disabled={
-            (!isEvaluation &&
-              questionType !== QuestionType.Kprim &&
-              response?.length === 0) ||
-            (questionType === QuestionType.Kprim &&
-              response &&
-              Object.keys(response).length !== options.choices.length) ||
-            (questionType === QuestionType.Numerical &&
-              !validateNumericalResponse({
-                response,
-                min: options?.restrictions?.min,
-                max: options?.restrictions?.max,
-              }))
-          }
-          onClick={onSubmitResponse}
-        >
-          {isEvaluation ? 'Weiter' : 'Antwort absenden'}
-        </Button>
+    <div className="flex flex-col gap-4">
+      <div className={twMerge(isEvaluation && 'order-2 md:order-1')}>
+        <Options
+          feedbacks={feedbacks}
+          questionType={questionType}
+          response={response}
+          isEvaluation={isEvaluation}
+          options={options}
+          onChangeResponse={onChangeResponse}
+          displayMode={displayMode}
+        />
       </div>
+      {onSubmitResponse && (
+        <div
+          className={twMerge(
+            'flex flex-col items-end',
+            isEvaluation &&
+              'order-1 md:order-2 border-b md:border-0 pb-4 md:pb-0'
+          )}
+        >
+          <Button
+            className={{ root: 'text-lg' }}
+            disabled={
+              !(
+                isEvaluation ||
+                (questionType === QuestionType.Sc &&
+                  validateScResponse(response)) ||
+                (questionType === QuestionType.Mc &&
+                  validateMcResponse(response)) ||
+                (questionType === QuestionType.Kprim &&
+                  validateKprimResponse(response)) ||
+                (questionType === QuestionType.Numerical &&
+                  validateNumericalResponse({
+                    response,
+                    min: options?.restrictions?.min,
+                    max: options?.restrictions?.max,
+                  })) ||
+                (questionType === QuestionType.FreeText &&
+                  validateFreeTextResponse({
+                    response,
+                    maxLength: options.restrictions?.maxLength,
+                  }))
+              )
+            }
+            onClick={onSubmitResponse}
+            data={{ cy: 'send-answer' }}
+          >
+            {isEvaluation
+              ? t('shared.generic.continue')
+              : t('shared.generic.sendAnswer')}
+          </Button>
+        </div>
+      )}
     </div>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
 }
 
 export default OptionsDisplay

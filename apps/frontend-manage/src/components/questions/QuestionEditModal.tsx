@@ -24,6 +24,7 @@ import * as Yup from 'yup'
 
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Markdown } from '@klicker-uzh/markdown'
 import {
   Button,
   FormikSelectField,
@@ -259,6 +260,7 @@ function QuestionEditModal({
         attachments: null,
         hasSampleSolution: false,
         hasAnswerFeedbacks: false,
+        pointsMultiplier: '1',
       }
 
       switch (questionType) {
@@ -303,6 +305,7 @@ function QuestionEditModal({
     return dataQuestion?.question?.questionData
       ? {
           ...dataQuestion.question,
+          pointsMultiplier: String(dataQuestion.question.pointsMultiplier),
           explanation: dataQuestion.question.explanation ?? '',
           displayMode:
             dataQuestion.question.displayMode ?? QuestionDisplayMode.List,
@@ -321,7 +324,6 @@ function QuestionEditModal({
 
   return (
     <Formik
-      // validateOnChange={false}
       isInitialValid={mode === 'EDIT'}
       enableReinitialize={true}
       initialValues={question}
@@ -337,6 +339,7 @@ function QuestionEditModal({
           attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
           tags: values.tags,
           displayMode: values.displayMode,
+          pointsMultiplier: parseInt(values.pointsMultiplier),
         }
         switch (questionType) {
           case QuestionType.Sc:
@@ -566,6 +569,47 @@ function QuestionEditModal({
                     </div>
                   </div>
 
+                  <div className="z-0 flex flex-row">
+                    <Label
+                      label="Multiplier"
+                      className={{
+                        root: 'mr-2 text-lg font-bold w-32',
+                        tooltip:
+                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                      }}
+                      tooltip="// TODO: tooltip content"
+                      showTooltipSymbol
+                      required
+                    />
+
+                    {typeof values.pointsMultiplier !== 'undefined' && (
+                      <FastField
+                        name="pointsMultiplier"
+                        shouldUpdate={(next, prev) =>
+                          next?.formik.values.pointsMultiplier !==
+                            prev?.formik.values.pointsMultiplier ||
+                          next?.pointsMultiplier !== prev?.pointsMultiplier
+                        }
+                      >
+                        {({ field, meta }: FastFieldProps) => (
+                          <Select
+                            items={[
+                              { label: 'x1', value: '1' },
+                              { label: 'x2', value: '2' },
+                              { label: 'x3', value: '3' },
+                              { label: 'x4', value: '4' },
+                            ]}
+                            onChange={(newValue: string) =>
+                              setFieldValue('pointsMultiplier', newValue)
+                            }
+                            value={field.value}
+                            data={{ cy: 'select-multiplier' }}
+                          />
+                        )}
+                      </FastField>
+                    )}
+                  </div>
+
                   <div className="mt-4">
                     <Label
                       label="Frage"
@@ -694,6 +738,7 @@ function QuestionEditModal({
                         validateForm()
                       }}
                       label="Musterlösung"
+                      data={{ cy: 'configure-sample-solution' }}
                     />
                     {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                       <Switch
@@ -818,6 +863,7 @@ function QuestionEditModal({
                                                 newValue
                                               )
                                             }}
+                                            data={{ cy: 'set-correctness' }}
                                           />
                                         )}
                                       </FastField>
@@ -1157,6 +1203,29 @@ function QuestionEditModal({
                     setInputState={setInputState}
                   />
                 </div>
+                {values.explanation && (
+                  <div className="mt-4">
+                    <H3>Erklärung</H3>
+                    <Markdown content={values.explanation} />
+                  </div>
+                )}
+                {QUESTION_GROUPS.CHOICES.includes(questionType) && (
+                  <div className="mt-4">
+                    <H3>Feedbacks</H3>
+                    {values.options?.choices?.map((choice, index) => (
+                      <div
+                        key={index}
+                        className="pt-1 pb-1 border-b last:border-b-0"
+                      >
+                        {choice.feedback ? (
+                          <Markdown content={choice.feedback} />
+                        ) : (
+                          'Kein Feedback definiert'
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </Modal>

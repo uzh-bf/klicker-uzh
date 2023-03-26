@@ -68,7 +68,7 @@ function GroupActivityDetails() {
   if (!data.groupActivityDetails) {
     return (
       <Layout>
-        Die Gruppenquest wird am 07.11.2022 ab 17:00 freigeschalten.
+        Die Gruppenquest ist nicht aktiv oder noch nicht freigeschalten.
       </Layout>
     )
   }
@@ -388,6 +388,24 @@ function GroupActivityDetails() {
       </div>
     </Layout>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+    revalidate: 600,
+  }
+}
+
+export function getStaticPaths() {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
 }
 
 export default GroupActivityDetails

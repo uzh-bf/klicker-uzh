@@ -8,6 +8,7 @@ interface EditorFieldProps {
   fieldName: string
   tooltip?: string
   className?: string
+  data_cy?: string
 }
 
 function EditorField({
@@ -15,6 +16,7 @@ function EditorField({
   fieldName,
   tooltip,
   className,
+  data_cy,
 }: EditorFieldProps) {
   const [field, meta, helpers] = useField(fieldName)
 
@@ -43,6 +45,7 @@ function EditorField({
           editor: '!leading-3 h-14 overflow-x-auto',
           root: 'w-full',
         }}
+        data_cy={data_cy}
       />
     </div>
   )

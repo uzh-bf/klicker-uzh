@@ -1,0 +1,5 @@
+mutation DeleteSession($id: String!) {
+  deleteSession(id: $id) {
+    id
+  }
+}

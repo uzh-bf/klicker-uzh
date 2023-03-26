@@ -39,6 +39,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           href="/sessions"
           label="Sessionen"
           className={{ label: 'font-bold text-white text-base' }}
+          data={{ cy: 'sessions' }}
         />
         <Navigation.ButtonItem
           href="/courses"

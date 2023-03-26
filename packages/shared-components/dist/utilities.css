@@ -2,8 +2,16 @@
   pointer-events: none
 }
 
+.absolute {
+  position: absolute
+}
+
 .relative {
   position: relative
+}
+
+.bottom-0 {
+  bottom: 0px
 }
 
 .order-1 {
@@ -148,10 +156,6 @@
   height: 2rem
 }
 
-.h-9 {
-  height: 2.25rem
-}
-
 .h-\[60px\] {
   height: 60px
 }
@@ -232,10 +236,6 @@
   flex: 0 1 auto
 }
 
-.cursor-not-allowed {
-  cursor: not-allowed
-}
-
 .cursor-pointer {
   cursor: pointer
 }
@@ -306,6 +306,10 @@
 
 .rounded {
   border-radius: 0.25rem
+}
+
+.rounded-full {
+  border-radius: 9999px
 }
 
 .rounded-md {
@@ -418,6 +422,10 @@
   --tw-bg-opacity: 0.5
 }
 
+.bg-opacity-60 {
+  --tw-bg-opacity: 0.6
+}
+
 .object-contain {
   -o-object-fit: contain;
      object-fit: contain
@@ -479,6 +487,11 @@
 .text-sm {
   font-size: 0.875rem;
   line-height: 1.25rem
+}
+
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem
 }
 
 .font-bold {
@@ -621,14 +634,6 @@
     max-width: 100%
   }
 
-  .md\:flex-row {
-    flex-direction: row
-  }
-
-  .md\:items-end {
-    align-items: flex-end
-  }
-
   .md\:border-b-4 {
     border-bottom-width: 4px
   }
@@ -651,5 +656,10 @@
 
   .lg\:w-56 {
     width: 14rem
+  }
+
+  .lg\:text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem
   }
 }

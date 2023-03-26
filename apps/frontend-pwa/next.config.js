@@ -1,13 +1,10 @@
 /** @type {import('next').NextConfig} */
 
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  skipWaiting: true,
-  dynamicStartUrlRedirect: true,
-  // disable: process.env.NODE_ENV === 'development',
-})
-
-const nextConfig = withPWA({
+const nextConfig = {
+  i18n: {
+    locales: ['en', 'de'],
+    defaultLocale: 'de',
+  },
   transpilePackages: ['shared-components'],
   modularizeImports: {
     ramda: {
@@ -60,6 +57,16 @@ const nextConfig = withPWA({
     APP_SECRET: process.env.APP_SECRET,
     COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
   },
-})
+}
 
-module.exports = nextConfig
+if (process.env.NODE_ENV !== 'test') {
+  const withPWA = require('next-pwa')({
+    dest: 'public',
+    skipWaiting: true,
+    dynamicStartUrlRedirect: true,
+    disable: process.env.NODE_ENV === 'development',
+  })
+  module.exports = withPWA(nextConfig)
+} else {
+  module.exports = nextConfig
+}

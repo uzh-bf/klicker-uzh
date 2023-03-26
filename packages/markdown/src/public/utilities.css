@@ -14,6 +14,11 @@
   top: 0.5rem
 }
 
+.my-1 {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem
+}
+
 .mb-1 {
   margin-bottom: 0.25rem
 }
@@ -66,12 +71,20 @@
   flex: 0 1 auto
 }
 
+.flex-row {
+  flex-direction: row
+}
+
 .flex-col {
   flex-direction: column
 }
 
 .items-start {
   align-items: flex-start
+}
+
+.gap-3 {
+  gap: 0.75rem
 }
 
 .rounded {
@@ -90,6 +103,16 @@
 .object-contain {
   -o-object-fit: contain;
      object-fit: contain
+}
+
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem
+}
+
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem
 }
 
 .text-sm {
@@ -115,6 +138,11 @@
   --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)
+}
+
+.hover\:bg-slate-200:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(226 232 240 / var(--tw-bg-opacity))
 }
 
 .hover\:text-black:hover {

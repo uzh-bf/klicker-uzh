@@ -1,4 +1,4 @@
-import { SSOType } from '@klicker-uzh/prisma'
+import { MicroSessionStatus, SessionStatus, SSOType } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
 import * as R from 'ramda'
@@ -75,21 +75,11 @@ export async function getParticipations(
                   scheduledEndAt: {
                     gt: new Date(),
                   },
-                },
-                select: {
-                  id: true,
-                  displayName: true,
-                  scheduledStartAt: true,
-                  scheduledEndAt: true,
+                  status: MicroSessionStatus.PUBLISHED,
                 },
               },
               sessions: {
-                where: { status: 'RUNNING' },
-                select: {
-                  id: true,
-                  displayName: true,
-                  linkTo: true,
-                },
+                where: { status: SessionStatus.RUNNING },
               },
             },
           },
@@ -101,7 +91,7 @@ export async function getParticipations(
   if (!participant) return []
 
   return R.sort(
-    R.ascend(R.prop('course.displayName')),
+    R.ascend(R.prop<string>('course.displayName')),
     participant.participations
   )
 }
@@ -350,36 +340,35 @@ export async function createParticipantAndJoinCourse(
 }
 
 interface BookmarkQuestionArgs {
-  instanceId: number
+  stackId: number
   courseId: string
   bookmarked: boolean
 }
 
 export async function bookmarkQuestion(
-  { instanceId, courseId, bookmarked }: BookmarkQuestionArgs,
-  ctx: Context
+  { stackId, courseId, bookmarked }: BookmarkQuestionArgs,
+  ctx: ContextWithUser
 ) {
-  console.log('received args', { instanceId, courseId, bookmarked })
   const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
         courseId,
-        participantId: ctx.user!.sub,
+        participantId: ctx.user.sub,
       },
     },
     data: {
-      bookmarkedQuestions: {
+      bookmarkedStacks: {
         [bookmarked ? 'connect' : 'disconnect']: {
-          id: instanceId,
+          id: stackId,
         },
       },
     },
     include: {
-      bookmarkedQuestions: true,
+      bookmarkedStacks: true,
     },
   })
 
-  return participation
+  return participation.bookmarkedStacks
 }
 
 interface GetBookmarkedQuestionsArgs {
@@ -388,35 +377,51 @@ interface GetBookmarkedQuestionsArgs {
 
 export async function getBookmarkedQuestions(
   { courseId }: GetBookmarkedQuestionsArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const participation = await ctx.prisma.participation.findUnique({
     where: {
       courseId_participantId: {
         courseId,
-        participantId: ctx.user!.sub,
+        participantId: ctx.user.sub,
       },
     },
     include: {
-      bookmarkedQuestions: true,
+      bookmarkedStacks: {
+        include: {
+          elements: {
+            include: {
+              questionInstance: true,
+            },
+          },
+        },
+      },
     },
   })
 
-  return participation?.bookmarkedQuestions ?? []
+  return participation?.bookmarkedStacks ?? []
 }
 
 export async function flagQuestion(
   args: { questionInstanceId: number; content: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   const questionInstance = await ctx.prisma.questionInstance.findUnique({
     where: {
       id: args.questionInstanceId,
     },
     include: {
-      learningElement: {
+      stackElement: {
         include: {
-          course: true,
+          stack: {
+            include: {
+              learningElement: {
+                include: {
+                  course: true,
+                },
+              },
+            },
+          },
         },
       },
       microSession: {
@@ -428,7 +433,8 @@ export async function flagQuestion(
   })
 
   if (
-    !questionInstance?.learningElement?.course?.notificationEmail &&
+    !questionInstance?.stackElement?.stack?.learningElement?.course
+      ?.notificationEmail &&
     !questionInstance?.microSession?.course?.notificationEmail
   )
     return null
@@ -440,27 +446,67 @@ export async function flagQuestion(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      elementType: questionInstance?.learningElement
+      elementType: questionInstance?.stackElement?.stack.learningElement
         ? 'Learning Element'
         : 'Micro-Session',
       elementId:
-        questionInstance?.learningElement?.id ||
+        questionInstance?.stackElement?.stack?.learningElement?.id ||
         questionInstance?.microSession?.id,
       elementName:
-        questionInstance?.learningElement?.name ||
+        questionInstance?.stackElement?.stack?.learningElement?.name ||
         questionInstance?.microSession?.name,
       questionId: questionInstance.questionId,
       questionName: (
         questionInstance.questionData?.valueOf() as AllQuestionTypeData
       ).name,
       content: args.content,
-      participantId: ctx.user.sub,
+      participantId: ctx.user?.sub,
       secret: process.env.NOTIFICATION_SECRET,
       notificationEmail:
-        questionInstance.learningElement?.course?.notificationEmail ||
+        questionInstance.stackElement?.stack?.learningElement?.course
+          ?.notificationEmail ||
         questionInstance.microSession?.course?.notificationEmail,
     }),
   })
 
   return 'OK'
+}
+
+export async function getParticipantDetails(
+  args: { participantId: string },
+  ctx: ContextWithUser
+) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: args.participantId },
+    include: {
+      achievements: {
+        include: {
+          achievement: true,
+        },
+      },
+    },
+  })
+
+  return participant
+}
+
+export async function getParticipantWithAchievements(ctx: ContextWithUser) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+    include: {
+      achievements: {
+        include: {
+          achievement: true,
+        },
+      },
+    },
+  })
+  if (!participant) return null
+
+  const achievements = await ctx.prisma.achievement.findMany()
+
+  return {
+    participant,
+    achievements,
+  }
 }

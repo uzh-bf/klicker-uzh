@@ -4,6 +4,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Histogram from 'shared-components/src/Histogram'
 import { twMerge } from 'tailwind-merge'
 
@@ -20,6 +21,8 @@ function EvaluationDisplay({
   evaluation,
   reference,
 }: Props) {
+  const t = useTranslations()
+
   switch (questionType) {
     case QuestionType.SC: {
       const sum = Object.values(
@@ -32,7 +35,9 @@ function EvaluationDisplay({
 
       return (
         <div className="space-y-2">
-          <div className="font-bold">So haben andere geantwortet</div>
+          <div className="font-bold">
+            {t('pwa.learningElement.othersAnswered')}
+          </div>
           {Object.entries(evaluation.choices as Record<string, number>).map(
             ([ix, value]) => (
               <Progress
@@ -71,7 +76,9 @@ function EvaluationDisplay({
 
       return (
         <div className="space-y-2">
-          <div className="font-bold">So haben andere geantwortet</div>
+          <div className="font-bold">
+            {t('pwa.learningElement.othersAnswered')}
+          </div>
           {Object.entries(evaluation.choices as Record<string, number>).map(
             ([ix, value]) => (
               <div key={value}>
@@ -99,7 +106,34 @@ function EvaluationDisplay({
     }
 
     case QuestionType.FREE_TEXT:
-      return <div></div>
+      const answers = Object.entries(
+        evaluation.answers as Record<string, number>
+      ).reduce(
+        (acc, [value, count]) => ({ ...acc, [value]: { value, count } }),
+        {}
+      ) as Record<string, Record<string, string | number>>
+      const solutions = options.solutions
+
+      return (
+        <div>
+          <div className="mb-4">
+            <div className="font-bold">
+              {t('pwa.learningElement.othersAnswered')}
+            </div>
+            <div>
+              {Object.keys(answers)
+                .map((key) => `${key} (${answers[key].count})`)
+                .join(', ')}
+            </div>
+          </div>
+          <div>
+            <div className="font-bold">
+              {t('shared.generic.sampleSolution')}
+            </div>
+            <div>{solutions.join(', ')}</div>
+          </div>
+        </div>
+      )
 
     case QuestionType.NUMERICAL:
       const results = Object.entries(
@@ -111,7 +145,9 @@ function EvaluationDisplay({
 
       return (
         <div className="h-40 space-y-2">
-          <div className="font-bold">So haben andere geantwortet</div>
+          <div className="font-bold">
+            {t('pwa.learningElement.othersAnswered')}
+          </div>
           <Histogram
             data={{
               results: results,
@@ -129,6 +165,16 @@ function EvaluationDisplay({
 
     default:
       return <div></div>
+  }
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
   }
 }
 

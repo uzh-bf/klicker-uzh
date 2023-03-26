@@ -1,4 +1,5 @@
 import { ThemeContext } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -16,6 +17,7 @@ export function FREETextAnswerOptions({
   value,
 }: FREETextAnswerOptionsProps): React.ReactElement {
   const theme = useContext(ThemeContext)
+  const t = useTranslations()
 
   return (
     <div className="flex flex-col gap-2">
@@ -30,12 +32,13 @@ export function FREETextAnswerOptions({
         onChange={(e): void => onChange(e.target.value)}
         rows={3}
         maxLength={maxLength ?? 1500}
-        placeholder={placeholder || 'Bitte geben Sie hier Ihre Antwort ein'}
+        placeholder={placeholder || t('shared.questions.ftPlaceholder')}
         data-cy="free-text-response-input"
       />
 
       <div className="text-sm italic text-right">
-        ({value?.length ?? 0} / {maxLength ?? '1500'} Zeichen)
+        ({value?.length ?? 0} / {maxLength ?? '1500'}{' '}
+        {t('shared.generic.characters')})
       </div>
     </div>
   )

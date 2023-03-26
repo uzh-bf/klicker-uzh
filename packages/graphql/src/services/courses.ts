@@ -1,3 +1,4 @@
+import { GroupActivityStatus, LearningElementStatus } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 
@@ -128,7 +129,7 @@ export async function leaveCourse(
 
 export async function getCourseOverviewData(
   { courseId }: { courseId: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   if (ctx.user?.sub) {
     const participation = await ctx.prisma.participation.findUnique({
@@ -151,15 +152,33 @@ export async function getCourseOverviewData(
                 order: 'asc',
               },
             },
+            groupActivities: {
+              where: {
+                status: GroupActivityStatus.PUBLISHED,
+              },
+            },
           },
         },
-        participant: true,
+        participant: {
+          include: {
+            participantGroups: true,
+          },
+        },
         courseLeaderboard: true,
       },
     })
 
     const course = ctx.prisma.course.findUnique({
       where: { id: courseId },
+    })
+
+    const groupActivityInstances = ctx.prisma.groupActivityInstance.findMany({
+      where: {
+        groupId: {
+          in:
+            participation?.participant.participantGroups.map((g) => g.id) ?? [],
+        },
+      },
     })
 
     const lbEntries =
@@ -263,6 +282,7 @@ export async function getCourseOverviewData(
               ? allGroupEntries.sum / allGroupEntries.count
               : 0,
         },
+        groupActivityInstances,
       }
     }
   }
@@ -387,6 +407,9 @@ export async function getUserLearningElements(ctx: ContextWithUser) {
                   orderBy: {
                     displayName: 'asc',
                   },
+                  where: {
+                    status: LearningElementStatus.PUBLISHED,
+                  },
                 },
               },
             },
@@ -407,7 +430,7 @@ export async function getCourseData(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, ownerId: ctx.user.sub },
     include: {
       sessions: {
         include: {
@@ -424,13 +447,19 @@ export async function getCourseData(
         },
       },
       learningElements: {
-        include: {
-          _count: {
-            select: { instances: true },
-          },
-        },
         orderBy: {
           createdAt: 'asc',
+        },
+        include: {
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  questionInstance: true,
+                },
+              },
+            },
+          },
         },
       },
       microSessions: {
@@ -471,15 +500,6 @@ export async function getCourseData(
       ),
     }
   })
-
-  const reducedLearningElements = course?.learningElements.map(
-    (learningElement) => {
-      return {
-        ...learningElement,
-        numOfInstances: learningElement._count.instances,
-      }
-    }
-  )
 
   const reducedMicroSessions = course?.microSessions.map((microSession) => {
     return {
@@ -528,6 +548,31 @@ export async function getCourseData(
   const averageScore = totalCount > 0 ? totalSum / totalCount : 0
   const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
 
+  const reducedLearningElements = course?.learningElements.map((element) => {
+    return {
+      ...element,
+      ...element.stacks.reduce(
+        (acc, stack) => {
+          const stackQuestions = stack.elements.reduce((acc, stackElem) => {
+            if (stackElem.questionInstance) {
+              return acc + 1
+            }
+            return acc
+          }, 0)
+
+          if (stackQuestions > 0) {
+            return {
+              stacksWithQuestions: acc.stacksWithQuestions + 1,
+              numOfQuestions: acc.numOfQuestions + stackQuestions,
+            }
+          }
+          return acc
+        },
+        { stacksWithQuestions: 0, numOfQuestions: 0 }
+      ),
+    }
+  })
+
   return {
     ...course,
     sessions: reducedSessions,
@@ -546,7 +591,7 @@ export async function getControlCourse(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, ownerId: ctx.user.sub },
     include: {
       sessions: {
         include: {
@@ -570,10 +615,13 @@ export async function getControlCourse(
 
 export async function changeCourseDescription(
   { courseId, input }: { courseId: string; input: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
     data: {
       description: input,
     },
@@ -584,10 +632,13 @@ export async function changeCourseDescription(
 
 export async function changeCourseColor(
   { courseId, color }: { courseId: string; color: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
     data: {
       color,
     },
@@ -607,7 +658,10 @@ export async function changeCourseDates(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      ownerId: ctx.user.sub,
+    },
     data: {
       ...(startDate && { startDate }),
       ...(endDate && { endDate }),

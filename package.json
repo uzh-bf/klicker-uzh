@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.0.0-alpha.58",
+  "version": "3.0.0-alpha.78",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -37,7 +37,10 @@
     "dev": "doppler run --config dev -- turbo run dev",
     "build": "turbo run build",
     "publish": "turbo run publish",
-    "format": "turbo run format",
+    "format": "turbo run format --parallel --continue",
+    "format:check": "turbo run format:check --parallel --continue",
+    "lint": "turbo run lint --parallel --continue",
+    "check": "turbo run check --parallel --continue",
     "//release": "standard-version --dry-run",
     "//release:dry": "standard-version --dry-run",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
@@ -48,16 +51,18 @@
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
     "test": "cypress open",
     "start": "turbo run start",
-    "start:test": "turbo run start:test"
+    "start:test": "turbo run start:test",
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@testing-library/cypress": "9.0.0",
     "azure-functions-core-tools": "4.0.4915",
-    "cypress": "12.5.1",
+    "cypress": "12.7.0",
+    "husky": "8.0.3",
     "prettier": "2.8.4",
     "prettier-plugin-organize-imports": "3.2.2",
     "standard-version": "9.5.0",
-    "turbo": "1.7.4",
+    "turbo": "1.8.5",
     "yaml": "2.2.1"
   },
   "dependencies": {

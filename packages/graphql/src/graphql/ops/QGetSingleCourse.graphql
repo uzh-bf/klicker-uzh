@@ -30,12 +30,15 @@ query GetSingleCourse($courseId: String!) {
       id
       name
       displayName
-      numOfInstances
+      status
+      stacksWithQuestions
+      numOfQuestions
     }
     microSessions {
       id
       name
       displayName
+      status
       scheduledStartAt
       scheduledEndAt
       numOfInstances

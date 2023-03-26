@@ -16,7 +16,11 @@ import {
   GroupActivityDetails,
   GroupActivityInstance,
 } from './groupActivity'
-import { LearningElement, LearningElementOrderType } from './learningElements'
+import {
+  LearningElement,
+  LearningElementOrderType,
+  QuestionStack,
+} from './learningElements'
 import { MicroSession } from './microSession'
 import {
   AvatarSettingsInput,
@@ -662,6 +666,7 @@ export const Mutation = builder.mutationType({
           displayMode: t.arg({ required: false, type: QuestionDisplayMode }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
             type: OptionsChoicesInput,
@@ -686,6 +691,7 @@ export const Mutation = builder.mutationType({
           explanation: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
             type: OptionsNumericalInput,
@@ -710,6 +716,7 @@ export const Mutation = builder.mutationType({
           explanation: t.arg.string({ required: false }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
             type: OptionsFreeTextInput,
@@ -725,10 +732,10 @@ export const Mutation = builder.mutationType({
 
       bookmarkQuestion: asParticipant.field({
         nullable: true,
-        type: Participation,
+        type: [QuestionStack],
         args: {
           courseId: t.arg.string({ required: true }),
-          instanceId: t.arg.int({ required: true }),
+          stackId: t.arg.int({ required: true }),
           bookmarked: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -736,7 +743,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      flagQuestion: asParticipant.string({
+      flagQuestion: t.string({
         nullable: true,
         args: {
           questionInstanceId: t.arg.int({ required: true }),
@@ -757,6 +764,67 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return CourseService.changeCourseDates(args, ctx)
+        },
+      }),
+
+      publishLearningElement: asUser.field({
+        nullable: true,
+        type: LearningElement,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.publishLearningElement(args, ctx)
+        },
+      }),
+
+      deleteLearningElement: asUser.field({
+        nullable: true,
+        type: LearningElement,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.deleteLearningElement(args, ctx)
+        },
+      }),
+
+      deleteSession: asUser.field({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.deleteSession(args, ctx)
+        },
+      }),
+
+      publishMicroSession: asUser.field({
+        nullable: true,
+        type: MicroSession,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.publishMicroSession(args, ctx)
+        },
+      }),
+
+      deleteMicroSession: asUser.field({
+        nullable: true,
+        type: MicroSession,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.deleteMicroSession(args, ctx)
+        },
+      }),
+
+      updateGroupAverageScores: t.boolean({
+        resolve(_, __, ctx) {
+          return ParticipantGroupService.updateGroupAverageScores(ctx)
         },
       }),
     }
