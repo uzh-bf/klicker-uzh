@@ -197,45 +197,45 @@ function FeedbackArea({
   }, [sessionId])
 
   // handle creation of a new confusion timestep with debounce for aggregation
-  const handleNewConfusionTS = async ({
-    speed = 0,
-    difficulty = 0,
-  }): Promise<void> => {
-    try {
-      addConfusionTimestep({
-        variables: {
-          sessionId: sessionId,
-          difficulty: difficulty,
-          speed: speed,
-        },
-      })
+  const handleNewConfusionTS = useCallback(
+    async ({ speed = 0, difficulty = 0 }): Promise<void> => {
+      try {
+        addConfusionTimestep({
+          variables: {
+            sessionId: sessionId,
+            difficulty: difficulty,
+            speed: speed,
+          },
+        })
 
-      localForage.setItem(`${sessionId}-confusion`, {
-        prevSpeed: speed,
-        prevDifficulty: difficulty,
-        prevTimestamp: dayjs().format(),
-      })
-      push([
-        'trackEvent',
-        'Join Session',
-        'Confusion Interacted',
-        `speed=${speed}, difficulty=${difficulty}`,
-      ])
-    } catch ({ message }) {
-      console.error(message)
-    } finally {
-      // disable confusion voting for 1 minute
-      setConfusionEnabled(false)
-      if (confusionButtonTimeout.current) {
-        clearTimeout(confusionButtonTimeout.current)
+        localForage.setItem(`${sessionId}-confusion`, {
+          prevSpeed: speed,
+          prevDifficulty: difficulty,
+          prevTimestamp: dayjs().format(),
+        })
+        push([
+          'trackEvent',
+          'Join Session',
+          'Confusion Interacted',
+          `speed=${speed}, difficulty=${difficulty}`,
+        ])
+      } catch ({ message }) {
+        console.error(message)
+      } finally {
+        // disable confusion voting for 1 minute
+        setConfusionEnabled(false)
+        if (confusionButtonTimeout.current) {
+          clearTimeout(confusionButtonTimeout.current)
+        }
+        confusionButtonTimeout.current = setTimeout(
+          setConfusionEnabled,
+          60000,
+          true
+        )
       }
-      confusionButtonTimeout.current = setTimeout(
-        setConfusionEnabled,
-        60000,
-        true
-      )
-    }
-  }
+    },
+    [addConfusionTimestep, sessionId]
+  )
 
   // custom implementation of confusion feedback debouncing
   const debouncedHandleNewConfusionTS = useCallback(
@@ -250,7 +250,7 @@ function FeedbackArea({
         }
       )
     },
-    []
+    [handleNewConfusionTS]
   )
 
   const onNewConfusionTS = async (newValue: any, selector: string) => {
