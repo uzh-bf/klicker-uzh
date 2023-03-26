@@ -14,14 +14,16 @@ module.exports = {
       async: true,
     },
   ],
-  stylesheets: ['https://fonts.googleapis.com/css?family=Open+Sans'],
+  stylesheets: [
+    'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap',
+  ],
   favicon: '/favicon.ico',
   customFields: {
     title_index: 'Klicker',
     subtitle_index: 'UZH',
     users: [],
     fonts: {
-      myFont: ['Open Sans', 'Serif'],
+      myFont: ['Source Sans Pro', 'Serif'],
     },
     repoUrl: 'https://github.com/uzh-bf/klicker-uzh',
   },
@@ -109,8 +111,8 @@ module.exports = {
     ],
     navbar: {
       logo: {
-        src: 'img/KlickerUZH_Gray_Transparent_borderless.png',
-        srcDark: 'img/KlickerUZH_Gray_Transparent_borderless_inverted.png',
+        src: '/img/KlickerLogo.png',
+        srcDark: '/img/KlickerLogo.png',
         href: '/home',
       },
       items: [
@@ -139,6 +141,11 @@ module.exports = {
           label: 'FAQ',
           position: 'left',
         },
+        // {
+        //   to: 'kb',
+        //   label: 'Knowledge Base',
+        //   position: 'left',
+        // },
 
         {
           to: 'https://community.klicker.uzh.ch',
