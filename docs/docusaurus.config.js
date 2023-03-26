@@ -14,7 +14,9 @@ module.exports = {
       async: true,
     },
   ],
-  stylesheets: ['https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap'],
+  stylesheets: [
+    'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap',
+  ],
   favicon: '/favicon.ico',
   customFields: {
     title_index: 'Klicker',
@@ -109,8 +111,8 @@ module.exports = {
     ],
     navbar: {
       logo: {
-        src:"/img/KlickerLogo.png",
-        srcDark: "/img/KlickerLogo.png",
+        src: '/img/KlickerLogo.png',
+        srcDark: '/img/KlickerLogo.png',
         href: '/home',
       },
       items: [
@@ -139,11 +141,11 @@ module.exports = {
           label: 'FAQ',
           position: 'left',
         },
-        {
-          to: 'kb',
-          label: 'Knowledge Base',
-          position: 'left',
-        },
+        // {
+        //   to: 'kb',
+        //   label: 'Knowledge Base',
+        //   position: 'left',
+        // },
 
         {
           to: 'https://community.klicker.uzh.ch',
