@@ -6,37 +6,52 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    directory: "/apps/backend-sls"
+    directory: "/apps/backend-docker"
     target-branch: v2
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "npm"
-    directory: "/apps/frontend-learning"
+    directory: "/apps/backend-responses"
     target-branch: v2
     schedule:
-      interval: "daily"
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/apps/backend-response-processor"
+    target-branch: v2
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "npm"
     directory: "/apps/frontend-manage"
     target-branch: v2
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "npm"
     directory: "/apps/frontend-pwa"
     target-branch: v2
     schedule:
-      interval: "daily"
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/packages/grading"
+    target-branch: v2
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "npm"
     directory: "/packages/graphql"
     target-branch: v2
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "npm"
     directory: "/packages/prisma"
     target-branch: v2
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "npm"
     directory: "/packages/lti"
     target-branch: v2
     schedule:
-      interval: "daily"
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/packages/markdown"
+    target-branch: v2
+    schedule:
+      interval: "weekly"
