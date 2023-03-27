@@ -35,7 +35,7 @@ analytics:
   google:
     trackingId:
   happyKit:
-    publicKey: analytics_pub_1312f90ec4
+    publicKey:
   matomo:
     siteUrl: https://webstats.uzh.ch/
     siteId: 411
@@ -45,8 +45,8 @@ featureFlags:
 
 services:
   chatwoot:
-    enabled: true
-    websiteToken: uTjuRjWKaNxHzUs36BW21Wi9
+    enabled: false
+    websiteToken:
   teams:
     enabled: true
     env: prod
