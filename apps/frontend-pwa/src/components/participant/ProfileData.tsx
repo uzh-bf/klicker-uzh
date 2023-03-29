@@ -95,6 +95,7 @@ function ProfileData({
                 value={xp}
                 max={level.nextLevel.requiredXp}
                 formatter={Number}
+                offset={level.requiredXp}
               />
             )}
           </div>
