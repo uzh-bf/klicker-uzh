@@ -15,7 +15,8 @@
     "dev:func": "func start -p 7073",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "start": "func start -p 7073"
+    "start": "func start -p 7073",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@klicker-uzh/grading": "^3.0.0-alpha.0",
@@ -33,7 +34,7 @@
     "@types/md5": "2.3.2",
     "@types/node": "^18.0.0",
     "@types/ramda": "^0.28.15",
-    "@uzh-bf/design-system": "1.5.4",
+    "@uzh-bf/design-system": "1.5.9",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "husky": "8.0.3",

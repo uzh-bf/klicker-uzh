@@ -11,7 +11,8 @@
     "build:tw:components": "tailwindcss -i src/components.css -o dist/components.css",
     "build:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check": "tsc --noEmit"
   },
   "peerDependencies": {
     "@fortawesome/free-regular-svg-icons": "^6.3.0",

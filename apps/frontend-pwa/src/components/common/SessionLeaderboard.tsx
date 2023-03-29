@@ -20,6 +20,11 @@ interface SessionLeaderboardProps {
   className?: string
 }
 
+type BlockResult = {
+  score: number
+  rank: number
+} | null
+
 function SessionLeaderboard({
   sessionId,
   className,
@@ -37,7 +42,7 @@ function SessionLeaderboard({
     fetchPolicy: 'network-only',
   })
 
-  const [blockDelta, setBlockDelta] = useState(null)
+  const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
 
   // save the current leaderboard to local storage
   useEffect(() => {
@@ -56,7 +61,7 @@ function SessionLeaderboard({
 
         if (selfEntry.lastBlockOrder > 0) {
           try {
-            const prevStoredEntry = await localforage.getItem(
+            const prevStoredEntry: BlockResult = await localforage.getItem(
               `${selfEntry.participantId}-score-block${
                 selfEntry.lastBlockOrder - 1
               }`
@@ -75,7 +80,7 @@ function SessionLeaderboard({
     }
 
     asyncFunc()
-  }, [data])
+  }, [data, selfData?.self?.id])
 
   if (loading || !data) {
     return <div>Loading...</div>

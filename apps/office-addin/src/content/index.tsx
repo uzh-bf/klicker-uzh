@@ -4,9 +4,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import App from "./components/App";
 
-/* global document, Office, module, require */
-
-declare const Office;
+declare const document, Office;
 
 initializeIcons();
 

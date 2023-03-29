@@ -9,6 +9,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_REMOTE_ONLY: true
 
 jobs:
   # build-backend:
@@ -135,11 +138,6 @@ jobs:
 
 
   cypress-run:
-    env:
-       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-       TURBO_REMOTE_ONLY: true
-
     # needs:
     #   - build-backend
     #   - build-frontend-manage

@@ -4,19 +4,19 @@
   <Version>1.0.0.0</Version>
   <ProviderName>KlickerUZH</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="klicker-content-test"/>
-  <Description DefaultValue="A dummy project to test content add-ins for KlickerUZH"/>
-  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png"/>
+  <DisplayName DefaultValue="KlickerUZH Evaluation"/>
+  <Description DefaultValue="Embed KlickerUZH Polls"/>
+  <IconUrl DefaultValue="https://www.klicker.uzh.ch/office-addin/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://www.klicker.uzh.ch/office-addin/assets/icon-64.png"/>
   <SupportUrl DefaultValue="https://www.klicker.uzh.ch"/>
   <AppDomains>
-    <AppDomain>https://manage.klicker-qa.bf-app.ch/</AppDomain>
+    <AppDomain>https://manage.klicker.uzh.ch/</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Presentation"/>
   </Hosts>
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://localhost:3000/content.html"/>
+    <SourceLocation DefaultValue="https://www.klicker.uzh.ch/office-addin/content.html"/>
     <RequestedWidth>1000</RequestedWidth>
     <RequestedHeight>600</RequestedHeight>
   </DefaultSettings>

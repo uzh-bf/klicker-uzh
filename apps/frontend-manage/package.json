@@ -11,7 +11,8 @@
     "format:check": "prettier --check .",
     "start": "next start --port 3002",
     "start:test": "cross-env NODE_ENV=test npm start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@apollo/client": "3.7.7",
@@ -24,7 +25,7 @@
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "@next/font": "13.1.6",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "1.5.4",
+    "@uzh-bf/design-system": "1.5.9",
     "d3": "7.8.2",
     "dayjs": "1.11.7",
     "deepmerge": "4.3.0",

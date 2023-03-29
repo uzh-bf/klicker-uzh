@@ -29,11 +29,12 @@
     "dev-addin": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
     "predev": "npm run clear",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@fluentui/react": "8.105.7",
-    "@uzh-bf/design-system": "1.5.4",
+    "@uzh-bf/design-system": "1.5.9",
     "core-js": "3.27.2",
     "es6-promise": "4.2.8",
     "formik": "2.2.9",

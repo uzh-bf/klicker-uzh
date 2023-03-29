@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "size": "size-limit",
-    "test": "jest"
+    "test": "jest",
+    "check": "tsc --noEmit"
   },
   "engines": {
     "node": "=18"

@@ -1,6 +1,7 @@
 @import '@uzh-bf/design-system/dist/index.esm.css';
 
 :root {
+  @apply font-sans;
   --ifm-color-primary: #dc6027;
   --ifm-color-primary-dark: rgb(33, 175, 144);
   --ifm-color-primary-darker: rgb(31, 165, 136);
@@ -13,3 +14,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+* {
+  @apply font-sans;
+}

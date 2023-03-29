@@ -12,24 +12,24 @@ const Footer = () => {
       <div className="mt-6 text-center ">
         <a href="/">
           <img
-            src="/img/KlickerUZH_Gray_Transparent.png"
-            className={twMerge(
-              'transition-opacity duration-1000 ease-out opacity-50 w-52 hover:opacity-100',
-              isDarkTheme && 'hidden'
-            )}
-          />
-          <img
-            src="/img/KlickerUZH_Gray_Transparent_inverted.png"
+            src="/img/KlickerLogo.png"
             className={twMerge(
               'transition-opacity duration-1000 ease-out opacity-50 w-52 hover:opacity-100',
               !isDarkTheme && 'hidden'
+            )}
+          />
+          <img
+            src="/img/KlickerLogo.png"
+            className={twMerge(
+              'transition-opacity duration-1000 ease-out opacity-50 w-52 hover:opacity-100',
+              isDarkTheme && 'hidden'
             )}
           />
         </a>
       </div>
       <div className="flex flex-col justify-center w-full mb-6 text-center md:px-10 lg:px-18">
         <div className="self-center max-w-6xl px-10">
-          Copyright 2022 @{' '}
+          Copyright {new Date().getFullYear()} @{' '}
           <a href="https://www.bf.uzh.ch/de/studies/general/teaching-center.html">
             Teaching Center
           </a>

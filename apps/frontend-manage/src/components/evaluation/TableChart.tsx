@@ -1,4 +1,4 @@
-import { faRepeat } from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faRepeat, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Choice,
@@ -11,6 +11,13 @@ import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Table } from '@uzh-bf/design-system'
 import React, { useMemo, useRef } from 'react'
 import { QUESTION_GROUPS } from 'shared-components/src/constants'
+
+type RowType = {
+  count: number
+  value: string | number
+  correct: boolean
+  percentage: number
+}
 
 interface TableChartProps {
   data: InstanceResult
@@ -31,21 +38,11 @@ function TableChart({
         (choice: Choice, index: number) => {
           return {
             count: data.results[index].count,
-            value: (
-              <Markdown
-                content={choice.value}
-                className={{ img: 'max-h-32' }}
-              />
-            ),
-            correct: choice.correct ? 'T' : 'F',
+            value: choice.value,
+            correct: choice.correct,
             percentage: data.participants
-              ? String(
-                  (
-                    (data.results[index].count / data.participants) *
-                    100
-                  ).toFixed()
-                ) + ' %'
-              : '0 %',
+              ? data.results[index].count / data.participants
+              : 0,
           }
         }
       )
@@ -56,29 +53,54 @@ function TableChart({
         return {
           count: result.count,
           value: result.value,
-          correct:
-            result.correct === undefined
-              ? '--'
-              : result.correct === true
-              ? 'T'
-              : 'F',
-          percentage: data.participants
-            ? String(((result.count / data.participants) * 100).toFixed()) +
-              ' %'
-            : '0 %',
+          correct: result.correct,
+          percentage: data.participants ? result.count / data.participants : 0,
         }
       })
     }
   }, [data])
 
-  const columns = [
+  let columns = [
     { label: 'Count', accessor: 'count', sortable: true },
-    { label: 'Value', accessor: 'value', sortable: true },
-    { label: '%', accessor: 'percentage', sortable: true },
+    {
+      label: 'Value',
+      accessor: 'value',
+      sortable: true,
+      formatter: ({ row }: { row: RowType }) => {
+        if (typeof row['value'] === 'string')
+          return (
+            <Markdown content={row['value']} className={{ img: 'max-h-32' }} />
+          )
+        return row['value']
+      },
+    },
+    {
+      label: '%',
+      accessor: 'percentage',
+      sortable: true,
+      transformer: ({ row }: { row: RowType }) => row['percentage'] * 100,
+      formatter: ({ row }: { row: RowType }) =>
+        `${String(row['percentage'].toFixed())} %`,
+    },
+    ...(showSolution
+      ? [
+          {
+            label: 'T/F',
+            accessor: 'correct',
+            sortable: false,
+            formatter: ({ row }: { row: RowType }) => {
+              if (row['correct'] === true)
+                return (
+                  <FontAwesomeIcon icon={faCheck} className="text-green-700" />
+                )
+              if (row['correct'] === false)
+                return <FontAwesomeIcon icon={faX} className="text-red-600" />
+              return <>--</>
+            },
+          },
+        ]
+      : []),
   ]
-
-  if (showSolution)
-    columns.push({ label: 'T/F', accessor: 'correct', sortable: true })
 
   const anythingSortable = columns.reduce(
     (acc, curr) => acc || curr.sortable,
@@ -88,7 +110,7 @@ function TableChart({
   return (
     <div>
       <Table
-        ref={ref}
+        forwardedRef={ref}
         data={tableData}
         columns={columns}
         className={{

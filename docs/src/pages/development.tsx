@@ -88,8 +88,6 @@ const Development = () => {
             >
               new concept and ideas
             </a>{' '}
-            for the upcoming KlickerUZH v3.0, which will be released in beta
-            next February. Please have a look and let us know what you think!
           </div>
         </div>
       </div>
@@ -114,8 +112,14 @@ const Development = () => {
           will be working on several interesting focus areas over the coming
           years. We will be developing best practices and materials, as well as
           extending the KlickerUZH with capabilities that support each of these
-          areas. This page and our official documentation will be continuously
-          extended with helpful resources.
+          areas. <br />
+          This page and our official documentation will be continuously extended
+          with helpful resources. You can help shape the KlickerUZH by joining
+          our{' '}
+          <a href="https://community.klicker.uzh.ch/" target="_blank">
+            community
+          </a>
+          .
           <div className="block mt-4 md:hidden">
             <img src="/img/logo_swissuniversities.png" className="h-12 mr-2" />
             <img src="/img/logo_uzh.jpeg" className="h-12" />

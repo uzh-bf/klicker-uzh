@@ -37,9 +37,10 @@
     "dev": "doppler run --config dev -- turbo run dev",
     "build": "turbo run build",
     "publish": "turbo run publish",
-    "format": "turbo run format",
-    "format:check": "turbo run format:check",
-    "lint": "turbo run lint",
+    "format": "turbo run format --parallel --continue",
+    "format:check": "turbo run format:check --parallel --continue",
+    "lint": "turbo run lint --parallel --continue",
+    "check": "turbo run check --parallel --continue",
     "//release": "standard-version --dry-run",
     "//release:dry": "standard-version --dry-run",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
@@ -61,7 +62,7 @@
     "prettier": "2.8.4",
     "prettier-plugin-organize-imports": "3.2.2",
     "standard-version": "9.5.0",
-    "turbo": "1.7.4",
+    "turbo": "1.8.5",
     "yaml": "2.2.1"
   },
   "dependencies": {

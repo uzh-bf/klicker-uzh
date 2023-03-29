@@ -94,7 +94,7 @@ function SingleQuestion({
         setInputValid(false)
         break
     }
-  }, [instance, questionResponse])
+  }, [instance, questionResponse, setInputValid, setResponse])
 
   const questionData = instance.questionData
 
