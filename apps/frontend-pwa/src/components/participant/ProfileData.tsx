@@ -96,6 +96,7 @@ function ProfileData({
                 max={level.nextLevel.requiredXp}
                 formatter={Number}
                 offset={level.requiredXp}
+                className={{ indicator: 'min-w-[55px]' }}
               />
             )}
           </div>
