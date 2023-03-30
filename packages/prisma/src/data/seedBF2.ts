@@ -361,7 +361,7 @@ Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusamme
               name: 'stock1',
               displayName: 'Aktie 1',
               value:
-                '[Novartis](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Novartis Aktienkurs AF8SF.xlsx)',
+                '[Novartis](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/NovartisAktienkursAF8SF.xlsx)',
             },
           },
           {
@@ -376,7 +376,7 @@ Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusamme
               name: 'stock2',
               displayName: 'Aktie 2',
               value:
-                '[Sanofi](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Sanofi Aktienkurs A837H.xlsx)',
+                '[Sanofi](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/SanofiAktienkursA837H.xlsx)',
             },
           },
           {
@@ -391,7 +391,7 @@ Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusamme
               name: 'stock3',
               displayName: 'Aktie 3',
               value:
-                '[Bristol](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Bristol Aktienkurs K8FH3.xlsx)',
+                '[Bristol](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BristolAktienkursK8FH3.xlsx)',
             },
           },
           {
@@ -406,7 +406,7 @@ Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusamme
               name: 'stock4',
               displayName: 'Aktie 4',
               value:
-                '[Pfizer](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Pfizer Aktienkurs 7FDK6.xlsx)',
+                '[Pfizer](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/PfizerAktienkurs7FDK6.xlsx)',
             },
           },
           {
@@ -421,7 +421,7 @@ Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusamme
               name: 'stock5',
               displayName: 'Aktie 5',
               value:
-                '[Roche](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Roche Aktienkurs 9KDH7.xlsx)',
+                '[Roche](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/RocheAktienkurs9KDH7.xlsx)',
             },
           },
         ],
