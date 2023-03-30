@@ -1,7 +1,7 @@
 {
   "shared": {
     "questions": {
-      "roundedTo": "(gerundet auf {accuracy} Nachkommastellen)",
+      "roundedTo": "Rundet auf {accuracy} Nachkommastellen.",
       "numInvalidValue": "Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.",
       "ftPlaceholder": "Ihre Antwort..."
     },
