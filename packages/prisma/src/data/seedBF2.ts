@@ -338,15 +338,14 @@ async function seed(prisma: Prisma.PrismaClient) {
       name: 'BFII Gruppenquest 3',
       displayName: 'BFII Gruppenquest 3',
       description: `![](https://sos-ch-dk-2.exo.io/klicker-prod/img/bf2/bf2_group_activity_3.png)
-
-Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusammenstel-len. Sprecht euch untereinander ab, um herauszufinden, welche Aktientitel infrage kommen. Für die Besprechungen und Rechnungen geben wir euch die folgenden Tipps:
+Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusammenstellen. Sprecht euch untereinander ab, um herauszufinden, welche Aktientitel infrage kommen. Für die Besprechungen und Rechnungen geben wir euch die folgenden Tipps:
 
 -	Verwendet die euch zur Verfügung gestellten Daten der letzten zehn Jahre für eure Berechnungen.
 -	Ausgeschüttete Dividenden können für die Berechnungen vernachlässigt werden.
 -	Nutzt passende Excel Übungen im Self-Learning auf OLAT, um die relevanten Parameter zu testen und deren Einfluss zu untersuchen.
   `,
-      scheduledStartAt: new Date('2023-03-30T11:00:00.000Z'),
-      scheduledEndAt: new Date('2023-04-07T22:00:00.000Z'),
+      scheduledStartAt: new Date('2023-04-07T11:00:00.000Z'),
+      scheduledEndAt: new Date('2023-04-14T22:00:00.000Z'),
       parameters: {},
       clues: {
         connectOrCreate: [
@@ -362,7 +361,7 @@ Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusamme
               name: 'stock1',
               displayName: 'Aktie 1',
               value:
-                '[Novartis](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Novartis Aktienkurs.xlsx)',
+                '[Novartis](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Novartis Aktienkurs AF8SF.xlsx)',
             },
           },
           {
@@ -377,7 +376,7 @@ Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusamme
               name: 'stock2',
               displayName: 'Aktie 2',
               value:
-                '[Sanofi](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Sanofi Aktienkurs.xlsx)',
+                '[Sanofi](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Sanofi Aktienkurs A837H.xlsx)',
             },
           },
           {
@@ -392,7 +391,7 @@ Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusamme
               name: 'stock3',
               displayName: 'Aktie 3',
               value:
-                '[Bristol](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Bristol Aktienkurs.xlsx)',
+                '[Bristol](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Bristol Aktienkurs K8FH3.xlsx)',
             },
           },
           {
@@ -407,7 +406,7 @@ Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusamme
               name: 'stock4',
               displayName: 'Aktie 4',
               value:
-                '[Pfizer](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Pfizer Aktienkurs.png)',
+                '[Pfizer](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Pfizer Aktienkurs 7FDK6.xlsx)',
             },
           },
           {
@@ -422,7 +421,7 @@ Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusamme
               name: 'stock5',
               displayName: 'Aktie 5',
               value:
-                '[Roche](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Roche Aktienkurs.png)',
+                '[Roche](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/Roche Aktienkurs 9KDH7.xlsx)',
             },
           },
         ],
