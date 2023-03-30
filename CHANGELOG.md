@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.80](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.79...v3.0.0-alpha.80) (2023-03-30)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** allow markdown in clues ([867bd3c](https://github.com/uzh-bf/klicker-uzh/commit/867bd3cb5234cd01f20da27cd7fc2789cbd09155))
+
 ## [3.0.0-alpha.79](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.78...v3.0.0-alpha.79) (2023-03-30)
 
 
