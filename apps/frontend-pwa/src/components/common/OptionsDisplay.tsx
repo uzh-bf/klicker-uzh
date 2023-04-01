@@ -298,8 +298,8 @@ export function Options({
             <div className="mb-2 italic">
               {t.rich(`shared.${QuestionType.Numerical}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
-              })}
-              {options.accuracy &&
+              })}{' '}
+              {typeof options.accuracy === 'number' &&
                 t('shared.questions.roundedTo', { accuracy: options.accuracy })}
             </div>
           )}

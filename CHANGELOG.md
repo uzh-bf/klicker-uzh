@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.80](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.79...v3.0.0-alpha.80) (2023-03-30)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** allow markdown in clues ([867bd3c](https://github.com/uzh-bf/klicker-uzh/commit/867bd3cb5234cd01f20da27cd7fc2789cbd09155))
+
+## [3.0.0-alpha.79](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.78...v3.0.0-alpha.79) (2023-03-30)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that sorting of tables works as to be expected ([#3489](https://github.com/uzh-bf/klicker-uzh/issues/3489)) ([7bfcb5a](https://github.com/uzh-bf/klicker-uzh/commit/7bfcb5a8fce2b139298cbab78da326d89bb9bcc2))
+* **apps/frontend-pwa:** display accuracy info if options.accuracy is a number ([fe52399](https://github.com/uzh-bf/klicker-uzh/commit/fe52399d2d6c0d0862785b188844b8dbc506c934))
+* **packages/shared-components:** update translations of accuracy string ([cc8da7d](https://github.com/uzh-bf/klicker-uzh/commit/cc8da7d3a6987ab6e1b4515c4ec9ed28f0bd7f87))
+
+
+### Enhancements
+
+* **ci:** update pipelines with turbo and add pipeline and workflow for type checks ([25a023f](https://github.com/uzh-bf/klicker-uzh/commit/25a023f003d90873091583d00109bd9ed958578c))
+
 ## [3.0.0-alpha.78](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.77...v3.0.0-alpha.78) (2023-03-24)
 
 
