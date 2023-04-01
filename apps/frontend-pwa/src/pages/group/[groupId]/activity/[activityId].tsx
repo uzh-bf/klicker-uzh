@@ -145,14 +145,18 @@ function GroupActivityDetails() {
                         <div className="font-bold">{clue.displayName}</div>
                         {typeof clue.value === 'string' && (
                           <div>
-                            {clue.type === 'NUMBER'
-                              ? Number(
-                                  clue.unit === '%'
-                                    ? clue.value * 100
-                                    : clue.value
-                                ).toLocaleString()
-                              : clue.value}{' '}
-                            {clue.unit}
+                            {clue.type === 'NUMBER' ? (
+                              `${Number(
+                                clue.unit === '%'
+                                  ? clue.value * 100
+                                  : clue.value
+                              ).toLocaleString()} ${clue.unit}`
+                            ) : (
+                              <Markdown
+                                content={clue.value}
+                                className={{ root: 'prose prose-sm' }}
+                              />
+                            )}
                           </div>
                         )}
                       </div>
