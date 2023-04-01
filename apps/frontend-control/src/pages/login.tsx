@@ -123,7 +123,7 @@ function LoginForm() {
               {loginFailed && (
                 <UserNotification
                   className={{ root: 'w-72 sm:w-96' }}
-                  notificationType="error"
+                  type="error"
                   message="Login fehlgeschlagen. Bitte überprüfen Sie Ihre E-Mail Adresse und den Token. Beachten Sie die zeitlich begrenzte Gültigkeit des Tokens."
                 />
               )}

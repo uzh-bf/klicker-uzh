@@ -83,7 +83,7 @@ function JoinPage() {
         {showError && (
           <UserNotification
             message="Es gab einen Fehler bei Ihrer Eingabe, bitte überprüfen Sie diese erneut."
-            notificationType="error"
+            type="error"
             className={{ root: 'mt-14' }}
           />
         )}

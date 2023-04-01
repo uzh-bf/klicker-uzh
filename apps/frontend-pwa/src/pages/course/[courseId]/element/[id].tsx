@@ -39,7 +39,7 @@ function LearningElement({ courseId, id }: Props) {
     return (
       <Layout>
         <UserNotification
-          notificationType="error"
+          type="error"
           message={t('pwa.learningElement.notFound')}
         />
       </Layout>

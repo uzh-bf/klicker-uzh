@@ -240,7 +240,7 @@ function Evaluation() {
                 ) : (
                   <UserNotification
                     className={{ message: 'text-lg' }}
-                    notificationType="error"
+                    type="warning"
                     message="Bisher waren keine Teilnehmenden während dieser Session
               angemeldet und haben Punkte gesammelt."
                   />
@@ -259,7 +259,7 @@ function Evaluation() {
                 ) : (
                   <UserNotification
                     className={{ message: 'text-lg' }}
-                    notificationType="error"
+                    type="warning"
                     message="Diese Session enthält bisher keine Feedbacks."
                   />
                 )}
@@ -277,7 +277,7 @@ function Evaluation() {
                 ) : (
                   <UserNotification
                     className={{ message: 'text-lg' }}
-                    notificationType="error"
+                    type="warning"
                     message="Diese Session enthält bisher keine Confusion Feedbacks."
                   />
                 )}

@@ -124,7 +124,7 @@ function SingleQuestion({
           </div>
           {instance.evaluation && questionData.explanation && (
             <UserNotification
-              notificationType="success"
+              type="success"
               message=""
               className={{
                 root: 'flex flex-row items-center mb-2 md:mb-4 gap-3 px-3',
