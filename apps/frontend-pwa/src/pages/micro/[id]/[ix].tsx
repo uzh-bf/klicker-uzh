@@ -162,7 +162,7 @@ function MicroSessionInstance() {
               <Progress
                 isMaxVisible
                 formatter={(v) => v}
-                value={ix}
+                value={parseInt(ix)}
                 max={data.microSession?.instances?.length ?? 0}
               />
             </div>
