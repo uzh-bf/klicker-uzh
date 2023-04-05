@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import { GetLearningElementDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Progress, UserNotification } from '@uzh-bf/design-system'
+import { StepProgress, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -39,7 +39,7 @@ function LearningElement({ courseId, id }: Props) {
     return (
       <Layout>
         <UserNotification
-          notificationType="error"
+          type="error"
           message={t('pwa.learningElement.notFound')}
         />
       </Layout>
@@ -65,13 +65,10 @@ function LearningElement({ courseId, id }: Props) {
       >
         {(currentIx === -1 || currentStack) && (
           <div>
-            <Progress
-              nonLinear
-              isMaxVisible
+            <StepProgress
               displayOffset={
                 (data.learningElement?.stacks?.length ?? 0) > 15 ? 3 : undefined
               }
-              formatter={(v) => v}
               value={currentIx}
               max={data.learningElement?.stacks?.length ?? 0}
               onItemClick={(ix: number) => setCurrentIx(ix)}

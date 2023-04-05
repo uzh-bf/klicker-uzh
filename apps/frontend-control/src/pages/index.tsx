@@ -19,7 +19,7 @@ function Index() {
     return (
       <Layout title="Kursübersicht">
         <UserNotification
-          notificationType="error"
+          type="error"
           className={{ root: 'text-base' }}
           message="Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen
         Sie es später erneut."

@@ -46,7 +46,7 @@ function Repetition() {
         ))}
         {(!data?.learningElements || data?.learningElements?.length === 0) && (
           <UserNotification
-            notificationType="info"
+            type="info"
             message={t('pwa.learningElement.noRepetition')}
           />
         )}

@@ -34,7 +34,7 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
   if (!block)
     return (
       <UserNotification
-        notificationType="error"
+        type="error"
         message="Leider ist ein Fehler aufgetreten."
       />
     )

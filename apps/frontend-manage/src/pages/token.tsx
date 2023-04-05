@@ -76,7 +76,7 @@ function TokenGeneration() {
           <UserNotification
             message={`Ihr Token lautet:`}
             className={{ root: 'text-base', content: 'mt-0' }}
-            notificationType="success"
+            type="success"
           >
             <div className="text-lg font-bold">
               {String(token)
@@ -98,7 +98,7 @@ function TokenGeneration() {
           <UserNotification
             className={{ root: 'text-base' }}
             message="Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen."
-            notificationType="error"
+            type="error"
           />
         )}
       </div>

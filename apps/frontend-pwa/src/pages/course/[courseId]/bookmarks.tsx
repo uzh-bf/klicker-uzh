@@ -34,7 +34,7 @@ function Bookmarks() {
         <UserNotification
           // TODO: delete this translation, once the notification is replaced with the bookmarked questions
           message={t('pwa.general.bookmarksPlaceholder')}
-          notificationType="info"
+          type="info"
         />
         {/* {data?.getBookmarkedQuestions?.map((question) => (
           <div key={question.id}>{question.questionData.name}</div>

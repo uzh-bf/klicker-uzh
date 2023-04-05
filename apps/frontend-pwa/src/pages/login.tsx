@@ -162,12 +162,7 @@ function LoginForm() {
                     component="div"
                     className="text-sm text-red-400"
                   />
-                  {error && (
-                    <UserNotification
-                      notificationType="error"
-                      message={error}
-                    />
-                  )}
+                  {error && <UserNotification type="error" message={error} />}
                   <div className="flex justify-center mt-7">
                     <Button
                       type="submit"
@@ -181,7 +176,7 @@ function LoginForm() {
                   {onChrome && (
                     <div className="flex flex-col justify-center md:hidden mt-7">
                       <UserNotification
-                        notificationType="info"
+                        type="info"
                         message={t('pwa.login.installPWA')}
                       >
                         <Button
@@ -200,7 +195,7 @@ function LoginForm() {
                   {oniOS && (
                     <UserNotification
                       className={{ root: 'mt-4' }}
-                      notificationType="info"
+                      type="info"
                       message={t('pwa.login.installHomeScreen')}
                     />
                   )}

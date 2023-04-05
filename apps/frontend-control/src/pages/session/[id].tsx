@@ -80,7 +80,7 @@ function RunningSession() {
       <Layout title="Session-Steuerung">
         <UserNotification
           message="Leider ist beim Laden der Session ein Fehler aufgetreten. Bitte vergewissern Sie sich, dass die Session noch läuft oder versuchen Sie es später nochmals"
-          notificationType="error"
+          type="error"
         />
       </Layout>
     )
@@ -92,7 +92,7 @@ function RunningSession() {
     return (
       <Layout title={name}>
         <UserNotification
-          notificationType="warning"
+          type="warning"
           message="Diese Session enthält keine Fragen und kann daher zum aktuellen Zeitpunkt nicht über die Controller-App gesteuert werden. Bitte benutzen sie die Manage-App mit allen Funktionalitäten."
         />
       </Layout>
@@ -191,7 +191,7 @@ function RunningSession() {
         ) : (
           <div>
             <UserNotification
-              notificationType="info"
+              type="info"
               message="Es wurden bereits alle Blöcke dieser Session ausgeführt und geschlossen. Mit dem Beenden der Session wird auch der Feedback-Kanal geschlossen."
               className={{ root: 'mb-2' }}
             />

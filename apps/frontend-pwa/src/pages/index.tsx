@@ -298,9 +298,7 @@ const Index = function () {
             </LinkButton>
           </div>
         </div>
-        {userInfo && (
-          <UserNotification notificationType="info" message={userInfo} />
-        )}
+        {userInfo && <UserNotification type="info" message={userInfo} />}
         {/* <SurveyPromotion courseId={courses?.[0]?.id} /> */}
       </div>
     </Layout>

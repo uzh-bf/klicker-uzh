@@ -127,10 +127,7 @@ function TagList({
 
             if (tagsError) {
               return (
-                <UserNotification
-                  notificationType="error"
-                  message={tagsError.message}
-                />
+                <UserNotification type="error" message={tagsError.message} />
               )
             }
 
