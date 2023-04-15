@@ -131,7 +131,9 @@
       "groupLeaderboardUpdate": "Das Gruppenleaderboard wird täglich aktualisiert.<b>x</b>Gruppen mit einem Mitglied erhalten keine Punkte.",
       "membersScore": "Punkte durch Mitglieder",
       "groupActivityScore": "Punkte durch Gruppenaktivitäten",
-      "totalScore": "Total Punkte"
+      "totalScore": "Total Punkte",
+      "bookmarkedQuestionsTitle": "Bookmarks in {courseName}",
+      "bookmarkedQuestionsDesc": "Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie einem gewöhnlichen Lernelement dargestellt."
     },
     "joinCourse": {
       "title": "Kurs \"{name}\" beitreten",

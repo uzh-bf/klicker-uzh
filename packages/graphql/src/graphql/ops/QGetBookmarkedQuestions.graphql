@@ -1,15 +1,34 @@
+#import "./FQuestionData.graphql"
+
 query GetBookmarkedQuestions($courseId: String!) {
   getBookmarkedQuestions(courseId: $courseId) {
     id
     displayName
+    description
+    order
     elements {
       id
+      order
+      mdContent
       questionInstance {
         id
-        questionData {
-          id
-          name
-          type
+        pointsMultiplier
+        ...QuestionData
+        evaluation {
+          feedbacks {
+            ix
+            feedback
+            correct
+            value
+          }
+          choices
+          answers
+          score
+          pointsAwarded
+          percentile
+          newPointsFrom
+          xpAwarded
+          newXpFrom
         }
       }
     }
