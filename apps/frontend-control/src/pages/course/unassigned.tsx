@@ -34,7 +34,7 @@ function UnassignedSessions() {
     return (
       <Layout title="Sessionen ohne Kurs">
         <UserNotification
-          notificationType="error"
+          type="error"
           className={{ root: 'text-base' }}
           message="Beim Laden Ihrer Sessionen ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
         />

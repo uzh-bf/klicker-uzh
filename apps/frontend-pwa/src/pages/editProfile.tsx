@@ -203,7 +203,7 @@ function EditProfile(): NextPageWithLayout {
                       </div>
                       {error && (
                         <UserNotification
-                          notificationType="error"
+                          type="error"
                           message="Please choose a different username."
                         />
                       )}

@@ -34,7 +34,7 @@ function MicroSessionIntroduction({ id }: Props) {
     return (
       <Layout>
         <UserNotification
-          notificationType="error"
+          type="error"
           message={t('pwa.microSession.notFound')}
         />
       </Layout>

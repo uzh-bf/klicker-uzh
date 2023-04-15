@@ -1165,7 +1165,7 @@ function QuestionEditModal({
                       icon: 'text-red-700',
                       message: 'text-red-700',
                     }}
-                    notificationType="error"
+                    type="error"
                     message={JSON.stringify(errors)}
                   />
                 )}
