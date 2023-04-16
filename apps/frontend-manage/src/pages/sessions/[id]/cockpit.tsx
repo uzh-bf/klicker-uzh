@@ -5,7 +5,7 @@ import {
   EndSessionDocument,
   Feedback,
   GetCockpitSessionDocument,
-  GetRunningSessionsDocument,
+  GetUserRunningSessionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -23,7 +23,7 @@ function Cockpit() {
   const [endSession] = useMutation(EndSessionDocument, {
     refetchQueries: [
       {
-        query: GetRunningSessionsDocument,
+        query: GetUserRunningSessionsDocument,
       },
     ],
   })

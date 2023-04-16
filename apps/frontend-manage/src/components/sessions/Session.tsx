@@ -11,7 +11,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteSessionDocument,
-  GetRunningSessionsDocument,
+  GetUserRunningSessionsDocument,
   GetUserSessionsDocument,
   Session as SessionType,
   SessionBlock,
@@ -40,7 +40,7 @@ function Session({ session }: SessionProps) {
     variables: { id: session.id },
     refetchQueries: [
       {
-        query: GetRunningSessionsDocument,
+        query: GetUserRunningSessionsDocument,
       },
     ],
   })
