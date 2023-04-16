@@ -176,6 +176,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      userRunningSessions: asUser.field({
+        nullable: true,
+        type: [Session],
+        resolve(_, __, ctx) {
+          return SessionService.getUserRunningSessions(ctx)
+        },
+      }),
+
       controlCourses: asUser.field({
         nullable: true,
         type: [Course],

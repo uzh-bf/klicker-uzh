@@ -1218,6 +1218,28 @@ export async function getRunningSessions(
   return userWithSessions.sessions
 }
 
+export async function getUserRunningSessions(ctx: ContextWithUser) {
+  const userWithSessions = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      sessions: {
+        where: {
+          status: 'RUNNING',
+        },
+        include: {
+          course: true,
+        },
+      },
+    },
+  })
+
+  if (!userWithSessions?.sessions) return []
+
+  return userWithSessions.sessions
+}
+
 export async function getUserSessions(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {

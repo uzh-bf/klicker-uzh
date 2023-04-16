@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faPlayCircle, faUserCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetRunningSessionsDocument,
+  GetUserRunningSessionsDocument,
   LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -19,10 +19,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const [logoutUser] = useMutation(LogoutUserDocument)
 
-  const { data } = useQuery(GetRunningSessionsDocument, {
-    variables: { shortname: user?.shortname as string },
-    skip: !user?.shortname,
-  })
+  const { data } = useQuery(GetUserRunningSessionsDocument)
 
   return (
     <div
@@ -60,15 +57,15 @@ function Header({ user }: HeaderProps): React.ReactElement {
             root: 'h-10 w-10 group',
             icon: twMerge(
               'text-uzh-grey-80',
-              data?.runningSessions?.length !== 0 && 'text-green-600'
+              data?.userRunningSessions?.length !== 0 && 'text-green-600'
             ),
             disabled: '!text-gray-400',
             dropdown: 'p-1.5 gap-0',
           }}
-          disabled={data?.runningSessions?.length === 0}
+          disabled={data?.userRunningSessions?.length === 0}
         >
-          {data?.runningSessions && data?.runningSessions.length > 0 ? (
-            data?.runningSessions.map((session) => {
+          {data?.userRunningSessions && data?.userRunningSessions.length > 0 ? (
+            data?.userRunningSessions.map((session) => {
               return (
                 <Navigation.DropdownItem
                   key={session.id}

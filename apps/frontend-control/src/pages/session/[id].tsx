@@ -6,7 +6,7 @@ import {
   DeactivateSessionBlockDocument,
   EndSessionDocument,
   GetControlSessionDocument,
-  GetRunningSessionsDocument,
+  GetUserRunningSessionsDocument,
   SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -32,7 +32,7 @@ function RunningSession() {
   const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
   const [deactivateSessionBlock] = useMutation(DeactivateSessionBlockDocument)
   const [endSession] = useMutation(EndSessionDocument, {
-    refetchQueries: [{ query: GetRunningSessionsDocument }],
+    refetchQueries: [{ query: GetUserRunningSessionsDocument }],
   })
 
   const {
