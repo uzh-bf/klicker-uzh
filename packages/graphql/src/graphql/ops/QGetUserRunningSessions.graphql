@@ -1,0 +1,12 @@
+query GetUserRunningSessions {
+  userRunningSessions {
+    id
+    name
+    displayName
+    linkTo
+    course {
+      id
+      displayName
+    }
+  }
+}

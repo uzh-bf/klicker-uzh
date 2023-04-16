@@ -598,6 +598,7 @@ type Query {
   userCourses: [Course!]
   userProfile: User
   userQuestions: [Question!]
+  userRunningSessions: [Session!]
   userSessions: [Session!]
   userTags: [Tag!]
 }

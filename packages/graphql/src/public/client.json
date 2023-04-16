@@ -85,6 +85,7 @@
    "GetUnassignedSessions": "513bdcda8f5ff54d01c0da150edcf8eacb505f455c407adc971d27f4585fb66c",
    "GetUserCourses": "26796463bf095b29bb85addd4127f6e5b9fcd3a2958b6f1563da36435c62c7ec",
    "GetUserQuestions": "cafe5e6145b7a6d3250cae6b918d8b458b323fe4ea521f2a3a7bbf1d7acd70d1",
+   "GetUserRunningSessions": "ead3fc3a2dea6e39187b31df5fc85beeb2a51a824c4a305b061112a1730cdcc3",
    "GetUserSessions": "7b91baa24f5af4e35d22647250b356437be5c380d55ca24edb1423daed9cc5db",
    "GetUserTags": "24abb877c271a0e4cc742ddbcffe524ca3f413fc98f9514b7d2ad96d90c2d8c1",
    "GroupActivityDetails": "bc66ba256771cb6610e7677269da9a0b691c149bc8741e67b147911d555acc9e",
