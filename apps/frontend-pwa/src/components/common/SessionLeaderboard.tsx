@@ -3,7 +3,7 @@ import {
   GetSessionLeaderboardDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H2 } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
@@ -92,16 +92,21 @@ function SessionLeaderboard({
         <H2>{t('shared.leaderboard.sessionTitle')}</H2>
         <div>
           {data.sessionLeaderboard?.length &&
-            data.sessionLeaderboard.length > 0 && (
-              <Podium
-                leaderboard={data.sessionLeaderboard?.slice(0, 3)}
-                imgSrc={{
-                  rank1: Rank1Img,
-                  rank2: Rank2Img,
-                  rank3: Rank3Img,
-                }}
-              />
-            )}
+          data.sessionLeaderboard.length > 0 ? (
+            <Podium
+              leaderboard={data.sessionLeaderboard?.slice(0, 3)}
+              imgSrc={{
+                rank1: Rank1Img,
+                rank2: Rank2Img,
+                rank3: Rank3Img,
+              }}
+            />
+          ) : (
+            <UserNotification
+              type="info"
+              message={t('shared.leaderboard.noPointsCollected')}
+            />
+          )}
         </div>
         <div className="space-y-1">
           {data.sessionLeaderboard?.slice(0, 10).map((entry) => (
