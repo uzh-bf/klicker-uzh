@@ -464,104 +464,119 @@ async function seed(prisma: Prisma.PrismaClient) {
   //     update: {},
   //   })
 
-  // const TEAMGEIST = [
+  // SELECT DISTINCT(p.id), p.username, gi.results
+  // FROM "GroupActivityInstance" gi
+  // JOIN "ParticipantGroup" pg ON gi."groupId" = pg.id
+  // JOIN "_ParticipantToParticipantGroup" match ON pg.id = match."B"
+  // JOIN "Participant" p ON match."A" = p.id
+  // WHERE gi.decisions IS NOT NULL
+  //     AND gi."groupActivityId" = '9f5850a4-f58d-4144-94d6-68adb3ab0466'
+
+  // const TEAMGEIST = []
+
+  // await prisma.$transaction(
+  //   TEAMGEIST.map((participantId) =>
+  //     // prisma.participantAchievementInstance.upsert({
+  //     //   where: {
+  //     //     participantId_achievementId: {
+  //     //       participantId,
+  //     //       achievementId: 9,
+  //     //     },
+  //     //   },
+  //     //   create: {
+  //     //     achievedCount: 1,
+  //     //     achievedAt: new Date(),
+  //     //     participant: {
+  //     //       connect: {
+  //     //         id: participantId,
+  //     //       },
+  //     //     },
+  //     //     achievement: {
+  //     //       connect: {
+  //     //         id: 9,
+  //     //       },
+  //     //     },
+  //     //   },
+  //     //   update: {
+  //     //     achievedAt: new Date(),
+  //     //     achievedCount: {
+  //     //       increment: 1,
+  //     //     },
+  //     //   },
+  //     // })
+  //     // prisma.participant.update({
+  //     //   where: {
+  //     //     id: participantId,
+  //     //   },
+  //     //   data: {
+  //     //     xp: {
+  //     //       increment: 250,
+  //     //     },
+  //     //   },
+  //     // })
+  //   )
+  // )
+
+  // const DREAMTEAM = [
 
   // ]
 
   // await prisma.$transaction(
-  //   TEAMGEIST.map((participantId) =>
-  //     prisma.participantAchievementInstance.upsert({
-  //       where: {
-  //         participantId_achievementId: {
-  //           participantId,
-  //           achievementId: 9,
-  //         },
-  //       },
-  //       create: {
-  //         achievedCount: 1,
-  //         achievedAt: new Date(),
-  //         participant: {
-  //           connect: {
-  //             id: participantId,
-  //           },
-  //         },
-  //         achievement: {
-  //           connect: {
-  //             id: 9,
-  //           },
-  //         },
-  //       },
-  //       update: {
-  //         achievedAt: new Date(),
-  //         achievedCount: {
-  //           increment: 1,
-  //         },
-  //       },
-  //     })
+  //   DREAMTEAM.map((participantId) =>
+  //     // prisma.participant.update({
+  //     //   where: {
+  //     //     id: participantId,
+  //     //   },
+  //     //   data: {
+  //     //     xp: {
+  //     //       increment: 1000,
+  //     //     },
+  //     //   },
+  //     // })
+  //     // prisma.leaderboardEntry.update({
+  //     //   where: {
+  //     //     type_participantId_courseId: {
+  //     //       type: 'COURSE',
+  //     //       participantId,
+  //     //       courseId: COURSE_ID_BF2,
+  //     //     },
+  //     //   },
+  //     //   data: {
+  //     //     score: {
+  //     //       increment: 500,
+  //     //     },
+  //     //   },
+  //     // })
+  //     // prisma.participantAchievementInstance.upsert({
+  //     //   where: {
+  //     //     participantId_achievementId: {
+  //     //       participantId,
+  //     //       achievementId: 8,
+  //     //     },
+  //     //   },
+  //     //   create: {
+  //     //     achievedCount: 1,
+  //     //     achievedAt: new Date(),
+  //     //     participant: {
+  //     //       connect: {
+  //     //         id: participantId,
+  //     //       },
+  //     //     },
+  //     //     achievement: {
+  //     //       connect: {
+  //     //         id: 8,
+  //     //       },
+  //     //     },
+  //     //   },
+  //     //   update: {
+  //     //     achievedAt: new Date(),
+  //     //     achievedCount: {
+  //     //       increment: 1,
+  //     //     },
+  //     //   },
+  //     // })
   //   )
-  // )
-
-  // const DREAMTEAM = []
-
-  // await prisma.$transaction(
-  //   DREAMTEAM.map(
-  //     (participantId) =>
-  //       // prisma.participant.update({
-  //       //   where: {
-  //       //     id: participantId,
-  //       //   },
-  //       //   data: {
-  //       //     xp: {
-  //       //       increment: 1000,
-  //       //     },
-  //       //   },
-  //       // })
-  //       // )
-  //       // prisma.leaderboardEntry.update({
-  //       //   where: {
-  //       //     type_participantId_courseId: {
-  //       //       type: 'COURSE',
-  //       //       participantId,
-  //       //       courseId: COURSE_ID_BF2,
-  //       //     },
-  //       //   },
-  //       //   data: {
-  //       //     score: {
-  //       //       increment: 500,
-  //       //     },
-  //       //   },
-  //       // })
-  //     //   prisma.participantAchievementInstance.upsert({
-  //     //     where: {
-  //     //       participantId_achievementId: {
-  //     //         participantId,
-  //     //         achievementId: 8,
-  //     //       },
-  //     //     },
-  //     //     create: {
-  //     //       achievedCount: 1,
-  //     //       achievedAt: new Date(),
-  //     //       participant: {
-  //     //         connect: {
-  //     //           id: participantId,
-  //     //         },
-  //     //       },
-  //     //       achievement: {
-  //     //         connect: {
-  //     //           id: 8,
-  //     //         },
-  //     //       },
-  //     //     },
-  //     //     update: {
-  //     //       achievedAt: new Date(),
-  //     //       achievedCount: {
-  //     //         increment: 1,
-  //     //       },
-  //     //     },
-  //     //   })
-  //     // )
-  //   )
-  // )
+  )
 }
 
 const prismaClient = new Prisma.PrismaClient()
