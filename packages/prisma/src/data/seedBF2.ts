@@ -328,107 +328,108 @@ async function seed(prisma: Prisma.PrismaClient) {
   //   update: {},
   // })
 
-  //   const GROUP_ACTIVITY_ID = '8cece48e-cc4c-4328-a120-345969a90abb'
-  //   const groupActivity3BF2 = await prisma.groupActivity.upsert({
-  //     where: {
-  //       id: GROUP_ACTIVITY_ID,
-  //     },
-  //     create: {
-  //       id: GROUP_ACTIVITY_ID,
-  //       name: 'BFII Gruppenquest 3',
-  //       displayName: 'BFII Gruppenquest 3',
-  //       description: `![](https://sos-ch-dk-2.exo.io/klicker-prod/img/bf2/bf2_group_activity_3.png)
+  // const GROUP_ACTIVITY_ID = '8cece48e-cc4c-4328-a120-345969a90abb'
+  // const groupActivity3BF2 = await prisma.groupActivity.upsert({
+  //   where: {
+  //     id: GROUP_ACTIVITY_ID,
+  //   },
+  //   create: {
+  //     id: GROUP_ACTIVITY_ID,
+  //     name: 'BFII Gruppenquest 3',
+  //     displayName: 'BFII Gruppenquest 3',
+  //     description: `![](https://sos-ch-dk-2.exo.io/klicker-prod/img/bf2/bf2_group_activity_3.png)
   // Du und deine Kolleg:innen wollt mit geteiltem Portemonnaie ein Portfolio zusammenstellen. Sprecht euch untereinander ab, um herauszufinden, welche Aktientitel infrage kommen. Für die Besprechungen und Rechnungen geben wir euch die folgenden Tipps:
 
   // -	Verwendet die euch zur Verfügung gestellten Daten der letzten zehn Jahre für eure Berechnungen.
   // -	Ausgeschüttete Dividenden können für die Berechnungen vernachlässigt werden.
   // -	Nutzt passende Excel Übungen im Self-Learning auf OLAT, um die relevanten Parameter zu testen und deren Einfluss zu untersuchen.
   //   `,
-  //       scheduledStartAt: new Date('2023-04-07T11:00:00.000Z'),
-  //       scheduledEndAt: new Date('2023-04-14T22:00:00.000Z'),
-  //       parameters: {},
-  //       clues: {
-  //         connectOrCreate: [
-  //           {
-  //             where: {
-  //               groupActivityId_name: {
-  //                 groupActivityId: GROUP_ACTIVITY_ID,
-  //                 name: 'stock1',
-  //               },
-  //             },
-  //             create: {
-  //               type: 'STRING',
+  //     scheduledStartAt: new Date('2023-04-21T11:00:00.000Z'),
+  //     scheduledEndAt: new Date('2023-04-28T22:00:00.000Z'),
+  //     parameters: {},
+  //     clues: {
+  //       connectOrCreate: [
+  //         {
+  //           where: {
+  //             groupActivityId_name: {
+  //               groupActivityId: GROUP_ACTIVITY_ID,
   //               name: 'stock1',
-  //               displayName: 'Aktie 1',
-  //               value:
-  //                 '[Novartis](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/NovartisAktienkursAF8SF.xlsx)',
   //             },
   //           },
-  //           {
-  //             where: {
-  //               groupActivityId_name: {
-  //                 groupActivityId: GROUP_ACTIVITY_ID,
-  //                 name: 'stock2',
-  //               },
-  //             },
-  //             create: {
-  //               type: 'STRING',
+  //           create: {
+  //             type: 'STRING',
+  //             name: 'stock1',
+  //             displayName: 'Aktie 1',
+  //             value:
+  //               '[Novartis](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/NovartisAktienkursAF8SF.xlsx)',
+  //           },
+  //         },
+  //         {
+  //           where: {
+  //             groupActivityId_name: {
+  //               groupActivityId: GROUP_ACTIVITY_ID,
   //               name: 'stock2',
-  //               displayName: 'Aktie 2',
-  //               value:
-  //                 '[Sanofi](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/SanofiAktienkursA837H.xlsx)',
   //             },
   //           },
-  //           {
-  //             where: {
-  //               groupActivityId_name: {
-  //                 groupActivityId: GROUP_ACTIVITY_ID,
-  //                 name: 'stock3',
-  //               },
-  //             },
-  //             create: {
-  //               type: 'STRING',
+  //           create: {
+  //             type: 'STRING',
+  //             name: 'stock2',
+  //             displayName: 'Aktie 2',
+  //             value:
+  //               '[Sanofi](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/SanofiAktienkursA837H.xlsx)',
+  //           },
+  //         },
+  //         {
+  //           where: {
+  //             groupActivityId_name: {
+  //               groupActivityId: GROUP_ACTIVITY_ID,
   //               name: 'stock3',
-  //               displayName: 'Aktie 3',
-  //               value:
-  //                 '[Bristol](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BristolAktienkursK8FH3.xlsx)',
   //             },
   //           },
-  //           {
-  //             where: {
-  //               groupActivityId_name: {
-  //                 groupActivityId: GROUP_ACTIVITY_ID,
-  //                 name: 'stock4',
-  //               },
-  //             },
-  //             create: {
-  //               type: 'STRING',
+  //           create: {
+  //             type: 'STRING',
+  //             name: 'stock3',
+  //             displayName: 'Aktie 3',
+  //             value:
+  //               '[Bristol](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BristolAktienkursK8FH3.xlsx)',
+  //           },
+  //         },
+  //         {
+  //           where: {
+  //             groupActivityId_name: {
+  //               groupActivityId: GROUP_ACTIVITY_ID,
   //               name: 'stock4',
-  //               displayName: 'Aktie 4',
-  //               value:
-  //                 '[Pfizer](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/PfizerAktienkurs7FDK6.xlsx)',
   //             },
   //           },
-  //           {
-  //             where: {
-  //               groupActivityId_name: {
-  //                 groupActivityId: GROUP_ACTIVITY_ID,
-  //                 name: 'stock5',
-  //               },
-  //             },
-  //             create: {
-  //               type: 'STRING',
+  //           create: {
+  //             type: 'STRING',
+  //             name: 'stock4',
+  //             displayName: 'Aktie 4',
+  //             value:
+  //               '[Pfizer](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/PfizerAktienkurs7FDK6.xlsx)',
+  //           },
+  //         },
+  //         {
+  //           where: {
+  //             groupActivityId_name: {
+  //               groupActivityId: GROUP_ACTIVITY_ID,
   //               name: 'stock5',
-  //               displayName: 'Aktie 5',
-  //               value:
-  //                 '[Roche](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/RocheAktienkurs9KDH7.xlsx)',
   //             },
   //           },
-  //         ],
-  //       },
-  //       instances: {
-  //         connectOrCreate: await Promise.all(
-  //           R.range(770, 786).map(async (qId, ix) => {
+  //           create: {
+  //             type: 'STRING',
+  //             name: 'stock5',
+  //             displayName: 'Aktie 5',
+  //             value:
+  //               '[Roche](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/RocheAktienkurs9KDH7.xlsx)',
+  //           },
+  //         },
+  //       ],
+  //     },
+  //     instances: {
+  //       connectOrCreate: await Promise.all(
+  //         [775, 776, 777, 773, 774, 778, 779, 780, 781, 782, 784, 785].map(
+  //           async (qId, ix) => {
   //             const question = await prisma.question.findUnique({
   //               where: { id: qId },
   //             })
@@ -447,22 +448,23 @@ async function seed(prisma: Prisma.PrismaClient) {
   //                 order: ix,
   //               }),
   //             }
-  //           })
-  //         ),
-  //       },
-  //       owner: {
-  //         connect: {
-  //           id: USER_ID_BF2,
-  //         },
-  //       },
-  //       course: {
-  //         connect: {
-  //           id: COURSE_ID_BF2,
-  //         },
+  //           }
+  //         )
+  //       ),
+  //     },
+  //     owner: {
+  //       connect: {
+  //         id: USER_ID_BF2,
   //       },
   //     },
-  //     update: {},
-  //   })
+  //     course: {
+  //       connect: {
+  //         id: COURSE_ID_BF2,
+  //       },
+  //     },
+  //   },
+  //   update: {},
+  // })
 
   // SELECT DISTINCT(p.id), p.username, gi.results
   // FROM "GroupActivityInstance" gi
@@ -576,7 +578,7 @@ async function seed(prisma: Prisma.PrismaClient) {
   //     //   },
   //     // })
   //   )
-  )
+  // )
 }
 
 const prismaClient = new Prisma.PrismaClient()
