@@ -138,7 +138,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
         <div className="flex flex-row items-center justify-between">
           <Image
             src={participant?.self?.levelData?.avatar ?? ''}
-            alt="Start Level"
+            alt="Old Level"
             width={50}
             height={50}
           />
@@ -155,7 +155,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
                 ? participant?.self?.levelData?.nextLevel?.avatar
                 : participant?.self?.levelData?.avatar) ?? ''
             }
-            alt="Start Level"
+            alt="New Level"
             width={50}
             height={50}
           />

@@ -17,6 +17,10 @@ export const LearningElementStatus = builder.enumType('LearningElementStatus', {
   values: Object.values(DB.LearningElementStatus),
 })
 
+export const QuestionStackType = builder.enumType('QuestionStackType', {
+  values: Object.values(DB.QuestionStackType),
+})
+
 export interface IQuestionStack extends DB.QuestionStack {
   elements?: IStackElement[]
 }
@@ -25,6 +29,7 @@ export const QuestionStackRef =
 export const QuestionStack = QuestionStackRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
+    type: t.expose('type', { type: QuestionStackType }),
     displayName: t.exposeString('displayName', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
     order: t.exposeInt('order', { nullable: true }),

@@ -7,6 +7,7 @@ import { getParticipantToken } from '@lib/token'
 import { Button } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
 import Link from 'next/link'
+import Layout from '../../components/Layout'
 
 interface Props {
   isInactive: boolean
@@ -29,28 +30,30 @@ function Join({ isInactive, shortname }: Props) {
   }
 
   return (
-    <div className="max-w-md p-4 mx-auto mt-4 border rounded">
-      <div className="font-bold">
-        Aktive Sessions von <span className="italic">{shortname}</span>
+    <Layout>
+      <div className="w-full max-w-md p-4 mx-auto mt-4 border rounded">
+        <div className="font-bold">
+          Aktive Sessions von <span className="italic">{shortname}</span>
+        </div>
+        <div className="mt-2 space-y-1">
+          {data.runningSessions.map((session) => (
+            <div className="" key={session.id}>
+              <Link href={`/session/${session.id}`}>
+                <Button fluid className={{ root: 'justify-start gap-4' }}>
+                  <Button.Icon>
+                    <FontAwesomeIcon icon={faExternalLink} />
+                  </Button.Icon>
+                  <Button.Label>
+                    {session.displayName}{' '}
+                    {session.course && `in ${session.course?.displayName}`}
+                  </Button.Label>
+                </Button>
+              </Link>
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="mt-2 space-y-1">
-        {data.runningSessions.map((session) => (
-          <div className="" key={session.id}>
-            <Link href={`/session/${session.id}`}>
-              <Button fluid className={{ root: 'justify-start gap-4' }}>
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faExternalLink} />
-                </Button.Icon>
-                <Button.Label>
-                  {session.displayName}{' '}
-                  {session.course && `in ${session.course?.displayName}`}
-                </Button.Label>
-              </Button>
-            </Link>
-          </div>
-        ))}
-      </div>
-    </div>
+    </Layout>
   )
 }
 
