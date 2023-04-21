@@ -89,7 +89,8 @@
       "pointsCollected": "Points (collected)",
       "participantCount": "Number of participants: {number}",
       "groupCount": "Number of groups: {number}",
-      "averagePoints": "Average points: {number}"
+      "averagePoints": "Average points: {number}",
+      "noPointsCollected": "No points have been collected in this session so far. As soon as this changes, podium and leaderboard will be displayed here."
     },
     "error": {
       "404": "404 Page not found",
@@ -105,7 +106,6 @@
       "setupProfile": "Setup profile",
       "openInBrowser": "Open in browser",
       "selectCourse": "Select course",
-      "bookmarksPlaceholder": "This page is currently under development and will be published soon. All bookmarked questions will be displayed here.",
       "setup": "Log-in and App-Installation",
       "appSetup": "Installation of the KlickerUZH-App",
       "firstLogin": "First login and profile setup",
@@ -132,7 +132,9 @@
       "groupLeaderboardUpdate": "The group leaderboard will be updated daily.<b>x</b>Groups with a single member will not receive any points.",
       "membersScore": "Points by group members",
       "groupActivityScore": "Points by group activities",
-      "totalScore": "Total points"
+      "totalScore": "Total points",
+      "bookmarkedQuestionsTitle": "Bookmarks for {courseName}",
+      "bookmarkedQuestionsDesc": "This page allows you to repeat all questions with bookmarks from the course {courseName}. They will be displayed as a regular learning element."
     },
     "joinCourse": {
       "title": "Join Course \"{name}\"",
@@ -170,7 +172,8 @@
       "addFeedback": "Add feedback",
       "feedbackRequired": "Please add a text to your feedback.",
       "submitFeedback": "Submit feedback",
-      "feedbackTransmitted": "Your feedback has been transmitted successfully."
+      "feedbackTransmitted": "Your feedback has been transmitted successfully.",
+      "infoStack": "Information element"
     },
     "microSession": {
       "notFound": "The corresponding micro session is either not available or not yet active.",
