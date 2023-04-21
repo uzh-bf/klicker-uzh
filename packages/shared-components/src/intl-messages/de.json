@@ -89,7 +89,8 @@
       "pointsCollected": "Punkte (gesammelt)",
       "participantCount": "Anzahl Teilnehmende: {number}",
       "groupCount": "Anzahl Gruppen: {number}",
-      "averagePoints": "Durchschnittliche Punkte: {number}"
+      "averagePoints": "Durchschnittliche Punkte: {number}",
+      "noPointsCollected": "Bisher wurden im Rahmen dieser Session noch keine Punkte gesammelt. Sobald sich dies ändert, werden hier Podium und Rangliste angezeigt."
     },
     "error": {
       "404": "404 Seite nicht gefunden",

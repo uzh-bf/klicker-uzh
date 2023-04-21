@@ -89,7 +89,8 @@
       "pointsCollected": "Points (collected)",
       "participantCount": "Number of participants: {number}",
       "groupCount": "Number of groups: {number}",
-      "averagePoints": "Average points: {number}"
+      "averagePoints": "Average points: {number}",
+      "noPointsCollected": "No points have been collected in this session so far. As soon as this changes, podium and leaderboard will be displayed here."
     },
     "error": {
       "404": "404 Page not found",
