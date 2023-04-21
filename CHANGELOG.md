@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.81](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.80...v3.0.0-alpha.81) (2023-04-21)
+
+
+### Bug Fixes
+
+* ensure that running sessions query works for lecturer and student frontends ([#3546](https://github.com/uzh-bf/klicker-uzh/issues/3546)) ([80ae835](https://github.com/uzh-bf/klicker-uzh/commit/80ae8354350777cb67b3953ff2255df6c8c58473))
+
+
+### Other
+
+* **apps/frontend-pwa:** add layout wrapper around join page ([#3557](https://github.com/uzh-bf/klicker-uzh/issues/3557)) ([2b7c966](https://github.com/uzh-bf/klicker-uzh/commit/2b7c9664135c8e830d365c12ed5116501a561b00))
+* **apps/frontend-pwa:** add offset to progress bar to subtract xp of previous level visually ([#3497](https://github.com/uzh-bf/klicker-uzh/issues/3497)) ([94e5d24](https://github.com/uzh-bf/klicker-uzh/commit/94e5d24b2b332d4ac350f777ce5d088d7d173e5b))
+
+
+### Enhancements
+
+* display bookmarks on student view ([#3466](https://github.com/uzh-bf/klicker-uzh/issues/3466)) ([49c8f96](https://github.com/uzh-bf/klicker-uzh/commit/49c8f9685a859819cf4917287e3a1d81a80cf6cb))
+
 ## [3.0.0-alpha.80](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.79...v3.0.0-alpha.80) (2023-03-30)
 
 
