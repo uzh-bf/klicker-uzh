@@ -106,7 +106,6 @@
       "setupProfile": "Profil einrichten",
       "openInBrowser": "In Browser öffnen",
       "selectCourse": "Kurs auswählen",
-      "bookmarksPlaceholder": "Diese Seite ist aktuell noch in Entwicklung und wird bald publiziert. Hier werden alle mit Bookmarks versehenen Fragen angezeigt werden.",
       "setup": "Log-in und KlickerUZH-App",
       "appSetup": "Installation der KlickerUZH-App",
       "firstLogin": "Erstmaliges Login und Profileinrichtung",
@@ -133,7 +132,9 @@
       "groupLeaderboardUpdate": "Das Gruppenleaderboard wird täglich aktualisiert.<b>x</b>Gruppen mit einem Mitglied erhalten keine Punkte.",
       "membersScore": "Punkte durch Mitglieder",
       "groupActivityScore": "Punkte durch Gruppenaktivitäten",
-      "totalScore": "Total Punkte"
+      "totalScore": "Total Punkte",
+      "bookmarkedQuestionsTitle": "Bookmarks in {courseName}",
+      "bookmarkedQuestionsDesc": "Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie einem gewöhnlichen Lernelement dargestellt."
     },
     "joinCourse": {
       "title": "Kurs \"{name}\" beitreten",
@@ -171,7 +172,8 @@
       "addFeedback": "Feedback hinzufügen",
       "feedbackRequired": "Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu",
       "submitFeedback": "Feedback abschicken",
-      "feedbackTransmitted": "Ihr Feedback wurde erfolgreich übermittelt."
+      "feedbackTransmitted": "Ihr Feedback wurde erfolgreich übermittelt.",
+      "infoStack": "Informationselement"
     },
     "microSession": {
       "notFound": "Unter diesem Link existiert keine Micro-Session oder diese ist noch nicht aktiv.",

@@ -409,6 +409,17 @@ export const Query = builder.queryType({
           return LearningElementService.getBookmarksLearningElement(args, ctx)
         },
       }),
+
+      questionStack: asParticipant.field({
+        nullable: true,
+        type: QuestionStack,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.getQuestionStack(args, ctx)
+        },
+      }),
     }
   },
 })

@@ -1,11 +1,11 @@
 #import "./FQuestionData.graphql"
 
-query GetBookmarkedQuestions($courseId: String!) {
-  getBookmarkedQuestions(courseId: $courseId) {
+query GetSingleQuestionStack($id: Int!) {
+  questionStack(id: $id) {
     id
+    type
     displayName
     description
-    order
     elements {
       id
       order
