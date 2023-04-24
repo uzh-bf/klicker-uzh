@@ -94,7 +94,8 @@ function SingleQuestion({
         setInputValid(false)
         break
     }
-  }, [instance, questionResponse, setInputValid, setResponse])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instance, questionResponse])
 
   const questionData = instance.questionData
 
