@@ -1,0 +1,10 @@
+query GetMicroSessions {
+  microSessions {
+    id
+    displayName
+    course {
+      id
+      displayName
+    }
+  }
+}

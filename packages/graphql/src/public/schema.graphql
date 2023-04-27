@@ -361,6 +361,7 @@ type Level {
 }
 
 type MicroSession {
+  arePushNotificationsSent: Boolean!
   course: Course
   description: String
   displayName: String!
@@ -581,6 +582,7 @@ type Query {
   learningElements: [LearningElement!]
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
+  microSessions: [MicroSession!]
   participantCourses: [Course!]
   participantDetails(participantId: String!): Participant
   participantGroups(courseId: String!): [ParticipantGroup!]
