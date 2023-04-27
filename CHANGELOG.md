@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.82](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.81...v3.0.0-alpha.82) (2023-04-24)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that home button works on learning element stacks ([#3566](https://github.com/uzh-bf/klicker-uzh/issues/3566)) ([c4f0365](https://github.com/uzh-bf/klicker-uzh/commit/c4f0365743db6e0702c3a31fa737db10849d0b36))
+
 ## [3.0.0-alpha.81](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.80...v3.0.0-alpha.81) (2023-04-21)
 
 
