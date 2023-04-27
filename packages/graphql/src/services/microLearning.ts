@@ -1,6 +1,5 @@
 import {
   Attachment,
-  MicroSession,
   MicroSessionStatus,
   Question,
   QuestionInstanceType,
@@ -10,7 +9,6 @@ import { GraphQLError } from 'graphql'
 import { pick } from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
-import dayjs from 'dayjs'
 
 export async function getQuestionMap(
   questions: number[],
@@ -134,26 +132,6 @@ export async function getSingleMicroSession(
   if (!microSession) return null
 
   return microSession
-}
-
-export async function getMicroSessionsForPushNotifications( ctx: Context) {
-  const microSessions = await ctx.prisma.microSession.findMany({
-    include: {
-      course: true,
-      instances: false,
-    },
-  })
-
-  const filteredMicroSessions = microSessions.filter((microSession: MicroSession) => {
-    return (
-      microSession.status === MicroSessionStatus.PUBLISHED &&
-      microSession.scheduledStartAt.isSameOrBefore(dayjs()) &&
-      dayjs().isBefore(microSession.scheduledEndAt)  &&
-      microSession.arePushNotificationsSent === false
-    )
-  })
-
-  return filteredMicroSessions
 }
 
 interface MarkMicroSessionCompletedArgs {

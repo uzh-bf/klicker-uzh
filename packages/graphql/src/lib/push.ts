@@ -1,5 +1,7 @@
+import { PushSubscription } from '@klicker-uzh/prisma'
 import * as dotenv from 'dotenv'
 import webpush from 'web-push'
+import { Context } from './context'
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -47,9 +49,9 @@ webpush.setVapidDetails(
 
 // console.log(result)
 
-async function sendPushNotifications() {
-  for (let sub of SUBSCRIPTIONS) {
-    console.log(sub.username)
+export async function sendPushNotificationsToSubscribers(subscriptions: PushSubscription[], ctx: Context) {
+  for (let sub of subscriptions) {
+    console.log(sub.participantId, sub.courseId, sub.endpoint)
     await sleep(500)
     try {
       const result = await webpush.sendNotification(
@@ -67,10 +69,19 @@ async function sendPushNotifications() {
         })
       )
       console.log(result)
-    } catch (e) {
-      console.log(e)
+    } catch (error) {
+      console.log("An error occured while trying to send the push notification", error)
+      if (error.statusCode === 410) {
+        // subscription has expired or is no longer valid
+        // remove it from the database
+        await ctx.prisma.pushSubscription.delete({
+          where: {
+            id: sub.id,
+          },
+        })
+      }
     }
   }
 }
 
-sendPushNotifications()
+// sendPushNotifications()

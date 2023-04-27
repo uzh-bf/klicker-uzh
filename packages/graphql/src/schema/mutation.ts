@@ -827,6 +827,14 @@ export const Mutation = builder.mutationType({
           return ParticipantGroupService.updateGroupAverageScores(ctx)
         },
       }),
+
+      sendPushNotifications: t.boolean({
+        resolve(_, __, ctx) {
+          return NotificationService.sendPushNotifications(ctx)
+          .then(() => true)
+          .catch(() => false)
+        }
+      }),
     }
   },
 })

@@ -253,14 +253,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      microSessions: t.field({
-        nullable: true,
-        type: [MicroSession],
-        resolve(_, __, ctx) {
-          return MicroSessionService.getMicroSessionsForPushNotifications(ctx)
-        },
-      }),
-
       participantGroups: asAuthenticated.field({
         nullable: true,
         type: [ParticipantGroup],

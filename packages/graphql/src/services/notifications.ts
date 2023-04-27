@@ -1,5 +1,9 @@
-import { ContextWithUser } from '../lib/context'
-
+import { MicroSession, MicroSessionStatus, PushSubscription } from '@klicker-uzh/prisma'
+import { Context, ContextWithUser } from '../lib/context'
+import * as dotenv from 'dotenv'
+import webpush from 'web-push'
+import result from 'src/ops'
+// import { sendPushNotificationsToSubscribers } from '../lib/push'
 interface SubscriptionObjectInput {
   endpoint: string
   expirationTime?: number | null | undefined
@@ -48,4 +52,92 @@ export async function subscribeToPush(
       subscriptions: true,
     },
   })
+}
+
+export async function sendPushNotifications( ctx: Context) {
+  const microSessions = await ctx.prisma.microSession.findMany({
+    where: {
+      status: MicroSessionStatus.PUBLISHED,
+      scheduledStartAt: {
+        lte: new Date(),
+      },
+      scheduledEndAt: {
+        gt: new Date(),
+      },
+      arePushNotificationsSent: false,
+    },
+    include: {
+      course: true,
+      instances: false,
+    },
+  })
+
+  microSessions.forEach(async (microSession: MicroSession) => {
+    const subscriptions = await ctx.prisma.subscription.findMany({
+      where: {
+        courseId: microSession.courseId,
+      },
+    })
+
+    await sendPushNotificationsToSubscribers(subscriptions, ctx);
+    
+    //update microSession to prevent sending push notifications multiple times
+    await ctx.prisma.microSession.update({
+      where: {
+        id: microSession.id,
+      },
+      data: {
+        arePushNotificationsSent: true,
+      },
+    })
+  })
+
+  return true
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+dotenv.config()
+
+webpush.setVapidDetails(
+  'mailto:klicker.support@uzh.ch',
+  process.env.VAPID_PUBLIC_KEY as string,
+  process.env.VAPID_PRIVATE_KEY as string
+)
+
+async function sendPushNotificationsToSubscribers(subscriptions: PushSubscription[], ctx: Context) {
+  for (let sub of subscriptions) {
+    console.log(sub.participantId, sub.courseId, sub.endpoint)
+    await sleep(500)
+    try {
+      const result = await webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: {
+            auth: sub.auth,
+            p256dh: sub.p256dh,
+          },
+        },
+        JSON.stringify({
+          message:
+            'Das Microlearning für BFI Woche 5 ist bis morgen um 09:00 verfügbar.',
+          title: 'KlickerUZH - Neues Microlearning',
+        })
+      )
+      console.log(result)
+    } catch (error) {
+      console.log("An error occured while trying to send the push notification", error)
+      if (error.statusCode === 410) {
+        // subscription has expired or is no longer valid
+        // remove it from the database
+        await ctx.prisma.pushSubscription.delete({
+          where: {
+            id: sub.id,
+          },
+        })
+      }
+    }
+  }
 }
