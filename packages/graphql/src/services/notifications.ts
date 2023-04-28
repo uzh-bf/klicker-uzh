@@ -1,5 +1,6 @@
 import { MicroSession, MicroSessionStatus, PushSubscription } from '@klicker-uzh/prisma'
-import { Context, ContextWithUser } from '../lib/context'import webpush from 'web-push'
+import { Context, ContextWithUser } from '../lib/context'
+import webpush from 'web-push'
 
 interface SubscriptionObjectInput {
   endpoint: string
@@ -73,7 +74,8 @@ export async function sendPushNotifications( ctx: Context) {
     include: {
       course: {
         include: {
-          pushSubscription: true,
+          subscriptions: true,
+        },
       },
       instances: false,
     },
@@ -81,12 +83,11 @@ export async function sendPushNotifications( ctx: Context) {
 
   console.log("Sending push notifications to the following microsessions:", microSessions)
 
-  await Promise.all(
+ await Promise.all(
     microSessions.map(async (microSession: MicroSession) => {
       try {
-        console.log("Sending push notifications to the following subscriptions:", microSession.pushSubscription)
-        const result = await sendPushNotificationsToSubscribers(microSession.pushSubscription, ctx);
-        console.log("Push notifications sent successfully: ", result)
+        console.log("Sending push notifications to the following subscriptions:", microSession.course.subscriptions)
+        await sendPushNotificationsToSubscribers(microSession.course.subscriptions, ctx);
         
         //update microSession to prevent sending push notifications multiple times
         const updatedMicroSession = await ctx.prisma.microSession.update({
@@ -100,11 +101,11 @@ export async function sendPushNotifications( ctx: Context) {
 
         console.log("Updated microSession: ", updatedMicroSession)
       } catch (error) {
-        console.log("An error occured while trying to send the push notifications to the following subscriptions:", microSession.pushSubscription)
+        console.log("An error occured while trying to send the push notifications to the following subscriptions:", microSession.course.pushSubscription)
         console.log(error)
       }
     })
-  )
+ )
 
   return true
 }
