@@ -22,6 +22,7 @@ export async function subscribeToPush(
   { subscriptionObject, courseId }: SubscribeToPushArgs,
   ctx: ContextWithUser
 ) {
+  console.log("subscriptionObject", subscriptionObject)
   return ctx.prisma.participation.update({
     where: {
       courseId_participantId: { courseId, participantId: ctx.user.sub },
@@ -55,6 +56,12 @@ export async function subscribeToPush(
 }
 
 export async function sendPushNotifications( ctx: Context) {
+  webpush.setVapidDetails(
+    'mailto:klicker.support@uzh.ch',
+    process.env.VAPID_PUBLIC_KEY as string,
+    process.env.VAPID_PRIVATE_KEY as string
+  )
+  
   const microSessions = await ctx.prisma.microSession.findMany({
     where: {
       status: MicroSessionStatus.PUBLISHED,
@@ -72,24 +79,27 @@ export async function sendPushNotifications( ctx: Context) {
     },
   })
 
+  console.log("Sending push notifications to the following microsessions:", microSessions)
+
   microSessions.forEach(async (microSession: MicroSession) => {
-    const subscriptions = await ctx.prisma.subscription.findMany({
+    const subscriptions = await ctx.prisma.pushSubscription.findMany({
       where: {
         courseId: microSession.courseId,
       },
     })
 
+    console.log("Sending push notifications to the following subscriptions:", subscriptions)
     await sendPushNotificationsToSubscribers(subscriptions, ctx);
     
-    //update microSession to prevent sending push notifications multiple times
-    await ctx.prisma.microSession.update({
-      where: {
-        id: microSession.id,
-      },
-      data: {
-        arePushNotificationsSent: true,
-      },
-    })
+    // //update microSession to prevent sending push notifications multiple times
+    // await ctx.prisma.microSession.update({
+    //   where: {
+    //     id: microSession.id,
+    //   },
+    //   data: {
+    //     arePushNotificationsSent: true,
+    //   },
+    // })
   })
 
   return true
@@ -99,18 +109,18 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-dotenv.config()
-
-webpush.setVapidDetails(
-  'mailto:klicker.support@uzh.ch',
-  process.env.VAPID_PUBLIC_KEY as string,
-  process.env.VAPID_PRIVATE_KEY as string
-)
-
 async function sendPushNotificationsToSubscribers(subscriptions: PushSubscription[], ctx: Context) {
   for (let sub of subscriptions) {
     console.log(sub.participantId, sub.courseId, sub.endpoint)
     await sleep(500)
+    const subscription = {
+      endpoint: sub.endpoint,
+      keys: {
+        auth: sub.auth,
+        p256dh: sub.p256dh,
+      },
+    }
+    console.log("Sending push notification to the following subscription: ", subscription)
     try {
       const result = await webpush.sendNotification(
         {
@@ -126,9 +136,9 @@ async function sendPushNotificationsToSubscribers(subscriptions: PushSubscriptio
           title: 'KlickerUZH - Neues Microlearning',
         })
       )
-      console.log(result)
+      console.log("Push notification sent successfully: ", result)
     } catch (error) {
-      console.log("An error occured while trying to send the push notification", error)
+      console.log("An error occured while trying to send the push notification: ", error)
       if (error.statusCode === 410) {
         // subscription has expired or is no longer valid
         // remove it from the database

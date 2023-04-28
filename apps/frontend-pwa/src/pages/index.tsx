@@ -11,10 +11,11 @@ import {
 import {
   MicroSession,
   ParticipationsDocument,
+  SendPushNotificationsDocument,
   Session,
   SubscribeToPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H1, UserNotification } from '@uzh-bf/design-system'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
@@ -52,6 +53,11 @@ const Index = function () {
   }, [])
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
+  const [sendPushNotifications] = useMutation(SendPushNotificationsDocument)
+
+  // if (!pushDisabled) {
+  //   sendPushNotifications()
+  // }
 
   const {
     courses,
@@ -156,6 +162,7 @@ const Index = function () {
     } else {
       // Case 2a: User already has a push subscription
       if (subscription) {
+        console.log('subscription: ', subscription)
         subscribeToPush({
           variables: {
             subscriptionObject: subscription,
@@ -169,6 +176,7 @@ const Index = function () {
             registration!,
             courseId
           )
+          console.log('newSubscription: ', newSubscription)
           setSubscription(newSubscription)
           subscribeToPush({
             variables: {
@@ -296,6 +304,17 @@ const Index = function () {
             <LinkButton icon={faCirclePlus} href="/join">
               {t('pwa.general.joinCourse')}
             </LinkButton>
+            <Button
+              onClick={() => {
+                console.log(
+                  'send push notification including current subscription: ',
+                  subscription
+                )
+                sendPushNotifications()
+              }}
+            >
+              Send Push Notification
+            </Button>
           </div>
         </div>
         {userInfo && <UserNotification type="info" message={userInfo} />}

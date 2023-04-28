@@ -831,8 +831,6 @@ export const Mutation = builder.mutationType({
       sendPushNotifications: t.boolean({
         resolve(_, __, ctx) {
           return NotificationService.sendPushNotifications(ctx)
-          .then(() => true)
-          .catch(() => false)
         }
       }),
     }
