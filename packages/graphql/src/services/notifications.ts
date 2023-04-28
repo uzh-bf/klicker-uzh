@@ -53,6 +53,32 @@ export async function subscribeToPush(
   })
 }
 
+interface UnsubscribeToPushArgs {
+  courseId: string
+  endpoint: string
+}
+
+export async function unsubscribeFromPush( 
+  { courseId, endpoint }: UnsubscribeToPushArgs,
+  ctx: Context
+) {
+  console.log("Unsubscribing from push notifications for the following courseId and endpoint: ", courseId, endpoint)
+
+  try {
+    await ctx.prisma.pushSubscription.delete({
+      where: {
+        endpoint,
+        courseId
+      },
+    })
+    return true
+  } catch(error) {
+    console.log("An error occured while trying to unsubscribe from push notifications for the following courseId and endpoint: ", courseId, endpoint)
+    console.log(error)
+    return false
+  }
+}
+
 export async function sendPushNotifications( ctx: Context) {
   webpush.setVapidDetails(
     'mailto:klicker.support@uzh.ch',

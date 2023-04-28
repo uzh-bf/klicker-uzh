@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { boolean } from 'mathjs'
 import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
@@ -282,6 +283,17 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return NotificationService.subscribeToPush(args, ctx)
+        },
+      }),
+
+      unsubscribeFromPush: t.boolean({
+        nullable: true,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          endpoint: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return NotificationService.unsubscribeFromPush(args, ctx)
         },
       }),
 

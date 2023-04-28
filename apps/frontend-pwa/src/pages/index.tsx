@@ -14,6 +14,7 @@ import {
   SendPushNotificationsDocument,
   Session,
   SubscribeToPushDocument,
+  UnsubscribeFromPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -52,7 +53,10 @@ const Index = function () {
     })
   }, [])
 
+  console.log('userInfo: ', userInfo)
+
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
+  const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
   const [sendPushNotifications] = useMutation(SendPushNotificationsDocument)
 
   // if (!pushDisabled) {
@@ -178,12 +182,13 @@ const Index = function () {
           )
           console.log('newSubscription: ', newSubscription)
           setSubscription(newSubscription)
-          subscribeToPush({
+          const result = await subscribeToPush({
             variables: {
               subscriptionObject: newSubscription,
               courseId,
             },
           })
+          console.log('result: ', result)
         } catch (e) {
           console.error(e)
           // Push notifications are disabled
@@ -314,6 +319,16 @@ const Index = function () {
               }}
             >
               Send Push Notification
+            </Button>
+            <Button
+              disabled={!subscription}
+              onClick={async () =>
+                await unsubscribeFromPush({
+                  variables: { id: subscription?.id },
+                })
+              }
+            >
+              unsubscribe from push notifications
             </Button>
           </div>
         </div>
