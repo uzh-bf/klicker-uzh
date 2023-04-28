@@ -17,7 +17,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "generate": "graphql-codegen --config codegen.ts",
-    "push": "ts-node --esm src/lib/push.ts",
     "size": "size-limit",
     "check": "tsc --noEmit"
   },

@@ -7,8 +7,5 @@
   },
   "ts-node": {
     "transpileOnly": true,
-    "moduleTypes": {
-      "src/lib/push.ts": "esm"
-    }
   }
 }
