@@ -1,9 +1,6 @@
 import { MicroSession, MicroSessionStatus, PushSubscription } from '@klicker-uzh/prisma'
-import { Context, ContextWithUser } from '../lib/context'
-import * as dotenv from 'dotenv'
-import webpush from 'web-push'
-import result from 'src/ops'
-// import { sendPushNotificationsToSubscribers } from '../lib/push'
+import { Context, ContextWithUser } from '../lib/context'import webpush from 'web-push'
+
 interface SubscriptionObjectInput {
   endpoint: string
   expirationTime?: number | null | undefined
@@ -61,7 +58,7 @@ export async function sendPushNotifications( ctx: Context) {
     process.env.VAPID_PUBLIC_KEY as string,
     process.env.VAPID_PRIVATE_KEY as string
   )
-  
+
   const microSessions = await ctx.prisma.microSession.findMany({
     where: {
       status: MicroSessionStatus.PUBLISHED,
@@ -74,33 +71,40 @@ export async function sendPushNotifications( ctx: Context) {
       arePushNotificationsSent: false,
     },
     include: {
-      course: true,
+      course: {
+        include: {
+          pushSubscription: true,
+      },
       instances: false,
     },
   })
 
   console.log("Sending push notifications to the following microsessions:", microSessions)
 
-  microSessions.forEach(async (microSession: MicroSession) => {
-    const subscriptions = await ctx.prisma.pushSubscription.findMany({
-      where: {
-        courseId: microSession.courseId,
-      },
-    })
+  await Promise.all(
+    microSessions.map(async (microSession: MicroSession) => {
+      try {
+        console.log("Sending push notifications to the following subscriptions:", microSession.pushSubscription)
+        const result = await sendPushNotificationsToSubscribers(microSession.pushSubscription, ctx);
+        console.log("Push notifications sent successfully: ", result)
+        
+        //update microSession to prevent sending push notifications multiple times
+        const updatedMicroSession = await ctx.prisma.microSession.update({
+          where: {
+            id: microSession.id,
+          },
+          data: {
+            arePushNotificationsSent: true,
+          },
+        })
 
-    console.log("Sending push notifications to the following subscriptions:", subscriptions)
-    await sendPushNotificationsToSubscribers(subscriptions, ctx);
-    
-    // //update microSession to prevent sending push notifications multiple times
-    // await ctx.prisma.microSession.update({
-    //   where: {
-    //     id: microSession.id,
-    //   },
-    //   data: {
-    //     arePushNotificationsSent: true,
-    //   },
-    // })
-  })
+        console.log("Updated microSession: ", updatedMicroSession)
+      } catch (error) {
+        console.log("An error occured while trying to send the push notifications to the following subscriptions:", microSession.pushSubscription)
+        console.log(error)
+      }
+    })
+  )
 
   return true
 }
@@ -140,13 +144,17 @@ async function sendPushNotificationsToSubscribers(subscriptions: PushSubscriptio
     } catch (error) {
       console.log("An error occured while trying to send the push notification: ", error)
       if (error.statusCode === 410) {
-        // subscription has expired or is no longer valid
-        // remove it from the database
-        await ctx.prisma.pushSubscription.delete({
-          where: {
-            id: sub.id,
-          },
-        })
+        try {
+          // subscription has expired or is no longer valid
+          // remove it from the database
+          await ctx.prisma.pushSubscription.delete({
+            where: {
+              id: sub.id,
+            },
+          })
+        } catch (error) {
+          console.log("An error occured while trying to remove the expired subscription from the database: ", error)
+        }
       }
     }
   }
