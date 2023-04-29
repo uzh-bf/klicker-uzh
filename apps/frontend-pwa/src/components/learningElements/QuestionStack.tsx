@@ -334,6 +334,7 @@ function QuestionStack({
             : () => handleSubmitResponse()
         }
         disabled={!allValid && !isEvaluation}
+        data={{ cy: 'learning-element-continue' }}
       >
         {isEvaluation || informationOnly
           ? t('shared.generic.continue')

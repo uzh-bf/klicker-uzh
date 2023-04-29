@@ -47,13 +47,15 @@ describe('Different learning element workflows', () => {
         cy.get('[data-cy="next-or-submit"]').click()
 
         // step 3
-        const dataTransfer = new DataTransfer();
-        cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
-            dataTransfer
-        });
-        cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
-            dataTransfer
-        });
+        for (let i = 0; i < 2; i++) {
+            const dataTransfer = new DataTransfer();
+            cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
+                dataTransfer
+            });
+            cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+                dataTransfer
+            });
+        }
         cy.get('[data-cy="next-or-submit"]').click();
 
         cy.get('[data-cy="load-session-list"]').click();
@@ -65,7 +67,7 @@ describe('Different learning element workflows', () => {
         cy.get('[data-cy="verify-publish-action"]').click()
         cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').contains('Published');
 
-        // sign in as student
+        // sign in as student and answer learning element
         cy.clearAllCookies();
         cy.visit(Cypress.env('URL_STUDENT'));
         cy.get('[data-cy="username-field"]').click().type(Cypress.env('STUDENT_USERNAME'));
@@ -75,6 +77,30 @@ describe('Different learning element workflows', () => {
         cy.findByText('Repetition').click();
         cy.get('[data-cy="repetition-element"]').contains(learningElementDisplayName).click();
         cy.get('[data-cy="start-learning-element"]').click();
-        // TODO: answer one question once bug is fixed (questions in learning elements are currently not correctly fetched) 
+        cy.findByText("50%").click();
+        cy.get('[data-cy="learning-element-continue"]').click();
+        cy.wait(1000);
+        cy.get('[data-cy="learning-element-continue"]').click();
+        cy.findByText("50%").click();
+        cy.get('[data-cy="learning-element-continue"]').click();
+        cy.wait(1000);
+        cy.get('[data-cy="learning-element-continue"]').click();
+
+        // sign in as student on mobile and answer learning element again
+        cy.clearAllCookies();
+        cy.visit(Cypress.env('URL_STUDENT'));
+        cy.viewport('iphone-x');
+        cy.get('[data-cy="username-field"]').click().type(Cypress.env('STUDENT_USERNAME'));
+        cy.get('[data-cy="password-field"]').click().type(Cypress.env('STUDENT_PASSWORD'));
+        cy.get('[data-cy="submit-login"]').click();
+
+        cy.findByText('Repetition').click();
+        cy.get('[data-cy="repetition-element"]').contains(learningElementDisplayName).click();
+        cy.get('[data-cy="start-learning-element"]').click();
+        cy.findByText("50%").click();
+        cy.get('[data-cy="learning-element-continue"]').click();
+        cy.wait(1000);
+        cy.get('[data-cy="learning-element-continue"]').click();
+        cy.viewport('macbook-16');
     })
 })
