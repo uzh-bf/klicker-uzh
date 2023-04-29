@@ -115,7 +115,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
                 : console.log('Logout failed')
             }}
             className={{ title: 'text-base font-bold', root: 'p-2' }}
-            data-cy={{ cy: 'logout' }}
+            data={{ cy: 'logout' }}
           />
         </Navigation.TriggerItem>
       </Navigation>
