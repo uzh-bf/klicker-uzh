@@ -154,4 +154,78 @@ export const LEARNING_ELEMENTS = [
   //   orderType: OrderType.SEQUENTIAL,
   //   stacks: [],
   // },
+  // {
+  //   id: '1e9cd20e-6c64-4776-abb6-9f05c39a4556',
+  //   name: 'BFII Modul 4',
+  //   displayName: 'BFII Modul 4 - Lernfragen',
+  //   description: '',
+  //   orderType: OrderType.LAST_RESPONSE,
+  //   stacks: [
+  //     {
+  //       elements: [562],
+  //     },
+  //     {
+  //       elements: [563],
+  //     },
+  //     {
+  //       displayName: 'Modul 4 - Present Value',
+  //       description: `
+  // Gegeben ist folgende Ausgangslage:
+  // ![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul4_Ausgangslage_Present%20Value.png)
+  // [Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul4_Present%20Value.xlsx)
+  //         `,
+  //       elements: [801, 802, 803],
+  //     },
+  //     {
+  //       displayName: 'Modul 4 - Future Value I',
+  //       description: `
+  // Gegeben ist folgende Ausgangslage:
+  // ![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul4_Ausgangslage_Future%20Value%20I.png)
+  // [Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul4_Future%20Value%20I.xlsx)
+  //         `,
+  //       elements: [805, 806, 807],
+  //     },
+  //     {
+  //       elements: [808],
+  //     },
+  //     {
+  //       elements: [564],
+  //     },
+  //     {
+  //       elements: [566],
+  //     },
+  //     {
+  //       elements: [567],
+  //     },
+  //     {
+  //       elements: [568],
+  //     },
+  //     {
+  //       elements: [569],
+  //     },
+  //     {
+  //       elements: [570],
+  //     },
+  //     {
+  //       elements: [571],
+  //     },
+  //     {
+  //       displayName: 'Modul 4 - Duration',
+  //       description: `
+  // Gegeben ist folgende Ausgangslage:
+  // ![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul4_Ausgangslage_Duration.png)
+  // [Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul4_Duration.xlsx)
+  //         `,
+  //       elements: [809, 810],
+  //     },
+  //   ],
+  // },
+  // {
+  //   id: 'a749be66-804c-4d9b-9cab-793f2e1e5b3a',
+  //   name: 'BFII Repetition Microlearning',
+  //   displayName: 'BFII Repetition Microlearning',
+  //   description: '',
+  //   orderType: OrderType.SEQUENTIAL,
+  //   stacks: [],
+  // },
 ]
