@@ -1,40 +1,42 @@
-import Prisma from '@klicker-uzh/prisma'
+import Prisma, { Question } from '@klicker-uzh/prisma'
+import { COURSE_ID_BF2, USER_ID_BF2 } from './constants'
+import * as DATA_BF2 from './data/BF2'
+import { prepareLearningElement } from './helpers'
 // import * as R from 'ramda'
-// import { COURSE_ID_BF2, USER_ID_BF2 } from './constants.js'
 // import { prepareQuestionInstance } from './helpers.js'
 
 async function seed(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)
 
-  // const questions = await prisma.question.findMany({
-  //   orderBy: { id: 'desc' },
-  //   where: {
-  //     ownerId: USER_ID_BF2,
-  //   },
-  // })
+  const questions = await prisma.question.findMany({
+    orderBy: { id: 'desc' },
+    where: {
+      ownerId: USER_ID_BF2,
+    },
+  })
 
-  // const learningElements = await Promise.all(
-  //   DATA_BF2.LEARNING_ELEMENTS.map(async (data) =>
-  //     prisma.learningElement.upsert(
-  //       await prepareLearningElement({
-  //         ...data,
-  //         ownerId: USER_ID_BF2,
-  //         courseId: COURSE_ID_BF2,
-  //         stacks: data.stacks.map((stack, index) => {
-  //           return {
-  //             ...stack,
-  //             elements: stack.elements.map((element) => {
-  //               if (typeof element !== 'string') {
-  //                 return questions.find((q) => q.id === element) as Question
-  //               }
-  //               return element
-  //             }),
-  //           }
-  //         }),
-  //       })
-  //     )
-  //   )
-  // )
+  const learningElements = await Promise.all(
+    DATA_BF2.LEARNING_ELEMENTS.map(async (data) =>
+      prisma.learningElement.upsert(
+        await prepareLearningElement({
+          ...data,
+          ownerId: USER_ID_BF2,
+          courseId: COURSE_ID_BF2,
+          stacks: data.stacks.map((stack, index) => {
+            return {
+              ...stack,
+              elements: stack.elements.map((element) => {
+                if (typeof element !== 'string') {
+                  return questions.find((q) => q.id === element) as Question
+                }
+                return element
+              }),
+            }
+          }),
+        })
+      )
+    )
+  )
 
   // const GROUP_ACTIVITY_ID = 'b83657a5-4d19-449d-b378-208b7cb2e8e0'
   // const groupActivity1BF2 = await prisma.groupActivity.upsert({
