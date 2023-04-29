@@ -39,5 +39,11 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'));
     cy.get('[data-cy="submit-login"]').click();
     cy.get('[data-cy="homepage"]').should('exist');
+
+    cy.get('[data-cy="user-menu"]').click();
+    cy.get('[data-cy="user-menu"]').children().last().click();
+    cy.findByText("Logout").click();
+    cy.wait(1000);
+    cy.url().then(url => url.includes("www.klicker.uzh.ch"));
   })
 })
