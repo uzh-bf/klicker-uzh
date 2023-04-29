@@ -34,6 +34,7 @@ function LearningElement({
             value={currentIx}
             max={element.stacks?.length ?? 0}
             onItemClick={(ix: number) => setCurrentIx(ix)}
+            data={{ cy: 'learning-element-progress' }}
           />
         </div>
       )}

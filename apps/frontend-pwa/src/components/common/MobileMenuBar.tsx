@@ -11,6 +11,10 @@ interface MobileMenuBarProps {
     value: string
     unseenItems?: number
     showBadge?: boolean
+    data?: {
+      cy?: string
+      test?: string
+    }
   }[]
   onClick?: (value: string) => void
   participantMissing?: boolean
@@ -26,6 +30,7 @@ function MobileMenuBar({
     icon: <FontAwesomeIcon icon={faHome} size="lg" />,
     value: 'home',
     onClick: () => Router.push('/'),
+    data: { cy: 'mobile-menu-home' },
   }
   const items = participantMissing
     ? menuItems
@@ -61,6 +66,7 @@ function MobileMenuBar({
                 onClick(item.value)
               }
             }}
+            data={item.data}
           >
             <div>{item.icon}</div>
             <div className="text-xs">{item.label}</div>

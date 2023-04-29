@@ -101,6 +101,16 @@ describe('Different learning element workflows', () => {
         cy.get('[data-cy="learning-element-continue"]').click();
         cy.wait(1000);
         cy.get('[data-cy="learning-element-continue"]').click();
+
+        // navigate back to the home menu and then continue the learning element from step 2
+        cy.get('[data-cy="mobile-menu-home"]').click();
+        cy.findByText('Repetition').click();
+        cy.get('[data-cy="repetition-element"]').contains(learningElementDisplayName).click();
+        cy.get('[data-cy="learning-element-progress"]').children().eq(1).click();
+        cy.findByText("50%").click();
+        cy.get('[data-cy="learning-element-continue"]').click();
+        cy.wait(1000);
+        cy.get('[data-cy="learning-element-continue"]').click();
         cy.viewport('macbook-16');
     })
 })
