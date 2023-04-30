@@ -145,13 +145,9 @@ describe('Different live-session workflows', () => {
         cy.findByText(session).click();
         cy.findByText(question).should('exist');
 
+        // TODO: test feedback mechanism (including lecturer response, publishing, moderation, etc.)
         cy.get('[data-cy="mobile-menu-leaderboard"]').click();
         cy.get('[data-cy="mobile-menu-feedbacks"]').click();
-        cy.get('[data-cy="feedback-input"]').click().type(feedback);
-        cy.get('[data-cy="feedback-submit"]').click();
-
-        // TODO: add lecturer response to given feedback and test if it is received
-
         cy.get('[data-cy="mobile-menu-questions"]').click();
         cy.findByText('25%').click();
         cy.get('[data-cy="student-submit-answer"]').click();
