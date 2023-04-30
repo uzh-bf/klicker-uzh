@@ -111,6 +111,7 @@ describe('Different learning element workflows', () => {
         cy.get('[data-cy="learning-element-continue"]').click();
         cy.wait(1000);
         cy.get('[data-cy="learning-element-continue"]').click();
+        cy.get('[data-cy="mobile-menu-home"]').click();
         cy.viewport('macbook-16');
     })
 })

@@ -64,6 +64,7 @@ describe('Different live-session workflows', () => {
         const sessionTitle = 'Test Session ' + randomNumber;
         const questionTitle = 'A Single Choice ' + randomNumber;
         const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber;
+        const feedback = 'This is a test feedback';
     
         cy.get('[data-cy="create-question"]').click();
         cy.get('[data-cy="insert-question-title"]').click().type(questionTitle);
@@ -103,7 +104,6 @@ describe('Different live-session workflows', () => {
         }
     
         cy.get('[data-cy="add-block"]').click();
-        const dataTransfer = new DataTransfer();
         for (let i = 0; i < 2; i++) {
           const dataTransfer = new DataTransfer();
           cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
@@ -134,7 +134,7 @@ describe('Different live-session workflows', () => {
         cy.get('[data-cy="student-submit-answer"]').click();
         cy.wait(500);
 
-        // login student again on mobile and answer second question
+        // login student again on mobile, test navigation and answer second question
         cy.clearAllCookies();
         cy.visit(Cypress.env('URL_STUDENT'));
         cy.viewport('iphone-x');
@@ -143,6 +143,16 @@ describe('Different live-session workflows', () => {
         cy.get('[data-cy="submit-login"]').click();
         cy.wait(1000);
         cy.findByText(session).click();
+        cy.findByText(question).should('exist');
+
+        cy.get('[data-cy="mobile-menu-leaderboard"]').click();
+        cy.get('[data-cy="mobile-menu-feedbacks"]').click();
+        cy.get('[data-cy="feedback-input"]').click().type(feedback);
+        cy.get('[data-cy="feedback-submit"]').click();
+
+        // TODO: add lecturer response to given feedback and test if it is received
+
+        cy.get('[data-cy="mobile-menu-questions"]').click();
         cy.findByText('25%').click();
         cy.get('[data-cy="student-submit-answer"]').click();
         cy.wait(500);
