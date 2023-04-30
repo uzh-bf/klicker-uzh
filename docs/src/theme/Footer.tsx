@@ -14,14 +14,14 @@ const Footer = () => {
           <img
             src="/img/KlickerLogo.png"
             className={twMerge(
-              'transition-opacity duration-1000 ease-out opacity-50 w-52 hover:opacity-100',
+              'transition-opacity duration-1000 ease-out opacity-50 w-52 sm:hover:opacity-100',
               !isDarkTheme && 'hidden'
             )}
           />
           <img
             src="/img/KlickerLogo.png"
             className={twMerge(
-              'transition-opacity duration-1000 ease-out opacity-50 w-52 hover:opacity-100',
+              'transition-opacity duration-1000 ease-out opacity-50 w-52 sm:hover:opacity-100',
               isDarkTheme && 'hidden'
             )}
           />

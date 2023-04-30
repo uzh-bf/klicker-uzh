@@ -59,7 +59,7 @@ function QuestionBlock({
           <Button
             onClick={() => remove(index)}
             className={{
-              root: 'w-6 flex justify-center text-white bg-red-500 rounded hover:bg-red-600',
+              root: 'w-6 flex justify-center text-white bg-red-500 rounded sm:hover:bg-red-600',
             }}
           >
             <FontAwesomeIcon icon={faTrash} />
