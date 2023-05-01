@@ -1,4 +1,9 @@
-import { QuestionInstance, QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import {
+  QuestionInstance,
+  QuestionType,
+  SelfDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   validateFreeTextResponse,
   validateKprimResponse,
@@ -34,6 +39,8 @@ function SingleQuestion({
 
   const [modalOpen, setModalOpen] = useState(false)
   const [questionResponse, setQuestionResponse] = useState(response)
+
+  const { data: dataParticipant } = useQuery(SelfDocument)
 
   useEffect(() => {
     setResponse(questionResponse)
@@ -112,11 +119,13 @@ function SingleQuestion({
                   total: totalSteps,
                 })}
               </div>
-              <FlagQuestionModal
-                open={modalOpen}
-                setOpen={setModalOpen}
-                instanceId={instance.id!}
-              />
+              {dataParticipant?.self && (
+                <FlagQuestionModal
+                  open={modalOpen}
+                  setOpen={setModalOpen}
+                  instanceId={instance.id!}
+                />
+              )}
             </div>
           </div>
 
