@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import FlagQuestionModal from '@components/flags/FlagQuestionModal'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookmark as faBookmarkFilled,
@@ -11,6 +12,7 @@ import {
   QuestionStack,
   QuestionType,
   ResponseToQuestionInstanceDocument,
+  SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import formatResponse from '@lib/formatResponse'
 import { Button, H2 } from '@uzh-bf/design-system'
@@ -48,10 +50,12 @@ function QuestionStack({
   const [informationOnly, setInformationOnly] = useState(true)
   const [inputValid, setInputValid] = useState<Record<number, boolean>>({})
   const [allValid, setAllValid] = useState(false)
+  const [flagModalOpen, setFlagModalOpen] = useState(false)
 
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
   )
+  const { data: dataParticipant } = useQuery(SelfDocument)
 
   const { data } = useQuery(GetBookmarksLearningElementDocument, {
     variables: {
@@ -277,6 +281,7 @@ function QuestionStack({
                           [element.id]: valid,
                         }))
                       }
+                      withParticipant={!!dataParticipant?.self}
                     />
                   )}
                   {!element.mdContent && !element.questionInstance && (
@@ -300,13 +305,21 @@ function QuestionStack({
                           className="flex flex-col gap-4 md:px-4"
                           key={element.id}
                         >
-                          <LearningElementPoints
-                            evaluation={element.questionInstance.evaluation}
-                            pointsMultiplier={
-                              element.questionInstance.pointsMultiplier
-                            }
-                          />
-
+                          <div className="flex flex-row justify-between">
+                            <LearningElementPoints
+                              evaluation={element.questionInstance.evaluation}
+                              pointsMultiplier={
+                                element.questionInstance.pointsMultiplier
+                              }
+                            />
+                            {dataParticipant?.self && (
+                              <FlagQuestionModal
+                                open={flagModalOpen}
+                                setOpen={setFlagModalOpen}
+                                instanceId={element.questionInstance.id}
+                              />
+                            )}
+                          </div>
                           <EvaluationDisplay
                             options={
                               element.questionInstance.questionData.options

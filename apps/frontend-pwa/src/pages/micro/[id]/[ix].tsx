@@ -96,7 +96,16 @@ function MicroSessionInstance() {
               <div className="flex-1 basis-2/3">
                 <div className="flex flex-row items-end justify-between mb-4 border-b">
                   <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
-                  <div className="text-slate-500">{questionData.type}</div>
+                  <div className="flex flex-row gap-2">
+                    <div className="text-slate-500">{questionData.type}</div>
+                    {dataParticipant?.self && (
+                      <FlagQuestionModal
+                        open={modalOpen}
+                        setOpen={setModalOpen}
+                        instanceId={currentInstance.id}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 <div className="pb-2">
