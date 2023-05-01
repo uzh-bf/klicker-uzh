@@ -3,6 +3,7 @@ import {
   GetMicroSessionDocument,
   QuestionType,
   ResponseToQuestionInstanceDocument,
+  SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import formatResponse from '@lib/formatResponse'
@@ -16,7 +17,6 @@ import EvaluationDisplay from '../../../components/evaluation/EvaluationDisplay'
 import FlagQuestionModal from '../../../components/flags/FlagQuestionModal'
 import Layout from '../../../components/Layout'
 
-// TODO: different question types (FREE and RANGE)
 function MicroSessionInstance() {
   const t = useTranslations()
 
@@ -32,6 +32,7 @@ function MicroSessionInstance() {
     variables: { id },
     skip: !id,
   })
+  const { data: dataParticipant } = useQuery(SelfDocument)
 
   const currentInstance = data?.microSession?.instances?.[Number(ix)]
   const questionData = currentInstance?.questionData
@@ -129,13 +130,13 @@ function MicroSessionInstance() {
                         {t('shared.leaderboard.points')}
                       </div>
                     </div>
-                    <div>
+                    {dataParticipant?.self && (
                       <FlagQuestionModal
                         open={modalOpen}
                         setOpen={setModalOpen}
                         instanceId={currentInstance.id}
                       />
-                    </div>
+                    )}
                   </div>
 
                   <EvaluationDisplay
