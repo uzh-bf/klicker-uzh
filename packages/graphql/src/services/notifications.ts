@@ -60,20 +60,24 @@ interface UnsubscribeToPushArgs {
 
 export async function unsubscribeFromPush( 
   { courseId, endpoint }: UnsubscribeToPushArgs,
-  ctx: Context
+  ctx: ContextWithUser
 ) {
-  console.log("Unsubscribing from push notifications for the following courseId and endpoint: ", courseId, endpoint)
+  console.log("Unsubscribing from push notifications for the following course with ID: ", courseId)
+  console.log("context ctx: ", ctx.user)
 
   try {
     await ctx.prisma.pushSubscription.delete({
       where: {
-        endpoint,
-        courseId
-      },
+        participantId_courseId_endpoint: {
+          participantId: ctx.user.sub,
+          courseId,
+          endpoint
+        }
+      }
     })
     return true
   } catch(error) {
-    console.log("An error occured while trying to unsubscribe from push notifications for the following courseId and endpoint: ", courseId, endpoint)
+    console.log("An error occured while trying to unsubscribe from push notifications for the following courseId: ", courseId)
     console.log(error)
     return false
   }

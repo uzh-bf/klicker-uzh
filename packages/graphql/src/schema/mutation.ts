@@ -286,11 +286,11 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      unsubscribeFromPush: t.boolean({
+      unsubscribeFromPush: asParticipant.boolean({
         nullable: true,
         args: {
           courseId: t.arg.string({ required: true }),
-          endpoint: t.arg.string({ required: true }),
+          endpoint: t.arg.string({ required: true})
         },
         resolve(_, args, ctx) {
           return NotificationService.unsubscribeFromPush(args, ctx)

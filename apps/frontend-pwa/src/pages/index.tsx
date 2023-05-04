@@ -38,7 +38,7 @@ const Index = function () {
     null
   )
 
-  const { data, loading, error } = useQuery(ParticipationsDocument, {
+  const { data, loading, error, refetch } = useQuery(ParticipationsDocument, {
     variables: { endpoint: subscription?.endpoint },
     fetchPolicy: 'network-only',
   })
@@ -162,6 +162,8 @@ const Index = function () {
     // Case 1: User unsubscribed
     if (subscribed) {
       // TODO: updateSubscriptionOnServer(subscription, courseId)
+      onUnsubscribeClick(courseId)
+      refetch()
       // Case 2: User subscribed
     } else {
       // Case 2a: User already has a push subscription
@@ -216,6 +218,19 @@ const Index = function () {
       }
     }
     return subscription
+  }
+
+  async function onUnsubscribeClick(courseId: string) {
+    if (subscription) {
+      await subscription.unsubscribe()
+      setSubscription(null)
+      await unsubscribeFromPush({
+        variables: {
+          courseId,
+          endpoint: subscription.endpoint,
+        },
+      })
+    }
   }
 
   return (
@@ -301,6 +316,7 @@ const Index = function () {
                 key={course.id}
                 course={course}
                 onSubscribeClick={onSubscribeClick}
+                onUnsubscribeClick={onUnsubscribeClick}
               />
             ))}
             {oldCourses.map((course) => (
@@ -319,16 +335,6 @@ const Index = function () {
               }}
             >
               Send Push Notification
-            </Button>
-            <Button
-              disabled={!subscription}
-              onClick={async () =>
-                await unsubscribeFromPush({
-                  variables: { id: subscription?.id },
-                })
-              }
-            >
-              unsubscribe from push notifications
             </Button>
           </div>
         </div>
