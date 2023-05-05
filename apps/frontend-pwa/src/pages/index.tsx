@@ -61,10 +61,6 @@ const Index = function () {
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
   const [sendPushNotifications] = useMutation(SendPushNotificationsDocument)
 
-  // if (!pushDisabled) {
-  //   sendPushNotifications()
-  // }
-
   const {
     courses,
     oldCourses,
@@ -165,9 +161,15 @@ const Index = function () {
   ) {
     setUserInfo('')
 
-    isSubscribedToPush
-      ? unsubscribeUserFromPush(courseId)
-      : subscribeUserToPush(courseId)
+    try {
+      if (isSubscribedToPush) {
+        await unsubscribeUserFromPush(courseId)
+      } else {
+        await subscribeUserToPush(courseId)
+      }
+    } catch (error) {
+      console.error('An error occurred while un/subscribing a user: ', error)
+    }
   }
 
   /**
@@ -225,7 +227,7 @@ const Index = function () {
       // There is no valid subscription to the push service
       try {
         const newSubscription = await subscribeParticipantToPushService(
-          registration!
+          registration
         )
         console.log('newSubscription: ', newSubscription)
         setSubscription(newSubscription)

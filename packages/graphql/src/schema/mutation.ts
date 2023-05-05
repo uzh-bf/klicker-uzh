@@ -1,5 +1,4 @@
 import * as DB from '@klicker-uzh/prisma'
-import { boolean } from 'mathjs'
 import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
