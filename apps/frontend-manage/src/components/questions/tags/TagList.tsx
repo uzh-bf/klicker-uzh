@@ -55,7 +55,7 @@ function TagList({
         <Button
           className={{
             root: twMerge(
-              'w-full text-base bg-white hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
+              'w-full text-base bg-white sm:hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
               (activeTags.length > 0 ||
                 activeType ||
                 sampleSolution ||
@@ -82,7 +82,7 @@ function TagList({
         {/* <Button
           className={twMerge(
             isArchiveActive && 'text-red-600',
-            'w-full text-base bg-white hover:bg-grey-40 hover:text-red-600 !py-[0.2rem] mb-2 flex flex-row justify-center'
+            'w-full text-base bg-white sm:hover:bg-grey-40 sm:hover:text-red-600 !py-[0.2rem] mb-2 flex flex-row justify-center'
           )}
           onClick={(): void => handleToggleArchive(true)}
         >

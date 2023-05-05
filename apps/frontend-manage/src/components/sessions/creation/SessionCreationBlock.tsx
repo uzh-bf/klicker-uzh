@@ -93,7 +93,7 @@ function SessionCreationBlock({
           <Button
             onClick={() => remove(index)}
             className={{
-              root: 'w-6 flex justify-center text-white bg-red-500 rounded hover:bg-red-600',
+              root: 'w-6 flex justify-center text-white bg-red-500 rounded sm:hover:bg-red-600',
             }}
             data={{ cy: 'delete-block' }}
           >
@@ -190,7 +190,7 @@ function SessionCreationBlock({
               </Button>
             </div>
             <div
-              className={`flex items-center px-2 text-white ${theme.primaryTextHover} bg-red-500 hover:bg-red-600 rounded-r`}
+              className={`flex items-center px-2 text-white ${theme.primaryTextHover} bg-red-500 sm:hover:bg-red-600 rounded-r`}
               onClick={() => {
                 replace(index, {
                   ...block,

@@ -224,12 +224,12 @@ function QuestionStack({
             <Button basic onClick={() => bookmarkQuestion()}>
               {isBookmarked ? (
                 <FontAwesomeIcon
-                  className="text-red-600 hover:text-red-500"
+                  className="text-red-600 sm:hover:text-red-500"
                   icon={faBookmarkFilled}
                 />
               ) : (
                 <FontAwesomeIcon
-                  className="hover:text-red-400"
+                  className="sm:hover:text-red-400"
                   icon={faBookmark}
                 />
               )}
@@ -293,45 +293,44 @@ function QuestionStack({
                     </div>
                   )}
                 </div>
-                {isEvaluation && (
+                {isEvaluation && element.questionInstance && (
                   <div
                     className="col-span-1 px-2 py-4 mr-2 border border-solid md:px-0 md:ml-2 md:mr-0 bg-slate-50"
                     key={element.id}
                   >
                     {element.mdContent && <div key={element.id} />}
-                    {element.questionInstance &&
-                      element.questionInstance.evaluation && (
-                        <div
-                          className="flex flex-col gap-4 md:px-4"
-                          key={element.id}
-                        >
-                          <div className="flex flex-row justify-between">
-                            <LearningElementPoints
-                              evaluation={element.questionInstance.evaluation}
-                              pointsMultiplier={
-                                element.questionInstance.pointsMultiplier
-                              }
-                            />
-                            {dataParticipant?.self && (
-                              <FlagQuestionModal
-                                open={flagModalOpen}
-                                setOpen={setFlagModalOpen}
-                                instanceId={element.questionInstance.id}
-                              />
-                            )}
-                          </div>
-                          <EvaluationDisplay
-                            options={
-                              element.questionInstance.questionData.options
-                            }
-                            questionType={
-                              element.questionInstance.questionData.type
-                            }
+                    {element.questionInstance.evaluation && (
+                      <div
+                        className="flex flex-col gap-4 md:px-4"
+                        key={element.id}
+                      >
+                        <div className="flex flex-row justify-between">
+                          <LearningElementPoints
                             evaluation={element.questionInstance.evaluation}
-                            reference={String(responses[element.id])}
+                            pointsMultiplier={
+                              element.questionInstance.pointsMultiplier
+                            }
                           />
+                          {dataParticipant?.self && (
+                            <FlagQuestionModal
+                              open={flagModalOpen}
+                              setOpen={setFlagModalOpen}
+                              instanceId={element.questionInstance.id}
+                            />
+                          )}
                         </div>
-                      )}
+                        <EvaluationDisplay
+                          options={
+                            element.questionInstance.questionData.options
+                          }
+                          questionType={
+                            element.questionInstance.questionData.type
+                          }
+                          evaluation={element.questionInstance.evaluation}
+                          reference={String(responses[element.id])}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </>

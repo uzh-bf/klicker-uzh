@@ -51,7 +51,7 @@ function MicroSessionIntroduction({ id }: Props) {
         <H3>{data.microSession.displayName}</H3>
         <Prose
           className={{
-            root: 'max-w-none prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 hover:text-current',
+            root: 'max-w-none prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 sm:hover:text-current',
           }}
         >
           <DynamicMarkdown content={data.microSession.description} />
