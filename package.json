@@ -55,7 +55,8 @@
     "start:test": "turbo run start:test",
     "prepare": "husky install",
     "prisma:setup": "npm run -w packages/prisma prisma:setup",
-    "prisma:migrate": "npm run -w packages/prisma prisma:migrate"
+    "prisma:migrate": "npm run -w packages/prisma prisma:migrate",
+    "prisma:reset": "npm run -w packages/prisma prisma:reset"
   },
   "devDependencies": {
     "@cypress/code-coverage": "3.10.4",
