@@ -74,7 +74,7 @@ function SessionBlock({
         <div key={instance.id}>
           <Link
             href={`/questions/${instance.questionData.id}`}
-            className="text-sm hover:text-slate-700"
+            className="text-sm sm:hover:text-slate-700"
             target="_blank"
           >
             {instance.questionData.name}{' '}

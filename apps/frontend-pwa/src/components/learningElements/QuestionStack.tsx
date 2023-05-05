@@ -220,12 +220,12 @@ function QuestionStack({
             <Button basic onClick={() => bookmarkQuestion()}>
               {isBookmarked ? (
                 <FontAwesomeIcon
-                  className="text-red-600 hover:text-red-500"
+                  className="text-red-600 sm:hover:text-red-500"
                   icon={faBookmarkFilled}
                 />
               ) : (
                 <FontAwesomeIcon
-                  className="hover:text-red-400"
+                  className="sm:hover:text-red-400"
                   icon={faBookmark}
                 />
               )}

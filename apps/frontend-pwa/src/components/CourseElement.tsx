@@ -43,7 +43,7 @@ function CourseElement({
           root: twMerge(
             'flex-1 rounded-r-none border-r-0 h-full',
             isPast && 'text-slate-600',
-            disabled && 'text-slate-600 hover:bg-slate-200'
+            disabled && 'text-slate-600 sm:hover:bg-slate-200'
           ),
         }}
         href={disabled ? '' : `/course/${course.id}`}
