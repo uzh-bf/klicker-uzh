@@ -16,7 +16,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "npm start",
+    "start:test": "nyc --silent npm start",
     "check": "tsc --noEmit"
   },
   "engines": {

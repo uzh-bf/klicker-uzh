@@ -52,6 +52,7 @@ const Profile = () => {
                 router.push('/login')
               }}
               className={{ root: 'mt-2' }}
+              data={{ cy: 'logout' }}
             >
               {t('shared.generic.logout')}
             </Button>

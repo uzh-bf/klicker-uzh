@@ -323,7 +323,7 @@ model LeaderboardEntry {
 
   type LeaderboardType
 
-  score Float
+  score Int
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
