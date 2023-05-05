@@ -13,7 +13,10 @@ function MissingPage() {
         </div>
         <div className="max-w-[90%] sm:max-w-[70%] md:max-w-[35rem]">
           Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum{' '}
-          <Link href="/" className="text-uzh-blue-60 hover:text-uzh-blue-100">
+          <Link
+            href="/"
+            className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
+          >
             Fragepool
           </Link>{' '}
           zurück oder nutzen sie das Menu zur weiteren Navigation.

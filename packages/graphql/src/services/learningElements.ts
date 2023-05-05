@@ -1,5 +1,6 @@
 import {
   computeAwardedXp,
+  computeSimpleAwardedPoints,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
   gradeQuestionMC,
@@ -25,16 +26,13 @@ import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
+const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 
 type QuestionResponse = {
   choices?: number[] | null
   value?: string | null
-}
-
-function round(value: number) {
-  return Number(Math.round(Number(value) * 100) / 100)
 }
 
 function evaluateQuestionResponse(
@@ -69,10 +67,11 @@ function evaluateQuestionResponse(
         return {
           feedbacks,
           choices: results.choices,
-          score:
-            pointsPercentage !== null
-              ? round(pointsPercentage * 10 * (multiplier ?? 1))
-              : -1,
+          score: computeSimpleAwardedPoints({
+            points: POINTS_PER_INSTANCE,
+            pointsPercentage,
+            pointsMultiplier: multiplier,
+          }),
           xp: computeAwardedXp({
             pointsPercentage,
             multiplier: multiplier ?? 1,
@@ -87,10 +86,11 @@ function evaluateQuestionResponse(
         return {
           feedbacks,
           choices: results.choices,
-          score:
-            pointsPercentage !== null
-              ? round(pointsPercentage * 10 * (multiplier ?? 1))
-              : -1,
+          score: computeSimpleAwardedPoints({
+            points: POINTS_PER_INSTANCE,
+            pointsPercentage,
+            pointsMultiplier: multiplier,
+          }),
           xp: computeAwardedXp({
             pointsPercentage,
             multiplier: multiplier ?? 1,
@@ -105,10 +105,11 @@ function evaluateQuestionResponse(
         return {
           feedbacks,
           choices: results.choices,
-          score:
-            pointsPercentage !== null
-              ? round(pointsPercentage * 10 * (multiplier ?? 1))
-              : -1,
+          score: computeSimpleAwardedPoints({
+            points: POINTS_PER_INSTANCE,
+            pointsPercentage,
+            pointsMultiplier: multiplier,
+          }),
           xp: computeAwardedXp({
             pointsPercentage,
             multiplier: multiplier ?? 1,

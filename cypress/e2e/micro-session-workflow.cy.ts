@@ -1,6 +1,7 @@
 describe('Different micro-session workflows', () => {
     beforeEach(() => {
         cy.visit(Cypress.env('URL_LECTURER'));
+        cy.viewport('macbook-16');
         cy.get('[data-cy="login-logo"]').should('exist');
         cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'));
         cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'));
@@ -46,13 +47,15 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="next-or-submit"]').click()
     
         // step 3
-        const dataTransfer = new DataTransfer();
-        cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
-          dataTransfer
-        });
-        cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
-          dataTransfer
-        });
+        for (let i = 0; i < 2; i++) {
+          const dataTransfer = new DataTransfer();
+          cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
+            dataTransfer
+          });
+          cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+            dataTransfer
+          });
+        }
         cy.get('[data-cy="next-or-submit"]').click();
     
         cy.get('[data-cy="load-session-list"]').click();
@@ -64,7 +67,7 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="verify-publish-action"]').click()
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
 
-        // sign in as student
+        // sign in as student on a laptop and respond to one question
         cy.clearAllCookies();
         cy.visit(Cypress.env('URL_STUDENT'));
         cy.get('[data-cy="username-field"]').click().type(Cypress.env('STUDENT_USERNAME'));
@@ -75,7 +78,22 @@ describe('Different micro-session workflows', () => {
         cy.findByText(microSessionDisplayName).click();
         cy.get('[data-cy="start-micro-session"]').click();
         cy.get('[data-cy="choice-option"]').eq(0).click();
-        // cy.get('[data-cy="send-answer"]').click(); //TODO: cypress command works but there is an unhandled promise rejection that causes the test to fail
+        cy.get('[data-cy="send-answer"]').click();
+
+        // sign in as a student on a mobile device and respond to the first question
+        cy.clearAllCookies();
+        cy.visit(Cypress.env('URL_STUDENT'));
+        cy.viewport('iphone-x');
+        cy.get('[data-cy="username-field"]').click().type(Cypress.env('STUDENT_USERNAME'));
+        cy.get('[data-cy="password-field"]').click().type(Cypress.env('STUDENT_PASSWORD'));
+        cy.get('[data-cy="submit-login"]').click();
+
+        cy.contains('[data-cy="micro-learnings"]', microSessionDisplayName).should('exist');
+        cy.findByText(microSessionDisplayName).click();
+        cy.get('[data-cy="start-micro-session"]').click();
+        cy.get('[data-cy="choice-option"]').eq(0).click();
+        cy.get('[data-cy="send-answer"]').click();
+        cy.viewport('macbook-16');
     }),
 
     it('creates and publishes a future micro session that should not be visible to students', () => {

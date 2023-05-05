@@ -49,7 +49,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           icon={
             <FontAwesomeIcon
               icon={faPlayCircle}
-              className="h-7 group-hover:text-white"
+              className="h-7 sm:group-hover:text-white"
             />
           }
           dropdownWidth="w-[12rem]"
@@ -89,6 +89,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
             root: 'flex flex-row items-center gap-1',
             dropdown: 'p-1.5 gap-0',
           }}
+          data={{ cy: 'user-menu' }}
         >
           {/* <Navigation.DropdownItem
             title="Settings"
@@ -114,6 +115,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
                 : console.log('Logout failed')
             }}
             className={{ title: 'text-base font-bold', root: 'p-2' }}
+            data={{ cy: 'logout' }}
           />
         </Navigation.TriggerItem>
       </Navigation>

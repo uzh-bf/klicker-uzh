@@ -179,6 +179,23 @@ export function computeAwardedPoints({
   return Math.round(awardedPoints)
 }
 
+interface ComputeSimpleAwardedPointsArgs {
+  points: number
+  pointsPercentage?: number | null
+  pointsMultiplier?: number | null
+}
+
+export function computeSimpleAwardedPoints({
+  points,
+  pointsPercentage,
+  pointsMultiplier,
+}: ComputeSimpleAwardedPointsArgs): number {
+  if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
+    return points * pointsPercentage * (pointsMultiplier ?? 1)
+  }
+  return 0
+}
+
 interface ComputeAwardedXpArgs {
   pointsPercentage: number | null
   multiplier: number
