@@ -11,6 +11,7 @@ import {
   QuestionStack,
   QuestionType,
   ResponseToQuestionInstanceDocument,
+  SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import formatResponse from '@lib/formatResponse'
 import { Button, H2 } from '@uzh-bf/design-system'
@@ -48,10 +49,12 @@ function QuestionStack({
   const [informationOnly, setInformationOnly] = useState(true)
   const [inputValid, setInputValid] = useState<Record<number, boolean>>({})
   const [allValid, setAllValid] = useState(false)
+  const [flagModalOpen, setFlagModalOpen] = useState(false)
 
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
   )
+  const { data: dataParticipant } = useQuery(SelfDocument)
 
   const { data } = useQuery(GetBookmarksLearningElementDocument, {
     variables: {
@@ -220,12 +223,12 @@ function QuestionStack({
             <Button basic onClick={() => bookmarkQuestion()}>
               {isBookmarked ? (
                 <FontAwesomeIcon
-                  className="text-red-600 hover:text-red-500"
+                  className="text-red-600 sm:hover:text-red-500"
                   icon={faBookmarkFilled}
                 />
               ) : (
                 <FontAwesomeIcon
-                  className="hover:text-red-400"
+                  className="sm:hover:text-red-400"
                   icon={faBookmark}
                 />
               )}
@@ -277,6 +280,7 @@ function QuestionStack({
                           [element.id]: valid,
                         }))
                       }
+                      withParticipant={!!dataParticipant?.self}
                     />
                   )}
                   {!element.mdContent && !element.questionInstance && (
@@ -288,37 +292,37 @@ function QuestionStack({
                     </div>
                   )}
                 </div>
-                {isEvaluation && (
+                {isEvaluation && element.questionInstance && (
                   <div
                     className="col-span-1 px-2 py-4 mr-2 border border-solid md:px-0 md:ml-2 md:mr-0 bg-slate-50"
                     key={element.id}
                   >
                     {element.mdContent && <div key={element.id} />}
-                    {element.questionInstance &&
-                      element.questionInstance.evaluation && (
-                        <div
-                          className="flex flex-col gap-4 md:px-4"
-                          key={element.id}
-                        >
+                    {element.questionInstance.evaluation && (
+                      <div
+                        className="flex flex-col gap-4 md:px-4"
+                        key={element.id}
+                      >
+                        <div className="flex flex-row justify-between">
                           <LearningElementPoints
                             evaluation={element.questionInstance.evaluation}
                             pointsMultiplier={
                               element.questionInstance.pointsMultiplier
                             }
                           />
-
-                          <EvaluationDisplay
-                            options={
-                              element.questionInstance.questionData.options
-                            }
-                            questionType={
-                              element.questionInstance.questionData.type
-                            }
-                            evaluation={element.questionInstance.evaluation}
-                            reference={String(responses[element.id])}
-                          />
                         </div>
-                      )}
+                        <EvaluationDisplay
+                          options={
+                            element.questionInstance.questionData.options
+                          }
+                          questionType={
+                            element.questionInstance.questionData.type
+                          }
+                          evaluation={element.questionInstance.evaluation}
+                          reference={String(responses[element.id])}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </>

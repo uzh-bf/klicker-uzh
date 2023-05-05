@@ -80,7 +80,7 @@ function Question({
       </div>
       <div
         className={twMerge(
-          'flex flex-row w-full p-3 border border-solid rounded-lg cursor-[grab] hover:shadow-md',
+          'flex flex-row w-full p-3 border border-solid rounded-lg cursor-[grab] sm:hover:shadow-md',
           collectedProps.isDragging && 'opacity-50'
         )}
         ref={drag}
@@ -90,7 +90,7 @@ function Question({
             {isArchived && <div>ARCHIVED // TODO styling</div>}
             <div className="flex flex-row flex-none mb-2">
               <a
-                className="flex-1 text-xl font-bold cursor-pointer text-primary-strong hover:text-uzh-blue-100"
+                className="flex-1 text-xl font-bold cursor-pointer text-primary-strong sm:hover:text-uzh-blue-100"
                 role="button"
                 tabIndex={0}
                 type="button"

@@ -754,7 +754,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      flagQuestion: t.string({
+      flagQuestion: asParticipant.string({
         nullable: true,
         args: {
           questionInstanceId: t.arg.int({ required: true }),
