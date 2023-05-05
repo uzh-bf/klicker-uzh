@@ -23,7 +23,7 @@
     "@klicker-uzh/graphql": "^3.0.0-alpha.0",
     "@klicker-uzh/markdown": "^3.0.0-alpha.0",
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
-    "@next/font": "13.1.6",
+    "@next/font": "13.4.1",
     "@socialgouv/matomo-next": "1.6.1",
     "@uzh-bf/design-system": "1.6.1",
     "d3": "7.8.2",
@@ -36,7 +36,7 @@
     "js-search": "2.0.0",
     "localforage": "1.10.0",
     "lodash": "4.17.21",
-    "next": "13.1.6",
+    "next": "13.4.1",
     "next-intl": "2.10.4",
     "nookies": "2.5.2",
     "ramda": "0.29.0",
@@ -75,7 +75,7 @@
     "@types/sharp": "^0.31.0",
     "autoprefixer": "10.4.13",
     "cssnano": "5.1.15",
-    "eslint-config-next": "13.1.6",
+    "eslint-config-next": "13.4.1",
     "postcss": "8.4.21",
     "prettier": "2.8.4",
     "prettier-plugin-organize-imports": "3.2.2",
@@ -90,6 +90,6 @@
     "node": ">=16"
   },
   "overrides": {
-    "next": "13.1.6"
+    "next": "13.4.1"
   }
 }

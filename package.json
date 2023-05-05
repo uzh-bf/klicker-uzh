@@ -69,8 +69,8 @@
     "yaml": "2.2.1"
   },
   "dependencies": {
-    "@prisma/client": "4.8.1",
-    "prisma": "4.8.1"
+    "@prisma/client": "4.13.0",
+    "prisma": "4.13.0"
   },
   "volta": {
     "node": "18.14.0"
