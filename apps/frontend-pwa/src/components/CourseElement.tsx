@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
-import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from './common/LinkButton'
 
@@ -23,7 +22,6 @@ interface CourseElementProps {
   }
   pushDisabled?: boolean
   onSubscribeClick?: (subscribed: boolean, courseId: string) => void
-  onUnsubscribeClick?: (courseId: string) => void
 }
 
 function CourseElement({
@@ -31,22 +29,12 @@ function CourseElement({
   course,
   pushDisabled,
   onSubscribeClick,
-  onUnsubscribeClick,
 }: CourseElementProps) {
   dayjs.extend(utc)
   const isFuture = dayjs(course.startDate).isAfter(dayjs())
   const isPast = dayjs().isAfter(course.endDate)
-  const [isSubscribed, setIsSubscribed] = useState(course.isSubscribed)
 
   console.log('isSubscribed: ', course.isSubscribed)
-
-  const subscriptionIcon = useMemo(() => {
-    if (!isSubscribed) {
-      return faBell
-    }
-
-    return faBellSlash
-  }, [isSubscribed])
 
   return (
     <div key={course.id} className="flex flex-row w-full">
@@ -93,10 +81,9 @@ function CourseElement({
           onClick={() => {
             if (disabled) return
             onSubscribeClick(course.isSubscribed, course.id)
-            setIsSubscribed(!isSubscribed)
           }}
         >
-          {/* {course.isSubscribed ? (
+          {course.isSubscribed ? (
             <FontAwesomeIcon
               className="text-uzh-yellow-100"
               icon={faBell}
@@ -104,17 +91,7 @@ function CourseElement({
             />
           ) : (
             <FontAwesomeIcon icon={faBellSlash} fixedWidth flip="horizontal" />
-          )} */}
-          <FontAwesomeIcon
-            className="text-uzh-yellow-100"
-            icon={subscriptionIcon}
-            fixedWidth
-          />
-        </Button>
-      )}
-      {onUnsubscribeClick && (
-        <Button onClick={async () => onUnsubscribeClick(course.id)}>
-          unsubscribe from push notifications
+          )}
         </Button>
       )}
     </div>

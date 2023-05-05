@@ -54,6 +54,8 @@ const Index = function () {
   }, [])
 
   console.log('userInfo: ', userInfo)
+  console.log('data: ', data)
+  console.log('data?.participations: ', data?.participations)
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
@@ -161,9 +163,8 @@ const Index = function () {
     setUserInfo('')
     // Case 1: User unsubscribed
     if (subscribed) {
-      // TODO: updateSubscriptionOnServer(subscription, courseId)
-      onUnsubscribeClick(courseId)
-      refetch()
+      unsubscribeUser(courseId)
+      // refetch()
       // Case 2: User subscribed
     } else {
       // Case 2a: User already has a push subscription
@@ -174,6 +175,12 @@ const Index = function () {
             subscriptionObject: subscription,
             courseId,
           },
+          refetchQueries: [
+            {
+              query: ParticipationsDocument,
+              variables: { endpoint: subscription?.endpoint },
+            },
+          ],
         })
         // Case 2b: User has no push subscription yet
       } else {
@@ -189,6 +196,12 @@ const Index = function () {
               subscriptionObject: newSubscription,
               courseId,
             },
+            refetchQueries: [
+              {
+                query: ParticipationsDocument,
+                variables: { endpoint: subscription?.endpoint },
+              },
+            ],
           })
           console.log('result: ', result)
         } catch (e) {
@@ -220,7 +233,7 @@ const Index = function () {
     return subscription
   }
 
-  async function onUnsubscribeClick(courseId: string) {
+  async function unsubscribeUser(courseId: string) {
     if (subscription) {
       await subscription.unsubscribe()
       setSubscription(null)
@@ -229,6 +242,12 @@ const Index = function () {
           courseId,
           endpoint: subscription.endpoint,
         },
+        refetchQueries: [
+          {
+            query: ParticipationsDocument,
+            variables: { endpoint: subscription?.endpoint },
+          },
+        ],
       })
     }
   }
@@ -316,7 +335,6 @@ const Index = function () {
                 key={course.id}
                 course={course}
                 onSubscribeClick={onSubscribeClick}
-                onUnsubscribeClick={onUnsubscribeClick}
               />
             ))}
             {oldCourses.map((course) => (
