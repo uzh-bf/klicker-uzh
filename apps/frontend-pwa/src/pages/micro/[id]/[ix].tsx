@@ -3,6 +3,7 @@ import {
   GetMicroSessionDocument,
   QuestionType,
   ResponseToQuestionInstanceDocument,
+  SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import formatResponse from '@lib/formatResponse'
@@ -16,7 +17,6 @@ import EvaluationDisplay from '../../../components/evaluation/EvaluationDisplay'
 import FlagQuestionModal from '../../../components/flags/FlagQuestionModal'
 import Layout from '../../../components/Layout'
 
-// TODO: different question types (FREE and RANGE)
 function MicroSessionInstance() {
   const t = useTranslations()
 
@@ -32,6 +32,7 @@ function MicroSessionInstance() {
     variables: { id },
     skip: !id,
   })
+  const { data: dataParticipant } = useQuery(SelfDocument)
 
   const currentInstance = data?.microSession?.instances?.[Number(ix)]
   const questionData = currentInstance?.questionData
@@ -95,7 +96,16 @@ function MicroSessionInstance() {
               <div className="flex-1 basis-2/3">
                 <div className="flex flex-row items-end justify-between mb-4 border-b">
                   <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
-                  <div className="text-slate-500">{questionData.type}</div>
+                  <div className="flex flex-row gap-2">
+                    <div className="text-slate-500">{questionData.type}</div>
+                    {dataParticipant?.self && (
+                      <FlagQuestionModal
+                        open={modalOpen}
+                        setOpen={setModalOpen}
+                        instanceId={currentInstance.id}
+                      />
+                    )}
+                  </div>
                 </div>
 
                 <div className="pb-2">
@@ -128,13 +138,6 @@ function MicroSessionInstance() {
                         {currentInstance.evaluation.pointsAwarded}{' '}
                         {t('shared.leaderboard.points')}
                       </div>
-                    </div>
-                    <div>
-                      <FlagQuestionModal
-                        open={modalOpen}
-                        setOpen={setModalOpen}
-                        instanceId={currentInstance.id}
-                      />
                     </div>
                   </div>
 
