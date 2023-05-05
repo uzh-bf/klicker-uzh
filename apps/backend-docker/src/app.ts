@@ -24,7 +24,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
 
   /* istanbul ignore next */
   if (global.__coverage__) {
-    require('@cypress/code-coverage/middleware/express')(app)
+    try {
+      require('@cypress/code-coverage/middleware/express')(app)
+    } catch (e) {}
   }
 
   app.use(
