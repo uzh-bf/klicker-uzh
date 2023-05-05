@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import FlagQuestionModal from '@components/flags/FlagQuestionModal'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookmark as faBookmarkFilled,
@@ -311,13 +310,6 @@ function QuestionStack({
                               element.questionInstance.pointsMultiplier
                             }
                           />
-                          {dataParticipant?.self && (
-                            <FlagQuestionModal
-                              open={flagModalOpen}
-                              setOpen={setFlagModalOpen}
-                              instanceId={element.questionInstance.id}
-                            />
-                          )}
                         </div>
                         <EvaluationDisplay
                           options={

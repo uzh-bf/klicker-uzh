@@ -139,13 +139,6 @@ function MicroSessionInstance() {
                         {t('shared.leaderboard.points')}
                       </div>
                     </div>
-                    {dataParticipant?.self && (
-                      <FlagQuestionModal
-                        open={modalOpen}
-                        setOpen={setModalOpen}
-                        instanceId={currentInstance.id}
-                      />
-                    )}
                   </div>
 
                   <EvaluationDisplay
