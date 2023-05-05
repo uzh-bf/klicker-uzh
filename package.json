@@ -57,7 +57,7 @@
   "devDependencies": {
     "@testing-library/cypress": "9.0.0",
     "azure-functions-core-tools": "4.0.5095",
-    "cypress": "12.7.0",
+    "cypress": "12.11.0",
     "husky": "8.0.3",
     "prettier": "2.8.4",
     "prettier-plugin-organize-imports": "3.2.2",
