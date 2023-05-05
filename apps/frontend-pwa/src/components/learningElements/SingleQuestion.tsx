@@ -20,6 +20,7 @@ interface SingleQuestionProps {
   response: any
   setResponse: (response: any) => void
   setInputValid: (valid: boolean) => void
+  withParticipant?: boolean
 }
 
 function SingleQuestion({
@@ -29,6 +30,7 @@ function SingleQuestion({
   response,
   setResponse,
   setInputValid,
+  withParticipant = false,
 }: SingleQuestionProps) {
   const t = useTranslations()
 
@@ -112,11 +114,13 @@ function SingleQuestion({
                   total: totalSteps,
                 })}
               </div>
-              <FlagQuestionModal
-                open={modalOpen}
-                setOpen={setModalOpen}
-                instanceId={instance.id!}
-              />
+              {withParticipant && (
+                <FlagQuestionModal
+                  open={modalOpen}
+                  setOpen={setModalOpen}
+                  instanceId={instance.id!}
+                />
+              )}
             </div>
           </div>
 

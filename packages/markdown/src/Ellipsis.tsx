@@ -41,7 +41,7 @@ function Ellipsis({
         tooltip={
           <Prose
             className={{
-              root: 'flex-initial max-w-full leading-6 prose-p:m-0 hover:text-white prose-img:m-0 ',
+              root: 'flex-initial max-w-full leading-6 prose-p:m-0 sm:hover:text-white prose-img:m-0 ',
             }}
           >
             <Markdown
@@ -64,7 +64,7 @@ function Ellipsis({
         <Prose
           className={{
             root: twMerge(
-              'flex-initial max-w-full leading-6 prose-p:m-0 text-black hover:text-black prose-img:m-0',
+              'flex-initial max-w-full leading-6 prose-p:m-0 text-black sm:hover:text-black prose-img:m-0',
               // HACK: dynamic classnames do not work with tailwind
               // line-clamp-1 line-clamp-2 line-clamp-3
               // the above ensures classes 1-3 are present
@@ -114,7 +114,7 @@ function Ellipsis({
   const shortenedParsedContent = (
     <Prose
       className={{
-        root: 'flex-initial max-w-full leading-6 prose-p:m-0 text-black hover:text-black',
+        root: 'flex-initial max-w-full leading-6 prose-p:m-0 text-black sm:hover:text-black',
       }}
     >
       <Markdown

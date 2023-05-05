@@ -40,7 +40,7 @@ function TagActions({
         disabled={active}
         onClick={() => setIsDeletionModalOpen(true)}
         className={{
-          root: 'hover:text-red-600 disabled:text-uzh-grey-60 disabled:hover:text-none',
+          root: 'sm:hover:text-red-600 disabled:text-uzh-grey-60 disabled:hover:text-none',
         }}
       >
         <FontAwesomeIcon icon={faTrash} className="mr-2" />

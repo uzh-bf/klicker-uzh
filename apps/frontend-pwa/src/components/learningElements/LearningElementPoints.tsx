@@ -14,8 +14,8 @@ function LearningElementPoints({
   const t = useTranslations()
 
   return (
-    <>
-      <div className="flex flex-row gap-2">
+    <div className="block">
+      <div className="mb-2">
         {t.rich('pwa.learningElement.multiplicatorEval', {
           mult: pointsMultiplier,
           b: (text) => <span className="font-bold">{text}</span>,
@@ -63,7 +63,7 @@ function LearningElementPoints({
           )}
         </div>
       )}
-    </>
+    </div>
   )
 }
 
