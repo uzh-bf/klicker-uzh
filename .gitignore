@@ -1,6 +1,7 @@
 **/__pycache__/
 **/node_modules/
-
+coverage/
+.nyc_output/
 .turbo/
 __blobstorage__/
 __queuestorage__/

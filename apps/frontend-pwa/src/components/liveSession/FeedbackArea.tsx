@@ -324,6 +324,7 @@ function FeedbackArea({
                   rows="3"
                   maxLength={500}
                   maxLengthLabel={t('shared.generic.characters')}
+                  data={{ cy: 'feedback-input' }}
                 />
                 <Button
                   className={{
@@ -331,6 +332,7 @@ function FeedbackArea({
                   }}
                   type="submit"
                   disabled={isSubmitting}
+                  data={{ cy: 'feedback-submit' }}
                 >
                   {isSubmitting ? (
                     <Button.Label>{t('shared.generic.loading')}</Button.Label>

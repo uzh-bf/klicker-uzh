@@ -1,6 +1,7 @@
 describe('Different live-session workflows', () => {
     beforeEach(() => {
         cy.visit(Cypress.env('URL_LECTURER'));
+        cy.viewport("macbook-16");
         cy.get('[data-cy="login-logo"]').should('exist');
         cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'));
         cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'));
@@ -63,6 +64,7 @@ describe('Different live-session workflows', () => {
         const sessionTitle = 'Test Session ' + randomNumber;
         const questionTitle = 'A Single Choice ' + randomNumber;
         const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber;
+        const feedback = 'This is a test feedback';
     
         cy.get('[data-cy="create-question"]').click();
         cy.get('[data-cy="insert-question-title"]').click().type(questionTitle);
@@ -102,13 +104,15 @@ describe('Different live-session workflows', () => {
         }
     
         cy.get('[data-cy="add-block"]').click();
-        const dataTransfer = new DataTransfer();
-        cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
-          dataTransfer
-        });
-        cy.get('[data-cy="drop-questions-here"]').eq(1).trigger('drop', {
-          dataTransfer
-        });    
+        for (let i = 0; i < 2; i++) {
+          const dataTransfer = new DataTransfer();
+          cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
+            dataTransfer
+          });
+          cy.get('[data-cy="drop-questions-here"]').eq(1).trigger('drop', {
+            dataTransfer
+          });  
+        }
         cy.get('[data-cy="next-or-submit"]').click();
     
         cy.get('[data-cy="load-session-list"]').click();
@@ -117,18 +121,38 @@ describe('Different live-session workflows', () => {
         // start session and first block
         cy.findByText(sessionTitle).parentsUntil('[data-cy="session"]').find('[data-cy="start-session"]').click();
         cy.get('[data-cy="interaction-first-block"]').click();
-         
+
+        // login student and answer first question
         cy.clearAllCookies();
         cy.visit(Cypress.env('URL_STUDENT'));
         cy.get('[data-cy="username-field"]').click().type(Cypress.env('STUDENT_USERNAME'));
         cy.get('[data-cy="password-field"]').click().type(Cypress.env('STUDENT_PASSWORD'));
         cy.get('[data-cy="submit-login"]').click();
+        cy.wait(1000);
         cy.findByText(session).click();
         cy.findByText('25%').click();
         cy.get('[data-cy="student-submit-answer"]').click();
+        cy.wait(500);
+
+        // login student again on mobile, test navigation and answer second question
+        cy.clearAllCookies();
+        cy.visit(Cypress.env('URL_STUDENT'));
+        cy.viewport('iphone-x');
+        cy.get('[data-cy="username-field"]').click().type(Cypress.env('STUDENT_USERNAME'));
+        cy.get('[data-cy="password-field"]').click().type(Cypress.env('STUDENT_PASSWORD'));
+        cy.get('[data-cy="submit-login"]').click();
+        cy.wait(1000);
+        cy.findByText(session).click();
+        cy.findByText(question).should('exist');
+
+        // TODO: test feedback mechanism (including lecturer response, publishing, moderation, etc.)
+        cy.get('[data-cy="mobile-menu-leaderboard"]').click();
+        cy.get('[data-cy="mobile-menu-feedbacks"]').click();
+        cy.get('[data-cy="mobile-menu-questions"]').click();
         cy.findByText('25%').click();
         cy.get('[data-cy="student-submit-answer"]').click();
         cy.wait(500);
+        cy.viewport('macbook-16');
     
         cy.clearAllCookies();
         cy.visit(Cypress.env('URL_LECTURER'));
@@ -145,7 +169,8 @@ describe('Different live-session workflows', () => {
         // start next block
         cy.get('[data-cy="interaction-first-block"]').click();
         cy.wait(500);
-    
+
+        // login student and answer first question
         cy.clearAllCookies();
         cy.visit(Cypress.env('URL_STUDENT'));
         cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'));
@@ -155,6 +180,20 @@ describe('Different live-session workflows', () => {
         cy.findByText('25%').click();
         cy.get('[data-cy="student-submit-answer"]').click();
         cy.wait(500);
+
+        // repeat student actions on mobile device and answer second question
+        cy.clearAllCookies();
+        cy.visit(Cypress.env('URL_STUDENT'));
+        cy.viewport('iphone-x');
+        cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'));
+        cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'));
+        cy.get('[data-cy="submit-login"]').click();
+        cy.wait(1000);
+        cy.findByText(session).click();
+        cy.findByText('25%').click();
+        cy.get('[data-cy="student-submit-answer"]').click();
+        cy.wait(500);
+        cy.viewport('macbook-16');
     
         cy.clearAllCookies();
         cy.visit(Cypress.env('URL_LECTURER'));

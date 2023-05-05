@@ -17,6 +17,7 @@ interface LayoutProps {
     value: string
     unseenItems?: number
     showBadge?: boolean
+    data?: { cy?: string; test?: string }
   }[]
   setActiveMobilePage?: (value: string) => void
   className?: string

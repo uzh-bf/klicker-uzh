@@ -22,6 +22,13 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
 
   const app = express()
 
+  /* istanbul ignore next */
+  if (global.__coverage__) {
+    try {
+      require('@cypress/code-coverage/middleware/express')(app)
+    } catch (e) {}
+  }
+
   app.use(
     cors({
       origin(origin, cb) {

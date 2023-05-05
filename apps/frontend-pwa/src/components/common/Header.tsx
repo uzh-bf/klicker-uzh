@@ -123,7 +123,11 @@ function Header({
           </Link>
         )}
         <Link href={participant ? '/profile' : '/login'} className="">
-          <Button basic className={{ root: 'relative' }}>
+          <Button
+            basic
+            className={{ root: 'relative' }}
+            data={{ cy: 'header-avatar' }}
+          >
             <Image
               src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
                 participant?.avatar ?? 'placeholder'
@@ -134,7 +138,10 @@ function Header({
               className="bg-white rounded-full cursor-pointer sm:hover:bg-uzh-red-20"
             />
             {participant?.level && (
-              <div className="absolute bottom-0 right-0 w-4 h-4 text-xs font-bold bg-white rounded-full text-slate-600">
+              <div
+                className="absolute bottom-0 right-0 w-4 h-4 text-xs font-bold bg-white rounded-full text-slate-600"
+                data-cy="participant-level"
+              >
                 {participant.level}
               </div>
             )}
