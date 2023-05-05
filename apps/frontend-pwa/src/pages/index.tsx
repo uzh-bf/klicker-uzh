@@ -25,7 +25,7 @@ import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import {
   determineInitialSubscriptionState,
-  subscribeParticipant,
+  subscribeParticipantToPushService,
 } from '../utils/push'
 
 const Index = function () {
@@ -38,7 +38,7 @@ const Index = function () {
     null
   )
 
-  const { data, loading, error, refetch } = useQuery(ParticipationsDocument, {
+  const { data, loading } = useQuery(ParticipationsDocument, {
     variables: { endpoint: subscription?.endpoint },
     fetchPolicy: 'network-only',
   })
@@ -159,84 +159,28 @@ const Index = function () {
     return <div>loading...</div>
   }
 
-  async function onSubscribeClick(subscribed: boolean, courseId: string) {
+  async function onSubscribeClick(
+    isSubscribedToPush: boolean,
+    courseId: string
+  ) {
     setUserInfo('')
-    // Case 1: User unsubscribed
-    if (subscribed) {
-      unsubscribeUser(courseId)
-      // refetch()
-      // Case 2: User subscribed
-    } else {
-      // Case 2a: User already has a push subscription
-      if (subscription) {
-        console.log('subscription: ', subscription)
-        subscribeToPush({
-          variables: {
-            subscriptionObject: subscription,
-            courseId,
-          },
-          refetchQueries: [
-            {
-              query: ParticipationsDocument,
-              variables: { endpoint: subscription?.endpoint },
-            },
-          ],
-        })
-        // Case 2b: User has no push subscription yet
-      } else {
-        try {
-          const newSubscription = await subscribeParticipant(
-            registration!,
-            courseId
-          )
-          console.log('newSubscription: ', newSubscription)
-          setSubscription(newSubscription)
-          const result = await subscribeToPush({
-            variables: {
-              subscriptionObject: newSubscription,
-              courseId,
-            },
-            refetchQueries: [
-              {
-                query: ParticipationsDocument,
-                variables: { endpoint: subscription?.endpoint },
-              },
-            ],
-          })
-          console.log('result: ', result)
-        } catch (e) {
-          console.error(e)
-          // Push notifications are disabled
-          if (Notification.permission === 'denied') {
-            setPushDisabled(true)
-            setUserInfo(
-              `Sie haben Push-Benachrichtigungen für diese Applikation deaktiviert. Wenn Sie Push-Benachrichtigungen
-              abonnieren möchten, aktivieren Sie diese in Ihrem Browser und laden Sie die Seite neu.`
-            )
-            // User has clicked away the prompt without allowing nor blocking
-          } else if (
-            e instanceof DOMException &&
-            e.name === 'NotAllowedError'
-          ) {
-            setUserInfo(
-              'Bitte erlauben Sie Push-Benachrichtigungen für diese Applikation in Ihrem Browser.'
-            )
-            // An error occured
-          } else {
-            setUserInfo(
-              'Beim Versuch, Sie für Push-Benachrichtigungen zu registrieren, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
-            )
-          }
-        }
-      }
-    }
-    return subscription
+
+    isSubscribedToPush
+      ? unsubscribeUserFromPush(courseId)
+      : subscribeUserToPush(courseId)
   }
 
-  async function unsubscribeUser(courseId: string) {
+  /**
+   * When unsubscribing a user from push notifications, the subscription needs to be
+   * removed from the browser's push service as well as from the backend.
+   */
+  async function unsubscribeUserFromPush(courseId: string) {
     if (subscription) {
+      // remove subscription from browser's push service
       await subscription.unsubscribe()
       setSubscription(null)
+
+      // remove subscription from backend
       await unsubscribeFromPush({
         variables: {
           courseId,
@@ -249,6 +193,78 @@ const Index = function () {
           },
         ],
       })
+    }
+  }
+
+  /**
+   * If a user has a valid push subscription for its browser to the push service,
+   * the only thing left to do is to store the subscription details on the backend,
+   * so that it can be used to send push notifications from there.
+   *
+   * If a user has no subscription for its client (e.g., browser) yet, then a new
+   * subscription to the browser's push service needs to be created and consequently
+   * stored on the backend.
+   */
+  async function subscribeUserToPush(courseId: string) {
+    // There is a valid subscription to the push service
+    if (subscription) {
+      console.log('subscription: ', subscription)
+      subscribeToPush({
+        variables: {
+          subscriptionObject: subscription,
+          courseId,
+        },
+        refetchQueries: [
+          {
+            query: ParticipationsDocument,
+            variables: { endpoint: subscription?.endpoint },
+          },
+        ],
+      })
+    } else {
+      // There is no valid subscription to the push service
+      try {
+        const newSubscription = await subscribeParticipantToPushService(
+          registration!
+        )
+        console.log('newSubscription: ', newSubscription)
+        setSubscription(newSubscription)
+
+        // Store new subscription object on the server
+        const result = await subscribeToPush({
+          variables: {
+            subscriptionObject: newSubscription,
+            courseId,
+          },
+          refetchQueries: [
+            {
+              query: ParticipationsDocument,
+              variables: { endpoint: subscription?.endpoint },
+            },
+          ],
+        })
+        console.log('result: ', result)
+      } catch (e) {
+        console.error(e)
+        // Push notifications are disabled
+        if (Notification.permission === 'denied') {
+          setPushDisabled(true)
+          setUserInfo(
+            `Sie haben Push-Benachrichtigungen für diese Applikation deaktiviert. Wenn Sie Push-Benachrichtigungen
+            abonnieren möchten, aktivieren Sie diese in Ihrem Browser und laden Sie die Seite neu.`
+          )
+          // User has clicked away the prompt without allowing nor blocking
+        } else if (e instanceof DOMException && e.name === 'NotAllowedError') {
+          setUserInfo(
+            'Bitte erlauben Sie Push-Benachrichtigungen für diese Applikation in Ihrem Browser.'
+          )
+          // An error occured
+        } else {
+          setUserInfo(
+            'Beim Versuch, Sie für Push-Benachrichtigungen zu registrieren, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
+          )
+        }
+      }
     }
   }
 
