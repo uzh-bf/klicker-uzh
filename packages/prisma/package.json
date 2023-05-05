@@ -92,7 +92,7 @@
     "uuidv4": "6.2.13"
   },
   "dependencies": {
-    "@prisma/client": "4.8.1"
+    "@prisma/client": "4.13.0"
   },
   "volta": {
     "extends": "../../package.json"
