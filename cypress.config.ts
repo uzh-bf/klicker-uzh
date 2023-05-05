@@ -9,11 +9,17 @@ export default defineConfig({
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
     STUDENT_PASSWORD: 'testing',
+
+    codeCoverage: {
+      expectBackendCoverageOnly: true,
+      url: 'http://127.0.0.1:3000/__coverage__',
+    },
   },
 
   e2e: {
     // includeShadowDom: true,
     setupNodeEvents(on, config) {
+      require('@cypress/code-coverage/task')(on, config)
       /* on("task", {
         async "db:seed"() {
           // seed database with test data
@@ -21,6 +27,7 @@ export default defineConfig({
           return data;
         },
       }); */
+      return config
     },
   },
 

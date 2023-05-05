@@ -55,10 +55,12 @@
     "prepare": "husky install"
   },
   "devDependencies": {
+    "@cypress/code-coverage": "3.10.4",
     "@testing-library/cypress": "9.0.0",
     "azure-functions-core-tools": "4.0.5095",
     "cypress": "12.11.0",
     "husky": "8.0.3",
+    "nyc": "15.1.0",
     "prettier": "2.8.4",
     "prettier-plugin-organize-imports": "3.2.2",
     "standard-version": "9.5.0",
