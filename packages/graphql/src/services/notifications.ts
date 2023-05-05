@@ -20,7 +20,6 @@ export async function subscribeToPush(
   { subscriptionObject, courseId }: SubscribeToPushArgs,
   ctx: ContextWithUser
 ) {
-  console.log("subscriptionObject", subscriptionObject)
   return ctx.prisma.participation.update({
     where: {
       courseId_participantId: { courseId, participantId: ctx.user.sub },
@@ -62,9 +61,6 @@ export async function unsubscribeFromPush(
   { courseId, endpoint }: UnsubscribeToPushArgs,
   ctx: ContextWithUser
 ) {
-  console.log("Unsubscribing from push notifications for the following course with ID: ", courseId)
-  console.log("context ctx: ", ctx.user)
-
   try {
     await ctx.prisma.pushSubscription.delete({
       where: {
@@ -77,8 +73,7 @@ export async function unsubscribeFromPush(
     })
     return true
   } catch(error) {
-    console.log("An error occured while trying to unsubscribe from push notifications for the following courseId: ", courseId)
-    console.log(error)
+    console.error("An error occured while trying to unsubscribe from push notifications: ", error)
     return false
   }
 }
@@ -111,12 +106,10 @@ export async function sendPushNotifications( ctx: Context) {
     },
   })
 
-  console.log("Sending push notifications to the following microsessions:", microSessions)
 
- await Promise.all(
+  await Promise.all(
     microSessions.map(async (microSession: MicroSession) => {
       try {
-        console.log("Sending push notifications to the following subscriptions:", microSession.course.subscriptions)
         await sendPushNotificationsToSubscribers(microSession.course.subscriptions, ctx);
         
         //update microSession to prevent sending push notifications multiple times
@@ -128,11 +121,8 @@ export async function sendPushNotifications( ctx: Context) {
             arePushNotificationsSent: true,
           },
         })
-
-        console.log("Updated microSession: ", updatedMicroSession)
       } catch (error) {
-        console.log("An error occured while trying to send the push notifications to the following subscriptions:", microSession.course.pushSubscription)
-        console.log(error)
+        console.error("An error occured while trying to send the push notifications: ", error)
       }
     })
  )
@@ -146,7 +136,6 @@ function sleep(ms) {
 
 async function sendPushNotificationsToSubscribers(subscriptions: PushSubscription[], ctx: Context) {
   for (let sub of subscriptions) {
-    console.log(sub.participantId, sub.courseId, sub.endpoint)
     await sleep(500)
     const subscription = {
       endpoint: sub.endpoint,
@@ -155,9 +144,9 @@ async function sendPushNotificationsToSubscribers(subscriptions: PushSubscriptio
         p256dh: sub.p256dh,
       },
     }
-    console.log("Sending push notification to the following subscription: ", subscription)
+
     try {
-      const result = await webpush.sendNotification(
+      await webpush.sendNotification(
         {
           endpoint: sub.endpoint,
           keys: {
@@ -171,9 +160,8 @@ async function sendPushNotificationsToSubscribers(subscriptions: PushSubscriptio
           title: 'KlickerUZH - Neues Microlearning',
         })
       )
-      console.log("Push notification sent successfully: ", result)
     } catch (error) {
-      console.log("An error occured while trying to send the push notification: ", error)
+      console.error("An error occured while trying to send the push notification: ", error)
       if (error.statusCode === 410) {
         try {
           // subscription has expired or is no longer valid
@@ -184,7 +172,7 @@ async function sendPushNotificationsToSubscribers(subscriptions: PushSubscriptio
             },
           })
         } catch (error) {
-          console.log("An error occured while trying to remove the expired subscription from the database: ", error)
+          console.error("An error occured while trying to remove the expired subscription from the database: ", error)
         }
       }
     }

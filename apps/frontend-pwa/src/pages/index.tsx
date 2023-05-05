@@ -16,7 +16,7 @@ import {
   SubscribeToPushDocument,
   UnsubscribeFromPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, UserNotification } from '@uzh-bf/design-system'
+import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
@@ -52,10 +52,6 @@ const Index = function () {
       setSubscription(sub)
     })
   }, [])
-
-  console.log('userInfo: ', userInfo)
-  console.log('data: ', data)
-  console.log('data?.participations: ', data?.participations)
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
@@ -210,8 +206,7 @@ const Index = function () {
   async function subscribeUserToPush(courseId: string) {
     // There is a valid subscription to the push service
     if (subscription) {
-      console.log('subscription: ', subscription)
-      subscribeToPush({
+      await subscribeToPush({
         variables: {
           subscriptionObject: subscription,
           courseId,
@@ -229,11 +224,10 @@ const Index = function () {
         const newSubscription = await subscribeParticipantToPushService(
           registration
         )
-        console.log('newSubscription: ', newSubscription)
         setSubscription(newSubscription)
 
         // Store new subscription object on the server
-        const result = await subscribeToPush({
+        await subscribeToPush({
           variables: {
             subscriptionObject: newSubscription,
             courseId,
@@ -245,9 +239,11 @@ const Index = function () {
             },
           ],
         })
-        console.log('result: ', result)
       } catch (e) {
-        console.error(e)
+        console.error(
+          'An error occured while subscribing a user to push notifications: ',
+          e
+        )
         // Push notifications are disabled
         if (Notification.permission === 'denied') {
           setPushDisabled(true)
@@ -361,17 +357,6 @@ const Index = function () {
             <LinkButton icon={faCirclePlus} href="/join">
               {t('pwa.general.joinCourse')}
             </LinkButton>
-            <Button
-              onClick={() => {
-                console.log(
-                  'send push notification including current subscription: ',
-                  subscription
-                )
-                sendPushNotifications()
-              }}
-            >
-              Send Push Notification
-            </Button>
           </div>
         </div>
         {userInfo && <UserNotification type="info" message={userInfo} />}

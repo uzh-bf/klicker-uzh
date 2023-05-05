@@ -34,8 +34,6 @@ function CourseElement({
   const isFuture = dayjs(course.startDate).isAfter(dayjs())
   const isPast = dayjs().isAfter(course.endDate)
 
-  console.log('isSubscribed: ', course.isSubscribed)
-
   return (
     <div key={course.id} className="flex flex-row w-full">
       <LinkButton
