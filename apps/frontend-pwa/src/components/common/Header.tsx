@@ -64,7 +64,7 @@ function Header({
             }
             className={{
               trigger:
-                'text-white border-b border-solid p-0.5 pb-0 rounded-none hover:bg-transparent hover:text-white',
+                'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
             }}
             basic
           />
@@ -135,7 +135,7 @@ function Header({
               alt=""
               width="45"
               height="45"
-              className="bg-white rounded-full cursor-pointer hover:bg-uzh-red-20"
+              className="bg-white rounded-full cursor-pointer sm:hover:bg-uzh-red-20"
             />
             {participant?.level && (
               <div

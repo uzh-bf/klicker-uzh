@@ -404,7 +404,7 @@ export async function getBookmarkedQuestions(
 
 export async function flagQuestion(
   args: { questionInstanceId: number; content: string },
-  ctx: Context
+  ctx: ContextWithUser
 ) {
   const questionInstance = await ctx.prisma.questionInstance.findUnique({
     where: {

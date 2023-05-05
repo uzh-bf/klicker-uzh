@@ -23,7 +23,7 @@ function MissingPage() {
               login: (text) => (
                 <Link
                   href="/login"
-                  className="text-uzh-blue-60 hover:text-uzh-blue-100"
+                  className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
                 >
                   {text}
                 </Link>
@@ -37,7 +37,7 @@ function MissingPage() {
               home: (text) => (
                 <Link
                   href="/"
-                  className="text-uzh-blue-60 hover:text-uzh-blue-100"
+                  className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
                 >
                   {text}
                 </Link>

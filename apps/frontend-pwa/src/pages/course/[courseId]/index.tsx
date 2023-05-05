@@ -452,7 +452,7 @@ function CourseOverview({ courseId }: any) {
                                 dayjs().isBefore(activity.scheduledEndAt) && (
                                   <Link
                                     href={`/group/${group.id}/activity/${activity.id}`}
-                                    className="inline-flex items-center gap-2 hover:text-orange-700"
+                                    className="inline-flex items-center gap-2 sm:hover:text-orange-700"
                                   >
                                     <Button
                                       className={{

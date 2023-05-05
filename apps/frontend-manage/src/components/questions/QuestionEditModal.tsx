@@ -879,9 +879,7 @@ function QuestionEditModal({
                                     <Button.Icon>
                                       <FontAwesomeIcon
                                         icon={faTrash}
-                                        className={twMerge(
-                                          `hover:${theme.primaryBg}`
-                                        )}
+                                        className={theme.primaryBgHover}
                                       />
                                     </Button.Icon>
                                   </Button>
@@ -1062,7 +1060,7 @@ function QuestionEditModal({
                                       <Button
                                         onClick={() => remove(index)}
                                         className={{
-                                          root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
+                                          root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
                                         }}
                                       >
                                         Löschen
@@ -1133,7 +1131,7 @@ function QuestionEditModal({
                                     <Button
                                       onClick={() => remove(index)}
                                       className={{
-                                        root: 'ml-2 text-white bg-red-500 hover:bg-red-600',
+                                        root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
                                       }}
                                     >
                                       Löschen

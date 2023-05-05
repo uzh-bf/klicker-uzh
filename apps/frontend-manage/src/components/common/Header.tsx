@@ -49,7 +49,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           icon={
             <FontAwesomeIcon
               icon={faPlayCircle}
-              className="h-7 group-hover:text-white"
+              className="h-7 sm:group-hover:text-white"
             />
           }
           dropdownWidth="w-[12rem]"
