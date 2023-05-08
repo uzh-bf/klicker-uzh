@@ -1,11 +1,23 @@
 import { useQuery } from '@apollo/client'
-import { GetMicroSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetMicroSessionDocument,
+  SelfDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H3,
+  Prose,
+  ThemeContext,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useContext } from 'react'
+import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 
 const DynamicMarkdown = dynamic(
@@ -24,10 +36,13 @@ interface Props {
 
 function MicroSessionIntroduction({ id }: Props) {
   const t = useTranslations()
+  const router = useRouter()
+  const theme = useContext(ThemeContext)
 
   const { loading, error, data } = useQuery(GetMicroSessionDocument, {
     variables: { id },
   })
+  const { data: selfData } = useQuery(SelfDocument)
 
   if (loading) return <p>{t('shared.generic.loading')}</p>
   if (!data?.microSession) {
@@ -48,6 +63,32 @@ function MicroSessionIntroduction({ id }: Props) {
       course={data.microSession.course ?? undefined}
     >
       <div className="flex flex-col w-full md:p-8 md:pt-6 md:w-full md:border md:rounded md:max-w-3xl md:mx-auto">
+        {!selfData?.self && (
+          <UserNotification type="warning" className={{ root: 'mb-4' }}>
+            {t.rich('pwa.general.userNotLoggedIn', {
+              login: (text) => (
+                <Button
+                  basic
+                  className={{
+                    root: twMerge('font-bold', theme.primaryTextHover),
+                  }}
+                  onClick={() =>
+                    router.push(
+                      `/login?expired=true&redirect_to=${
+                        encodeURIComponent(
+                          window?.location?.pathname +
+                            (window?.location?.search ?? '')
+                        ) ?? '/'
+                      }`
+                    )
+                  }
+                >
+                  {text}
+                </Button>
+              ),
+            })}
+          </UserNotification>
+        )}
         <H3>{data.microSession.displayName}</H3>
         <Prose
           className={{
