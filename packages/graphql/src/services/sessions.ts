@@ -509,11 +509,11 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                   },
                 },
               },
-              score: Number(score),
+              score: parseInt(score),
             },
             update: {
               score: {
-                increment: Number(score),
+                increment: parseInt(score),
               },
             },
           })
@@ -917,7 +917,7 @@ export async function deactivateSessionBlock(
             },
             // leaderboard: {
             //   create: Object.entries(blockLeaderboard).map(([id, score]) => ({
-            //     score: Number(score),
+            //     score: parseInt(score),
             //     participant: {
             //       connect: { id },
             //     },
@@ -943,7 +943,7 @@ export async function deactivateSessionBlock(
                 participant: {
                   connect: { id },
                 },
-                score: Number(score),
+                score: parseInt(score),
                 sessionParticipation: {
                   connectOrCreate: {
                     where: {
@@ -968,7 +968,7 @@ export async function deactivateSessionBlock(
                 },
               },
               update: {
-                score: Number(score),
+                score: parseInt(score),
               },
             })),
           }

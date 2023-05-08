@@ -123,12 +123,14 @@ function Index({ id }: Props) {
     icon: React.ReactElement
     unseenItems?: number
     showBadge?: boolean
+    data?: { cy?: string; test?: string }
   }[] = [
     {
       value: 'questions',
       label: t('shared.generic.questions'),
       icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
       unseenItems: activeBlock?.instances?.length,
+      data: { cy: 'mobile-menu-questions' },
     },
   ]
 
@@ -137,6 +139,7 @@ function Index({ id }: Props) {
       value: 'feedbacks',
       label: t('shared.generic.feedbacks'),
       icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
+      data: { cy: 'mobile-menu-feedbacks' },
     })
   }
   if (selfData?.self && isGamificationEnabled) {
@@ -144,6 +147,7 @@ function Index({ id }: Props) {
       value: 'leaderboard',
       label: t('shared.generic.leaderboard'),
       icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
+      data: { cy: 'mobile-menu-leaderboard' },
     })
   }
 
