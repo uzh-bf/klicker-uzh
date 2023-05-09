@@ -56,7 +56,7 @@ function TagList({
   })
 
   return (
-    <div className="p-4 md:w-[18rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-max text-[0.9rem] overflow-y-auto">
+    <div className="p-4 md:w-[18rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-full text-[0.9rem] overflow-y-auto">
       <Button
         className={{
           root: twMerge(
