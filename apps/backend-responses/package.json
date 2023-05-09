@@ -24,7 +24,7 @@
     "jsonwebtoken": "9.0.0"
   },
   "devDependencies": {
-    "@azure/functions": "3.5.0",
+    "@azure/functions": "3.5.1",
     "@tsconfig/node18": "^1.0.1",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jsonwebtoken": "^9.0.1",
