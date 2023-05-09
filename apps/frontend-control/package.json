@@ -15,7 +15,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@apollo/client": "3.7.7",
+    "@apollo/client": "3.7.14",
     "@fortawesome/fontawesome-svg-core": "6.3.0",
     "@fortawesome/free-regular-svg-icons": "6.3.0",
     "@fortawesome/free-solid-svg-icons": "6.3.0",
