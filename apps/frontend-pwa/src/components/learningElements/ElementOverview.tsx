@@ -1,11 +1,21 @@
+import { useQuery } from '@apollo/client'
 import {
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, H3 } from '@uzh-bf/design-system'
+import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Button,
+  H3,
+  ThemeContext,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
+import { useContext } from 'react'
+import { twMerge } from 'tailwind-merge'
 import DynamicMarkdown from './DynamicMarkdown'
 
 interface ElementOverviewProps {
@@ -32,9 +42,39 @@ function ElementOverview({
   setCurrentIx,
 }: ElementOverviewProps) {
   const t = useTranslations()
+  const router = useRouter()
+  const theme = useContext(ThemeContext)
+  const { data } = useQuery(SelfDocument)
 
   return (
     <div className="flex flex-col space-y-4">
+      {!data?.self && (
+        <UserNotification type="warning">
+          {t.rich('pwa.general.userNotLoggedIn', {
+            login: (text) => (
+              <Button
+                basic
+                className={{
+                  root: twMerge('font-bold', theme.primaryTextHover),
+                }}
+                onClick={() =>
+                  router.push(
+                    `/login?expired=true&redirect_to=${
+                      encodeURIComponent(
+                        window?.location?.pathname +
+                          (window?.location?.search ?? '')
+                      ) ?? '/'
+                    }`
+                  )
+                }
+              >
+                {text}
+              </Button>
+            ),
+          })}
+        </UserNotification>
+      )}
+
       <div className="border-b">
         <H3 className={{ root: 'mb-0' }}>{displayName}</H3>
       </div>

@@ -1,5 +1,8 @@
 import { FetchResult, useMutation } from '@apollo/client'
-import { LoginParticipantDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LoginParticipantDocument,
+  SelfDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import * as RadixLabel from '@radix-ui/react-label'
 import {
   Button,
@@ -74,6 +77,7 @@ function LoginForm() {
     try {
       const result: FetchResult = await loginParticipant({
         variables: { username: values.username, password: values.password },
+        refetchQueries: [SelfDocument],
       })
       const userID: string | null = result.data!.loginParticipant
       if (!userID) {

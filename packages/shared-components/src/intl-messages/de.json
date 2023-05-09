@@ -110,7 +110,8 @@
       "appSetup": "Installation der KlickerUZH-App",
       "firstLogin": "Erstmaliges Login und Profileinrichtung",
       "polls": "Umfragen",
-      "liveQA": "Live-Q&A"
+      "liveQA": "Live-Q&A",
+      "userNotLoggedIn": "Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten."
     },
     "login": {
       "installPWA": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",

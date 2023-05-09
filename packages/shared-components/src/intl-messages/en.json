@@ -110,7 +110,8 @@
       "appSetup": "Installation of the KlickerUZH-App",
       "firstLogin": "First login and profile setup",
       "polls": "Polls",
-      "liveQA": "Live-Q&A"
+      "liveQA": "Live-Q&A",
+      "userNotLoggedIn": "You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress."
     },
     "login": {
       "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
