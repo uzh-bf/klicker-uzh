@@ -49,7 +49,7 @@
     "recharts": "2.4.3",
     "shared-components": "*",
     "sharp": "0.31.3",
-    "tailwind-merge": "1.9.1",
+    "tailwind-merge": "1.12.0",
     "yup": "1.0.0"
   },
   "devDependencies": {
