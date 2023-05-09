@@ -55,7 +55,7 @@
     "rehype-external-links": "2.0.1",
     "rehype-katex": "6.0.2",
     "rehype-prism-plus": "1.5.1",
-    "rehype-react": "7.1.2",
+    "rehype-react": "7.2.0",
     "rehype-sanitize": "5.0.1",
     "remark-math": "5.1.1",
     "remark-parse": "10.0.1",
