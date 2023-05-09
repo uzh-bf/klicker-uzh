@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
-    "@tsconfig/node18": "^1.0.1",
+    "@tsconfig/node18": "^2.0.0",
     "@tsconfig/recommended": "^1.0.2",
     "size-limit": "8.2.4",
     "tsup": "6.6.2",
