@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { checkCronToken } from '../lib/util'
 import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
@@ -835,12 +836,14 @@ export const Mutation = builder.mutationType({
 
       updateGroupAverageScores: t.boolean({
         resolve(_, __, ctx) {
+          checkCronToken(ctx)
           return ParticipantGroupService.updateGroupAverageScores(ctx)
         },
       }),
 
       sendPushNotifications: t.boolean({
         resolve(_, __, ctx) {
+          checkCronToken(ctx)
           return NotificationService.sendPushNotifications(ctx)
         }
       }),

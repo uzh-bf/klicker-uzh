@@ -13,6 +13,8 @@ releases:
     values:
       - values.yaml
       - appSecret: '{{ requiredEnv "APP_SECRET" }}'
+        cron:
+          token: '{{ requiredEnv "CRON_TOKEN" }}'
 
         frontendPWA:
           replicaCount: 3

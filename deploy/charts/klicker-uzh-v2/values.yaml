@@ -14,6 +14,8 @@ notifications:
 
 cron:
   dailyGroupScores: "* * * * *"
+  pushNotifications: "*/5 * * * *"
+  token: ""
 
 frontendPWA:
   priorityClassName: production-workload
