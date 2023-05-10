@@ -113,7 +113,7 @@ export async function sendPushNotifications( ctx: Context) {
         await sendPushNotificationsToSubscribers(microSession.course.subscriptions, ctx);
         
         //update microSession to prevent sending push notifications multiple times
-        const updatedMicroSession = await ctx.prisma.microSession.update({
+        await ctx.prisma.microSession.update({
           where: {
             id: microSession.id,
           },
@@ -130,21 +130,9 @@ export async function sendPushNotifications( ctx: Context) {
   return true
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
 
 async function sendPushNotificationsToSubscribers(subscriptions: PushSubscription[], ctx: Context) {
-  for (let sub of subscriptions) {
-    await sleep(500)
-    const subscription = {
-      endpoint: sub.endpoint,
-      keys: {
-        auth: sub.auth,
-        p256dh: sub.p256dh,
-      },
-    }
-
+  for (let sub of subscriptions) {  
     try {
       await webpush.sendNotification(
         {

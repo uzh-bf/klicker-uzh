@@ -8,4 +8,9 @@ export function shuffle<T>(array: Array<T>): Array<T> {
   return a
 }
 
+
+export function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export { levelFromXp } from '@klicker-uzh/prisma/dist/util'

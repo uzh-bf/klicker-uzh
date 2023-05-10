@@ -11,7 +11,6 @@ import {
 import {
   MicroSession,
   ParticipationsDocument,
-  SendPushNotificationsDocument,
   Session,
   SubscribeToPushDocument,
   UnsubscribeFromPushDocument,
@@ -55,7 +54,6 @@ const Index = function () {
 
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
-  const [sendPushNotifications] = useMutation(SendPushNotificationsDocument)
 
   const {
     courses,
