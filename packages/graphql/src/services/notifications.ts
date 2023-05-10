@@ -106,7 +106,9 @@ export async function sendPushNotifications( ctx: Context) {
     },
   })
 
-
+  // TODO: improve scalability of push notification dispatch:
+  // 1. Investigate implementing this method as a background process to reduce the load on the main thread.
+  // 2. Investigate implementing this method in Azure
   await Promise.all(
     microSessions.map(async (microSession: MicroSession) => {
       try {
