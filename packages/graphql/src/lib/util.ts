@@ -26,4 +26,20 @@ export function checkCronToken(ctx: Context) {
   }
 }
 
+export function formatDate(dateTime: Date) {
+  let date = new Date(dateTime);
+
+  let day = String(date.getUTCDate()).padStart(2, '0');
+  let month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  let year = String(date.getUTCFullYear());
+
+  let hours = String(date.getUTCHours()).padStart(2, '0');
+  let minutes = String(date.getUTCMinutes()).padStart(2, '0');
+
+  return {
+    date: `${day}.${month}.${year}`,
+    time: `${hours}:${minutes}`
+  }
+}
+
 export { levelFromXp } from '@klicker-uzh/prisma/dist/util'

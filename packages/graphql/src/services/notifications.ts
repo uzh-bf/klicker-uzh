@@ -1,5 +1,6 @@
-import { MicroSession, MicroSessionStatus, PushSubscription } from '@klicker-uzh/prisma'
+import { Course, MicroSession, MicroSessionStatus, PushSubscription } from '@klicker-uzh/prisma'
 import { Context, ContextWithUser } from '../lib/context'
+import { formatDate } from '../lib/util'
 import webpush from 'web-push'
 
 interface SubscriptionObjectInput {
@@ -112,7 +113,7 @@ export async function sendPushNotifications( ctx: Context) {
   await Promise.all(
     microSessions.map(async (microSession: MicroSession) => {
       try {
-        await sendPushNotificationsToSubscribers(microSession.course.subscriptions, ctx);
+        await sendPushNotificationsToSubscribers(microSession, ctx);
         
         //update microSession to prevent sending push notifications multiple times
         await ctx.prisma.microSession.update({
@@ -133,9 +134,10 @@ export async function sendPushNotifications( ctx: Context) {
 }
 
 
-async function sendPushNotificationsToSubscribers(subscriptions: PushSubscription[], ctx: Context) {
-  for (let sub of subscriptions) {  
+async function sendPushNotificationsToSubscribers(microSession: MicroSession, ctx: Context) {
+  for (let sub of microSession.course.subscriptions) {  
     try {
+      const formattedDate = formatDate(microSession.scheduledEndAt)
       await webpush.sendNotification(
         {
           endpoint: sub.endpoint,
@@ -146,8 +148,8 @@ async function sendPushNotificationsToSubscribers(subscriptions: PushSubscriptio
         },
         JSON.stringify({
           message:
-            'Das Microlearning für BFI Woche 5 ist bis morgen um 09:00 verfügbar.',
-          title: 'KlickerUZH - Neues Microlearning',
+            `Das Microlearning ${microSession.displayName} für ${microSession.course.displayName} ist bis am ${formattedDate.date} um ${formattedDate.time} Uhr verfügbar.`,
+          title: `KlickerUZH - Neues Microlearning für den Kurs ${microSession.course.name} verfügbar`,
         })
       )
     } catch (error) {
