@@ -64,10 +64,10 @@ class MyDocument extends Document {
             content="KlickerUZH Audience Interaction"
           />
           <meta property="og:site_name" content="KlickerUZH" />
-          <meta property="og:url" content="https://pwa.klicker.uzh.ch" />
+          <meta property="og:url" content="https://control.klicker.uzh.ch" />
           <meta
             property="og:image"
-            content="https://pwa.klicker.uzh.ch/apple-touch-icon.png"
+            content="https://control.klicker.uzh.ch/apple-touch-icon.png"
           />
 
           {/* <link
