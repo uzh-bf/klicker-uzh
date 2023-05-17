@@ -2,7 +2,7 @@ mutation CreateLearningElement(
   $name: String!
   $displayName: String!
   $description: String
-  $questions: [Int!]!
+  $stacks: [StackInput!]!
   $courseId: String
   $multiplier: Int!
   $order: LearningElementOrderType!
@@ -12,7 +12,7 @@ mutation CreateLearningElement(
     name: $name
     displayName: $displayName
     description: $description
-    questions: $questions
+    stacks: $stacks
     courseId: $courseId
     multiplier: $multiplier
     order: $order

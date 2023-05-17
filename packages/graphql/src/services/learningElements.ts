@@ -757,11 +757,29 @@ export async function getLearningElementData(
   }
 }
 
+// TODO: think about refactor how to enforce either questionId or mdContent on type level
+// interface StackInputQuestion {
+//   questionId?: number
+//   mdContent?: never | null
+// }
+// interface StackInputMdContent {
+//   questionId?: never | null
+//   mdContent?: string
+// }
+
+interface StackInput {
+  // TODO: add missing stack input data
+  elements: {
+    questionId?: number | null
+    mdContent?: string | null
+  }[]
+}
+
 interface CreateLearningElementArgs {
   name: string
   displayName: string
   description?: string | null
-  questions: number[]
+  stacks: StackInput[]
   courseId?: string | null
   multiplier: number
   order: OrderType
@@ -773,7 +791,7 @@ export async function createLearningElement(
     name,
     displayName,
     description,
-    questions,
+    stacks,
     courseId,
     multiplier,
     order,
@@ -781,6 +799,13 @@ export async function createLearningElement(
   }: CreateLearningElementArgs,
   ctx: ContextWithUser
 ) {
+  const questions = stacks
+    .flatMap((stack) => stack.elements)
+    .map((stackElem) => stackElem.questionId)
+    .filter(
+      (stackElem) => stackElem !== null && typeof stackElem !== undefined
+    ) as number[]
+
   const dbQuestions = await ctx.prisma.question.findMany({
     where: {
       id: { in: questions },
@@ -810,41 +835,61 @@ export async function createLearningElement(
       resetTimeDays: resetTimeDays,
       stacks: {
         create: await Promise.all(
-          questions.map(async (questionId, ix) => {
-            const question = questionMap[questionId]
-            const processedQuestionData = processQuestionData(question)
-            const questionAttachmentInstances = question.attachments.map(
-              R.pick(['type', 'href', 'name', 'description', 'originalName'])
-            )
-
+          stacks.map(async (stack, ix) => {
+            // TODO: add optional attributes on stack level next to elements
             return {
               type: QuestionStackType.LEARNING_ELEMENT,
               order: ix,
               elements: {
-                create: [
-                  {
-                    order: 0,
-                    questionInstance: {
-                      create: {
-                        order: ix,
-                        type: QuestionInstanceType.LEARNING_ELEMENT,
-                        questionData: processedQuestionData,
-                        results: prepareInitialInstanceResults(
-                          processedQuestionData
-                        ),
-                        question: {
-                          connect: { id: questionId },
+                create: await Promise.all(
+                  stack.elements.map(async (element, ixInner) => {
+                    if (typeof element.mdContent === 'string') {
+                      // create text stack element
+                      return {
+                        order: ixInner,
+                        mdContent: element.mdContent,
+                      }
+                    } else if (typeof element.questionId === 'number') {
+                      // create stack element with question instance
+                      const question = questionMap[element.questionId]
+                      const processedQuestionData =
+                        processQuestionData(question)
+                      const questionAttachmentInstances =
+                        question.attachments.map(
+                          R.pick([
+                            'type',
+                            'href',
+                            'name',
+                            'description',
+                            'originalName',
+                          ])
+                        )
+
+                      return {
+                        order: ixInner,
+                        questionInstance: {
+                          create: {
+                            order: ix,
+                            type: QuestionInstanceType.LEARNING_ELEMENT,
+                            questionData: processedQuestionData,
+                            results: prepareInitialInstanceResults(
+                              processedQuestionData
+                            ),
+                            question: {
+                              connect: { id: element.questionId },
+                            },
+                            owner: {
+                              connect: { id: ctx.user.sub },
+                            },
+                            attachments: {
+                              create: questionAttachmentInstances,
+                            },
+                          },
                         },
-                        owner: {
-                          connect: { id: ctx.user.sub },
-                        },
-                        attachments: {
-                          create: questionAttachmentInstances,
-                        },
-                      },
-                    },
-                  },
-                ],
+                      }
+                    }
+                  })
+                ),
               },
             }
           })
@@ -859,11 +904,6 @@ export async function createLearningElement(
           }
         : undefined,
     },
-  })
-
-  ctx.emitter.emit('invalidate', {
-    typename: 'LearningElement',
-    id: element.id,
   })
 
   return element

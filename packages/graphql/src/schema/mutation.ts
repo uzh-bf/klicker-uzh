@@ -20,6 +20,7 @@ import {
   LearningElement,
   LearningElementOrderType,
   QuestionStack,
+  StackInput,
 } from './learningElements'
 import { MicroSession } from './microSession'
 import {
@@ -531,7 +532,10 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
           description: t.arg.string({ required: false }),
-          questions: t.arg.intList({ required: true }),
+          stacks: t.arg({
+            type: [StackInput],
+            required: true,
+          }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
           order: t.arg({

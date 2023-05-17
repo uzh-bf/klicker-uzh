@@ -113,7 +113,9 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
           name: values.name,
           displayName: values.displayName,
           description: values.description,
-          questions: values.questions.map((q: any) => q.id),
+          stacks: values.questions.map((q: any) => {
+            return { elements: [{ questionId: q.id }] }
+          }),
           multiplier: parseInt(values.multiplier),
           courseId: values.courseId,
           order: values.order as LearningElementOrderType,
