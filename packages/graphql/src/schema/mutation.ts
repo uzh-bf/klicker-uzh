@@ -570,6 +570,31 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      editLearningElement: asUser.field({
+        nullable: true,
+        type: LearningElement,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+          stacks: t.arg({
+            type: [StackInput],
+            required: true,
+          }),
+          courseId: t.arg.string({ required: false }),
+          multiplier: t.arg.int({ required: true }),
+          order: t.arg({
+            type: LearningElementOrderType,
+            required: true,
+          }),
+          resetTimeDays: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.editLearningElement(args, ctx)
+        },
+      }),
+
       createMicroSession: asUser.field({
         nullable: true,
         type: MicroSession,

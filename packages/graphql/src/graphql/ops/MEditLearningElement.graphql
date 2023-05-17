@@ -1,0 +1,25 @@
+mutation EditLearningElement(
+  $id: String!
+  $name: String!
+  $displayName: String!
+  $description: String
+  $stacks: [StackInput!]!
+  $courseId: String
+  $multiplier: Int!
+  $order: LearningElementOrderType!
+  $resetTimeDays: Int!
+) {
+  editLearningElement(
+    id: $id
+    name: $name
+    displayName: $displayName
+    description: $description
+    stacks: $stacks
+    courseId: $courseId
+    multiplier: $multiplier
+    order: $order
+    resetTimeDays: $resetTimeDays
+  ) {
+    id
+  }
+}
