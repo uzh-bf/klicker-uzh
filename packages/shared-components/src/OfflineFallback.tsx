@@ -22,5 +22,5 @@ const OfflineNotification = ({ LayoutComponent }: OfflineNotificationProps) => {
 }
 
 export const fallback = ({ LayoutComponent }: OfflineNotificationProps) => {
-  return <OfflineNotification LayoutComponent={LayoutComponent} />
+  return () => <OfflineNotification LayoutComponent={LayoutComponent} />
 }
