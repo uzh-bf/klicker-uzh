@@ -3,6 +3,7 @@
 query GetLearningElement($id: String!) {
   learningElement(id: $id) {
     id
+    name
     displayName
     description
     pointsMultiplier
