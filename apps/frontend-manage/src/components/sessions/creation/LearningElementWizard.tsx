@@ -98,7 +98,7 @@ function LearningElementWizard({
   const [createLearningElement] = useMutation(CreateLearningElementDocument)
   const [editLearningElement] = useMutation(EditLearningElementDocument)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [editMode, setEditMode] = useState(false)
+  const [editMode, setEditMode] = useState(!!initialValues)
   const [selectedCourseId, setSelectedCourseId] = useState('')
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
