@@ -479,6 +479,10 @@
   text-align: right
 }
 
+.align-middle {
+  vertical-align: middle
+}
+
 .text-lg {
   font-size: 1.125rem;
   line-height: 1.75rem
