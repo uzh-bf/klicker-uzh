@@ -3,6 +3,7 @@ import {
   LoginParticipantDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -16,6 +17,7 @@ function Login() {
 
   const [loginParticipant] = useMutation(LoginParticipantDocument)
   const [error, setError] = useState<string>('')
+  const [showError, setShowError] = useState(false)
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
 
   const loginSchema = Yup.object().shape({
@@ -41,6 +43,7 @@ function Login() {
       const userID: string | null = result.data!.loginParticipant
       if (!userID) {
         setError(t('shared.generic.loginError'))
+        setShowError(true)
         setSubmitting(false)
         resetForm()
       } else {
@@ -52,6 +55,7 @@ function Login() {
     } catch (e) {
       console.error(e)
       setError(t('shared.generic.systemError'))
+      setShowError(true)
       setSubmitting(false)
       resetForm()
     }
@@ -75,12 +79,19 @@ function Login() {
               field2="password"
               data2={{ cy: 'password-field' }}
               isSubmitting={isSubmitting}
-              error={error}
               installationHint={true}
             />
           )
         }}
       </Formik>
+      <Toast
+        type="error"
+        duration={6000}
+        openExternal={showError}
+        setOpenExternal={setShowError}
+      >
+        {error}
+      </Toast>
     </div>
   )
 }

@@ -35,7 +35,6 @@ interface LoginFormProps {
     test?: string
   }
   isSubmitting: boolean
-  error?: string
   installationHint?: boolean
 }
 
@@ -48,7 +47,6 @@ export function LoginForm({
   field2,
   data2,
   isSubmitting,
-  error,
   installationHint = false,
 }: LoginFormProps) {
   const [passwordHidden, setPasswordHidden] = useState(true)
@@ -111,8 +109,6 @@ export function LoginForm({
               type={passwordHidden ? 'password' : 'text'}
             />
 
-            {error && <UserNotification type="error" message={error} />}
-
             <div className="flex flex-row justify-between">
               <div>
                 {/* // TODO: add possibilities to reset password and register new user accounts here */}
@@ -128,7 +124,7 @@ export function LoginForm({
             </div>
 
             {installationHint && onChrome && (
-              <div className="flex flex-col justify-center md:hidden mt-7">
+              <div className="flex flex-col justify-center mt-4 md:hidden">
                 <UserNotification
                   type="info"
                   message={t('shared.login.installPWA')}
