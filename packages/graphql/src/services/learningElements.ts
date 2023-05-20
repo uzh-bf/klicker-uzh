@@ -1095,6 +1095,29 @@ export async function editLearningElement(
           }
         : undefined,
     },
+    include: {
+      course: true,
+      stacks: {
+        include: {
+          elements: {
+            include: {
+              questionInstance: true,
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'LearningElement',
+    id,
   })
 
   return element
