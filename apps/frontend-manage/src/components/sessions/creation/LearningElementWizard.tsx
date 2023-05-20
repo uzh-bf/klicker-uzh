@@ -183,7 +183,9 @@ function LearningElementWizard({
                   }
                 })
             : [],
-          multiplier: String(initialValues?.pointsMultiplier) || '1',
+          multiplier: initialValues?.pointsMultiplier
+            ? String(initialValues?.pointsMultiplier)
+            : '1',
           courseId: initialValues?.courseId || courses[0].value,
           order:
             initialValues?.orderType || Object.keys(LEARNING_ELEMENT_ORDERS)[0],
