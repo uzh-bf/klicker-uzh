@@ -23,6 +23,7 @@ import {
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
+import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
@@ -775,7 +776,8 @@ interface StackInput {
   }[]
 }
 
-interface CreateLearningElementArgs {
+interface ManipulateLearningElementArgs {
+  id?: string
   name: string
   displayName: string
   description?: string | null
@@ -786,8 +788,9 @@ interface CreateLearningElementArgs {
   resetTimeDays: number
 }
 
-export async function createLearningElement(
+export async function manipulateLearningElement(
   {
+    id,
     name,
     displayName,
     description,
@@ -796,9 +799,64 @@ export async function createLearningElement(
     multiplier,
     order,
     resetTimeDays,
-  }: CreateLearningElementArgs,
+  }: ManipulateLearningElementArgs,
   ctx: ContextWithUser
 ) {
+  if (id) {
+    // find all instances belonging to the old session and delete them as the content of the questions might have changed
+    const oldElement = await ctx.prisma.learningElement.findUnique({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: {
+              include: {
+                questionInstance: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!oldElement) {
+      throw new GraphQLError('Learning element not found')
+    }
+    if (oldElement.status === LearningElementStatus.PUBLISHED) {
+      throw new GraphQLError('Cannot edit a published learning element')
+    }
+
+    const oldQuestionInstances = oldElement!.stacks.reduce<QuestionInstance[]>(
+      (acc, stack) => [
+        ...acc,
+        ...(stack.elements
+          .map((element) => element.questionInstance)
+          .filter((instance) => instance !== null) as QuestionInstance[]),
+      ],
+      []
+    )
+
+    await ctx.prisma.questionInstance.deleteMany({
+      where: {
+        id: { in: oldQuestionInstances.map(({ id }) => id) },
+      },
+    })
+    await ctx.prisma.learningElement.update({
+      where: { id },
+      data: {
+        stacks: {
+          deleteMany: {},
+        },
+        course: {
+          disconnect: true,
+        },
+      },
+    })
+  }
+
   const questions = stacks
     .flatMap((stack) => stack.elements)
     .map((stackElem) => stackElem.questionId)
@@ -825,8 +883,9 @@ export async function createLearningElement(
     Record<number, Question & { attachments: Attachment[] }>
   >((acc, question) => ({ ...acc, [question.id]: question }), {})
 
-  const element = await ctx.prisma.learningElement.create({
-    data: {
+  const element = await ctx.prisma.learningElement.upsert({
+    where: { id: id ?? uuidv4() },
+    create: {
       name,
       displayName: displayName ?? name,
       description,
@@ -904,120 +963,7 @@ export async function createLearningElement(
           }
         : undefined,
     },
-  })
-
-  return element
-}
-
-// TODO: combine this function with the previous one using upsert, update / create
-interface EditLearningElementArgs {
-  id: string
-  name: string
-  displayName: string
-  description?: string | null
-  stacks: StackInput[]
-  courseId?: string | null
-  multiplier: number
-  order: OrderType
-  resetTimeDays: number
-}
-
-export async function editLearningElement(
-  {
-    id,
-    name,
-    displayName,
-    description,
-    stacks,
-    courseId,
-    multiplier,
-    order,
-    resetTimeDays,
-  }: EditLearningElementArgs,
-  ctx: ContextWithUser
-) {
-  // find all instances belonging to the old session and delete them as the content of the questions might have changed
-  const oldElement = await ctx.prisma.learningElement.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      stacks: {
-        include: {
-          elements: {
-            include: {
-              questionInstance: true,
-            },
-          },
-        },
-      },
-    },
-  })
-
-  if (!oldElement) {
-    throw new GraphQLError('Learning element not found')
-  }
-  if (oldElement.status === LearningElementStatus.PUBLISHED) {
-    throw new GraphQLError('Cannot edit a published learning element')
-  }
-
-  const oldQuestionInstances = oldElement!.stacks.reduce<QuestionInstance[]>(
-    (acc, stack) => [
-      ...acc,
-      ...(stack.elements
-        .map((element) => element.questionInstance)
-        .filter((instance) => instance !== null) as QuestionInstance[]),
-    ],
-    []
-  )
-
-  await ctx.prisma.questionInstance.deleteMany({
-    where: {
-      id: { in: oldQuestionInstances.map(({ id }) => id) },
-    },
-  })
-  await ctx.prisma.learningElement.update({
-    where: { id },
-    data: {
-      stacks: {
-        deleteMany: {},
-      },
-      course: {
-        disconnect: true,
-      },
-    },
-  })
-
-  const questions = stacks
-    .flatMap((stack) => stack.elements)
-    .map((stackElem) => stackElem.questionId)
-    .filter(
-      (stackElem) => stackElem !== null && typeof stackElem !== undefined
-    ) as number[]
-
-  const dbQuestions = await ctx.prisma.question.findMany({
-    where: {
-      id: { in: questions },
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      attachments: true,
-    },
-  })
-
-  const uniqueQuestions = new Set(dbQuestions.map((q) => q.id))
-  if (dbQuestions.length !== uniqueQuestions.size) {
-    throw new GraphQLError('Not all questions could be found')
-  }
-
-  const questionMap = dbQuestions.reduce<
-    Record<number, Question & { attachments: Attachment[] }>
-  >((acc, question) => ({ ...acc, [question.id]: question }), {})
-
-  const element = await ctx.prisma.learningElement.update({
-    where: { id },
-    data: {
+    update: {
       name,
       displayName: displayName ?? name,
       description,
