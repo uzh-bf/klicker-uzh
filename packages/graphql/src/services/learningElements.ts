@@ -883,164 +883,88 @@ export async function manipulateLearningElement(
     Record<number, Question & { attachments: Attachment[] }>
   >((acc, question) => ({ ...acc, [question.id]: question }), {})
 
+  const createOrUpdateJSON = {
+    name,
+    displayName: displayName ?? name,
+    description,
+    pointsMultiplier: multiplier,
+    orderType: order,
+    resetTimeDays: resetTimeDays,
+    stacks: {
+      create: await Promise.all(
+        stacks.map(async (stack, ix) => {
+          // TODO: add optional attributes on stack level next to elements
+          return {
+            type: QuestionStackType.LEARNING_ELEMENT,
+            order: ix,
+            elements: {
+              create: await Promise.all(
+                stack.elements.map(async (element, ixInner) => {
+                  if (typeof element.mdContent === 'string') {
+                    // create text stack element
+                    return {
+                      order: ixInner,
+                      mdContent: element.mdContent,
+                    }
+                  } else if (typeof element.questionId === 'number') {
+                    // create stack element with question instance
+                    const question = questionMap[element.questionId]
+                    const processedQuestionData = processQuestionData(question)
+                    const questionAttachmentInstances =
+                      question.attachments.map(
+                        R.pick([
+                          'type',
+                          'href',
+                          'name',
+                          'description',
+                          'originalName',
+                        ])
+                      )
+
+                    return {
+                      order: ixInner,
+                      questionInstance: {
+                        create: {
+                          order: ix,
+                          type: QuestionInstanceType.LEARNING_ELEMENT,
+                          questionData: processedQuestionData,
+                          results: prepareInitialInstanceResults(
+                            processedQuestionData
+                          ),
+                          question: {
+                            connect: { id: element.questionId },
+                          },
+                          owner: {
+                            connect: { id: ctx.user.sub },
+                          },
+                          attachments: {
+                            create: questionAttachmentInstances,
+                          },
+                        },
+                      },
+                    }
+                  }
+                })
+              ),
+            },
+          }
+        })
+      ),
+    },
+    owner: {
+      connect: { id: ctx.user.sub },
+    },
+    course: courseId
+      ? {
+          connect: { id: courseId },
+        }
+      : undefined,
+  }
+
   const element = await ctx.prisma.learningElement.upsert({
     where: { id: id ?? uuidv4() },
-    create: {
-      name,
-      displayName: displayName ?? name,
-      description,
-      pointsMultiplier: multiplier,
-      orderType: order,
-      resetTimeDays: resetTimeDays,
-      stacks: {
-        create: await Promise.all(
-          stacks.map(async (stack, ix) => {
-            // TODO: add optional attributes on stack level next to elements
-            return {
-              type: QuestionStackType.LEARNING_ELEMENT,
-              order: ix,
-              elements: {
-                create: await Promise.all(
-                  stack.elements.map(async (element, ixInner) => {
-                    if (typeof element.mdContent === 'string') {
-                      // create text stack element
-                      return {
-                        order: ixInner,
-                        mdContent: element.mdContent,
-                      }
-                    } else if (typeof element.questionId === 'number') {
-                      // create stack element with question instance
-                      const question = questionMap[element.questionId]
-                      const processedQuestionData =
-                        processQuestionData(question)
-                      const questionAttachmentInstances =
-                        question.attachments.map(
-                          R.pick([
-                            'type',
-                            'href',
-                            'name',
-                            'description',
-                            'originalName',
-                          ])
-                        )
-
-                      return {
-                        order: ixInner,
-                        questionInstance: {
-                          create: {
-                            order: ix,
-                            type: QuestionInstanceType.LEARNING_ELEMENT,
-                            questionData: processedQuestionData,
-                            results: prepareInitialInstanceResults(
-                              processedQuestionData
-                            ),
-                            question: {
-                              connect: { id: element.questionId },
-                            },
-                            owner: {
-                              connect: { id: ctx.user.sub },
-                            },
-                            attachments: {
-                              create: questionAttachmentInstances,
-                            },
-                          },
-                        },
-                      }
-                    }
-                  })
-                ),
-              },
-            }
-          })
-        ),
-      },
-      owner: {
-        connect: { id: ctx.user.sub },
-      },
-      course: courseId
-        ? {
-            connect: { id: courseId },
-          }
-        : undefined,
-    },
-    update: {
-      name,
-      displayName: displayName ?? name,
-      description,
-      pointsMultiplier: multiplier,
-      orderType: order,
-      resetTimeDays: resetTimeDays,
-      stacks: {
-        create: await Promise.all(
-          stacks.map(async (stack, ix) => {
-            // TODO: add optional attributes on stack level next to elements
-            return {
-              type: QuestionStackType.LEARNING_ELEMENT,
-              order: ix,
-              elements: {
-                create: await Promise.all(
-                  stack.elements.map(async (element, ixInner) => {
-                    if (typeof element.mdContent === 'string') {
-                      // create text stack element
-                      return {
-                        order: ixInner,
-                        mdContent: element.mdContent,
-                      }
-                    } else if (typeof element.questionId === 'number') {
-                      // create stack element with question instance
-                      const question = questionMap[element.questionId]
-                      const processedQuestionData =
-                        processQuestionData(question)
-                      const questionAttachmentInstances =
-                        question.attachments.map(
-                          R.pick([
-                            'type',
-                            'href',
-                            'name',
-                            'description',
-                            'originalName',
-                          ])
-                        )
-
-                      return {
-                        order: ixInner,
-                        questionInstance: {
-                          create: {
-                            order: ix,
-                            type: QuestionInstanceType.LEARNING_ELEMENT,
-                            questionData: processedQuestionData,
-                            results: prepareInitialInstanceResults(
-                              processedQuestionData
-                            ),
-                            question: {
-                              connect: { id: element.questionId },
-                            },
-                            owner: {
-                              connect: { id: ctx.user.sub },
-                            },
-                            attachments: {
-                              create: questionAttachmentInstances,
-                            },
-                          },
-                        },
-                      }
-                    }
-                  })
-                ),
-              },
-            }
-          })
-        ),
-      },
-      owner: {
-        connect: { id: ctx.user.sub },
-      },
-      course: courseId
-        ? {
-            connect: { id: courseId },
-          }
-        : undefined,
-    },
+    create: createOrUpdateJSON,
+    update: createOrUpdateJSON,
     include: {
       course: true,
       stacks: {
