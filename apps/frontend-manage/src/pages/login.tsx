@@ -1,12 +1,11 @@
 import { useMutation } from '@apollo/client'
+import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import { LoginUserDocument } from '@klicker-uzh/graphql/dist/ops'
-import * as RadixLabel from '@radix-ui/react-label'
-import { Button, H1, ThemeContext } from '@uzh-bf/design-system'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { Button, FormikTextField, H1 } from '@uzh-bf/design-system'
+import { Form, Formik } from 'formik'
 import Image from 'next/image'
 import Router from 'next/router'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useState } from 'react'
 import * as Yup from 'yup'
 
 import Footer from '../components/common/Footer'
@@ -17,8 +16,8 @@ const loginSchema = Yup.object().shape({
 })
 
 function LoginForm() {
-  const theme = useContext(ThemeContext)
   const [loginUser] = useMutation(LoginUserDocument)
+  const [passwordHidden, setPasswordHidden] = useState(true)
 
   return (
     <div className="flex flex-col items-center h-full md:justify-center">
@@ -32,7 +31,7 @@ function LoginForm() {
           Router.push('/')
         }}
       >
-        {({ errors, touched, isSubmitting }) => {
+        {({ isSubmitting }) => {
           return (
             <div className="max-w-xl md:border md:rounded-lg md:shadow">
               <div className="flex flex-col items-center p-12">
@@ -46,56 +45,27 @@ function LoginForm() {
                     data-cy="login-logo"
                   />
                 </div>
-                <div className="">
+                <div>
                   <H1>Login</H1>
-
                   <Form className="w-72 sm:w-96">
-                    <RadixLabel.Root
-                      htmlFor="email"
-                      className="text-sm leading-7 text-gray-600"
-                    >
-                      E-Mail Adresse
-                    </RadixLabel.Root>
-                    <Field
+                    <FormikTextField
+                      required
+                      label="E-Mail Adresse"
+                      labelType="small"
                       name="email"
-                      type="text"
-                      className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                        theme.primaryBorderFocus,
-                        errors.email &&
-                          touched.email &&
-                          'border-red-400 bg-red-50'
-                      )}
-                      data-cy="email-field"
-                    />
-                    <ErrorMessage
-                      name="email"
-                      component="div"
-                      className="text-sm text-red-400"
+                      data={{ cy: 'email-field' }}
                     />
 
-                    <RadixLabel.Root
-                      className="text-sm leading-7 text-gray-600"
-                      htmlFor="password"
-                    >
-                      Passwort
-                    </RadixLabel.Root>
-                    <Field
+                    <FormikTextField
+                      required
+                      label="Passwort"
+                      labelType="small"
                       name="password"
-                      type="password"
-                      className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                        theme.primaryBorderFocus,
-                        errors.password &&
-                          touched.password &&
-                          'border-red-400 bg-red-50'
-                      )}
-                      data-cy="password-field"
-                    />
-                    <ErrorMessage
-                      name="password"
-                      component="div"
-                      className="text-sm text-red-400"
+                      data={{ cy: 'password-field' }}
+                      icon={passwordHidden ? faEye : faEyeSlash}
+                      onIconClick={() => setPasswordHidden(!passwordHidden)}
+                      className={{ root: 'mt-1' }}
+                      type={passwordHidden ? 'password' : 'text'}
                     />
 
                     <div className="flex flex-row justify-between">
