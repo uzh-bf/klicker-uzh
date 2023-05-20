@@ -76,7 +76,7 @@ export function LoginForm({
   }
 
   return (
-    <div className="flex flex-col h-full max-w-xl md:h-max md:border md:rounded-lg md:shadow">
+    <div className="flex flex-col flex-grow max-w-xl md:!flex-grow-0 md:border md:rounded-lg md:shadow">
       <div className="flex flex-col items-center justify-center flex-1 md:p-12">
         <div className="w-full mb-8 text-center sm:mb-12">
           <Image
@@ -123,7 +123,7 @@ export function LoginForm({
                 disabled={isSubmitting}
                 data={{ cy: 'submit-login' }}
               >
-                <Button.Label>Anmelden</Button.Label>
+                <Button.Label>{t('shared.generic.signin')}</Button.Label>
               </Button>
             </div>
 

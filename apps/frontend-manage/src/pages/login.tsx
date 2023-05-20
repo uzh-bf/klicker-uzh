@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { LoginUserDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Formik } from 'formik'
-import Router from 'next/router'
+import { useRouter } from 'next/router'
 import LoginForm from 'shared-components/src/LoginForm'
 import * as Yup from 'yup'
 
@@ -12,6 +12,7 @@ const loginSchema = Yup.object().shape({
 
 function Login() {
   const [loginUser] = useMutation(LoginUserDocument)
+  const router = useRouter()
 
   return (
     <div className="flex flex-col items-center h-full md:justify-center">
@@ -22,13 +23,13 @@ function Login() {
           await loginUser({
             variables: { email: values.email, password: values.password },
           })
-          Router.push('/')
+          router.push('/')
         }}
       >
         {({ isSubmitting }) => {
           return (
             <LoginForm
-              header="Login"
+              header="Login Dozierende"
               label1="E-Mail Adresse"
               field1="email"
               data1={{ cy: 'email-field' }}
