@@ -17,9 +17,9 @@ import {
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useReducer, useState } from 'react'
+import Footer from 'shared-components/src/Footer'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
-import Footer from '../../../components/common/Footer'
 import useEvaluationInitialization from '../../../components/hooks/useEvaluationInitialization'
 import {
   sizeReducer,

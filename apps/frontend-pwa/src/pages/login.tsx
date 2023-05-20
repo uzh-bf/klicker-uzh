@@ -107,7 +107,7 @@ function LoginForm() {
       >
         {({ errors, touched, isSubmitting }) => {
           return (
-            <div className="">
+            <div>
               <div className="w-full mb-8 text-center sm:mb-12">
                 <Image
                   src="/KlickerLogo.png"
@@ -181,7 +181,7 @@ function LoginForm() {
                     <div className="flex flex-col justify-center md:hidden mt-7">
                       <UserNotification
                         type="info"
-                        message={t('pwa.login.installPWA')}
+                        message={t('shared.login.installPWA')}
                       >
                         <Button
                           className={{
@@ -190,7 +190,7 @@ function LoginForm() {
                           onClick={onInstallClick}
                         >
                           <Button.Label>
-                            {t('pwa.login.installButton')}
+                            {t('shared.login.installButton')}
                           </Button.Label>
                         </Button>
                       </UserNotification>
@@ -200,7 +200,7 @@ function LoginForm() {
                     <UserNotification
                       className={{ root: 'mt-4' }}
                       type="info"
-                      message={t('pwa.login.installHomeScreen')}
+                      message={t('shared.login.installHomeScreen')}
                     />
                   )}
                 </Form>
