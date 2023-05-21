@@ -7,13 +7,13 @@ import { twMerge } from 'tailwind-merge'
 import TagActions from './TagActions'
 import TagEditForm from './TagEditForm'
 
-interface TagListItemProps {
+interface UserTagProps {
   tag: Tag
   handleTagClick: (tag: string) => void
   active: boolean
 }
 
-function TagListItem({ tag, handleTagClick, active }: TagListItemProps) {
+function UserTag({ tag, handleTagClick, active }: UserTagProps) {
   const theme = useContext(ThemeContext)
   const [editMode, setEditMode] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
@@ -53,4 +53,4 @@ function TagListItem({ tag, handleTagClick, active }: TagListItemProps) {
   )
 }
 
-export default TagListItem
+export default UserTag
