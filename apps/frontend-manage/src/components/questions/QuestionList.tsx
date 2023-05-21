@@ -1,4 +1,5 @@
 import { Question as QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import { UserNotification } from '@uzh-bf/design-system'
 import React from 'react'
 
 import Question from './Question'
@@ -21,7 +22,13 @@ function QuestionList({
   }
 
   if (questions.length === 0) {
-    return <div>No questions matching your specified criteria.</div>
+    return (
+      <UserNotification
+        type="warning"
+        className={{ root: 'ml-7 text-sm' }}
+        message="Wir konnten leider keine Fragen finden, welche den gewünschten Kriterien entsprechen. Bitte versuchen Sie es mit anderen Filtern oder erstellen Sie eine neue Frage."
+      />
+    )
   }
 
   return (
