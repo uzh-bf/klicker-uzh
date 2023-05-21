@@ -147,14 +147,6 @@ export const LEARNING_ELEMENTS = [
   //   ],
   // },
   // {
-  //   id: 'a749be66-804c-4d9b-9cab-793f2e1e5b3a',
-  //   name: 'BFII Repetition Microlearning',
-  //   displayName: 'BFII Repetition Microlearning',
-  //   description: '',
-  //   orderType: OrderType.SEQUENTIAL,
-  //   stacks: [],
-  // },
-  // {
   //   id: '1e9cd20e-6c64-4776-abb6-9f05c39a4556',
   //   name: 'BFII Modul 4',
   //   displayName: 'BFII Modul 4 - Lernfragen',
@@ -220,6 +212,42 @@ export const LEARNING_ELEMENTS = [
   //     },
   //   ],
   // },
+  //   {
+  //     id: 'c74a161b-d7e3-44b0-acc2-475e27975f31',
+  //     name: 'BFII Modul 5',
+  //     displayName: 'BFII Modul 5 - Lernfragen',
+  //     description: '',
+  //     orderType: OrderType.LAST_RESPONSE,
+  //     stacks: [
+  //       {
+  //         elements: [572],
+  //       },
+  //       {
+  //         elements: [573],
+  //       },
+  //       {
+  //         elements: [574],
+  //       },
+  //       {
+  //         displayName: 'Modul 5 - Replikationsmethode',
+  //         description: `
+  // Gegeben ist folgende Ausgangslage:
+  // ![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul5_Ausgangslage_Replikationsmethode.png)
+  // [Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul5_Replikationsmethode.xlsx)
+  //           `,
+  //         elements: [850, 851, 852],
+  //       },
+  //       {
+  //         displayName: 'Modul 5 - Risikoneutrale Bewertung',
+  //         description: `
+  // Gegeben ist folgende Ausgangslage:
+  // ![](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul5_Ausgangslage_Optionspreis.png)
+  // [Excel-Vorlage herunterladen](https://sos-ch-dk-2.exo.io/klicker-prod/excel/bf2/BF2_Modul5_Optionspreis.xlsx)
+  //           `,
+  //         elements: [853, 854],
+  //       },
+  //     ],
+  //   },
   // {
   //   id: 'a749be66-804c-4d9b-9cab-793f2e1e5b3a',
   //   name: 'BFII Repetition Microlearning',

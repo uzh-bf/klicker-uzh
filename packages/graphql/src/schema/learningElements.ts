@@ -21,6 +21,19 @@ export const QuestionStackType = builder.enumType('QuestionStackType', {
   values: Object.values(DB.QuestionStackType),
 })
 
+export const StackInput = builder.inputType('StackInput', {
+  fields: (t) => ({
+    elements: t.field({ type: [StackElementInput], required: true }),
+  }),
+})
+
+export const StackElementInput = builder.inputType('StackElementInput', {
+  fields: (t) => ({
+    questionId: t.int({ required: false }),
+    mdContent: t.string({ required: false }),
+  }),
+})
+
 export interface IQuestionStack extends DB.QuestionStack {
   elements?: IStackElement[]
 }

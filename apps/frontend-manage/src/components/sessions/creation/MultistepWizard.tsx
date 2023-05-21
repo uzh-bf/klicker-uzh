@@ -1,10 +1,7 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
 import { faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  LearningElementOrderType,
-  Session,
-} from '@klicker-uzh/graphql/dist/ops'
+import { LearningElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Progress } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import React, { useState } from 'react'
@@ -13,7 +10,7 @@ interface FormProps {
   isCompleted: boolean
   completionSuccessMessage?: (elementName: string) => React.ReactNode
   children: React.ReactNode[]
-  initialValues?: Partial<Session>
+  initialValues?: any
   onSubmit: (values: any, bag: any) => void
   onViewElement: () => void
   onRestartForm: () => void

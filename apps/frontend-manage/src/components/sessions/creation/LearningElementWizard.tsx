@@ -1,6 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   CreateLearningElementDocument,
+  EditLearningElementDocument,
+  LearningElement,
   LearningElementOrderType,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -18,13 +20,14 @@ import * as yup from 'yup'
 import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
-import MultistepWizard, { MicroSessionFormValues } from './MultistepWizard'
+import MultistepWizard, { LearningElementFormValues } from './MultistepWizard'
 
 interface LearningElementWizardProps {
   courses: {
     label: string
     value: string
   }[]
+  initialValues?: LearningElement
 }
 
 const stepOneValidationSchema = yup.object().shape({
@@ -86,45 +89,63 @@ const stepThreeValidationSchema = yup.object().shape({
     .min(1),
 })
 
-function LearningElementWizard({ courses }: LearningElementWizardProps) {
+function LearningElementWizard({
+  courses,
+  initialValues,
+}: LearningElementWizardProps) {
   const router = useRouter()
 
   const [createLearningElement] = useMutation(CreateLearningElementDocument)
+  const [editLearningElement] = useMutation(EditLearningElementDocument)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [editMode, setEditMode] = useState(false)
+  const [editMode, setEditMode] = useState(!!initialValues)
   const [selectedCourseId, setSelectedCourseId] = useState('')
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
-  const initialValues = {
-    name: '',
-    displayName: '',
-    description: '',
-    questions: [],
-    multiplier: '1',
-    courseId: courses[0].value,
-    order: Object.keys(LEARNING_ELEMENT_ORDERS)[0],
-    resetTimeDays: '6',
-  }
-
-  const onSubmit = async (values: MicroSessionFormValues) => {
+  const onSubmit = async (values: LearningElementFormValues) => {
     try {
-      const result = await createLearningElement({
-        variables: {
-          name: values.name,
-          displayName: values.displayName,
-          description: values.description,
-          questions: values.questions.map((q: any) => q.id),
-          multiplier: parseInt(values.multiplier),
-          courseId: values.courseId,
-          order: values.order as LearningElementOrderType,
-          resetTimeDays: parseInt(values.resetTimeDays),
-        },
-      })
+      if (initialValues) {
+        const result = await editLearningElement({
+          variables: {
+            id: initialValues.id,
+            name: values.name,
+            displayName: values.displayName,
+            description: values.description,
+            stacks: values.questions.map((q: any) => {
+              return { elements: [{ questionId: q.id }] }
+            }),
+            multiplier: parseInt(values.multiplier),
+            courseId: values.courseId,
+            order: values.order as LearningElementOrderType,
+            resetTimeDays: parseInt(values.resetTimeDays),
+          },
+        })
 
-      if (result.data?.createLearningElement) {
-        setIsWizardCompleted(true)
+        if (result.data?.editLearningElement) {
+          setIsWizardCompleted(true)
+        }
+        setSelectedCourseId(values.courseId)
+      } else {
+        const result = await createLearningElement({
+          variables: {
+            name: values.name,
+            displayName: values.displayName,
+            description: values.description,
+            stacks: values.questions.map((q: any) => {
+              return { elements: [{ questionId: q.id }] }
+            }),
+            multiplier: parseInt(values.multiplier),
+            courseId: values.courseId,
+            order: values.order as LearningElementOrderType,
+            resetTimeDays: parseInt(values.resetTimeDays),
+          },
+        })
+
+        if (result.data?.createLearningElement) {
+          setIsWizardCompleted(true)
+        }
+        setSelectedCourseId(values.courseId)
       }
-      setSelectedCourseId(values.courseId)
     } catch (error) {
       console.log(error)
       // TODO: set edit mode value correctly once editing is implemented
@@ -142,7 +163,34 @@ function LearningElementWizard({ courses }: LearningElementWizardProps) {
             {editMode ? 'modifiziert' : 'erstellt'}.
           </div>
         )}
-        initialValues={initialValues}
+        initialValues={{
+          name: initialValues?.name || '',
+          displayName: initialValues?.displayName || '',
+          description: initialValues?.description || '',
+          questions: initialValues?.stacks
+            ? initialValues?.stacks
+                ?.filter(
+                  (stack) =>
+                    stack.elements && stack.elements[0].questionInstance
+                )
+                .map((stack) => {
+                  return {
+                    id: stack.elements![0].questionInstance?.questionData.id,
+                    title:
+                      stack.elements![0].questionInstance?.questionData.name,
+                    hasAnswerFeedbacks: true, // has been checked during previous submission
+                    hasSampleSolution: true, // has been checked during previous submission
+                  }
+                })
+            : [],
+          multiplier: initialValues?.pointsMultiplier
+            ? String(initialValues?.pointsMultiplier)
+            : '1',
+          courseId: initialValues?.courseId || courses[0].value,
+          order:
+            initialValues?.orderType || Object.keys(LEARNING_ELEMENT_ORDERS)[0],
+          resetTimeDays: initialValues?.resetTimeDays || '6',
+        }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
         onRestartForm={() => {
