@@ -10,15 +10,18 @@ import Header from './common/Header'
 interface LayoutProps {
   displayName?: string
   children: React.ReactNode
-  className?: string
-  scrollable?: boolean
+  className?: { root?: string; children?: string }
+  data?: {
+    cy?: string
+    test?: string
+  }
 }
 
 function Layout({
   displayName = 'KlickerUZH',
   children,
   className,
-  scrollable = true,
+  data,
 }: LayoutProps) {
   const router = useRouter()
 
@@ -36,27 +39,28 @@ function Layout({
   }
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <>
       <Head>
         <title>{displayName}</title>
         <meta name="description" content={displayName} charSet="utf-8"></meta>
       </Head>
 
-      <div className={twMerge('h-full overflow-y-none', className)}>
-        <div className="fixed top-0 z-10 w-full print:hidden">
-          <Header user={dataUser.userProfile} />
-        </div>
-        <div
-          className={twMerge(
-            'flex justify-between flex-col mt-14 [height:_calc(100%-3.5rem)]',
-            scrollable ? 'overflow-y-auto' : ''
-          )}
-        >
-          <div className="p-4">{children}</div>
-          <Footer className="relative" />
-        </div>
+      <div className="flex-none">
+        <Header user={dataUser.userProfile} />
       </div>
-    </div>
+
+      <div
+        className={twMerge(
+          'flex-1 flex flex-col overflow-y-auto p-4',
+          className?.children
+        )}
+        data-cy={data?.cy}
+        data-test={data?.test}
+      >
+        {children}
+      </div>
+      <Footer />
+    </>
   )
 }
 
