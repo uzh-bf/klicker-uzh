@@ -55,7 +55,7 @@ export const QuestionStack = QuestionStackRef.implement({
 })
 
 export interface IStackElement extends DB.StackElement {
-  questionInstance?: IQuestionInstance
+  questionInstance?: IQuestionInstance | null
 }
 export const StackElementRef = builder.objectRef<IStackElement>('StackElement')
 export const StackElement = StackElementRef.implement({

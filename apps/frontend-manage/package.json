@@ -23,9 +23,8 @@
     "@klicker-uzh/graphql": "^3.0.0-alpha.0",
     "@klicker-uzh/markdown": "^3.0.0-alpha.0",
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
-    "@next/font": "13.4.1",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "1.6.3",
+    "@uzh-bf/design-system": "1.6.4",
     "d3": "7.8.2",
     "dayjs": "1.11.7",
     "deepmerge": "4.3.0",
@@ -36,8 +35,8 @@
     "js-search": "2.0.0",
     "localforage": "1.10.0",
     "lodash": "4.17.21",
-    "next": "13.4.1",
-    "next-intl": "2.10.4",
+    "next": "13.4.3",
+    "next-intl": "2.14.6",
     "nookies": "2.5.2",
     "ramda": "0.29.0",
     "react": "18.2.0",
@@ -62,7 +61,6 @@
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "0.4.2",
     "@tailwindcss/forms": "0.5.3",
-    "@tailwindcss/line-clamp": "0.4.2",
     "@tailwindcss/typography": "0.5.9",
     "@types/d3": "^7.4.0",
     "@types/js-search": "^1.4.0",
@@ -77,7 +75,7 @@
     "cssnano": "5.1.15",
     "eslint-config-next": "13.4.1",
     "postcss": "8.4.21",
-    "prettier": "2.8.4",
+    "prettier": "2.8.8",
     "prettier-plugin-organize-imports": "3.2.2",
     "tailwindcss": "3.3.2",
     "tailwindcss-radix": "2.7.0",
@@ -90,6 +88,6 @@
     "node": ">=16"
   },
   "overrides": {
-    "next": "13.4.1"
+    "next": "13.4.3"
   }
 }
