@@ -11,10 +11,12 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetUserTagsDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button, ThemeContext, UserNotification } from '@uzh-bf/design-system'
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import { QUESTION_TYPES, TYPES_LABELS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
-import TagListItem from './TagListItem'
+import TagHeader from './TagHeader'
+import TagItem from './TagItem'
+import UserTag from './UserTag'
 
 interface Props {
   activeTags: string[]
@@ -45,41 +47,44 @@ function TagList({
     error: tagsError,
   } = useQuery(GetUserTagsDocument)
 
+  const [questionTypesVisible, setQuestionTypesVisible] = useState(true)
+  const [userTagsVisible, setUserTagsVisible] = useState(false)
+  const [gamificationTagsVisible, setGamificationTagsVisible] = useState(false)
+
   const tags = tagsData?.userTags?.map((tag) => {
     return { name: tag.name, id: tag.id }
   })
 
   return (
-    <div className="h-full pb-2">
-      <div className="p-4 md:w-[18rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-max text-[0.9rem] overflow-y-auto">
-        <Button
-          className={{
-            root: twMerge(
-              'w-full text-base bg-white sm:hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
-              (activeTags.length > 0 ||
-                activeType ||
-                sampleSolution ||
-                answerFeedbacks) &&
-                theme.primaryText
-            ),
-          }}
-          disabled={
-            !(
-              activeTags.length > 0 ||
+    <div className="p-4 md:w-[18rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-full text-[0.9rem] overflow-y-auto">
+      <Button
+        className={{
+          root: twMerge(
+            'w-full text-base bg-white sm:hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
+            (activeTags.length > 0 ||
               activeType ||
               sampleSolution ||
-              answerFeedbacks
-            )
-          }
-          onClick={(): void => handleReset()}
-        >
-          <Button.Icon className={{ root: 'mr-1' }}>
-            <FontAwesomeIcon icon={faCircleXmark} />
-          </Button.Icon>
-          <Button.Label>Filter zurücksetzen</Button.Label>
-        </Button>
+              answerFeedbacks) &&
+              theme.primaryText
+          ),
+        }}
+        disabled={
+          !(
+            activeTags.length > 0 ||
+            activeType ||
+            sampleSolution ||
+            answerFeedbacks
+          )
+        }
+        onClick={(): void => handleReset()}
+      >
+        <Button.Icon className={{ root: 'mr-1' }}>
+          <FontAwesomeIcon icon={faCircleXmark} />
+        </Button.Icon>
+        <Button.Label>Filter zurücksetzen</Button.Label>
+      </Button>
 
-        {/* <Button
+      {/* <Button
           className={twMerge(
             isArchiveActive && 'text-red-600',
             'w-full text-base bg-white sm:hover:bg-grey-40 sm:hover:text-red-600 !py-[0.2rem] mb-2 flex flex-row justify-center'
@@ -92,35 +97,33 @@ function TagList({
           <Button.Label>Archiv Anzeigen</Button.Label>
         </Button> */}
 
-        <div>
-          <div className="px-4 py-1 font-bold mb-1 border border-b border-x-0 border-solid border-t-0 border-gray-300 text-[1.05rem] text-neutral-500 mt-4">
-            Fragetypen
-          </div>
-          <ul className="p-0 m-0 list-none">
+      <div>
+        <TagHeader
+          text="Fragetypen"
+          state={questionTypesVisible}
+          setState={setQuestionTypesVisible}
+        />
+        {questionTypesVisible && (
+          <ul className="list-none">
             {Object.values(QUESTION_TYPES).map((type) => (
-              <li
+              <TagItem
                 key={type}
-                className={twMerge(
-                  'px-4 py-1 hover:cursor-pointer',
-                  theme.primaryTextHover,
-                  activeType === type && theme.primaryText
-                )}
+                text={TYPES_LABELS[type]}
+                icon={activeType === type ? faListSolid : faListRegular}
+                active={activeType === type}
                 onClick={(): void => handleTagClick(type, true)}
-              >
-                <FontAwesomeIcon
-                  icon={activeType === type ? faListSolid : faListRegular}
-                  className="mr-2"
-                />
-                {TYPES_LABELS[type]}
-              </li>
+              />
             ))}
           </ul>
+        )}
 
-          <div className="px-4 py-1 font-bold mb-1 border border-b border-x-0 border-solid border-t-0 border-gray-300 text-[1.05rem] text-neutral-500 mt-4">
-            Tags
-          </div>
-
-          {((): React.ReactElement => {
+        <TagHeader
+          text="Tags"
+          state={userTagsVisible}
+          setState={setUserTagsVisible}
+        />
+        {userTagsVisible &&
+          ((): React.ReactElement => {
             if (tagsLoading) {
               return <div>Loading...</div>
             }
@@ -132,14 +135,18 @@ function TagList({
             }
 
             if (tags?.length === 0) {
-              return <div>Keine Tags verfügbar</div>
+              return (
+                <UserNotification type="info">
+                  Keine Tags verfügbar
+                </UserNotification>
+              )
             }
 
             return (
-              <ul className="p-0 m-0 list-none">
+              <ul className="list-none">
                 {tags?.map(
                   (tag: Tag, index: number): React.ReactElement => (
-                    <TagListItem
+                    <UserTag
                       key={index}
                       tag={tag}
                       handleTagClick={handleTagClick}
@@ -151,35 +158,29 @@ function TagList({
             )
           })()}
 
-          <div className="px-4 py-1 font-bold mb-1 border border-b border-x-0 border-solid border-t-0 border-gray-300 text-[1.05rem] text-neutral-500 mt-4">
-            Gamification
-          </div>
-
-          <ul className="p-0 m-0 list-none">
-            <li
-              className={twMerge(
-                'px-4 py-1 hover:cursor-pointer',
-                theme.primaryTextHover,
-                sampleSolution && theme.primaryText
-              )}
+        <TagHeader
+          text="Gamification"
+          state={gamificationTagsVisible}
+          setState={setGamificationTagsVisible}
+        />
+        {gamificationTagsVisible && (
+          <ul className="list-none">
+            <TagItem
+              text="Musterlösung"
+              icon={faCheckCircle}
+              active={sampleSolution}
               onClick={(): void => handleSampleSolutionClick(!sampleSolution)}
-            >
-              <FontAwesomeIcon icon={faCheckCircle} className="mr-2" />
-              Musterlösung
-            </li>
-            <li
-              className={twMerge(
-                'px-4 py-1 hover:cursor-pointer',
-                theme.primaryTextHover,
-                answerFeedbacks && theme.primaryText
-              )}
-              onClick={(): void => handleAnswerFeedbacksClick(!answerFeedbacks)}
-            >
-              <FontAwesomeIcon icon={faCommentDots} className="mr-2" />
-              Antwort-Feedbacks
-            </li>
+            />
+            <TagItem
+              text="Antwort-Feedbacks"
+              icon={faCommentDots}
+              active={answerFeedbacks}
+              onClick={(): void => {
+                handleAnswerFeedbacksClick(!answerFeedbacks)
+              }}
+            />
           </ul>
-        </div>
+        )}
       </div>
     </div>
   )

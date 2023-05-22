@@ -77,6 +77,8 @@ function App({ Component, pageProps }: AppProps) {
         #__app {
           min-height: 100%;
           height: 100%;
+          display: flex;
+          flex-direction: column;
         }
       `}</style>
     </div>
