@@ -74,7 +74,7 @@ function Login() {
               header={t('shared.generic.login')}
               label1={t('shared.generic.username')}
               field1="username"
-              data1={{ cy: 'email-field' }}
+              data1={{ cy: 'username-field' }}
               label2={t('shared.generic.password')}
               field2="password"
               data2={{ cy: 'password-field' }}
