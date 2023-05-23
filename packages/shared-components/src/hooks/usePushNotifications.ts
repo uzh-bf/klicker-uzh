@@ -1,5 +1,4 @@
 import { DocumentNode } from 'graphql'
-import { useMutation } from '@apollo/client'
 import { useEffect, useState } from "react"
 import { determineInitialSubscriptionState, subscribeParticipantToPushService } from "../utils/push"
 
@@ -10,7 +9,9 @@ interface PushNotificationsOptions {
     refetchQueries?: { query: DocumentNode, variables?: any }[]
 }
 
-const usePushNotifications = ({ subscribeMutation, unsubscribeMutation, refetchQueries=[]}: PushNotificationsOptions) => {
+// const usePushNotifications = ({ subscribeMutation, unsubscribeMutation, refetchQueries=[]}: PushNotificationsOptions) => {
+const usePushNotifications = (subscribeToPush: any, unsubscribeFromPush: any) => {
+
  
   const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
   const [userInfo, setUserInfo] = useState<string>('')
@@ -19,9 +20,6 @@ const usePushNotifications = ({ subscribeMutation, unsubscribeMutation, refetchQ
   const [subscription, setSubscription] = useState<PushSubscription | null>(
     null
   )
-
-  const [subscribeToPush] = useMutation(subscribeMutation)
-  const [unsubscribeFromPush] = useMutation(unsubscribeMutation)
 
   // This is necessary to make sure navigator is defined
   useEffect(() => {
@@ -34,7 +32,7 @@ const usePushNotifications = ({ subscribeMutation, unsubscribeMutation, refetchQ
   }, [])
 
   console.log("subscription: ", subscription)
-  console.log("registration: ", registration)
+  //console.log("registration: ", registration)
   console.log("pushDisabled: ", pushDisabled)
   console.log("userInfo: ", userInfo)
 
@@ -48,7 +46,7 @@ const usePushNotifications = ({ subscribeMutation, unsubscribeMutation, refetchQ
    * subscription to the browser's push service needs to be created and consequently
    * stored on the backend.
    */
-  async function subscribeUserToPush(courseId: string) {
+  async function subscribeUserToPush(courseId: string, refetch: () => void) {
     // There is a valid subscription to the push service
     if (subscription) {
       await subscribeToPush({
@@ -56,18 +54,15 @@ const usePushNotifications = ({ subscribeMutation, unsubscribeMutation, refetchQ
           subscriptionObject: subscription,
           courseId,
         },
-        refetchQueries: refetchQueries.length > 0 ? refetchQueries.map(queryToBeRefetched => ({
-            query: queryToBeRefetched.query,
-            variables: { endpoint: subscription?.endpoint },
-        })) : undefined,
       })
+      await refetch()
     } else {
       // There is no valid subscription to the push service
       try {
         const newSubscription = await subscribeParticipantToPushService(
           registration
         )
-        setSubscription(newSubscription)
+        setSubscription(previousSubscription => newSubscription)
 
         // Store new subscription object on the server
         await subscribeToPush({
@@ -75,11 +70,8 @@ const usePushNotifications = ({ subscribeMutation, unsubscribeMutation, refetchQ
             subscriptionObject: newSubscription,
             courseId,
           },
-          refetchQueries: refetchQueries.length > 0 ? refetchQueries.map(queryToBeRefetched => ({
-            query: queryToBeRefetched.query,
-            variables: { endpoint: subscription?.endpoint },
-             })) : undefined,
         })
+        await refetch()
       } catch (e) {
         console.error(
           'An error occured while subscribing a user to push notifications: ',
@@ -115,11 +107,11 @@ const usePushNotifications = ({ subscribeMutation, unsubscribeMutation, refetchQ
    * When unsubscribing a user from push notifications, the subscription needs to be
    * removed from the browser's push service as well as from the backend.
    */
-  async function unsubscribeUserFromPush(courseId: string) {
+  async function unsubscribeUserFromPush(courseId: string, refetch: () => void) {
     if (subscription) {
       // remove subscription from browser's push service
       await subscription.unsubscribe()
-      setSubscription(null)
+      setSubscription(previousSubscription => null)
 
       // remove subscription from backend
       await unsubscribeFromPush({
@@ -127,11 +119,8 @@ const usePushNotifications = ({ subscribeMutation, unsubscribeMutation, refetchQ
           courseId,
           endpoint: subscription.endpoint,
         },
-        refetchQueries: refetchQueries.length > 0 ? refetchQueries.map(queryToBeRefetched => ({
-            query: queryToBeRefetched.query,
-            variables: { endpoint: subscription?.endpoint },
-        })) : undefined,
       })
+      await refetch()
     }
   }
 
