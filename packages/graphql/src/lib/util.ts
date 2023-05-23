@@ -1,5 +1,9 @@
 import { Context } from './context';
 import { GraphQLError } from 'graphql';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
 
 // shuffle an array and return a new copy
 export function shuffle<T>(array: Array<T>): Array<T> {
@@ -27,18 +31,11 @@ export function checkCronToken(ctx: Context) {
 }
 
 export function formatDate(dateTime: Date) {
-  let date = new Date(dateTime);
-
-  let day = String(date.getUTCDate()).padStart(2, '0');
-  let month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  let year = String(date.getUTCFullYear());
-
-  let hours = String(date.getUTCHours()).padStart(2, '0');
-  let minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  let date = dayjs(dateTime).utc();
 
   return {
-    date: `${day}.${month}.${year}`,
-    time: `${hours}:${minutes}`
+    date: `${date.format('DD')}.${date.format('MM')}.${date.format('YYYY')}`,
+    time: `${date.format('HH')}:${date.format('mm')}`
   }
 }
 

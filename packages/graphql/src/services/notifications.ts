@@ -2,6 +2,7 @@ import { Course, MicroSession, MicroSessionStatus, PushSubscription } from '@kli
 import { Context, ContextWithUser } from '../lib/context'
 import { formatDate } from '../lib/util'
 import webpush from 'web-push'
+import { GraphQLError } from 'graphql';
 
 interface SubscriptionObjectInput {
   endpoint: string
@@ -80,6 +81,10 @@ export async function unsubscribeFromPush(
 }
 
 export async function sendPushNotifications( ctx: Context) {
+  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    throw new GraphQLError("VAPID keys not available.")
+  }
+
   webpush.setVapidDetails(
     'mailto:klicker.support@uzh.ch',
     process.env.VAPID_PUBLIC_KEY as string,
