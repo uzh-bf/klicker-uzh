@@ -48,23 +48,12 @@ function JoinPage() {
             setSubmitting(false)
           }}
         >
-          {({
-            errors,
-            touched,
-            values,
-            isSubmitting,
-            isValid,
-            setFieldValue,
-          }) => {
+          {({ isSubmitting, isValid }) => {
             return (
               <Form>
                 <PinField
                   name="pin"
                   label={t('pwa.joinCourse.coursePinFormat')}
-                  error={errors.pin}
-                  touched={touched.pin}
-                  value={values.pin}
-                  setFieldValue={setFieldValue}
                 />
 
                 <Button

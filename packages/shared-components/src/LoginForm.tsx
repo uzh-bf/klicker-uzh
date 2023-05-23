@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import React, { useEffect, useRef, useState } from 'react'
 import Footer from './Footer'
+import PinField from './PinField'
 
 interface BeforeInstallPromptEventReturn {
   userChoice: string
@@ -35,6 +36,7 @@ interface LoginFormProps {
     test?: string
   }
   isSubmitting: boolean
+  usePinField?: boolean
   installationHint?: boolean
 }
 
@@ -47,6 +49,7 @@ export function LoginForm({
   field2,
   data2,
   isSubmitting,
+  usePinField = false,
   installationHint = false,
 }: LoginFormProps) {
   const [passwordHidden, setPasswordHidden] = useState(true)
@@ -64,6 +67,7 @@ export function LoginForm({
         setOnChrome(true)
       })
     } else {
+      // TODO: resolve this fallback - currently shows install symbol on all mac browsers (also PCs)
       // We assume users are on iOS (for now)
       setOniOS(true)
     }
@@ -97,17 +101,28 @@ export function LoginForm({
               data={data1}
             />
 
-            <FormikTextField
-              required
-              label={label2}
-              labelType="small"
-              name={field2}
-              data={data2}
-              icon={passwordHidden ? faEye : faEyeSlash}
-              onIconClick={() => setPasswordHidden(!passwordHidden)}
-              className={{ root: 'mt-1' }}
-              type={passwordHidden ? 'password' : 'text'}
-            />
+            {usePinField ? (
+              <PinField
+                required
+                label={label2}
+                labelType="small"
+                name={field2}
+                className={{ root: 'mt-1' }}
+                data={data2}
+              />
+            ) : (
+              <FormikTextField
+                required
+                label={label2}
+                labelType="small"
+                name={field2}
+                data={data2}
+                icon={passwordHidden ? faEye : faEyeSlash}
+                onIconClick={() => setPasswordHidden(!passwordHidden)}
+                className={{ root: 'mt-1' }}
+                type={passwordHidden ? 'password' : 'text'}
+              />
+            )}
 
             <div className="flex flex-row justify-between">
               <div>

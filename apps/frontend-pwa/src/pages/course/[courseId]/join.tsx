@@ -136,23 +136,12 @@ function JoinCourse({
                 }
               }}
             >
-              {({
-                errors,
-                touched,
-                values,
-                isSubmitting,
-                isValid,
-                setFieldValue,
-              }) => {
+              {({ isSubmitting, isValid }) => {
                 return (
                   <Form>
                     <PinField
                       name="pin"
                       label={t('pwa.joinCourse.coursePinFormat')}
-                      error={errors.pin}
-                      touched={touched.pin}
-                      value={values.pin}
-                      setFieldValue={setFieldValue}
                     />
 
                     <Button
@@ -202,14 +191,7 @@ function JoinCourse({
                 }
               }}
             >
-              {({
-                errors,
-                touched,
-                values,
-                isSubmitting,
-                isValid,
-                setFieldValue,
-              }) => {
+              {({ errors, touched, isSubmitting, isValid }) => {
                 return (
                   <Form>
                     <Label
@@ -281,10 +263,6 @@ function JoinCourse({
                     <PinField
                       label={t('pwa.joinCourse.coursePinFormat')}
                       name="pin"
-                      error={errors.pin}
-                      touched={touched.pin}
-                      value={values.pin}
-                      setFieldValue={setFieldValue}
                     />
 
                     <Button
