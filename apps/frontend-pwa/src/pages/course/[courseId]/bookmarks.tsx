@@ -2,8 +2,8 @@ import { useQuery } from '@apollo/client'
 import {
   GetBasicCourseInformationDocument,
   GetBookmarkedQuestionsDocument,
-  LearningElement as LearningElementType,
   LearningElementStatus,
+  LearningElement as LearningElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'

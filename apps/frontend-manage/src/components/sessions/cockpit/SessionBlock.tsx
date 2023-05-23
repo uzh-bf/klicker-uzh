@@ -7,8 +7,8 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   QuestionInstance,
-  SessionBlock as SessionBlockType,
   SessionBlockStatus,
+  SessionBlock as SessionBlockType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Countdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'

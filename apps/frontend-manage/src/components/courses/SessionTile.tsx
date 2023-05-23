@@ -26,8 +26,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import LiveSessionDeletionModal from './modals/LiveSessionDeletionModal'
 import StatusTag from './StatusTag'
+import LiveSessionDeletionModal from './modals/LiveSessionDeletionModal'
 
 interface SessionTileProps {
   session: Partial<Session>

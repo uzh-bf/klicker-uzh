@@ -15,9 +15,9 @@ import { Button, ThemeContext, Toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import StatusTag from './StatusTag'
 import MicroSessionDeletionModal from './modals/MicroSessionDeletionModal'
 import PublishConfirmationModal from './modals/PublishConfirmationModal'
-import StatusTag from './StatusTag'
 
 interface MicroSessionProps {
   microSession: Partial<MicroSession> & Pick<MicroSession, 'id' | 'name'>
