@@ -26,13 +26,6 @@ import Layout from '../components/Layout'
 
 const Index = function () {
   const t = useTranslations()
-  // const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
-  // const [userInfo, setUserInfo] = useState<string>('')
-  // const [registration, setRegistration] =
-  //   useState<ServiceWorkerRegistration | null>(null)
-  // const [subscription, setSubscription] = useState<PushSubscription | null>(
-  //   null
-  // )
 
   //TODO: discuss updating cache when user subscribes/unsubscribes to avoid refetching twice
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
@@ -50,16 +43,6 @@ const Index = function () {
     variables: { endpoint: subscription?.endpoint },
     fetchPolicy: 'network-only',
   })
-
-  // // This is necessary to make sure navigator is defined
-  // useEffect(() => {
-  //   determineInitialSubscriptionState().then(({ disabled, info, reg, sub }) => {
-  //     setPushDisabled(disabled)
-  //     setUserInfo(info)
-  //     setRegistration(reg)
-  //     setSubscription(sub)
-  //   })
-  // }, [])
 
   const {
     courses,
