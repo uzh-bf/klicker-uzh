@@ -53,6 +53,7 @@ releases:
           notifications:
             url: '{{ requiredEnv "NOTIFICATION_URL" }}'
             secret: '{{ requiredEnv "NOTIFICATION_SECRET" }}'
+            supportMail: '{{ requiredEnv "SUPPORT_MAIL" }}'
 
           redisCache:
             host: klicker-v2-prod-redis-master
