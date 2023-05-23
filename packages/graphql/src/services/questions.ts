@@ -67,15 +67,15 @@ export async function manipulateQuestion(
     content?: string | null
     explanation?: string | null
     options?: {
-      unit?: string
-      accuracy?: number
-      placeholder?: string
+      unit?: string | null
+      accuracy?: number | null
+      placeholder?: string | null
       restrictions?: {
-        maxLength?: number
-        minLength?: number
-        pattern?: string
-        min?: number
-        max?: number
+        maxLength?: number | null
+        minLength?: number | null
+        pattern?: string | null
+        min?: number | null
+        max?: number | null
       }
       feedback?: string
       solutionRanges?: { min?: number; max?: number }[]
