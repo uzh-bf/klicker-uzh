@@ -337,13 +337,6 @@ function Evaluation() {
             )}
         </Footer>
       </div>
-
-      <style jsx global>{`
-        #__app {
-          display: flex;
-          flex-direction: column;
-        }
-      `}</style>
     </>
   )
 }
