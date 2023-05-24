@@ -20,12 +20,19 @@ const usePushNotifications = ({ subscribeToPush, unsubscribeFromPush }: PushNoti
 
   // This is necessary to make sure navigator is defined
   useEffect(() => {
-    determineInitialSubscriptionState().then(({ disabled, info, reg, sub }) => {
-      setPushDisabled(disabled)
-      setUserInfo(info)
-      setRegistration(reg)
-      setSubscription(sub)
-    })
+    determineInitialSubscriptionState()
+      .then(({ disabled, info, reg, sub }) => {
+        setPushDisabled(disabled)
+        setUserInfo(info)
+        setRegistration(reg)
+        setSubscription(sub)
+      })
+      .catch((e) => {
+        console.error(
+          'An error occured while determining the initial subscription state: ',
+          e
+        )
+      })
   }, [])
 
 
