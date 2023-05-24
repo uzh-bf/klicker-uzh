@@ -117,9 +117,9 @@ export const NumericalSolutionRange = builder
   })
 
 export interface INumericalQuestionOptions {
-  accuracy?: number
-  placeholder?: string
-  unit?: string
+  accuracy?: number | null
+  placeholder?: string | null
+  unit?: string | null
   restrictions: INumericalRestrictions
   solutionRanges: INumericalSolutionRange[]
 }
@@ -153,7 +153,7 @@ export const NumericalQuestionData = builder
 
 // ----- FREE-TEXT QUESTIONS -----
 export interface IFreeTextRestrictions {
-  maxLength?: number
+  maxLength?: number | null
 }
 export const FreeTextRestrictions = builder
   .objectRef<IFreeTextRestrictions>('FreeTextRestrictions')

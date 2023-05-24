@@ -16,10 +16,10 @@ import isHotkey from 'is-hotkey'
 import React, { PropsWithChildren, Ref, useCallback, useMemo } from 'react'
 import {
   BaseEditor,
-  createEditor,
   Editor,
   Element as SlateElement,
   Transforms,
+  createEditor,
 } from 'slate'
 import { HistoryEditor, withHistory } from 'slate-history'
 import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
