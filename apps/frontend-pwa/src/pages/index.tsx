@@ -77,7 +77,7 @@ const Index = function () {
     unsubscribeFromPush: unsubscribeUser,
   })
 
-  const { data, loading, refetch } = useQuery(ParticipationsDocument, {
+  const { data, loading } = useQuery(ParticipationsDocument, {
     variables: { endpoint: subscription?.endpoint },
     fetchPolicy: 'network-only',
   })
