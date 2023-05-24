@@ -138,7 +138,9 @@ export async function sendPushNotifications( ctx: Context) {
   return true
 }
 
-
+//TODO: how to address translation of the message when switching to multi language support?
+//E.g., store the language on the course entity and use it here to translate the message or
+// store the language on the user subscription entity and use this language when sending to the specific user?
 async function sendPushNotificationsToSubscribers(microSession: MicroSession, ctx: Context) {
   for (let sub of microSession.course.subscriptions) {  
     try {
@@ -153,8 +155,8 @@ async function sendPushNotificationsToSubscribers(microSession: MicroSession, ct
         },
         JSON.stringify({
           message:
-            `Das Microlearning ${microSession.displayName} für ${microSession.course.displayName} ist bis am ${formattedDate.date} um ${formattedDate.time} Uhr verfügbar.`,
-          title: `KlickerUZH - Neues Microlearning für den Kurs ${microSession.course.name} verfügbar`,
+            `Microlearning ${microSession.displayName} for ${microSession.course.displayName} is available until ${formattedDate.date} at ${formattedDate.time}.`,
+          title: `KlickerUZH - New Microlearning available for the course ${microSession.course.name}`,
         })
       )
     } catch (error) {
