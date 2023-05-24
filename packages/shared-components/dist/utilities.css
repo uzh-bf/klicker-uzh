@@ -48,10 +48,6 @@
   margin-right: 0px !important
 }
 
-.mb-0 {
-  margin-bottom: 0px
-}
-
 .mb-1 {
   margin-bottom: 0.25rem
 }
@@ -94,10 +90,6 @@
 
 .mr-10 {
   margin-right: 2.5rem
-}
-
-.mr-2 {
-  margin-right: 0.5rem
 }
 
 .mr-3 {
@@ -160,10 +152,6 @@
   height: 2.5rem
 }
 
-.h-2 {
-  height: 0.5rem
-}
-
 .h-28 {
   height: 7rem
 }
@@ -208,10 +196,6 @@
   min-height: 6rem
 }
 
-.w-2 {
-  width: 0.5rem
-}
-
 .w-3 {
   width: 0.75rem
 }
@@ -243,11 +227,6 @@
 
 .w-full {
   width: 100%
-}
-
-.min-w-max {
-  min-width: -moz-max-content;
-  min-width: max-content
 }
 
 .max-w-\[35\%\] {
@@ -401,11 +380,6 @@
   border-style: solid
 }
 
-.border-red-400 {
-  --tw-border-opacity: 1;
-  border-color: rgb(248 113 113 / var(--tw-border-opacity))
-}
-
 .border-red-600 {
   --tw-border-opacity: 1;
   border-color: rgb(220 38 38 / var(--tw-border-opacity))
@@ -431,11 +405,6 @@
   border-color: rgb(163 173 183 / var(--tw-border-opacity))
 }
 
-.border-uzh-grey-60 {
-  --tw-border-opacity: 1;
-  border-color: rgb(200 206 212 / var(--tw-border-opacity))
-}
-
 .border-uzh-grey-80 {
   --tw-border-opacity: 1;
   border-color: rgb(181 189 197 / var(--tw-border-opacity))
@@ -444,11 +413,6 @@
 .bg-gray-100 {
   --tw-bg-opacity: 1;
   background-color: rgb(243 244 246 / var(--tw-bg-opacity))
-}
-
-.bg-red-50 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(254 242 242 / var(--tw-bg-opacity))
 }
 
 .bg-slate-100 {
@@ -484,10 +448,6 @@
 .bg-white {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity))
-}
-
-.bg-opacity-50 {
-  --tw-bg-opacity: 0.5
 }
 
 .bg-opacity-60 {
@@ -590,10 +550,6 @@
   font-weight: 700
 }
 
-.font-normal {
-  font-weight: 400
-}
-
 .italic {
   font-style: italic
 }
@@ -618,16 +574,6 @@
 .text-gray-400 {
   --tw-text-opacity: 1;
   color: rgb(156 163 175 / var(--tw-text-opacity))
-}
-
-.text-gray-600 {
-  --tw-text-opacity: 1;
-  color: rgb(75 85 99 / var(--tw-text-opacity))
-}
-
-.text-red-400 {
-  --tw-text-opacity: 1;
-  color: rgb(248 113 113 / var(--tw-text-opacity))
 }
 
 .text-red-700 {
