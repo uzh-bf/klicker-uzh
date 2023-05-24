@@ -3,24 +3,26 @@ import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { init } from '@socialgouv/matomo-next'
 import { ThemeProvider } from '@uzh-bf/design-system'
+import { NextIntlProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
-
 import { sourceSansPro } from 'shared-components/src/font'
 import { useApollo } from '../lib/apollo'
 
-config.autoAddCss = false
-
-import { NextIntlProvider } from 'next-intl'
 import '../globals.css'
+
+config.autoAddCss = false
 
 const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
 
 function App({ Component, pageProps }: AppProps) {
+  const { locale } = useRouter()
+
   const apolloClient = useApollo(pageProps)
 
   useEffect(() => {
@@ -40,7 +42,7 @@ function App({ Component, pageProps }: AppProps) {
         />
       </Head>
       <ApolloProvider client={apolloClient}>
-        <NextIntlProvider messages={pageProps.messages}>
+        <NextIntlProvider messages={pageProps.messages} locale={locale}>
           <DndProvider backend={HTML5Backend}>
             <ThemeProvider
               theme={{

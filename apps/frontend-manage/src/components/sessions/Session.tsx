@@ -13,8 +13,8 @@ import {
   DeleteSessionDocument,
   GetUserRunningSessionsDocument,
   GetUserSessionsDocument,
-  Session as SessionType,
   SessionBlock,
+  Session as SessionType,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'

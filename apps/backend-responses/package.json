@@ -19,23 +19,23 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@azure/service-bus": "7.8.0",
-    "@sentry/node": "7.37.2",
+    "@azure/service-bus": "7.9.0",
+    "@sentry/node": "7.52.1",
     "jsonwebtoken": "9.0.0"
   },
   "devDependencies": {
-    "@azure/functions": "3.5.0",
-    "@tsconfig/node18": "^1.0.1",
+    "@azure/functions": "3.5.1",
+    "@tsconfig/node18": "^2.0.0",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jsonwebtoken": "^9.0.1",
     "@types/node": "^18.0.0",
-    "@uzh-bf/design-system": "1.6.3",
+    "@uzh-bf/design-system": "1.6.4",
     "cross-env": "7.0.3",
     "husky": "8.0.3",
     "npm-run-all": "4.1.5",
     "ts-node": "10.9.1",
-    "tsup": "6.6.2",
-    "typescript": "4.9.5"
+    "tsup": "6.7.0",
+    "typescript": "5.0.4"
   },
   "volta": {
     "extends": "../../package.json"

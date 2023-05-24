@@ -9,8 +9,8 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSideProps } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import Footer from '../../../../components/common/Footer'
 import Layout from '../../../../components/Layout'
+import Footer from '../../../../components/common/Footer'
 import LearningElement from '../../../../components/learningElements/LearningElement'
 
 interface Props {
