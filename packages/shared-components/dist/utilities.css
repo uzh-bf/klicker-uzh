@@ -499,18 +499,18 @@
 }
 
 .from-transparent {
-  --tw-gradient-from: transparent;
-  --tw-gradient-to: rgb(0 0 0 / 0);
+  --tw-gradient-from: transparent var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(0 0 0 / 0) var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to)
 }
 
 .via-gray-500 {
-  --tw-gradient-to: rgb(107 114 128 / 0);
-  --tw-gradient-stops: var(--tw-gradient-from), #6b7280, var(--tw-gradient-to)
+  --tw-gradient-to: rgb(107 114 128 / 0)  var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), #6b7280 var(--tw-gradient-via-position), var(--tw-gradient-to)
 }
 
 .to-transparent {
-  --tw-gradient-to: transparent
+  --tw-gradient-to: transparent var(--tw-gradient-to-position)
 }
 
 .object-contain {
