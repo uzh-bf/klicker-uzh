@@ -18,9 +18,9 @@ import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
-import LinkButton from '../components/common/LinkButton'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
+import LinkButton from '../components/common/LinkButton'
 import {
   determineInitialSubscriptionState,
   subscribeParticipant,

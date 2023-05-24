@@ -12,8 +12,8 @@ import {
 import {
   Button,
   Switch,
-  useArrowNavigation,
   UserNotification,
+  useArrowNavigation,
 } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useReducer, useState } from 'react'
@@ -21,14 +21,14 @@ import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
 import Footer from '../../../components/common/Footer'
 import useEvaluationInitialization from '../../../components/hooks/useEvaluationInitialization'
-import {
-  sizeReducer,
-  TextSizes,
-} from '../../../components/sessions/evaluation/constants'
 import EvaluationConfusion from '../../../components/sessions/evaluation/EvaluationConfusion'
 import EvaluationControlBar from '../../../components/sessions/evaluation/EvaluationControlBar'
 import EvaluationFeedbacks from '../../../components/sessions/evaluation/EvaluationFeedbacks'
 import QuestionEvaluation from '../../../components/sessions/evaluation/QuestionEvaluation'
+import {
+  TextSizes,
+  sizeReducer,
+} from '../../../components/sessions/evaluation/constants'
 
 export type EvaluationTabData = TabData & { ix: number }
 export type EvaluationBlock = Omit<Block, 'tabData'> & {
@@ -337,13 +337,6 @@ function Evaluation() {
             )}
         </Footer>
       </div>
-
-      <style jsx global>{`
-        #__app {
-          display: flex;
-          flex-direction: column;
-        }
-      `}</style>
     </>
   )
 }

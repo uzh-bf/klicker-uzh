@@ -20,6 +20,7 @@ import {
   LearningElement,
   LearningElementOrderType,
   QuestionStack,
+  StackInput,
 } from './learningElements'
 import { MicroSession } from './microSession'
 import {
@@ -524,27 +525,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createLearningElement: asUser.field({
-        nullable: true,
-        type: LearningElement,
-        args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          questions: t.arg.intList({ required: true }),
-          courseId: t.arg.string({ required: false }),
-          multiplier: t.arg.int({ required: true }),
-          order: t.arg({
-            type: LearningElementOrderType,
-            required: true,
-          }),
-          resetTimeDays: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.createLearningElement(args, ctx)
-        },
-      }),
-
       editSession: asUser.field({
         nullable: true,
         type: Session,
@@ -563,6 +543,55 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return SessionService.editSession(args, ctx)
+        },
+      }),
+
+      createLearningElement: asUser.field({
+        nullable: true,
+        type: LearningElement,
+        args: {
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+          stacks: t.arg({
+            type: [StackInput],
+            required: true,
+          }),
+          courseId: t.arg.string({ required: false }),
+          multiplier: t.arg.int({ required: true }),
+          order: t.arg({
+            type: LearningElementOrderType,
+            required: true,
+          }),
+          resetTimeDays: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.manipulateLearningElement(args, ctx)
+        },
+      }),
+
+      editLearningElement: asUser.field({
+        nullable: true,
+        type: LearningElement,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+          stacks: t.arg({
+            type: [StackInput],
+            required: true,
+          }),
+          courseId: t.arg.string({ required: false }),
+          multiplier: t.arg.int({ required: true }),
+          order: t.arg({
+            type: LearningElementOrderType,
+            required: true,
+          }),
+          resetTimeDays: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return LearningElementService.manipulateLearningElement(args, ctx)
         },
       }),
 
@@ -676,7 +705,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx)
         },
       }),
 
@@ -701,7 +730,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx)
         },
       }),
 
@@ -726,7 +755,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx)
         },
       }),
 

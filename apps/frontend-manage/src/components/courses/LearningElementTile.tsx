@@ -14,9 +14,9 @@ import { Button, ThemeContext, Toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import StatusTag from './StatusTag'
 import LearningElementDeletionModal from './modals/LearningElementDeletionModal'
 import PublishConfirmationModal from './modals/PublishConfirmationModal'
-import StatusTag from './StatusTag'
 
 interface LearningElementTileProps {
   courseId: string

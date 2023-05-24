@@ -5,6 +5,7 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
+import TagList from '@components/questions/tags/TagList'
 import {
   faMagnifyingGlass,
   faSort,
@@ -17,7 +18,6 @@ import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
-import TagList from '../components/questions/tags/TagList'
 import SessionCreation from '../components/sessions/creation/SessionCreation'
 
 function Index() {
@@ -93,146 +93,122 @@ function Index() {
   }, [sortBy, sort.asc])
 
   return (
-    <Layout displayName="Fragepool" scrollable={false}>
-      <div className="flex flex-col gap-6" id="homepage" data-cy="homepage">
-        <div className="flex-none">
-          <SessionCreation
-            sessionId={router.query.sessionId as string}
-            editMode={router.query.editMode as string}
-          />
+    <Layout
+      displayName="Fragepool"
+      data={{ cy: 'homepage' }}
+      className={{ children: 'pb-2' }}
+    >
+      <div className="flex-none mb-4">
+        <SessionCreation
+          sessionId={router.query.sessionId as string}
+          editMode={router.query.editMode as string}
+        />
+      </div>
+
+      <div className="flex flex-row flex-1 gap-4 overflow-y-auto">
+        <div>
+          {dataQuestions && dataQuestions.userQuestions && (
+            <TagList
+              activeTags={filters.tags}
+              activeType={filters.type}
+              sampleSolution={filters.sampleSolution}
+              answerFeedbacks={filters.answerFeedbacks}
+              handleReset={handleReset}
+              handleTagClick={handleTagClick}
+              handleSampleSolutionClick={handleSampleSolutionClick}
+              handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
+              // handleToggleArchive={onToggleArchive}
+              // isArchiveActive={filters.archive}
+            />
+          )}
         </div>
-
-        <div className="flex flex-col flex-1 gap-5 md:flex-row">
-          <div className="flex-none">
-            {dataQuestions && dataQuestions.userQuestions && (
-              <TagList
-                activeTags={filters.tags}
-                activeType={filters.type}
-                sampleSolution={filters.sampleSolution}
-                answerFeedbacks={filters.answerFeedbacks}
-                handleReset={handleReset}
-                handleTagClick={handleTagClick}
-                handleSampleSolutionClick={handleSampleSolutionClick}
-                handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
-                // handleToggleArchive={onToggleArchive}
-                // isArchiveActive={filters.archive}
-              />
-            )}
-          </div>
-          <div className="flex-1">
-            {!dataQuestions || loadingQuestions ? (
-              // TODO: replace by nice loader
-              <div>Loading...</div>
-            ) : (
-              <div>
-                {/* // TODO: add action area
-                   <ActionSearchArea
-                    withSorting
-                    deletionConfirmation={deletionConfirmation}
-                    handleArchiveQuestions={onArchiveQuestions}
-                    handleDeleteQuestions={onDeleteQuestions}
-                    handleQuickBlock={onQuickBlock}
-                    handleQuickBlocks={onQuickBlocks}
-                    handleQuickStart={handleQuickStart}
-                    handleResetItemsChecked={handleResetSelection}
-                    handleSearch={_debounce(handleSearch, 200)}
-                    handleSetItemsChecked={handleSelectItems}
-                    handleSortByChange={handleSortByChange}
-                    handleSortOrderToggle={handleSortOrderToggle}
-                    isArchiveActive={filters.archive}
-                    itemsChecked={selectedItems.ids}
-                    key="action-area"
-                    questions={processedQuestions}
-                    runningSessionId={runningSessionId}
-                    sessionBlocks={sessionBlocks}
-                    setSessionBlocks={setSessionBlocks}
-                    sortBy={sort.by}
-                    sortOrder={sort.asc}
-                    sortingTypes={QUESTION_SORTINGS}
-                  /> */}
-
-                <div className="flex flex-row content-center justify-between flex-none pl-8">
-                  <div className="relative flex flex-row pb-6">
-                    <TextField
-                      placeholder="Suchen.."
-                      value={searchInput}
-                      onChange={(newValue: string) => {
-                        setSearchInput(newValue)
-                        handleSearch(newValue)
-                      }}
-                      icon={faMagnifyingGlass}
-                      className={{
-                        input: 'h-10',
-                        field: 'w-30 pr-3',
-                      }}
-                    />
-                    <Button
-                      disabled={!sortBy}
-                      onClick={() => {
-                        handleSortOrderToggle()
-                      }}
-                      className={{
-                        root: 'h-10 mr-1',
-                      }}
-                    >
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={sortIcon} />
-                      </Button.Icon>
-                    </Button>
-                    <Select
-                      className={{
-                        root: 'min-w-30',
-                        trigger: 'h-10',
-                      }}
-                      placeholder="Sortieren nach.."
-                      items={dropdownItems}
-                      onChange={(newSortBy: string) => {
-                        setSortBy(newSortBy)
-                        handleSortByChange(newSortBy)
-                      }}
-                    />
-                  </div>
-                  <Button
-                    onClick={() =>
-                      setIsQuestionCreationModalOpen(
-                        !isQuestionCreationModalOpen
-                      )
-                    }
+        <div className="flex flex-col flex-1 w-full overflow-auto">
+          {!dataQuestions || loadingQuestions ? (
+            // TODO: replace by nice loader
+            <div>Loading...</div>
+          ) : (
+            <>
+              <div className="flex flex-row content-center justify-between flex-none pl-7">
+                <div className="flex flex-row pb-3">
+                  <TextField
+                    placeholder="Suchen.."
+                    value={searchInput}
+                    onChange={(newValue: string) => {
+                      setSearchInput(newValue)
+                      handleSearch(newValue)
+                    }}
+                    icon={faMagnifyingGlass}
                     className={{
-                      root: twMerge(
-                        'h-10 font-bold text-white',
-                        theme.primaryBgDark
-                      ),
+                      input: 'h-10',
+                      field: 'w-30 pr-3',
                     }}
-                    data={{ cy: 'create-question' }}
+                  />
+                  <Button
+                    disabled={!sortBy}
+                    onClick={() => {
+                      handleSortOrderToggle()
+                    }}
+                    className={{
+                      root: 'h-10 mr-1',
+                    }}
                   >
-                    FRAGE ERSTELLEN
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={sortIcon} />
+                    </Button.Icon>
                   </Button>
-                </div>
-                {isQuestionCreationModalOpen && (
-                  <QuestionEditModal
-                    handleSetIsOpen={setIsQuestionCreationModalOpen}
-                    isOpen={isQuestionCreationModalOpen}
-                    mode="CREATE"
-                  />
-                )}
-                <div className="overflow-y-auto [height:_calc(100vh-500px)]">
-                  <QuestionList
-                    questions={processedQuestions}
-                    selectedQuestions={selectedQuestions}
-                    setSelectedQuestions={(index: number) => {
-                      const tempQuestions = [...selectedQuestions]
-                      tempQuestions[index] = !tempQuestions[index]
-                      setSelectedQuestions(tempQuestions)
+                  <Select
+                    className={{
+                      root: 'min-w-30',
+                      trigger: 'h-10',
                     }}
-                    tagfilter={filters.tags}
+                    placeholder="Sortieren nach.."
+                    items={dropdownItems}
+                    onChange={(newSortBy: string) => {
+                      setSortBy(newSortBy)
+                      handleSortByChange(newSortBy)
+                    }}
                   />
                 </div>
+                <Button
+                  onClick={() =>
+                    setIsQuestionCreationModalOpen(!isQuestionCreationModalOpen)
+                  }
+                  className={{
+                    root: twMerge(
+                      'h-10 font-bold text-white',
+                      theme.primaryBgDark
+                    ),
+                  }}
+                  data={{ cy: 'create-question' }}
+                >
+                  FRAGE ERSTELLEN
+                </Button>
               </div>
-            )}
-          </div>
+
+              <div className="h-full overflow-y-auto">
+                <QuestionList
+                  questions={processedQuestions}
+                  selectedQuestions={selectedQuestions}
+                  setSelectedQuestions={(index: number) => {
+                    const tempQuestions = [...selectedQuestions]
+                    tempQuestions[index] = !tempQuestions[index]
+                    setSelectedQuestions(tempQuestions)
+                  }}
+                  tagfilter={filters.tags}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
+
+      {isQuestionCreationModalOpen && (
+        <QuestionEditModal
+          handleSetIsOpen={setIsQuestionCreationModalOpen}
+          isOpen={isQuestionCreationModalOpen}
+          mode="CREATE"
+        />
+      )}
     </Layout>
   )
 }
