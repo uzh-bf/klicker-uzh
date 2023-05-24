@@ -11,6 +11,11 @@ securityContext: {}
 notifications:
   url: ''
   secret: ''
+  supportMail: ''
+
+vapid:
+  publicKey: ''
+  privateKey: ''
 
 cron:
   dailyGroupScores: "* * * * *"

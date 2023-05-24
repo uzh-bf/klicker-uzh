@@ -31,6 +31,10 @@ const Index = function () {
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
 
+  // const subscribe = (variables) => {
+  //   subscribeToPush({ variables }, refetchQueries: [ParticipationsDocument[])
+  // }
+
   const {
     userInfo,
     setUserInfo,

@@ -81,12 +81,12 @@ export async function unsubscribeFromPush(
 }
 
 export async function sendPushNotifications( ctx: Context) {
-  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY || !process.env.SUPPORT_MAIL) {
+  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY || !process.env.NOTIFICATION_SUPPORT_MAIL) {
     throw new GraphQLError("VAPID keys or support email not available.")
   }
 
   webpush.setVapidDetails(
-    `mailto:${process.env.SUPPORT_MAIL as String}`,
+    `mailto:${process.env.NOTIFICATION_SUPPORT_MAIL as String}`,
     process.env.VAPID_PUBLIC_KEY as string,
     process.env.VAPID_PRIVATE_KEY as string
   )

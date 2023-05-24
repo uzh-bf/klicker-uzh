@@ -8,6 +8,7 @@ metadata:
 data:
   API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
   NOTIFICATION_URL: {{ .Values.backendGraphql.notifications.url | quote }}
+  NOTIFICATION_SUPPORT_EMAIL: {{ .Values.backendGraphql.notifications.supportEmail | quote }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
   REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
   REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}

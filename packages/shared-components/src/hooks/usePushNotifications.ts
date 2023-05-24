@@ -46,7 +46,7 @@ const usePushNotifications = (subscribeToPush: any, unsubscribeFromPush: any) =>
    * subscription to the browser's push service needs to be created and consequently
    * stored on the backend.
    */
-  async function subscribeUserToPush(courseId: string, refetch: () => void) {
+  async function subscribeUserToPush(courseId: string) {
     // There is a valid subscription to the push service
     if (subscription) {
       await subscribeToPush({
@@ -55,7 +55,6 @@ const usePushNotifications = (subscribeToPush: any, unsubscribeFromPush: any) =>
           courseId,
         },
       })
-      await refetch()
     } else {
       // There is no valid subscription to the push service
       try {
@@ -71,7 +70,6 @@ const usePushNotifications = (subscribeToPush: any, unsubscribeFromPush: any) =>
             courseId,
           },
         })
-        await refetch()
       } catch (e) {
         console.error(
           'An error occured while subscribing a user to push notifications: ',
@@ -107,7 +105,7 @@ const usePushNotifications = (subscribeToPush: any, unsubscribeFromPush: any) =>
    * When unsubscribing a user from push notifications, the subscription needs to be
    * removed from the browser's push service as well as from the backend.
    */
-  async function unsubscribeUserFromPush(courseId: string, refetch: () => void) {
+  async function unsubscribeUserFromPush(courseId: string) {
     if (subscription) {
       // remove subscription from browser's push service
       await subscription.unsubscribe()
@@ -120,7 +118,6 @@ const usePushNotifications = (subscribeToPush: any, unsubscribeFromPush: any) =>
           endpoint: subscription.endpoint,
         },
       })
-      await refetch()
     }
   }
 
