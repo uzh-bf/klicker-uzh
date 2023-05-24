@@ -62,7 +62,7 @@ if (process.env.NODE_ENV !== 'test') {
     dest: 'public',
     skipWaiting: true,
     dynamicStartUrlRedirect: true,
-    //disable: process.env.NODE_ENV === 'development',
+    disable: process.env.NODE_ENV === 'development',
   })
   module.exports = withPWA(nextConfig)
 } else {
