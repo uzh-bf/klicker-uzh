@@ -705,7 +705,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx)
         },
       }),
 
@@ -730,7 +730,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx)
         },
       }),
 
@@ -755,7 +755,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx)
         },
       }),
 

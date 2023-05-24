@@ -16,6 +16,7 @@ import { Context, ContextWithUser } from '../lib/context'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
+import { ISession } from 'src/schema/session'
 
 const scheduledJobs: Record<string, any> = {}
 
@@ -1801,7 +1802,7 @@ export async function cancelSession(
     ),
   ])
 
-  return updatedSession
+  return updatedSession as ISession
 }
 
 export async function deleteSession(
