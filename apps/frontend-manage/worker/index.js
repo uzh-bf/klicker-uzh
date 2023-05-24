@@ -7,9 +7,11 @@ self.addEventListener('install', () => {
 
 // Reload each open page to make sure the new service worker is in charge
 self.addEventListener('activate', () => {
-  const tabs =  self.clients.matchAll({ type: 'window' })
-  tabs.forEach((tab) => {
-    tab.navigate(tab.url)
+  self.clients.matchAll({ type: 'window' })
+  .then(tabs => {
+    tabs.forEach((tab) => {
+      tab.navigate(tab.url)
+    })
   })
 })
 
