@@ -3,6 +3,7 @@ import {
   Button,
   FormikTextField,
   H1,
+  PinField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form } from 'formik'
@@ -10,7 +11,6 @@ import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import React, { useEffect, useRef, useState } from 'react'
 import Footer from './Footer'
-import PinField from './PinField'
 
 interface BeforeInstallPromptEventReturn {
   userChoice: string

@@ -10,6 +10,7 @@ import {
   Button,
   H2,
   Label,
+  PinField,
   ThemeContext,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -18,7 +19,6 @@ import { GetServerSideProps } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
-import PinField from 'shared-components/src/PinField'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
@@ -261,8 +261,8 @@ function JoinCourse({
                     />
 
                     <PinField
-                      label={t('pwa.joinCourse.coursePinFormat')}
                       name="pin"
+                      label={t('pwa.joinCourse.coursePinFormat')}
                     />
 
                     <Button
