@@ -27,13 +27,44 @@ import Layout from '../components/Layout'
 const Index = function () {
   const t = useTranslations()
 
-  //TODO: discuss updating cache when user subscribes/unsubscribes to avoid refetching twice
   const [subscribeToPush] = useMutation(SubscribeToPushDocument)
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
 
-  // const subscribe = (variables) => {
-  //   subscribeToPush({ variables }, refetchQueries: [ParticipationsDocument[])
-  // }
+  async function subscribeUser(
+    subscriptionObject: PushSubscription,
+    courseId: string
+  ) {
+    await subscribeToPush({
+      variables: {
+        subscriptionObject,
+        courseId,
+      },
+      refetchQueries: [
+        {
+          query: ParticipationsDocument,
+          variables: { endpoint: subscriptionObject.endpoint },
+        },
+      ],
+    })
+  }
+
+  async function unsubscribeUser(
+    subscriptionObject: PushSubscription,
+    courseId: string
+  ) {
+    await unsubscribeFromPush({
+      variables: {
+        courseId,
+        endpoint: subscriptionObject.endpoint,
+      },
+      refetchQueries: [
+        {
+          query: ParticipationsDocument,
+          variables: { endpoint: subscriptionObject.endpoint },
+        },
+      ],
+    })
+  }
 
   const {
     userInfo,
@@ -41,7 +72,10 @@ const Index = function () {
     subscription,
     subscribeUserToPush,
     unsubscribeUserFromPush,
-  } = usePushNotifications(subscribeToPush, unsubscribeFromPush)
+  } = usePushNotifications({
+    subscribeToPush: subscribeUser,
+    unsubscribeFromPush: unsubscribeUser,
+  })
 
   const { data, loading, refetch } = useQuery(ParticipationsDocument, {
     variables: { endpoint: subscription?.endpoint },
@@ -147,14 +181,13 @@ const Index = function () {
     courseId: string
   ) {
     setUserInfo('')
-
+    console.log('onSubscribeClick')
     try {
       if (isSubscribedToPush) {
-        await unsubscribeUserFromPush(courseId, refetch)
+        await unsubscribeUserFromPush(courseId)
       } else {
-        await subscribeUserToPush(courseId, refetch)
+        await subscribeUserToPush(courseId)
       }
-      await refetch()
     } catch (error) {
       console.error('An error occurred while un/subscribing a user: ', error)
     }

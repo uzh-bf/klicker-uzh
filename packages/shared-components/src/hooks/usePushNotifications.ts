@@ -1,16 +1,13 @@
-import { DocumentNode } from 'graphql'
 import { useEffect, useState } from "react"
 import { determineInitialSubscriptionState, subscribeParticipantToPushService } from "../utils/push"
 
 
 interface PushNotificationsOptions {
-    subscribeMutation: DocumentNode
-    unsubscribeMutation: DocumentNode
-    refetchQueries?: { query: DocumentNode, variables?: any }[]
+    subscribeToPush: (subscriptionObject: PushSubscription, courseId: string) => void
+    unsubscribeFromPush: (subscriptionObject: PushSubscription, courseId: string) => void
 }
 
-// const usePushNotifications = ({ subscribeMutation, unsubscribeMutation, refetchQueries=[]}: PushNotificationsOptions) => {
-const usePushNotifications = (subscribeToPush: any, unsubscribeFromPush: any) => {
+const usePushNotifications = ({ subscribeToPush, unsubscribeFromPush }: PushNotificationsOptions) => {
 
  
   const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
@@ -31,11 +28,6 @@ const usePushNotifications = (subscribeToPush: any, unsubscribeFromPush: any) =>
     })
   }, [])
 
-  console.log("subscription: ", subscription)
-  //console.log("registration: ", registration)
-  console.log("pushDisabled: ", pushDisabled)
-  console.log("userInfo: ", userInfo)
-
 
   /**
    * If a user has a valid push subscription for its browser to the push service,
@@ -49,27 +41,17 @@ const usePushNotifications = (subscribeToPush: any, unsubscribeFromPush: any) =>
   async function subscribeUserToPush(courseId: string) {
     // There is a valid subscription to the push service
     if (subscription) {
-      await subscribeToPush({
-        variables: {
-          subscriptionObject: subscription,
-          courseId,
-        },
-      })
+      subscribeToPush(subscription, courseId)
     } else {
       // There is no valid subscription to the push service
       try {
         const newSubscription = await subscribeParticipantToPushService(
           registration
         )
-        setSubscription(previousSubscription => newSubscription)
+        setSubscription(newSubscription)
 
         // Store new subscription object on the server
-        await subscribeToPush({
-          variables: {
-            subscriptionObject: newSubscription,
-            courseId,
-          },
-        })
+        subscribeToPush(newSubscription, courseId)
       } catch (e) {
         console.error(
           'An error occured while subscribing a user to push notifications: ',
@@ -109,15 +91,10 @@ const usePushNotifications = (subscribeToPush: any, unsubscribeFromPush: any) =>
     if (subscription) {
       // remove subscription from browser's push service
       await subscription.unsubscribe()
-      setSubscription(previousSubscription => null)
+      setSubscription(null)
 
       // remove subscription from backend
-      await unsubscribeFromPush({
-        variables: {
-          courseId,
-          endpoint: subscription.endpoint,
-        },
-      })
+      unsubscribeFromPush(subscription, courseId)
     }
   }
 
