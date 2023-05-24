@@ -3,8 +3,8 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  Feedback as FeedbackType,
   FeedbackResponse,
+  Feedback as FeedbackType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 

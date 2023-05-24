@@ -11,9 +11,9 @@ import {
   Legend,
   Line,
   LineChart,
+  Tooltip as RechartsTooltip,
   ReferenceArea,
   ResponsiveContainer,
-  Tooltip as RechartsTooltip,
   XAxis,
   YAxis,
 } from 'recharts'

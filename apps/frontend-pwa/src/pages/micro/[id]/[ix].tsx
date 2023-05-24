@@ -11,11 +11,11 @@ import { H3, Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import Layout from '../../../components/Layout'
 import Footer from '../../../components/common/Footer'
 import OptionsDisplay from '../../../components/common/OptionsDisplay'
 import EvaluationDisplay from '../../../components/evaluation/EvaluationDisplay'
 import FlagQuestionModal from '../../../components/flags/FlagQuestionModal'
-import Layout from '../../../components/Layout'
 
 function MicroSessionInstance() {
   const t = useTranslations()

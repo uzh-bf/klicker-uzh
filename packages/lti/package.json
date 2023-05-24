@@ -30,14 +30,14 @@
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
-    "@tsconfig/node18": "^1.0.1",
+    "@tsconfig/node18": "^2.0.0",
     "@tsconfig/recommended": "^1.0.2",
     "size-limit": "8.2.4",
-    "tsup": "6.6.2",
-    "typescript": "4.9.5"
+    "tsup": "6.7.0",
+    "typescript": "5.0.4"
   },
   "dependencies": {
-    "body-parser": "1.20.1"
+    "body-parser": "1.20.2"
   },
   "volta": {
     "extends": "../../package.json"
