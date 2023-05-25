@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
+import { checkCronToken } from '../lib/util'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
@@ -283,6 +284,17 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return NotificationService.subscribeToPush(args, ctx)
+        },
+      }),
+
+      unsubscribeFromPush: asParticipant.boolean({
+        nullable: true,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          endpoint: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return NotificationService.unsubscribeFromPush(args, ctx)
         },
       }),
 
@@ -853,7 +865,15 @@ export const Mutation = builder.mutationType({
 
       updateGroupAverageScores: t.boolean({
         resolve(_, __, ctx) {
+          checkCronToken(ctx)
           return ParticipantGroupService.updateGroupAverageScores(ctx)
+        },
+      }),
+
+      sendPushNotifications: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return NotificationService.sendPushNotifications(ctx)
         },
       }),
     }

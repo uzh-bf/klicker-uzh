@@ -1,0 +1,3 @@
+mutation UnsubscribeFromPush($courseId: String!, $endpoint: String!) {
+  unsubscribeFromPush(courseId: $courseId, endpoint: $endpoint)
+}

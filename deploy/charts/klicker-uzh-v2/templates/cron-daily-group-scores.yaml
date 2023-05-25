@@ -19,7 +19,21 @@ spec:
             - POST
             - -H
             - "Content-Type: application/json"
+            - -H
+            - "x-token: {{ .Values.cron.token }}"
+            - -H
+            - "x-graphql-yoga-csrf: updateGroupAverageScores"
             - -d
-            - '{"query":"mutation { updateGroupAverageScores }"}'
+            - >
+                {
+                    "operationName": "UpdateGroupAverageScores",
+                    "variables": {},
+                    "extensions": {
+                        "persistedQuery": {
+                            "version": 1,
+                            "sha256Hash": "fccda9bacb2fb5740670ff2b65ef9258bc41a0ff97e5be4a94f523669fa4f46d"
+                        }
+                    }
+                }
             - "http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql"
           restartPolicy: OnFailure

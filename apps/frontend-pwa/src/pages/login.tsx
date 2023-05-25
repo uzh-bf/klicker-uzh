@@ -79,7 +79,7 @@ function Login() {
               fieldSecret="password"
               dataSecret={{ cy: 'password-field' }}
               isSubmitting={isSubmitting}
-              installationHint={true}
+              installationHint
             />
           )
         }}

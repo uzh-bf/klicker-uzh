@@ -64,8 +64,7 @@ function Login() {
               fieldSecret="password"
               dataSecret={{ cy: 'password-field' }}
               isSubmitting={isSubmitting}
-              // TODO: after conversion to PWA, set this to true
-              installationHint={false}
+              installationHint
             />
           )
         }}

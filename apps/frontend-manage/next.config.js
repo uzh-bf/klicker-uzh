@@ -57,4 +57,14 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+if (process.env.NODE_ENV !== 'test') {
+  const withPWA = require('next-pwa')({
+    dest: 'public',
+    skipWaiting: true,
+    dynamicStartUrlRedirect: true,
+    disable: process.env.NODE_ENV === 'development',
+  })
+  module.exports = withPWA(nextConfig)
+} else {
+  module.exports = nextConfig
+}

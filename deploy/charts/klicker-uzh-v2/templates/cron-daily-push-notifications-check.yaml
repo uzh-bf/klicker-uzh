@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "chart.fullname" . }}-cron-push-notifications
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cron.pushNotifications | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: curl
+            image: curlimages/curl:7.85.0
+            imagePullPolicy: IfNotPresent
+            args:
+            - -X
+            - POST
+            - -H
+            - "Content-Type: application/json"
+            - -H
+            - "x-token: {{ .Values.cron.token }}"
+            - -H
+            - "x-graphql-yoga-csrf: sendPushNotifications"
+            - -d
+            - >
+                {
+                    "operationName": "SendPushNotifications",
+                    "variables": {},
+                    "extensions": {
+                        "persistedQuery": {
+                            "version": 1,
+                            "sha256Hash": "d0a02157dafcbc7c4df31ea01934d39ca72f9e71eb2ae75cf37298898db99416"
+                        }
+                    }
+                }
+            - 'http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql'
+          restartPolicy: OnFailure
