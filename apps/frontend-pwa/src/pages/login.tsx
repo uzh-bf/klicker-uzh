@@ -72,12 +72,12 @@ function Login() {
           return (
             <LoginForm
               header={t('shared.generic.login')}
-              label1={t('shared.generic.username')}
-              field1="username"
-              data1={{ cy: 'username-field' }}
-              label2={t('shared.generic.password')}
-              field2="password"
-              data2={{ cy: 'password-field' }}
+              labelIdentifier={t('shared.generic.username')}
+              fieldIdentifier="username"
+              dataIdentifier={{ cy: 'username-field' }}
+              labelSecret={t('shared.generic.password')}
+              fieldSecret="password"
+              dataSecret={{ cy: 'password-field' }}
               isSubmitting={isSubmitting}
               installationHint={true}
             />

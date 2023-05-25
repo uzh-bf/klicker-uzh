@@ -46,12 +46,12 @@ function Login() {
           return (
             <LoginForm
               header="Login Controller-App (Token)"
-              label1="E-Mail Adresse"
-              field1="email"
-              data1={{ cy: 'email-field' }}
-              label2="Token"
-              field2="token"
-              data2={{ cy: 'token-field' }}
+              labelIdentifier="E-Mail Adresse"
+              fieldIdentifier="email"
+              dataIdentifier={{ cy: 'email-field' }}
+              labelSecret="Token"
+              fieldSecret="token"
+              dataSecret={{ cy: 'token-field' }}
               isSubmitting={isSubmitting}
               usePinField={true}
               installationHint={true}

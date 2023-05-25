@@ -23,15 +23,15 @@ interface BeforeInstallPromptEvent extends Event {
 
 interface LoginFormProps {
   header: string
-  label1: string
-  field1: string
-  data1?: {
+  labelIdentifier: string
+  fieldIdentifier: string
+  dataIdentifier?: {
     cy?: string
     test?: string
   }
-  label2: string
-  field2: string
-  data2?: {
+  labelSecret: string
+  fieldSecret: string
+  dataSecret?: {
     cy?: string
     test?: string
   }
@@ -42,12 +42,12 @@ interface LoginFormProps {
 
 export function LoginForm({
   header,
-  label1,
-  field1,
-  data1,
-  label2,
-  field2,
-  data2,
+  labelIdentifier,
+  fieldIdentifier,
+  dataIdentifier,
+  labelSecret,
+  fieldSecret,
+  dataSecret,
   isSubmitting,
   usePinField = false,
   installationHint = false,
@@ -95,28 +95,28 @@ export function LoginForm({
           <Form className="w-72 sm:w-96">
             <FormikTextField
               required
-              label={label1}
+              label={labelIdentifier}
               labelType="small"
-              name={field1}
-              data={data1}
+              name={fieldIdentifier}
+              data={dataIdentifier}
             />
 
             {usePinField ? (
               <PinField
                 required
-                label={label2}
+                label={labelSecret}
                 labelType="small"
-                name={field2}
+                name={fieldSecret}
                 className={{ root: 'mt-1' }}
-                data={data2}
+                data={dataSecret}
               />
             ) : (
               <FormikTextField
                 required
-                label={label2}
+                label={labelSecret}
                 labelType="small"
-                name={field2}
-                data={data2}
+                name={fieldSecret}
+                data={dataSecret}
                 icon={passwordHidden ? faEye : faEyeSlash}
                 onIconClick={() => setPasswordHidden(!passwordHidden)}
                 className={{ root: 'mt-1' }}

@@ -57,12 +57,12 @@ function Login() {
           return (
             <LoginForm
               header="Login Dozierende"
-              label1="E-Mail Adresse"
-              field1="email"
-              data1={{ cy: 'email-field' }}
-              label2="Passwort"
-              field2="password"
-              data2={{ cy: 'password-field' }}
+              labelIdentifier="E-Mail Adresse"
+              fieldIdentifier="email"
+              dataIdentifier={{ cy: 'email-field' }}
+              labelSecret="Passwort"
+              fieldSecret="password"
+              dataSecret={{ cy: 'password-field' }}
               isSubmitting={isSubmitting}
               // TODO: after conversion to PWA, set this to true
               installationHint={false}
