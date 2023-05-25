@@ -13,45 +13,74 @@ import {
   ParticipationsDocument,
   Session,
   SubscribeToPushDocument,
+  UnsubscribeFromPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import usePushNotifications from 'shared-components/src/hooks/usePushNotifications'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
-import {
-  determineInitialSubscriptionState,
-  subscribeParticipant,
-} from '../utils/push'
 
 const Index = function () {
   const t = useTranslations()
-  const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
-  const [userInfo, setUserInfo] = useState<string>('')
-  const [registration, setRegistration] =
-    useState<ServiceWorkerRegistration | null>(null)
-  const [subscription, setSubscription] = useState<PushSubscription | null>(
-    null
-  )
 
-  const { data, loading, error } = useQuery(ParticipationsDocument, {
+  const [subscribeToPush] = useMutation(SubscribeToPushDocument)
+  const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
+
+  async function subscribeUser(
+    subscriptionObject: PushSubscription,
+    courseId: string
+  ) {
+    await subscribeToPush({
+      variables: {
+        subscriptionObject,
+        courseId,
+      },
+      refetchQueries: [
+        {
+          query: ParticipationsDocument,
+          variables: { endpoint: subscriptionObject.endpoint },
+        },
+      ],
+    })
+  }
+
+  async function unsubscribeUser(
+    subscriptionObject: PushSubscription,
+    courseId: string
+  ) {
+    await unsubscribeFromPush({
+      variables: {
+        courseId,
+        endpoint: subscriptionObject.endpoint,
+      },
+      refetchQueries: [
+        {
+          query: ParticipationsDocument,
+          variables: { endpoint: subscriptionObject.endpoint },
+        },
+      ],
+    })
+  }
+
+  const {
+    userInfo,
+    setUserInfo,
+    subscription,
+    subscribeUserToPush,
+    unsubscribeUserFromPush,
+  } = usePushNotifications({
+    subscribeToPush: subscribeUser,
+    unsubscribeFromPush: unsubscribeUser,
+  })
+
+  const { data, loading } = useQuery(ParticipationsDocument, {
     variables: { endpoint: subscription?.endpoint },
     fetchPolicy: 'network-only',
   })
-
-  // This is necessary to make sure navigator is defined
-  useEffect(() => {
-    determineInitialSubscriptionState().then(({ disabled, info, reg, sub }) => {
-      setPushDisabled(disabled)
-      setUserInfo(info)
-      setRegistration(reg)
-      setSubscription(sub)
-    })
-  }, [])
-
-  const [subscribeToPush] = useMutation(SubscribeToPushDocument)
 
   const {
     courses,
@@ -147,62 +176,21 @@ const Index = function () {
     return <div>loading...</div>
   }
 
-  async function onSubscribeClick(subscribed: boolean, courseId: string) {
+  async function onSubscribeClick(
+    isSubscribedToPush: boolean,
+    courseId: string
+  ) {
     setUserInfo('')
-    // Case 1: User unsubscribed
-    if (subscribed) {
-      // TODO: updateSubscriptionOnServer(subscription, courseId)
-      // Case 2: User subscribed
-    } else {
-      // Case 2a: User already has a push subscription
-      if (subscription) {
-        subscribeToPush({
-          variables: {
-            subscriptionObject: subscription,
-            courseId,
-          },
-        })
-        // Case 2b: User has no push subscription yet
+    console.log('onSubscribeClick')
+    try {
+      if (isSubscribedToPush) {
+        await unsubscribeUserFromPush(courseId)
       } else {
-        try {
-          const newSubscription = await subscribeParticipant(
-            registration!,
-            courseId
-          )
-          setSubscription(newSubscription)
-          subscribeToPush({
-            variables: {
-              subscriptionObject: newSubscription,
-              courseId,
-            },
-          })
-        } catch (e) {
-          console.error(e)
-          // Push notifications are disabled
-          if (Notification.permission === 'denied') {
-            setPushDisabled(true)
-            setUserInfo(
-              `Sie haben Push-Benachrichtigungen für diese Applikation deaktiviert. Wenn Sie Push-Benachrichtigungen
-              abonnieren möchten, aktivieren Sie diese in Ihrem Browser und laden Sie die Seite neu.`
-            )
-            // User has clicked away the prompt without allowing nor blocking
-          } else if (
-            e instanceof DOMException &&
-            e.name === 'NotAllowedError'
-          ) {
-            setUserInfo(
-              'Bitte erlauben Sie Push-Benachrichtigungen für diese Applikation in Ihrem Browser.'
-            )
-            // An error occured
-          } else {
-            setUserInfo(
-              'Beim Versuch, Sie für Push-Benachrichtigungen zu registrieren, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
-            )
-          }
-        }
+        await subscribeUserToPush(courseId)
       }
+    } catch (error) {
+      console.error('An error occurred while un/subscribing a user: ', error)
     }
-    return subscription
   }
 
   return (

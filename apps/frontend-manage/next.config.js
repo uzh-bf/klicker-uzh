@@ -68,4 +68,3 @@ if (process.env.NODE_ENV !== 'test') {
 } else {
   module.exports = nextConfig
 }
-

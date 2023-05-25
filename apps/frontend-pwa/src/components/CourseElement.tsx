@@ -75,7 +75,7 @@ function CourseElement({
               !course.isSubscribed && !pushDisabled && 'cursor-pointer'
             ),
           }}
-          disabled={course.isSubscribed || !!pushDisabled}
+          disabled={!!pushDisabled}
           onClick={() => {
             if (disabled) return
             onSubscribeClick(course.isSubscribed, course.id)

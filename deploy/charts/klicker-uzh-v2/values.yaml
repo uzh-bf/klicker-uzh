@@ -11,9 +11,16 @@ securityContext: {}
 notifications:
   url: ''
   secret: ''
+  supportMail: ''
+
+vapid:
+  publicKey: ''
+  privateKey: ''
 
 cron:
   dailyGroupScores: "* * * * *"
+  pushNotifications: "*/5 * * * *"
+  token: ""
 
 frontendPWA:
   priorityClassName: production-workload

@@ -488,6 +488,8 @@ model MicroSession {
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
 
+  arePushNotificationsSent Boolean @default(false)
+
   instances QuestionInstance[]
 
   owner    User    @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)

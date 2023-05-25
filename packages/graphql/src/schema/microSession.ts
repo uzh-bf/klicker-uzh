@@ -28,6 +28,7 @@ export const MicroSession = MicroSessionRef.implement({
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
+    arePushNotificationsSent: t.exposeBoolean('arePushNotificationsSent'),
     numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),
 
     course: t.expose('course', {

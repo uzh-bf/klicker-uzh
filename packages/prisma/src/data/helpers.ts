@@ -487,6 +487,7 @@ export async function prepareMicroSession({
   displayName: string
   scheduledStartAt: Date
   scheduledEndAt: Date
+  arePushNotificationsSent: boolean
   description: string
   courseId: string
   ownerId: string

@@ -325,6 +325,7 @@ export const MICRO_SESSIONS = [
     displayName: 'Test Micro',
     scheduledStartAt: new Date('2022-09-12T20:00:00.000Z'),
     scheduledEndAt: new Date('2023-09-19:12:00.000Z'),
+    arePushNotificationsSent: false,
     description: `
 Diese Woche lernen wir...
 

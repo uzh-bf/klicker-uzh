@@ -13,6 +13,8 @@ releases:
     values:
       - values.yaml
       - appSecret: '{{ requiredEnv "APP_SECRET" }}'
+        cron:
+          token: '{{ requiredEnv "CRON_TOKEN" }}'
 
         frontendPWA:
           replicaCount: 3
@@ -51,6 +53,11 @@ releases:
           notifications:
             url: '{{ requiredEnv "NOTIFICATION_URL" }}'
             secret: '{{ requiredEnv "NOTIFICATION_SECRET" }}'
+            supportMail: '{{ requiredEnv "SUPPORT_MAIL" }}'
+          
+          vapid:
+            publicKey: '{{ requiredEnv "VAPID_PUBLIC_KEY" }}'
+            privateKey: '{{ requiredEnv "VAPID_PRIVATE_KEY" }}'
 
           redisCache:
             host: klicker-v2-prod-redis-master

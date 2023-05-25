@@ -1,11 +1,11 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "chart.fullname" . }}-cron-group-scores
+  name: {{ include "chart.fullname" . }}-cron-push-notifications
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
-  schedule: {{ .Values.cron.dailyGroupScores | quote }}
+  schedule: {{ .Values.cron.pushNotifications | quote }}
   jobTemplate:
     spec:
       template:
@@ -22,18 +22,18 @@ spec:
             - -H
             - "x-token: {{ .Values.cron.token }}"
             - -H
-            - "x-graphql-yoga-csrf: updateGroupAverageScores"
+            - "x-graphql-yoga-csrf: sendPushNotifications"
             - -d
             - >
                 {
-                    "operationName": "UpdateGroupAverageScores",
+                    "operationName": "SendPushNotifications",
                     "variables": {},
                     "extensions": {
                         "persistedQuery": {
                             "version": 1,
-                            "sha256Hash": "fccda9bacb2fb5740670ff2b65ef9258bc41a0ff97e5be4a94f523669fa4f46d"
+                            "sha256Hash": "d0a02157dafcbc7c4df31ea01934d39ca72f9e71eb2ae75cf37298898db99416"
                         }
                     }
                 }
-            - "http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql"
+            - 'http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql'
           restartPolicy: OnFailure
