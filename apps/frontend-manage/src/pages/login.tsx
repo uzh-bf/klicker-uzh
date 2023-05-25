@@ -1,138 +1,94 @@
 import { useMutation } from '@apollo/client'
-import { LoginUserDocument } from '@klicker-uzh/graphql/dist/ops'
-import * as RadixLabel from '@radix-ui/react-label'
-import { Button, H1, ThemeContext } from '@uzh-bf/design-system'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
-import Image from 'next/image'
-import Router from 'next/router'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { LoginUserDocument, SelfDocument } from '@klicker-uzh/graphql/dist/ops'
+import { Toast } from '@uzh-bf/design-system'
+import { Formik } from 'formik'
+import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
+import LoginForm from 'shared-components/src/LoginForm'
 import * as Yup from 'yup'
-
-import Footer from '../components/common/Footer'
 
 const loginSchema = Yup.object().shape({
   email: Yup.string().required('Geben Sie eine gültige E-Mail Adresse ein'),
   password: Yup.string().required('Geben Sie Ihr Passwort ein'),
 })
 
-function LoginForm() {
-  const theme = useContext(ThemeContext)
+function Login() {
   const [loginUser] = useMutation(LoginUserDocument)
+  const router = useRouter()
+  const t = useTranslations()
+
+  const [error, setError] = useState('')
+  const [showError, setShowError] = useState(false)
 
   return (
     <div className="flex flex-col items-center h-full md:justify-center">
       <Formik
         initialValues={{ email: '', password: '' }}
         validationSchema={loginSchema}
-        onSubmit={async (values) => {
-          await loginUser({
-            variables: { email: values.email, password: values.password },
-          })
-          Router.push('/')
+        onSubmit={async (values, { setSubmitting, resetForm }: any) => {
+          try {
+            const result = await loginUser({
+              variables: { email: values.email, password: values.password },
+              refetchQueries: [SelfDocument],
+            })
+            const userID = result.data?.loginUser
+            if (!userID) {
+              setError(t('shared.generic.loginError'))
+              setShowError(true)
+              setSubmitting(false)
+              resetForm()
+            } else {
+              console.log('Login successful!', userID)
+
+              // TODO: enable push to redirected path (as for frontend-pwa)
+              router.push('/')
+            }
+          } catch (e) {
+            console.error(e)
+            setError(t('shared.generic.systemError'))
+            setShowError(true)
+            setSubmitting(false)
+            resetForm()
+          }
         }}
       >
-        {({ errors, touched, isSubmitting }) => {
+        {({ isSubmitting }) => {
           return (
-            <div className="max-w-xl md:border md:rounded-lg md:shadow">
-              <div className="flex flex-col items-center p-12">
-                <div className="w-full mb-8 text-center sm:mb-12">
-                  <Image
-                    src="/KlickerLogo.png"
-                    width={300}
-                    height={90}
-                    alt="KlickerUZH Logo"
-                    className="mx-auto"
-                    data-cy="login-logo"
-                  />
-                </div>
-                <div className="">
-                  <H1>Login</H1>
-
-                  <Form className="w-72 sm:w-96">
-                    <RadixLabel.Root
-                      htmlFor="email"
-                      className="text-sm leading-7 text-gray-600"
-                    >
-                      E-Mail Adresse
-                    </RadixLabel.Root>
-                    <Field
-                      name="email"
-                      type="text"
-                      className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                        theme.primaryBorderFocus,
-                        errors.email &&
-                          touched.email &&
-                          'border-red-400 bg-red-50'
-                      )}
-                      data-cy="email-field"
-                    />
-                    <ErrorMessage
-                      name="email"
-                      component="div"
-                      className="text-sm text-red-400"
-                    />
-
-                    <RadixLabel.Root
-                      className="text-sm leading-7 text-gray-600"
-                      htmlFor="password"
-                    >
-                      Passwort
-                    </RadixLabel.Root>
-                    <Field
-                      name="password"
-                      type="password"
-                      className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                        theme.primaryBorderFocus,
-                        errors.password &&
-                          touched.password &&
-                          'border-red-400 bg-red-50'
-                      )}
-                      data-cy="password-field"
-                    />
-                    <ErrorMessage
-                      name="password"
-                      component="div"
-                      className="text-sm text-red-400"
-                    />
-
-                    <div className="flex flex-row justify-between">
-                      <div className="flex flex-col text-sm">
-                        {/* // TODO: Implement password reset and registration
-                      <Link href="/requestPassword">
-                        <div className="">
-                          Passwort vergessen?
-                        </div>
-                      </Link>
-                      <Link href="/registration">
-                        <div className="">
-                          Neu registrieren
-                        </div>
-                      </Link> */}
-                      </div>
-                      <Button
-                        className={{ root: 'mt-2 border-uzh-grey-80' }}
-                        type="submit"
-                        disabled={isSubmitting}
-                        data={{ cy: 'submit-login' }}
-                      >
-                        <Button.Label>Anmelden</Button.Label>
-                      </Button>
-                    </div>
-                  </Form>
-                </div>
-              </div>
-              <div className="flex-none w-full">
-                <Footer />
-              </div>
-            </div>
+            <LoginForm
+              header="Login Dozierende"
+              labelIdentifier="E-Mail Adresse"
+              fieldIdentifier="email"
+              dataIdentifier={{ cy: 'email-field' }}
+              labelSecret="Passwort"
+              fieldSecret="password"
+              dataSecret={{ cy: 'password-field' }}
+              isSubmitting={isSubmitting}
+              installationHint
+            />
           )
         }}
       </Formik>
+      <Toast
+        type="error"
+        duration={6000}
+        openExternal={showError}
+        setOpenExternal={setShowError}
+      >
+        {error}
+      </Toast>
     </div>
   )
 }
 
-export default LoginForm
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
+}
+
+export default Login
