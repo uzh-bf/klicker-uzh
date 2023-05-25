@@ -1,6 +1,6 @@
 /**
  * This method determines whether a user's client (e.g., chrome, firefox, etc.) has an actual
- * subscription to the browser's push service on the component's initial render. 
+ * subscription to the browser's push service on the component's initial render.
  */
 async function determineInitialSubscriptionState() {
   if (
@@ -35,7 +35,7 @@ async function determineInitialSubscriptionState() {
 
 /**
  * The Web Push Protocol requires application server keys (a.k.a. VAPID keys) to be in a binary format.
- * Newly generated VAPID keys are usually in a base64 format. This method therefore converts a 
+ * Newly generated VAPID keys are usually in a base64 format. This method therefore converts a
  * base64 string to a Uint8Array to ensure compatiblity with the Web Push Protocol.
  */
 function base64ToUint8Array(base64: string) {
@@ -52,7 +52,7 @@ function base64ToUint8Array(base64: string) {
 }
 
 async function subscribeParticipantToPushService(
-  registration: ServiceWorkerRegistration,
+  registration: ServiceWorkerRegistration
 ) {
   const applicationServerKey = base64ToUint8Array(
     process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY!
@@ -65,7 +65,4 @@ async function subscribeParticipantToPushService(
   return newSubscription
 }
 
-export {
-  determineInitialSubscriptionState,
-  subscribeParticipantToPushService,
-}
+export { determineInitialSubscriptionState, subscribeParticipantToPushService }

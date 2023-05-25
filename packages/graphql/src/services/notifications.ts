@@ -1,8 +1,8 @@
-import { Course, MicroSession, MicroSessionStatus, PushSubscription } from '@klicker-uzh/prisma'
+import { MicroSession, MicroSessionStatus } from '@klicker-uzh/prisma'
+import { GraphQLError } from 'graphql'
+import webpush from 'web-push'
 import { Context, ContextWithUser } from '../lib/context'
 import { formatDate } from '../lib/util'
-import webpush from 'web-push'
-import { GraphQLError } from 'graphql';
 
 interface SubscriptionObjectInput {
   endpoint: string
@@ -59,7 +59,7 @@ interface UnsubscribeToPushArgs {
   endpoint: string
 }
 
-export async function unsubscribeFromPush( 
+export async function unsubscribeFromPush(
   { courseId, endpoint }: UnsubscribeToPushArgs,
   ctx: ContextWithUser
 ) {
@@ -69,20 +69,27 @@ export async function unsubscribeFromPush(
         participantId_courseId_endpoint: {
           participantId: ctx.user.sub,
           courseId,
-          endpoint
-        }
-      }
+          endpoint,
+        },
+      },
     })
     return true
-  } catch(error) {
-    console.error("An error occured while trying to unsubscribe from push notifications: ", error)
+  } catch (error) {
+    console.error(
+      'An error occured while trying to unsubscribe from push notifications: ',
+      error
+    )
     return false
   }
 }
 
-export async function sendPushNotifications( ctx: Context) {
-  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY || !process.env.NOTIFICATION_SUPPORT_MAIL) {
-    throw new GraphQLError("VAPID keys or support email not available.")
+export async function sendPushNotifications(ctx: Context) {
+  if (
+    !process.env.VAPID_PUBLIC_KEY ||
+    !process.env.VAPID_PRIVATE_KEY ||
+    !process.env.NOTIFICATION_SUPPORT_MAIL
+  ) {
+    throw new GraphQLError('VAPID keys or support email not available.')
   }
 
   webpush.setVapidDetails(
@@ -118,8 +125,8 @@ export async function sendPushNotifications( ctx: Context) {
   await Promise.all(
     microSessions.map(async (microSession: MicroSession) => {
       try {
-        await sendPushNotificationsToSubscribers(microSession, ctx);
-        
+        await sendPushNotificationsToSubscribers(microSession, ctx)
+
         //update microSession to prevent sending push notifications multiple times
         await ctx.prisma.microSession.update({
           where: {
@@ -130,10 +137,13 @@ export async function sendPushNotifications( ctx: Context) {
           },
         })
       } catch (error) {
-        console.error("An error occured while trying to send the push notifications: ", error)
+        console.error(
+          'An error occured while trying to send the push notifications: ',
+          error
+        )
       }
     })
- )
+  )
 
   return true
 }
@@ -141,8 +151,11 @@ export async function sendPushNotifications( ctx: Context) {
 //TODO: how to address translation of the message when switching to multi language support?
 //E.g., store the language on the course entity and use it here to translate the message or
 // store the language on the user subscription entity and use this language when sending to the specific user?
-async function sendPushNotificationsToSubscribers(microSession: MicroSession, ctx: Context) {
-  for (let sub of microSession.course.subscriptions) {  
+async function sendPushNotificationsToSubscribers(
+  microSession: MicroSession,
+  ctx: Context
+) {
+  for (let sub of microSession.course.subscriptions) {
     try {
       const formattedDate = formatDate(microSession.scheduledEndAt)
       await webpush.sendNotification(
@@ -154,13 +167,15 @@ async function sendPushNotificationsToSubscribers(microSession: MicroSession, ct
           },
         },
         JSON.stringify({
-          message:
-            `Microlearning ${microSession.displayName} for ${microSession.course.displayName} is available until ${formattedDate.date} at ${formattedDate.time}.`,
+          message: `Microlearning ${microSession.displayName} for ${microSession.course.displayName} is available until ${formattedDate.date} at ${formattedDate.time}.`,
           title: `KlickerUZH - New Microlearning available for the course ${microSession.course.name}`,
         })
       )
     } catch (error) {
-      console.error("An error occured while trying to send the push notification: ", error)
+      console.error(
+        'An error occured while trying to send the push notification: ',
+        error
+      )
       if (error.statusCode === 410) {
         try {
           // subscription has expired or is no longer valid
@@ -171,7 +186,10 @@ async function sendPushNotificationsToSubscribers(microSession: MicroSession, ct
             },
           })
         } catch (error) {
-          console.error("An error occured while trying to remove the expired subscription from the database: ", error)
+          console.error(
+            'An error occured while trying to remove the expired subscription from the database: ',
+            error
+          )
         }
       }
     }

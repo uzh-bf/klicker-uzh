@@ -20,9 +20,9 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import usePushNotifications from 'shared-components/src/hooks/usePushNotifications'
-import LinkButton from '../components/common/LinkButton'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
+import LinkButton from '../components/common/LinkButton'
 
 const Index = function () {
   const t = useTranslations()

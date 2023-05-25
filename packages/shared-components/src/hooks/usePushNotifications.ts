@@ -1,15 +1,24 @@
-import { useEffect, useState } from "react"
-import { determineInitialSubscriptionState, subscribeParticipantToPushService } from "../utils/push"
-
+import { useEffect, useState } from 'react'
+import {
+  determineInitialSubscriptionState,
+  subscribeParticipantToPushService,
+} from '../utils/push'
 
 interface PushNotificationsOptions {
-    subscribeToPush: (subscriptionObject: PushSubscription, courseId: string) => void
-    unsubscribeFromPush: (subscriptionObject: PushSubscription, courseId: string) => void
+  subscribeToPush: (
+    subscriptionObject: PushSubscription,
+    courseId: string
+  ) => void
+  unsubscribeFromPush: (
+    subscriptionObject: PushSubscription,
+    courseId: string
+  ) => void
 }
 
-const usePushNotifications = ({ subscribeToPush, unsubscribeFromPush }: PushNotificationsOptions) => {
-
- 
+const usePushNotifications = ({
+  subscribeToPush,
+  unsubscribeFromPush,
+}: PushNotificationsOptions) => {
   const [pushDisabled, setPushDisabled] = useState<boolean | null>(null)
   const [userInfo, setUserInfo] = useState<string>('')
   const [registration, setRegistration] =
@@ -34,7 +43,6 @@ const usePushNotifications = ({ subscribeToPush, unsubscribeFromPush }: PushNoti
         )
       })
   }, [])
-
 
   /**
    * If a user has a valid push subscription for its browser to the push service,
@@ -78,7 +86,7 @@ const usePushNotifications = ({ subscribeToPush, unsubscribeFromPush }: PushNoti
           )
           // An error occured
         } else {
-            console.log("error occured: ", e)
+          console.log('error occured: ', e)
           setUserInfo(
             'Beim Versuch, Sie für Push-Benachrichtigungen zu registrieren, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
           )
@@ -86,9 +94,6 @@ const usePushNotifications = ({ subscribeToPush, unsubscribeFromPush }: PushNoti
       }
     }
   }
-
-
-
 
   /**
    * When unsubscribing a user from push notifications, the subscription needs to be
@@ -104,7 +109,6 @@ const usePushNotifications = ({ subscribeToPush, unsubscribeFromPush }: PushNoti
       unsubscribeFromPush(subscription, courseId)
     }
   }
-
 
   return {
     pushDisabled,
