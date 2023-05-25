@@ -33,7 +33,8 @@
     "yup": "^1.0.0",
     "recharts": "^2.4.1",
     "lodash": "^4.17.21",
-    "next-intl": "^2.10.4"
+    "next-intl": "^2.10.4",
+    "formik": "^2.2.9"
   },
   "volta": {
     "extends": "../../package.json"

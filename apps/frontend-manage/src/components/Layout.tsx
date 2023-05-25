@@ -3,8 +3,8 @@ import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
+import Footer from 'shared-components/src/Footer'
 import { twMerge } from 'tailwind-merge'
-import Footer from './common/Footer'
 import Header from './common/Header'
 
 interface LayoutProps {
