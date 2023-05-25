@@ -25,6 +25,11 @@
       "text": "Please enter a number.",
       "richtext": "Please enter a <b>number</b>."
     },
+    "login": {
+      "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
+      "installButton": "Install Now",
+      "installHomeScreen": "Open the Share dialog and click 'Add to Home Screen' to install the Klicker app on your phone."
+    },
     "generic": {
       "points": "Points",
       "title": "KlickerUZH",
@@ -112,11 +117,6 @@
       "polls": "Polls",
       "liveQA": "Live-Q&A",
       "userNotLoggedIn": "You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress."
-    },
-    "login": {
-      "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
-      "installButton": "Install Now",
-      "installHomeScreen": "Open the Share dialog and click 'Add to Home Screen' to install the Klicker app on your phone."
     },
     "courses": {
       "courseInformation": "Course Information",
