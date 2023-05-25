@@ -57,10 +57,10 @@ export default function Document() {
           content="KlickerUZH Audience Interaction"
         />
         <meta property="og:site_name" content="KlickerUZH" />
-        <meta property="og:url" content="https://pwa.klicker.uzh.ch" />
+        <meta property="og:url" content="https://manage.klicker.uzh.ch" />
         <meta
           property="og:image"
-          content="https://pwa.klicker.uzh.ch/apple-touch-icon.png"
+          content="https://manage.klicker.uzh.ch/apple-touch-icon.png"
         />
 
         {/* <link

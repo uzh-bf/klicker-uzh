@@ -54,7 +54,7 @@ function Login() {
               dataSecret={{ cy: 'token-field' }}
               isSubmitting={isSubmitting}
               usePinField={true}
-              installationHint={true}
+              installationHint
             />
           )
         }}
