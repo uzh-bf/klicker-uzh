@@ -25,6 +25,11 @@
       "text": "Bitte eine Zahl eingeben.",
       "richtext": "Bitte eine <b>Zahl</b> eingeben."
     },
+    "login": {
+      "installPWA": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
+      "installButton": "Jetzt installieren",
+      "installHomeScreen": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+    },
     "generic": {
       "points": "Punkte",
       "title": "KlickerUZH",
@@ -113,11 +118,7 @@
       "liveQA": "Live-Q&A",
       "userNotLoggedIn": "Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten."
     },
-    "login": {
-      "installPWA": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
-      "installButton": "Jetzt installieren",
-      "installHomeScreen": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
-    },
+
     "courses": {
       "courseInformation": "Kursinformationen",
       "createJoinGroup": "Gruppe erstellen/beitreten",
