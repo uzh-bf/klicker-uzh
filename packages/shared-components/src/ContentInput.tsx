@@ -42,6 +42,19 @@ interface Props {
     content?: string
     editor?: string
   }
+  toolbar?: {
+    bold?: boolean
+    italic?: boolean
+    code?: boolean
+    quote?: boolean
+    ol?: boolean
+    ul?: boolean
+    image?: boolean
+    texInline?: boolean
+    texCentered?: boolean
+    undo?: boolean
+    redo?: boolean
+  }
   key?: string
   data_cy?: string
 }
@@ -52,6 +65,20 @@ const HOTKEYS: Record<string, string> = {
 }
 const LIST_TYPES = ['numbered-list', 'bulleted-list']
 type OrNull<T> = T | null
+
+const TOOLBAR_DEFAULTS = {
+  bold: true,
+  italic: true,
+  code: true,
+  quote: true,
+  ol: true,
+  ul: true,
+  image: true,
+  texInline: true,
+  texCentered: true,
+  undo: true,
+  redo: true,
+}
 
 function ContentInput({
   content,
@@ -65,6 +92,9 @@ function ContentInput({
   className,
   key,
   data_cy,
+  toolbar = {
+    ...TOOLBAR_DEFAULTS,
+  },
 }: Props): React.ReactElement {
   const renderElement = useCallback((props: any) => <Element {...props} />, [])
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
@@ -93,7 +123,7 @@ function ContentInput({
         <div className={twMerge('p-3', className?.content)}>
           <Editable
             className={twMerge(
-              'prose prose-sm leading-3 prose-blockquote:text-gray-500 max-w-none focus:!outline-none',
+              'prose prose-sm prose-blockquote:text-gray-500 max-w-none focus:!outline-none prose-p:m-0 prose-p:mb-1',
               className?.editor
             )}
             autoFocus={autoFocus}
@@ -126,170 +156,192 @@ function ContentInput({
               className?.toolbar
             )}
           >
-            <Tooltip
-              tooltip="Wählen Sie diese Einstellung für fetten Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+b erreicht werden."
-              className={{
-                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-              }}
-              withIndicator={false}
-            >
-              <MarkButton format="bold" icon={faBold} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip="Wählen Sie diese Einstellung für kursiven Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+i erreicht werden."
-              className={{
-                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-              }}
-              withIndicator={false}
-            >
-              <MarkButton format="italic" icon={faItalic} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip="Wählen Sie diese Einstellung für Code-Styling."
-              className={{
-                tooltip: 'text-sm md:text-base max-w-full md:max-w-full',
-              }}
-              withIndicator={false}
-            >
-              <MarkButton format="code" icon={faCode} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip="Wählen Sie diese Option, um ein Zitat einzufügen. Beachten Sie hier, dass aktuell neue Paragraphen (durch einen Zeilenumbruch / Enter) als separate Zitate dargestellt werden."
-              className={{
-                tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[70%]',
-              }}
-              withIndicator={false}
-            >
-              <BlockButton format="block-quote" icon={faQuoteRight} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip="Diese Option erzeugt eine nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
-              className={{
-                tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[50%]',
-              }}
-              withIndicator={false}
-            >
-              <BlockButton format="numbered-list" icon={faListOl} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip="Diese Option erzeugt eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
-              className={{
-                tooltip: 'text-sm md:text-base max-w-[40%] md:max-w-[50%]',
-              }}
-              withIndicator={false}
-            >
-              <BlockButton format="bulleted-list" icon={faListUl} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip="Wählen Sie diese Einstellung, um ein Bild einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
-              className={{
-                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-              }}
-              withIndicator={false}
-            >
-              <Button
-                active={false}
-                editor={editor}
-                format="paragraph"
-                onClick={(e: any) => {
-                  e.preventDefault()
-                  Transforms.insertText(
-                    editor,
-                    '![University of Zurich](https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Lichthof_Uzh.jpg/1920px-Lichthof_Uzh.jpg)'
-                  )
+            {toolbar.bold && (
+              <Tooltip
+                tooltip="Wählen Sie diese Einstellung für fetten Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+b erreicht werden."
+                className={{
+                  tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                 }}
+                withIndicator={false}
               >
-                <div className="ml-1 mt-0.5">
-                  <FontAwesomeIcon icon={faImage} color="grey" />
-                </div>
-              </Button>
-            </Tooltip>
+                <MarkButton format="bold" icon={faBold} />
+              </Tooltip>
+            )}
 
-            <Tooltip
-              tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
-              className={{
-                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-              }}
-              withIndicator={false}
-            >
-              <Button
-                active={false}
-                editor={editor}
-                format="paragraph"
-                onClick={(e: any) => {
-                  e.preventDefault()
-                  Transforms.insertText(editor, '$$1 + 2$$')
+            {toolbar.italic && (
+              <Tooltip
+                tooltip="Wählen Sie diese Einstellung für kursiven Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+i erreicht werden."
+                className={{
+                  tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                 }}
+                withIndicator={false}
               >
-                <div className="ml-1 mt-0.5">
-                  <FontAwesomeIcon icon={faSuperscript} color="grey" />
-                </div>
-              </Button>
-            </Tooltip>
+                <MarkButton format="italic" icon={faItalic} />
+              </Tooltip>
+            )}
 
-            <Tooltip
-              tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden."
-              className={{
-                tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-              }}
-              withIndicator={false}
-            >
-              <Button
-                active={false}
-                editor={editor}
-                format="paragraph"
-                onClick={(e: any) => {
-                  e.preventDefault()
-                  Transforms.insertNodes(editor, {
-                    type: 'paragraph',
-                    children: [{ text: '$$' }],
-                  })
-                  Transforms.insertNodes(editor, {
-                    type: 'paragraph',
-                    children: [{ text: '1 + 2' }],
-                  })
-                  Transforms.insertNodes(editor, {
-                    type: 'paragraph',
-                    children: [{ text: '$$' }],
-                  })
+            {toolbar.code && (
+              <Tooltip
+                tooltip="Wählen Sie diese Einstellung für Code-Styling."
+                className={{
+                  tooltip: 'text-sm md:text-base max-w-full md:max-w-full',
                 }}
+                withIndicator={false}
               >
-                <div className="ml-1 mt-0.5">
-                  <FontAwesomeIcon icon={faSuperscript} color="grey" />
-                </div>
-              </Button>
-            </Tooltip>
+                <MarkButton format="code" icon={faCode} />
+              </Tooltip>
+            )}
+
+            {toolbar.quote && (
+              <Tooltip
+                tooltip="Wählen Sie diese Option, um ein Zitat einzufügen. Beachten Sie hier, dass aktuell neue Paragraphen (durch einen Zeilenumbruch / Enter) als separate Zitate dargestellt werden."
+                className={{
+                  tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[70%]',
+                }}
+                withIndicator={false}
+              >
+                <BlockButton format="block-quote" icon={faQuoteRight} />
+              </Tooltip>
+            )}
+
+            {toolbar.ol && (
+              <Tooltip
+                tooltip="Diese Option erzeugt eine nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
+                className={{
+                  tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[50%]',
+                }}
+                withIndicator={false}
+              >
+                <BlockButton format="numbered-list" icon={faListOl} />
+              </Tooltip>
+            )}
+
+            {toolbar.ul && (
+              <Tooltip
+                tooltip="Diese Option erzeugt eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
+                className={{
+                  tooltip: 'text-sm md:text-base max-w-[40%] md:max-w-[50%]',
+                }}
+                withIndicator={false}
+              >
+                <BlockButton format="bulleted-list" icon={faListUl} />
+              </Tooltip>
+            )}
+
+            {toolbar.image && (
+              <Tooltip
+                tooltip="Wählen Sie diese Einstellung, um ein Bild einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
+                className={{
+                  tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                }}
+                withIndicator={false}
+              >
+                <Button
+                  active={false}
+                  editor={editor}
+                  format="paragraph"
+                  onClick={(e: any) => {
+                    e.preventDefault()
+                    Transforms.insertText(
+                      editor,
+                      '![University of Zurich](https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Lichthof_Uzh.jpg/1920px-Lichthof_Uzh.jpg)'
+                    )
+                  }}
+                >
+                  <div className="ml-1 mt-0.5">
+                    <FontAwesomeIcon icon={faImage} color="grey" />
+                  </div>
+                </Button>
+              </Tooltip>
+            )}
+
+            {toolbar.texInline && (
+              <Tooltip
+                tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
+                className={{
+                  tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                }}
+                withIndicator={false}
+              >
+                <Button
+                  active={false}
+                  editor={editor}
+                  format="paragraph"
+                  onClick={(e: any) => {
+                    e.preventDefault()
+                    Transforms.insertText(editor, '$$1 + 2$$')
+                  }}
+                >
+                  <div className="ml-1 mt-0.5">
+                    <FontAwesomeIcon icon={faSuperscript} color="grey" />
+                  </div>
+                </Button>
+              </Tooltip>
+            )}
+
+            {toolbar.texCentered && (
+              <Tooltip
+                tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden."
+                className={{
+                  tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                }}
+                withIndicator={false}
+              >
+                <Button
+                  active={false}
+                  editor={editor}
+                  format="paragraph"
+                  onClick={(e: any) => {
+                    e.preventDefault()
+                    Transforms.insertNodes(editor, {
+                      type: 'paragraph',
+                      children: [{ text: '$$' }],
+                    })
+                    Transforms.insertNodes(editor, {
+                      type: 'paragraph',
+                      children: [{ text: '1 + 2' }],
+                    })
+                    Transforms.insertNodes(editor, {
+                      type: 'paragraph',
+                      children: [{ text: '$$' }],
+                    })
+                  }}
+                >
+                  <div className="ml-1 mt-0.5">
+                    <FontAwesomeIcon icon={faSuperscript} color="grey" />
+                  </div>
+                </Button>
+              </Tooltip>
+            )}
           </div>
-          <Button
-            active={false}
-            editor={editor}
-            format="paragraph"
-            onClick={() => editor.undo()}
-            type="button"
-            className="mr-3"
-          >
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faRotateLeft} color="grey" />
-            </div>
-          </Button>
-          <Button
-            active={false}
-            editor={editor}
-            format="paragraph"
-            onClick={() => editor.redo()}
-            type="button"
-            className="mr-0.5"
-          >
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faRotateRight} color="grey" />
-            </div>
-          </Button>
+          {toolbar.undo && (
+            <Button
+              active={false}
+              editor={editor}
+              format="paragraph"
+              onClick={() => editor.undo()}
+              type="button"
+              className="mr-3"
+            >
+              <div className="flex items-center">
+                <FontAwesomeIcon icon={faRotateLeft} color="grey" />
+              </div>
+            </Button>
+          )}
+          {toolbar.redo && (
+            <Button
+              active={false}
+              editor={editor}
+              format="paragraph"
+              onClick={() => editor.redo()}
+              type="button"
+              className="mr-0.5"
+            >
+              <div className="flex items-center">
+                <FontAwesomeIcon icon={faRotateRight} color="grey" />
+              </div>
+            </Button>
+          )}
         </div>
       </Slate>
     </div>
