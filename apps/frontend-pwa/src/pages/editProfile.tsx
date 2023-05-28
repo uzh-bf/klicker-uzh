@@ -10,11 +10,11 @@ import {
   FormikTextField,
   Prose,
   ThemeContext,
-  UserNotification,
+  Toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import Router from 'next/router'
+import { useRouter } from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
 import { useContext, useEffect, useState } from 'react'
@@ -26,12 +26,14 @@ import Layout from '../components/Layout'
 function EditProfile() {
   const t = useTranslations()
   const theme = useContext(ThemeContext)
+  const router = useRouter()
   const { data, loading } = useQuery(SelfDocument)
-  const [updateParticipantProfile, { error }] = useMutation(
+  const [updateParticipantProfile] = useMutation(
     UpdateParticipantProfileDocument
   )
 
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/profile')
+  const [showError, setShowError] = useState(false)
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
@@ -145,7 +147,11 @@ function EditProfile() {
             },
           })
 
-          Router.replace(decodedRedirectPath)
+          if (result.data?.updateParticipantProfile) {
+            router.replace(decodedRedirectPath)
+          } else {
+            setShowError(true)
+          }
         }}
       >
         {({ values, isSubmitting, isValid }) => {
@@ -189,13 +195,6 @@ function EditProfile() {
                         labelType="small"
                         className={{ label: 'font-bold text-md text-black' }}
                       />
-                      {error && (
-                        <UserNotification
-                          type="error"
-                          message="Please choose a different username."
-                        />
-                      )}
-
                       <FormikTextField
                         name="password"
                         label={t('shared.generic.password')}
@@ -247,6 +246,14 @@ function EditProfile() {
           )
         }}
       </Formik>
+      <Toast
+        type="error"
+        openExternal={showError}
+        setOpenExternal={setShowError}
+        duration={8000}
+      >
+        {t('pwa.profile.editProfileFailed')}
+      </Toast>
     </Layout>
   )
 }
