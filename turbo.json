@@ -24,6 +24,11 @@
       "outputs": ["dist/**", ".next/**"],
       "dependsOn": ["@klicker-uzh/prisma#build", "@klicker-uzh/markdown#build"]
     },
+    "dev:offline": {
+      "cache": false,
+      "outputs": ["dist/**", ".next/**"],
+      "dependsOn": ["@klicker-uzh/prisma#build", "@klicker-uzh/markdown#build"]
+    },
     "publish": {
       "cache": false,
       "dependsOn": ["build"]

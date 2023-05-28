@@ -35,6 +35,7 @@
   ],
   "scripts": {
     "dev": "doppler run --config dev -- turbo run dev",
+    "dev:offline": "doppler run --config dev -- turbo run dev:offline",
     "build": "turbo run build",
     "publish": "turbo run publish",
     "format": "turbo run format --parallel --continue",

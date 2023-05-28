@@ -5,6 +5,7 @@
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3003",
+    "dev:offline": "NODE_ENV=development next dev --port 3003",
     "build": "next build",
     "build:test": "cross-env NODE_ENV=test next build",
     "format": "prettier --write .",
