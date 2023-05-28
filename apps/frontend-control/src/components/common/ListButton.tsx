@@ -9,6 +9,10 @@ interface ListButtonProps {
   onClick?: () => void
   icon: IconProp
   label: string
+  data?: {
+    cy?: string
+    test?: string
+  }
   className?: {
     root?: string
     icon?: string
@@ -30,19 +34,21 @@ function ListButton({
   onClick,
   icon,
   label,
+  data,
   className,
 }: ListButtonLinkProps | ListButtonOnClickProps) {
   const router = useRouter()
 
   return (
     <Button
+      onClick={onClick ? onClick : () => router.push(link)}
       className={{
         root: twMerge(
           'p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100 w-full',
           className?.root
         ),
       }}
-      onClick={onClick ? onClick : () => router.push(link)}
+      data={data}
     >
       <Button.Icon className={{ root: twMerge('ml-1 mr-3', className?.icon) }}>
         <FontAwesomeIcon icon={icon} />

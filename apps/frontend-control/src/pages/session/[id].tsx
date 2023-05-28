@@ -142,6 +142,7 @@ function RunningSession() {
               className={{
                 root: 'float-right',
               }}
+              data={{ cy: 'deactivate-block' }}
             >
               Block schliessen
             </Button>
@@ -184,6 +185,7 @@ function RunningSession() {
               className={{
                 root: twMerge('float-right text-white', theme.primaryBgDark),
               }}
+              data={{ cy: 'activate-next-block' }}
             >
               Block {nextBlockOrder + 1} aktivieren
             </Button>
@@ -205,6 +207,7 @@ function RunningSession() {
               className={{
                 root: 'float-right text-white bg-uzh-red-100',
               }}
+              data={{ cy: 'end-session' }}
             >
               Session beenden
             </Button>

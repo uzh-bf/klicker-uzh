@@ -60,6 +60,7 @@ function Index() {
               link="/course/unassigned"
               icon={faList}
               label="Liste aller Sessionen ohne Kurs"
+              data={{ cy: 'unassigned-sessions' }}
             />
           </div>
         </div>
