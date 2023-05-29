@@ -196,6 +196,7 @@
     },
     "profile": {
       "editProfile": "Edit profile",
+      "editProfileFailed": "Unfortunately, an error occurred while saving the changes. The username you have chosen may already be taken. Please check your entries and try again.",
       "achievements": "Achievements",
       "myProfile": "My Profile",
       "usernameMinLength": "The username must be at least {length} characters long.",
