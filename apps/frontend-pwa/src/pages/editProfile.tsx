@@ -4,16 +4,17 @@ import {
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { NextPageWithLayout } from '@pages/_app'
 import {
   Button,
+  FormikSelectField,
+  FormikTextField,
   Prose,
   ThemeContext,
-  UserNotification,
+  Toast,
 } from '@uzh-bf/design-system'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import Router from 'next/router'
+import { useRouter } from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
 import { useContext, useEffect, useState } from 'react'
@@ -22,15 +23,17 @@ import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import Layout from '../components/Layout'
 
-function EditProfile(): NextPageWithLayout {
+function EditProfile() {
   const t = useTranslations()
   const theme = useContext(ThemeContext)
+  const router = useRouter()
   const { data, loading } = useQuery(SelfDocument)
-  const [updateParticipantProfile, { error }] = useMutation(
+  const [updateParticipantProfile] = useMutation(
     UpdateParticipantProfileDocument
   )
 
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/profile')
+  const [showError, setShowError] = useState(false)
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
@@ -144,10 +147,14 @@ function EditProfile(): NextPageWithLayout {
             },
           })
 
-          Router.replace(decodedRedirectPath)
+          if (result.data?.updateParticipantProfile) {
+            router.replace(decodedRedirectPath)
+          } else {
+            setShowError(true)
+          }
         }}
       >
-        {({ values, errors, isSubmitting, isValid }) => {
+        {({ values, isSubmitting, isValid }) => {
           return (
             <div className="flex flex-col md:w-full md:border md:p-8 md:rounded md:max-w-3xl md:mx-auto">
               <BigHead
@@ -182,71 +189,26 @@ function EditProfile(): NextPageWithLayout {
                     )}
 
                     <div className="space-y-4">
-                      <div className="">
-                        <div>
-                          <p className="font-bold">
-                            {t('shared.generic.username')}
-                          </p>
-                        </div>
-                        <div>
-                          <Field
-                            className="w-full"
-                            type="text"
-                            name="username"
-                          />
-                        </div>
-                        <ErrorMessage
-                          name="username"
-                          component="div"
-                          className="text-sm text-red-400"
-                        />
-                      </div>
-                      {error && (
-                        <UserNotification
-                          type="error"
-                          message="Please choose a different username."
-                        />
-                      )}
-
-                      <div>
-                        <div>
-                          <p className="font-bold">
-                            {t('shared.generic.password')}
-                          </p>
-                        </div>
-                        <div className="flex-1">
-                          <Field
-                            className="w-full"
-                            type="password"
-                            name="password"
-                          />
-                        </div>
-                        <ErrorMessage
-                          name="password"
-                          component="div"
-                          className="text-sm text-red-400"
-                        />
-                      </div>
-
-                      <div>
-                        <div>
-                          <p className="font-bold">
-                            {t('shared.generic.passwordRepetition')}
-                          </p>
-                        </div>
-                        <div>
-                          <Field
-                            className="w-full"
-                            type="password"
-                            name="passwordRepetition"
-                          />
-                        </div>
-                        <ErrorMessage
-                          name="passwordRepetition"
-                          component="div"
-                          className="text-sm text-red-400"
-                        />
-                      </div>
+                      <FormikTextField
+                        name="username"
+                        label={t('shared.generic.username')}
+                        labelType="small"
+                        className={{ label: 'font-bold text-md text-black' }}
+                      />
+                      <FormikTextField
+                        name="password"
+                        label={t('shared.generic.password')}
+                        labelType="small"
+                        className={{ label: 'font-bold text-md text-black' }}
+                        type="password"
+                      />
+                      <FormikTextField
+                        name="passwordRepetition"
+                        label={t('shared.generic.passwordRepetition')}
+                        labelType="small"
+                        className={{ label: 'font-bold text-md text-black' }}
+                        type="password"
+                      />
                     </div>
 
                     <div>
@@ -266,19 +228,15 @@ function EditProfile(): NextPageWithLayout {
                         <div className="flex-1">
                           <p className="font-bold">{t(`pwa.avatar.${key}`)}</p>
                         </div>
-                        <div className="flex-1">
-                          <Field
-                            as="select"
-                            name={key}
-                            style={{ width: '100%' }}
-                          >
-                            {AVATAR_OPTIONS[key].map((value) => (
-                              <option key={value} value={value}>
-                                {t(`pwa.avatar.${value}`)}
-                              </option>
-                            ))}
-                          </Field>
-                        </div>
+                        <FormikSelectField
+                          name={key}
+                          items={AVATAR_OPTIONS[key].map((value) => {
+                            return {
+                              label: t(`pwa.avatar.${value}`),
+                              value: value,
+                            }
+                          })}
+                        />
                       </div>
                     ))}
                   </div>
@@ -288,6 +246,14 @@ function EditProfile(): NextPageWithLayout {
           )
         }}
       </Formik>
+      <Toast
+        type="error"
+        openExternal={showError}
+        setOpenExternal={setShowError}
+        duration={8000}
+      >
+        {t('pwa.profile.editProfileFailed')}
+      </Toast>
     </Layout>
   )
 }

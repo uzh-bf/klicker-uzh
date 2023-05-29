@@ -197,6 +197,7 @@
     },
     "profile": {
       "editProfile": "Profil editieren",
+      "editProfileFailed": "Leider ist beim Speichern der Änderungen ein Fehler aufgetreten. Möglicherweise ist der von Ihnen gewählte Nutzername bereits vergeben. Bitte überprüfen Sie Ihre Eingaben und versuchen es nochmal.",
       "achievements": "Errungenschaften",
       "myProfile": "Mein Profil",
       "usernameMinLength": "Der Benutzername muss mindestens {length} Zeichen lang sein.",
