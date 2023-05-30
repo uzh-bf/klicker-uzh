@@ -63,18 +63,35 @@ describe('Test functionalities of frontend-control application', () => {
         })
         cy.get('[data-cy="submit-login"]').click();
 
-        // start the session
         cy.get('[data-cy="unassigned-sessions"]').click();
+
+        // check ppt links and start the session
+        cy.findByText(sessionTitle).then(($parentDiv) => {
+            const sessionDiv = $parentDiv.parent().parent();
+            cy.wrap(sessionDiv).findByText("PPT").click();
+        })
+        cy.get('[data-cy="close-embedding-modal"]').click();
+
         cy.findByText(sessionTitle).click();
         cy.get('[data-cy="confirm-start-session"]').click();
+
+        // test the mobile menu of the control app
+        // resize the window to a mobile size
+        cy.viewport("iphone-6");
+        cy.get('[data-cy="ppt-button"]').click();
+        cy.get('[data-cy="close-embedding-modal"]').click();
+        cy.get('[data-cy="home-button"]').click();
+        cy.get('[data-cy="unassigned-sessions"]').click();
+        cy.findByText(sessionTitle).click();
+        cy.get('[data-cy="back-button"]').click();
+        cy.findByText(sessionTitle).click();
+        cy.viewport("macbook-16");
 
         // open and close the block and end the session
         cy.get('[data-cy="activate-next-block"]').click();
         cy.get('[data-cy="deactivate-block"]').click();
         cy.get('[data-cy="end-session"]').click();
-
-        // TODO: check mobile menu
-        // TODO: check ppt modals during session from mobile menu and before session from list page
+        cy.findByText(sessionTitle).should('not.exist');
 
         // TODO (later): check if session is running correctly / add student answer
     })
