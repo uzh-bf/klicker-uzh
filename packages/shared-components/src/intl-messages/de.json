@@ -26,9 +26,7 @@
       "richtext": "Bitte eine <b>Zahl</b> eingeben."
     },
     "login": {
-      "installPWA": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
-      "installButton": "Jetzt installieren",
-      "installHomeScreen": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+      "installButton": "Jetzt installieren"
     },
     "generic": {
       "points": "Punkte",
@@ -45,7 +43,9 @@
       "logout": "Ausloggen",
       "login": "Login",
       "username": "Benutzername",
+      "email": "E-Mail Adresse",
       "password": "Passwort",
+      "token": "Token",
       "passwordRepetition": "Passwort (Wiederholung)",
       "signin": "Anmelden",
       "usernameError": "Bitte geben Sie Ihren Nutzernamen ein.",
@@ -118,7 +118,10 @@
       "liveQA": "Live-Q&A",
       "userNotLoggedIn": "Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten."
     },
-
+    "login": {
+      "installAndroid": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
+      "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+    },
     "courses": {
       "courseInformation": "Kursinformationen",
       "createJoinGroup": "Gruppe erstellen/beitreten",
@@ -218,7 +221,6 @@
       "clothing": "Kleidungsstil",
       "clothingColor": "Kleidungsfarbe",
       "skinTone": "Hautton",
-
       "breasts": "Weiblich",
       "chest": "Männlich",
       "normal": "Normal",
@@ -265,5 +267,11 @@
     }
   },
   "manage": {},
-  "control": {}
+  "control": {
+    "login": {
+      "header": "KlickerUZH Controller-App (Token)",
+      "installAndroid": "Installieren Sie die KlickerUZH Controller-App auf Ihrem Handy, um Ihre Sessionen während der Vorlesungen direkt vom Handy aus zu steuern.",
+      "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker Controller-App auf Ihrem Handy zu installieren und Live-Sessionen direkt zu bedienen."
+    }
+  }
 }

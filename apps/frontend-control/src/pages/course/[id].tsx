@@ -65,4 +65,21 @@ function Course() {
   )
 }
 
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
+}
+
+export function getStaticPaths() {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
+}
+
 export default Course

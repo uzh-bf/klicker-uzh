@@ -26,9 +26,7 @@
       "richtext": "Please enter a <b>number</b>."
     },
     "login": {
-      "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
-      "installButton": "Install Now",
-      "installHomeScreen": "Open the Share dialog and click 'Add to Home Screen' to install the Klicker app on your phone."
+      "installButton": "Install Now"
     },
     "generic": {
       "points": "Points",
@@ -45,7 +43,9 @@
       "logout": "Logout",
       "login": "Login",
       "username": "Username",
+      "email": "E-mail address",
       "password": "Password",
+      "token": "Token",
       "passwordRepetition": "Password (repetition)",
       "signin": "Login",
       "usernameError": "Please enter your username.",
@@ -117,6 +117,10 @@
       "polls": "Polls",
       "liveQA": "Live-Q&A",
       "userNotLoggedIn": "You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress."
+    },
+    "login": {
+      "installAndroid": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
+      "installIOS": "Open the Share dialog and click 'Add to Home Screen' to install the Klicker app on your phone."
     },
     "courses": {
       "courseInformation": "Course Information",
@@ -217,7 +221,6 @@
       "clothing": "Clothing",
       "clothingColor": "Clothing Color",
       "skinTone": "Skin Tone",
-
       "breasts": "Female",
       "chest": "Male",
       "normal": "Normal",
@@ -264,5 +267,11 @@
     }
   },
   "manage": {},
-  "control": {}
+  "control": {
+    "login": {
+      "header": "KlickerUZH Controller-App (Token)",
+      "installAndroid": "Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.",
+      "installIOS": "Open the share dialog and click 'Add to Home Screen' to install the Klicker Controller app on your phone and control live sessions directly."
+    }
+  }
 }
