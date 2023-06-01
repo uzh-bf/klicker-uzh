@@ -16,14 +16,14 @@ function Index() {
 
   if (loadingCourses) {
     return (
-      <Layout title={t('control.home.courseOverview')}>
+      <Layout title={t('control.home.courseSelection')}>
         {t('shared.generic.loading')}
       </Layout>
     )
   }
   if ((!loadingCourses && !dataCourses) || errorCourses) {
     return (
-      <Layout title={t('control.home.courseOverview')}>
+      <Layout title={t('control.home.courseSelection')}>
         <UserNotification
           type="error"
           className={{ root: 'text-base' }}
@@ -35,7 +35,7 @@ function Index() {
   }
 
   return (
-    <Layout title={t('control.home.courseOverview')}>
+    <Layout title={t('control.home.courseSelection')}>
       <div className="flex flex-col w-full gap-4">
         {dataCourses?.controlCourses && (
           <div>

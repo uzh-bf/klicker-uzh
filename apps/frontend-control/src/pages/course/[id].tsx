@@ -4,12 +4,14 @@ import {
   SessionStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import Layout from '../../components/Layout'
 import SessionLists from '../../components/sessions/SessionLists'
 
 function Course() {
+  const t = useTranslations()
   const router = useRouter()
 
   const { loading, error, data } = useQuery(GetControlCourseDocument, {
@@ -24,16 +26,19 @@ function Course() {
   }, [data, router])
 
   if (loading) {
-    return <Layout title="Kursübersicht">Loading...</Layout>
+    return (
+      <Layout title={t('control.course.courseOverview')}>
+        {t('shared.generic.loading')}
+      </Layout>
+    )
   }
   if (!data?.controlCourse || error) {
     return (
-      <Layout title="Kursübersicht">
+      <Layout title={t('control.course.courseOverview')}>
         <UserNotification
           type="error"
           className={{ root: 'text-base' }}
-          message="Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen
-        Sie es später erneut."
+          message={t('control.course.loadingFailed')}
         />
       </Layout>
     )
@@ -41,10 +46,10 @@ function Course() {
 
   const { controlCourse } = data
 
-  const runningSessions = controlCourse.sessions.filter(
+  const runningSessions = controlCourse.sessions?.filter(
     (session) => session.status === SessionStatus.Running
   )
-  const plannedSessions = controlCourse.sessions.filter(
+  const plannedSessions = controlCourse.sessions?.filter(
     (session) =>
       session.status === SessionStatus.Prepared ||
       session.status === SessionStatus.Scheduled
@@ -53,13 +58,12 @@ function Course() {
   return (
     <Layout title={controlCourse.name}>
       <SessionLists
-        runningSessions={runningSessions}
-        plannedSessions={plannedSessions}
+        runningSessions={runningSessions || []}
+        plannedSessions={plannedSessions || []}
       />
 
       <div className="mt-4 text-base italic">
-        Abgeschlossene Sessionen können auf der entsprechenden Seite in der
-        Management-App mit Resultaten betrachtet werden.
+        {t('control.course.completedSessionsHint')}
       </div>
     </Layout>
   )

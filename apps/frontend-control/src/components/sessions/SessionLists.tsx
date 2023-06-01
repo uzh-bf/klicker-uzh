@@ -5,9 +5,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, H4 } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ListButton from '../common/ListButton'
-import SessionStartToast from '../toasts/SessionStartToast'
+import ErrorStartToast from '../toasts/ErrorStartToast'
 import EmbeddingModal from './EmbeddingModal'
 import StartModal from './StartModal'
 
@@ -17,6 +18,7 @@ interface SessionListsProps {
 }
 
 function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
+  const t = useTranslations()
   const [startModalOpen, setStartModalOpen] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
   const [startId, setStartId] = useState('')
@@ -26,7 +28,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
 
   return (
     <>
-      <H4>Laufende Sessionen</H4>
+      <H4>{t('control.course.runningSessions')}</H4>
       {runningSessions.length > 0 ? (
         <div className="flex flex-col gap-1.5">
           {runningSessions.map((session) => (
@@ -55,10 +57,12 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
           ))}
         </div>
       ) : (
-        <div>Keine laufenden Sessionen</div>
+        <div>{t('control.course.noRunningSessions')}</div>
       )}
 
-      <H4 className={{ root: 'mt-4' }}>Geplante Sessionen</H4>
+      <H4 className={{ root: 'mt-4' }}>
+        {t('control.course.plannedSessions')}
+      </H4>
       {plannedSessions.length > 0 ? (
         <div className="flex flex-col gap-1.5">
           {plannedSessions.map((session) => (
@@ -92,7 +96,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
           ))}
         </div>
       ) : (
-        <div>Keine geplanten Sessionen</div>
+        <div>{t('control.course.noPlannedSessions')}</div>
       )}
 
       <EmbeddingModal
@@ -107,7 +111,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
         setStartModalOpen={setStartModalOpen}
         setErrorToast={setErrorToast}
       />
-      <SessionStartToast open={errorToast} setOpen={setErrorToast} />
+      <ErrorStartToast open={errorToast} setOpen={setErrorToast} />
     </>
   )
 }

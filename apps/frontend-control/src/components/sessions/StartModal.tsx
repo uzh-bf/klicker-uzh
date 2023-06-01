@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { StartSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, Modal, ThemeContext } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -20,6 +21,7 @@ function StartModal({
   setStartModalOpen,
   setErrorToast,
 }: StartModalProps) {
+  const t = useTranslations()
   const router = useRouter()
   const theme = useContext(ThemeContext)
   const [startSession] = useMutation(StartSessionDocument)
@@ -45,24 +47,24 @@ function StartModal({
             root: twMerge('text-white', theme.primaryBgDark),
           }}
         >
-          Starten
+          {t('shared.generic.start')}
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={() => setStartModalOpen(false)}>Abbrechen</Button>
+        <Button onClick={() => setStartModalOpen(false)}>
+          {t('shared.generic.cancel')}
+        </Button>
       }
       className={{ content: 'h-max w-max md:min-w-[30rem] my-auto mx-auto' }}
       hideCloseButton
     >
-      <H3>Session starten</H3>
+      <H3>{t('control.course.startSession')}</H3>
       <div className="p-2 border border-solid rounded border-uzh-grey-100 bg-uzh-grey-20">
-        Sind Sie sich sicher, dass sie die folgende Session starten möchten?
+        {t('control.course.confirmStartSession')}
         <div className="font-bold">{startName}</div>
       </div>
       <div className="mt-4 text-sm italic">
-        Bitte beachten Sie, dass eine gestartete Live-Session grundsätzlich
-        öffentlich zugänglich ist. Laufende Sessionen können über die
-        Management-App abgebrochen oder gestoppt werden.
+        {t('control.course.explanationStartSession')}
       </div>
     </Modal>
   )

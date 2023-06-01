@@ -36,6 +36,7 @@
       "start": "Starten",
       "continue": "Weiter",
       "cancel": "Abbrechen",
+      "close": "Schliessen",
       "sendAnswer": "Antwort senden",
       "loading": "Laden...",
       "begin": "Beginnen",
@@ -274,12 +275,27 @@
       "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker Controller-App auf Ihrem Handy zu installieren und Live-Sessionen direkt zu bedienen."
     },
     "home": {
-      "courseOverview": "Kursübersicht",
+      "courseSelection": "Kursauswahl",
       "errorLoadingCourse": "Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchenSie es später erneut.",
       "selectCourse": "Bitte wählen Sie einen Kurs aus:",
       "archivedCourse": "{courseName} (Archiviert)",
       "sessionsNoCourse": "Sessionen ohne Kurs",
       "listSessionsNoCourse": "Liste aller Sessionen ohne Kurs"
-    }
+    },
+    "course": {
+      "courseOverview": "Kursübersicht",
+      "loadingFailed": "Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen Sie es später erneut.",
+      "completedSessionsHint": "Abgeschlossene Sessionen können auf der entsprechenden Seite in der KlickerUZH Management-App mit Resultaten betrachtet werden.",
+      "runningSessions": "Laufende Sessionen",
+      "noRunningSessions": "Keine laufenden Sessionen",
+      "plannedSessions": "Geplante Sessionen",
+      "noPlannedSessions": "Keine geplanten Sessionen",
+      "sessionStartFailed": "Leider konnte Ihre Session aufgrund eines Fehlers nicht gestartet werden. Bitte versuchen Sie es später erneut.",
+      "pptEmbedding": "PPT-Einbettung Evaluation",
+      "startSession": "Session starten",
+      "confirmStartSession": "Sind Sie sich sicher, dass sie die folgende Session starten möchten?",
+      "explanationStartSession": "Bitte beachten Sie, dass eine gestartete Live-Session grundsätzlich öffentlich zugänglich ist. Laufende Sessionen können über die KlickerUZH Management-App abgebrochen oder gestoppt werden."
+    },
+    "session": {}
   }
 }

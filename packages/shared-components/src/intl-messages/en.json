@@ -36,6 +36,7 @@
       "start": "Start",
       "continue": "Continue",
       "cancel": "Cancel",
+      "close": "Close",
       "sendAnswer": "Send answer",
       "loading": "Loading...",
       "begin": "Begin",
@@ -274,12 +275,27 @@
       "installIOS": "Open the share dialog and click 'Add to Home Screen' to install the Klicker Controller app on your phone and control live sessions directly."
     },
     "home": {
-      "courseOverview": "Course overview",
+      "courseSelection": "Course Selection",
       "errorLoadingCourse": "An error occurred while loading your courses. Please try again later.",
       "selectCourse": "Please select a course:",
       "archivedCourse": "{courseName} (archived)",
       "sessionsNoCourse": "Sessions without course",
       "listSessionsNoCourse": "List of all sessions without course"
-    }
+    },
+    "course": {
+      "courseOverview": "Course overview",
+      "loadingFailed": "An error occurred while loading your courses. Please try again later.",
+      "completedSessionsHint": "Completed sessions can be viewed with results on the corresponding page in the KlickerUZH management app.",
+      "runningSessions": "Running Sessions",
+      "noRunningSessions": "No running sessions",
+      "plannedSessions": "Planned Sessions",
+      "noPlannedSessions": "No planned sessions",
+      "sessionStartFailed": "Unfortunately, your session could not be started due to an error. Please try again later.",
+      "pptEmbedding": "PPT-Embedding Evaluation",
+      "startSession": "Start session",
+      "confirmStartSession": "Are you sure you want to start the following session?",
+      "explanationStartSession": "Please note that a started live session is generally publicly accessible. Running sessions can be canceled or stopped using the KlickerUZH management app."
+    },
+    "session": {}
   }
 }
