@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
@@ -15,6 +16,7 @@ interface LayoutProps {
 
 function Layout({ title, children, sessionId, className }: LayoutProps) {
   const router = useRouter()
+  const t = useTranslations()
   const {
     loading: loadingUser,
     error: errorUser,
@@ -25,7 +27,7 @@ function Layout({ title, children, sessionId, className }: LayoutProps) {
     router.push('/login')
   }
   if (!dataUser) {
-    return <div>Loading...</div>
+    return <div>{t('shared.generic.loading')}</div>
   }
 
   return (

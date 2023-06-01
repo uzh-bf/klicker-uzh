@@ -272,6 +272,14 @@
       "header": "KlickerUZH Controller-App (Token)",
       "installAndroid": "Installieren Sie die KlickerUZH Controller-App auf Ihrem Handy, um Ihre Sessionen während der Vorlesungen direkt vom Handy aus zu steuern.",
       "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker Controller-App auf Ihrem Handy zu installieren und Live-Sessionen direkt zu bedienen."
+    },
+    "home": {
+      "courseOverview": "Kursübersicht",
+      "errorLoadingCourse": "Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchenSie es später erneut.",
+      "selectCourse": "Bitte wählen Sie einen Kurs aus:",
+      "archivedCourse": "{courseName} (Archiviert)",
+      "sessionsNoCourse": "Sessionen ohne Kurs",
+      "listSessionsNoCourse": "Liste aller Sessionen ohne Kurs"
     }
   }
 }

@@ -272,6 +272,14 @@
       "header": "KlickerUZH Controller-App (Token)",
       "installAndroid": "Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.",
       "installIOS": "Open the share dialog and click 'Add to Home Screen' to install the Klicker Controller app on your phone and control live sessions directly."
+    },
+    "home": {
+      "courseOverview": "Course overview",
+      "errorLoadingCourse": "An error occurred while loading your courses. Please try again later.",
+      "selectCourse": "Please select a course:",
+      "archivedCourse": "{courseName} (archived)",
+      "sessionsNoCourse": "Sessions without course",
+      "listSessionsNoCourse": "List of all sessions without course"
     }
   }
 }
