@@ -296,6 +296,19 @@
       "confirmStartSession": "Are you sure you want to start the following session?",
       "explanationStartSession": "Please note that a started live session is generally publicly accessible. Running sessions can be canceled or stopped using the KlickerUZH management app."
     },
-    "session": {}
+    "session": {
+      "sessionControl": "Session Control",
+      "errorLoadingSession": "Unfortunately, an error occurred while loading the session. Please make sure that the session is still running or try again later.",
+      "containsNoQuestions": "This session does not contain any questions and therefore cannot be controlled via the controller app at the moment. Please use the management app with all functionalities.",
+      "sessionWithName": "Session: {name}",
+      "activeBlock": "Active Block:",
+      "closeBlock": "Close Block",
+      "nextBlock": "Next Block:",
+      "activateBlockN": "Activate Block {number}",
+      "hintAllBlocksClosed": "All blocks of this session have already been executed and closed. The feedback channel will be closed when the session is ended.",
+      "endSession": "End Session",
+      "hintLastBlock": "The currently running block is the last of this session. After closing it, the session can be ended.",
+      "blockN": "Block {number}"
+    }
   }
 }

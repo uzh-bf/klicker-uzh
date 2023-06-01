@@ -15,6 +15,7 @@ import {
   ThemeContext,
   UserNotification,
 } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
 import { useContext, useEffect, useState } from 'react'
@@ -23,6 +24,7 @@ import Layout from '../../components/Layout'
 import SessionBlock from '../../components/sessions/SessionBlock'
 
 function RunningSession() {
+  const t = useTranslations()
   const router = useRouter()
   const theme = useContext(ThemeContext)
   const [nextBlockOrder, setNextBlockOrder] = useState(-1)
@@ -72,14 +74,18 @@ function RunningSession() {
   }, [sessionData?.controlSession?.blocks])
 
   if (sessionLoading) {
-    return <Layout title="Session-Steuerung">Loading...</Layout>
+    return (
+      <Layout title={t('control.session.sessionControl')}>
+        {t('shared.generic.loading')}
+      </Layout>
+    )
   }
 
   if (!sessionData?.controlSession || sessionError) {
     return (
-      <Layout title="Session-Steuerung">
+      <Layout title={t('control.session.sessionControl')}>
         <UserNotification
-          message="Leider ist beim Laden der Session ein Fehler aufgetreten. Bitte vergewissern Sie sich, dass die Session noch läuft oder versuchen Sie es später nochmals"
+          message={t('control.session.errorLoadingSession')}
           type="error"
         />
       </Layout>
@@ -93,18 +99,21 @@ function RunningSession() {
       <Layout title={name}>
         <UserNotification
           type="warning"
-          message="Diese Session enthält keine Fragen und kann daher zum aktuellen Zeitpunkt nicht über die Controller-App gesteuert werden. Bitte benutzen sie die Manage-App mit allen Funktionalitäten."
+          message={t('control.session.containsNoQuestions')}
         />
       </Layout>
     )
   }
 
   return (
-    <Layout title={`Session: ${name}`} sessionId={id}>
+    <Layout
+      title={t('control.session.sessionWithName', { name: name })}
+      sessionId={id}
+    >
       <div key={`${currentBlockOrder}-${nextBlockOrder}`}>
         {typeof currentBlockOrder !== 'undefined' ? (
           <div key={`${currentBlockOrder}-${nextBlockOrder}-child`}>
-            <H3>Aktiver Block:</H3>
+            <H3>{t('control.session.activeBlock')}</H3>
 
             <SessionBlock
               block={blocks.find((block) => block.order === currentBlockOrder)}
@@ -143,12 +152,12 @@ function RunningSession() {
                 root: 'float-right',
               }}
             >
-              Block schliessen
+              {t('control.session.closeBlock')}
             </Button>
           </div>
         ) : nextBlockOrder !== -1 ? (
           <div>
-            <H3>Nächster Block:</H3>
+            <H3>{t('control.session.nextBlock')}</H3>
             {nextBlockOrder > 0 && (
               <FontAwesomeIcon
                 icon={faEllipsis}
@@ -185,14 +194,16 @@ function RunningSession() {
                 root: twMerge('float-right text-white', theme.primaryBgDark),
               }}
             >
-              Block {nextBlockOrder + 1} aktivieren
+              {t('control.session.activateBlockN', {
+                number: nextBlockOrder + 1,
+              })}
             </Button>
           </div>
         ) : (
           <div>
             <UserNotification
               type="info"
-              message="Es wurden bereits alle Blöcke dieser Session ausgeführt und geschlossen. Mit dem Beenden der Session wird auch der Feedback-Kanal geschlossen."
+              message={t('control.session.hintAllBlocksClosed')}
               className={{ root: 'mb-2' }}
             />
             <Button
@@ -206,14 +217,14 @@ function RunningSession() {
                 root: 'float-right text-white bg-uzh-red-100',
               }}
             >
-              Session beenden
+              {t('control.session.endSession')}
             </Button>
           </div>
         )}
 
         {typeof currentBlockOrder !== 'undefined' && nextBlockOrder == -1 && (
           <UserNotification
-            message="Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden."
+            message={t('control.session.hintLastBlock')}
             className={{ root: 'mt-14' }}
           />
         )}

@@ -296,6 +296,19 @@
       "confirmStartSession": "Sind Sie sich sicher, dass sie die folgende Session starten möchten?",
       "explanationStartSession": "Bitte beachten Sie, dass eine gestartete Live-Session grundsätzlich öffentlich zugänglich ist. Laufende Sessionen können über die KlickerUZH Management-App abgebrochen oder gestoppt werden."
     },
-    "session": {}
+    "session": {
+      "sessionControl": "Session-Steuerung",
+      "errorLoadingSession": "Leider ist beim Laden der Session ein Fehler aufgetreten. Bitte vergewissern Sie sich, dass die Session noch läuft oder versuchen Sie es später nochmals",
+      "containsNoQuestions": "Diese Session enthält keine Fragen und kann daher zum aktuellen Zeitpunkt nicht über die Controller-App gesteuert werden. Bitte benutzen sie die Manage-App mit allen Funktionalitäten.",
+      "sessionWithName": "Session: {name}",
+      "activeBlock": "Aktiver Block:",
+      "closeBlock": "Block schliessen",
+      "nextBlock": "Nächster Block:",
+      "activateBlockN": "Block {number} aktivieren",
+      "hintAllBlocksClosed": "Es wurden bereits alle Blöcke dieser Session ausgeführt und geschlossen. Mit dem Beenden der Session wird auch der Feedback-Kanal geschlossen.",
+      "endSession": "Session beenden",
+      "hintLastBlock": "Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden.",
+      "blockN": "Block {number}"
+    }
   }
 }
