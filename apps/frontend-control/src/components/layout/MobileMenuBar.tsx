@@ -25,12 +25,14 @@ function MobileMenuBar({ sessionId }: MobileMenuBarProps) {
         <MenuButton
           icon={<FontAwesomeIcon icon={faArrowLeftLong} />}
           onClick={() => router.back()}
+          data={{ cy: 'back-button' }}
         >
           {t('shared.generic.back')}
         </MenuButton>
         <MenuButton
           icon={<FontAwesomeIcon icon={faHouse} />}
           onClick={() => router.push('/')}
+          data={{ cy: 'home-button' }}
         >
           {t('shared.generic.home')}
         </MenuButton>
@@ -38,6 +40,7 @@ function MobileMenuBar({ sessionId }: MobileMenuBarProps) {
           icon={<FontAwesomeIcon icon={faPersonChalkboard} />}
           onClick={() => setEmbedModalOpen(true)}
           disabled={!sessionId}
+          data={{ cy: 'ppt-button' }}
         >
           PPT
         </MenuButton>

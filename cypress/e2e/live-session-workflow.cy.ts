@@ -1,6 +1,6 @@
 describe('Different live-session workflows', () => {
     beforeEach(() => {
-        cy.visit(Cypress.env('URL_LECTURER'));
+        cy.visit(Cypress.env('URL_MANAGE'));
         cy.viewport("macbook-16");
         cy.get('[data-cy="login-logo"]').should('exist');
         cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'));
@@ -155,7 +155,7 @@ describe('Different live-session workflows', () => {
         cy.viewport('macbook-16');
     
         cy.clearAllCookies();
-        cy.visit(Cypress.env('URL_LECTURER'));
+        cy.visit(Cypress.env('URL_MANAGE'));
         cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'));
         cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'));
         cy.get('[data-cy="submit-login"]').click();
@@ -196,7 +196,7 @@ describe('Different live-session workflows', () => {
         cy.viewport('macbook-16');
     
         cy.clearAllCookies();
-        cy.visit(Cypress.env('URL_LECTURER'));
+        cy.visit(Cypress.env('URL_MANAGE'));
         cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'));
         cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'));
         cy.get('[data-cy="submit-login"]').click();
@@ -207,7 +207,7 @@ describe('Different live-session workflows', () => {
         
         cy.url().then(url => {
           const sessionIdEvaluation = url.split('/')[4];
-          cy.visit(Cypress.env('URL_LECTURER') + '/sessions/' + sessionIdEvaluation + '/evaluation');
+          cy.visit(Cypress.env('URL_MANAGE') + '/sessions/' + sessionIdEvaluation + '/evaluation');
         });
     
       // TODO: bugfix: evaluation is broken - does not fetch any answers. Once fixed, write better checks

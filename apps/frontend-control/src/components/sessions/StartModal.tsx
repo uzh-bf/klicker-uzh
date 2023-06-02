@@ -46,6 +46,9 @@ function StartModal({
           className={{
             root: twMerge('text-white', theme.primaryBgDark),
           }}
+          data={{
+            cy: 'confirm-start-session',
+          }}
         >
           {t('shared.generic.start')}
         </Button>

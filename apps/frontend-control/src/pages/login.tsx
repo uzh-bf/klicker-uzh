@@ -22,7 +22,7 @@ function Login() {
   const [loginUserToken] = useMutation(LoginUserTokenDocument)
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-full h-full pb-20 mx-auto">
+    <div className="flex flex-col items-center h-full md:justify-center">
       <Formik
         isInitialValid={false}
         initialValues={{ email: '', token: '' }}

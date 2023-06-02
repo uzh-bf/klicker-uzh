@@ -47,6 +47,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
                 className={{
                   root: 'h-full p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100',
                 }}
+                data={{ cy: `ppt-links` }}
               >
                 <Button.Icon className={{ root: 'mr-2' }}>
                   <FontAwesomeIcon icon={faPersonChalkboard} />

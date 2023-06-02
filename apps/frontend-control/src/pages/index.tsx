@@ -70,6 +70,7 @@ function Index() {
               link="/course/unassigned"
               icon={faList}
               label={t('control.home.listSessionsNoCourse')}
+              data={{ cy: 'unassigned-sessions' }}
             />
           </div>
         </div>
