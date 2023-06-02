@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['ProcessResponses/index.ts'],
+  entry: ['src/functions/index.ts'],
   clean: true,
   dts: true,
 })

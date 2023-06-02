@@ -1,6 +1,6 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["ProcessResponses"],
+  "include": ["src"],
   "compilerOptions": {
     "module": "ESNext"
   }
