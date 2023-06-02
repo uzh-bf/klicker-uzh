@@ -1,4 +1,4 @@
-import type { AzureFunction, Context } from '@azure/functions'
+import { app } from '@azure/functions'
 import {
   computeAwardedPoints,
   computeAwardedXp,
@@ -29,9 +29,10 @@ Sentry.init()
 
 const redisExec = getRedis()
 
-const serviceBusTrigger: AzureFunction = async function (
+// TODO: determine parameter types
+const serviceBusTrigger = async function (
   queueItem,
-  context: Context
+  context
 ) {
   context.log('ProcessResponses function processed a message', queueItem)
 
@@ -347,3 +348,11 @@ const serviceBusTrigger: AzureFunction = async function (
 }
 
 export default serviceBusTrigger
+
+app.serviceBusQueue("queueItem", {
+  connection: "SERVICE_BUS_CONNECTION_STRING",
+  queueName: "%SERVICE_BUS_QUEUE_NAME%",
+  isSessionsEnabled: true,
+  //autoCompleteMessages: true,
+  handler: serviceBusTrigger,
+})
