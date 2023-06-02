@@ -1,4 +1,4 @@
-import { app } from '@azure/functions'
+import { app, InvocationContext } from '@azure/functions'
 import {
   computeAwardedPoints,
   computeAwardedXp,
@@ -29,10 +29,9 @@ Sentry.init()
 
 const redisExec = getRedis()
 
-// TODO: determine parameter types
 const serviceBusTrigger = async function (
-  queueItem,
-  context
+  queueItem: any,
+  context: InvocationContext
 ) {
   context.log('ProcessResponses function processed a message', queueItem)
 
@@ -349,6 +348,7 @@ const serviceBusTrigger = async function (
 
 export default serviceBusTrigger
 
+// TODO: check how autoCompleteMessages needs to be applied in v4
 app.serviceBusQueue("queueItem", {
   connection: "SERVICE_BUS_CONNECTION_STRING",
   queueName: "%SERVICE_BUS_QUEUE_NAME%",
