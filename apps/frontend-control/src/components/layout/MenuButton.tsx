@@ -11,6 +11,10 @@ interface MenuButtonProps {
     icon?: string
     label?: string
   }
+  data?: {
+    cy?: string
+    test?: string
+  }
 }
 
 function MenuButton({
@@ -19,6 +23,7 @@ function MenuButton({
   children,
   onClick,
   className,
+  data,
 }: MenuButtonProps) {
   return (
     <Button
@@ -31,6 +36,7 @@ function MenuButton({
       }}
       onClick={onClick}
       disabled={disabled}
+      data={data}
     >
       <Button.Icon className={{ root: twMerge('w-max', className?.icon) }}>
         {icon}

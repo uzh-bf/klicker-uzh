@@ -105,6 +105,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
             title="Login-Token generieren"
             href="/token"
             className={{ title: 'text-base font-bold', root: 'p-2' }}
+            data={{ cy: 'token-generation-page' }}
           />
           <Navigation.DropdownItem
             title="Logout"
