@@ -1,6 +1,6 @@
 describe('Create questions', () => {
     beforeEach(() => {
-        cy.visit(Cypress.env('URL_LECTURER'));
+        cy.visit(Cypress.env('URL_MANAGE'));
         cy.viewport("macbook-16");
         cy.get('[data-cy="login-logo"]').should('exist');
         cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'));

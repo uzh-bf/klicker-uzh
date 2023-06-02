@@ -56,6 +56,7 @@ function TokenGeneration() {
           allerdings jederzeit wieder neu generiert werden.
         </div>
         <Button
+          data={{ cy: 'generate-token' }}
           onClick={async () => {
             const result = await generateLoginToken()
             if (result) {
@@ -78,7 +79,7 @@ function TokenGeneration() {
             className={{ root: 'text-base', content: 'mt-0' }}
             type="success"
           >
-            <div className="text-lg font-bold">
+            <div className="text-lg font-bold" data-cy="control-login-token">
               {String(token)
                 .match(/.{1,3}/g)
                 ?.join(' ')}

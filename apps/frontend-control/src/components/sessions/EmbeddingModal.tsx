@@ -27,11 +27,17 @@ function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
 
   return (
     <Modal
+      asPortal
       open={open}
       onOpenChange={() => setOpen(!open)}
       onClose={() => setOpen(false)}
       onPrimaryAction={
-        <Button onClick={() => setOpen(false)}>Schliessen</Button>
+        <Button
+          onClick={() => setOpen(false)}
+          data={{ cy: 'close-embedding-modal' }}
+        >
+          Schliessen
+        </Button>
       }
       className={{
         content:

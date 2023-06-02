@@ -4,7 +4,8 @@ export default defineConfig({
   projectId: 'y436dx',
   env: {
     URL_STUDENT: 'http://127.0.0.1:3001/login',
-    URL_LECTURER: 'http://127.0.0.1:3002',
+    URL_MANAGE: 'http://127.0.0.1:3002',
+    URL_CONTROL: 'http://127.0.0.1:3003',
     LECTURER_EMAIL: 'lecturer@bf.uzh.ch',
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
