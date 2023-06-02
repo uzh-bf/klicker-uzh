@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import { LoginUserTokenDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import Router from 'next/router'
 import { useState } from 'react'
 import LoginForm from 'shared-components/src/LoginForm'
@@ -15,6 +16,7 @@ const loginSchema = Yup.object().shape({
 })
 
 function Login() {
+  const t = useTranslations()
   const [error, setError] = useState('')
   const [showError, setShowError] = useState(false)
   const [loginUserToken] = useMutation(LoginUserTokenDocument)
@@ -45,16 +47,17 @@ function Login() {
         {({ isSubmitting }) => {
           return (
             <LoginForm
-              header="Login Controller-App (Token)"
-              labelIdentifier="E-Mail Adresse"
+              header={t('control.login.header')}
+              labelIdentifier={t('shared.generic.email')}
               fieldIdentifier="email"
               dataIdentifier={{ cy: 'email-field' }}
-              labelSecret="Token"
+              labelSecret={t('shared.generic.token')}
               fieldSecret="token"
               dataSecret={{ cy: 'token-field' }}
               isSubmitting={isSubmitting}
               usePinField={true}
-              installationHint
+              installAndroid={t('control.login.installAndroid')}
+              installIOS={t('control.login.installIOS')}
             />
           )
         }}

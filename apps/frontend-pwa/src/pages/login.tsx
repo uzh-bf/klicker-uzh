@@ -79,7 +79,8 @@ function Login() {
               fieldSecret="password"
               dataSecret={{ cy: 'password-field' }}
               isSubmitting={isSubmitting}
-              installationHint
+              installAndroid={t('pwa.login.installAndroid')}
+              installIOS={t('pwa.login.installIOS')}
             />
           )
         }}

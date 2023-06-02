@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { SessionBlockStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Countdown, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -23,6 +24,7 @@ interface SessionBlockProps {
 }
 
 function SessionBlock({ block, active = false }: SessionBlockProps) {
+  const t = useTranslations()
   const untilExpiration = useMemo(
     () =>
       block?.expiresAt
@@ -35,7 +37,7 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
     return (
       <UserNotification
         type="error"
-        message="Leider ist ein Fehler aufgetreten."
+        message={t('shared.generic.systemError')}
       />
     )
 
@@ -52,7 +54,9 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
           active && 'bg-green-300'
         )}
       >
-        <div className="font-bold">Block {block.order + 1}</div>
+        <div className="font-bold">
+          {t('control.session.blockN', { number: block.order + 1 })}
+        </div>
         <div className="flex flex-row items-center gap-2">
           {untilExpiration && (
             <Countdown
