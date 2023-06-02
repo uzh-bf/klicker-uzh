@@ -106,3 +106,4 @@ __azurite_db*__.json
 prisma/client
 
 src/
+!src/functions/
