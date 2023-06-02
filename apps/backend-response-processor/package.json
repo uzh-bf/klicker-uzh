@@ -20,6 +20,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
+    "@azure/functions": "4.0.0-alpha.10",
     "@klicker-uzh/grading": "^3.0.0-alpha.0",
     "@sentry/node": "7.52.1",
     "ioredis": "5.3.2",
@@ -28,7 +29,6 @@
     "ramda": "0.29.0"
   },
   "devDependencies": {
-    "@azure/functions": "3.5.1",
     "@tsconfig/node18": "^2.0.0",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jsonwebtoken": "^9.0.1",

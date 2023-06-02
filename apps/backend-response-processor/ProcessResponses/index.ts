@@ -30,8 +30,8 @@ Sentry.init()
 const redisExec = getRedis()
 
 const serviceBusTrigger: AzureFunction = async function (
-  context: Context,
-  queueItem
+  queueItem,
+  context: Context
 ) {
   context.log('ProcessResponses function processed a message', queueItem)
 
