@@ -26,9 +26,7 @@
       "richtext": "Please enter a <b>number</b>."
     },
     "login": {
-      "installPWA": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
-      "installButton": "Install Now",
-      "installHomeScreen": "Open the Share dialog and click 'Add to Home Screen' to install the Klicker app on your phone."
+      "installButton": "Install Now"
     },
     "generic": {
       "points": "Points",
@@ -38,6 +36,7 @@
       "start": "Start",
       "continue": "Continue",
       "cancel": "Cancel",
+      "close": "Close",
       "sendAnswer": "Send answer",
       "loading": "Loading...",
       "begin": "Begin",
@@ -45,7 +44,9 @@
       "logout": "Logout",
       "login": "Login",
       "username": "Username",
+      "email": "E-mail address",
       "password": "Password",
+      "token": "Token",
       "passwordRepetition": "Password (repetition)",
       "signin": "Login",
       "usernameError": "Please enter your username.",
@@ -117,6 +118,10 @@
       "polls": "Polls",
       "liveQA": "Live-Q&A",
       "userNotLoggedIn": "You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress."
+    },
+    "login": {
+      "installAndroid": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
+      "installIOS": "Open the Share dialog and click 'Add to Home Screen' to install the Klicker app on your phone."
     },
     "courses": {
       "courseInformation": "Course Information",
@@ -217,7 +222,6 @@
       "clothing": "Clothing",
       "clothingColor": "Clothing Color",
       "skinTone": "Skin Tone",
-
       "breasts": "Female",
       "chest": "Male",
       "normal": "Normal",
@@ -264,5 +268,47 @@
     }
   },
   "manage": {},
-  "control": {}
+  "control": {
+    "login": {
+      "header": "KlickerUZH Controller-App (Token)",
+      "installAndroid": "Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.",
+      "installIOS": "Open the share dialog and click 'Add to Home Screen' to install the Klicker Controller app on your phone and control live sessions directly."
+    },
+    "home": {
+      "courseSelection": "Course Selection",
+      "errorLoadingCourse": "An error occurred while loading your courses. Please try again later.",
+      "selectCourse": "Please select a course:",
+      "archivedCourse": "{courseName} (archived)",
+      "sessionsNoCourse": "Sessions without course",
+      "listSessionsNoCourse": "List of all sessions without course"
+    },
+    "course": {
+      "courseOverview": "Course overview",
+      "loadingFailed": "An error occurred while loading your courses. Please try again later.",
+      "completedSessionsHint": "Completed sessions can be viewed with results on the corresponding page in the KlickerUZH management app.",
+      "runningSessions": "Running Sessions",
+      "noRunningSessions": "No running sessions",
+      "plannedSessions": "Planned Sessions",
+      "noPlannedSessions": "No planned sessions",
+      "sessionStartFailed": "Unfortunately, your session could not be started due to an error. Please try again later.",
+      "pptEmbedding": "PPT-Embedding Evaluation",
+      "startSession": "Start session",
+      "confirmStartSession": "Are you sure you want to start the following session?",
+      "explanationStartSession": "Please note that a started live session is generally publicly accessible. Running sessions can be canceled or stopped using the KlickerUZH management app."
+    },
+    "session": {
+      "sessionControl": "Session Control",
+      "errorLoadingSession": "Unfortunately, an error occurred while loading the session. Please make sure that the session is still running or try again later.",
+      "containsNoQuestions": "This session does not contain any questions and therefore cannot be controlled via the controller app at the moment. Please use the management app with all functionalities.",
+      "sessionWithName": "Session: {name}",
+      "activeBlock": "Active Block:",
+      "closeBlock": "Close Block",
+      "nextBlock": "Next Block:",
+      "activateBlockN": "Activate Block {number}",
+      "hintAllBlocksClosed": "All blocks of this session have already been executed and closed. The feedback channel will be closed when the session is ended.",
+      "endSession": "End Session",
+      "hintLastBlock": "The currently running block is the last of this session. After closing it, the session can be ended.",
+      "blockN": "Block {number}"
+    }
+  }
 }

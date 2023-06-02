@@ -2,10 +2,12 @@ import { useQuery } from '@apollo/client'
 import { faList, faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
 import { GetControlCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H4, UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import ListButton from '../components/common/ListButton'
 
 function Index() {
+  const t = useTranslations()
   const {
     loading: loadingCourses,
     error: errorCourses,
@@ -13,11 +15,15 @@ function Index() {
   } = useQuery(GetControlCoursesDocument)
 
   if (loadingCourses) {
-    return <Layout title="Kursübersicht">Loading...</Layout>
+    return (
+      <Layout title={t('control.home.courseSelection')}>
+        {t('shared.generic.loading')}
+      </Layout>
+    )
   }
   if ((!loadingCourses && !dataCourses) || errorCourses) {
     return (
-      <Layout title="Kursübersicht">
+      <Layout title={t('control.home.courseSelection')}>
         <UserNotification
           type="error"
           className={{ root: 'text-base' }}
@@ -29,11 +35,11 @@ function Index() {
   }
 
   return (
-    <Layout title="Kursübersicht">
+    <Layout title={t('control.home.courseSelection')}>
       <div className="flex flex-col w-full gap-4">
         {dataCourses?.controlCourses && (
           <div>
-            <H4>Bitte wählen Sie einen Kurs aus:</H4>
+            <H4>{t('control.home.selectCourse')}</H4>
             <div className="flex flex-col gap-2">
               {dataCourses.controlCourses
                 .sort((a, b) => (a.isArchived ? 1 : -1))
@@ -45,7 +51,11 @@ function Index() {
                     label={
                       !course.isArchived
                         ? course.name
-                        : `${course.name} (Archiviert)`
+                        : t
+                            .rich('control.home.archivedCourse', {
+                              courseName: course.name,
+                            })
+                            .toString()
                     }
                   />
                 ))}
@@ -54,12 +64,12 @@ function Index() {
         )}
 
         <div>
-          <H4>Sessionen ohne Kurs</H4>
+          <H4>{t('control.home.sessionsNoCourse')}</H4>
           <div className="flex flex-col gap-2">
             <ListButton
               link="/course/unassigned"
               icon={faList}
-              label="Liste aller Sessionen ohne Kurs"
+              label={t('control.home.listSessionsNoCourse')}
               data={{ cy: 'unassigned-sessions' }}
             />
           </div>
@@ -67,6 +77,16 @@ function Index() {
       </div>
     </Layout>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
 }
 
 export default Index
