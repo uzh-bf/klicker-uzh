@@ -1,11 +1,12 @@
 {
-  "azureFunctions.deploySubpath": "apps/backend-sls",
-  "azureFunctions.postDeployTask": "npm install (serverless)",
+  "azureFunctions.deploySubpath": "apps/backend-response-processor-v4",
+  "azureFunctions.postDeployTask": "npm install (functions)",
   "azureFunctions.projectLanguage": "TypeScript",
+  "azureFunctions.projectLanguageModel": 4,
   "azureFunctions.projectRuntime": "~4",
   "debug.internalConsoleOptions": "neverOpen",
-  "azureFunctions.preDeployTask": "npm prune (serverless)",
-  "azureFunctions.projectSubpath": "apps/backend-sls",
+  "azureFunctions.preDeployTask": "npm prune (functions)",
+  "azureFunctions.projectSubpath": "apps/backend-response-processor-v4",
   "githubPullRequests.ignoredPullRequestBranches": ["v3"],
   "editor.formatOnSave": true
 }
