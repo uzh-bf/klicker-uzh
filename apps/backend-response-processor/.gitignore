@@ -104,6 +104,3 @@ __queuestorage__
 __azurite_db*__.json
 
 prisma/client
-
-src/
-!src/functions/
