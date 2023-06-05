@@ -4,11 +4,15 @@
   "description": "",
   "scripts": {
     "build": "tsc",
-    "watch": "tsc -w",
     "clean": "rimraf dist",
     "prestart": "npm run clean && npm run build",
-    "start": "func start",
-    "test": "echo \"No tests yet...\""
+    "dev": "npm-run-all --parallel dev:ts dev:func",
+    "dev:ts": "tsc -w",
+    "dev:func": "func start -p 7073",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "start": "func start -p 7073",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@azure/functions": "^4.0.0-alpha.7"
