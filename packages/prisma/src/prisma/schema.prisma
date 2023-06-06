@@ -74,7 +74,7 @@ model User {
   learningElements  LearningElement[]
   microSessions     MicroSession[]
   groupActivities   GroupActivity[]
-  FlashcardSet      FlashcardSet[]
+  flashcardSets     FlashcardSet[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -299,6 +299,7 @@ model Course {
   classAchievements ClassAchievementInstance[]
   achievements      Achievement[]
   titles            Title[]
+  flashcardSets     FlashcardSet[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -307,9 +308,8 @@ model Course {
   subscriptions     PushSubscription[]
   participantGroups ParticipantGroup[]
 
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  FlashcardSet FlashcardSet[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // TODO: CourseInstance -> holds participants, leaderboards, instances, etc. (parallel courses, same course in repetition across years)
@@ -1043,9 +1043,9 @@ model Flashcard {
   answer      String
   explanation String?
 
-  FlashcardResponse FlashcardResponse[]
+  flashcardResponse FlashcardResponse[]
 
-  FlashcardSet   FlashcardSet @relation(fields: [flashcardSetId], references: [id])
+  flashcardSet   FlashcardSet @relation(fields: [flashcardSetId], references: [id])
   flashcardSetId Int
 
   createdAt DateTime @default(now())
