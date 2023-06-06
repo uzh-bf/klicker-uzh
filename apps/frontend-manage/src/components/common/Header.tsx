@@ -43,6 +43,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
           label="Kurse"
           className={{ label: 'font-bold text-white text-base' }}
         />
+        <Navigation.ButtonItem
+          href="/flashcards"
+          label="Flashcards"
+          className={{ label: 'font-bold text-white text-base' }}
+        />
       </Navigation>
       <Navigation className={{ root: '!p-0 bg-slate-800' }}>
         <Navigation.TriggerItem
