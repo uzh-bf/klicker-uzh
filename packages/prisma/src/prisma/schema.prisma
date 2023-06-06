@@ -1009,12 +1009,19 @@ model Level {
 
 // ----- FLASHCARDS -----
 
+enum FlashcardSetStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model FlashcardSet {
   id Int @id @default(autoincrement())
 
   name        String
   displayName String
   description String?
+
+  status FlashcardSetStatus @default(DRAFT)
 
   flashcards Flashcard[]
 
