@@ -1031,8 +1031,10 @@ model FlashcardSet {
 model Flashcard {
   id Int @id @default(autoincrement())
 
-  question String
-  answer   String
+  question    String
+  comment     String?
+  answer      String
+  explanation String?
 
   FlashcardResponse FlashcardResponse[]
 

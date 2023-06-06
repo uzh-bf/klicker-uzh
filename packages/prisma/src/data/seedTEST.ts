@@ -374,7 +374,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           {
             id: 1,
             question: 'What is the capital of Switzerland?',
+            comment: 'Hint: It is not the countries biggest city.',
             answer: 'Bern',
+            explanation:
+              'Bern is the capital of Switzerland for historic reasons.',
           },
           {
             id: 2,
