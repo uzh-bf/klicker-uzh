@@ -3,6 +3,7 @@ import builder from '../builder'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
+import * as FlashcardService from '../services/flashcards'
 import * as ParticipantGroupService from '../services/groups'
 import * as LearningElementService from '../services/learningElements'
 import * as MicroSessionService from '../services/microLearning'
@@ -10,6 +11,7 @@ import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
+import { FlashcardSet } from './flashcards'
 import { GroupActivityDetails } from './groupActivity'
 import { LearningElement, QuestionStack } from './learningElements'
 import { MicroSession } from './microSession'
@@ -418,6 +420,14 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return LearningElementService.getQuestionStack(args, ctx)
+        },
+      }),
+
+      userFlashcardSets: asUser.field({
+        nullable: true,
+        type: [FlashcardSet],
+        resolve(_, args, ctx) {
+          return FlashcardService.getFlashcardSets(args, ctx)
         },
       }),
     }

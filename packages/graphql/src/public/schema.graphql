@@ -170,6 +170,29 @@ type FeedbackResponse {
   positiveReactions: Int!
 }
 
+type Flashcard {
+  createdAt: Date!
+  id: ID!
+  updatedAt: Date
+}
+
+type FlashcardSet {
+  course: Course
+  createdAt: Date!
+  description: String
+  displayName: String!
+  flashcards: [Flashcard!]
+  id: ID!
+  name: String!
+  status: FlashcardSetStatus!
+  updatedAt: Date
+}
+
+enum FlashcardSetStatus {
+  DRAFT
+  PUBLISHED
+}
+
 type FreeTextQuestionData implements QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
@@ -601,6 +624,7 @@ type Query {
   singleMicroSession(id: String!): MicroSession
   unassignedSessions: [Session!]
   userCourses: [Course!]
+  userFlashcardSets: [FlashcardSet!]
   userProfile: User
   userQuestions: [Question!]
   userRunningSessions: [Session!]

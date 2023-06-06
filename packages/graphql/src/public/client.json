@@ -88,6 +88,7 @@
    "GetSingleQuestionStack": "18eba3a31bf1b9ceb26bf582422c41e4832598e31712535b3b13bd9dd44e51c2",
    "GetUnassignedSessions": "513bdcda8f5ff54d01c0da150edcf8eacb505f455c407adc971d27f4585fb66c",
    "GetUserCourses": "26796463bf095b29bb85addd4127f6e5b9fcd3a2958b6f1563da36435c62c7ec",
+   "GetUserFlashcardSets": "765a76fe14ec3774029523ab78c9d35c5c546af8a7a3b1648ecafe4eb0532cf4",
    "GetUserQuestions": "cafe5e6145b7a6d3250cae6b918d8b458b323fe4ea521f2a3a7bbf1d7acd70d1",
    "GetUserRunningSessions": "ead3fc3a2dea6e39187b31df5fc85beeb2a51a824c4a305b061112a1730cdcc3",
    "GetUserSessions": "7b91baa24f5af4e35d22647250b356437be5c380d55ca24edb1423daed9cc5db",

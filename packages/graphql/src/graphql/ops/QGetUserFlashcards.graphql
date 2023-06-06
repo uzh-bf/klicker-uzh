@@ -1,0 +1,18 @@
+query GetUserFlashcardSets {
+  userFlashcardSets {
+    id
+    name
+    displayName
+    description
+
+    flashcards {
+      id
+    }
+
+    course {
+      id
+      name
+      displayName
+    }
+  }
+}
