@@ -363,6 +363,38 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       update: {},
     })
   })
+
+  const flashcardSet = await prisma.flashcardSet.create({
+    data: {
+      name: 'Test Flashcard Set',
+      displayName: 'Test Flashcard Set StudentTitle',
+      description: 'Test Flashcard Set',
+      flashcards: {
+        create: [
+          {
+            id: 1,
+            question: 'What is the capital of Switzerland?',
+            answer: 'Bern',
+          },
+          {
+            id: 2,
+            question: 'What is the capital of Germany?',
+            answer: 'Berlin',
+          },
+        ],
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+    },
+  })
 }
 
 const prismaClient = new Prisma.PrismaClient()
