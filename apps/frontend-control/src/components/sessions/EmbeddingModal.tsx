@@ -3,6 +3,7 @@ import { faClipboard } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSingleLiveSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 
 interface EmbeddingModalProps {
@@ -12,6 +13,7 @@ interface EmbeddingModalProps {
 }
 
 function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
+  const t = useTranslations()
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
     skip: !sessionId,
@@ -27,11 +29,17 @@ function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
 
   return (
     <Modal
+      asPortal
       open={open}
       onOpenChange={() => setOpen(!open)}
       onClose={() => setOpen(false)}
       onPrimaryAction={
-        <Button onClick={() => setOpen(false)}>Schliessen</Button>
+        <Button
+          onClick={() => setOpen(false)}
+          data={{ cy: 'close-embedding-modal' }}
+        >
+          {t('shared.generic.close')}
+        </Button>
       }
       className={{
         content:
@@ -39,7 +47,7 @@ function EmbeddingModal({ open, setOpen, sessionId }: EmbeddingModalProps) {
       }}
       hideCloseButton
     >
-      <H2>PPT-Einbettung Evaluation</H2>
+      <H2>{t('control.course.pptEmbedding')}</H2>
       <div className="flex flex-col gap-3">
         {questions?.map((question: any, ix: number) => {
           return (

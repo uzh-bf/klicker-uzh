@@ -26,9 +26,7 @@
       "richtext": "Bitte eine <b>Zahl</b> eingeben."
     },
     "login": {
-      "installPWA": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
-      "installButton": "Jetzt installieren",
-      "installHomeScreen": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+      "installButton": "Jetzt installieren"
     },
     "generic": {
       "points": "Punkte",
@@ -38,6 +36,7 @@
       "start": "Starten",
       "continue": "Weiter",
       "cancel": "Abbrechen",
+      "close": "Schliessen",
       "sendAnswer": "Antwort senden",
       "loading": "Laden...",
       "begin": "Beginnen",
@@ -45,7 +44,9 @@
       "logout": "Ausloggen",
       "login": "Login",
       "username": "Benutzername",
+      "email": "E-Mail Adresse",
       "password": "Passwort",
+      "token": "Token",
       "passwordRepetition": "Passwort (Wiederholung)",
       "signin": "Anmelden",
       "usernameError": "Bitte geben Sie Ihren Nutzernamen ein.",
@@ -118,7 +119,10 @@
       "liveQA": "Live-Q&A",
       "userNotLoggedIn": "Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten."
     },
-
+    "login": {
+      "installAndroid": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
+      "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+    },
     "courses": {
       "courseInformation": "Kursinformationen",
       "createJoinGroup": "Gruppe erstellen/beitreten",
@@ -218,7 +222,6 @@
       "clothing": "Kleidungsstil",
       "clothingColor": "Kleidungsfarbe",
       "skinTone": "Hautton",
-
       "breasts": "Weiblich",
       "chest": "Männlich",
       "normal": "Normal",
@@ -265,5 +268,47 @@
     }
   },
   "manage": {},
-  "control": {}
+  "control": {
+    "login": {
+      "header": "KlickerUZH Controller-App (Token)",
+      "installAndroid": "Installieren Sie die KlickerUZH Controller-App auf Ihrem Handy, um Ihre Sessionen während der Vorlesungen direkt vom Handy aus zu steuern.",
+      "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker Controller-App auf Ihrem Handy zu installieren und Live-Sessionen direkt zu bedienen."
+    },
+    "home": {
+      "courseSelection": "Kursauswahl",
+      "errorLoadingCourse": "Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchenSie es später erneut.",
+      "selectCourse": "Bitte wählen Sie einen Kurs aus:",
+      "archivedCourse": "{courseName} (Archiviert)",
+      "sessionsNoCourse": "Sessionen ohne Kurs",
+      "listSessionsNoCourse": "Liste aller Sessionen ohne Kurs"
+    },
+    "course": {
+      "courseOverview": "Kursübersicht",
+      "loadingFailed": "Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen Sie es später erneut.",
+      "completedSessionsHint": "Abgeschlossene Sessionen können auf der entsprechenden Seite in der KlickerUZH Management-App mit Resultaten betrachtet werden.",
+      "runningSessions": "Laufende Sessionen",
+      "noRunningSessions": "Keine laufenden Sessionen",
+      "plannedSessions": "Geplante Sessionen",
+      "noPlannedSessions": "Keine geplanten Sessionen",
+      "sessionStartFailed": "Leider konnte Ihre Session aufgrund eines Fehlers nicht gestartet werden. Bitte versuchen Sie es später erneut.",
+      "pptEmbedding": "PPT-Einbettung Evaluation",
+      "startSession": "Session starten",
+      "confirmStartSession": "Sind Sie sich sicher, dass sie die folgende Session starten möchten?",
+      "explanationStartSession": "Bitte beachten Sie, dass eine gestartete Live-Session grundsätzlich öffentlich zugänglich ist. Laufende Sessionen können über die KlickerUZH Management-App abgebrochen oder gestoppt werden."
+    },
+    "session": {
+      "sessionControl": "Session-Steuerung",
+      "errorLoadingSession": "Leider ist beim Laden der Session ein Fehler aufgetreten. Bitte vergewissern Sie sich, dass die Session noch läuft oder versuchen Sie es später nochmals",
+      "containsNoQuestions": "Diese Session enthält keine Fragen und kann daher zum aktuellen Zeitpunkt nicht über die Controller-App gesteuert werden. Bitte benutzen sie die Manage-App mit allen Funktionalitäten.",
+      "sessionWithName": "Session: {name}",
+      "activeBlock": "Aktiver Block:",
+      "closeBlock": "Block schliessen",
+      "nextBlock": "Nächster Block:",
+      "activateBlockN": "Block {number} aktivieren",
+      "hintAllBlocksClosed": "Es wurden bereits alle Blöcke dieser Session ausgeführt und geschlossen. Mit dem Beenden der Session wird auch der Feedback-Kanal geschlossen.",
+      "endSession": "Session beenden",
+      "hintLastBlock": "Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden.",
+      "blockN": "Block {number}"
+    }
+  }
 }

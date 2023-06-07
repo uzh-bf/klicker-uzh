@@ -37,7 +37,8 @@ interface LoginFormProps {
   }
   isSubmitting: boolean
   usePinField?: boolean
-  installationHint?: boolean
+  installAndroid?: string
+  installIOS?: string
 }
 
 export function LoginForm({
@@ -50,7 +51,8 @@ export function LoginForm({
   dataSecret,
   isSubmitting,
   usePinField = false,
-  installationHint = false,
+  installAndroid,
+  installIOS,
 }: LoginFormProps) {
   const [passwordHidden, setPasswordHidden] = useState(true)
   const t = useTranslations()
@@ -138,12 +140,9 @@ export function LoginForm({
               </Button>
             </div>
 
-            {installationHint && onChrome && (
+            {installAndroid && onChrome && (
               <div className="flex flex-col justify-center mt-4 md:hidden">
-                <UserNotification
-                  type="info"
-                  message={t('shared.login.installPWA')}
-                >
+                <UserNotification type="info" message={installAndroid}>
                   <Button
                     className={{
                       root: 'mt-2 w-fit border-uzh-grey-80',
@@ -157,11 +156,11 @@ export function LoginForm({
                 </UserNotification>
               </div>
             )}
-            {installationHint && oniOS && (
+            {installIOS && oniOS && (
               <UserNotification
                 className={{ root: 'mt-4' }}
                 type="info"
-                message={t('shared.login.installHomeScreen')}
+                message={installIOS}
               />
             )}
           </Form>

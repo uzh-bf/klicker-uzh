@@ -64,7 +64,13 @@ function Login() {
               fieldSecret="password"
               dataSecret={{ cy: 'password-field' }}
               isSubmitting={isSubmitting}
-              installationHint
+              installAndroid={
+                'Installieren Sie die KlickerUZH-App direkt auf Ihrem Handy'
+              } // only placeholder, better text at: t('manage.login.installAndroid')
+              installIOS={
+                'Installieren Sie die KlickerUZH-App direkt auf Ihrem Handy'
+              }
+              // only placeholder, better text at: t('manage.login.installIOS')
             />
           )
         }}
