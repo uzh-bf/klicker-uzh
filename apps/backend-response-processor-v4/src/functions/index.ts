@@ -349,7 +349,7 @@ const serviceBusTrigger = async function (
 export default serviceBusTrigger
 
 // TODO: check how autoCompleteMessages needs to be applied in v4
-app.serviceBusQueue("queueItem", {
+app.serviceBusQueue("ProcessResponse", {
   connection: "SERVICE_BUS_CONNECTION_STRING",
   queueName: "%SERVICE_BUS_QUEUE_NAME%",
   isSessionsEnabled: true,

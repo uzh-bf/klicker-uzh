@@ -25,7 +25,8 @@ const httpTrigger = async function (req: HttpRequest, context: InvocationContext
   }
   
   const body: any = await req.json();
-  context.log("body: ", body);
+  context.info("body: ", body);
+  context.warn("body: ", body)
 
   if (!body.response || !body.sessionId) {
     context.log('Missing response or sessionId', body)
@@ -65,7 +66,7 @@ const httpTrigger = async function (req: HttpRequest, context: InvocationContext
   return { status: 200 }
 };
 
-app.http('req', {
+app.http('AddResponse', {
     methods: ['GET', 'POST', 'OPTIONS'],
     authLevel: 'anonymous',
     route: 'AddResponse',
