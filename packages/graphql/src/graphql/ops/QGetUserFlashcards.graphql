@@ -4,6 +4,8 @@ query GetUserFlashcardSets {
     name
     displayName
     description
+    status
+
     numOfFlashcards
     course {
       id
