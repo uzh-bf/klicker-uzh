@@ -184,13 +184,22 @@ type FlashcardSet {
   flashcards: [Flashcard!]
   id: ID!
   name: String!
+  numOfFlashcards: Int
+  reviewedAt: Date
   status: FlashcardSetStatus!
+  studentContributions: Boolean
   updatedAt: Date
 }
 
 enum FlashcardSetStatus {
   DRAFT
   PUBLISHED
+}
+
+enum FlashcardStatus {
+  DRAFT
+  PUBLISHED
+  REVIEW
 }
 
 type FreeTextQuestionData implements QuestionData {

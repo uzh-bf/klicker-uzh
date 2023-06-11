@@ -10,12 +10,21 @@ export async function getFlashcardSets({}: {}, ctx: ContextWithUser) {
     include: {
       flashcardSets: {
         include: {
-          flashcards: true,
+          _count: {
+            select: {
+              flashcards: true,
+            },
+          },
           course: true,
         },
       },
     },
   })
 
-  return user?.flashcardSets || []
+  const flashcards =
+    user?.flashcardSets.map((set) => {
+      return { ...set, numOfFlashcards: set._count?.flashcards }
+    }) || []
+
+  return flashcards
 }

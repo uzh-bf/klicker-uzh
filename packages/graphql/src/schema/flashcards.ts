@@ -7,9 +7,14 @@ export const FlashcardSetStatus = builder.enumType('FlashcardSetStatus', {
   values: Object.values(DB.FlashcardSetStatus),
 })
 
+export const FlashcardStatus = builder.enumType('FlashcardStatus', {
+  values: Object.values(DB.FlashcardStatus),
+})
+
 export interface IFlashcardSet extends DB.FlashcardSet {
   flashcards?: DB.Flashcard[]
   course?: DB.Course
+  numOfFlashcards?: number
 }
 export const FlashcardSetRef = builder.objectRef<IFlashcardSet>('FlashcardSet')
 export const FlashcardSet = FlashcardSetRef.implement({
@@ -20,10 +25,19 @@ export const FlashcardSet = FlashcardSetRef.implement({
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
 
-    status: t.expose('status', { type: FlashcardSetStatus }),
-
     flashcards: t.expose('flashcards', {
       type: [Flashcard],
+      nullable: true,
+    }),
+
+    studentContributions: t.expose('studentContributions', {
+      type: 'Boolean',
+      nullable: true,
+    }),
+
+    status: t.expose('status', { type: FlashcardSetStatus }),
+
+    numOfFlashcards: t.exposeInt('numOfFlashcards', {
       nullable: true,
     }),
 
@@ -33,6 +47,7 @@ export const FlashcardSet = FlashcardSetRef.implement({
     }),
 
     createdAt: t.expose('createdAt', { type: 'Date' }),
+    reviewedAt: t.expose('reviewedAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
   }),
 })

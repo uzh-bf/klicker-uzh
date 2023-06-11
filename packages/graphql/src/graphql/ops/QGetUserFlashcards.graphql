@@ -4,11 +4,7 @@ query GetUserFlashcardSets {
     name
     displayName
     description
-
-    flashcards {
-      id
-    }
-
+    numOfFlashcards
     course {
       id
       name
