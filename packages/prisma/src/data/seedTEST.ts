@@ -369,20 +369,23 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       name: 'Test Flashcard Set',
       displayName: 'Test Flashcard Set StudentTitle',
       description: 'Test Flashcard Set',
+      status: 'PUBLISHED',
       flashcards: {
         create: [
           {
             id: 1,
             question: 'What is the capital of Switzerland?',
-            comment: 'Hint: It is not the countries biggest city.',
+            details: 'Hint: It is not the countries biggest city.',
             answer: 'Bern',
             explanation:
               'Bern is the capital of Switzerland for historic reasons.',
+            status: 'PUBLISHED',
           },
           {
             id: 2,
             question: 'What is the capital of Germany?',
             answer: 'Berlin',
+            status: 'PUBLISHED',
           },
         ],
       },
@@ -404,17 +407,20 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       name: 'Test Flashcard Set 2',
       displayName: 'Test Flashcard Set 2 StudentTitle',
       description: 'Test Flashcard Set 2',
+      status: 'PUBLISHED',
       flashcards: {
         create: [
           {
             id: 3,
             question: 'What is the capital of France?',
             answer: 'Paris',
+            status: 'PUBLISHED',
           },
           {
             id: 4,
             question: 'What is the capital of Italy?',
             answer: 'Rome',
+            status: 'PUBLISHED',
           },
         ],
       },

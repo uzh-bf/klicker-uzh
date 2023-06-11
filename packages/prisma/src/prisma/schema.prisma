@@ -717,6 +717,7 @@ model Participant {
   awards                  AwardEntry[]
   achievements            ParticipantAchievementInstance[]
   titles                  Title[]
+  submittedFlashcards     Flashcard[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1021,6 +1022,8 @@ model FlashcardSet {
   displayName String
   description String?
 
+  studentContributions Boolean @default(false)
+
   status FlashcardSetStatus @default(DRAFT)
 
   flashcards Flashcard[]
@@ -1031,30 +1034,32 @@ model FlashcardSet {
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
+  updatedAt  DateTime  @updatedAt
+}
+
+enum FlashcardStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
 }
 
 model Flashcard {
   id Int @id @default(autoincrement())
 
   question    String
-  comment     String?
+  details     String?
   answer      String
   explanation String?
 
-  flashcardResponse FlashcardResponse[]
+  status FlashcardStatus @default(DRAFT)
 
-  flashcardSet   FlashcardSet @relation(fields: [flashcardSetId], references: [id])
-  flashcardSetId Int
+  flashcardSets FlashcardSet[]
+
+  student   Participant? @relation(fields: [studentId], references: [id], onDelete: SetNull, onUpdate: SetNull)
+  studentId String?      @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model FlashcardResponse {
-  id Int @id @default(autoincrement())
-
-  flashcard   Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  flashcardId Int
 }
