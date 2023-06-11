@@ -1,11 +1,13 @@
 import { useQuery } from '@apollo/client'
 import FlashcardStack from '@components/flashcards/FlashcardStack'
+import { faPlus } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Course,
   FlashcardSet,
   GetUserFlashcardSetsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H2 } from '@uzh-bf/design-system'
+import { Button, H2 } from '@uzh-bf/design-system'
 import Layout from '../../components/Layout'
 
 function Flashcards() {
@@ -34,9 +36,21 @@ function Flashcards() {
     <Layout displayName="Flashcards">
       {courseSets.map((courseSet) => (
         <div key={courseSet.course.id} className="w-full">
-          <H2
-            className={{ root: 'mb-2' }}
-          >{`Flashcards ${courseSet.course.name}`}</H2>
+          <div className="flex flex-row items-center justify-between gap-2 mb-2">
+            <H2 className={{ root: 'mb-0' }}>
+              {`Flashcards ${courseSet.course.name}`}
+            </H2>
+            <Button
+              className={{ root: 'h-8' }}
+              onClick={() => {
+                // TODO
+                return null
+              }}
+            >
+              <FontAwesomeIcon icon={faPlus} />
+              <div>Create New Flashcard</div>
+            </Button>
+          </div>
           <div className="flex flex-row gap-6 py-4 overflow-x-scroll">
             {courseSet.sets.map((set) => (
               <FlashcardStack flashcardSet={set} key={set.id} />
