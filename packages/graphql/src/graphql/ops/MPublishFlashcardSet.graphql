@@ -1,0 +1,6 @@
+mutation PublishFlashcardSet($id: Int!) {
+  publishFlashcardSet(id: $id) {
+    id
+    status
+  }
+}

@@ -19,7 +19,7 @@ export interface IFlashcardSet extends DB.FlashcardSet {
 export const FlashcardSetRef = builder.objectRef<IFlashcardSet>('FlashcardSet')
 export const FlashcardSet = FlashcardSetRef.implement({
   fields: (t) => ({
-    id: t.exposeID('id'),
+    id: t.exposeInt('id'),
 
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),

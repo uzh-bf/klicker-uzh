@@ -1,0 +1,6 @@
+mutation UnpublishFlashcardSet($id: Int!) {
+  unpublishFlashcardSet(id: $id) {
+    id
+    status
+  }
+}

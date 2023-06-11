@@ -4,6 +4,7 @@ import { checkCronToken } from '../lib/util'
 import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
+import * as FlashcardService from '../services/flashcards'
 import * as ParticipantGroupService from '../services/groups'
 import * as LearningElementService from '../services/learningElements'
 import * as MicroLearningService from '../services/microLearning'
@@ -12,6 +13,7 @@ import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
+import { FlashcardSet } from './flashcards'
 import {
   GroupActivityDecisionInput,
   GroupActivityDetails,
@@ -874,6 +876,34 @@ export const Mutation = builder.mutationType({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
           return NotificationService.sendPushNotifications(ctx)
+        },
+      }),
+
+      publishFlashcardSet: asUser.field({
+        nullable: true,
+        type: FlashcardSet,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return FlashcardService.changePublishedState(
+            { ...args, published: true },
+            ctx
+          )
+        },
+      }),
+
+      unpublishFlashcardSet: asUser.field({
+        nullable: true,
+        type: FlashcardSet,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return FlashcardService.changePublishedState(
+            { ...args, published: false },
+            ctx
+          )
         },
       }),
     }

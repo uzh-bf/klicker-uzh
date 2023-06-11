@@ -36,7 +36,7 @@ function Flashcards() {
     <Layout displayName="Flashcards">
       {courseSets.map((courseSet) => (
         <div key={courseSet.course.id} className="w-full">
-          <div className="flex flex-row items-center justify-between gap-2 mb-2">
+          <div className="flex flex-row items-center justify-between gap-2 mb-1">
             <H2 className={{ root: 'mb-0' }}>
               {`Flashcards ${courseSet.course.name}`}
             </H2>
@@ -48,7 +48,7 @@ function Flashcards() {
               }}
             >
               <FontAwesomeIcon icon={faPlus} />
-              <div>Create New Flashcard</div>
+              <div>Create new flashcard set</div>
             </Button>
           </div>
           <div className="flex flex-row gap-6 py-4 overflow-x-scroll">

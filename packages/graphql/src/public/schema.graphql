@@ -182,7 +182,7 @@ type FlashcardSet {
   description: String
   displayName: String!
   flashcards: [Flashcard!]
-  id: ID!
+  id: Int!
   name: String!
   numOfFlashcards: Int
   reviewedAt: Date
@@ -458,6 +458,7 @@ type Mutation {
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
+  publishFlashcardSet(id: Int!): FlashcardSet
   publishLearningElement(id: String!): LearningElement
   publishMicroSession(id: String!): MicroSession
   registerParticipantFromLTI(courseId: String!, participantId: String!): ParticipantLearningData
@@ -469,6 +470,7 @@ type Mutation {
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
+  unpublishFlashcardSet(id: Int!): FlashcardSet
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
