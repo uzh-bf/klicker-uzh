@@ -4,10 +4,10 @@
   "version": "3.0.0-alpha.82",
   "type": "module",
   "license": "AGPL-3.0",
-  "main": "dist/src/functions/*.js",
+  "main": "dist/functions/*.js",
   "files": [
-    "dist/src",
-    "dist/src/functions"
+    "dist/",
+    "dist/functions"
   ],
   "scripts": {
     "build": "cross-env NODE_ENV=production tsc",
