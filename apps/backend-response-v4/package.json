@@ -2,6 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/backend-response-v4",
   "version": "3.0.0-alpha.82",
+  "type": "module",
   "license": "AGPL-3.0",
   "main": "dist/src/functions/*.js",
   "files": [
