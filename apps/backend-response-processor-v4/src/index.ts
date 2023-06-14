@@ -15,7 +15,7 @@ import md5 from 'md5'
 import assert from 'node:assert/strict'
 import { toLower, trim } from 'ramda'
 
-import getRedis from '../redis'
+import getRedis from './redis'
 
 const MAX_BONUS_POINTS = 45 // maximum 45 bonus points for fastest answer
 const TIME_TO_ZERO_BONUS = 20 // seconds until the bonus points are zero
@@ -349,9 +349,9 @@ const serviceBusTrigger = async function (
 export default serviceBusTrigger
 
 // TODO: check how autoCompleteMessages needs to be applied in v4
-app.serviceBusQueue("ProcessResponse", {
-  connection: "SERVICE_BUS_CONNECTION_STRING",
-  queueName: "%SERVICE_BUS_QUEUE_NAME%",
+app.serviceBusQueue('ProcessResponse', {
+  connection: 'SERVICE_BUS_CONNECTION_STRING',
+  queueName: '%SERVICE_BUS_QUEUE_NAME%',
   isSessionsEnabled: true,
   //autoCompleteMessages: true,
   handler: serviceBusTrigger,

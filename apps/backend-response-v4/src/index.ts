@@ -1,7 +1,12 @@
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import {
+  app,
+  HttpRequest,
+  HttpResponseInit,
+  InvocationContext,
+} from '@azure/functions'
 import * as Sentry from '@sentry/node'
 
-import getServiceBus from '../sbus'
+import getServiceBus from './sbus'
 
 Sentry.init()
 
@@ -11,8 +16,11 @@ const serviceBusSender = serviceBusClient.createSender(
   process.env.SERVICE_BUS_QUEUE_NAME as string
 )
 
-const httpTrigger = async function (req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    context.log('AddResponse function processed a request', req.method, req.body)
+const httpTrigger = async function (
+  req: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> {
+  context.log('AddResponse function processed a request', req.method, req.body)
 
   // immediately return on GET -> healthcheck
   if (req.method === 'GET') {
@@ -23,10 +31,10 @@ const httpTrigger = async function (req: HttpRequest, context: InvocationContext
 
     return { status: 200 }
   }
-  
-  const body: any = await req.json();
-  context.info("body: ", body);
-  context.warn("body: ", body)
+
+  const body: any = await req.json()
+  context.info('body: ', body)
+  context.warn('body: ', body)
 
   if (!body.response || !body.sessionId) {
     context.log('Missing response or sessionId', body)
@@ -64,11 +72,11 @@ const httpTrigger = async function (req: HttpRequest, context: InvocationContext
   }
 
   return { status: 200 }
-};
+}
 
 app.http('AddResponse', {
-    methods: ['GET', 'POST', 'OPTIONS'],
-    authLevel: 'anonymous',
-    route: 'AddResponse',
-    handler: httpTrigger
-});
+  methods: ['GET', 'POST', 'OPTIONS'],
+  authLevel: 'anonymous',
+  route: 'AddResponse',
+  handler: httpTrigger,
+})

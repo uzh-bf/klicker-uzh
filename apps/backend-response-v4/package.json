@@ -4,17 +4,15 @@
   "version": "3.0.0-alpha.82",
   "type": "module",
   "license": "AGPL-3.0",
-  "main": "dist/functions/*.js",
+  "main": "dist/index.js",
   "files": [
-    "dist/",
-    "dist/functions"
+    "dist/"
   ],
   "scripts": {
     "build": "cross-env NODE_ENV=production tsc",
     "dev": "npm-run-all --parallel dev:ts dev:func",
-    "dev:offline": "npm-run-all --parallel dev:ts",
     "dev:ts": "tsc -w",
-    "dev:func": "func start -p 7072",
+    "dev:func": "func start -p 7072 --verbose",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "func start -p 7072",
