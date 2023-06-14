@@ -36,7 +36,6 @@ function CourseOverviewPage() {
   const theme = useContext(ThemeContext)
 
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
-  const [isColorPickerVisible, setIsColorPickerVisible] = useState(false)
   const [editStartDate, setEditStartDate] = useState(false)
   const [editEndDate, setEditEndDate] = useState(false)
   const [dateToastSuccess, setDateToastSuccess] = useState(false)
@@ -56,10 +55,6 @@ function CourseOverviewPage() {
     }
   }, [data, router])
 
-  const toggleColorPicker = () => {
-    setIsColorPickerVisible((prevState) => !prevState)
-  }
-
   if (error) {
     return <div>{error.message}</div>
   }
@@ -73,11 +68,6 @@ function CourseOverviewPage() {
     [SESSION_STATUS.SCHEDULED]: 1,
     [SESSION_STATUS.PREPARED]: 2,
     [SESSION_STATUS.COMPLETED]: 3,
-  }
-
-  const handleColorChange = (color: string) => {
-    toggleColorPicker()
-    changeCourseColor({ variables: { color, courseId: course.id } })
   }
 
   return (
@@ -155,7 +145,11 @@ function CourseOverviewPage() {
             <div className="pr-3">Kursfarbe</div>
             <ColorPicker
               color={course.color ?? '#0028A5'}
-              onSubmit={handleColorChange}
+              onSubmit={(color) =>
+                changeCourseColor({ variables: { color, courseId: course.id } })
+              }
+              abortText="Abbrechen"
+              submitText="Speichern"
             />
           </div>
           <DateChanger

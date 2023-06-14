@@ -11,6 +11,8 @@ interface ColorPickerProps {
   onSubmit: (newColor: string) => void
   disabled?: boolean
   position?: 'bottom' | 'top'
+  submitText: string
+  abortText: string
   dataTrigger?: {
     cy?: string
     test?: string
@@ -36,6 +38,8 @@ function ColorPicker({
   onSubmit,
   disabled,
   position = 'bottom',
+  submitText,
+  abortText,
   dataTrigger,
   dataHexInput,
   dataAbort,
@@ -102,7 +106,7 @@ function ColorPicker({
               onClick={() => setColorPickerOpen(false)}
               data={dataAbort}
             >
-              Abbrechen
+              {abortText}
             </Button>
             <Button
               className={{
@@ -116,7 +120,7 @@ function ColorPicker({
               disabled={color === newColor}
               data={dataSubmit}
             >
-              Speichern
+              {submitText}
             </Button>
           </div>
         </div>

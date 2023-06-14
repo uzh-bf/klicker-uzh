@@ -12,6 +12,7 @@ import { Form, Formik } from 'formik'
 import { useContext } from 'react'
 import ContentInput from 'shared-components/src/ContentInput'
 import { twMerge } from 'tailwind-merge'
+import * as yup from 'yup'
 
 interface CourseCreationModalProps {
   modalOpen: boolean
@@ -26,7 +27,30 @@ function CourseCreationModal({
   modalOpen,
   onModalClose,
 }: CourseCreationModalProps) {
-  const schema = {}
+  const schema = yup.object().shape({
+    name: yup.string().required('Bitte geben Sie einen Namen für den Kurs an.'),
+    displayName: yup
+      .string()
+      .required('Bitte geben Sie einen Anzeigenamen für den Kurs an.'),
+    description: yup.string(),
+    color: yup.string().required('Bitte wählen Sie eine Farbe für den Kurs.'),
+    startDate: yup
+      .date()
+      .required(
+        'Bitte geben Sie ein Startdatum für Ihren Kurs ein. Die Daten können auch nach Erstellen des Kurses noch verändert werden.'
+      ),
+    endDate: yup
+      .date()
+      .min(new Date(), 'Das Enddatum muss in der Zukunft liegen.')
+      .min(
+        yup.ref('startDate'),
+        'Das Enddatum muss nach dem Startdatum liegen.'
+      )
+      .required(
+        'Bitte geben Sie ein Enddatum für Ihren Kurs ein. Die Daten können auch nach dem Erstellen des Kurses noch verändert werden.'
+      ),
+    isGamificationEnabled: yup.boolean(),
+  })
   const theme = useContext(ThemeContext)
   const today = new Date()
   const initEndDate = new Date(today.setMonth(today.getMonth() + 6))
@@ -48,12 +72,14 @@ function CourseCreationModal({
           endDate: initEndDate.toISOString().slice(0, 10),
           isGamificationEnabled: true,
         }}
-        onSubmit={(values, { setSubmitting }) =>
-          // TODO implement submission
+        onSubmit={(values, { setSubmitting }) => {
           console.log(values)
-        }
-        // TODO: implement form validation
-        // validationSchema={schema}
+          // TODO implement submission
+          // TODO: show success toast if successful or on error
+          // TODO: set setSubmitting correspondingly
+        }}
+        validationSchema={schema}
+        isInitialValid={false}
       >
         {({
           values,
@@ -118,6 +144,8 @@ function CourseCreationModal({
                   name="color"
                   label="Kursfarbe"
                   position="top"
+                  abortText="Abbrechen"
+                  submitText="Bestätigen"
                   required
                 />
                 <FormikSwitchField
@@ -134,10 +162,12 @@ function CourseCreationModal({
               )}
             </div>
             <Button
+              disabled={!isValid || isSubmitting}
               type="submit"
               className={{
                 root: twMerge(
                   'float-right text-white font-bold mt-2 md:-mt-2 w-full md:w-max',
+                  (!isValid || isSubmitting) && 'cursor-not-allowed opacity-50',
                   theme.primaryBgDark
                 ),
               }}

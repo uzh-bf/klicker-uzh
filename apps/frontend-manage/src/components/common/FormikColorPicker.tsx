@@ -13,6 +13,8 @@ export interface FormikColorPickerProps {
   hideError?: boolean
   disabled?: boolean
   position?: 'bottom' | 'top'
+  abortText: string
+  submitText: string
   className?: {
     root?: string
     field?: string
@@ -48,6 +50,8 @@ export function FormikColorPicker({
   hideError = false,
   disabled = false,
   position,
+  abortText,
+  submitText,
   className,
   dataTrigger,
   dataHexInput,
@@ -93,6 +97,8 @@ export function FormikColorPicker({
           dataAbort={dataAbort}
           dataSubmit={dataSubmit}
           position={position}
+          abortText={abortText}
+          submitText={submitText}
         />
       </div>
       {!hideError && meta.touched && meta.error && (
