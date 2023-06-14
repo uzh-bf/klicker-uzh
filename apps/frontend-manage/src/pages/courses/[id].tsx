@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
+import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeCourseColorDocument,
@@ -153,23 +153,10 @@ function CourseOverviewPage() {
         <div className="flex flex-row items-center gap-8 pt-1 h-11">
           <div className="flex flex-row">
             <div className="pr-3">Kursfarbe</div>
-            <div
-              className={
-                'flex relative w-20 rounded-lg align-center justify-end'
-              }
-              style={{ backgroundColor: course.color ?? '#eaa07d' }}
-            >
-              <Button onClick={toggleColorPicker}>
-                <FontAwesomeIcon icon={faPalette} />
-              </Button>
-              {isColorPickerVisible && (
-                <ColorPicker
-                  color={course.color ?? '#eaa07d'}
-                  onSubmit={handleColorChange}
-                  onAbort={toggleColorPicker}
-                />
-              )}
-            </div>
+            <ColorPicker
+              color={course.color ?? '#0028A5'}
+              onSubmit={handleColorChange}
+            />
           </div>
           <DateChanger
             label="Startdatum:"
