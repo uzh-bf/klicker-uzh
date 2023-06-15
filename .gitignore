@@ -24,3 +24,6 @@ cypress/screenshots/*
 packages/prisma/src/seed
 !packages/prisma/.env
 .turbo
+
+migration/dump
+migration/export_v2_data/exported_json_files

@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "export-v2-data"
+version = "0.1.0"
+description = ""
+authors = ["BShaq <bulinshaqiri@hotmail.com>"]
+readme = "README.md"
+packages = [{include = "export_v2_data"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pymongo = "^4.3.3"
+pandas = "^2.0.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
