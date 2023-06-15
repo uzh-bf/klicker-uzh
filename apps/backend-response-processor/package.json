@@ -35,7 +35,7 @@
     "@types/md5": "2.3.2",
     "@types/node": "^18.0.0",
     "@types/ramda": "^0.29.0",
-    "@uzh-bf/design-system": "1.7.1",
+    "@uzh-bf/design-system": "1.7.4",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "husky": "8.0.3",

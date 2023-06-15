@@ -1,7 +1,7 @@
-import { Label } from '@uzh-bf/design-system'
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+import { ColorPicker, Label } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { twMerge } from 'tailwind-merge'
-import ColorPicker from './ColorPicker'
 
 export interface FormikColorPickerProps {
   id?: string
@@ -12,6 +12,8 @@ export interface FormikColorPickerProps {
   required?: boolean
   hideError?: boolean
   disabled?: boolean
+  triggerIcon?: IconDefinition
+  presetColors?: string[]
   position?: 'bottom' | 'top'
   abortText: string
   submitText: string
@@ -21,6 +23,14 @@ export interface FormikColorPickerProps {
     label?: string
     input?: string
     error?: string
+    pickerRoot?: string
+    trigger?: string
+    popover?: string
+    presetButtons?: string
+    inputLabel?: string
+    pickerInput?: string
+    abort?: string
+    submit?: string
   }
   dataTrigger?: {
     cy?: string
@@ -49,6 +59,8 @@ export function FormikColorPicker({
   required = false,
   hideError = false,
   disabled = false,
+  triggerIcon,
+  presetColors,
   position,
   abortText,
   submitText,
@@ -92,13 +104,25 @@ export function FormikColorPicker({
           color={field.value}
           onSubmit={(newColor: string) => helpers.setValue(newColor)}
           disabled={disabled}
+          triggerIcon={triggerIcon}
+          presetColors={presetColors}
+          position={position}
+          abortText={abortText}
+          submitText={submitText}
           dataTrigger={dataTrigger}
           dataHexInput={dataHexInput}
           dataAbort={dataAbort}
           dataSubmit={dataSubmit}
-          position={position}
-          abortText={abortText}
-          submitText={submitText}
+          className={{
+            root: className?.pickerRoot,
+            trigger: className?.trigger,
+            popover: className?.popover,
+            presetButtons: className?.presetButtons,
+            inputLabel: className?.inputLabel,
+            input: className?.pickerInput,
+            abort: className?.abort,
+            submit: className?.submit,
+          }}
         />
       </div>
       {!hideError && meta.touched && meta.error && (

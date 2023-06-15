@@ -9,6 +9,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import {
   Button,
+  ColorPicker,
   DateChanger,
   H1,
   H2,
@@ -24,7 +25,6 @@ import { useContext, useEffect, useState } from 'react'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Layout from '../../components/Layout'
-import ColorPicker from '../../components/common/ColorPicker'
 import CourseDescription from '../../components/courses/CourseDescription'
 import LearningElementTile from '../../components/courses/LearningElementTile'
 import MicroSessionTile from '../../components/courses/MicroSessionTile'
