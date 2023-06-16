@@ -25,7 +25,6 @@ interface CourseCreationModalProps {
 
 // TODO: add notification email settings, once more generally compatible solution is available
 // TODO: add groupDeadlineDate field, once this should be user settable (also add to fields on course overview)
-// TODO: add tooltips to fields where it makes sense
 
 function CourseCreationModal({
   modalOpen,
