@@ -1,6 +1,6 @@
-import FormikColorPicker from '@components/common/FormikColorPicker'
 import {
   Button,
+  FormikColorPicker,
   FormikDateChanger,
   FormikSwitchField,
   FormikTextField,
