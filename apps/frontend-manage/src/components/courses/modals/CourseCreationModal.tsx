@@ -1,3 +1,6 @@
+import { useMutation } from '@apollo/client'
+import ElementCreationErrorToast from '@components/toasts/ElementCreationErrorToast'
+import { CreateCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
@@ -9,7 +12,8 @@ import {
   ThemeContext,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { useContext } from 'react'
+import { useRouter } from 'next/router'
+import { useContext, useState } from 'react'
 import ContentInput from 'shared-components/src/ContentInput'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
@@ -27,6 +31,10 @@ function CourseCreationModal({
   modalOpen,
   onModalClose,
 }: CourseCreationModalProps) {
+  const router = useRouter()
+  const [createCourse] = useMutation(CreateCourseDocument)
+  const [showErrorToast, setShowErrorToast] = useState(false)
+
   const schema = yup.object().shape({
     name: yup.string().required('Bitte geben Sie einen Namen für den Kurs an.'),
     displayName: yup
@@ -72,11 +80,32 @@ function CourseCreationModal({
           endDate: initEndDate.toISOString().slice(0, 10),
           isGamificationEnabled: true,
         }}
-        onSubmit={(values, { setSubmitting }) => {
-          console.log(values)
-          // TODO implement submission
-          // TODO: show success toast if successful or on error
-          // TODO: set setSubmitting correspondingly
+        onSubmit={async (values, { setSubmitting }) => {
+          try {
+            const result = await createCourse({
+              variables: {
+                name: values.name,
+                displayName: values.displayName,
+                description: values.description,
+                color: values.color,
+                startDate: values.startDate + 'T00:00:00.000Z',
+                endDate: values.endDate + 'T23:59:59.999Z',
+                isGamificationEnabled: values.isGamificationEnabled,
+              },
+            })
+
+            if (result.data?.createCourse) {
+              onModalClose()
+              router.push(`/courses/${result.data.createCourse.id}`)
+            } else {
+              setShowErrorToast(true)
+              setSubmitting(false)
+            }
+          } catch (error) {
+            setShowErrorToast(true)
+            setSubmitting(false)
+            console.log(error)
+          }
         }}
         validationSchema={schema}
         isInitialValid={false}
@@ -96,6 +125,7 @@ function CourseCreationModal({
                   name="name"
                   label="Kursname"
                   placeholder="Kursname"
+                  tooltip="Der Kursname dient Ihnen zur Identifizierung des Kurses. Den Studierenden wird dieser Name nicht angezeigt."
                   className={{ root: 'w-full md:w-1/2' }}
                   required
                 />
@@ -103,6 +133,7 @@ function CourseCreationModal({
                   name="displayName"
                   label="Anzeigename"
                   placeholder="Kursanzeigename"
+                  tooltip="Der Anzeigename wird den Studierenden angezeigt. Er kann vom Kursnamen abweichen."
                   className={{ root: 'w-full md:w-1/2' }}
                   required
                 />
@@ -111,7 +142,9 @@ function CourseCreationModal({
               <div>
                 <Label
                   label="Beschreibung"
-                  className={{ root: 'font-bold' }}
+                  className={{ root: 'font-bold', tooltip: 'text-sm' }}
+                  tooltip="Die Beschreibung wird den Studierenden angezeigt. Sie können hier z.B. die Ziele des Kurses beschreiben."
+                  showTooltipSymbol
                   required
                 />
                 <ContentInput
@@ -129,12 +162,14 @@ function CourseCreationModal({
                 <FormikDateChanger
                   name="startDate"
                   label="Startdatum"
+                  tooltip="Ab dem Startdatum können die Studierenden auf die freigeschalteten Inhalte des Kurses zugreifen. Das Startdatum können Sie auch nach Erstellen des Kurses noch verändern."
                   required
                   className={{ label: 'font-bold' }}
                 />
                 <FormikDateChanger
                   name="endDate"
                   label="Enddatum"
+                  tooltip="Nach dem Enddatum wird der Kurs für die Studierenden als archiviert angezeigt, sie können aber weiterhin auf die Inhalte zugreifen. Das Enddatum können Sie auch nach Erstellen des Kurses noch verändern."
                   required
                   className={{ label: 'font-bold' }}
                 />
@@ -151,8 +186,9 @@ function CourseCreationModal({
                 <FormikSwitchField
                   name="isGamificationEnabled"
                   label="Gamifizierung"
-                  standardLabel
                   className={{ label: 'font-bold' }}
+                  standardLabel
+                  required
                 />
               </div>
             </div>
@@ -177,6 +213,11 @@ function CourseCreationModal({
           </Form>
         )}
       </Formik>
+      <ElementCreationErrorToast
+        open={showErrorToast}
+        setOpen={setShowErrorToast}
+        error="Erstellen des Kurses fehlgeschlagen..."
+      />
     </Modal>
   )
 }
