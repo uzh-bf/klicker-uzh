@@ -45,6 +45,14 @@ try:
         export_data[collection_name] = documents
         logging.info(f"Fetched {len(documents)} documents from collection '{collection_name}' for user '{email}'.")
 
+    # remove deleted questions from the export data
+    export_data["questions"] = [question for question in export_data["questions"] if not question["isDeleted"] ]
+    
+    # select last version as the final version of the question
+    for question in export_data["questions"]:
+        if question["versions"]:
+            question["versions"] = question["versions"][-1]
+    
     # generate a json file with the user data
     output_directory =  "exported_json_files"
 
