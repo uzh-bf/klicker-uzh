@@ -198,6 +198,7 @@ interface QuestionEditModalProps {
   handleSetIsOpen: (open: boolean) => void
   questionId?: number
   mode: 'EDIT' | 'CREATE'
+  duplicateQuestion?: boolean
 }
 
 function QuestionEditModal({
@@ -205,6 +206,7 @@ function QuestionEditModal({
   handleSetIsOpen,
   questionId,
   mode,
+  duplicateQuestion = false,
 }: QuestionEditModalProps): React.ReactElement {
   const theme = useContext(ThemeContext)
 
@@ -348,6 +350,7 @@ function QuestionEditModal({
             await manipulateChoicesQuestion({
               variables: {
                 ...common,
+                id: duplicateQuestion ? undefined : questionId,
                 type: questionType,
                 options: {
                   choices: values.options?.choices.map((choice: any) => {
@@ -371,6 +374,7 @@ function QuestionEditModal({
             await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
+                id: duplicateQuestion ? undefined : questionId,
                 options: {
                   unit: values.options?.unit,
                   accuracy: values.options?.accuracy,
@@ -407,6 +411,7 @@ function QuestionEditModal({
             await manipulateFreeTextQuestion({
               variables: {
                 ...common,
+                id: duplicateQuestion ? undefined : questionId,
                 options: {
                   placeholder: values.options?.placeholder,
                   restrictions: {

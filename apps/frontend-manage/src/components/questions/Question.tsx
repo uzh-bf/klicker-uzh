@@ -53,6 +53,7 @@ function Question({
 }: Props): React.ReactElement {
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
+  // TODO: add preview modal with student view of question
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
   const [deleteQuestion] = useMutation(DeleteQuestionDocument)
@@ -148,18 +149,18 @@ function Question({
               <Button
                 className={{ root: 'bg-white w-36' }}
                 onClick={(): void => setIsDuplicationModalOpen(true)}
-                // TODO: implement
-                disabled
               >
                 Duplizieren
               </Button>
-              {/* {isDuplicationModalOpen && (
-                <QuestionDuplicationModal
+              {isDuplicationModalOpen && (
+                <QuestionEditModal
                   handleSetIsOpen={setIsDuplicationModalOpen}
                   isOpen={isDuplicationModalOpen}
                   questionId={id}
+                  mode="EDIT"
+                  duplicateQuestion={true}
                 />
-              )} */}
+              )}
             </div>
             <div className="w-36">
               <Button
