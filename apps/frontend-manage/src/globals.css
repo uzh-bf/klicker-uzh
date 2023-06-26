@@ -1,5 +1,6 @@
-@import 'tailwindcss/base';
 @import 'tailwindcss/src/css/preflight.css';
+
+@import 'tailwindcss/base';
 @import '@uzh-bf/design-system/dist/index.esm.css';
 
 @import 'tailwindcss/components';
@@ -11,5 +12,5 @@
 @import 'shared-components/dist/utilities.css';
 
 html {
-  font-size: 17px;
+  font-size: 16px;
 }
