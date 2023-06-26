@@ -141,7 +141,7 @@ function Question({
                   handleSetIsOpen={setIsModificationModalOpen}
                   isOpen={isModificationModalOpen}
                   questionId={id}
-                  mode="EDIT"
+                  mode={QuestionEditModal.Mode.EDIT}
                 />
               )}
             </div>
@@ -157,8 +157,7 @@ function Question({
                   handleSetIsOpen={setIsDuplicationModalOpen}
                   isOpen={isDuplicationModalOpen}
                   questionId={id}
-                  mode="EDIT"
-                  duplicateQuestion={true}
+                  mode={QuestionEditModal.Mode.DUPLICATE}
                 />
               )}
             </div>

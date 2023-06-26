@@ -206,7 +206,7 @@ function Index() {
         <QuestionEditModal
           handleSetIsOpen={setIsQuestionCreationModalOpen}
           isOpen={isQuestionCreationModalOpen}
-          mode="CREATE"
+          mode={QuestionEditModal.Mode.CREATE}
         />
       )}
     </Layout>
