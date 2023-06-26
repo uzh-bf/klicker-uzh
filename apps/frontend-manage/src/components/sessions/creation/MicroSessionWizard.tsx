@@ -17,7 +17,7 @@ import { ErrorMessage } from 'formik'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
-import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
+import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
 import MultistepWizard from './MultistepWizard'
@@ -188,7 +188,7 @@ function MicroSessionWizard({
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
         <StepThree validationSchema={stepThreeValidationSchema} />
       </MultistepWizard>
-      <SessionCreationErrorToast
+      <ElementCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}
         error={

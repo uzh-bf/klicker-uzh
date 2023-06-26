@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faPalette, faPencil } from '@fortawesome/free-solid-svg-icons'
+import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeCourseColorDocument,
@@ -9,6 +9,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import {
   Button,
+  ColorPicker,
   DateChanger,
   H1,
   H2,
@@ -24,7 +25,6 @@ import { useContext, useEffect, useState } from 'react'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Layout from '../../components/Layout'
-import ColorPicker from '../../components/common/ColorPicker'
 import CourseDescription from '../../components/courses/CourseDescription'
 import LearningElementTile from '../../components/courses/LearningElementTile'
 import MicroSessionTile from '../../components/courses/MicroSessionTile'
@@ -36,7 +36,6 @@ function CourseOverviewPage() {
   const theme = useContext(ThemeContext)
 
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
-  const [isColorPickerVisible, setIsColorPickerVisible] = useState(false)
   const [editStartDate, setEditStartDate] = useState(false)
   const [editEndDate, setEditEndDate] = useState(false)
   const [dateToastSuccess, setDateToastSuccess] = useState(false)
@@ -56,10 +55,6 @@ function CourseOverviewPage() {
     }
   }, [data, router])
 
-  const toggleColorPicker = () => {
-    setIsColorPickerVisible((prevState) => !prevState)
-  }
-
   if (error) {
     return <div>{error.message}</div>
   }
@@ -73,11 +68,6 @@ function CourseOverviewPage() {
     [SESSION_STATUS.SCHEDULED]: 1,
     [SESSION_STATUS.PREPARED]: 2,
     [SESSION_STATUS.COMPLETED]: 3,
-  }
-
-  const handleColorChange = (color: string) => {
-    toggleColorPicker()
-    changeCourseColor({ variables: { color, courseId: course.id } })
   }
 
   return (
@@ -153,23 +143,14 @@ function CourseOverviewPage() {
         <div className="flex flex-row items-center gap-8 pt-1 h-11">
           <div className="flex flex-row">
             <div className="pr-3">Kursfarbe</div>
-            <div
-              className={
-                'flex relative w-20 rounded-lg align-center justify-end'
+            <ColorPicker
+              color={course.color ?? '#0028A5'}
+              onSubmit={(color) =>
+                changeCourseColor({ variables: { color, courseId: course.id } })
               }
-              style={{ backgroundColor: course.color ?? '#eaa07d' }}
-            >
-              <Button onClick={toggleColorPicker}>
-                <FontAwesomeIcon icon={faPalette} />
-              </Button>
-              {isColorPickerVisible && (
-                <ColorPicker
-                  color={course.color ?? '#eaa07d'}
-                  onSubmit={handleColorChange}
-                  onAbort={toggleColorPicker}
-                />
-              )}
-            </div>
+              abortText="Abbrechen"
+              submitText="Speichern"
+            />
           </div>
           <DateChanger
             label="Startdatum:"
