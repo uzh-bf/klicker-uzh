@@ -319,28 +319,54 @@ export async function getCourseOverviewData(
 
 interface CreateCourseArgs {
   name: string
-  displayName?: string
-  color?: string
+  displayName: string
+  description?: string | null
+  color?: string | null
+  startDate: Date
+  endDate: Date
+  groupDeadlineDate?: Date | null
+  notificationEmail?: string | null
+  isGamificationEnabled: boolean
 }
 
 export async function createCourse(
-  { name, displayName, color }: CreateCourseArgs,
+  {
+    name,
+    displayName,
+    description,
+    color,
+    startDate,
+    endDate,
+    groupDeadlineDate,
+    notificationEmail,
+    isGamificationEnabled,
+  }: CreateCourseArgs,
   ctx: ContextWithUser
 ) {
   // TODO: ensure that PINs are unique
   const randomPin = Math.floor(Math.random() * 900000000 + 100000000)
 
-  return ctx.prisma.course.create({
+  const course = await ctx.prisma.course.create({
     data: {
-      name,
+      name: name,
+      displayName: displayName,
+      description: description,
+      color: color ?? '#CCD5ED',
+      startDate: startDate,
+      endDate: endDate,
+      groupDeadlineDate: groupDeadlineDate ?? endDate,
+      notificationEmail: notificationEmail,
+      isGamificationEnabled: isGamificationEnabled,
       pinCode: randomPin,
-      displayName: displayName ?? name,
-      color,
       owner: {
-        connect: { id: ctx.user.sub },
+        connect: {
+          id: ctx.user.sub,
+        },
       },
     },
   })
+
+  return course
 }
 
 export async function getUserCourses(ctx: ContextWithUser) {
