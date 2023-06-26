@@ -44,6 +44,12 @@ import {
 import ContentInput from 'shared-components/src/ContentInput'
 import StudentQuestion from 'shared-components/src/StudentQuestion'
 
+enum QuestionEditMode {
+  DUPLICATE = 'DUPLICATE',
+  EDIT = 'EDIT',
+  CREATE = 'CREATE',
+}
+
 const questionManipulationSchema = Yup.object().shape({
   name: Yup.string().required('Geben Sie einen Namen für die Frage ein.'),
   tags: Yup.array().of(Yup.string()),
@@ -197,7 +203,7 @@ interface QuestionEditModalProps {
   isOpen: boolean
   handleSetIsOpen: (open: boolean) => void
   questionId?: number
-  mode: 'EDIT' | 'CREATE'
+  mode: QuestionEditMode
 }
 
 function QuestionEditModal({
@@ -207,6 +213,8 @@ function QuestionEditModal({
   mode,
 }: QuestionEditModalProps): React.ReactElement {
   const theme = useContext(ThemeContext)
+
+  const isDuplication = mode === QuestionEditMode.DUPLICATE
 
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
     inputValue: '',
@@ -245,11 +253,13 @@ function QuestionEditModal({
   )
 
   const questionType = useMemo(() => {
-    return mode === 'CREATE' ? newQuestionType : dataQuestion?.question?.type
+    return mode === QuestionEditMode.CREATE
+      ? newQuestionType
+      : dataQuestion?.question?.type
   }, [mode, dataQuestion?.question?.type, newQuestionType])
 
   const question = useMemo(() => {
-    if (mode === 'CREATE') {
+    if (mode === QuestionEditMode.CREATE) {
       const common = {
         type: questionType,
         displayMode: QuestionDisplayMode.List,
@@ -305,6 +315,9 @@ function QuestionEditModal({
     return dataQuestion?.question?.questionData
       ? {
           ...dataQuestion.question,
+          name: isDuplication
+            ? `${dataQuestion.question.name} (Copy)`
+            : dataQuestion.question.name,
           pointsMultiplier: String(dataQuestion.question.pointsMultiplier),
           explanation: dataQuestion.question.explanation ?? '',
           displayMode:
@@ -324,7 +337,10 @@ function QuestionEditModal({
 
   return (
     <Formik
-      isInitialValid={mode === 'EDIT'}
+      isInitialValid={[
+        QuestionEditMode.EDIT,
+        QuestionEditMode.DUPLICATE,
+      ].includes(mode)}
       enableReinitialize={true}
       initialValues={question}
       validationSchema={questionManipulationSchema}
@@ -348,6 +364,7 @@ function QuestionEditModal({
             await manipulateChoicesQuestion({
               variables: {
                 ...common,
+                id: isDuplication ? undefined : questionId,
                 type: questionType,
                 options: {
                   choices: values.options?.choices.map((choice: any) => {
@@ -371,6 +388,7 @@ function QuestionEditModal({
             await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
+                id: isDuplication ? undefined : questionId,
                 options: {
                   unit: values.options?.unit,
                   accuracy: values.options?.accuracy,
@@ -407,6 +425,7 @@ function QuestionEditModal({
             await manipulateFreeTextQuestion({
               variables: {
                 ...common,
+                id: isDuplication ? undefined : questionId,
                 options: {
                   placeholder: values.options?.placeholder,
                   restrictions: {
@@ -440,15 +459,21 @@ function QuestionEditModal({
         setFieldTouched,
         validateForm,
       }) => {
-        if (mode === 'EDIT' && loadingQuestion) {
+        if (loadingQuestion) {
           return <div></div>
+        }
+
+        const titles = {
+          [QuestionEditMode.CREATE]: 'Frage erstellen',
+          [QuestionEditMode.EDIT]: 'Frage bearbeiten',
+          [QuestionEditMode.DUPLICATE]: 'Frage duplizieren',
         }
 
         return (
           <Modal
             asPortal
             fullScreen
-            title={mode === 'CREATE' ? 'Frage erstellen' : 'Frage bearbeiten'}
+            title={titles[mode]}
             className={{
               content: 'max-w-[1400px]',
               title: 'text-xl',
@@ -495,7 +520,7 @@ function QuestionEditModal({
                     // showTooltipSymbol={mode === 'CREATE'}
                     required
                   />
-                  {mode === 'CREATE' ? (
+                  {mode === QuestionEditMode.CREATE ? (
                     <Select
                       placeholder="Fragetyp auswählen"
                       items={dropdownOptions}
@@ -1232,5 +1257,7 @@ function QuestionEditModal({
     </Formik>
   )
 }
+
+QuestionEditModal.Mode = QuestionEditMode
 
 export default QuestionEditModal
