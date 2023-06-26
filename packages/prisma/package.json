@@ -89,7 +89,7 @@
     "size-limit": "8.2.4",
     "ts-node": "10.9.1",
     "tsup": "6.7.0",
-    "typescript": "5.0.4",
+    "typescript": "5.1.3",
     "uuidv4": "6.2.13"
   },
   "dependencies": {
