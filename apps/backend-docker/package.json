@@ -65,7 +65,7 @@
     "@klicker-uzh/graphql": "^3.0.0-alpha.0",
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "@sentry/node": "7.52.1",
-    "@sentry/tracing": "7.52.1",
+    "@sentry/tracing": "7.56.0",
     "cookie-parser": "1.4.6",
     "cors": "2.8.5",
     "express": "4.18.2",
