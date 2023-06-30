@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "chart.fullname" . }}-cron-push-notifications
+  name: {{ include "chart.fullname" . }}-cron-push
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
