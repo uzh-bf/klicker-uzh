@@ -53,8 +53,8 @@ releases:
           notifications:
             url: '{{ requiredEnv "NOTIFICATION_URL" }}'
             secret: '{{ requiredEnv "NOTIFICATION_SECRET" }}'
-            supportMail: '{{ requiredEnv "SUPPORT_MAIL" }}'
-          
+            supportEmail: '{{ requiredEnv "NOTIFICATION_SUPPORT_EMAIL" }}'
+
           vapid:
             publicKey: '{{ requiredEnv "VAPID_PUBLIC_KEY" }}'
             privateKey: '{{ requiredEnv "VAPID_PRIVATE_KEY" }}'
