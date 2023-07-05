@@ -2,12 +2,13 @@ import { ThemeContext } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ContentInput from '../ContentInput'
 
 export interface FREETextAnswerOptionsProps {
   placeholder?: string
   maxLength?: number
   onChange: (value: any) => any
-  value?: string
+  value: string
 }
 
 export function FREETextAnswerOptions({
@@ -21,19 +22,25 @@ export function FREETextAnswerOptions({
 
   return (
     <div className="flex flex-col gap-2">
-      <textarea
-        className={twMerge(
-          'rounded focus:border focus:border-solid',
-          theme.primaryBorderDarkFocus
-        )}
-        defaultValue=""
-        id="responseInput"
-        value={value}
-        onChange={(e): void => onChange(e.target.value)}
-        rows={3}
-        maxLength={maxLength ?? 1500}
+      <ContentInput
+        className={{
+          root: twMerge(
+            'rounded focus:border focus:border-solid',
+            theme.primaryBorderDarkFocus
+          ),
+        }}
+        content={value}
+        onChange={onChange}
         placeholder={placeholder || t('shared.questions.ftPlaceholder')}
-        data-cy="free-text-response-input"
+        data_cy="free-text-response-input"
+        touched={false}
+        toolbar={{
+          texInline: true,
+          ol: true,
+          ul: true,
+          undo: true,
+          redo: true,
+        }}
       />
 
       <div className="text-sm italic text-right">

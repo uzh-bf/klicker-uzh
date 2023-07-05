@@ -23,7 +23,8 @@ function Wordcloud({
     ).map((result) => {
       return {
         count: result.count,
-        value: result.value,
+        // value: <Markdown content={result.value} />,
+        value: (result.value ?? '').replace(/[^a-zA-Z \n]/g, ''),
       }
     })
   }, [data])
