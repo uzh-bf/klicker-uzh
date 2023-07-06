@@ -17,7 +17,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { LEARNING_ELEMENT_ORDERS } from 'shared-components/src/constants'
 import * as yup from 'yup'
-import SessionCreationErrorToast from '../../toasts/SessionCreationErrorToast'
+import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
 import MultistepWizard, { LearningElementFormValues } from './MultistepWizard'
@@ -204,7 +204,7 @@ function LearningElementWizard({
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
         <StepThree validationSchema={stepThreeValidationSchema} />
       </MultistepWizard>
-      <SessionCreationErrorToast
+      <ElementCreationErrorToast
         open={errorToastOpen}
         setOpen={setErrorToastOpen}
         error={

@@ -1,0 +1,34 @@
+mutation CreateCourse(
+  $name: String!
+  $displayName: String!
+  $description: String
+  $color: String
+  $startDate: Date!
+  $endDate: Date!
+  $groupDeadlineDate: Date
+  $notificationEmail: String
+  $isGamificationEnabled: Boolean!
+) {
+  createCourse(
+    name: $name
+    displayName: $displayName
+    description: $description
+    color: $color
+    startDate: $startDate
+    endDate: $endDate
+    groupDeadlineDate: $groupDeadlineDate
+    notificationEmail: $notificationEmail
+    isGamificationEnabled: $isGamificationEnabled
+  ) {
+    id
+    name
+    displayName
+    description
+    color
+    startDate
+    endDate
+    groupDeadlineDate
+    notificationEmail
+    isGamificationEnabled
+  }
+}

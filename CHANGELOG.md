@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-alpha.84](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.83...v3.0.0-alpha.84) (2023-06-30)
+
+## [3.0.0-alpha.83](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.82...v3.0.0-alpha.83) (2023-06-30)
+
+
+### Features
+
+* **apps/frontend-control:** internationalization for frontend-control ([#3652](https://github.com/uzh-bf/klicker-uzh/issues/3652)) ([8635750](https://github.com/uzh-bf/klicker-uzh/commit/86357504fb03a61911289776f7cdf252a242e47c))
+* **apps/frontend-manage:** add possibility to duplicate questions ([#3705](https://github.com/uzh-bf/klicker-uzh/issues/3705)) ([7002eca](https://github.com/uzh-bf/klicker-uzh/commit/7002eca48e22af5d636f5854f6c87dea3284b6de))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** hide evaluation box for text blocks on question stacks ([#3585](https://github.com/uzh-bf/klicker-uzh/issues/3585)) ([ac93c1b](https://github.com/uzh-bf/klicker-uzh/commit/ac93c1b2b6c04a153df8c1cd8e853958083bdfe6))
+* ensure that only integer point amounts are collectable ([#3555](https://github.com/uzh-bf/klicker-uzh/issues/3555)) ([b9be295](https://github.com/uzh-bf/klicker-uzh/commit/b9be2951aa6f8121fae4cc361b5a3c94959f3a99))
+* update the version of azure core tools ([68cef2f](https://github.com/uzh-bf/klicker-uzh/commit/68cef2fb06cca9ddbb9ea8e380b40d113e95bbc1))
+
+
+### Other
+
+* **apps/frontend-*:** fix hover styles on mobile ([#3587](https://github.com/uzh-bf/klicker-uzh/issues/3587)) ([0f055e1](https://github.com/uzh-bf/klicker-uzh/commit/0f055e1c9c046a4885c4373354dc170d1dfe1721))
+
+
+### Enhancements
+
+* add course creation form and backend mutation ([#3679](https://github.com/uzh-bf/klicker-uzh/issues/3679)) ([e1097cf](https://github.com/uzh-bf/klicker-uzh/commit/e1097cf9f3756d5fe65d098656b9bec43aa5adf6))
+* **apps/frontend-*:** unify login page layouts ([#3625](https://github.com/uzh-bf/klicker-uzh/issues/3625)) ([37b98bb](https://github.com/uzh-bf/klicker-uzh/commit/37b98bb045e509d17a304d9d29ca498e820a2ed1))
+* **apps/frontend-manage:** rework layout and fix question pool scrolling issues ([#3613](https://github.com/uzh-bf/klicker-uzh/issues/3613)) ([36f4382](https://github.com/uzh-bf/klicker-uzh/commit/36f438261a2e5ea0cc077776793373a6e653f5e4))
+* **apps/frontend-pwa:** add notification for users that are not logged in on pwa elements ([#3607](https://github.com/uzh-bf/klicker-uzh/issues/3607)) ([e3077a6](https://github.com/uzh-bf/klicker-uzh/commit/e3077a648f05bee0eb6ebe79575a4ea33f25a253))
+* automate push notifications and implement unsubscribe functionality ([#3574](https://github.com/uzh-bf/klicker-uzh/issues/3574)) ([b6deca5](https://github.com/uzh-bf/klicker-uzh/commit/b6deca507ccef513a966c94890339f5259a85f4a))
+* **cypress:** add mobile-specific test cases and basic test coverage setup for backend ([#3586](https://github.com/uzh-bf/klicker-uzh/issues/3586)) ([fec6091](https://github.com/uzh-bf/klicker-uzh/commit/fec6091dbb198002257650cf59758f8a53d1f7b1))
+* ensure that only logged in participants can flag questions ([#3588](https://github.com/uzh-bf/klicker-uzh/issues/3588)) ([a5f3299](https://github.com/uzh-bf/klicker-uzh/commit/a5f3299c693f0415c37fb3d6226d6e2ce889d37c))
+* **frontend-manage:** convert frontend-manage to PWA ([#3614](https://github.com/uzh-bf/klicker-uzh/issues/3614)) ([344fbf2](https://github.com/uzh-bf/klicker-uzh/commit/344fbf21ffd392db0aa64642075b43992583ff03))
+* implement learning element editing ([#3623](https://github.com/uzh-bf/klicker-uzh/issues/3623)) ([36cd625](https://github.com/uzh-bf/klicker-uzh/commit/36cd625f8aa8ccc9c59a3d3d54d49b3345e71a80))
+* **packages/prisma:** implement parametrized approach for level derivation from xp ([#3558](https://github.com/uzh-bf/klicker-uzh/issues/3558)) ([5059ec6](https://github.com/uzh-bf/klicker-uzh/commit/5059ec61783d52dd2bdecb5f8cb82a74bf9aa474))
+* **test:** add test for frontend-control application ([#3651](https://github.com/uzh-bf/klicker-uzh/issues/3651)) ([4a7c289](https://github.com/uzh-bf/klicker-uzh/commit/4a7c2892fd1bfdcd982d2d194b11fcd5d33d3ea0))
+
 ## [3.0.0-alpha.82](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.81...v3.0.0-alpha.82) (2023-04-24)
 
 

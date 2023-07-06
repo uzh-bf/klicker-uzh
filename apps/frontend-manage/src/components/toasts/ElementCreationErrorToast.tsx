@@ -1,16 +1,16 @@
 import { Toast } from '@uzh-bf/design-system'
 
-interface SessionCreationErrorToastProps {
+interface ElementCreationErrorToastProps {
   error: string
   open: boolean
   setOpen: (open: boolean) => void
 }
 
-function SessionCreationErrorToast({
+function ElementCreationErrorToast({
   error,
   open,
   setOpen,
-}: SessionCreationErrorToastProps): React.ReactElement {
+}: ElementCreationErrorToastProps): React.ReactElement {
   return (
     <Toast
       duration={6000}
@@ -26,4 +26,4 @@ function SessionCreationErrorToast({
   )
 }
 
-export default SessionCreationErrorToast
+export default ElementCreationErrorToast
