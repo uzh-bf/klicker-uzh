@@ -44,6 +44,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
     skip: !sessionId || editMode !== 'learningElement',
   })
 
+  console.log('SessionCreation - dataLiveSession', dataLiveSession)
   const {
     loading: loadingCourses,
     error: errorCourses,

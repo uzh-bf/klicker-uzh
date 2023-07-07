@@ -32,6 +32,10 @@ function TableChart({
 }: TableChartProps): React.ReactElement {
   const ref = useRef<{ reset: () => void }>(null)
 
+  console.log('TableChart - data: ', data)
+  console.log('TableChart - data.results: ', data.results)
+  console.log('TableChart - data.questionData: ', data.questionData)
+
   const tableData = useMemo(() => {
     if (QUESTION_GROUPS.CHOICES.includes(data.questionData.type)) {
       return (data.questionData as ChoicesQuestionData).options.choices.map(

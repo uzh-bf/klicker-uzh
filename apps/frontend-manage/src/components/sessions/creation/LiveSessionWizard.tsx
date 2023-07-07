@@ -2,7 +2,6 @@ import { useMutation } from '@apollo/client'
 import {
   CreateSessionDocument,
   EditSessionDocument,
-  GetUserSessionsDocument,
   QuestionType,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -102,6 +101,7 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
           timeLimit: block.timeLimit,
         }
       })
+    console.log('onSubmit - blockQuestions: ', blockQuestions)
 
     try {
       let success = false
