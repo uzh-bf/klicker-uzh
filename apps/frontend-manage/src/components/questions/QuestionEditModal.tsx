@@ -482,7 +482,7 @@ function QuestionEditModal({
               <Button
                 disabled={isSubmitting || !isValid}
                 className={{
-                  root: 'mt-2 font-bold text-white border-uzh-grey-80 disabled:bg-uzh-grey-80 bg-primary-80',
+                  root: 'mt-2 font-bold text-white border-uzh-grey-80 bg-primary-80',
                 }}
                 type="submit"
                 form="question-manipulation-form"
