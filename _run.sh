@@ -1,2 +1,2 @@
 #!/bin/sh
-podman-compose up postgres redis_exec redis_cache
+docker compose up postgres redis_exec redis_cache
