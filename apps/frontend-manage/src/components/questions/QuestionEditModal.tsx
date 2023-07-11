@@ -18,7 +18,7 @@ import {
   Form,
   Formik,
 } from 'formik'
-import React, { useContext, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -33,7 +33,6 @@ import {
   Modal,
   Select,
   Switch,
-  ThemeContext,
   UserNotification,
 } from '@uzh-bf/design-system'
 import {
@@ -212,8 +211,6 @@ function QuestionEditModal({
   questionId,
   mode,
 }: QuestionEditModalProps): React.ReactElement {
-  const theme = useContext(ThemeContext)
-
   const isDuplication = mode === QuestionEditMode.DUPLICATE
 
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
@@ -485,10 +482,7 @@ function QuestionEditModal({
               <Button
                 disabled={isSubmitting || !isValid}
                 className={{
-                  root: twMerge(
-                    'mt-2 font-bold text-white border-uzh-grey-80 disabled:bg-uzh-grey-80',
-                    theme.primaryBgDark
-                  ),
+                  root: 'mt-2 font-bold text-white border-uzh-grey-80 disabled:bg-uzh-grey-80 bg-primary-80',
                 }}
                 type="submit"
                 form="question-manipulation-form"
@@ -554,10 +548,7 @@ function QuestionEditModal({
                     <FastField
                       name="name"
                       type="text"
-                      className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
-                        theme.primaryBorderFocus
-                      )}
+                      className="w-full bg-opacity-50 border rounded bg-uzh-grey-20 border-uzh-grey-60 h-9 focus:border-primary-40"
                       data-cy="insert-question-title"
                     />
                   </div>
@@ -578,10 +569,7 @@ function QuestionEditModal({
                       <FastField
                         name="tags"
                         type="text"
-                        className={twMerge(
-                          'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
-                          theme.primaryBorderFocus
-                        )}
+                        className="w-full bg-opacity-50 border rounded bg-uzh-grey-20 border-uzh-grey-60 h-9 focus:border-primary-40"
                         value={values.tags?.join(', ')}
                         onChange={(e: any) => {
                           setFieldValue('tags', e.target.value.split(', '))
@@ -827,12 +815,7 @@ function QuestionEditModal({
                                     ' bg-red-100 border-red-300'
                                 )}
                               >
-                                <div
-                                  className={twMerge(
-                                    'flex flex-row w-full',
-                                    theme.primaryBorderFocus
-                                  )}
-                                >
+                                <div className="flex flex-row w-full focus:border-primary-40">
                                   {/* // TODO: define maximum height of editor if possible */}
                                   <FastField
                                     name={`options.choices.${index}.value`}
@@ -904,7 +887,7 @@ function QuestionEditModal({
                                     <Button.Icon>
                                       <FontAwesomeIcon
                                         icon={faTrash}
-                                        className={theme.primaryBgHover}
+                                        className="hover:bg-primary-20"
                                       />
                                     </Button.Icon>
                                   </Button>
@@ -945,10 +928,8 @@ function QuestionEditModal({
                                             }}
                                             className={{
                                               root: 'bg-white',
-                                              content: twMerge(
-                                                'w-full rounded border border-uzh-grey-100',
-                                                theme.primaryBorderFocus
-                                              ),
+                                              content:
+                                                'w-full rounded border border-uzh-grey-100 focus:border-primary-40',
                                             }}
                                             showToolbarOnFocus={true}
                                             placeholder="Feedback eingeben…"
@@ -998,10 +979,7 @@ function QuestionEditModal({
                           <FastField
                             name="options.restrictions.min"
                             type="number"
-                            className={twMerge(
-                              'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                              theme.primaryBorderFocus
-                            )}
+                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                             placeholder="Minimum"
                             data-cy="set-numerical-minimum"
                           />
@@ -1009,10 +987,7 @@ function QuestionEditModal({
                           <FastField
                             name="options.restrictions.max"
                             type="number"
-                            className={twMerge(
-                              'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                              theme.primaryBorderFocus
-                            )}
+                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                             placeholder="Maximum"
                             data-cy="set-numerical-maximum"
                           />
@@ -1022,10 +997,7 @@ function QuestionEditModal({
                           <FastField
                             name="options.unit"
                             type="text"
-                            className={twMerge(
-                              'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                              theme.primaryBorderFocus
-                            )}
+                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                             placeholder="CHF"
                             data-cy="set-numerical-unit"
                           />
@@ -1033,10 +1005,7 @@ function QuestionEditModal({
                           <FastField
                             name="options.accuracy"
                             type="number"
-                            className={twMerge(
-                              'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                              theme.primaryBorderFocus
-                            )}
+                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                             placeholder="Präzision"
                             data-cy="set-numerical-accuracy"
                           />
@@ -1066,20 +1035,14 @@ function QuestionEditModal({
                                       <FastField
                                         name={`options.solutionRanges.${index}.min`}
                                         type="number"
-                                        className={twMerge(
-                                          'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                                          theme.primaryBorderFocus
-                                        )}
+                                        className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                                         placeholder="Minimum"
                                       />
                                       <div className="font-bold">Max: </div>
                                       <FastField
                                         name={`options.solutionRanges.${index}.max`}
                                         type="number"
-                                        className={twMerge(
-                                          'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9',
-                                          theme.primaryBorderFocus
-                                        )}
+                                        className="w-40 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                                         placeholder="Maximum"
                                       />
                                       <Button
@@ -1122,10 +1085,7 @@ function QuestionEditModal({
                         <FastField
                           name="options.restrictions.maxLength"
                           type="number"
-                          className={twMerge(
-                            'w-44 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                            theme.primaryBorderFocus
-                          )}
+                          className="mr-2 bg-opacity-50 border rounded w-44 border-uzh-grey-100 h-9 focus:border-primary-40"
                           placeholder="Antwort Länge"
                           min={0}
                           data-cy="set-free-text-length"
@@ -1147,10 +1107,7 @@ function QuestionEditModal({
                                     <FastField
                                       name={`options.solutions.${index}`}
                                       type="text"
-                                      className={twMerge(
-                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                                        theme.primaryBorderFocus
-                                      )}
+                                      className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                                       placeholder="Lösung"
                                     />
                                     <Button

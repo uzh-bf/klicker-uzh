@@ -12,14 +12,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FeedbackResponse } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  FormikTextareaField,
-  ThemeContext,
-} from '@uzh-bf/design-system'
+import { Button, FormikTextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface IFeedback {
@@ -55,7 +51,6 @@ function Feedback({
   onResolveFeedback,
   onRespondToFeedback,
 }: Props) {
-  const theme = useContext(ThemeContext)
   const [isEditingActive, setIsEditingActive] = useState(false)
   const [isBeingDeleted, setIsBeingDeleted] = useState(false)
 
@@ -225,10 +220,7 @@ function Feedback({
                     />
                     <Button
                       className={{
-                        root: twMerge(
-                          'float-right px-5 text-white disabled:opacity-60',
-                          theme.primaryBgDark
-                        ),
+                        root: 'float-right px-5 text-white disabled:opacity-60 bg-primary-80',
                       }}
                       type="submit"
                       disabled={isSubmitting || resolved}

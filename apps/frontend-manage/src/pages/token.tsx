@@ -3,22 +3,14 @@ import {
   GenerateLoginTokenDocument,
   GetLoginTokenDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  H2,
-  ThemeContext,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs, { Dayjs } from 'dayjs'
 import Link from 'next/link'
-import { useContext, useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import Countdown from '../components/common/Countdown'
 
 function TokenGeneration() {
-  const theme = useContext(ThemeContext)
-
   const [tokenValid, setTokenValid] = useState(false)
   const [hadToken, setHadToken] = useState(false)
   const [token, setToken] = useState<string>('')
@@ -48,7 +40,7 @@ function TokenGeneration() {
           Controller-App{' '}
           <Link
             href={process.env.NEXT_PUBLIC_CONTROL_URL || ''}
-            className={theme.primaryText}
+            className="text-primary"
           >
             {process.env.NEXT_PUBLIC_CONTROL_URL}
           </Link>{' '}
@@ -68,7 +60,7 @@ function TokenGeneration() {
               setHadToken(true)
             }
           }}
-          className={{ root: twMerge(theme.primaryBgDark, 'text-white mb-3') }}
+          className={{ root: 'text-white mb-3 bg-primary-80' }}
         >
           Token generieren!
         </Button>

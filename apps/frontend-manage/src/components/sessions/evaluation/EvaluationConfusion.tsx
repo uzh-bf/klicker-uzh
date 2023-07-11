@@ -1,11 +1,11 @@
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ConfusionTimestep } from '@klicker-uzh/graphql/dist/ops'
-import { FormikTextField, ThemeContext, Tooltip } from '@uzh-bf/design-system'
+import { FormikTextField, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { repeat } from 'ramda'
-import { useContext, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Legend,
@@ -17,7 +17,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
 interface EvaluationConfusionProps {
@@ -37,7 +36,6 @@ function MatchingEmoji({ value }: { value: number }) {
 }
 
 function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
-  const theme = useContext(ThemeContext)
   const xIntervalDefault = 120
   const peakValue = 2 // hightest value that can be returned from a feedback (both positive and negative)
   const runningWindowDefault = 3
@@ -143,10 +141,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
           >
             <FontAwesomeIcon
               icon={faQuestion}
-              className={twMerge(
-                'w-3 h-3 p-1 mt-1 text-white rounded-full border border-solid border-white',
-                theme.primaryBgMedium
-              )}
+              className="w-3 h-3 p-1 mt-1 text-white border border-white border-solid rounded-full bg-primary-60"
             />
           </Tooltip>
         </div>
