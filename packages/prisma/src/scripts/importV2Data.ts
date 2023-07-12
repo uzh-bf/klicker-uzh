@@ -118,12 +118,23 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
                 } else if (question.type === 'FREE_RANGE') {
                     // throw new Error('Unsupported question type NR')
                     // console.log("FREE_RANGE question.FREE_RANGE: ", question.versions.options.FREE_RANGE)
-                    result.data.options = {
-                        restrictions: {
-                        min: question.versions.options.FREE_RANGE?.restrictions.min ?? undefined,
-                        max: question.versions.options.FREE_RANGE?.restrictions.max ?? undefined,
-                        },
-                        solutions: [],
+                    const restrictions = question.versions.options.FREE_RANGE?.restrictions;
+                    console.log("restrictions: ", restrictions)
+                    if (!restrictions) {
+                        result.data.options = {
+                            restrictions: undefined,
+                            solutions: [],
+                            solutionRanges: [],
+                        }
+                    } else {
+                        result.data.options = {
+                            restrictions: {
+                                min: restrictions.min !== null ? restrictions.min : undefined,
+                                max: restrictions.max !== null ? restrictions.max : undefined,
+                            },
+                            solutions: [],
+                            solutionRanges: [],
+                        }
                     }
                     // return result
                 } else if (question.type === 'FREE') {
