@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-beta.0...v3.0.0-beta.1) (2023-07-12)
+
+
+### Dependencies
+
+* add prettier-plugin-tailwindcss to pwa and control apps ([92b7ee1](https://github.com/uzh-bf/klicker-uzh/commit/92b7ee19a88d47937f6d7fb66f7070e58376cd07))
+
 ## [3.0.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.84...v3.0.0-beta.0) (2023-07-12)
 
 
