@@ -30,130 +30,137 @@ function sliceIntoChunks(array: any[], chunkSize: number) {
     return result;
 }
 
-const importTags = async (prisma: PrismaClient, tags: any, user) => {
+const importTags = async (prisma: PrismaClient, tags: any, user, batchSize: number) => {
     let mappedTags: Record<string, Record<string, string | number>> = {}
+    const batches = sliceIntoChunks(tags, batchSize)
     try {
-        await prisma.$transaction( async (prisma) => {
-            for (const tag of tags) {
-                const newTag = await prisma.tag.upsert({
-                    where: {
-                        ownerId_name: {
-                            ownerId: user.id,
-                            name: tag.name
+        for (const batch of batches) {
+            await prisma.$transaction( async (prisma) => {
+                for (const tag of batch) {
+                    const newTag = await prisma.tag.upsert({
+                        where: {
+                            ownerId_name: {
+                                ownerId: user.id,
+                                name: tag.name
+                            }
+                        },
+                        update: {},
+                        create: {
+                            name: tag.name,
+                            owner: {
+                                connect: {
+                                    id: user.id
+                            }
                         }
-                    },
-                    update: {},
-                    create: {
-                        name: tag.name,
-                        owner: {
-                            connect: {
-                                id: user.id
-                        }
-                    }
-                }})
-                console.log("new tag created: ", newTag)
-                const extractedId = extractString(tag._id)
-                console.log("tag._id: ", extractedId)
-                mappedTags[extractedId] = {id: newTag.id, name: newTag.name}
-            }
-            console.log("mappedTagIds: ", mappedTags)
-         })
+                    }})
+                    console.log("new tag created: ", newTag)
+                    const extractedId = extractString(tag._id)
+                    console.log("tag._id: ", extractedId)
+                    mappedTags[extractedId] = {id: newTag.id, name: newTag.name}
+                }
+                console.log("mappedTagIds: ", mappedTags)
+             })
+        }
     } catch (error) {
         console.log("Something went wrong while importing tags: ", error)
     }
     return mappedTags
 }
 
-const importQuestions = async (prisma: PrismaClient, importedQuestions: any, mappedTags: Record<string, Record<string, string | number>>, user) => {
+const importQuestions = async (prisma: PrismaClient, importedQuestions: any, mappedTags: Record<string, Record<string, string | number>>, user,  batchSize: number) => {
     let mappedQuestionIds: Record<string, number> = {}
+    const batches = sliceIntoChunks(importedQuestions, batchSize)
     try {
-        await prisma.$transaction( async (prisma) => {
-            for (const question of importedQuestions) {
-                // console.log("question to be imported: ", question)
-
-                const result = {
-                    data: {
-                        name: question.title,
-                        type: QuestionTypeMap[question.type],
-                        content: question.versions.content,
-                        options: {},
-                        hasSampleSolution: false,
-                        isDeleted: question.isDeleted,
-                        isArchived: question.isArchived,
-                        tags: {
-                            connect: question.tags.map((oldTagId) => {
-                                const tagName = mappedTags[extractString(oldTagId)].name;
-                                return {
-                                    ownerId_name: {
-                                        ownerId: user.id,
-                                        name: tagName
-                                    }
-                                };
-                            })
-                        },
-                        owner: {
-                            connect: {
-                                id: user.id
+        for (const batch of batches) {
+            await prisma.$transaction( async (prisma) => {
+                for (const question of batch) {
+                    // console.log("question to be imported: ", question)
+    
+                    const result = {
+                        data: {
+                            name: question.title,
+                            type: QuestionTypeMap[question.type],
+                            content: question.versions.content,
+                            options: {},
+                            hasSampleSolution: false,
+                            isDeleted: question.isDeleted,
+                            isArchived: question.isArchived,
+                            tags: {
+                                connect: question.tags.map((oldTagId) => {
+                                    const tagName = mappedTags[extractString(oldTagId)].name;
+                                    return {
+                                        ownerId_name: {
+                                            ownerId: user.id,
+                                            name: tagName
+                                        }
+                                    };
+                                })
                             },
+                            owner: {
+                                connect: {
+                                    id: user.id
+                                },
+                            }
                         }
                     }
-                }
-
-                if (['SC', 'MC'].includes(question.type)) {
-                    result.data.options = {
-                      choices: question.versions.options[question.type].choices.map(
-                        (choice, ix) => {
-                            console.log("SC/MC choice: ", choice)
-                          if (choice.correct) result.data.hasSampleSolution = true
-                          return {
-                            ix,
-                            value: choice.name,
-                            correct: choice.correct,
-                            feedback: '',
-                          }
-                        }
-                      ),
-                    }
-                    // return result
-                } else if (question.type === 'FREE_RANGE') {
-                    // throw new Error('Unsupported question type NR')
-                    // console.log("FREE_RANGE question.FREE_RANGE: ", question.versions.options.FREE_RANGE)
-                    const restrictions = question.versions.options.FREE_RANGE?.restrictions;
-                    console.log("restrictions: ", restrictions)
-                    if (!restrictions) {
+    
+                    if (['SC', 'MC'].includes(question.type)) {
                         result.data.options = {
-                            restrictions: undefined,
-                            solutions: [],
-                            solutionRanges: [],
+                          choices: question.versions.options[question.type].choices.map(
+                            (choice, ix) => {
+                                console.log("SC/MC choice: ", choice)
+                              if (choice.correct) result.data.hasSampleSolution = true
+                              return {
+                                ix,
+                                value: choice.name,
+                                correct: choice.correct,
+                                feedback: '',
+                              }
+                            }
+                          ),
                         }
+                        // return result
+                    } else if (question.type === 'FREE_RANGE') {
+                        // throw new Error('Unsupported question type NR')
+                        // console.log("FREE_RANGE question.FREE_RANGE: ", question.versions.options.FREE_RANGE)
+                        const restrictions = question.versions.options.FREE_RANGE?.restrictions;
+                        console.log("restrictions: ", restrictions)
+                        if (!restrictions) {
+                            result.data.options = {
+                                restrictions: undefined,
+                                solutions: [],
+                                solutionRanges: [],
+                            }
+                        } else {
+                            result.data.options = {
+                                restrictions: {
+                                    min: restrictions.min !== null ? restrictions.min : undefined,
+                                    max: restrictions.max !== null ? restrictions.max : undefined,
+                                },
+                                solutions: [],
+                                solutionRanges: [],
+                            }
+                        }
+                        // return result
+                    } else if (question.type === 'FREE') {
+                        result.data.options = {
+                            restrictions: {},
+                            solutions: [],
+                        }
+                        // return result
                     } else {
-                        result.data.options = {
-                            restrictions: {
-                                min: restrictions.min !== null ? restrictions.min : undefined,
-                                max: restrictions.max !== null ? restrictions.max : undefined,
-                            },
-                            solutions: [],
-                            solutionRanges: [],
-                        }
+                        throw new Error('Unknown question type')
                     }
-                    // return result
-                } else if (question.type === 'FREE') {
-                    result.data.options = {
-                        restrictions: {},
-                        solutions: [],
-                    }
-                    // return result
-                } else {
-                    throw new Error('Unknown question type')
+                
+                    const newQuestion = await prisma.question.create({
+                        data: result.data
+                    })
+                    mappedQuestionIds[extractString(question._id)] = newQuestion.id
+                    // console.log("new question created: ", newQuestion)
                 }
-            
-                const newQuestion = await prisma.question.create({
-                    data: result.data
-                })
-                mappedQuestionIds[extractString(question._id)] = newQuestion.id
-                // console.log("new question created: ", newQuestion)
-            }
-        })
+            })
+        }
+       
     } catch (error) {
         console.log("Something went wrong while importing questions: ", error)
     }
@@ -161,12 +168,12 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
     return mappedQuestionIds
 }
 
-const importQuestionInstances = async (prisma: PrismaClient, importedQuestionInstances: any, mappedQuestionIds: Record<string, number>, user) => {
+const importQuestionInstances = async (prisma: PrismaClient, importedQuestionInstances: any, mappedQuestionIds: Record<string, number>, user,  batchSize: number) => {
     let mappedQuestionInstancesIds: Record<string, number> = {}
     console.log("questionId: ", Object.values(mappedQuestionIds))
     const questions = await Promise.all(Object.values(mappedQuestionIds).map((questionId) => prisma.question.findUnique({where: { id: questionId}})))
     console.log("questions: ", questions)
-    const batches = sliceIntoChunks(importedQuestionInstances, 200)
+    const batches = sliceIntoChunks(importedQuestionInstances,  batchSize)
     try {
         for (const batch of batches) {
             await prisma.$transaction( async (prisma) => {
@@ -323,10 +330,10 @@ const getSessionStatus = (status: string) => {
     }
 }
 
-const importSessions = async (prisma: PrismaClient, importedSessions: any, mappedQuestionInstanceIds: Record<string, number>, user) => {
+const importSessions = async (prisma: PrismaClient, importedSessions: any, mappedQuestionInstanceIds: Record<string, number>, user,  batchSize: number) => {
     //new uuid is generated for each session -> string
     let mappedSessionIds: Record<string, string> = {}
-    const batches = sliceIntoChunks(importedSessions, 150)
+    const batches = sliceIntoChunks(importedSessions, batchSize)
     try {
        for (const batch of batches) {
         await prisma.$transaction(async (prisma) => {
@@ -497,18 +504,19 @@ const importV2Data = async () => {
         //new uuid is generated for each session -> string
         let mappedSessionIds: Record<string, string> = {}
     
+        const batchSize = 150
         // import tags
         const tags = importData.tags
-        mappedTags = await importTags(prisma, tags, user)
+        mappedTags = await importTags(prisma, tags, user, batchSize)
         
         const importedQuestions = importData.questions
-        mappedQuestionIds = await importQuestions(prisma, importedQuestions, mappedTags, user)
+        mappedQuestionIds = await importQuestions(prisma, importedQuestions, mappedTags, user, batchSize)
 
         const importedQuestionInstances = importData.questioninstances
-        mappedQuestionInstancesIds = await importQuestionInstances(prisma, importedQuestionInstances, mappedQuestionIds, user)
+        mappedQuestionInstancesIds = await importQuestionInstances(prisma, importedQuestionInstances, mappedQuestionIds, user, batchSize)
     
         const importedSessions = importData.sessions
-        mappedSessionIds = await importSessions(prisma, importedSessions, mappedQuestionInstancesIds, user)
+        mappedSessionIds = await importSessions(prisma, importedSessions, mappedQuestionInstancesIds, user, batchSize)
 
         // deleteQuestions(prisma)
         
