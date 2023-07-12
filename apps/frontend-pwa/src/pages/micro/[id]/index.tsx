@@ -4,20 +4,12 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import {
-  Button,
-  H3,
-  Prose,
-  ThemeContext,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 
 const DynamicMarkdown = dynamic(
@@ -37,7 +29,6 @@ interface Props {
 function MicroSessionIntroduction({ id }: Props) {
   const t = useTranslations()
   const router = useRouter()
-  const theme = useContext(ThemeContext)
 
   const { loading, error, data } = useQuery(GetMicroSessionDocument, {
     variables: { id },
@@ -70,7 +61,7 @@ function MicroSessionIntroduction({ id }: Props) {
                 <Button
                   basic
                   className={{
-                    root: twMerge('font-bold', theme.primaryTextHover),
+                    root: 'font-bold sm:hover:text-primary',
                   }}
                   onClick={() =>
                     router.push(

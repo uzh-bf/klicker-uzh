@@ -10,8 +10,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetUserTagsDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
-import { Button, ThemeContext, UserNotification } from '@uzh-bf/design-system'
-import React, { useContext, useState } from 'react'
+import { Button, UserNotification } from '@uzh-bf/design-system'
+import React, { useState } from 'react'
 import { QUESTION_TYPES, TYPES_LABELS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 import TagHeader from './TagHeader'
@@ -40,7 +40,6 @@ function TagList({
   handleSampleSolutionClick,
   handleAnswerFeedbacksClick,
 }: Props): React.ReactElement {
-  const theme = useContext(ThemeContext)
   const {
     data: tagsData,
     loading: tagsLoading,
@@ -65,7 +64,7 @@ function TagList({
               activeType ||
               sampleSolution ||
               answerFeedbacks) &&
-              theme.primaryText
+              'text-primary'
           ),
         }}
         disabled={

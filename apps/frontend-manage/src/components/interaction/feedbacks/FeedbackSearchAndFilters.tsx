@@ -1,15 +1,8 @@
-// TODO: eliminate duplicated content and imporve layout instead dynamically
+// TODO: eliminate duplicated content and improve layout instead dynamically
 
 import { faFilter, faPrint } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Button,
-  Checkbox,
-  Dropdown,
-  Select,
-  ThemeContext,
-} from '@uzh-bf/design-system'
-import { useContext } from 'react'
+import { Button, Checkbox, Dropdown, Select } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
@@ -59,8 +52,6 @@ function FeedbackSearchAndFilters({
   setSortBy,
   className,
 }: Props) {
-  const theme = useContext(ThemeContext)
-
   const filter: {
     label: string
     checked: boolean
@@ -118,8 +109,7 @@ function FeedbackSearchAndFilters({
                   <FontAwesomeIcon
                     icon={faFilter}
                     className={twMerge(
-                      'p-2.5 border border-solid border-uzh-grey-60 rounded-md ml-2 shadow-md sm:hover:shadow-none',
-                      theme.primaryBgHover,
+                      'p-2.5 border border-solid border-uzh-grey-60 rounded-md ml-2 shadow-md sm:hover:shadow-none hover:bg-primary-20',
                       disabled?.filters && 'hover:bg-white shadow-none'
                     )}
                   />
@@ -129,8 +119,7 @@ function FeedbackSearchAndFilters({
                     label: (
                       <span
                         className={twMerge(
-                          'flex items-center hover:cursor-pointer px-2 py-0.5',
-                          theme.primaryBgMediumHover
+                          'flex items-center hover:cursor-pointer px-2 py-0.5 hover:bg-primary-60'
                         )}
                       >
                         <Checkbox
@@ -178,8 +167,7 @@ function FeedbackSearchAndFilters({
             basic
             className={{
               root: twMerge(
-                'flex justify-center items-center h-9 w-9 rounded-md',
-                theme.primaryBgHover,
+                'flex justify-center items-center h-9 w-9 rounded-md hover:bg-primary-20',
                 !hidden?.sorting && 'mr-2'
               ),
             }}

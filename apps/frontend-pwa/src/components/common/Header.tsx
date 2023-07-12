@@ -1,12 +1,12 @@
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Course, Participant } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, H2, Select, ThemeContext } from '@uzh-bf/design-system'
+import { Button, H1, H2, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useContext } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
@@ -22,7 +22,6 @@ function Header({
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const { pathname, asPath, query } = router
-  const theme = useContext(ThemeContext)
   const t = useTranslations()
 
   const pageInFrame =
@@ -73,11 +72,7 @@ function Header({
           <Link href={`/course/${course.id}/docs`}>
             <Button
               className={{
-                root: twMerge(
-                  'block px-1 md:px-2 py-1 rounded',
-                  theme.primaryBgHover,
-                  theme.primaryTextHover
-                ),
+                root: 'block px-1 md:px-2 py-1 rounded hover:bg-primary-20 sm:hover:text-primary',
               }}
               basic
             >

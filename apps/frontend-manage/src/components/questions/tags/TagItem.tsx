@@ -1,7 +1,5 @@
 import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ThemeContext } from '@uzh-bf/design-system'
-import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface TagItemProps {
@@ -12,14 +10,11 @@ interface TagItemProps {
 }
 
 function TagItem({ text, icon, active, onClick }: TagItemProps) {
-  const theme = useContext(ThemeContext)
-
   return (
     <li
       className={twMerge(
-        'px-4 py-0.5 hover:cursor-pointer',
-        theme.primaryTextHover,
-        active && theme.primaryText
+        'px-4 py-0.5 hover:cursor-pointer sm:hover:text-primary',
+        active && 'text-primary'
       )}
       onClick={onClick}
     >

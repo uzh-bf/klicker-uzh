@@ -18,16 +18,15 @@ import {
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Collapsible, H3, ThemeContext } from '@uzh-bf/design-system'
+import { Button, Collapsible, H3 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import {
   QUESTION_TYPES_SHORT,
   SESSION_STATUS,
 } from 'shared-components/src/constants'
-import { twMerge } from 'tailwind-merge'
 import EmbeddingModal from './EmbeddingModal'
 
 interface SessionProps {
@@ -35,7 +34,6 @@ interface SessionProps {
 }
 
 function Session({ session }: SessionProps) {
-  const theme = useContext(ThemeContext)
   const [startSession] = useMutation(StartSessionDocument, {
     variables: { id: session.id },
     refetchQueries: [
@@ -101,10 +99,7 @@ function Session({ session }: SessionProps) {
                       basic
                       onClick={() => setEmbedModalOpen(true)}
                       className={{
-                        root: twMerge(
-                          'flex flex-row items-center gap-2 text-sm cursor-pointer',
-                          theme.primaryTextHover
-                        ),
+                        root: 'flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary',
                       }}
                     >
                       <Button.Icon>
@@ -127,10 +122,7 @@ function Session({ session }: SessionProps) {
                 {SESSION_STATUS.RUNNING === session.status && (
                   <Link href={`/sessions/${session.id}/cockpit`} legacyBehavior>
                     <div
-                      className={twMerge(
-                        'flex flex-row items-center gap-2 text-sm cursor-pointer',
-                        theme.primaryTextHover
-                      )}
+                      className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
                       data-cy="session-cockpit"
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
@@ -143,12 +135,7 @@ function Session({ session }: SessionProps) {
                     href={`/sessions/${session.id}/evaluation`}
                     legacyBehavior
                   >
-                    <div
-                      className={twMerge(
-                        'flex flex-row items-center gap-2 text-sm cursor-pointer',
-                        theme.primaryTextHover
-                      )}
-                    >
+                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>Session Evaluation</div>
                     </div>
@@ -164,12 +151,7 @@ function Session({ session }: SessionProps) {
                     }}
                     data={{ cy: 'start-session' }}
                   >
-                    <div
-                      className={twMerge(
-                        'flex flex-row items-center gap-2 text-sm cursor-pointer',
-                        theme.primaryTextHover
-                      )}
-                    >
+                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
                       <div>Start Session</div>
                     </div>

@@ -9,7 +9,6 @@ import {
   FormikSelectField,
   FormikTextField,
   Prose,
-  ThemeContext,
   Toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -17,15 +16,13 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AVATAR_OPTIONS } from 'shared-components/src/constants'
-import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import Layout from '../components/Layout'
 
 function EditProfile() {
   const t = useTranslations()
-  const theme = useContext(ThemeContext)
   const router = useRouter()
   const { data, loading } = useQuery(SelfDocument)
   const [updateParticipantProfile] = useMutation(
@@ -159,10 +156,7 @@ function EditProfile() {
             <div className="flex flex-col md:w-full md:border md:p-8 md:rounded md:max-w-3xl md:mx-auto">
               <BigHead
                 // @ts-ignore
-                className={twMerge(
-                  'border-b-4 h-36 md:h-48',
-                  theme.primaryBorderDark
-                )}
+                className="border-b-4 h-36 md:h-48 border-primary-80"
                 eyebrows="raised"
                 faceMask={false}
                 lashes={false}
