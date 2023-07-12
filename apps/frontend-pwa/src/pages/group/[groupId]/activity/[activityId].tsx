@@ -6,20 +6,18 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { QuestionType } from '@type/app'
-import { Button, H1, ThemeContext } from '@uzh-bf/design-system'
+import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { array, number, object, string } from 'yup'
 import Layout from '../../../../components/Layout'
 import { Options } from '../../../../components/common/OptionsDisplay'
 
 function GroupActivityDetails() {
-  const theme = useContext(ThemeContext)
   const router = useRouter()
 
   const { data, loading, error } = useQuery(GroupActivityDetailsDocument, {
@@ -120,7 +118,7 @@ function GroupActivityDetails() {
                     <div
                       className={twMerge(
                         'flex flex-row items-center gap-2 py-2 border rounded shadow',
-                        clue.participant.isSelf && theme.primaryBorder
+                        clue.participant.isSelf && 'border-primary-40'
                       )}
                       key={clue.participant.id}
                     >

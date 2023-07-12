@@ -3,10 +3,7 @@ import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import useFeedbackFilter from '@lib/hooks/useFeedbackFilter'
-import { ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
 import FeedbackSearchAndFilters from '../../interaction/feedbacks/FeedbackSearchAndFilters'
 
 interface EvaluationFeedbacksProps {
@@ -14,7 +11,6 @@ interface EvaluationFeedbacksProps {
 }
 
 function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
-  const theme = useContext(ThemeContext)
   const { sortedFeedbacks, filterProps } = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })
@@ -62,12 +58,7 @@ function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
               key={response?.content}
               className="w-full pl-12 mt-1 text-base"
             >
-              <div
-                className={twMerge(
-                  'border border-solid rounded border-uzh-grey-40 p-1.5 bg-opacity-50',
-                  theme.primaryBg
-                )}
-              >
+              <div className="border border-solid rounded border-uzh-grey-40 p-1.5 bg-opacity-50 bg-primary-20">
                 {response?.content}
               </div>
             </div>

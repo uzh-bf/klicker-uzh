@@ -1,8 +1,8 @@
 import { faTag } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Tag } from '@klicker-uzh/graphql/dist/ops'
-import { Button, ThemeContext } from '@uzh-bf/design-system'
-import { useContext, useState } from 'react'
+import { Button } from '@uzh-bf/design-system'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import TagActions from './TagActions'
 import TagEditForm from './TagEditForm'
@@ -14,7 +14,6 @@ interface UserTagProps {
 }
 
 function UserTag({ tag, handleTagClick, active }: UserTagProps) {
-  const theme = useContext(ThemeContext)
   const [editMode, setEditMode] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
 
@@ -23,7 +22,7 @@ function UserTag({ tag, handleTagClick, active }: UserTagProps) {
       <li
         className={twMerge(
           'px-4 py-1 hover:cursor-pointer flex flex-row justify-between group',
-          active && theme.primaryText
+          active && 'text-primary'
         )}
       >
         {editMode ? (
@@ -33,7 +32,7 @@ function UserTag({ tag, handleTagClick, active }: UserTagProps) {
             <Button
               basic
               onClick={(): void => handleTagClick(tag.name)}
-              className={{ root: twMerge(theme.primaryTextHover, 'flex-1') }}
+              className={{ root: 'flex-1 sm:hover:text-primary' }}
             >
               <FontAwesomeIcon icon={faTag} />
               {tag.name}

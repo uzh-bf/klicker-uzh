@@ -21,11 +21,10 @@ import {
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, ThemeContext } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useState } from 'react'
 import StatusTag from './StatusTag'
 import LiveSessionDeletionModal from './modals/LiveSessionDeletionModal'
 
@@ -34,8 +33,6 @@ interface SessionTileProps {
 }
 
 function SessionTile({ session }: SessionTileProps) {
-  const theme = useContext(ThemeContext)
-
   const [startSession] = useMutation(StartSessionDocument)
   const [deleteSession] = useMutation(DeleteSessionDocument, {
     variables: { id: session.id || '' },
@@ -74,7 +71,7 @@ function SessionTile({ session }: SessionTileProps) {
           <div className="flex flex-col">
             <Button
               basic
-              className={{ root: theme.primaryText }}
+              className={{ root: 'text-primary' }}
               onClick={() =>
                 router.push({
                   pathname: '/',
@@ -89,7 +86,7 @@ function SessionTile({ session }: SessionTileProps) {
             </Button>
             <Button
               basic
-              className={{ root: theme.primaryText }}
+              className={{ root: 'text-primary' }}
               onClick={async () => {
                 try {
                   await startSession({
@@ -119,12 +116,7 @@ function SessionTile({ session }: SessionTileProps) {
           </div>
         )}
         {session.status === SessionStatus.Running && (
-          <div
-            className={twMerge(
-              'flex flex-row items-center gap-2',
-              theme.primaryText
-            )}
-          >
+          <div className="flex flex-row items-center gap-2 text-primary">
             <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-4" />
             <Link href={`/sessions/${session.id}/cockpit`}>
               Laufende Session
@@ -132,12 +124,7 @@ function SessionTile({ session }: SessionTileProps) {
           </div>
         )}
         {session.status === SessionStatus.Completed && (
-          <div
-            className={twMerge(
-              'flex flex-row items-center gap-2',
-              theme.primaryText
-            )}
-          >
+          <div className="flex flex-row items-center gap-2 text-primary">
             <FontAwesomeIcon icon={faUpRightFromSquare} />
             <Link
               href={`/sessions/${session.id}/evaluation`}

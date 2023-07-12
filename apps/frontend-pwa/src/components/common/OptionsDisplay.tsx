@@ -13,10 +13,10 @@ import {
   validateNumericalResponse,
   validateScResponse,
 } from '@lib/validateResponse'
-import { Button, ThemeContext } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { indexBy } from 'ramda'
-import { useContext, useMemo } from 'react'
+import { useMemo } from 'react'
 import FREETextAnswerOptions from 'shared-components/src/questions/FREETextAnswerOptions'
 import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
 import { twMerge } from 'tailwind-merge'
@@ -41,8 +41,6 @@ function ChoiceOptions({
   isCompact,
   displayMode,
 }: ChoiceOptionsProps) {
-  const theme = useContext(ThemeContext)
-
   return (
     <div
       className={twMerge(
@@ -60,8 +58,7 @@ function ChoiceOptions({
             active={Array.isArray(response) && response?.includes(choice.ix)}
             className={{
               root: twMerge(
-                'px-4 py-3 text-sm shadow-md',
-                theme.primaryBorder,
+                'px-4 py-3 text-sm shadow-md border-primary-40',
                 isEvaluation && 'text-gray-700',
                 (disabled || isEvaluation) &&
                   response?.includes(choice.ix) &&
