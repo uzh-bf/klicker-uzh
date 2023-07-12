@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.84...v3.0.0-beta.0) (2023-07-12)
+
+
+### Bug Fixes
+
+* **deploy:** add the cron token to the backend configmap ([69ce40a](https://github.com/uzh-bf/klicker-uzh/commit/69ce40ae4ab37c1983d94de50e8234331ec19afa))
+* **deploy:** ensure name of push cronjob is shorter than 52 char ([f70a0aa](https://github.com/uzh-bf/klicker-uzh/commit/f70a0aaab51060295d88897463c7f9abda4f24b7))
+* **deploy:** update supportEmail ([2f0db5d](https://github.com/uzh-bf/klicker-uzh/commit/2f0db5d3be2d2216f9e645083351c9d4542d092d))
+
+
+### Refactors
+
+* migrate all apps to new design-system theme approach ([#3757](https://github.com/uzh-bf/klicker-uzh/issues/3757)) ([3cbeb50](https://github.com/uzh-bf/klicker-uzh/commit/3cbeb50eae87f6d0f7a01615cb6bac8b21d19806))
+
 ## [3.0.0-alpha.84](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.83...v3.0.0-alpha.84) (2023-06-30)
 
 ## [3.0.0-alpha.83](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-alpha.82...v3.0.0-alpha.83) (2023-06-30)
