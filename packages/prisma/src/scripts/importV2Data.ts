@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { AccessMode, PrismaClient, QuestionInstanceType, SessionBlockStatus, SessionStatus, Tag } from '../client';
+import { AccessMode, PrismaClient, Question, QuestionInstanceType, SessionBlockStatus, SessionStatus, Tag } from '../client';
 import { QuestionType } from '@klicker-uzh/prisma'
 
 // used to extract the string (e.g., objectId, createdAt, etc.) inside "\"...\"" 
@@ -19,6 +19,16 @@ const QuestionTypeMap: Record<string, QuestionType> = {
     FREE_RANGE: 'NUMERICAL',
     FREE: 'FREE_TEXT',
   }
+
+function sliceIntoChunks(array: any[], chunkSize: number) {
+    const result = [];
+    let index = 0;
+    while (index < array.length) {
+        result.push(array.slice(index, index + chunkSize));
+    index += chunkSize;
+    }
+    return result;
+}
 
 const importTags = async (prisma: PrismaClient, tags: any, user) => {
     let mappedTags: Record<string, Record<string, string | number>> = {}
@@ -59,7 +69,7 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
     try {
         await prisma.$transaction( async (prisma) => {
             for (const question of importedQuestions) {
-                console.log("question to be imported: ", question)
+                // console.log("question to be imported: ", question)
 
                 const result = {
                     data: {
@@ -107,7 +117,7 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
                     // return result
                 } else if (question.type === 'FREE_RANGE') {
                     // throw new Error('Unsupported question type NR')
-                    console.log("FREE_RANGE question.FREE_RANGE: ", question.versions.options.FREE_RANGE)
+                    // console.log("FREE_RANGE question.FREE_RANGE: ", question.versions.options.FREE_RANGE)
                     result.data.options = {
                         restrictions: {
                         min: question.versions.options.FREE_RANGE?.restrictions.min ?? undefined,
@@ -130,7 +140,7 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
                     data: result.data
                 })
                 mappedQuestionIds[extractString(question._id)] = newQuestion.id
-                console.log("new question created: ", newQuestion)
+                // console.log("new question created: ", newQuestion)
             }
         })
     } catch (error) {
@@ -142,107 +152,112 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
 
 const importQuestionInstances = async (prisma: PrismaClient, importedQuestionInstances: any, mappedQuestionIds: Record<string, number>, user) => {
     let mappedQuestionInstancesIds: Record<string, number> = {}
+    console.log("questionId: ", Object.values(mappedQuestionIds))
+    const questions = await Promise.all(Object.values(mappedQuestionIds).map((questionId) => prisma.question.findUnique({where: { id: questionId}})))
+    console.log("questions: ", questions)
+    const batches = sliceIntoChunks(importedQuestionInstances, 200)
     try {
-        await prisma.$transaction( async (prisma) => {
-            for (const questionInstance of importedQuestionInstances) {
-                // console.log("questionInstance to be imported: ", questionInstance)
-
-                let questionData = {}
-                let questionId = null
-                if (mappedQuestionIds[extractString(questionInstance.question)]) {
-                    const question = await prisma.question.findUnique({
-                        where: { id: mappedQuestionIds[extractString(questionInstance.question)] }
-                    })
-                    // console.log("importQuestionInstances question: ", question)
+        for (const batch of batches) {
+            await prisma.$transaction( async (prisma) => {
+                for (const questionInstance of batch) {
+                    // console.log("questionInstance to be imported: ", questionInstance)
     
+                    let questionData = {}
+                    let questionId = null
+                    const question = questions.find((question) => question.id === mappedQuestionIds[extractString(questionInstance.question)])
+                    console.log("importQuestionInstances question: ", question)
+                    
                     // TODO: move processQuestionData to shared-components and use it to create questionData
-                    questionData = {
-                        ...question,
-                    }
-                    questionId = question?.id
-                } 
-                // console.log("importQuestionInstances mappedQuestionIds: ", mappedQuestionIds)
-                // console.log("importQuestionInstances questionInstance.question: ", extractString(questionInstance.question))
-                
-                // console.log("importQuestionInstances questionData: ", questionData)
-                // console.log("importQuestionInstances questionInstance.results: ", questionInstance.results)
-                let results = {};
-
-                if (questionInstance.results) {
-                    console.log("importQuestionInstances questionData.type: ", questionData.type)
-                    if (questionData.type === "SC" || questionData.type === "MC") {
-                        // console.log("SC/MC questionInstance.results: ", questionInstance.results)
-                        if (questionInstance.results.CHOICES) {
-                            results = questionInstance.results.CHOICES.reduce((acc, choice, idx) => {
-                                acc[idx.toString()] = {count: choice, value: idx.toString()};
-                                return acc;
-                            }, {});
+                    if (question) {
+                        questionData = {
+                            ...question,
                         }
-                    } else if (questionData.type === QuestionTypeMap["FREE"] || questionData.type === QuestionTypeMap["FREE_RANGE"] ) {
-                        console.log("FREE/FREE_RANGE questionInstance: ", questionInstance)
-                        if (questionInstance.results.FREE) {
-                            let newResults = Object.keys(questionInstance.results.FREE).reduce((acc, hash) => {
-                                acc[extractString(hash)] = questionInstance.results.FREE[hash];
-                                return acc;
-                            }, {});
-                            results = { ...results, ...newResults };
-                        } else if (questionInstance.results.FREE_RANGE) {
-                            let newResults = Object.keys(questionInstance.results.FREE_RANGE).reduce((acc, hash) => {
-                                acc[extractString(hash)] = questionInstance.results.FREE_RANGE[hash];
-                                return acc;
-                            }, {});
-                            results = { ...results, ...newResults };
-                        }
-             
+                        questionId = question?.id
                     } 
-                }
-                console.log("importQuestionInstances transformed results: ", results)
-
-                const result = {
-                    data: {
-                        type: QuestionInstanceType.SESSION,
-                        questionData: questionData,
-                        participants: questionInstance.results?.totalParticipants,
-                        results: results,
-                        owner: {
-                            connect: {
-                                id: user.id
+    
+                    // console.log("importQuestionInstances mappedQuestionIds: ", mappedQuestionIds)
+                    // console.log("importQuestionInstances questionInstance.question: ", extractString(questionInstance.question))
+                    
+                    // console.log("importQuestionInstances questionData: ", questionData)
+                    // console.log("importQuestionInstances questionInstance.results: ", questionInstance.results)
+                    let results = {};
+    
+                    if (questionInstance.results) {
+                        console.log("importQuestionInstances questionData.type: ", questionData.type)
+                        if (questionData.type === "SC" || questionData.type === "MC") {
+                            // console.log("SC/MC questionInstance.results: ", questionInstance.results)
+                            if (questionInstance.results.CHOICES) {
+                                results = questionInstance.results.CHOICES.reduce((acc, choice, idx) => {
+                                    acc[idx.toString()] = {count: choice, value: idx.toString()};
+                                    return acc;
+                                }, {});
                             }
-                        },
-                        question: questionId ? {
-                            connect: {
-                                id: questionId
+                        } else if (questionData.type === QuestionTypeMap["FREE"] || questionData.type === QuestionTypeMap["FREE_RANGE"] ) {
+                            // console.log("FREE/FREE_RANGE questionInstance: ", questionInstance)
+                            if (questionInstance.results.FREE) {
+                                let newResults = Object.keys(questionInstance.results.FREE).reduce((acc, hash) => {
+                                    acc[extractString(hash)] = questionInstance.results.FREE[hash];
+                                    return acc;
+                                }, {});
+                                results = { ...results, ...newResults };
+                            } else if (questionInstance.results.FREE_RANGE) {
+                                let newResults = Object.keys(questionInstance.results.FREE_RANGE).reduce((acc, hash) => {
+                                    acc[extractString(hash)] = questionInstance.results.FREE_RANGE[hash];
+                                    return acc;
+                                }, {});
+                                results = { ...results, ...newResults };
                             }
-                        } : undefined,
-                        //TODO: 
-                        // responses: only import aggregated results
-                        // blockedParticipants
-                        // dropped: not relevant for now (für die wahlen wichtig)
+                 
+                        } 
                     }
-                }
-                const newQuestionInstance = await prisma.questionInstance.create({
-                    data: result.data
-                })
-
-                mappedQuestionInstancesIds[extractString(questionInstance._id)] = newQuestionInstance.id
-                // console.log("new questionInstance created: ", newQuestionInstance)
-
-                if (questionId) {
-                    await prisma.question.update({
-                        where: {
-                            id: questionId
-                        },
+                    // console.log("importQuestionInstances transformed results: ", results)
+    
+                    const result = {
                         data: {
-                            instances: {
+                            type: QuestionInstanceType.SESSION,
+                            questionData: questionData,
+                            participants: questionInstance.results?.totalParticipants,
+                            results: results,
+                            owner: {
                                 connect: {
-                                    id: newQuestionInstance.id
+                                    id: user.id
+                                }
+                            },
+                            question: questionId ? {
+                                connect: {
+                                    id: questionId
+                                }
+                            } : undefined,
+                            //TODO: 
+                            // responses: only import aggregated results
+                            // blockedParticipants
+                            // dropped: not relevant for now (für die wahlen wichtig)
+                        }
+                    }
+                    const newQuestionInstance = await prisma.questionInstance.create({
+                        data: result.data
+                    })
+    
+                    mappedQuestionInstancesIds[extractString(questionInstance._id)] = newQuestionInstance.id
+                    // console.log("new questionInstance created: ", newQuestionInstance)
+    
+                    if (questionId) {
+                        await prisma.question.update({
+                            where: {
+                                id: questionId
+                            },
+                            data: {
+                                instances: {
+                                    connect: {
+                                        id: newQuestionInstance.id
+                                    }
                                 }
                             }
-                        }
-                    })
+                        })
+                    }
                 }
-            }
-        })
+            })
+        }
     }
     catch (error) {
         console.log("Something went wrong while importing question instances: ", error)
@@ -300,11 +315,13 @@ const getSessionStatus = (status: string) => {
 const importSessions = async (prisma: PrismaClient, importedSessions: any, mappedQuestionInstanceIds: Record<string, number>, user) => {
     //new uuid is generated for each session -> string
     let mappedSessionIds: Record<string, string> = {}
+    const batches = sliceIntoChunks(importedSessions, 150)
     try {
+       for (const batch of batches) {
         await prisma.$transaction(async (prisma) => {
-            for (const session of importedSessions) {
+            for (const session of batch) {
                 console.log("session to be imported: ", session);
-
+                console.log("session isBeta: ", !!session.isBeta)
                 const newSession = await prisma.session.create({
                     data: {
                         namespace: session.namespace,
@@ -330,7 +347,13 @@ const importSessions = async (prisma: PrismaClient, importedSessions: any, mappe
                             }
                         },
                         // nested writes for entities that have not circular dependencies
-                        feedbacks: {
+                        feedbacks: !!session.isBeta ? {
+                            create: session.feedbacks.map((feedback) => ({
+                                content: feedback.content,
+                                votes: feedback.votes,
+                                createdAt: new Date(extractString(feedback.createdAt)),
+                            }))
+                        } : {
                             create: session.feedbacks.map((feedback) => ({
                                 isPublished: feedback.published,
                                 isPinned: feedback.pinned,
@@ -338,7 +361,7 @@ const importSessions = async (prisma: PrismaClient, importedSessions: any, mappe
                                 votes: feedback.votes,
                                 content: feedback.content,
                                 responses: {
-                                    create: feedback.responses.map((response) => ({
+                                    create: feedback.responses?.map((response) => ({
                                         content: response.content,
                                         positiveReactions: response.positiveReactions,
                                         negativeReactions: response.negativeReactions,
@@ -402,6 +425,7 @@ const importSessions = async (prisma: PrismaClient, importedSessions: any, mappe
                 console.log("new session created: ", newSession);
             }
         });
+       }
     } catch (error) {
         console.log("Something went wrong while importing sessions: ", error);
     }

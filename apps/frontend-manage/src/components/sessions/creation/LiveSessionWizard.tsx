@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   CreateSessionDocument,
   EditSessionDocument,
+  GetUserSessionsDocument,
   QuestionType,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -143,7 +144,7 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
         setIsWizardCompleted(true)
       }
     } catch (error) {
-      console.log('error')
+      console.log('error: ', error)
       setEditMode(!!initialValues)
       setErrorToastOpen(true)
     }
