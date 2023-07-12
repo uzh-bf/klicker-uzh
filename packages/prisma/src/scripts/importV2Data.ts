@@ -173,8 +173,8 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
                     if (questionData.type === "SC" || questionData.type === "MC") {
                         // console.log("SC/MC questionInstance.results: ", questionInstance.results)
                         if (questionInstance.results.CHOICES) {
-                            results.choices = questionInstance.results.CHOICES.reduce((acc, choice, idx) => {
-                                acc[idx.toString()] = choice;
+                            results = questionInstance.results.CHOICES.reduce((acc, choice, idx) => {
+                                acc[idx.toString()] = {count: choice, value: idx.toString()};
                                 return acc;
                             }, {});
                         }
@@ -416,7 +416,8 @@ const importV2Data = async () => {
     // construct relative path to desired json file
     // __dirname provides the current directory name of the current file
     const dirPath = path.join(__dirname, '../../../../migration/export_v2_data/exported_json_files');
-    const filePath = path.join(dirPath, 'exported_data_2023-07-06_17-10-52.json');
+    // const filePath = path.join(dirPath, 'exported_data_2023-07-06_17-10-52.json');
+    const filePath = path.join(dirPath, 'exported_data_2023-06-30_13-19-22.json');
 
     let importData;
     if (fs.existsSync(dirPath)) {
@@ -474,7 +475,7 @@ const importV2Data = async () => {
         const importedSessions = importData.sessions
         mappedSessionIds = await importSessions(prisma, importedSessions, mappedQuestionInstancesIds, user)
 
-        deleteQuestions(prisma)
+        // deleteQuestions(prisma)
         
     } catch (error) {
         console.log("Something went wrong while importing data: ", error)
