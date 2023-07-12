@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { AccessMode, PrismaClient, Question, QuestionInstanceType, SessionBlockStatus, SessionStatus, Tag } from '../client';
 import { QuestionType } from '@klicker-uzh/prisma'
+import { getLegacyResults } from './getLegacyResults';
 
 // used to extract the string (e.g., objectId, createdAt, etc.) inside "\"...\"" 
 const extractString = (stringItem: string) => {
@@ -174,6 +175,7 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
     const questions = await Promise.all(Object.values(mappedQuestionIds).map((questionId) => prisma.question.findUnique({where: { id: questionId}})))
     console.log("questions: ", questions)
     const batches = sliceIntoChunks(importedQuestionInstances,  batchSize)
+    let lostResults: any[] = []
     try {
         for (const batch of batches) {
             await prisma.$transaction( async (prisma) => {
@@ -192,12 +194,14 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
                         }
                         questionId = question?.id
                     } 
-    
-                    // console.log("importQuestionInstances mappedQuestionIds: ", mappedQuestionIds)
-                    // console.log("importQuestionInstances questionInstance.question: ", extractString(questionInstance.question))
-                    
-                    // console.log("importQuestionInstances questionData: ", questionData)
-                    // console.log("importQuestionInstances questionInstance.results: ", questionInstance.results)
+
+                    if (questionInstance.results == null) {
+                        lostResults.push(questionInstance)
+                        // TODO: restore results from legacy db
+                        // questionInstance.results = await getLegacyResults(extractString(questionInstance._id))
+                        // console.log("importQuestionInstances restored results: ", questionInstance.results)
+                    }
+
                     let results = {};
     
                     if (questionInstance.results) {
@@ -281,6 +285,8 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
         console.log("Something went wrong while importing question instances: ", error)
     }
     console.log("mappedQuestionInstancesIds: ", mappedQuestionInstancesIds)
+    console.log("lostResults: ", lostResults)
+    console.log("lostResults.length: ", lostResults.length)
     return mappedQuestionInstancesIds
 }
 
