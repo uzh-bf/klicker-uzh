@@ -25,9 +25,10 @@ function Index() {
   const theme = useContext(ThemeContext)
 
   const [searchInput, setSearchInput] = useState('')
-  const [selectedQuestions, setSelectedQuestions] = useState(
-    new Array<boolean>()
-  )
+  const [selectedQuestions, setSelectedQuestions] = useState<
+    Record<number, boolean>
+  >({})
+  console.log(selectedQuestions)
 
   const {
     loading: loadingQuestions,
@@ -91,6 +92,13 @@ function Index() {
 
     return faSortDesc
   }, [sortBy, sort.asc])
+
+  const selectedQuestionIds = useMemo(() => {
+    return Object.entries(selectedQuestions).flatMap(([id, selected]) => {
+      if (!selected) return []
+      return [id]
+    })
+  }, [selectedQuestions])
 
   return (
     <Layout
@@ -186,13 +194,15 @@ function Index() {
               </div>
 
               <div className="h-full overflow-y-auto">
+                {selectedQuestionIds.length} items selected
                 <QuestionList
                   questions={processedQuestions}
                   selectedQuestions={selectedQuestions}
-                  setSelectedQuestions={(index: number) => {
-                    const tempQuestions = [...selectedQuestions]
-                    tempQuestions[index] = !tempQuestions[index]
-                    setSelectedQuestions(tempQuestions)
+                  setSelectedQuestions={(questionId: number) => {
+                    setSelectedQuestions((prevState) => ({
+                      ...prevState,
+                      [questionId]: !prevState[questionId],
+                    }))
                   }}
                   tagfilter={filters.tags}
                 />

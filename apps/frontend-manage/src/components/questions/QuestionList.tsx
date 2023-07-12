@@ -5,8 +5,8 @@ import React from 'react'
 import Question from './Question'
 
 interface QuestionListProps {
-  setSelectedQuestions: (questionIndex: number) => void
-  selectedQuestions: boolean[]
+  setSelectedQuestions: (questionId: number) => void
+  selectedQuestions: Record<number, boolean>
   questions?: QuestionType[]
   tagfilter?: string[]
 }
@@ -33,9 +33,9 @@ function QuestionList({
 
   return (
     <>
-      {questions.map((question, index): any => (
+      {questions.map((question): any => (
         <Question
-          checked={selectedQuestions[index]}
+          checked={selectedQuestions[question.id]}
           id={question.id}
           isArchived={question.isArchived}
           key={question.id}
@@ -45,7 +45,7 @@ function QuestionList({
           content={question.content}
           hasAnswerFeedbacks={question.hasAnswerFeedbacks}
           hasSampleSolution={question.hasSampleSolution}
-          onCheck={() => setSelectedQuestions(index)}
+          onCheck={() => setSelectedQuestions(question.id)}
           tagfilter={tagfilter}
           createdAt={question.createdAt}
           updatedAt={question.updatedAt}
