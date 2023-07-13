@@ -1,15 +1,5 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
-
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/apps/backend-sls"
-    target-branch: v3
-    schedule:
-      interval: "weekly"
   - package-ecosystem: "npm"
     directory: "/apps/backend-docker"
     target-branch: v3
@@ -17,6 +7,11 @@ updates:
       interval: "weekly"
   - package-ecosystem: "npm"
     directory: "/apps/backend-responses"
+    target-branch: v3
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/apps/backend-response-processor"
     target-branch: v3
     schedule:
       interval: "weekly"
@@ -32,6 +27,11 @@ updates:
       interval: "weekly"
   - package-ecosystem: "npm"
     directory: "/apps/frontend-pwa"
+    target-branch: v3
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/apps/office-addin"
     target-branch: v3
     schedule:
       interval: "weekly"
