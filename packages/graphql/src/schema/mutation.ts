@@ -797,6 +797,25 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      createCourse: asUser.field({
+        nullable: true,
+        type: Course,
+        args: {
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+          color: t.arg.string({ required: false }),
+          startDate: t.arg({ type: 'Date', required: true }),
+          endDate: t.arg({ type: 'Date', required: true }),
+          groupDeadlineDate: t.arg({ type: 'Date', required: false }),
+          notificationEmail: t.arg.string({ required: false }),
+          isGamificationEnabled: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.createCourse(args, ctx)
+        },
+      }),
+
       changeCourseDates: asUser.field({
         nullable: true,
         type: Course,

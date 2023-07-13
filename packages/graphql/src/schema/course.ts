@@ -63,6 +63,11 @@ export const Course = builder.objectType(CourseRef, {
       type: 'Date',
       nullable: true,
     }),
+
+    notificationEmail: t.exposeString('notificationEmail', {
+      nullable: true,
+    }),
+
     isGroupDeadlinePassed: t.boolean({
       resolve(course: ICourse) {
         if (typeof course.groupDeadlineDate === 'undefined') return null

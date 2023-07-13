@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
@@ -13,8 +13,7 @@ import {
   faSortDesc,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, Select, TextField, ThemeContext } from '@uzh-bf/design-system'
-import { twMerge } from 'tailwind-merge'
+import { Button, Select, TextField } from '@uzh-bf/design-system'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
@@ -22,7 +21,6 @@ import SessionCreation from '../components/sessions/creation/SessionCreation'
 
 function Index() {
   const router = useRouter()
-  const theme = useContext(ThemeContext)
 
   const [searchInput, setSearchInput] = useState('')
   const [selectedQuestions, setSelectedQuestions] = useState(
@@ -174,10 +172,7 @@ function Index() {
                     setIsQuestionCreationModalOpen(!isQuestionCreationModalOpen)
                   }
                   className={{
-                    root: twMerge(
-                      'h-10 font-bold text-white',
-                      theme.primaryBgDark
-                    ),
+                    root: 'h-10 font-bold text-white bg-primary-80',
                   }}
                   data={{ cy: 'create-question' }}
                 >
@@ -206,7 +201,7 @@ function Index() {
         <QuestionEditModal
           handleSetIsOpen={setIsQuestionCreationModalOpen}
           isOpen={isQuestionCreationModalOpen}
-          mode="CREATE"
+          mode={QuestionEditModal.Mode.CREATE}
         />
       )}
     </Layout>

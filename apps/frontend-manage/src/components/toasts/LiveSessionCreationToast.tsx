@@ -1,9 +1,7 @@
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ThemeContext, Toast } from '@uzh-bf/design-system'
+import { Toast } from '@uzh-bf/design-system'
 import Link from 'next/link'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface LiveSessionCreationToastProps {
   editMode: boolean
@@ -16,8 +14,6 @@ function LiveSessionCreationToast({
   open,
   setOpen,
 }: LiveSessionCreationToastProps): React.ReactElement {
-  const theme = useContext(ThemeContext)
-
   return (
     <Toast
       duration={6000}
@@ -36,7 +32,7 @@ function LiveSessionCreationToast({
           Zur
           <Link
             href="/sessions"
-            className={twMerge(theme.primaryText, 'ml-1')}
+            className="ml-1 text-primary"
             data-cy="load-session-list"
           >
             Session-Liste

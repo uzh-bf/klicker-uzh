@@ -18,7 +18,7 @@ import {
   Form,
   Formik,
 } from 'formik'
-import React, { useContext, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -33,7 +33,6 @@ import {
   Modal,
   Select,
   Switch,
-  ThemeContext,
   UserNotification,
 } from '@uzh-bf/design-system'
 import {
@@ -43,6 +42,12 @@ import {
 } from 'shared-components/src/constants'
 import ContentInput from 'shared-components/src/ContentInput'
 import StudentQuestion from 'shared-components/src/StudentQuestion'
+
+enum QuestionEditMode {
+  DUPLICATE = 'DUPLICATE',
+  EDIT = 'EDIT',
+  CREATE = 'CREATE',
+}
 
 const questionManipulationSchema = Yup.object().shape({
   name: Yup.string().required('Geben Sie einen Namen für die Frage ein.'),
@@ -197,7 +202,7 @@ interface QuestionEditModalProps {
   isOpen: boolean
   handleSetIsOpen: (open: boolean) => void
   questionId?: number
-  mode: 'EDIT' | 'CREATE'
+  mode: QuestionEditMode
 }
 
 function QuestionEditModal({
@@ -206,7 +211,7 @@ function QuestionEditModal({
   questionId,
   mode,
 }: QuestionEditModalProps): React.ReactElement {
-  const theme = useContext(ThemeContext)
+  const isDuplication = mode === QuestionEditMode.DUPLICATE
 
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
     inputValue: '',
@@ -245,11 +250,13 @@ function QuestionEditModal({
   )
 
   const questionType = useMemo(() => {
-    return mode === 'CREATE' ? newQuestionType : dataQuestion?.question?.type
+    return mode === QuestionEditMode.CREATE
+      ? newQuestionType
+      : dataQuestion?.question?.type
   }, [mode, dataQuestion?.question?.type, newQuestionType])
 
   const question = useMemo(() => {
-    if (mode === 'CREATE') {
+    if (mode === QuestionEditMode.CREATE) {
       const common = {
         type: questionType,
         displayMode: QuestionDisplayMode.List,
@@ -305,6 +312,9 @@ function QuestionEditModal({
     return dataQuestion?.question?.questionData
       ? {
           ...dataQuestion.question,
+          name: isDuplication
+            ? `${dataQuestion.question.name} (Copy)`
+            : dataQuestion.question.name,
           pointsMultiplier: String(dataQuestion.question.pointsMultiplier),
           explanation: dataQuestion.question.explanation ?? '',
           displayMode:
@@ -324,7 +334,10 @@ function QuestionEditModal({
 
   return (
     <Formik
-      isInitialValid={mode === 'EDIT'}
+      isInitialValid={[
+        QuestionEditMode.EDIT,
+        QuestionEditMode.DUPLICATE,
+      ].includes(mode)}
       enableReinitialize={true}
       initialValues={question}
       validationSchema={questionManipulationSchema}
@@ -348,6 +361,7 @@ function QuestionEditModal({
             await manipulateChoicesQuestion({
               variables: {
                 ...common,
+                id: isDuplication ? undefined : questionId,
                 type: questionType,
                 options: {
                   choices: values.options?.choices.map((choice: any) => {
@@ -371,6 +385,7 @@ function QuestionEditModal({
             await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
+                id: isDuplication ? undefined : questionId,
                 options: {
                   unit: values.options?.unit,
                   accuracy: values.options?.accuracy,
@@ -407,6 +422,7 @@ function QuestionEditModal({
             await manipulateFreeTextQuestion({
               variables: {
                 ...common,
+                id: isDuplication ? undefined : questionId,
                 options: {
                   placeholder: values.options?.placeholder,
                   restrictions: {
@@ -440,15 +456,21 @@ function QuestionEditModal({
         setFieldTouched,
         validateForm,
       }) => {
-        if (mode === 'EDIT' && loadingQuestion) {
+        if (loadingQuestion) {
           return <div></div>
+        }
+
+        const titles = {
+          [QuestionEditMode.CREATE]: 'Frage erstellen',
+          [QuestionEditMode.EDIT]: 'Frage bearbeiten',
+          [QuestionEditMode.DUPLICATE]: 'Frage duplizieren',
         }
 
         return (
           <Modal
             asPortal
             fullScreen
-            title={mode === 'CREATE' ? 'Frage erstellen' : 'Frage bearbeiten'}
+            title={titles[mode]}
             className={{
               content: 'max-w-[1400px]',
               title: 'text-xl',
@@ -460,10 +482,7 @@ function QuestionEditModal({
               <Button
                 disabled={isSubmitting || !isValid}
                 className={{
-                  root: twMerge(
-                    'mt-2 font-bold text-white border-uzh-grey-80 disabled:bg-uzh-grey-80',
-                    theme.primaryBgDark
-                  ),
+                  root: 'mt-2 font-bold text-white border-uzh-grey-80 bg-primary-80',
                 }}
                 type="submit"
                 form="question-manipulation-form"
@@ -495,7 +514,7 @@ function QuestionEditModal({
                     // showTooltipSymbol={mode === 'CREATE'}
                     required
                   />
-                  {mode === 'CREATE' ? (
+                  {mode === QuestionEditMode.CREATE ? (
                     <Select
                       placeholder="Fragetyp auswählen"
                       items={dropdownOptions}
@@ -529,10 +548,7 @@ function QuestionEditModal({
                     <FastField
                       name="name"
                       type="text"
-                      className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
-                        theme.primaryBorderFocus
-                      )}
+                      className="w-full bg-opacity-50 border rounded bg-uzh-grey-20 border-uzh-grey-60 h-9 focus:border-primary-40"
                       data-cy="insert-question-title"
                     />
                   </div>
@@ -553,10 +569,7 @@ function QuestionEditModal({
                       <FastField
                         name="tags"
                         type="text"
-                        className={twMerge(
-                          'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 h-9',
-                          theme.primaryBorderFocus
-                        )}
+                        className="w-full bg-opacity-50 border rounded bg-uzh-grey-20 border-uzh-grey-60 h-9 focus:border-primary-40"
                         value={values.tags?.join(', ')}
                         onChange={(e: any) => {
                           setFieldValue('tags', e.target.value.split(', '))
@@ -802,12 +815,7 @@ function QuestionEditModal({
                                     ' bg-red-100 border-red-300'
                                 )}
                               >
-                                <div
-                                  className={twMerge(
-                                    'flex flex-row w-full',
-                                    theme.primaryBorderFocus
-                                  )}
-                                >
+                                <div className="flex flex-row w-full focus:border-primary-40">
                                   {/* // TODO: define maximum height of editor if possible */}
                                   <FastField
                                     name={`options.choices.${index}.value`}
@@ -879,7 +887,7 @@ function QuestionEditModal({
                                     <Button.Icon>
                                       <FontAwesomeIcon
                                         icon={faTrash}
-                                        className={theme.primaryBgHover}
+                                        className="hover:bg-primary-20"
                                       />
                                     </Button.Icon>
                                   </Button>
@@ -920,10 +928,8 @@ function QuestionEditModal({
                                             }}
                                             className={{
                                               root: 'bg-white',
-                                              content: twMerge(
-                                                'w-full rounded border border-uzh-grey-100',
-                                                theme.primaryBorderFocus
-                                              ),
+                                              content:
+                                                'w-full rounded border border-uzh-grey-100 focus:border-primary-40',
                                             }}
                                             showToolbarOnFocus={true}
                                             placeholder="Feedback eingeben…"
@@ -973,10 +979,7 @@ function QuestionEditModal({
                           <FastField
                             name="options.restrictions.min"
                             type="number"
-                            className={twMerge(
-                              'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                              theme.primaryBorderFocus
-                            )}
+                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                             placeholder="Minimum"
                             data-cy="set-numerical-minimum"
                           />
@@ -984,10 +987,7 @@ function QuestionEditModal({
                           <FastField
                             name="options.restrictions.max"
                             type="number"
-                            className={twMerge(
-                              'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                              theme.primaryBorderFocus
-                            )}
+                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                             placeholder="Maximum"
                             data-cy="set-numerical-maximum"
                           />
@@ -997,10 +997,7 @@ function QuestionEditModal({
                           <FastField
                             name="options.unit"
                             type="text"
-                            className={twMerge(
-                              'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                              theme.primaryBorderFocus
-                            )}
+                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                             placeholder="CHF"
                             data-cy="set-numerical-unit"
                           />
@@ -1008,10 +1005,7 @@ function QuestionEditModal({
                           <FastField
                             name="options.accuracy"
                             type="number"
-                            className={twMerge(
-                              'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                              theme.primaryBorderFocus
-                            )}
+                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                             placeholder="Präzision"
                             data-cy="set-numerical-accuracy"
                           />
@@ -1041,20 +1035,14 @@ function QuestionEditModal({
                                       <FastField
                                         name={`options.solutionRanges.${index}.min`}
                                         type="number"
-                                        className={twMerge(
-                                          'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                                          theme.primaryBorderFocus
-                                        )}
+                                        className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                                         placeholder="Minimum"
                                       />
                                       <div className="font-bold">Max: </div>
                                       <FastField
                                         name={`options.solutionRanges.${index}.max`}
                                         type="number"
-                                        className={twMerge(
-                                          'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9',
-                                          theme.primaryBorderFocus
-                                        )}
+                                        className="w-40 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                                         placeholder="Maximum"
                                       />
                                       <Button
@@ -1097,10 +1085,7 @@ function QuestionEditModal({
                         <FastField
                           name="options.restrictions.maxLength"
                           type="number"
-                          className={twMerge(
-                            'w-44 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                            theme.primaryBorderFocus
-                          )}
+                          className="mr-2 bg-opacity-50 border rounded w-44 border-uzh-grey-100 h-9 focus:border-primary-40"
                           placeholder="Antwort Länge"
                           min={0}
                           data-cy="set-free-text-length"
@@ -1122,10 +1107,7 @@ function QuestionEditModal({
                                     <FastField
                                       name={`options.solutions.${index}`}
                                       type="text"
-                                      className={twMerge(
-                                        'w-40 rounded bg-opacity-50 border border-uzh-grey-100 h-9 mr-2',
-                                        theme.primaryBorderFocus
-                                      )}
+                                      className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
                                       placeholder="Lösung"
                                     />
                                     <Button
@@ -1232,5 +1214,7 @@ function QuestionEditModal({
     </Formik>
   )
 }
+
+QuestionEditModal.Mode = QuestionEditMode
 
 export default QuestionEditModal

@@ -20,7 +20,7 @@
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@klicker-uzh/graphql": "*",
     "@klicker-uzh/markdown": "*",
-    "@uzh-bf/design-system": "^1.3.0",
+    "@uzh-bf/design-system": "^2.0.0",
     "dayjs": "^1.11.6",
     "is-hotkey": "^0.2.0",
     "ramda": "^0.29.0",

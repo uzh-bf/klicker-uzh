@@ -1,9 +1,7 @@
 import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Tag } from '@klicker-uzh/graphql/dist/ops'
-import { Button, ThemeContext } from '@uzh-bf/design-system'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { Button } from '@uzh-bf/design-system'
 import TagDeletionModal from './TagDeletionModal'
 
 interface TagActionsProps {
@@ -21,8 +19,6 @@ function TagActions({
   isDeletionModalOpen,
   setIsDeletionModalOpen,
 }: TagActionsProps) {
-  const theme = useContext(ThemeContext)
-
   return (
     <div className="flex-row hidden text-black group-hover:flex">
       <Button
@@ -30,7 +26,7 @@ function TagActions({
         disabled={active}
         onClick={() => setEditMode(true)}
         className={{
-          root: twMerge(theme.primaryTextHover, 'disabled:text-uzh-grey-60'),
+          root: 'disabled:text-uzh-grey-60 sm:hover:text-primary',
         }}
       >
         <FontAwesomeIcon icon={faPencil} className="mr-2" />

@@ -11,9 +11,9 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { MicroSession, MicroSessionStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, ThemeContext, Toast } from '@uzh-bf/design-system'
+import { Button, Toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import StatusTag from './StatusTag'
 import MicroSessionDeletionModal from './modals/MicroSessionDeletionModal'
@@ -24,7 +24,6 @@ interface MicroSessionProps {
 }
 
 function MicroSessionTile({ microSession }: MicroSessionProps) {
-  const theme = useContext(ThemeContext)
   const router = useRouter()
 
   const [publishModal, setPublishModal] = useState(false)
@@ -95,7 +94,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           setCopyToast(true)
         }}
         className={{
-          root: twMerge('flex flex-row items-center gap-1', theme.primaryText),
+          root: twMerge('flex flex-row items-center gap-1 text-primary'),
         }}
       >
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
@@ -104,7 +103,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
       {microSession.status === MicroSessionStatus.Draft && (
         <Button
           basic
-          className={{ root: theme.primaryText }}
+          className={{ root: 'text-primary' }}
           onClick={() =>
             router.push({
               pathname: '/',
@@ -125,7 +124,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
       {microSession.status === MicroSessionStatus.Draft && (
         <Button
           basic
-          className={{ root: theme.primaryText }}
+          className={{ root: 'text-primary' }}
           onClick={() => setPublishModal(true)}
           data={{ cy: 'publish-micro-session' }}
         >
