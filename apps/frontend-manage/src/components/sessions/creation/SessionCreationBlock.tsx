@@ -9,9 +9,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Modal, NumberField, ThemeContext } from '@uzh-bf/design-system'
+import { Button, Modal, NumberField } from '@uzh-bf/design-system'
 import { move as RamdaMove } from 'ramda'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 
@@ -32,7 +32,6 @@ function SessionCreationBlock({
   move,
   replace,
 }: SessionCreationBlockProps): React.ReactElement {
-  const theme = useContext(ThemeContext)
   const [openSettings, setOpenSettings] = useState(false)
 
   const [{ isOver }, drop] = useDrop(
@@ -128,10 +127,7 @@ function SessionCreationBlock({
               <Button
                 basic
                 className={{
-                  root: twMerge(
-                    'flex flex-col justify-center h-1/2 px-2 disabled:hidden',
-                    theme.primaryBgHover
-                  ),
+                  root: 'flex flex-col justify-center h-1/2 px-2 disabled:hidden hover:bg-primary-20',
                 }}
                 disabled={block.questionIds.length === 1}
                 onClick={() => {
@@ -157,10 +153,7 @@ function SessionCreationBlock({
               <Button
                 basic
                 className={{
-                  root: twMerge(
-                    'flex flex-col justify-center h-1/2 px-2 disabled:hidden',
-                    theme.primaryBgHover
-                  ),
+                  root: 'flex flex-col justify-center h-1/2 px-2 disabled:hidden hover:bg-primary-20',
                 }}
                 disabled={block.questionIds.length === 1}
                 onClick={() => {
@@ -190,7 +183,7 @@ function SessionCreationBlock({
               </Button>
             </div>
             <div
-              className={`flex items-center px-2 text-white ${theme.primaryTextHover} bg-red-500 sm:hover:bg-red-600 rounded-r`}
+              className={`flex items-center px-2 text-white sm:hover:text-primary bg-red-500 sm:hover:bg-red-600 rounded-r`}
               onClick={() => {
                 replace(index, {
                   ...block,
@@ -212,7 +205,7 @@ function SessionCreationBlock({
         ref={drop}
         className={twMerge(
           'w-full text-center p-0.5 border border-solid rounded',
-          isOver && theme.primaryBg
+          isOver && 'bg-primary-20'
         )}
         data-cy="drop-questions-here"
       >

@@ -14,14 +14,13 @@ import {
   H1,
   H2,
   H3,
-  ThemeContext,
   Toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { sort } from 'ramda'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Leaderboard from 'shared-components/src/Leaderboard'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Layout from '../../components/Layout'
@@ -33,7 +32,6 @@ import QRPopup from '../../components/sessions/cockpit/QRPopup'
 
 function CourseOverviewPage() {
   const router = useRouter()
-  const theme = useContext(ThemeContext)
 
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
   const [editStartDate, setEditStartDate] = useState(false)
@@ -91,7 +89,7 @@ function CourseOverviewPage() {
               <Link
                 href={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}
                 target="_blank"
-                className={theme.primaryText}
+                className="text-primary"
               >{`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}</Link>
 
               <div className="mt-4">

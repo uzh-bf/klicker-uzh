@@ -10,10 +10,9 @@ import {
   LearningElementStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, ThemeContext, Toast } from '@uzh-bf/design-system'
+import { Button, Toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useState } from 'react'
 import StatusTag from './StatusTag'
 import LearningElementDeletionModal from './modals/LearningElementDeletionModal'
 import PublishConfirmationModal from './modals/PublishConfirmationModal'
@@ -31,7 +30,6 @@ function LearningElementTile({
   const [copyToast, setCopyToast] = useState(false)
   const [publishModal, setPublishModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
-  const theme = useContext(ThemeContext)
   const router = useRouter()
 
   return (
@@ -68,10 +66,7 @@ function LearningElementTile({
             setCopyToast(true)
           }}
           className={{
-            root: twMerge(
-              'flex flex-row items-center gap-1',
-              theme.primaryText
-            ),
+            root: 'flex flex-row items-center gap-1 text-primary',
           }}
         >
           <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
@@ -81,7 +76,7 @@ function LearningElementTile({
         {learningElement.status === LearningElementStatus.Draft && (
           <Button
             basic
-            className={{ root: theme.primaryText }}
+            className={{ root: 'text-primary' }}
             onClick={() =>
               router.push({
                 pathname: '/',
@@ -102,7 +97,7 @@ function LearningElementTile({
         {learningElement.status === LearningElementStatus.Draft && (
           <Button
             basic
-            className={{ root: theme.primaryText }}
+            className={{ root: 'text-primary' }}
             onClick={() => setPublishModal(true)}
             data={{ cy: 'publish-learning-element' }}
           >

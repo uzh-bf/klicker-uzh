@@ -9,15 +9,8 @@ import {
   MicroSession,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Tab,
-  TabContent,
-  TabList,
-  Tabs,
-  ThemeContext,
-} from '@uzh-bf/design-system'
-import { useContext, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { Tab, TabContent, TabList, Tabs } from '@uzh-bf/design-system'
+import { useMemo, useState } from 'react'
 import LearningElementWizard from './LearningElementWizard'
 import LiveSessionWizard from './LiveSessionWizard'
 import MicroSessionWizard from './MicroSessionWizard'
@@ -28,7 +21,6 @@ interface SessionCreationProps {
 }
 
 function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
-  const theme = useContext(ThemeContext)
   const [selectedForm, setSelectedForm] = useState(editMode)
 
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
@@ -79,7 +71,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               value="liveSession"
               label="Live-Session"
               className={{
-                root: twMerge('flex-1', theme.primaryBgHover),
+                root: 'flex-1 hover:bg-primary-20',
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
@@ -89,7 +81,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               value="microSession"
               label="Micro-Session"
               className={{
-                root: twMerge('flex-1 ', theme.primaryBgHover),
+                root: 'flex-1 hover:bg-primary-20',
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
@@ -101,7 +93,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               value="learningElement"
               label="Lernelement"
               className={{
-                root: twMerge('flex-1 ', theme.primaryBgHover),
+                root: 'flex-1 hover:bg-primary-20',
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}

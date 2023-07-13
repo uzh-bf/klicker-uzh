@@ -1,9 +1,7 @@
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ThemeContext, Toast } from '@uzh-bf/design-system'
+import { Toast } from '@uzh-bf/design-system'
 import Link from 'next/link'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface MicroSessionCreationToastProps {
   editMode: boolean
@@ -18,8 +16,6 @@ function MicroSessionCreationToast({
   open,
   setOpen,
 }: MicroSessionCreationToastProps): React.ReactElement {
-  const theme = useContext(ThemeContext)
-
   return (
     <Toast
       duration={6000}
@@ -38,7 +34,7 @@ function MicroSessionCreationToast({
           Zur
           <Link
             href={`/courses/${courseId}`}
-            className={twMerge(theme.primaryText, 'ml-1')}
+            className="ml-1 text-primary"
             id="load-course-link"
           >
             Kursübersicht

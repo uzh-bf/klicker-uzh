@@ -2,11 +2,10 @@ import { useMutation } from '@apollo/client'
 import { faEnvelope, faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlagQuestionDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H4, Modal, ThemeContext, Toast } from '@uzh-bf/design-system'
+import { Button, H4, Modal, Toast } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useContext, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useState } from 'react'
 import * as Yup from 'yup'
 
 interface FlagErrorToastProps {
@@ -68,7 +67,6 @@ function FlagQuestionModal({
   const [successToastOpen, setSuccessToastOpen] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
 
-  const theme = useContext(ThemeContext)
   const [flagQuestion, { error }] = useMutation(FlagQuestionDocument)
 
   const flagQuestionSchema = Yup.object().shape({
@@ -158,10 +156,7 @@ function FlagQuestionModal({
                   </Button>
                   <Button
                     className={{
-                      root: twMerge(
-                        'float-right px-5 text-white disabled:opacity-20 order-1 md:order-2 border-0',
-                        theme.primaryBgDark
-                      ),
+                      root: 'float-right px-5 text-white disabled:opacity-20 order-1 md:order-2 border-0 bg-primary-80',
                     }}
                     type="submit"
                     disabled={isSubmitting || !isValid}

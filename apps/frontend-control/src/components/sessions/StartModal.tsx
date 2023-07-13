@@ -1,10 +1,8 @@
 import { useMutation } from '@apollo/client'
 import { StartSessionDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H3, Modal, ThemeContext } from '@uzh-bf/design-system'
+import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface StartModalProps {
   startId: string
@@ -23,7 +21,6 @@ function StartModal({
 }: StartModalProps) {
   const t = useTranslations()
   const router = useRouter()
-  const theme = useContext(ThemeContext)
   const [startSession] = useMutation(StartSessionDocument)
 
   return (
@@ -44,7 +41,7 @@ function StartModal({
             }
           }}
           className={{
-            root: twMerge('text-white', theme.primaryBgDark),
+            root: 'text-white bg-primary-80',
           }}
           data={{
             cy: 'confirm-start-session',

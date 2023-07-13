@@ -11,7 +11,7 @@ securityContext: {}
 notifications:
   url: ''
   secret: ''
-  supportMail: ''
+  supportEmail: ''
 
 vapid:
   publicKey: ''

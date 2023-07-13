@@ -1,5 +1,4 @@
 import { initializeIcons } from "@fluentui/font-icons-mdl2";
-import { ThemeProvider } from "@fluentui/react";
 import React from "react";
 import ReactDOM from "react-dom";
 import App from "./components/App";
@@ -13,9 +12,7 @@ let newlyInserted = false;
 
 const render = (Component) => {
   ReactDOM.render(
-    <ThemeProvider>
-      <Component isOfficeInitialized={isOfficeInitialized} newlyInserted={newlyInserted} />
-    </ThemeProvider>,
+    <Component isOfficeInitialized={isOfficeInitialized} newlyInserted={newlyInserted} />,
     document.getElementById("container")
   );
 };
