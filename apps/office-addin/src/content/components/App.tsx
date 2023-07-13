@@ -37,8 +37,8 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
   }
   return (
     <div className="m-10">
-      <H1 className={{ root: "text-red-900 text-xl" }}>KlickerUZH: PowerPoint Add-in</H1>
-      <img src="assets/logo-filled.png" alt="KlickerUZH Logo" className="h-72 w-72 ml-auto mr-auto my-12"></img>
+      <H1 className={{ root: "text-xl text-red-900" }}>KlickerUZH: PowerPoint Add-in</H1>
+      <img src="assets/logo-filled.png" alt="KlickerUZH Logo" className="my-12 ml-auto mr-auto h-72 w-72"></img>
       <URLForm slideID={slideID} />
     </div>
   );
