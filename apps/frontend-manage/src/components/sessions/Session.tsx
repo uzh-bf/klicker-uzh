@@ -75,7 +75,7 @@ function Session({ session }: SessionProps) {
     <>
       <div key={session.id} className="p-1 border rounded" data-cy="session">
         <Collapsible
-          className={{ root: 'border-0' }}
+          className={{ root: 'border-0 !py-0.5' }}
           key={session.id}
           open={showDetails && session.id === selectedSession}
           onChange={() => {
@@ -204,9 +204,10 @@ function Session({ session }: SessionProps) {
         >
           <div className="flex flex-row gap-2 my-2 overflow-y-scroll">
             {session.blocks?.map((block, index) => (
-              <div key={block.id} className="flex flex-col gap-2">
+              <div key={block.id} className="flex flex-col gap-1">
                 <div className="italic">
-                  Block {index + 1} ({block.instances?.length} Fragen)
+                  Block {index + 1} ({block.instances?.length}{' '}
+                  {(block.instances?.length || 0) > 1 ? 'Fragen' : 'Frage'})
                 </div>
                 {block.instances?.map((instance) => (
                   <div
@@ -225,7 +226,10 @@ function Session({ session }: SessionProps) {
                         ({QUESTION_TYPES_SHORT[instance.questionData.type]})
                       </div>
                     </div>
-                    <Ellipsis maxLength={50} className={{ markdown: 'px-1' }}>
+                    <Ellipsis
+                      maxLength={50}
+                      className={{ markdown: 'px-1 text-sm' }}
+                    >
                       {instance.questionData.content}
                     </Ellipsis>
                   </div>
