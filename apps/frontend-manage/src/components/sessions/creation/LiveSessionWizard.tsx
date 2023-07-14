@@ -143,7 +143,7 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
         setIsWizardCompleted(true)
       }
     } catch (error) {
-      console.log('error')
+      console.log(error)
       setEditMode(!!initialValues)
       setErrorToastOpen(true)
     }
@@ -181,12 +181,34 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
+        editMode={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}
         onViewElement={() => {
           router.push(`/sessions`)
         }}
+        workflowItems={[
+          {
+            title: 'Beschreibung',
+            tooltip:
+              'Geben Sie in diesem Schritt den Namen und die Beschreibung der Live-Session ein.',
+          },
+          {
+            title: 'Einstellungen',
+            tooltip:
+              'In diesem Schritt können Sie Einstellungen zur Session vornehmen.',
+            tooltipDisabled:
+              'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+          },
+          {
+            title: 'Fragen & Blöcke',
+            tooltip:
+              'In diesem Schritt können Sie Fragen und Blöcke zu Ihrer Session hinzufügen.',
+            tooltipDisabled:
+              'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+          },
+        ]}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />

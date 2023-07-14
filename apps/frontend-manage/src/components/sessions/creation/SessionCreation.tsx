@@ -55,7 +55,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
 
   return (
     <div className="flex flex-col justify-center print-hidden">
-      <div className="w-full h-full border rounded">
+      <div className="w-full h-full border rounded-lg">
         <Tabs
           defaultValue="liveSession"
           value={selectedForm}
@@ -71,7 +71,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               value="liveSession"
               label="Live-Session"
               className={{
-                root: 'flex-1 hover:bg-primary-20',
+                root: 'flex-1 bg-primary-20 border-b-0',
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
@@ -81,7 +81,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               value="microSession"
               label="Micro-Session"
               className={{
-                root: 'flex-1 hover:bg-primary-20',
+                root: 'flex-1 bg-primary-20 border-b-0',
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}
@@ -93,7 +93,7 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
               value="learningElement"
               label="Lernelement"
               className={{
-                root: 'flex-1 hover:bg-primary-20',
+                root: 'flex-1 bg-primary-20 border-b-0',
                 label:
                   'font-bold text-base flex flex-col justify-center h-full',
               }}

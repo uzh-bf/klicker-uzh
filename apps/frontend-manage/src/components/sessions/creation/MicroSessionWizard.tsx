@@ -177,12 +177,34 @@ function MicroSessionWizard({
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
+        editMode={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}
         onViewElement={() => {
           router.push(`/courses/${selectedCourseId}`)
         }}
+        workflowItems={[
+          {
+            title: 'Beschreibung',
+            tooltip:
+              'Geben Sie in diesem Schritt den Namen und die Beschreibung der Micro-Session ein.',
+          },
+          {
+            title: 'Einstellungen',
+            tooltip:
+              'Wählen Sie in diesem Schritt das Start- und Enddatum und nehmen Sie weitere Einstellungen vor.',
+            tooltipDisabled:
+              'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+          },
+          {
+            title: 'Fragen',
+            tooltip:
+              'Wählen Sie in diesem Schritt die Fragen für die Micro-Session aus.',
+            tooltipDisabled:
+              'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+          },
+        ]}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />

@@ -148,8 +148,7 @@ function LearningElementWizard({
       }
     } catch (error) {
       console.log(error)
-      // TODO: set edit mode value correctly once editing is implemented
-      setEditMode(false)
+      setEditMode(!!initialValues)
       setErrorToastOpen(true)
     }
   }
@@ -193,12 +192,33 @@ function LearningElementWizard({
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
+        editMode={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}
         onViewElement={() => {
           router.push(`/courses/${selectedCourseId}`)
         }}
+        workflowItems={[
+          {
+            title: 'Beschreibung',
+            tooltip:
+              'Geben Sie in diesem Schritt den Namen und die Beschreibung des Lernelements ein.',
+          },
+          {
+            title: 'Einstellungen',
+            tooltip: 'Nehmen Sie in diesem Schritt einige Einstellungen vor.',
+            tooltipDisabled:
+              'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+          },
+          {
+            title: 'Fragen',
+            tooltip:
+              'Fügen Sie in diesem Schritt Fragen und Text-Elemente zu Ihrem Lernelement hinzu.',
+            tooltipDisabled:
+              'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+          },
+        ]}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
@@ -354,10 +374,8 @@ function StepTwo(props: StepProps) {
 
 function StepThree(_: StepProps) {
   return (
-    <>
-      <div className="mt-2 mb-2">
-        <BlockField fieldName="questions" />
-      </div>
-    </>
+    <div className="mt-2 mb-2">
+      <BlockField fieldName="questions" />
+    </div>
   )
 }
