@@ -91,11 +91,11 @@
     "ts-node": "10.9.1",
     "tsup": "6.7.0",
     "typescript": "5.0.4",
-    "uuidv4": "6.2.13"
+    "uuidv4": "6.2.13",
+    "mongoose": "7.3.3"
   },
   "dependencies": {
-    "@prisma/client": "4.14.1",
-    "mongoose": "7.3.3"
+    "@prisma/client": "4.14.1"
   },
   "volta": {
     "extends": "../../package.json"
