@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { AccessMode, PrismaClient, Question, QuestionInstanceType, SessionBlockStatus, SessionStatus, Tag } from '../client';
 import { QuestionType } from '@klicker-uzh/prisma'
-import { getLegacyResults } from './getLegacyResults';
+import { closeLegacyConnection, getLegacyResults } from './getLegacyResults';
 
 // used to extract the string (e.g., objectId, createdAt, etc.) inside "\"...\"" 
 const extractString = (stringItem: string) => {
@@ -54,12 +54,12 @@ const importTags = async (prisma: PrismaClient, tags: any, user, batchSize: numb
                             }
                         }
                     }})
-                    console.log("new tag created: ", newTag)
+                    // console.log("new tag created: ", newTag)
                     const extractedId = extractString(tag._id)
-                    console.log("tag._id: ", extractedId)
+                    // console.log("tag._id: ", extractedId)
                     mappedTags[extractedId] = {id: newTag.id, name: newTag.name}
                 }
-                console.log("mappedTagIds: ", mappedTags)
+                // console.log("mappedTagIds: ", mappedTags)
              })
         }
     } catch (error) {
@@ -109,7 +109,7 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
                         result.data.options = {
                           choices: question.versions.options[question.type].choices.map(
                             (choice, ix) => {
-                                console.log("SC/MC choice: ", choice)
+                                // console.log("SC/MC choice: ", choice)
                               if (choice.correct) result.data.hasSampleSolution = true
                               return {
                                 ix,
@@ -125,7 +125,7 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
                         // throw new Error('Unsupported question type NR')
                         // console.log("FREE_RANGE question.FREE_RANGE: ", question.versions.options.FREE_RANGE)
                         const restrictions = question.versions.options.FREE_RANGE?.restrictions;
-                        console.log("restrictions: ", restrictions)
+                        // console.log("restrictions: ", restrictions)
                         if (!restrictions) {
                             result.data.options = {
                                 restrictions: undefined,
@@ -165,15 +165,16 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
     } catch (error) {
         console.log("Something went wrong while importing questions: ", error)
     }
-    console.log("mappedQuestionIds: ", mappedQuestionIds)
+    // console.log("mappedQuestionIds: ", mappedQuestionIds)
     return mappedQuestionIds
 }
 
 const importQuestionInstances = async (prisma: PrismaClient, importedQuestionInstances: any, mappedQuestionIds: Record<string, number>, user,  batchSize: number) => {
     let mappedQuestionInstancesIds: Record<string, number> = {}
-    console.log("questionId: ", Object.values(mappedQuestionIds))
+    // console.log("questionId: ", Object.values(mappedQuestionIds))
+    // TODO: check if it works in azure functions, had to extract it out of the transaction since the multiple read operations caused a deadlock
     const questions = await Promise.all(Object.values(mappedQuestionIds).map((questionId) => prisma.question.findUnique({where: { id: questionId}})))
-    console.log("questions: ", questions)
+    // console.log("questions: ", questions)
     const batches = sliceIntoChunks(importedQuestionInstances,  batchSize)
     let lostResults: any[] = []
     try {
@@ -185,7 +186,7 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
                     let questionData = {}
                     let questionId = null
                     const question = questions.find((question) => question.id === mappedQuestionIds[extractString(questionInstance.question)])
-                    console.log("importQuestionInstances question: ", question)
+                    // console.log("importQuestionInstances question: ", question)
                     
                     // TODO: move processQuestionData to shared-components and use it to create questionData
                     if (question) {
@@ -196,16 +197,19 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
                     } 
 
                     if (questionInstance.results == null) {
-                        lostResults.push(questionInstance)
+                        // lostResults.push(questionInstance)
                         // TODO: restore results from legacy db
-                        // questionInstance.results = await getLegacyResults(extractString(questionInstance._id))
+                        questionInstance.results = await getLegacyResults(extractString(questionInstance._id))
+                        if (questionInstance.results == null) {
+                            lostResults.push(questionInstance)
+                        }
                         // console.log("importQuestionInstances restored results: ", questionInstance.results)
                     }
 
                     let results = {};
     
                     if (questionInstance.results) {
-                        console.log("importQuestionInstances questionData.type: ", questionData.type)
+                        // console.log("importQuestionInstances questionData.type: ", questionData.type)
                         if (questionData.type === "SC" || questionData.type === "MC") {
                             // console.log("SC/MC questionInstance.results: ", questionInstance.results)
                             if (questionInstance.results.CHOICES) {
@@ -284,7 +288,7 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
     catch (error) {
         console.log("Something went wrong while importing question instances: ", error)
     }
-    console.log("mappedQuestionInstancesIds: ", mappedQuestionInstancesIds)
+    // console.log("mappedQuestionInstancesIds: ", mappedQuestionInstancesIds)
     console.log("lostResults: ", lostResults)
     console.log("lostResults.length: ", lostResults.length)
     return mappedQuestionInstancesIds
@@ -302,7 +306,7 @@ const deleteQuestions = async (prisma: PrismaClient) => {
                 }
             })
             const questionsToDelete = questions.map((question) => question.id)
-            console.log("questions to be deleted: ", questionsToDelete)
+            // console.log("questions to be deleted: ", questionsToDelete)
             await prisma.question.deleteMany({
                 where: {
                     id: {
@@ -344,8 +348,8 @@ const importSessions = async (prisma: PrismaClient, importedSessions: any, mappe
        for (const batch of batches) {
         await prisma.$transaction(async (prisma) => {
             for (const session of batch) {
-                console.log("session to be imported: ", session);
-                console.log("session isBeta: ", !!session.isBeta)
+                // console.log("session to be imported: ", session);
+                // console.log("session isBeta: ", !!session.isBeta)
                 const newSession = await prisma.session.create({
                     data: {
                         namespace: session.namespace,
@@ -446,7 +450,7 @@ const importSessions = async (prisma: PrismaClient, importedSessions: any, mappe
                         });
                     }
                 }
-                console.log("new session created: ", newSession);
+                // console.log("new session created: ", newSession);
             }
         });
        }
@@ -465,7 +469,8 @@ const importV2Data = async () => {
     // __dirname provides the current directory name of the current file
     const dirPath = path.join(__dirname, '../../../../migration/export_v2_data/exported_json_files');
     // const filePath = path.join(dirPath, 'exported_data_2023-07-06_17-10-52.json');
-    const filePath = path.join(dirPath, 'exported_data_2023-06-30_13-19-22.json');
+    // const filePath = path.join(dirPath, 'exported_data_2023-07-14_10-03-00.json');
+    const filePath = path.join(dirPath, "exported_data_no_questioninstances_results.json");
 
     let importData;
     if (fs.existsSync(dirPath)) {
@@ -523,8 +528,10 @@ const importV2Data = async () => {
     
         const importedSessions = importData.sessions
         mappedSessionIds = await importSessions(prisma, importedSessions, mappedQuestionInstancesIds, user, batchSize)
-
+        console.log("Successfully imported data")
         // deleteQuestions(prisma)
+
+        closeLegacyConnection()
         
     } catch (error) {
         console.log("Something went wrong while importing data: ", error)

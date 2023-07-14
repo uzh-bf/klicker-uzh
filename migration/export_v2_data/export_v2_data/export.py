@@ -52,6 +52,12 @@ try:
     for question in export_data["questions"]:
         if question["versions"]:
             question["versions"] = question["versions"][-1]
+      
+    # used for testing getLegacyQuestionInstanceResults      
+    # export_data["questioninstances"] = [
+    #     {**questioninstance, "results": None} 
+    #     for questioninstance in export_data["questioninstances"]
+    # ]    
     
     # generate a json file with the user data
     output_directory =  "exported_json_files"
