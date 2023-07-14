@@ -2,6 +2,34 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Launch Chrome (frontend-control)",
+      "request": "launch",
+      "type": "chrome",
+      "url": "http://127.0.0.1:3003",
+      "webRoot": "${workspaceFolder}/apps/frontend-control",
+    },
+    {
+      "name": "Launch Chrome (frontend-manage)",
+      "request": "launch",
+      "type": "chrome",
+      "url": "http://127.0.0.1:3002",
+      "webRoot": "${workspaceFolder}/apps/frontend-manage",
+    },
+    {
+      "name": "Launch Chrome (frontend-pwa)",
+      "request": "launch",
+      "type": "chrome",
+      "url": "http://127.0.0.1:3001",
+      "webRoot": "${workspaceFolder}/apps/frontend-pwa",
+    },
+    {
+      "name": "Launch Chrome (office-addin)",
+      "request": "launch",
+      "type": "chrome",
+      "url": "http://127.0.0.1:3000",
+      "webRoot": "${workspaceFolder}/apps/office-addin",
+    },
+    {
       "name": "Attach to Node Functions",
       "type": "node",
       "request": "attach",
