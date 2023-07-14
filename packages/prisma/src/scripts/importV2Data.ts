@@ -33,11 +33,26 @@ function sliceIntoChunks(array: any[], chunkSize: number) {
 
 const importTags = async (prisma: PrismaClient, tags: any, user, batchSize: number) => {
     let mappedTags: Record<string, Record<string, string | number>> = {}
+    const tagsInDb = await prisma.tag.findMany()
+    const tagsDict: Record<string, any> = tagsInDb.reduce((acc, t) => {
+        if (t.originalId != null) {
+            acc[t.originalId] = t;
+          }
+          return acc;
+      }, {});
     const batches = sliceIntoChunks(tags, batchSize)
     try {
         for (const batch of batches) {
             await prisma.$transaction( async (prisma) => {
                 for (const tag of batch) {
+                    const tagExists = tagsDict[extractString(tag._id)]
+
+                    if (tagExists) {
+                        console.log("tag already exists: ", tagExists)
+                        mappedTags[extractString(tag._id)] = {id: tagExists.id, name: tagExists.name}
+                        continue
+                    }
+
                     const newTag = await prisma.tag.upsert({
                         where: {
                             ownerId_name: {
@@ -48,6 +63,7 @@ const importTags = async (prisma: PrismaClient, tags: any, user, batchSize: numb
                         update: {},
                         create: {
                             name: tag.name,
+                            originalId: extractString(tag._id),
                             owner: {
                                 connect: {
                                     id: user.id
@@ -70,15 +86,31 @@ const importTags = async (prisma: PrismaClient, tags: any, user, batchSize: numb
 
 const importQuestions = async (prisma: PrismaClient, importedQuestions: any, mappedTags: Record<string, Record<string, string | number>>, user,  batchSize: number) => {
     let mappedQuestionIds: Record<string, number> = {}
+    const questionsInDb = await prisma.question.findMany()
+    
+    const questionsDict: Record<string, any> = questionsInDb.reduce((acc, cur) => {
+        if (cur.originalId != null) {
+            acc[cur.originalId] = cur;
+        }                            
+        return acc;
+    }, {});
     const batches = sliceIntoChunks(importedQuestions, batchSize)
     try {
         for (const batch of batches) {
             await prisma.$transaction( async (prisma) => {
                 for (const question of batch) {
                     // console.log("question to be imported: ", question)
+                    const questionExists = questionsDict[extractString(question._id)]
+
+                    if (questionExists) {
+                        console.log("question already exists: ", questionExists)
+                        mappedQuestionIds[extractString(question._id)] = questionExists.id
+                        continue
+                    }
     
                     const result = {
                         data: {
+                            originalId: extractString(question._id),
                             name: question.title,
                             type: QuestionTypeMap[question.type],
                             content: question.versions.content,
@@ -174,6 +206,13 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
     // console.log("questionId: ", Object.values(mappedQuestionIds))
     // TODO: check if it works in azure functions, had to extract it out of the transaction since the multiple read operations caused a deadlock
     const questions = await Promise.all(Object.values(mappedQuestionIds).map((questionId) => prisma.question.findUnique({where: { id: questionId}})))
+    const questionInstancesInDb = await prisma.questionInstance.findMany()
+    const questionInstancesDict: Record<string, any> = questionInstancesInDb.reduce((acc, qi) => {
+        if (qi.originalId != null){
+            acc[qi.originalId] = qi;
+        }
+        return acc;
+    }, {});
     // console.log("questions: ", questions)
     const batches = sliceIntoChunks(importedQuestionInstances,  batchSize)
     let lostResults: any[] = []
@@ -182,6 +221,14 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
             await prisma.$transaction( async (prisma) => {
                 for (const questionInstance of batch) {
                     // console.log("questionInstance to be imported: ", questionInstance)
+
+                    const questionInstanceExists = questionInstancesDict[extractString(questionInstance._id)]
+
+                    if (questionInstanceExists) {
+                        console.log("questionInstance already exists: ", questionInstanceExists)
+                        mappedQuestionInstancesIds[extractString(questionInstance._id)] = questionInstanceExists.id
+                        continue
+                    }
     
                     let questionData = {}
                     let questionId = null
@@ -240,6 +287,7 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
     
                     const result = {
                         data: {
+                            originalId: extractString(questionInstance._id),
                             type: QuestionInstanceType.SESSION,
                             questionData: questionData,
                             participants: questionInstance.results?.totalParticipants,
@@ -343,6 +391,13 @@ const getSessionStatus = (status: string) => {
 const importSessions = async (prisma: PrismaClient, importedSessions: any, mappedQuestionInstanceIds: Record<string, number>, user,  batchSize: number) => {
     //new uuid is generated for each session -> string
     let mappedSessionIds: Record<string, string> = {}
+    const sessionsInDb = await prisma.session.findMany()
+    const sessionsDict: Record<string, any> = sessionsInDb.reduce((acc, s) => {
+        if (s.originalId != null) {
+            acc[s.originalId] = s;
+          }
+        return acc;
+      }, {});
     const batches = sliceIntoChunks(importedSessions, batchSize)
     try {
        for (const batch of batches) {
@@ -350,8 +405,19 @@ const importSessions = async (prisma: PrismaClient, importedSessions: any, mappe
             for (const session of batch) {
                 // console.log("session to be imported: ", session);
                 // console.log("session isBeta: ", !!session.isBeta)
+
+                const sessionExists = sessionsDict[extractString(session._id)]
+
+                if (sessionExists) {
+                    console.log("session already exists: ", sessionExists)
+                    mappedSessionIds[extractString(session._id)] = sessionExists.id
+                    continue
+                }
+
+
                 const newSession = await prisma.session.create({
                     data: {
+                        originalId: extractString(session._id),
                         namespace: session.namespace,
                         name: session.name,
                         displayName: session.name, // no displayName in v2
@@ -469,8 +535,8 @@ const importV2Data = async () => {
     // __dirname provides the current directory name of the current file
     const dirPath = path.join(__dirname, '../../../../migration/export_v2_data/exported_json_files');
     // const filePath = path.join(dirPath, 'exported_data_2023-07-06_17-10-52.json');
-    // const filePath = path.join(dirPath, 'exported_data_2023-07-14_10-03-00.json');
-    const filePath = path.join(dirPath, "exported_data_no_questioninstances_results.json");
+    const filePath = path.join(dirPath, 'exported_data_2023-07-14_10-03-00.json');
+    // const filePath = path.join(dirPath, "exported_data_no_questioninstances_results.json");
 
     let importData;
     if (fs.existsSync(dirPath)) {
@@ -515,7 +581,7 @@ const importV2Data = async () => {
         //new uuid is generated for each session -> string
         let mappedSessionIds: Record<string, string> = {}
     
-        const batchSize = 150
+        const batchSize = 50
         // import tags
         const tags = importData.tags
         mappedTags = await importTags(prisma, tags, user, batchSize)
