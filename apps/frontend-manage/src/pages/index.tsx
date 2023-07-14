@@ -61,7 +61,7 @@ function Index() {
     if (router.query.sessionId) {
       setCreationMode(router.query.editMode as any)
     }
-  })
+  }, [router])
 
   const index = useMemo(() => {
     if (dataQuestions?.userQuestions) {
