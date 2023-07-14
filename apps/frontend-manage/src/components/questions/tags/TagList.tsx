@@ -19,6 +19,7 @@ import TagItem from './TagItem'
 import UserTag from './UserTag'
 
 interface Props {
+  compact: boolean
   activeTags: string[]
   activeType: string
   sampleSolution: boolean
@@ -31,6 +32,7 @@ interface Props {
 
 // TODO: re-add archive toggle
 function TagList({
+  compact,
   activeTags,
   activeType,
   sampleSolution,
@@ -47,8 +49,10 @@ function TagList({
   } = useQuery(GetUserTagsDocument)
 
   const [questionTypesVisible, setQuestionTypesVisible] = useState(true)
-  const [userTagsVisible, setUserTagsVisible] = useState(false)
-  const [gamificationTagsVisible, setGamificationTagsVisible] = useState(false)
+  const [userTagsVisible, setUserTagsVisible] = useState(!compact)
+  const [gamificationTagsVisible, setGamificationTagsVisible] = useState(
+    !compact
+  )
 
   const tags = tagsData?.userTags?.map((tag) => {
     return { name: tag.name, id: tag.id }

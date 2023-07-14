@@ -6,23 +6,31 @@ import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
 import TagList from '@components/questions/tags/TagList'
+import CreationButton from '@components/sessions/creation/CreationButton'
+import SessionCreation from '@components/sessions/creation/SessionCreation'
 import {
+  faChalkboardUser,
+  faGraduationCap,
   faMagnifyingGlass,
   faSort,
   faSortAsc,
   faSortDesc,
+  faUserGroup,
+  faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Select, TextField } from '@uzh-bf/design-system'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
-import SessionCreation from '../components/sessions/creation/SessionCreation'
 
 function Index() {
   const router = useRouter()
 
   const [searchInput, setSearchInput] = useState('')
+  const [creationMode, setCreationMode] = useState<
+    undefined | 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
+  >(undefined)
   const [selectedQuestions, setSelectedQuestions] = useState(
     new Array<boolean>()
   )
@@ -49,6 +57,10 @@ function Index() {
   useEffect((): void => {
     router.prefetch('/sessions/running')
     router.prefetch('/sessions')
+
+    if (router.query.sessionId) {
+      setCreationMode(router.query.editMode as any)
+    }
   })
 
   const index = useMemo(() => {
@@ -96,17 +108,63 @@ function Index() {
       data={{ cy: 'homepage' }}
       className={{ children: 'pb-2' }}
     >
-      <div className="flex-none mb-4">
-        <SessionCreation
-          sessionId={router.query.sessionId as string}
-          editMode={router.query.editMode as string}
-        />
-      </div>
+      {typeof creationMode === 'undefined' && (
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          <CreationButton
+            icon={faUsersLine}
+            text="Live-Session erstellen"
+            onClick={() => {
+              setCreationMode('liveSession')
+            }}
+            data={{ cy: 'create-live-session' }}
+          />
+          <CreationButton
+            icon={faChalkboardUser}
+            text="Micro-Session erstellen"
+            onClick={() => {
+              setCreationMode('microSession')
+            }}
+            data={{ cy: 'create-micro-session' }}
+          />
+          <CreationButton
+            icon={faGraduationCap}
+            text="Lernelement erstellen"
+            onClick={() => {
+              setCreationMode('learningElement')
+            }}
+            data={{ cy: 'create-learning-element' }}
+          />
+          <CreationButton
+            icon={faUserGroup}
+            text="Gruppentask erstellen"
+            onClick={() => {
+              setCreationMode('groupTask')
+            }}
+            data={{ cy: 'create-learning-element' }}
+            disabled
+          />
+        </div>
+      )}
+      {creationMode && (
+        <div className="flex-none mb-4">
+          <SessionCreation
+            creationMode={creationMode}
+            closeWizard={() => {
+              router.push('/')
+              setCreationMode(() => undefined)
+            }}
+            sessionId={router.query.sessionId as string}
+            editMode={router.query.editMode as string}
+          />
+        </div>
+      )}
 
       <div className="flex flex-row flex-1 gap-4 overflow-y-auto">
         <div>
           {dataQuestions && dataQuestions.userQuestions && (
             <TagList
+              key={creationMode}
+              compact={!!creationMode}
               activeTags={filters.tags}
               activeType={filters.type}
               sampleSolution={filters.sampleSolution}

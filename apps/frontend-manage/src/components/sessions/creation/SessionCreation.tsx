@@ -1,4 +1,6 @@
 import { useQuery } from '@apollo/client'
+import { faX } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Course,
   GetLearningElementDocument,
@@ -9,20 +11,27 @@ import {
   MicroSession,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Tab, TabContent, TabList, Tabs } from '@uzh-bf/design-system'
-import { useMemo, useState } from 'react'
+import { Button, H2 } from '@uzh-bf/design-system'
+import { useRouter } from 'next/router'
+import { useMemo } from 'react'
 import LearningElementWizard from './LearningElementWizard'
 import LiveSessionWizard from './LiveSessionWizard'
 import MicroSessionWizard from './MicroSessionWizard'
 
 interface SessionCreationProps {
+  creationMode: 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
+  closeWizard: () => void
   sessionId?: string
   editMode?: string
 }
 
-function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
-  const [selectedForm, setSelectedForm] = useState(editMode)
-
+function SessionCreation({
+  creationMode,
+  closeWizard,
+  sessionId,
+  editMode,
+}: SessionCreationProps) {
+  const router = useRouter()
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
     skip: !sessionId || editMode !== 'liveSession',
@@ -55,69 +64,45 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
 
   return (
     <div className="flex flex-col justify-center print-hidden">
-      <div className="w-full h-full border rounded-lg">
-        <Tabs
-          defaultValue="liveSession"
-          value={selectedForm}
-          onValueChange={(newValue: string) => setSelectedForm(newValue)}
-        >
-          <TabList
-            className={{
-              root: 'flex flex-row justify-between w-full h-8',
-            }}
-          >
-            <Tab
-              key="liveSession"
-              value="liveSession"
-              label="Live-Session"
-              className={{
-                root: 'flex-1 bg-primary-20 border-b-0',
-                label:
-                  'font-bold text-base flex flex-col justify-center h-full',
-              }}
-            />
-            <Tab
-              key="microSession"
-              value="microSession"
-              label="Micro-Session"
-              className={{
-                root: 'flex-1 bg-primary-20 border-b-0',
-                label:
-                  'font-bold text-base flex flex-col justify-center h-full',
-              }}
-              disabled={courseSelection?.length === 0}
-              data={{ cy: 'create-micro-session' }}
-            />
-            <Tab
-              key="learningElement"
-              value="learningElement"
-              label="Lernelement"
-              className={{
-                root: 'flex-1 bg-primary-20 border-b-0',
-                label:
-                  'font-bold text-base flex flex-col justify-center h-full',
-              }}
-              disabled={courseSelection?.length === 0}
-              data={{ cy: 'create-learning-element' }}
-            />
-          </TabList>
-          <TabContent
-            key="liveSession"
-            value="liveSession"
-            className={{ root: 'p-0' }}
-          >
+      <div className="w-full h-full rounded-lg">
+        {creationMode === 'liveSession' && (
+          <>
+            <div className="grid w-full grid-cols-3 mb-1 -mt-1">
+              <div />
+              <H2 className={{ root: 'w-full text-center' }}>
+                Live-Session {editMode ? 'bearbeiten' : 'erstellen'}
+              </H2>
+              <Button
+                className={{ root: 'ml-auto -mt-1 border-red-400' }}
+                onClick={closeWizard}
+              >
+                <FontAwesomeIcon icon={faX} />
+                <div>{editMode ? 'Editieren' : 'Erstellen'} abbrechen</div>
+              </Button>
+            </div>
             <LiveSessionWizard
               courses={courseSelection || [{ label: '', value: '' }]}
               initialValues={
                 (dataLiveSession?.liveSession as Session) ?? undefined
               }
             />
-          </TabContent>
-          <TabContent
-            key="microSession"
-            value="microSession"
-            className={{ root: 'p-0' }}
-          >
+          </>
+        )}
+        {creationMode === 'microSession' && (
+          <>
+            <div className="grid w-full grid-cols-3 mb-1 -mt-1">
+              <div />
+              <H2 className={{ root: 'w-full text-center' }}>
+                Micro-Session {editMode ? 'bearbeiten' : 'erstellen'}
+              </H2>
+              <Button
+                className={{ root: 'ml-auto -mt-1 border-red-400' }}
+                onClick={closeWizard}
+              >
+                <FontAwesomeIcon icon={faX} />
+                <div>{editMode ? 'Editieren' : 'Erstellen'} abbrechen</div>
+              </Button>
+            </div>
             <MicroSessionWizard
               courses={courseSelection || [{ label: '', value: '' }]}
               initialValues={
@@ -125,12 +110,23 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
                 undefined
               }
             />
-          </TabContent>
-          <TabContent
-            key="learningElement"
-            value="learningElement"
-            className={{ root: 'p-0' }}
-          >
+          </>
+        )}
+        {creationMode === 'learningElement' && (
+          <>
+            <div className="grid w-full grid-cols-3 mb-1 -mt-1">
+              <div />
+              <H2 className={{ root: 'w-full text-center' }}>
+                Lernelement {editMode ? 'bearbeiten' : 'erstellen'}
+              </H2>
+              <Button
+                className={{ root: 'ml-auto -mt-1 border-red-400' }}
+                onClick={closeWizard}
+              >
+                <FontAwesomeIcon icon={faX} />
+                <div>{editMode ? 'Editieren' : 'Erstellen'} abbrechen</div>
+              </Button>
+            </div>
             <LearningElementWizard
               courses={courseSelection || [{ label: '', value: '' }]}
               initialValues={
@@ -138,8 +134,8 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
                 undefined
               }
             />
-          </TabContent>
-        </Tabs>
+          </>
+        )}
       </div>
     </div>
   )

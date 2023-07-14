@@ -105,17 +105,17 @@ function MultistepWizard({
         enableReinitialize
       >
         {({ values, isSubmitting, isValid, resetForm }) => (
-          <Form className="h-76">
+          <Form className="border rounded-md h-76 border-uzh-grey-60">
             <Workflow
               items={workflowItems}
               onClick={(_, ix) => setStepNumber(ix)}
               activeIx={stepNumber}
               // TODO: choose optimal disabled logic - allow to jump between 3 and 1 if all valid
               disabledFrom={isValid ? stepNumber + 2 : stepNumber + 1}
-              className={{
-                root: 'border-t border-solid border-black',
-              }}
               minimal
+              className={{
+                item: 'first:rounded-tl-md last:rounded-tr-md',
+              }}
             />
             <div className="flex flex-col justify-between gap-1 p-4 overflow-y-auto h-60">
               {!isCompleted && <div>{step}</div>}
@@ -130,14 +130,18 @@ function MultistepWizard({
                   setStepNumber={setStepNumber}
                 />
               )}
-              {isValid && (
+              {isValid && !isCompleted && (
                 <Button
                   disabled={isSubmitting && !isValid}
                   type="submit"
                   data={{ cy: 'next-or-submit' }}
                   className={{ root: 'w-max self-end' }}
                 >
-                  Weiter
+                  {stepNumber === steps.length - 1
+                    ? editMode
+                      ? 'Speichern'
+                      : 'Erstellen'
+                    : 'Weiter'}
                 </Button>
               )}
             </div>
