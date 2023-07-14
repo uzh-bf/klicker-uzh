@@ -35,7 +35,9 @@ function Index() {
   const [selectedQuestions, setSelectedQuestions] = useState<
     Record<number, boolean>
   >({})
-  console.log(selectedQuestions)
+  const [displayedQuestions, setDisplayedQuestions] = useState([])
+  const [displayedQuestionsIds, setDisplayedQuestionsIds] = useState([])
+  const [archivedQuestions, setArchivedQuestions] = useState([])
 
   const {
     loading: loadingQuestions,
@@ -73,7 +75,14 @@ function Index() {
 
   const processedQuestions = useMemo(() => {
     if (dataQuestions?.userQuestions) {
-      return processItems(dataQuestions?.userQuestions, filters, sort, index)
+      const items = processItems(
+        dataQuestions?.userQuestions,
+        filters,
+        sort,
+        index
+      )
+      setDisplayedQuestions(items)
+      return items
     }
     return
   }, [dataQuestions?.userQuestions, filters, index, sort])
@@ -103,17 +112,26 @@ function Index() {
   const selectedQuestionIds = useMemo(() => {
     return Object.entries(selectedQuestions).flatMap(([id, selected]) => {
       if (!selected) return []
-      return [id]
+      setDisplayedQuestionsIds([parseInt(id)])
+      return [parseInt(id)]
     })
   }, [selectedQuestions])
 
   // move element by id to archived array
   const moveToArchived = () => {
-    console.log('move to archived')
-    console.log(selectedQuestionIds)
-    console.log(processedQuestions)
-    const filteredQuestions = processedQuestions
-    console.log(filteredQuestions)
+    const archivedQuestionsCopy = [...archivedQuestions]
+    const processedQuestionsCopy = [...displayedQuestions]
+    selectedQuestionIds.forEach((id) => {
+      processedQuestions?.find((question, index) => {
+        if (question.id === id) {
+          archivedQuestionsCopy.push(question)
+          delete processedQuestionsCopy[index]
+        }
+      })
+    })
+    setDisplayedQuestions(processedQuestionsCopy)
+    setArchivedQuestions(archivedQuestionsCopy)
+    setSelectedQuestions({})
   }
 
   return (
@@ -192,7 +210,7 @@ function Index() {
                       handleSortByChange(newSortBy)
                     }}
                   />
-                  {selectedQuestionIds.length > 0 && (
+                  {displayedQuestionsIds.length > 0 && (
                     <Tooltip tooltip="Archivieren">
                       <Button
                         className={{
@@ -228,7 +246,7 @@ function Index() {
               <div className="h-full overflow-y-auto">
                 {selectedQuestionIds.length} items selected
                 <QuestionList
-                  questions={processedQuestions}
+                  questions={displayedQuestions}
                   selectedQuestions={selectedQuestions}
                   setSelectedQuestions={(questionId: number) => {
                     setSelectedQuestions((prevState) => ({
