@@ -6,6 +6,10 @@ import { AccessMode, PrismaClient, Question, QuestionInstanceType, SessionBlockS
 import { QuestionType } from '@klicker-uzh/prisma'
 import { closeLegacyConnection, getLegacyResults } from './getLegacyResults';
 
+// TODOs: 
+// - Test UI after import
+// - Compare DB with DIFF tools 
+
 // used to extract the string (e.g., objectId, createdAt, etc.) inside "\"...\"" 
 const extractString = (stringItem: string) => {
     const pattern = /"(.*)"/
@@ -236,6 +240,7 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
                     // console.log("importQuestionInstances question: ", question)
                     
                     // TODO: move processQuestionData to shared-components and use it to create questionData
+                    // TODO: add 'attachments' to relevant questionData types
                     if (question) {
                         questionData = {
                             ...question,
@@ -342,31 +347,6 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
     return mappedQuestionInstancesIds
 }
 
-const deleteQuestions = async (prisma: PrismaClient) => {
-    try {
-        await prisma.$transaction(async (prisma) => {
-            const questions = await prisma.question.findMany({
-                where: {
-                    isDeleted: true
-                },
-                select: {
-                    id: true
-                }
-            })
-            const questionsToDelete = questions.map((question) => question.id)
-            // console.log("questions to be deleted: ", questionsToDelete)
-            await prisma.question.deleteMany({
-                where: {
-                    id: {
-                        in: questionsToDelete
-                    }
-                }
-            })
-        })
-    } catch (error) {
-        console.log("Something went wrong while deleting questions: ", error)
-    }
-}
 
 const getSessionBlockStatus = (status: string) => {
     switch (status) {
@@ -595,7 +575,8 @@ const importV2Data = async () => {
         const importedSessions = importData.sessions
         mappedSessionIds = await importSessions(prisma, importedSessions, mappedQuestionInstancesIds, user, batchSize)
         console.log("Successfully imported data")
-        // deleteQuestions(prisma)
+
+        // TODO: import files
 
         closeLegacyConnection()
         

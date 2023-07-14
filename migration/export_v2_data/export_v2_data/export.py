@@ -22,6 +22,7 @@ try:
     client = MongoClient(mongo_url)
     db = client[database_name]
 
+    # TODO: terminate running sessions before exporting data
     # used to verify whether the exception is raised
     # email = "abc@hotmail.com"
     user_document = db['users'].find_one({"email": f"{email}"})
