@@ -140,7 +140,7 @@ function Index() {
             onClick={() => {
               setCreationMode('groupTask')
             }}
-            data={{ cy: 'create-learning-element' }}
+            data={{ cy: 'create-group-task' }}
             disabled
           />
         </div>
