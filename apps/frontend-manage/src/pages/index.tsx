@@ -7,13 +7,20 @@ import { buildIndex, processItems } from '../lib/utils/filters'
 
 import TagList from '@components/questions/tags/TagList'
 import {
+  faBoxArchive,
   faMagnifyingGlass,
   faSort,
   faSortAsc,
   faSortDesc,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, Select, TextField, ThemeContext } from '@uzh-bf/design-system'
+import {
+  Button,
+  Select,
+  TextField,
+  ThemeContext,
+  Tooltip,
+} from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
@@ -100,6 +107,15 @@ function Index() {
     })
   }, [selectedQuestions])
 
+  // move element by id to archived array
+  const moveToArchived = () => {
+    console.log('move to archived')
+    console.log(selectedQuestionIds)
+    console.log(processedQuestions)
+    const filteredQuestions = processedQuestions
+    console.log(filteredQuestions)
+  }
+
   return (
     <Layout
       displayName="Fragepool"
@@ -176,6 +192,22 @@ function Index() {
                       handleSortByChange(newSortBy)
                     }}
                   />
+                  {selectedQuestionIds.length > 0 && (
+                    <Tooltip tooltip="Archivieren">
+                      <Button
+                        className={{
+                          root: 'h-10 ml-1',
+                        }}
+                        onClick={() => {
+                          moveToArchived()
+                        }}
+                      >
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faBoxArchive} />
+                        </Button.Icon>
+                      </Button>
+                    </Tooltip>
+                  )}
                 </div>
                 <Button
                   onClick={() =>
