@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.10](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.9...v1.8.10) (2023-07-15)
+
+
+### Other
+
+* add release announcement in banner ([#3742](https://github.com/uzh-bf/klicker-uzh/issues/3742)) ([d861a37](https://github.com/uzh-bf/klicker-uzh/commit/d861a3775384173749f6654ddf9730f5b877ee4b))
+* update redis chart, remove settings for chatwoot and happykit ([00396d7](https://github.com/uzh-bf/klicker-uzh/commit/00396d7c05af946656c2b32b13e6fff3e5473b6d))
+
 ### [1.8.9](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.8...v1.8.9) (2022-11-26)
 
 
