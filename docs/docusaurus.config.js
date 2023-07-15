@@ -221,7 +221,7 @@ const config = {
     },
     algolia: {
       appId: 'TZ15XJ66MJ',
-      apiKey: '765b79e360223a157b384c08463a47ac',
+      apiKey: '591a723cb9f36f1a60d80180a3463d2f',
       indexName: 'klicker-uzh',
     },
   },
