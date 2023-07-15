@@ -1,7 +1,6 @@
 import { useColorMode } from '@docusaurus/theme-common'
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface RoadmapTileProps {

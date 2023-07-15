@@ -1,4 +1,3 @@
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export default function TableChart({ className, title, data }) {

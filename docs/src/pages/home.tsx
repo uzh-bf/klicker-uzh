@@ -1,12 +1,13 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useColorMode } from '@docusaurus/theme-common'
-import { faArrowRight, faMessage } from '@fortawesome/free-solid-svg-icons'
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Image from '@theme/IdealImage'
 import Layout from '@theme/Layout'
 import { Button } from '@uzh-bf/design-system'
+import AnnouncementBanner from '../components/AnnouncementBanner'
 import ImageTextBlock from '../components/common/ImageTextBlock'
 import TitleTextBlock from '../components/common/TitleTextBlock'
 import ImageTile from '../components/landing/ImageTile'
@@ -151,28 +152,8 @@ function Home() {
 
   return (
     <Layout title="Welcome">
-      <div className="flex flex-row items-center gap-6 bg-uzh-red-20 p-4 text-black">
-        <div>
-          <FontAwesomeIcon icon={faMessage} />
-        </div>
-        <div>
-          <div className="font-bold">
-            KlickerUZH v3.0 - Concept and Request for Feedback
-          </div>
-          <div className="font-sans">
-            We have just published our{' '}
-            <a
-              href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79"
-              target="_blank"
-            >
-              new concept and ideas
-            </a>{' '}
-            for the upcoming KlickerUZH v3.0, which has been made available for
-            beta testing at UZH. Please have a look and let us know what you
-            think!
-          </div>
-        </div>
-      </div>
+      <AnnouncementBanner />
+
       <TitleImage imgSrc={require('../../static/img/timeline_mac.png')} />
       <div className="m-auto flex max-w-7xl flex-col gap-8 p-4 md:gap-16 md:p-8">
         <div className="flex flex-col justify-between gap-12 md:flex-row md:gap-4">

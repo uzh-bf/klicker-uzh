@@ -1,5 +1,3 @@
-import React from 'react'
-
 export default function CaseSummary({ goals, tags, children }) {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-8">

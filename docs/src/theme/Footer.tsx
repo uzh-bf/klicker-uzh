@@ -1,5 +1,4 @@
 import { useColorMode } from '@docusaurus/theme-common'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const Footer = () => {

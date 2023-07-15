@@ -1,7 +1,5 @@
-import { faMessage } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Layout from '@theme/Layout'
-import React from 'react'
+import AnnouncementBanner from '../components/AnnouncementBanner'
 import RoadmapTile from '../components/development/RoadmapTile'
 
 const Development = () => {
@@ -24,14 +22,15 @@ const Development = () => {
         {
           content: 'Learning Elements & Microlearning',
           href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79',
-          status: 'Release in v3.0 Beta (FS23)',
+          status: 'Released in v3.0 (HS23)',
         },
-        // { content: 'Poll-Based Experiments', status: 'Under Consideration' },
+        {
+          content: 'Collaborative Question Creation',
+          status: 'Under Consideration',
+        },
+        { content: 'Poll-Based Experiments', status: 'Under Consideration' },
       ],
-      tags: [
-        { text: 'Working On', color: 'orange' },
-        { text: 'Fall 21 - Spring 23', color: 'lightgray' },
-      ],
+      tags: [{ text: 'Working On', color: 'orange' }],
     },
     {
       title: 'Gamification and Engagement',
@@ -41,56 +40,39 @@ const Development = () => {
         {
           content: 'Gamified Live Quizzes',
           href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79',
-          status: 'Release in v3.0 Beta (FS23)',
+          status: 'Released in v3.0 (HS23)',
         },
         {
-          content: 'Challenges and Awards',
+          content: 'Gamified Courses, Challenges and Awards',
           href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79',
-          status: 'Release in v3.0 Beta (FS23)',
+          status: 'Released in v3.0 (HS23)',
         },
         {
-          content: 'Group Activities',
+          content: 'Groups and Group Activities',
           href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79',
-          status: 'Work In Progress',
+          status: 'Released in v3.0 (HS23)',
+        },
+        {
+          content: 'Synchronous Group Activities',
+          status: 'Under Consideration',
         },
       ],
-      tags: [
-        { text: 'Working On', color: 'orange' },
-        { text: 'Fall 22 - Spring 23', color: 'lightgray' },
-      ],
+      tags: [{ text: 'Working On', color: 'orange' }],
     },
     {
       title: 'In-Depth Analysis',
       content:
-        'Analysis functionalities allow lecturers to evaluate their sessions and questions in terms of different quality dimensions.',
+        'Analysis functionalities allow lecturers to evaluate their sessions and questions in terms of different quality dimensions, as well as students to reflect on their learning progress.',
       tags: [
         { text: 'Planned', color: 'gray' },
-        { text: 'Spring 23 - Fall 23', color: 'lightgray' },
+        { text: 'Fall 23 - Spring 24', color: 'lightgray' },
       ],
     },
   ]
 
   return (
     <Layout title="Development">
-      <div className="flex flex-row items-center gap-6 bg-uzh-red-20 p-4">
-        <div>
-          <FontAwesomeIcon icon={faMessage} />
-        </div>
-        <div>
-          <div className="font-bold">
-            KlickerUZH v3.0 - Concept and Request for Feedback
-          </div>
-          <div>
-            We have just published our{' '}
-            <a
-              href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79"
-              target="_blank"
-            >
-              new concept and ideas
-            </a>{' '}
-          </div>
-        </div>
-      </div>
+      <AnnouncementBanner />
 
       <div className="m-auto max-w-6xl p-8">
         <div className="mb-4 flex h-12 flex-row items-start justify-between">
