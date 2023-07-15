@@ -22,7 +22,7 @@ const ImageTile = ({
         <Image
           img={imgSrc}
           className={twMerge(
-            'top-0 bottom-0 left-0 right-0 max-w-full m-auto md:absolute md:max-w-full md:max-h-full max-h-64',
+            'bottom-0 left-0 right-0 top-0 m-auto max-h-64 max-w-full md:absolute md:max-h-full md:max-w-full',
             imgClassName
           )}
         />

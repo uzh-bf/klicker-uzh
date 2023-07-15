@@ -151,7 +151,7 @@ function Home() {
 
   return (
     <Layout title="Welcome">
-      <div className="flex flex-row items-center gap-6 p-4 text-black bg-uzh-red-20">
+      <div className="flex flex-row items-center gap-6 bg-uzh-red-20 p-4 text-black">
         <div>
           <FontAwesomeIcon icon={faMessage} />
         </div>
@@ -174,7 +174,7 @@ function Home() {
         </div>
       </div>
       <TitleImage imgSrc={require('../../static/img/timeline_mac.png')} />
-      <div className="flex flex-col gap-8 p-4 m-auto max-w-7xl md:gap-16 md:p-8">
+      <div className="m-auto flex max-w-7xl flex-col gap-8 p-4 md:gap-16 md:p-8">
         <div className="flex flex-col justify-between gap-12 md:flex-row md:gap-4">
           <ImageTile
             content="Feature Complete and Easy to Use"
@@ -198,10 +198,10 @@ function Home() {
         <Divider />
 
         <div>
-          <h2 className="flex flex-row items-center mb-4 text-2xl font-bold sm:text-4xl">
+          <h2 className="mb-4 flex flex-row items-center text-2xl font-bold sm:text-4xl">
             Use Cases
           </h2>
-          <div className="flex flex-col w-full gap-4">
+          <div className="flex w-full flex-col gap-4">
             {useCases.map((block: any) => (
               <ImageTextBlock
                 title={block.title}
@@ -218,7 +218,7 @@ function Home() {
         <Divider />
 
         <div>
-          <h2 className="flex flex-row items-center mb-4 text-2xl font-bold sm:text-4xl">
+          <h2 className="mb-4 flex flex-row items-center text-2xl font-bold sm:text-4xl">
             Why choose
             <KlickerLogo className="ml-1 w-28 sm:w-32" />?
           </h2>
@@ -266,7 +266,7 @@ function Home() {
                 window.open('https://www.klicker.uzh.ch/community', '_blank')
               }
               className={{
-                root: 'flex h-12 flex-row justify-center gap-4 px-4 text-base border-none shadow cursor-pointer items-center',
+                root: 'flex h-12 cursor-pointer flex-row items-center justify-center gap-4 border-none px-4 text-base shadow',
               }}
             >
               <Button.Icon>
@@ -283,7 +283,7 @@ function Home() {
 
 function Divider() {
   return (
-    <div className="w-full h-1 mt-4 bg-gradient-to-r from-gray-100 via-gray-300 to-gray-100" />
+    <div className="mt-4 h-1 w-full bg-gradient-to-r from-gray-100 via-gray-300 to-gray-100" />
   )
 }
 
@@ -292,8 +292,8 @@ const TitleImage = ({ imgSrc }) => {
 
   return (
     <>
-      <div className="sticky z-10 top-[3.75rem]">
-        <div className="flex flex-row-reverse justify-center w-full gap-2 p-2 bg-gradient-to-b from-gray-400 to-transparent sm:justify-start sm:bg-transparent-400">
+      <div className="sticky top-[3.75rem] z-10">
+        <div className="sm:bg-transparent-400 flex w-full flex-row-reverse justify-center gap-2 bg-gradient-to-b from-gray-400 to-transparent p-2 sm:justify-start">
           {[
             { text: 'Login', url: 'https://app.klicker.uzh.ch/user/login' },
             {
@@ -304,7 +304,7 @@ const TitleImage = ({ imgSrc }) => {
             <Button
               onClick={() => window.open(entry.url, '_blank')}
               className={{
-                root: 'flex h-12 w-36 bg-white text-black flex-row justify-center gap-4 px-4 text-base border-none shadow cursor-pointer items-center',
+                root: 'flex h-12 w-36 cursor-pointer flex-row items-center justify-center gap-4 border-none bg-white px-4 text-base text-black shadow',
               }}
             >
               <Button.Icon>
@@ -323,14 +323,14 @@ const TitleImage = ({ imgSrc }) => {
           />
         </div>
 
-        <h1 className="items-center justify-center mt-4 mb-4">
+        <h1 className="mb-4 mt-4 items-center justify-center">
           <KlickerLogo className="w-44 sm:w-48 md:w-64 lg:w-80" />
-          <div className="mt-2 mr-1 text-xl font-bold sm:text-2xl md:mt-4 md:text-3xl">
+          <div className="mr-1 mt-2 text-xl font-bold sm:text-2xl md:mt-4 md:text-3xl">
             Open Source Audience Interaction
           </div>
         </h1>
 
-        <div className="flex flex-col items-center justify-center gap-2 mt-8 sm:flex-row md:gap-4">
+        <div className="mt-8 flex flex-col items-center justify-center gap-2 sm:flex-row md:gap-4">
           {[
             {
               text: 'Sign Up',
@@ -352,7 +352,7 @@ const TitleImage = ({ imgSrc }) => {
               }
               className={{
                 root: twMerge(
-                  'flex h-12 w-64 md:w-52 md:text-lg bg-white text-black flex-row justify-center gap-4 px-4 text-base border-none shadow cursor-pointer items-center',
+                  'flex h-12 w-64 cursor-pointer flex-row items-center justify-center gap-4 border-none bg-white px-4 text-base text-black shadow md:w-52 md:text-lg',
                   !isDarkTheme && 'bg-gray-50'
                 ),
               }}

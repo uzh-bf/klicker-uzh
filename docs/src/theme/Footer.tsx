@@ -14,21 +14,21 @@ const Footer = () => {
           <img
             src="/img/KlickerLogo.png"
             className={twMerge(
-              'transition-opacity duration-1000 ease-out opacity-50 w-52 sm:hover:opacity-100',
+              'w-52 opacity-50 transition-opacity duration-1000 ease-out sm:hover:opacity-100',
               !isDarkTheme && 'hidden'
             )}
           />
           <img
             src="/img/KlickerLogo.png"
             className={twMerge(
-              'transition-opacity duration-1000 ease-out opacity-50 w-52 sm:hover:opacity-100',
+              'w-52 opacity-50 transition-opacity duration-1000 ease-out sm:hover:opacity-100',
               isDarkTheme && 'hidden'
             )}
           />
         </a>
       </div>
-      <div className="flex flex-col justify-center w-full mb-6 text-center md:px-10 lg:px-18">
-        <div className="self-center max-w-6xl px-10">
+      <div className="lg:px-18 mb-6 flex w-full flex-col justify-center text-center md:px-10">
+        <div className="max-w-6xl self-center px-10">
           Copyright {new Date().getFullYear()} @{' '}
           <a href="https://www.bf.uzh.ch/de/studies/general/teaching-center.html">
             Teaching Center
@@ -37,7 +37,7 @@ const Footer = () => {
           reserved. Products and Services displayed herein are trademarks or
           registered trademarks of their respective owners.
         </div>
-        <div className="self-center max-w-6xl px-10">
+        <div className="max-w-6xl self-center px-10">
           <a href="/privacy_policy" className="whitespace-nowrap">
             Privacy Policy
           </a>
