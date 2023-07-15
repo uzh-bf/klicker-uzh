@@ -1,4 +1,7 @@
-module.exports = {
+// @ts-check
+
+/** @type {import('@docusaurus/types').Config} */
+const config = {
   trailingSlash: false,
   title: 'KlickerUZH',
   tagline: 'Open source instant audience response system',
@@ -168,3 +171,5 @@ module.exports = {
     },
   },
 }
+
+module.exports = config
