@@ -1,4 +1,5 @@
-import { ArrowRightIcon } from '@heroicons/react/solid'
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Image from '@theme/IdealImage'
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
@@ -42,13 +43,21 @@ const ImageTextBlock = ({
         <div className="mb-4">{text}</div>
         {link && linkText && (
           <a href={link} className="hidden md:block">
-            <ArrowRightIcon className="h-5 align-text-bottom" /> {linkText}
+            <FontAwesomeIcon
+              icon={faArrowRight}
+              className="mr-2 h-5 align-text-bottom"
+            />{' '}
+            {linkText}
           </a>
         )}
       </div>
       {link && linkText && (
         <a href={link} className="order-2 mt-2 block md:hidden">
-          <ArrowRightIcon className="h-5 align-text-bottom" /> {linkText}
+          <FontAwesomeIcon
+            icon={faArrowRight}
+            className="mr-2 h-5 align-text-bottom"
+          />{' '}
+          {linkText}
         </a>
       )}
     </div>

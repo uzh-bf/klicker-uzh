@@ -1,4 +1,5 @@
-import { ArrowRightIcon } from '@heroicons/react/solid'
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { twMerge } from 'tailwind-merge'
 
 interface TitleTextBlockProps {
@@ -26,7 +27,11 @@ const TitleTextBlock = ({
       <div className="mb-10">{text}</div>
       {link && linkText && (
         <a href={link} className="absolute bottom-4">
-          <ArrowRightIcon className="h-5 align-text-bottom" /> {linkText}
+          <FontAwesomeIcon
+            icon={faArrowRight}
+            className="h-5 align-text-bottom mr-2"
+          />{' '}
+          {linkText}
         </a>
       )}
     </div>
