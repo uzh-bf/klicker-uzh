@@ -15,16 +15,13 @@ module.exports = {
     },
   ],
   stylesheets: [
-    'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;700&display=swap',
+    'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap',
   ],
   favicon: '/favicon.ico',
   customFields: {
     title_index: 'Klicker',
     subtitle_index: 'UZH',
     users: [],
-    fonts: {
-      myFont: ['Source Sans 3', 'Serif'],
-    },
     repoUrl: 'https://github.com/uzh-bf/klicker-uzh',
   },
   onBrokenLinks: 'log',
