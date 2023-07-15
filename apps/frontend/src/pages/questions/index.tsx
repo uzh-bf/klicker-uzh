@@ -528,10 +528,10 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                     <div>
                       The new KlickerUZH v3.0 will be released on <strong>August 26, 2023</strong>. This version (v2) of
                       the KlickerUZH will be available until the end of 2023. Refer to our{' '}
-                      <a href="https://ref.bf-app.ch/klickeruzh-v3" rel="noreferrer" target="_blank">
+                      <a href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-announcement-26-08-2023/79" rel="noreferrer" target="_blank">
                         community post
                       </a>{' '}
-                      for more information on the release and migration.
+                      for more information.
                     </div>
                   </>
                 }
