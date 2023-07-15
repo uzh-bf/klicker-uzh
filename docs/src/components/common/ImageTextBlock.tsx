@@ -26,19 +26,19 @@ const ImageTextBlock = ({
   return (
     <div
       className={twMerge(
-        'grid grid-cols-1 md:grid-cols-2 p-4 md:p-8 border border-solid border-gray-200 rounded-lg shadow w-full',
+        'grid w-full grid-cols-1 rounded-lg border border-solid border-gray-200 p-4 shadow md:grid-cols-2 md:p-8',
         className
       )}
     >
-      <div className="order-1 w-full mx-auto text-center md:px-6 md:my-auto md:order-0">
-        <Zoom overlayBgColorEnd="gray">
+      <div className="md:order-0 order-1 mx-auto w-full text-center md:my-auto md:px-6">
+        <Zoom>
           <Image
             img={imgSrc}
-            className={twMerge('p-1 shadow max-h-60', imgClassName)}
+            className={twMerge('max-h-60 p-1 shadow', imgClassName)}
           />
         </Zoom>
       </div>
-      <div className="relative w-full order-0 md:order-1">
+      <div className="order-0 relative w-full md:order-1">
         <div className="mb-2 text-lg font-bold sm:text-xl">{title}</div>
         <div className="mb-4">{text}</div>
         {link && linkText && (
@@ -48,7 +48,7 @@ const ImageTextBlock = ({
         )}
       </div>
       {link && linkText && (
-        <a href={link} className="order-2 block mt-2 md:hidden">
+        <a href={link} className="order-2 mt-2 block md:hidden">
           <ArrowRightIcon className="h-5 align-text-bottom" /> {linkText}
         </a>
       )}
