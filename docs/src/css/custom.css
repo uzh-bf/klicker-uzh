@@ -1,3 +1,4 @@
+@import 'tailwindcss/';
 @import '@uzh-bf/design-system/dist/index.esm.css';
 
 :root {

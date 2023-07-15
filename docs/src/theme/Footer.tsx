@@ -29,13 +29,10 @@ const Footer = () => {
       </div>
       <div className="lg:px-18 mb-6 flex w-full flex-col justify-center text-center md:px-10">
         <div className="max-w-6xl self-center px-10">
-          Copyright {new Date().getFullYear()} @{' '}
-          <a href="https://www.bf.uzh.ch/de/studies/general/teaching-center.html">
-            Teaching Center
-          </a>
-          , Department of Banking and Finance, University of Zurich. All rights
-          reserved. Products and Services displayed herein are trademarks or
-          registered trademarks of their respective owners.
+          Copyright {new Date().getFullYear()} @ Teaching Center, Department of
+          Banking and Finance, University of Zurich. All rights reserved.
+          Products and Services displayed herein are trademarks or registered
+          trademarks of their respective owners.
         </div>
         <div className="max-w-6xl self-center px-10">
           <a href="/privacy_policy" className="whitespace-nowrap">
