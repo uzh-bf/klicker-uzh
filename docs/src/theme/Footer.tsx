@@ -30,9 +30,9 @@ const Footer = () => {
       <div className="lg:px-18 mb-6 flex w-full flex-col justify-center text-center md:px-10">
         <div className="max-w-6xl self-center px-10">
           Copyright {new Date().getFullYear()} @ Teaching Center, Department of
-          Banking and Finance, University of Zurich. All rights reserved.
-          Products and Services displayed herein are trademarks or registered
-          trademarks of their respective owners.
+          Banking and Finance (https://www.bf.uzh.ch), University of Zurich. All
+          rights reserved. Products and Services displayed herein are trademarks
+          or registered trademarks of their respective owners.
         </div>
         <div className="max-w-6xl self-center px-10">
           <a href="/privacy_policy" className="whitespace-nowrap">
@@ -52,7 +52,7 @@ const Footer = () => {
           </a>
           {' | '}
           <a
-            href="https://www.klicker.uzh.ch/community"
+            href="https://community.klicker.uzh.ch"
             className="whitespace-nowrap"
           >
             User Community
