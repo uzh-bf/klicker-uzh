@@ -103,7 +103,7 @@ const config = {
       },
     ],
     navbar: {
-      hideOnScroll: true,
+      hideOnScroll: false,
       logo: {
         src: '/img/KlickerLogo.png',
         srcDark: '/img/KlickerLogo.png',
