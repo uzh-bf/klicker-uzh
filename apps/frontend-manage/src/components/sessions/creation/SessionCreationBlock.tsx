@@ -60,7 +60,7 @@ function SessionCreationBlock({
   return (
     <div
       key={index}
-      className="flex flex-col p-2 border border-solid rounded w-52"
+      className="flex flex-col p-2 border border-solid rounded md:w-64"
     >
       <div className="flex flex-row items-center justify-between">
         <div className="font-bold" data-cy="block-container-header">
@@ -108,7 +108,7 @@ function SessionCreationBlock({
           </Button>
         </div>
       </div>
-      <div className="flex flex-col flex-1 gap-1 my-2">
+      <div className="flex flex-col flex-1 gap-1 my-2 md:overflow-y-auto">
         {block.titles.map((title, questionIdx) => (
           <div
             key={title}

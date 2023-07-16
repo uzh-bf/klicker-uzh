@@ -109,7 +109,7 @@ function Index() {
       className={{ children: 'pb-2' }}
     >
       {typeof creationMode === 'undefined' && (
-        <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="grid md:grid-cols-4 gap-1 md:gap-2 mb-4">
           <CreationButton
             icon={faUsersLine}
             text="Live-Session erstellen"
@@ -159,25 +159,43 @@ function Index() {
         </div>
       )}
 
-      <div className="flex flex-row flex-1 gap-4 overflow-y-auto">
-        <div>
-          {dataQuestions && dataQuestions.userQuestions && (
-            <TagList
-              key={creationMode}
-              compact={!!creationMode}
-              activeTags={filters.tags}
-              activeType={filters.type}
-              sampleSolution={filters.sampleSolution}
-              answerFeedbacks={filters.answerFeedbacks}
-              handleReset={handleReset}
-              handleTagClick={handleTagClick}
-              handleSampleSolutionClick={handleSampleSolutionClick}
-              handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
-              // handleToggleArchive={onToggleArchive}
-              // isArchiveActive={filters.archive}
-            />
-          )}
-        </div>
+      <div className="flex flex-col md:flex-row flex-1 gap-4 overflow-y-auto">
+        {dataQuestions && dataQuestions.userQuestions && (
+          <div>
+            <div className="hidden md:block">
+              <TagList
+                key={creationMode}
+                compact={!!creationMode}
+                activeTags={filters.tags}
+                activeType={filters.type}
+                sampleSolution={filters.sampleSolution}
+                answerFeedbacks={filters.answerFeedbacks}
+                handleReset={handleReset}
+                handleTagClick={handleTagClick}
+                handleSampleSolutionClick={handleSampleSolutionClick}
+                handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
+                // handleToggleArchive={onToggleArchive}
+                // isArchiveActive={filters.archive}
+              />
+            </div>
+            <div className="md:hidden">
+              <TagList
+                compact
+                key={creationMode}
+                activeTags={filters.tags}
+                activeType={filters.type}
+                sampleSolution={filters.sampleSolution}
+                answerFeedbacks={filters.answerFeedbacks}
+                handleReset={handleReset}
+                handleTagClick={handleTagClick}
+                handleSampleSolutionClick={handleSampleSolutionClick}
+                handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
+                // handleToggleArchive={onToggleArchive}
+                // isArchiveActive={filters.archive}
+              />
+            </div>
+          </div>
+        )}
         <div className="flex flex-col flex-1 w-full overflow-auto">
           {!dataQuestions || loadingQuestions ? (
             // TODO: replace by nice loader

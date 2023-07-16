@@ -9,7 +9,6 @@ import {
   MicroSession,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import CreationTitle from './CreationTitle'
 import LearningElementWizard from './LearningElementWizard'
@@ -29,7 +28,6 @@ function SessionCreation({
   sessionId,
   editMode,
 }: SessionCreationProps) {
-  const router = useRouter()
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
     skip: !sessionId || editMode !== 'liveSession',

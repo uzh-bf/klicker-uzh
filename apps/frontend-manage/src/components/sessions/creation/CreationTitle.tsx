@@ -10,9 +10,9 @@ interface CreationTitleProps {
 
 function CreationTitle({ text, editMode, closeWizard }: CreationTitleProps) {
   return (
-    <div className="grid w-full grid-cols-3 mb-1 -mt-1">
+    <div className="flex flex-row justify-between items-center mb-1">
       <div />
-      <H2 className={{ root: 'w-full text-center' }}>
+      <H2 className={{ root: 'flex-1' }}>
         {text} {editMode ? 'bearbeiten' : 'erstellen'}
       </H2>
       <Button

@@ -48,7 +48,7 @@ function TagList({
     error: tagsError,
   } = useQuery(GetUserTagsDocument)
 
-  const [questionTypesVisible, setQuestionTypesVisible] = useState(true)
+  const [questionTypesVisible, setQuestionTypesVisible] = useState(!compact)
   const [userTagsVisible, setUserTagsVisible] = useState(!compact)
   const [gamificationTagsVisible, setGamificationTagsVisible] = useState(
     !compact

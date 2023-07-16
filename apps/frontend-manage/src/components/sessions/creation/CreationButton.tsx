@@ -1,6 +1,6 @@
 import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, H3 } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 
 interface CreationButtonProps {
   icon: IconDefinition
@@ -22,15 +22,17 @@ function CreationButton({
 }: CreationButtonProps) {
   return (
     <Button
-      className={{
-        root: 'flex flex-row items-center justify-center h-12 gap-6',
-      }}
-      onClick={onClick}
-      data={data}
       disabled={disabled}
+      className={{
+        root: 'h-10 md:h-12 gap-6',
+      }}
+      data={data}
+      onClick={onClick}
     >
-      <FontAwesomeIcon icon={icon} className="h-8" />
-      <H3>{text}</H3>
+      <Button.Icon>
+        <FontAwesomeIcon icon={icon} />
+      </Button.Icon>
+      <Button.Label>{text}</Button.Label>
     </Button>
   )
 }

@@ -204,7 +204,7 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
           {
             title: 'Fragen & Blöcke',
             tooltip:
-              'In diesem Schritt können Sie Fragen und Blöcke zu Ihrer Session hinzufügen.',
+              'Fügen Sie mittels Drag&Drop auf das Plus-Icon Fragen zu Ihren Blöcken hinzu. Neue Blöcke können entweder ebenfalls durch Drag&Drop auf das entsprechende Feld oder durch Klicken auf den Button erstellt werden.',
             tooltipDisabled:
               'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
           },
@@ -279,7 +279,7 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   return (
-    <div className="flex flex-col gap-2">
+    <>
       <H3 className={{ root: 'mb-0' }}>Einstellungen</H3>
       {props.courses && (
         <div className="flex flex-row items-center gap-4">
@@ -335,14 +335,10 @@ function StepTwo(props: StepProps) {
           className="text-sm text-red-400"
         />
       </div>
-    </div>
+    </>
   )
 }
 
 function StepThree(_: StepProps) {
-  return (
-    <div className="mt-2 mb-2">
-      <SessionBlockField fieldName="blocks" />
-    </div>
-  )
+  return <SessionBlockField fieldName="blocks" />
 }

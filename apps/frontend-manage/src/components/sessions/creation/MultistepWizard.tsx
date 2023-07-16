@@ -117,8 +117,8 @@ function MultistepWizard({
                 item: 'first:rounded-tl-md last:rounded-tr-md',
               }}
             />
-            <div className="flex flex-col justify-between gap-1 p-4 overflow-y-auto h-60">
-              {!isCompleted && <div>{step}</div>}
+            <div className="flex flex-col justify-between gap-1 p-4 md:h-64">
+              {!isCompleted && <>{step}</>}
               {isCompleted && (
                 <CompletionStep
                   completionSuccessMessage={completionSuccessMessage}
@@ -130,9 +130,9 @@ function MultistepWizard({
                   setStepNumber={setStepNumber}
                 />
               )}
-              {isValid && !isCompleted && (
+              {!isCompleted && (
                 <Button
-                  disabled={isSubmitting && !isValid}
+                  disabled={isSubmitting || !isValid}
                   type="submit"
                   data={{ cy: 'next-or-submit' }}
                   className={{ root: 'w-max self-end' }}
