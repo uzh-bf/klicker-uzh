@@ -35,7 +35,7 @@ function AddBlockButton({ push }: AddBlockButtonProps) {
   return (
     <div
       className={twMerge(
-        'flex flex-col items-center justify-center rounded text-center border border-solid w-16 cursor-pointer hover:bg-primary-20',
+        'flex flex-col items-center justify-center rounded text-center border border-solid md:w-16 cursor-pointer hover:bg-primary-20 w-full p-2',
         isOver && 'bg-primary-20'
       )}
       onClick={() =>

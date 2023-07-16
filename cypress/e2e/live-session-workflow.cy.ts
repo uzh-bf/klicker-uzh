@@ -13,6 +13,7 @@ describe('Different live-session workflows', () => {
         const sessionTitle = 'Test Session ' + randomNumber;
         const session = 'Displayed Test Session Name ' + randomNumber;
 
+        cy.get('[data-cy="create-live-session"]').click();
         cy.get('[data-cy="insert-live-session-name"]').type(sessionTitle);
         cy.get('[data-cy="insert-live-display-name"]').type(session);
         cy.get('[data-cy="next-or-submit"]').click();
@@ -40,6 +41,7 @@ describe('Different live-session workflows', () => {
         cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%');
         cy.get('[data-cy="save-new-question"]').click({force: true});
      
+        cy.get('[data-cy="create-live-session"]').click();
         cy.get('[data-cy="insert-live-session-name"]').type(sessionTitle);
         cy.get('[data-cy="insert-live-display-name"]').type(session);
         cy.get('[data-cy="next-or-submit"]').click();
@@ -76,6 +78,7 @@ describe('Different live-session workflows', () => {
     
     
         // step 1
+        cy.get('[data-cy="create-live-session"]').click();
         cy.get('[data-cy="insert-live-session-name"]').type(sessionTitle);
         cy.get('[data-cy="insert-live-display-name"]').type(session);
         cy.get('[data-cy="next-or-submit"]').click();
