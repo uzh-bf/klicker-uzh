@@ -7,6 +7,7 @@ interface EditorFieldProps {
   label: string
   fieldName: string
   tooltip?: string
+  showToolbarOnFocus?: boolean
   className?: string
   data_cy?: string
 }
@@ -15,6 +16,7 @@ function EditorField({
   label,
   fieldName,
   tooltip,
+  showToolbarOnFocus = true,
   className,
   data_cy,
 }: EditorFieldProps) {
@@ -39,7 +41,7 @@ function EditorField({
           helpers.setValue(newValue)
           helpers.setTouched(true)
         }}
-        showToolbarOnFocus={true}
+        showToolbarOnFocus={showToolbarOnFocus}
         placeholder="Inhalt hier eingeben…"
         className={{
           editor: '!leading-3 h-14 overflow-x-auto',

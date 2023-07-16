@@ -241,30 +241,33 @@ interface StepProps {
 function StepOne(_: StepProps) {
   return (
     <>
-      <FormikTextField
-        required
-        autoComplete="off"
-        name="name"
-        label="Name"
-        tooltip="Der Name soll Ihnen ermöglichen, diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
-        className={{ root: 'mb-1' }}
-        data-cy="insert-live-session-name"
-        shouldValidate={() => true}
-      />
-      <FormikTextField
-        required
-        autoComplete="off"
-        name="displayName"
-        label="Anzeigename"
-        tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
-        className={{ root: 'mb-1' }}
-        data-cy="insert-live-display-name"
-      />
+      <div className="flex flex-col gap-4 md:flex-row">
+        <FormikTextField
+          required
+          autoComplete="off"
+          name="name"
+          label="Name"
+          tooltip="Der Name soll Ihnen ermöglichen, diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
+          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          data-cy="insert-live-session-name"
+          shouldValidate={() => true}
+        />
+        <FormikTextField
+          required
+          autoComplete="off"
+          name="displayName"
+          label="Anzeigename"
+          tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
+          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          data-cy="insert-live-display-name"
+        />
+      </div>
       <EditorField
         // key={fieldName.value}
         label="Beschreibung"
         tooltip="// TODO CONTENT TOOLTIP"
         fieldName="description"
+        showToolbarOnFocus={false}
       />
       <div className="w-full text-right">
         <ErrorMessage
