@@ -32,7 +32,7 @@ function QuestionList({
   }
 
   return (
-    <>
+    <div className="space-y-1 md:space-y-2">
       {questions.map((question, index): any => (
         <Question
           checked={selectedQuestions[index]}
@@ -51,7 +51,7 @@ function QuestionList({
           updatedAt={question.updatedAt}
         />
       ))}
-    </>
+    </div>
   )
 }
 

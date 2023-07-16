@@ -143,7 +143,7 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
         setIsWizardCompleted(true)
       }
     } catch (error) {
-      console.log('error')
+      console.log(error)
       setEditMode(!!initialValues)
       setErrorToastOpen(true)
     }
@@ -181,12 +181,34 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
+        editMode={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}
         onViewElement={() => {
           router.push(`/sessions`)
         }}
+        workflowItems={[
+          {
+            title: 'Beschreibung',
+            tooltip:
+              'Geben Sie in diesem Schritt den Namen und die Beschreibung der Live-Session ein.',
+          },
+          {
+            title: 'Einstellungen',
+            tooltip:
+              'In diesem Schritt können Sie Einstellungen zur Session vornehmen.',
+            tooltipDisabled:
+              'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+          },
+          {
+            title: 'Fragen & Blöcke',
+            tooltip:
+              'Fügen Sie mittels Drag&Drop auf das Plus-Icon Fragen zu Ihren Blöcken hinzu. Neue Blöcke können entweder ebenfalls durch Drag&Drop auf das entsprechende Feld oder durch Klicken auf den Button erstellt werden.',
+            tooltipDisabled:
+              'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+          },
+        ]}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
@@ -219,30 +241,33 @@ interface StepProps {
 function StepOne(_: StepProps) {
   return (
     <>
-      <FormikTextField
-        required
-        autoComplete="off"
-        name="name"
-        label="Name"
-        tooltip="Der Name soll Ihnen ermöglichen, diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
-        className={{ root: 'mb-1' }}
-        data-cy="insert-live-session-name"
-        shouldValidate={() => true}
-      />
-      <FormikTextField
-        required
-        autoComplete="off"
-        name="displayName"
-        label="Anzeigename"
-        tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
-        className={{ root: 'mb-1' }}
-        data-cy="insert-live-display-name"
-      />
+      <div className="flex flex-col gap-4 md:flex-row">
+        <FormikTextField
+          required
+          autoComplete="off"
+          name="name"
+          label="Name"
+          tooltip="Der Name soll Ihnen ermöglichen, diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
+          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          data-cy="insert-live-session-name"
+          shouldValidate={() => true}
+        />
+        <FormikTextField
+          required
+          autoComplete="off"
+          name="displayName"
+          label="Anzeigename"
+          tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
+          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          data-cy="insert-live-display-name"
+        />
+      </div>
       <EditorField
         // key={fieldName.value}
         label="Beschreibung"
         tooltip="// TODO CONTENT TOOLTIP"
         fieldName="description"
+        showToolbarOnFocus={false}
       />
       <div className="w-full text-right">
         <ErrorMessage
@@ -257,7 +282,7 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   return (
-    <div className="flex flex-col gap-2">
+    <>
       <H3 className={{ root: 'mb-0' }}>Einstellungen</H3>
       {props.courses && (
         <div className="flex flex-row items-center gap-4">
@@ -313,14 +338,10 @@ function StepTwo(props: StepProps) {
           className="text-sm text-red-400"
         />
       </div>
-    </div>
+    </>
   )
 }
 
 function StepThree(_: StepProps) {
-  return (
-    <div className="mt-2 mb-2">
-      <SessionBlockField fieldName="blocks" />
-    </div>
-  )
+  return <SessionBlockField fieldName="blocks" />
 }

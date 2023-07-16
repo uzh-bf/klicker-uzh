@@ -1,39 +1,43 @@
-import { faEye } from '@fortawesome/free-regular-svg-icons'
-import { faSync } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LearningElementOrderType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Progress } from '@uzh-bf/design-system'
+import { Button, Workflow } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import React, { useState } from 'react'
+import CompletionStep from './CompletionStep'
 
-interface FormProps {
+interface MultistepWizardProps {
   isCompleted: boolean
+  editMode: boolean
   completionSuccessMessage?: (elementName: string) => React.ReactNode
   children: React.ReactNode[]
   initialValues?: any
   onSubmit: (values: any, bag: any) => void
   onViewElement: () => void
   onRestartForm: () => void
+  workflowItems: {
+    title: string
+    tooltip?: string
+    tooltipDisabled?: string
+  }[]
 }
 
-export interface LiveSessionFormValues {
+interface CommonFormValues {
   name: string
   displayName: string
   description: string
+  courseId: string
+  multiplier: string
+}
+
+export interface LiveSessionFormValues extends CommonFormValues {
   blocks: {
     questionIds: number[]
     titles: string[]
     timeLimit: number
   }[]
-  courseId: string
-  multiplier: string
   isGamificationEnabled: boolean
 }
 
-export interface MicroSessionFormValues {
-  name: string
-  displayName: string
-  description: string
+export interface MicroSessionFormValues extends CommonFormValues {
   questions: {
     id: number
     title: string
@@ -42,24 +46,17 @@ export interface MicroSessionFormValues {
   }[]
   startDate: string
   endDate: string
-  multiplier: string
-  courseId: string
   order: LearningElementOrderType
   resetTimeDays: string
 }
 
-export interface LearningElementFormValues {
-  name: string
-  displayName: string
-  description: string
+export interface LearningElementFormValues extends CommonFormValues {
   questions: {
     id: number
     title: string
     hasAnswerFeedbacks: boolean
     hasSampleSolution: boolean
   }[]
-  multiplier: string
-  courseId: string
   order: any
   resetTimeDays: string
 }
@@ -69,17 +66,15 @@ function MultistepWizard({
   initialValues,
   onSubmit,
   isCompleted,
+  editMode,
   completionSuccessMessage,
   onViewElement,
   onRestartForm,
-}: FormProps) {
+  workflowItems,
+}: MultistepWizardProps) {
   const [stepNumber, setStepNumber] = useState(0)
-
   const steps = React.Children.toArray(children)
-
-  const step = steps[stepNumber]
-  const totalSteps = steps.length
-  const isLastStep = stepNumber === totalSteps - 1
+  const step = steps[stepNumber] as React.ReactElement
 
   const handleSubmit = async (
     values:
@@ -92,91 +87,68 @@ function MultistepWizard({
       await step.props.onSubmit(values, bag)
     }
 
-    if (isLastStep) {
+    if (stepNumber === steps.length - 1) {
       return onSubmit(values, bag)
     } else {
       bag.setTouched({})
-      setStepNumber(Math.min(stepNumber + 1, totalSteps - 1))
+      setStepNumber(Math.min(stepNumber + 1, steps.length - 1))
     }
   }
 
   return (
-    <Formik
-      initialValues={initialValues}
-      onSubmit={handleSubmit}
-      validationSchema={step.props.validationSchema}
-      isInitialValid={false}
-      enableReinitialize
-    >
-      {({ values, isSubmitting, isValid, resetForm }) => (
-        <Form className="flex flex-col justify-between gap-1 p-4 overflow-y-auto h-72">
-          {!isCompleted && <div>{step}</div>}
-          {isCompleted && (
-            <div className="flex flex-col items-center gap-4 p-4">
-              <div>
-                {completionSuccessMessage
-                  ? completionSuccessMessage(values.name)
-                  : 'Element erfolgreich erstellt/modifiziert.'}
-              </div>
-              <div className="space-x-2">
+    <>
+      <Formik
+        initialValues={initialValues}
+        onSubmit={handleSubmit}
+        validationSchema={step.props.validationSchema}
+        isInitialValid={editMode}
+        enableReinitialize
+      >
+        {({ values, isSubmitting, isValid, resetForm }) => (
+          <Form className="border rounded-md h-76 border-uzh-grey-60">
+            <Workflow
+              items={workflowItems}
+              onClick={(_, ix) => setStepNumber(ix)}
+              activeIx={stepNumber}
+              // TODO: choose optimal disabled logic - allow to jump between 3 and 1 if all valid
+              disabledFrom={isValid ? stepNumber + 2 : stepNumber + 1}
+              minimal
+              className={{
+                item: 'first:rounded-tl-md last:rounded-tr-md',
+              }}
+            />
+            <div className="flex flex-col justify-between gap-1 p-4 md:h-60">
+              {!isCompleted && <>{step}</>}
+              {isCompleted && (
+                <CompletionStep
+                  completionSuccessMessage={completionSuccessMessage}
+                  name={values.name}
+                  editMode={editMode}
+                  onViewElement={onViewElement}
+                  onRestartForm={onRestartForm}
+                  resetForm={resetForm}
+                  setStepNumber={setStepNumber}
+                />
+              )}
+              {!isCompleted && (
                 <Button
-                  onClick={onViewElement}
-                  data={{ cy: 'load-session-list' }}
+                  disabled={isSubmitting || !isValid}
+                  type="submit"
+                  data={{ cy: 'next-or-submit' }}
+                  className={{ root: 'w-max self-end' }}
                 >
-                  <Button.Icon>
-                    <FontAwesomeIcon icon={faEye} />
-                  </Button.Icon>
-                  <Button.Label>Übersicht öffnen</Button.Label>
+                  {stepNumber === steps.length - 1
+                    ? editMode
+                      ? 'Speichern'
+                      : 'Erstellen'
+                    : 'Weiter'}
                 </Button>
-                <Button
-                  onClick={() => {
-                    onRestartForm()
-                    resetForm()
-                    setStepNumber(0)
-                  }}
-                >
-                  <Button.Icon>
-                    <FontAwesomeIcon icon={faSync} />
-                  </Button.Icon>
-                  <Button.Label>Weiteres Element erstellen</Button.Label>
-                </Button>
-              </div>
+              )}
             </div>
-          )}
-          {!isCompleted && (
-            <div className="flex flex-row items-center justify-between gap-4">
-              <div>
-                <Button
-                  disabled={stepNumber === 0}
-                  onClick={() => setStepNumber(Math.max(stepNumber - 1, 0))}
-                  type="button"
-                >
-                  Zurück
-                </Button>
-              </div>
-
-              <Progress
-                className={{
-                  root: 'flex-1 h-4 text-xs',
-                  indicator: 'bg-slate-400 h-4 text-xs min-w-max',
-                }}
-                value={stepNumber}
-                max={totalSteps - 1}
-                formatter={(step) => `Schritt ${step + 1}`}
-              />
-
-              <Button
-                disabled={isSubmitting && !isValid}
-                type="submit"
-                data={{ cy: 'next-or-submit' }}
-              >
-                {isLastStep ? 'Erstellen' : 'Weiter'}
-              </Button>
-            </div>
-          )}
-        </Form>
-      )}
-    </Formik>
+          </Form>
+        )}
+      </Formik>
+    </>
   )
 }
 
