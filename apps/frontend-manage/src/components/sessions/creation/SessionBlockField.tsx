@@ -20,7 +20,7 @@ function SessionBlockField({
 
   return (
     <>
-      <div className="flex flex-col md:flex-row flex-1 gap-2 mt-1 md:mt-0 md:overflow-auto">
+      <div className="flex flex-col md:flex-row flex-1 gap-4 mt-1 md:mt-0 md:overflow-auto">
         <FieldArray name="blocks">
           {({ push, remove, move, replace }: FieldArrayRenderProps) => (
             <>

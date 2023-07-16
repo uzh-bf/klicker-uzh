@@ -117,7 +117,7 @@ function MultistepWizard({
                 item: 'first:rounded-tl-md last:rounded-tr-md',
               }}
             />
-            <div className="flex flex-col justify-between gap-1 p-4 md:h-64">
+            <div className="flex flex-col justify-between gap-1 p-4 md:h-60">
               {!isCompleted && <>{step}</>}
               {isCompleted && (
                 <CompletionStep
