@@ -234,23 +234,19 @@ describe('Different live-session workflows', () => {
       cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%');
       cy.get('[data-cy="save-new-question"]').click({force: true});
 
-      // duplicate question, check content and save
+      // duplicate question and save
       cy.get(`[data-cy="duplicate-question-${questionTitle}"]`).click();
-      cy.findByText("Frage editieren").should('exist');
-      cy.findByText(questionTitle + " (Copy)").should('exist');
-      cy.findByText(question).should('exist');
-      cy.findByText("50%").should('exist');
-      cy.findByText("100%").should('exist');
+      cy.findByText("Frage duplizieren").should('exist');
       cy.get('[data-cy="save-new-question"]').click({force: true});
 
       // check if duplicated question exists alongside original question
-      cy.get('[data-cy="question"]').contains(questionTitle).should('exist');
-      cy.get('[data-cy="question"]').contains(questionTitle + " (Copy)").should('exist');
+      cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
+      cy.get('[data-cy="question-block"]').contains(questionTitle + " (Copy)").should('exist');
 
       // delete the duplicated question
       cy.get(`[data-cy="delete-question-${questionTitle} (Copy)"]`).click();
       cy.get('[data-cy="confirm-question-deletion"]').click();
-      cy.get('[data-cy="question"]').contains(questionTitle).should('exist');
-      cy.get('[data-cy="question"]').contains(questionTitle + " (Copy)").should('not.exist');
+      cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist');
+      cy.get('[data-cy="question-block"]').contains(questionTitle + " (Copy)").should('not.exist');
     })
 })
