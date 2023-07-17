@@ -30,7 +30,9 @@ describe('Different micro-session workflows', () => {
         // 
         // create a micro-session
         cy.get('[data-cy="create-micro-session"]').click();
-        // 
+        cy.get('[data-cy="cancel-session-creation"]').click();
+        cy.get('[data-cy="create-micro-session"]').click();
+
         // step 1
         cy.get('[data-cy="insert-micro-session-name"]').click().type(microSessionName);
         cy.get('[data-cy="insert-micro-session-display-name"]').click().type(microSessionDisplayName);

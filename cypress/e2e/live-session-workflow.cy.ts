@@ -14,6 +14,8 @@ describe('Different live-session workflows', () => {
         const session = 'Displayed Test Session Name ' + randomNumber;
 
         cy.get('[data-cy="create-live-session"]').click();
+        cy.get('[data-cy="cancel-session-creation"]').click();
+        cy.get('[data-cy="create-live-session"]').click();
         cy.get('[data-cy="insert-live-session-name"]').type(sessionTitle);
         cy.get('[data-cy="insert-live-display-name"]').type(session);
         cy.get('[data-cy="next-or-submit"]').click();
