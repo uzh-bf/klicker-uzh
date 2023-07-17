@@ -66,7 +66,6 @@ describe('Different live-session workflows', () => {
         const sessionTitle = 'Test Session ' + randomNumber;
         const questionTitle = 'A Single Choice ' + randomNumber;
         const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber;
-        const feedback = 'This is a test feedback';
     
         cy.get('[data-cy="create-question"]').click();
         cy.get('[data-cy="insert-question-title"]').click().type(questionTitle);
@@ -222,4 +221,36 @@ describe('Different live-session workflows', () => {
       //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
     })
 
+    it('creates a new question, duplicates it and then deletes the duplicate again', () => {
+      const randomNumber = Math.round(Math.random() * 1000);
+      const questionTitle = 'A Single Choice ' + randomNumber;
+      const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber;
+    
+      cy.get('[data-cy="create-question"]').click();
+      cy.get('[data-cy="insert-question-title"]').type(questionTitle);
+      cy.get('[data-cy="insert-question-text"]').click().type(question);
+      cy.get('[data-cy="insert-answer-field"]').click().type('50%');
+      cy.get('[data-cy="add-new-answer"]').click({force: true});
+      cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%');
+      cy.get('[data-cy="save-new-question"]').click({force: true});
+
+      // duplicate question, check content and save
+      cy.get(`[data-cy="duplicate-question-${questionTitle}"]`).click();
+      cy.findByText("Frage editieren").should('exist');
+      cy.findByText(questionTitle + " (Copy)").should('exist');
+      cy.findByText(question).should('exist');
+      cy.findByText("50%").should('exist');
+      cy.findByText("100%").should('exist');
+      cy.get('[data-cy="save-new-question"]').click({force: true});
+
+      // check if duplicated question exists alongside original question
+      cy.get('[data-cy="question"]').contains(questionTitle).should('exist');
+      cy.get('[data-cy="question"]').contains(questionTitle + " (Copy)").should('exist');
+
+      // delete the duplicated question
+      cy.get(`[data-cy="delete-question-${questionTitle} (Copy)"]`).click();
+      cy.get('[data-cy="confirm-question-deletion"]').click();
+      cy.get('[data-cy="question"]').contains(questionTitle).should('exist');
+      cy.get('[data-cy="question"]').contains(questionTitle + " (Copy)").should('not.exist');
+    })
 })
