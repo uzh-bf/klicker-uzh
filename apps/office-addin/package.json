@@ -60,7 +60,7 @@
     "autoprefixer": "10.4.14",
     "babel-loader": "9.1.2",
     "copy-webpack-plugin": "11.0.0",
-    "eslint": "8.41.0",
+    "eslint": "8.45.0",
     "eslint-plugin-office-addins": "2.1.5",
     "eslint-plugin-react": "7.32.2",
     "file-loader": "6.2.0",
