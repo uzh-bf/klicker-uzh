@@ -1,8 +1,7 @@
-import React from 'react'
 import {
   Bar,
-  BarChart as RechartsBarChart,
   Legend,
+  BarChart as RechartsBarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -16,12 +15,12 @@ export default function BarChart({ className, legend, likert, title, data }) {
   return (
     <div
       className={twMerge(
-        'max-w-lg border border-gray-300 border-solid rounded p-2',
+        'max-w-lg rounded border border-solid border-gray-300 p-2',
         className
       )}
     >
       {title && (
-        <div className="w-full px-2 py-1 mb-4 font-bold bg-gray-100 rounded shadow">
+        <div className="mb-4 w-full rounded bg-gray-100 px-2 py-1 font-bold shadow">
           {title}
         </div>
       )}
