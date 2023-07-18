@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@klicker-uzh/grading": "^3.0.0-alpha.0",
-    "@sentry/node": "7.52.1",
+    "@sentry/node": "7.59.2",
     "ioredis": "5.3.2",
     "jsonwebtoken": "9.0.0",
     "md5": "2.3.0",
