@@ -55,7 +55,7 @@
     "typescript": "5.0.4"
   },
   "dependencies": {
-    "@envelop/response-cache-redis": "2.0.8",
+    "@envelop/response-cache-redis": "3.1.0",
     "@envelop/sentry": "5.1.1",
     "@escape.tech/graphql-armor": "1.7.3",
     "@graphql-yoga/plugin-csrf-prevention": "1.5.1",
