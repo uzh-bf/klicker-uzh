@@ -34,7 +34,6 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# COPY ../packages/shared-components shared-components
 
 RUN npm run build
 
