@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-beta.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-beta.3...v3.0.0-beta.4) (2023-07-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** use relative paths to import shared components in globals.css ([f8e6d50](https://github.com/uzh-bf/klicker-uzh/commit/f8e6d5078a504f03418a2b65a571b33bbd43e698))
+
 ## [3.0.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-beta.2...v3.0.0-beta.3) (2023-07-18)
 
 ## [3.0.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-beta.1...v3.0.0-beta.2) (2023-07-18)
