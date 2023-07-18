@@ -36,7 +36,7 @@
     "size-limit": "8.2.4",
     "ts-jest": "29.1.0",
     "tsup": "6.7.0",
-    "typescript": "5.0.4"
+    "typescript": "5.1.6"
   },
   "dependencies": {
     "ramda": "0.29.0"
