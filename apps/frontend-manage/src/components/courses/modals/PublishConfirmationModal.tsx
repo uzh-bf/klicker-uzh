@@ -3,9 +3,7 @@ import {
   PublishLearningElementDocument,
   PublishMicroSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, H3, Modal, ThemeContext } from '@uzh-bf/design-system'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
 
 const LABELS = {
   LEARNING_ELEMENT: 'Lernelement',
@@ -26,7 +24,6 @@ function PublishConfirmationModal({
   open,
   setOpen,
 }: PublishConfirmationModalProps) {
-  const theme = useContext(ThemeContext)
   const [publishLearningElement] = useMutation(PublishLearningElementDocument, {
     variables: {
       id: elementId,
@@ -51,7 +48,7 @@ function PublishConfirmationModal({
             setOpen(false)
           }}
           className={{
-            root: twMerge('font-bold text-white', theme.primaryBgDark),
+            root: 'font-bold text-white bg-primary-80',
           }}
           data={{ cy: 'verify-publish-action' }}
         >

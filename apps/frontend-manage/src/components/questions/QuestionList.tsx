@@ -32,8 +32,8 @@ function QuestionList({
   }
 
   return (
-    <>
-      {questions.map((question): any => (
+    <div className="space-y-1 md:space-y-2">
+      {questions.map((question, index): any => (
         <Question
           checked={selectedQuestions[question.id]}
           id={question.id}
@@ -51,7 +51,7 @@ function QuestionList({
           updatedAt={question.updatedAt}
         />
       ))}
-    </>
+    </div>
   )
 }
 

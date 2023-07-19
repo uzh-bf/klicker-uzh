@@ -2,12 +2,11 @@ import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Feedback } from '@klicker-uzh/graphql/dist/ops'
-import { Button, ThemeContext } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localForage from 'localforage'
 import { useTranslations } from 'next-intl'
-import React, { useContext, useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import React, { useEffect, useState } from 'react'
 
 interface FeedbackProps {
   feedback: Feedback
@@ -25,7 +24,6 @@ function PublicFeedback({
   onReactToFeedbackResponse,
 }: FeedbackProps): React.ReactElement {
   const feedbackId = feedback.id
-  const theme = useContext(ThemeContext)
   const t = useTranslations()
 
   // structure for upvotes element: { upvote: true/false, responseId1: 1, 0 or -1, responseId2: 1, 0 or -1, ...}
@@ -131,13 +129,7 @@ function PublicFeedback({
 
   return (
     <div className="w-full mb-3">
-      <div
-        className={twMerge(
-          'flex flex-row w-full p-1.5 text-sm border border-solid rounded-md bg-opacity-30 mb-1',
-          theme.primaryBg,
-          theme.primaryBorder
-        )}
-      >
+      <div className="flex flex-row w-full p-1.5 text-sm border border-solid rounded-md bg-opacity-30 mb-1 bg-primary-20 border-primary-40">
         <div className="flex flex-col flex-1">
           <div className="mb-0.5">{feedback.content}</div>
           <div className="text-xs italic text-gray-600">

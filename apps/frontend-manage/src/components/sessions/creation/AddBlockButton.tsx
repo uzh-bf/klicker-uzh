@@ -1,7 +1,5 @@
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ThemeContext } from '@uzh-bf/design-system'
-import { useContext } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 
@@ -10,7 +8,6 @@ interface AddBlockButtonProps {
 }
 
 function AddBlockButton({ push }: AddBlockButtonProps) {
-  const theme = useContext(ThemeContext)
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: 'question',
@@ -38,9 +35,8 @@ function AddBlockButton({ push }: AddBlockButtonProps) {
   return (
     <div
       className={twMerge(
-        'flex flex-col items-center justify-center rounded text-center border border-solid w-16 cursor-pointer',
-        theme.primaryBgHover,
-        isOver && theme.primaryBg
+        'flex flex-col items-center justify-center rounded text-center border border-solid md:w-16 cursor-pointer hover:bg-primary-20 w-full p-2',
+        isOver && 'bg-primary-20'
       )}
       onClick={() =>
         push({

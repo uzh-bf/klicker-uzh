@@ -2,8 +2,8 @@ import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import { Button, Prose, ThemeContext } from '@uzh-bf/design-system'
-import { useContext, useEffect, useState } from 'react'
+import { Button, Prose } from '@uzh-bf/design-system'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function EvaluationCollapsible({
@@ -15,8 +15,6 @@ function EvaluationCollapsible({
   currentInstance: Partial<InstanceResult>
   proseSize: string
 }) {
-  const theme = useContext(ThemeContext)
-
   const [questionElem, setQuestionElem] = useState<HTMLDivElement | null>(null)
   const [questionCollapsed, setQuestionCollapsed] = useState<boolean>(true)
   const [showExtensibleButton, setShowExtensibleButton] =
@@ -69,9 +67,8 @@ function EvaluationCollapsible({
         <Button
           className={{
             root: twMerge(
-              questionCollapsed && 'bg-gradient-to-b from-white to-slate-100',
-              'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block print:hidden hover:bg-none',
-              theme.primaryBgHover
+              'hidden w-full h-4 text-xs text-center rounded-none border-0 shadow-none md:block print:hidden hover:bg-none hover:bg-primary-20',
+              questionCollapsed && 'bg-gradient-to-b from-white to-slate-100'
             ),
           }}
           onClick={() => setQuestionCollapsed(!questionCollapsed)}

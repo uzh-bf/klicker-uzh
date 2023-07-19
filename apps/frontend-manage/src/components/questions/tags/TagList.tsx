@@ -10,8 +10,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetUserTagsDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
-import { Button, ThemeContext, UserNotification } from '@uzh-bf/design-system'
-import React, { useContext, useState } from 'react'
+import { Button, UserNotification } from '@uzh-bf/design-system'
+import React, { useState } from 'react'
 import { QUESTION_TYPES, TYPES_LABELS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 import TagHeader from './TagHeader'
@@ -19,6 +19,7 @@ import TagItem from './TagItem'
 import UserTag from './UserTag'
 
 interface Props {
+  compact: boolean
   activeTags: string[]
   activeType: string
   sampleSolution: boolean
@@ -31,6 +32,7 @@ interface Props {
 
 // TODO: re-add archive toggle
 function TagList({
+  compact,
   activeTags,
   activeType,
   sampleSolution,
@@ -40,16 +42,17 @@ function TagList({
   handleSampleSolutionClick,
   handleAnswerFeedbacksClick,
 }: Props): React.ReactElement {
-  const theme = useContext(ThemeContext)
   const {
     data: tagsData,
     loading: tagsLoading,
     error: tagsError,
   } = useQuery(GetUserTagsDocument)
 
-  const [questionTypesVisible, setQuestionTypesVisible] = useState(true)
-  const [userTagsVisible, setUserTagsVisible] = useState(false)
-  const [gamificationTagsVisible, setGamificationTagsVisible] = useState(false)
+  const [questionTypesVisible, setQuestionTypesVisible] = useState(!compact)
+  const [userTagsVisible, setUserTagsVisible] = useState(!compact)
+  const [gamificationTagsVisible, setGamificationTagsVisible] = useState(
+    !compact
+  )
 
   const tags = tagsData?.userTags?.map((tag) => {
     return { name: tag.name, id: tag.id }
@@ -65,7 +68,7 @@ function TagList({
               activeType ||
               sampleSolution ||
               answerFeedbacks) &&
-              theme.primaryText
+              'text-primary'
           ),
         }}
         disabled={

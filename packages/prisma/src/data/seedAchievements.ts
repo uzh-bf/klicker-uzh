@@ -217,6 +217,104 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       icon: '/achievements/Unerschrocken.svg',
     },
   })
+
+  const creativeAchievement = await prisma.achievement.upsert({
+    where: { id: 11 },
+    create: {
+      id: 11,
+      name: 'Creative Mastermind',
+      description: '',
+      icon: '/achievements/CreativeMastermind.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: '/achievements/CreativeMastermind.svg',
+    },
+  })
+
+  const entertainerAchievement = await prisma.achievement.upsert({
+    where: { id: 12 },
+    create: {
+      id: 12,
+      name: 'Entertainer',
+      description: '',
+      icon: '/achievements/Entertainer.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: '/achievements/Entertainer.svg',
+    },
+  })
+
+  const futureProofAchievement = await prisma.achievement.upsert({
+    where: { id: 13 },
+    create: {
+      id: 13,
+      name: 'Future Proof',
+      description: '',
+      icon: '/achievements/FutureProof.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: '/achievements/FutureProof.svg',
+    },
+  })
+
+  const happinessAchievement = await prisma.achievement.upsert({
+    where: { id: 14 },
+    create: {
+      id: 14,
+      name: 'Happiness',
+      description: '',
+      icon: '/achievements/Happiness.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: '/achievements/Happiness.svg',
+    },
+  })
+
+  const presentationAchievement = await prisma.achievement.upsert({
+    where: { id: 15 },
+    create: {
+      id: 15,
+      name: 'Presentation Wizard',
+      description: '',
+      icon: '/achievements/PresentationWizard.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: '/achievements/PresentationWizard.svg',
+    },
+  })
+
+  const shootingStarAchievement = await prisma.achievement.upsert({
+    where: { id: 16 },
+    create: {
+      id: 16,
+      name: 'Shooting Star',
+      description: '',
+      icon: '/achievements/ShootingStar.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: '/achievements/ShootingStar.svg',
+    },
+  })
+
+  const speedyAchievement = await prisma.achievement.upsert({
+    where: { id: 17 },
+    create: {
+      id: 17,
+      name: 'Speedy',
+      description: '',
+      icon: '/achievements/Speedy.svg',
+      type: 'PARTICIPANT',
+    },
+    update: {
+      icon: '/achievements/Speedy.svg',
+    },
+  })
 }
 
 const prismaClient = new Prisma.PrismaClient()

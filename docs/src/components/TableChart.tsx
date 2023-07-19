@@ -1,4 +1,3 @@
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export default function TableChart({ className, title, data }) {
@@ -7,12 +6,12 @@ export default function TableChart({ className, title, data }) {
   return (
     <div
       className={twMerge(
-        'max-w-lg border border-gray-300 border-solid rounded p-2',
+        'max-w-lg rounded border border-solid border-gray-300 p-2',
         className
       )}
     >
       {title && (
-        <div className="px-2 py-1 mb-2 font-bold bg-gray-100 rounded shadow">
+        <div className="mb-2 rounded bg-gray-100 px-2 py-1 font-bold shadow">
           {title}
         </div>
       )}

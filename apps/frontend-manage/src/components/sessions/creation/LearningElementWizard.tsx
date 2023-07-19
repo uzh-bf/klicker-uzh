@@ -10,7 +10,6 @@ import {
   FormikNumberField,
   FormikSelectField,
   FormikTextField,
-  H3,
 } from '@uzh-bf/design-system'
 import { ErrorMessage } from 'formik'
 import { useRouter } from 'next/router'
@@ -148,8 +147,7 @@ function LearningElementWizard({
       }
     } catch (error) {
       console.log(error)
-      // TODO: set edit mode value correctly once editing is implemented
-      setEditMode(false)
+      setEditMode(!!initialValues)
       setErrorToastOpen(true)
     }
   }
@@ -193,12 +191,33 @@ function LearningElementWizard({
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
+        editMode={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}
         onViewElement={() => {
           router.push(`/courses/${selectedCourseId}`)
         }}
+        workflowItems={[
+          {
+            title: 'Beschreibung',
+            tooltip:
+              'Geben Sie in diesem Schritt den Namen und die Beschreibung des Lernelements ein.',
+          },
+          {
+            title: 'Einstellungen',
+            tooltip: 'Nehmen Sie in diesem Schritt einige Einstellungen vor.',
+            tooltipDisabled:
+              'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+          },
+          {
+            title: 'Fragen',
+            tooltip:
+              'Fügen Sie in diesem Schritt Fragen und Text-Elemente zu Ihrem Lernelement hinzu.',
+            tooltipDisabled:
+              'Bitte überprüfen Sie zuerst Ihre Eingaben im vorherigen Schritt bevor Sie fortfahren.',
+          },
+        ]}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
@@ -232,30 +251,33 @@ interface StepProps {
 function StepOne(_: StepProps) {
   return (
     <>
-      <FormikTextField
-        required
-        autoComplete="off"
-        name="name"
-        label="Name"
-        tooltip="Der Name soll Ihnen ermöglichen, dieses Lernelement von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
-        className={{ root: 'mb-1' }}
-        data-cy="insert-learning-element-name"
-      />
-      <FormikTextField
-        required
-        autoComplete="off"
-        name="displayName"
-        label="Anzeigename"
-        tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
-        className={{ root: 'mb-1' }}
-        data-cy="insert-learning-element-display-name"
-      />
+      <div className="flex flex-col w-full gap-4 md:flex-row">
+        <FormikTextField
+          required
+          autoComplete="off"
+          name="name"
+          label="Name"
+          tooltip="Der Name soll Ihnen ermöglichen, dieses Lernelement von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
+          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          data-cy="insert-learning-element-name"
+        />
+        <FormikTextField
+          required
+          autoComplete="off"
+          name="displayName"
+          label="Anzeigename"
+          tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
+          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          data-cy="insert-learning-element-display-name"
+        />
+      </div>
 
       <EditorField
         label="Beschreibung"
         tooltip="Fügen Sie eine Beschreibung zu Ihrer Micro-Session hinzu, welche den Teilnehmern zu Beginn angezeigt wird."
         fieldName="description"
         data_cy="insert-learning-element-description"
+        showToolbarOnFocus={false}
       />
 
       <div className="w-full text-right">
@@ -272,7 +294,6 @@ function StepOne(_: StepProps) {
 function StepTwo(props: StepProps) {
   return (
     <div className="flex flex-col gap-2">
-      <H3 className={{ root: 'mb-0' }}>Einstellungen</H3>
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
           name="courseId"
@@ -354,10 +375,8 @@ function StepTwo(props: StepProps) {
 
 function StepThree(_: StepProps) {
   return (
-    <>
-      <div className="mt-2 mb-2">
-        <BlockField fieldName="questions" />
-      </div>
-    </>
+    <div className="mt-2 mb-2">
+      <BlockField fieldName="questions" />
+    </div>
   )
 }

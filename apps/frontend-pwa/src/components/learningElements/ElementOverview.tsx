@@ -6,16 +6,9 @@ import {
 import { faCheck, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  H3,
-  ThemeContext,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
 import DynamicMarkdown from './DynamicMarkdown'
 
 interface ElementOverviewProps {
@@ -43,7 +36,6 @@ function ElementOverview({
 }: ElementOverviewProps) {
   const t = useTranslations()
   const router = useRouter()
-  const theme = useContext(ThemeContext)
   const { data } = useQuery(SelfDocument)
 
   return (
@@ -55,7 +47,7 @@ function ElementOverview({
               <Button
                 basic
                 className={{
-                  root: twMerge('font-bold', theme.primaryTextHover),
+                  root: 'font-bold sm:hover:text-primary',
                 }}
                 onClick={() =>
                   router.push(

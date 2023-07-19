@@ -9,11 +9,10 @@ import {
   FormikTextField,
   Label,
   Modal,
-  ThemeContext,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import ContentInput from 'shared-components/src/ContentInput'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
@@ -58,7 +57,6 @@ function CourseCreationModal({
       ),
     isGamificationEnabled: yup.boolean(),
   })
-  const theme = useContext(ThemeContext)
   const today = new Date()
   const initEndDate = new Date(today.setMonth(today.getMonth() + 6))
 
@@ -201,9 +199,8 @@ function CourseCreationModal({
               type="submit"
               className={{
                 root: twMerge(
-                  'float-right text-white font-bold mt-2 md:-mt-2 w-full md:w-max',
-                  (!isValid || isSubmitting) && 'cursor-not-allowed opacity-50',
-                  theme.primaryBgDark
+                  'float-right text-white font-bold mt-2 md:-mt-2 w-full md:w-max bg-primary-80',
+                  (!isValid || isSubmitting) && 'cursor-not-allowed opacity-50'
                 ),
               }}
             >

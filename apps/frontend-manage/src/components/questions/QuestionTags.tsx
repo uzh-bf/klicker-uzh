@@ -1,6 +1,5 @@
 import { Tag } from '@klicker-uzh/graphql/dist/ops'
-import { ThemeContext } from '@uzh-bf/design-system'
-import React, { useContext } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface QuestionTagsProps {
@@ -12,8 +11,6 @@ function QuestionTags({
   tags = [],
   tagfilter = [],
 }: QuestionTagsProps): React.ReactElement {
-  const theme = useContext(ThemeContext)
-
   if (!tags || tags.length === 0) {
     return <></>
   }
@@ -25,7 +22,7 @@ function QuestionTags({
           <div
             className={twMerge(
               'py-1 px-3 m-1 mt-0 bg-slate-100 border border-solid rounded-md border-blue-40 w-max',
-              tagfilter?.includes(tag.name) && theme.primaryBg
+              tagfilter?.includes(tag.name) && 'bg-primary-20'
             )}
             key={tag.id}
           >

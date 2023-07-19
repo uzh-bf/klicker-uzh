@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.0.0-alpha.84",
+  "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3003",
@@ -26,7 +26,7 @@
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "@sentry/nextjs": "7.52.1",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "1.8.0",
+    "@uzh-bf/design-system": "2.0.2",
     "body-parser": "1.20.2",
     "cross-env": "7.0.3",
     "dayjs": "1.11.7",
@@ -63,8 +63,10 @@
     "cssnano": "6.0.1",
     "eslint-config-next": "13.4.3",
     "postcss": "8.4.23",
+    "postcss-import": "15.1.0",
     "prettier": "2.8.8",
     "prettier-plugin-organize-imports": "3.2.2",
+    "prettier-plugin-tailwindcss": "0.3.0",
     "tailwindcss": "3.3.2",
     "tailwindcss-radix": "2.8.0",
     "ts-node": "10.9.1",

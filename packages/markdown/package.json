@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/markdown",
-  "version": "3.0.0-alpha.84",
+  "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "type": "module",
@@ -36,7 +36,7 @@
     "@fortawesome/free-regular-svg-icons": "^6.3.0",
     "@fortawesome/free-solid-svg-icons": "^6.2.0",
     "@fortawesome/react-fontawesome": "^0.2.0",
-    "@uzh-bf/design-system": "^1.0.0",
+    "@uzh-bf/design-system": "^2.0.0",
     "next": "^13.0.0",
     "react": "^18.2.0",
     "tailwind-merge": "^1.8.0"

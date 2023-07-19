@@ -51,7 +51,7 @@ function Layout({
 
       <div
         className={twMerge(
-          'flex-1 flex flex-col overflow-y-auto p-4',
+          'flex-1 flex flex-col md:overflow-y-auto p-4',
           className?.children
         )}
         data-cy={data?.cy}

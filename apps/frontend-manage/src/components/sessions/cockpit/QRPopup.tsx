@@ -1,9 +1,9 @@
 import { faQrcode } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import QR from '@pages/qr/[...args]'
-import { Button, Modal, ThemeContext } from '@uzh-bf/design-system'
+import { Button, Modal } from '@uzh-bf/design-system'
 import Link from 'next/link'
-import React, { useContext, useState } from 'react'
+import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface QRPopupProps {
@@ -33,7 +33,6 @@ function QRPopup({
   className,
   children,
 }: QRPopupPropsWithLink | QRPopupPropsWithChildren): React.ReactElement {
-  const theme = useContext(ThemeContext)
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
@@ -58,7 +57,7 @@ function QRPopup({
       {children || (
         <div className="flex flex-row gap-1 font-bold">
           <div>Link:</div>
-          <Link href={link || ''} className={theme.primaryText} target="_blank">
+          <Link href={link || ''} className="text-primary" target="_blank">
             {link}
           </Link>
         </div>
@@ -73,8 +72,7 @@ function QRPopup({
           fluid
           className={{
             root: twMerge(
-              'text-lg font-bold text-white h-11',
-              theme.primaryBgDark,
+              'text-lg font-bold text-white h-11 bg-primary-80',
               className?.button
             ),
           }}
