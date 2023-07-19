@@ -43,7 +43,6 @@ function Index() {
     Record<number, boolean>
   >({})
   const [displayedQuestions, setDisplayedQuestions] = useState([])
-  const [displayedQuestionsIds, setDisplayedQuestionsIds] = useState([])
   const [archivedQuestions, setArchivedQuestions] = useState([])
 
   const {
@@ -121,12 +120,17 @@ function Index() {
   }, [sortBy, sort.asc])
 
   const selectedQuestionIds = useMemo(() => {
-    return Object.entries(selectedQuestions).flatMap(([id, selected]) => {
-      if (!selected) return []
-      setDisplayedQuestionsIds([parseInt(id)])
-      return [parseInt(id)]
-    })
-  }, [selectedQuestions])
+    const ids = [];
+  
+    for (const [id, selected] of Object.entries(selectedQuestions)) {
+      if (!selected) continue;
+      
+      const parsedId = parseInt(id);
+      ids.push(parsedId);
+    }
+    
+    return ids;
+  }, [selectedQuestions]);
 
   // move element by id to archived array
   const moveToArchived = () => {
@@ -142,7 +146,6 @@ function Index() {
     })
     setDisplayedQuestions(processedQuestionsCopy)
     setArchivedQuestions(archivedQuestionsCopy)
-    setSelectedQuestions({})
   }
 
   return (
@@ -217,7 +220,7 @@ function Index() {
                 handleTagClick={handleTagClick}
                 handleSampleSolutionClick={handleSampleSolutionClick}
                 handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
-                // handleToggleArchive={onToggleArchive}
+                // handleToggleArchive={true}
                 // isArchiveActive={filters.archive}
               />
             </div>
@@ -285,7 +288,7 @@ function Index() {
                       handleSortByChange(newSortBy)
                     }}
                   />
-                  {displayedQuestionsIds.length > 0 && (
+                  {selectedQuestionIds.length > 0 && (
                     <Tooltip tooltip="Archivieren">
                       <Button
                         className={{
