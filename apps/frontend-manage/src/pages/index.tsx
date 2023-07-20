@@ -42,8 +42,6 @@ function Index() {
   const [selectedQuestions, setSelectedQuestions] = useState<
     Record<number, boolean>
   >({})
-  const [displayedQuestions, setDisplayedQuestions] = useState([])
-  const [archivedQuestions, setArchivedQuestions] = useState([])
 
   const {
     loading: loadingQuestions,
@@ -73,29 +71,32 @@ function Index() {
     }
   }, [router])
 
-  const index = useMemo(() => {
-    if (dataQuestions?.userQuestions) {
-      return buildIndex('questions', dataQuestions.userQuestions, [
-        'name',
-        'createdAt',
-      ])
-    }
-    return null
-  }, [dataQuestions])
+  // const index = useMemo(() => {
+  //   if (dataQuestions?.userQuestions) {
+  //     return buildIndex('questions', dataQuestions.userQuestions, [
+  //       'name',
+  //       'createdAt',
+  //     ])
+  //   }
+  //   return null
+  // }, [dataQuestions?.userQuestions])
 
-  const processedQuestions = useMemo(() => {
-    if (dataQuestions?.userQuestions) {
-      const items = processItems(
-        dataQuestions?.userQuestions,
-        filters,
-        sort,
-        index
-      )
-      setDisplayedQuestions(items)
-      return items
-    }
-    return
-  }, [dataQuestions?.userQuestions, filters, index, sort])
+  // const processedQuestions = useMemo(() => {
+  //   if (dataQuestions?.userQuestions) {
+  //     const items = processItems(
+  //       dataQuestions?.userQuestions,
+  //       filters,
+  //       sort,
+  //       index
+  //     )
+  //     setDisplayedQuestions(items)
+  //     return items
+  //   }
+  //   return
+  // }, [dataQuestions?.userQuestions, filters, index, sort])
+
+  // HOW TO DEAL WITH THIS DATA?
+  const processedQuestions = dataQuestions?.userQuestions
 
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
@@ -119,34 +120,39 @@ function Index() {
     return faSortDesc
   }, [sortBy, sort.asc])
 
-  const selectedQuestionIds = useMemo(() => {
-    const ids = [];
-  
-    for (const [id, selected] of Object.entries(selectedQuestions)) {
-      if (!selected) continue;
-      
-      const parsedId = parseInt(id);
-      ids.push(parsedId);
-    }
-    
-    return ids;
-  }, [selectedQuestions]);
+  // const selectedQuestionIds = useMemo(() => {
+  //   const ids = []
+  //   for (const [id, selected] of Object.entries(selectedQuestions)) {
+  //     if (!selected) continue;
+  //     const parsedId = parseInt(id);
+  //     ids.push(parsedId);
+  //   }
+  //   return ids;
+  // }, [selectedQuestions]);
 
-  // move element by id to archived array
-  const moveToArchived = () => {
-    const archivedQuestionsCopy = [...archivedQuestions]
-    const processedQuestionsCopy = [...displayedQuestions]
-    selectedQuestionIds.forEach((id) => {
-      processedQuestions?.find((question, index) => {
-        if (question.id === id) {
-          archivedQuestionsCopy.push(question)
-          delete processedQuestionsCopy[index]
-        }
-      })
-    })
-    setDisplayedQuestions(processedQuestionsCopy)
-    setArchivedQuestions(archivedQuestionsCopy)
-  }
+  // const [isArchiveActive, setIsArchiveActive] = useState(false)
+  // // state for archive ids --> update on button click
+  // const moveToArchived = () => {
+  //   const filteredQuestions = displayedQuestions.filter(question => selectedQuestionIds.includes(question.id));
+  //   setArchivedQuestions(filteredQuestions);
+  // }
+  // // useMemo for filtering
+  // const filteredQuestions = useMemo(() => {
+  //   if (isArchiveActive) {
+  //     return archivedQuestions
+  //   } else {
+  //     return processedQuestions
+  //   }
+  // }, [archivedQuestions, isArchiveActive, processedQuestions])
+
+  // const showArchiveView = () => {
+  //   setDisplayedQuestions(archivedQuestions)
+  //   setIsArchiveActive(true)
+  // }
+  // const showNormalView = () => {
+  //   setDisplayedQuestions(processedQuestions)
+  //   setIsArchiveActive(false)
+  // }
 
   return (
     <Layout
@@ -288,7 +294,7 @@ function Index() {
                       handleSortByChange(newSortBy)
                     }}
                   />
-                  {selectedQuestionIds.length > 0 && (
+                  {Object.values(selectedQuestions).filter((value) => value === true).length > 0 && (
                     <Tooltip tooltip="Archivieren">
                       <Button
                         className={{
@@ -319,9 +325,9 @@ function Index() {
               </div>
 
               <div className="h-full overflow-y-auto">
-                {selectedQuestionIds.length} items selected
+                {Object.values(selectedQuestions).filter((value) => value === true).length} items selected
                 <QuestionList
-                  questions={displayedQuestions}
+                  questions={processedQuestions}
                   selectedQuestions={selectedQuestions}
                   setSelectedQuestions={(questionId: number) => {
                     setSelectedQuestions((prevState) => ({
