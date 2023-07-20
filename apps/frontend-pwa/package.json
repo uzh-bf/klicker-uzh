@@ -18,7 +18,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@apollo/client": "3.7.14",
+    "@apollo/client": "3.7.17",
     "@bigheads/core": "0.3.3",
     "@fortawesome/fontawesome-svg-core": "6.4.0",
     "@fortawesome/free-regular-svg-icons": "6.4.0",
@@ -29,36 +29,36 @@
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "@radix-ui/react-tabs": "1.0.3",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "2.0.2",
+    "@uzh-bf/design-system": "2.0.4",
     "body-parser": "1.20.2",
     "dayjs": "1.11.7",
     "deepmerge": "4.3.1",
-    "formik": "2.2.9",
-    "graphql": "16.6.0",
-    "graphql-ws": "5.13.1",
-    "jsonwebtoken": "9.0.0",
+    "formik": "2.4.2",
+    "graphql": "16.7.1",
+    "graphql-ws": "5.14.0",
+    "jsonwebtoken": "9.0.1",
     "localforage": "1.10.0",
-    "next": "13.4.3",
-    "next-intl": "2.14.6",
+    "next": "13.4.10",
+    "next-intl": "2.19.0",
     "next-pwa": "5.6.0",
     "nookies": "2.5.2",
     "object-hash": "3.0.0",
     "ramda": "0.29.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "recharts": "2.6.2",
+    "recharts": "2.7.2",
     "shared-components": "*",
-    "sharp": "0.32.1",
-    "tailwind-merge": "1.12.0",
-    "yup": "1.1.1"
+    "sharp": "0.32.3",
+    "tailwind-merge": "1.14.0",
+    "yup": "1.2.0"
   },
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "0.4.2",
-    "@tailwindcss/forms": "0.5.3",
+    "@tailwindcss/forms": "0.5.4",
     "@tailwindcss/typography": "0.5.9",
     "@types/body-parser": "^1.19.2",
     "@types/jsonwebtoken": "^9.0.1",
-    "@types/node": "^18.0.0",
+    "@types/node": "^20.0.0",
     "@types/object-hash": "^3.0.2",
     "@types/ramda": "^0.29.0",
     "@types/react": "^18.0.17",
@@ -67,25 +67,22 @@
     "@types/web-push": "^3.3.2",
     "autoprefixer": "10.4.14",
     "cssnano": "6.0.1",
-    "eslint-config-next": "13.4.3",
-    "postcss": "8.4.23",
+    "eslint-config-next": "13.4.10",
+    "postcss": "8.4.26",
     "postcss-import": "15.1.0",
     "prettier": "2.8.8",
-    "prettier-plugin-organize-imports": "3.2.2",
+    "prettier-plugin-organize-imports": "3.2.3",
     "prettier-plugin-tailwindcss": "0.3.0",
-    "tailwindcss": "3.3.2",
+    "tailwindcss": "3.3.3",
     "tailwindcss-radix": "2.8.0",
     "ts-node": "10.9.1",
-    "typescript": "5.0.4",
+    "typescript": "5.1.6",
     "web-push": "3.6.1"
   },
   "volta": {
     "extends": "../../package.json"
   },
   "engines": {
-    "node": ">=16"
-  },
-  "overrides": {
-    "next": "13.4.3"
+    "node": ">=18"
   }
 }

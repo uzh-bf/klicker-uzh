@@ -17,7 +17,7 @@
     "check": "tsc --noEmit"
   },
   "engines": {
-    "node": "=18"
+    "node": ">=18"
   },
   "size-limit": [
     {
@@ -30,11 +30,11 @@
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
-    "@tsconfig/node18": "^2.0.0",
+    "@tsconfig/node20": "^20.0.0",
     "@tsconfig/recommended": "^1.0.2",
-    "size-limit": "8.2.4",
-    "tsup": "6.7.0",
-    "typescript": "5.0.4"
+    "size-limit": "8.2.6",
+    "tsup": "7.1.0",
+    "typescript": "5.1.6"
   },
   "dependencies": {
     "body-parser": "1.20.2"
