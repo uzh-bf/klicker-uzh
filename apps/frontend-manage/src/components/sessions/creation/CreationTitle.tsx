@@ -18,6 +18,7 @@ function CreationTitle({ text, editMode, closeWizard }: CreationTitleProps) {
       <Button
         className={{ root: 'ml-auto -mt-1 border-red-400' }}
         onClick={closeWizard}
+        data={{ cy: 'cancel-session-creation' }}
       >
         <FontAwesomeIcon icon={faX} />
         <div>{editMode ? 'Editieren' : 'Erstellen'} abbrechen</div>

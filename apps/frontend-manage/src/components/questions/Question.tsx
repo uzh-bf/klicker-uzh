@@ -155,6 +155,7 @@ function Question({
               root: 'bg-white text-sm md:text-base md:w-36 space-x-2',
             }}
             onClick={(): void => setIsDuplicationModalOpen(true)}
+            data={{ cy: `duplicate-question-${title}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faCopy} />
@@ -174,6 +175,7 @@ function Question({
               root: 'text-sm md:text-base md:w-36 border-red-400 space-x-2',
             }}
             onClick={() => setIsDeletionModalOpen(true)}
+            data={{ cy: `delete-question-${title}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faTrash} />
@@ -193,6 +195,7 @@ function Question({
                   setIsDeletionModalOpen(false)
                 }}
                 className={{ root: 'bg-red-600 font-bold text-white' }}
+                data={{ cy: 'confirm-question-deletion' }}
               >
                 Löschen
               </Button>
