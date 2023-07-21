@@ -11,7 +11,7 @@ import markdown from 'remark-parse'
 import remark2rehype from 'remark-rehype'
 import { twMerge } from 'tailwind-merge'
 import { unified } from 'unified'
-import ImgWithModal from './ImgWithModal'
+import ImgWithModal from './ImgWithModal.js'
 
 export interface MarkdownProps {
   className?: {
