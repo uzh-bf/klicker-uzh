@@ -1,5 +1,5 @@
 {
-  "extends": "@tsconfig/node20/tsconfig.json",
+  "extends": "@tsconfig/node18/tsconfig.json",
   "include": ["AddResponse"],
   "compilerOptions": {
     "module": "ESNext"

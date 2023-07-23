@@ -29,8 +29,8 @@
     "next": "^13.0.0"
   },
   "devDependencies": {
-    "@size-limit/preset-small-lib": "8.2.4",
-    "@tsconfig/node20": "^20.0.0",
+    "@size-limit/preset-small-lib": "8.2.6",
+    "@tsconfig/node18": "^2.0.1",
     "@tsconfig/recommended": "^1.0.2",
     "size-limit": "8.2.6",
     "tsup": "7.1.0",
