@@ -50,40 +50,43 @@ function Header({ user }: HeaderProps): React.ReactElement {
         />
       </Navigation>
       <Navigation className={{ root: '!p-0 bg-slate-800' }}>
-        <Navigation.TriggerItem
-          icon={
-            <FontAwesomeIcon
-              icon={faPlayCircle}
-              className="h-7 sm:group-hover:text-white"
-            />
-          }
-          dropdownWidth="w-[12rem]"
-          className={{
-            root: 'h-10 w-10 group',
-            icon: twMerge(
-              'text-uzh-grey-80',
-              data?.userRunningSessions?.length !== 0 && 'text-green-600'
-            ),
-            disabled: '!text-gray-400',
-            dropdown: 'p-1.5 gap-0',
-          }}
-          disabled={data?.userRunningSessions?.length === 0}
-        >
-          {data?.userRunningSessions && data?.userRunningSessions.length > 0 ? (
-            data?.userRunningSessions.map((session) => {
-              return (
-                <Navigation.DropdownItem
-                  key={session.id}
-                  title={session.name}
-                  href={`/sessions/${session.id}/cockpit`}
-                  className={{ title: 'text-base font-bold', root: 'p-2' }}
-                />
-              )
-            })
-          ) : (
-            <div />
-          )}
-        </Navigation.TriggerItem>
+        <div className="hidden md:block">
+          <Navigation.TriggerItem
+            icon={
+              <FontAwesomeIcon
+                icon={faPlayCircle}
+                className="h-7 sm:group-hover:text-white"
+              />
+            }
+            dropdownWidth="w-[12rem]"
+            className={{
+              root: 'h-10 w-10 group',
+              icon: twMerge(
+                'text-uzh-grey-80',
+                data?.userRunningSessions?.length !== 0 && 'text-green-600'
+              ),
+              disabled: '!text-gray-400',
+              dropdown: 'p-1.5 gap-0',
+            }}
+            disabled={data?.userRunningSessions?.length === 0}
+          >
+            {data?.userRunningSessions &&
+            data?.userRunningSessions.length > 0 ? (
+              data?.userRunningSessions.map((session) => {
+                return (
+                  <Navigation.DropdownItem
+                    key={session.id}
+                    title={session.name}
+                    href={`/sessions/${session.id}/cockpit`}
+                    className={{ title: 'text-base font-bold', root: 'p-2' }}
+                  />
+                )
+              })
+            ) : (
+              <div />
+            )}
+          </Navigation.TriggerItem>
+        </div>
         <Navigation.TriggerItem
           icon={<FontAwesomeIcon icon={faUserCircle} className="h-5" />}
           label={user?.shortname}

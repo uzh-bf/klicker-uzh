@@ -10,7 +10,8 @@ module.exports = {
         primary: '#dc6027',
       },
       fontFamily: {
-        sans: ['Source Sans Pro', ...fontFamily.sans],}
+        sans: ['Source Sans Pro', ...fontFamily.sans],
+      },
     },
   },
   plugins: [],

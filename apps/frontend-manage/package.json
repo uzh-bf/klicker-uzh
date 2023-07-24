@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.0.0-beta.1",
+  "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "NODE_ENV=development next dev --port 3002",
@@ -25,11 +25,11 @@
     "@klicker-uzh/markdown": "^3.0.0-alpha.0",
     "@klicker-uzh/prisma": "^3.0.0-alpha.0",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "2.0.0",
+    "@uzh-bf/design-system": "2.0.2",
     "d3": "7.8.4",
     "dayjs": "1.11.7",
     "deepmerge": "4.3.1",
-    "formik": "2.2.9",
+    "formik": "2.4.2",
     "graphql": "16.6.0",
     "graphql-ws": "5.13.1",
     "is-hotkey": "0.2.0",
