@@ -3,8 +3,7 @@
   "include": ["src"],
   "compilerOptions": {
     "module": "ESNext",
-    "baseUrl": ".",
-    "moduleResolution": "node"
+    "baseUrl": "."
   },
   "ts-node": {
     "transpileOnly": true

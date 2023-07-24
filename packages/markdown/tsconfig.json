@@ -2,7 +2,6 @@
   "extends": "@tsconfig/node18/tsconfig.json",
   "include": ["src"],
   "compilerOptions": {
-    "jsx": "react",
-    "moduleResolution": "node"
+    "jsx": "react"
   }
 }
