@@ -74,6 +74,7 @@
   },
   "dependencies": {
     "@prisma/client": "4.14.1",
+    "code-review-gpt": "0.0.26",
     "prisma": "4.14.1"
   },
   "volta": {

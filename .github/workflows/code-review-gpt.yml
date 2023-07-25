@@ -2,7 +2,7 @@ name: Code Review GPT
 
 on:
   pull_request:
-    branches: [main]
+    branches: [v3]
 
 permissions:
   pull-requests: write
@@ -25,7 +25,7 @@ jobs:
         run: npm install code-review-gpt
 
       - name: Run code review script
-        run: npx code-review-gpt review --ci
+        run: npx code-review-gpt review --ci --model gpt-3.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
