@@ -5,9 +5,12 @@ export const authOptions = {
   providers: [
     {
       id: process.env.EDUID_ID,
+      wellKnown: process.env.EDUID_WELL_KNOWN,
+      clientId: process.env.EDUID_CLIENT_ID,
+      clientSecret: process.env.EDUID_CLIENT_SECRET,
+
       name: 'EduID',
       type: 'oauth',
-      wellKnown: process.env.EDUID_WELL_KNOWN,
       authorization: {
         params: {
           scope: 'openid email https://login.eduid.ch/authz/User.Read',
@@ -15,14 +18,29 @@ export const authOptions = {
       },
       idToken: true,
       checks: ['pkce', 'state'],
-      clientId: process.env.EDUID_CLIENT_ID,
-      clientSecret: process.env.EDUID_CLIENT_SECRET,
-      profile(profile) {
+
+      profile(profile, tokens) {
+        console.log(profile)
         return {
           id: profile.sub,
           email: profile.email,
         }
       },
+
+      // session: {
+      //   strategy: 'jwt',
+      // },
+      // callbacks: {
+      //   async jwt({ token, user, account }) {
+      //     console.log(token, user, account)
+      //     return token
+      //   },
+      //   async session({ token, session }) {
+      //     console.log(token, session)
+      //     return session
+      //   },
+
+      // }
     } as Provider,
   ],
 }
