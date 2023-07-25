@@ -4,10 +4,10 @@ import { Provider } from 'next-auth/providers/index'
 export const authOptions = {
   providers: [
     {
-      id: 'eduid-test',
+      id: process.env.EDUID_ID,
       name: 'EduID',
       type: 'oauth',
-      wellKnown: 'https://login.test.eduid.ch/.well-known/openid-configuration',
+      wellKnown: process.env.EDUID_WELL_KNOWN,
       authorization: {
         params: {
           scope: 'openid email https://login.eduid.ch/authz/User.Read',
@@ -15,6 +15,8 @@ export const authOptions = {
       },
       idToken: true,
       checks: ['pkce', 'state'],
+      clientId: process.env.EDUID_CLIENT_ID,
+      clientSecret: process.env.EDUID_CLIENT_SECRET,
       profile(profile) {
         return {
           id: profile.sub,
