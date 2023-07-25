@@ -1,72 +1,19 @@
 services:
-  frontend-pwa:
-    profiles:
-      - full
-    build:
-      context: apps/frontend-pwa
-      args:
-        NODE_ENV: development
-        COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://127.0.0.1:7072/api/AddResponse'
-        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
-        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-    environment:
-      APP_SECRET: abcd
+  reverse_proxy:
+    image: traefik:v2.10
+    command:
+      - --api.insecure=true
+      - --providers.file=true
+      - --providers.file.filename=/etc/traefik/rules.yaml
+      - --providers.file.watch=true
+      - --entrypoints.web.address=0.0.0.0:80
     ports:
-      - 3001:3000
+      - 80:80
+      - 8080:8080
+    volumes:
+      - './util/traefik/rules.yaml:/etc/traefik/rules.yaml'
     networks:
-      - klicker-dev
-
-  frontend-manage:
-    profiles:
-      - full
-    build:
-      context: apps/frontend-manage
-      args:
-        NODE_ENV: development
-        COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
-        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-    ports:
-      - 3002:3000
-    networks:
-      - klicker-dev
-
-  frontend-control:
-    profiles:
-      - full
-    build:
-      context: apps/frontend-control
-      args:
-        NODE_ENV: development
-        COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
-        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-    ports:
-      - 3003:3000
-    networks:
-      - klicker-dev
-
-  backend:
-    profiles:
-      - full
-    build:
-      context: apps/backend-docker
-      args:
-        NODE_ENV: 'development'
-    environment:
-      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
-      APP_SECRET: 'abcd'
-      REDIS_HOST: 'redis_exec'
-      REDIS_PORT: 6379
-      REDIS_CACHE_HOST: 'redis_cache'
-      REDIS_CACHE_PORT: 6379
-      API_DOMAIN: '127.0.0.1'
-      COOKIE_DOMAIN: '127.0.0.1'
-    ports:
-      - 3000:3000
-    networks:
-      - klicker-dev
+      - klicker
 
   # main database
   postgres:
@@ -78,7 +25,7 @@ services:
     ports:
       - 5432:5432
     networks:
-      - klicker-dev
+      - klicker
 
     # redis instance to support session execution
   redis_exec:
@@ -86,7 +33,7 @@ services:
     ports:
       - 6379:6379
     networks:
-      - klicker-dev
+      - klicker
     volumes:
       - /data
 
@@ -96,7 +43,7 @@ services:
     ports:
       - 6380:6379
     networks:
-      - klicker-dev
+      - klicker
 
   sendria:
     image: msztolcman/sendria:v2.2.2.0
@@ -104,8 +51,77 @@ services:
       - 1025:1025
       - 1080:1080
     networks:
-      - klicker-dev
+      - klicker
+
+# frontend-pwa:
+#   profiles:
+#     - full
+#   build:
+#     context: apps/frontend-pwa
+#     args:
+#       NODE_ENV: development
+#       COOKIE_DOMAIN: 127.0.0.1
+#       NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://127.0.0.1:7072/api/AddResponse'
+#       NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+#       NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+#   environment:
+#     APP_SECRET: abcd
+#   ports:
+#     - 3001:3000
+#   networks:
+#     - klicker
+
+# frontend-manage:
+#   profiles:
+#     - full
+#   build:
+#     context: apps/frontend-manage
+#     args:
+#       NODE_ENV: development
+#       COOKIE_DOMAIN: 127.0.0.1
+#       NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+#       NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+#   ports:
+#     - 3002:3000
+#   networks:
+#     - klicker
+
+# frontend-control:
+#   profiles:
+#     - full
+#   build:
+#     context: apps/frontend-control
+#     args:
+#       NODE_ENV: development
+#       COOKIE_DOMAIN: 127.0.0.1
+#       NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+#       NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+#   ports:
+#     - 3003:3000
+#   networks:
+#     - klicker
+
+# backend:
+#   profiles:
+#     - full
+#   build:
+#     context: apps/backend-docker
+#     args:
+#       NODE_ENV: 'development'
+#   environment:
+#     DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
+#     APP_SECRET: 'abcd'
+#     REDIS_HOST: 'redis_exec'
+#     REDIS_PORT: 6379
+#     REDIS_CACHE_HOST: 'redis_cache'
+#     REDIS_CACHE_PORT: 6379
+#     API_DOMAIN: '127.0.0.1'
+#     COOKIE_DOMAIN: '127.0.0.1'
+#   ports:
+#     - 3000:3000
+#   networks:
+#     - klicker-dev
 
 networks:
-  klicker-dev:
+  klicker:
     driver: bridge
