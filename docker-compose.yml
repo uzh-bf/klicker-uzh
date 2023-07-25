@@ -6,7 +6,7 @@ services:
       - --providers.file=true
       - --providers.file.filename=/etc/traefik/rules.yaml
       - --providers.file.watch=true
-      - --entrypoints.web.address=0.0.0.0:80
+      - --entrypoints.web.address=:80
     ports:
       - 80:80
       - 8080:8080
