@@ -99,7 +99,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   const sessionsTest = await Promise.all(
     DATA_TEST.SESSIONS.map(async (data) =>
-      prisma.session.upsert(
+      prisma.liveSession.upsert(
         await prepareSession({
           ...data,
           blocks: data.blocks.map((block, ix) => ({
