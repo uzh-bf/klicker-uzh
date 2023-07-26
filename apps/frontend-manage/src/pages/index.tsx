@@ -3,7 +3,6 @@ import { GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
-import { buildIndex, processItems } from '../lib/utils/filters'
 
 import TagList from '@components/questions/tags/TagList'
 import CreationButton from '@components/sessions/creation/CreationButton'
@@ -20,28 +19,30 @@ import {
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Button,
-  Select,
-  TextField,
-  ThemeContext,
-  Tooltip,
-} from '@uzh-bf/design-system'
-import { twMerge } from 'tailwind-merge'
+import { Button, Select, TextField, Tooltip } from '@uzh-bf/design-system'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
 
 function Index() {
+  const dropdownItems = [
+    { value: 'CREATED', label: 'Datum' },
+    { value: 'TITLE', label: 'Titel' },
+  ]
+
   const router = useRouter()
 
   const [searchInput, setSearchInput] = useState('')
   const [creationMode, setCreationMode] = useState<
-  undefined | 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
+    undefined | 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
   >(undefined)
   const [selectedQuestions, setSelectedQuestions] = useState<
     Record<number, boolean>
   >({})
+  const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
+    useState(false)
+  const [sortBy, setSortBy] = useState('')
+  const [processedQuestions, setProcessedQuestions] = useState([])
 
   const {
     loading: loadingQuestions,
@@ -95,18 +96,12 @@ function Index() {
   //   return
   // }, [dataQuestions?.userQuestions, filters, index, sort])
 
-  // HOW TO DEAL WITH THIS DATA?
-  const processedQuestions = dataQuestions?.userQuestions
-
-  const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
-    useState(false)
-
-  const dropdownItems = [
-    { value: 'CREATED', label: 'Datum' },
-    { value: 'TITLE', label: 'Titel' },
-  ]
-
-  const [sortBy, setSortBy] = useState('')
+  useEffect(() => {
+    const listedQuestions = dataQuestions?.userQuestions
+    if (listedQuestions) {
+      setProcessedQuestions(listedQuestions)
+    }
+  }, [dataQuestions])
 
   const sortIcon = useMemo(() => {
     if (!sortBy) {
@@ -294,7 +289,9 @@ function Index() {
                       handleSortByChange(newSortBy)
                     }}
                   />
-                  {Object.values(selectedQuestions).filter((value) => value === true).length > 0 && (
+                  {Object.values(selectedQuestions).filter(
+                    (value) => value === true
+                  ).length > 0 && (
                     <Tooltip tooltip="Archivieren">
                       <Button
                         className={{
@@ -325,7 +322,12 @@ function Index() {
               </div>
 
               <div className="h-full overflow-y-auto">
-                {Object.values(selectedQuestions).filter((value) => value === true).length} items selected
+                {
+                  Object.values(selectedQuestions).filter(
+                    (value) => value === true
+                  ).length
+                }{' '}
+                items selected
                 <QuestionList
                   questions={processedQuestions}
                   selectedQuestions={selectedQuestions}
