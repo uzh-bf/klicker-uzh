@@ -273,3 +273,24 @@ export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
 
   return tag
 }
+
+// TODO: new function that gets list of question ids and toggles isArchived
+// TODO: use ctx.prisma.question.updateMany
+export async function toggleIsArchived(
+  { ids }: { ids: number[] },
+  ctx: ContextWithUser
+) {
+  const archivedQuestions = await ctx.prisma.question.updateMany({
+    where: {
+      id : {
+        in: ids,
+      },
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      isArchived: true,
+    },
+  })
+
+  return archivedQuestions
+}
