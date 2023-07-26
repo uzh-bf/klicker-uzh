@@ -1,7 +1,12 @@
+import { PrismaAdapter } from '@auth/prisma-adapter'
+import { PrismaClient } from '@klicker-uzh/prisma'
 import NextAuth from 'next-auth'
 import { Provider } from 'next-auth/providers/index'
 
+const prisma = new PrismaClient()
+
 export const authOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     {
       id: process.env.EDUID_ID,
