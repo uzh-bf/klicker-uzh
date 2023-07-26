@@ -26,7 +26,7 @@ enum UserRole {
 }
 
 model Account {
-  id String @id @default(cuid())
+  id String @id @default(uuid()) @db.Uuid
 
   type              String
   provider          String
@@ -40,19 +40,19 @@ model Account {
   session_state     String?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
+  userId String @db.Uuid
 
   @@unique([provider, providerAccountId])
 }
 
 model Session {
-  id String @id @default(cuid())
+  id String @id @default(uuid()) @db.Uuid
 
   sessionToken String   @unique
-  userId       String
   expires      DateTime
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
 }
 
 model User {
@@ -77,6 +77,7 @@ model User {
 
   role UserRole @default(USER)
 
+  session           Session[]
   accounts          Account[]
   courses           Course[]
   questions         Question[]
@@ -88,9 +89,8 @@ model User {
   microSessions     MicroSession[]
   groupActivities   GroupActivity[]
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Session   Session[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ----- QUESTION POOL -----
