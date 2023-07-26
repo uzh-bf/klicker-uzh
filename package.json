@@ -78,9 +78,9 @@
     "prisma": "4.14.1"
   },
   "volta": {
-    "node": "18.16.0"
+    "node": "18.17.0"
   },
-  "packageManager": "npm@8.19.3",
+  "packageManager": "npm@9.6.7",
   "engines": {
     "node": "=18"
   }
