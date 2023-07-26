@@ -20,6 +20,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Select, TextField, Tooltip } from '@uzh-bf/design-system'
+import { buildIndex, processItems } from 'src/lib/utils/filters'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
@@ -42,7 +43,6 @@ function Index() {
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
   const [sortBy, setSortBy] = useState('')
-  const [processedQuestions, setProcessedQuestions] = useState([])
   const [selectedQuestionIds, setSelectedQuestionIds] = useState([])
 
   const {
@@ -73,36 +73,27 @@ function Index() {
     }
   }, [router])
 
-  // const index = useMemo(() => {
-  //   if (dataQuestions?.userQuestions) {
-  //     return buildIndex('questions', dataQuestions.userQuestions, [
-  //       'name',
-  //       'createdAt',
-  //     ])
-  //   }
-  //   return null
-  // }, [dataQuestions?.userQuestions])
-
-  // const processedQuestions = useMemo(() => {
-  //   if (dataQuestions?.userQuestions) {
-  //     const items = processItems(
-  //       dataQuestions?.userQuestions,
-  //       filters,
-  //       sort,
-  //       index
-  //     )
-  //     setDisplayedQuestions(items)
-  //     return items
-  //   }
-  //   return
-  // }, [dataQuestions?.userQuestions, filters, index, sort])
-
-  useEffect(() => {
-    const listedQuestions = dataQuestions?.userQuestions
-    if (listedQuestions) {
-      setProcessedQuestions(listedQuestions)
+  const index = useMemo(() => {
+    if (dataQuestions?.userQuestions) {
+      return buildIndex('questions', dataQuestions.userQuestions, [
+        'name',
+        'createdAt',
+      ])
     }
-  }, [dataQuestions])
+    return null
+  }, [dataQuestions?.userQuestions])
+
+  const processedQuestions = useMemo(() => {
+    if (dataQuestions?.userQuestions) {
+      const items = processItems(
+        dataQuestions?.userQuestions,
+        filters,
+        sort,
+        index
+      )
+      return items
+    }
+  }, [dataQuestions?.userQuestions, filters, index, sort])
 
   const sortIcon = useMemo(() => {
     if (!sortBy) {
