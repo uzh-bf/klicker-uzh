@@ -28,6 +28,8 @@ describe('Different learning element workflows', () => {
         
         // create learning element
         cy.get('[data-cy="create-learning-element"]').click();
+        cy.get('[data-cy="cancel-session-creation"]').click();
+        cy.get('[data-cy="create-learning-element"]').click();
             
         // step 1
         cy.get('[data-cy="insert-learning-element-name"]').click().type(learningElementName);

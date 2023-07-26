@@ -14,6 +14,8 @@ describe('Different live-session workflows', () => {
         const session = 'Displayed Test Session Name ' + randomNumber;
 
         cy.get('[data-cy="create-live-session"]').click();
+        cy.get('[data-cy="cancel-session-creation"]').click();
+        cy.get('[data-cy="create-live-session"]').click();
         cy.get('[data-cy="insert-live-session-name"]').type(sessionTitle);
         cy.get('[data-cy="insert-live-display-name"]').type(session);
         cy.get('[data-cy="next-or-submit"]').click();
@@ -66,7 +68,6 @@ describe('Different live-session workflows', () => {
         const sessionTitle = 'Test Session ' + randomNumber;
         const questionTitle = 'A Single Choice ' + randomNumber;
         const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber;
-        const feedback = 'This is a test feedback';
     
         cy.get('[data-cy="create-question"]').click();
         cy.get('[data-cy="insert-question-title"]').click().type(questionTitle);
@@ -221,5 +222,4 @@ describe('Different live-session workflows', () => {
       //   cy.get('[data-cy="evaluate-next-question"]').click();
       //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
     })
-
 })
