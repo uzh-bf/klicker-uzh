@@ -43,6 +43,7 @@ function Index() {
     useState(false)
   const [sortBy, setSortBy] = useState('')
   const [processedQuestions, setProcessedQuestions] = useState([])
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState([])
 
   const {
     loading: loadingQuestions,
@@ -114,6 +115,28 @@ function Index() {
 
     return faSortDesc
   }, [sortBy, sort.asc])
+
+  useEffect(() => {
+    const ids = []
+    for (const [id, selected] of Object.entries(selectedQuestions)) {
+      if (!selected) continue
+      const parsedId = parseInt(id)
+      ids.push(parsedId)
+    }
+    setSelectedQuestionIds(ids)
+  }, [selectedQuestions])
+
+  const moveToArchived = () => {
+    const selectedQuestionsContent = processedQuestions.filter((question) =>
+      selectedQuestionIds.includes(question.id)
+    )
+    const nonSelectedQuestionsContent = processedQuestions.filter(
+      (question) => !selectedQuestionIds.includes(question.id)
+    )
+    setProcessedQuestions(nonSelectedQuestionsContent)
+    setSelectedQuestionIds([])
+    setSelectedQuestions({})
+  }
 
   // const selectedQuestionIds = useMemo(() => {
   //   const ids = []
@@ -289,9 +312,7 @@ function Index() {
                       handleSortByChange(newSortBy)
                     }}
                   />
-                  {Object.values(selectedQuestions).filter(
-                    (value) => value === true
-                  ).length > 0 && (
+                  {selectedQuestionIds.length > 0 && (
                     <Tooltip tooltip="Archivieren">
                       <Button
                         className={{
@@ -322,12 +343,7 @@ function Index() {
               </div>
 
               <div className="h-full overflow-y-auto">
-                {
-                  Object.values(selectedQuestions).filter(
-                    (value) => value === true
-                  ).length
-                }{' '}
-                items selected
+                {selectedQuestionIds.length} items selected
                 <QuestionList
                   questions={processedQuestions}
                   selectedQuestions={selectedQuestions}
