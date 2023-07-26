@@ -1,27 +1,27 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/src/css/preflight.css';
+
+@import 'tailwindcss/base';
+@import '@uzh-bf/design-system/dist/index.esm.css';
+
+@import 'tailwindcss/components';
+@import 'shared-components/dist/components.css';
+
+@import 'tailwindcss/utilities';
+@import 'shared-components/dist/utilities.css';
+
+html {
+  font-size: 18px;
+}
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  --theme-color-primary: #0028a5;
+  --theme-color-primary-80: #3353b7;
+  --theme-color-primary-60: #667ec9;
+  --theme-color-primary-40: #99a9db;
+  --theme-color-primary-20: #ccd4ed;
+  --theme-color-secondary: #dc6027;
+  --theme-color-secondary-80: #e38052;
+  --theme-color-secondary-60: #eaa07d;
+  --theme-color-secondary-40: #f1bfa9;
+  --theme-color-secondary-20: #f8dfd4;
 }

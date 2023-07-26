@@ -3,6 +3,7 @@
   "version": "3.0.0-beta.4",
   "scripts": {
     "dev": "next dev --port 3010",
+    "dev:offline": "next dev --port 3010",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -12,16 +13,21 @@
     "@types/react": "18.2.15",
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.14",
+    "cssnano": "6.0.1",
     "eslint": "8.45.0",
     "eslint-config-next": "13.4.12",
     "postcss": "8.4.27",
+    "postcss-import": "15.1.0",
     "tailwindcss": "3.3.3",
     "typescript": "5.1.6"
   },
   "dependencies": {
+    "@uzh-bf/design-system": "2.0.5",
     "next": "13.4.12",
     "next-auth": "4.22.3",
+    "nookies": "2.5.2",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "shared-components": "*"
   }
 }

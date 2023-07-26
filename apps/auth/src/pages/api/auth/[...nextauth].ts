@@ -13,34 +13,25 @@ export const authOptions = {
       type: 'oauth',
       authorization: {
         params: {
+          claims: {
+            id_token: {
+              sub: { essential: true },
+              email: { essential: true },
+              swissEduPersonUniqueID: { essential: true },
+            },
+          },
           scope: 'openid email https://login.eduid.ch/authz/User.Read',
         },
       },
       idToken: true,
       checks: ['pkce', 'state'],
 
-      profile(profile, tokens) {
-        console.log(profile)
+      profile(profile) {
         return {
           id: profile.sub,
           email: profile.email,
         }
       },
-
-      // session: {
-      //   strategy: 'jwt',
-      // },
-      // callbacks: {
-      //   async jwt({ token, user, account }) {
-      //     console.log(token, user, account)
-      //     return token
-      //   },
-      //   async session({ token, session }) {
-      //     console.log(token, session)
-      //     return session
-      //   },
-
-      // }
     } as Provider,
   ],
 }
