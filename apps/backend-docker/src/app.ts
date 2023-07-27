@@ -45,8 +45,21 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
         jwtFromRequest(req: Request) {
           if (req.headers?.['authorization'])
             return req.headers['authorization']?.replace('Bearer ', '')
+          // if (req.cookies?.['next-auth.session-token']) {
+          //   decode({
+          //     token: req.cookies['next-auth.session-token'],
+          //     secret: process.env.NEXTAUTH_SECRET as string,
+          //   }).then((decoded) => {
+          //     return decoded
+          //   })
+          // }
+
           if (req.cookies)
-            return req.cookies['user_token'] || req.cookies['participant_token']
+            return (
+              req.cookies['next-auth.session-token'] ||
+              req.cookies['participant_token']
+            )
+
           return null
         },
         // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)

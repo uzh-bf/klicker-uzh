@@ -1,10 +1,33 @@
+import { UserRole } from '@klicker-uzh/prisma'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
+import JWT from 'jsonwebtoken'
 import type { NextAuthOptions } from 'next-auth'
 import NextAuth from 'next-auth'
+import { DefaultJWT } from 'next-auth/jwt'
 import { Provider } from 'next-auth/providers/index'
 
 import prisma from 'src/lib/prisma'
+
+export async function decode({
+  token,
+  secret,
+}: {
+  token: string
+  secret: string
+}) {
+  return JWT.verify(token, secret) as DefaultJWT
+}
+
+export async function encode({
+  token,
+  secret,
+}: {
+  token: string
+  secret: string
+}) {
+  return JWT.sign(token, secret)
+}
 
 function generateRandomString(length: number) {
   let result = ''
@@ -24,7 +47,10 @@ function generateRandomString(length: number) {
 }
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.APP_SECRET,
+
   adapter: PrismaAdapter(prisma),
+
   providers: [
     {
       id: process.env.EDUID_ID,
@@ -63,6 +89,10 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
+  jwt: {
+    decode,
+    encode,
+  },
   cookies: {
     sessionToken: {
       name: 'next-auth.session-token',
@@ -73,6 +103,17 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
       },
+    },
+  },
+
+  callbacks: {
+    async jwt({ token, user, account }) {
+      // if there are a user and account on the first invocation, we are logging in a user
+      // otherwise, the login is related to a participant
+      if (user && account) {
+        token.role = UserRole.USER
+      }
+      return token
     },
   },
 }
