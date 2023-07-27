@@ -53,7 +53,7 @@ export const authOptions: NextAuthOptions = {
 
   providers: [
     {
-      id: process.env.EDUID_ID,
+      id: process.env.NEXT_PUBLIC_EDUID_ID,
       wellKnown: process.env.EDUID_WELL_KNOWN,
       clientId: process.env.EDUID_CLIENT_ID,
       clientSecret: process.env.EDUID_CLIENT_SECRET,
@@ -114,6 +114,14 @@ export const authOptions: NextAuthOptions = {
         token.role = UserRole.USER
       }
       return token
+    },
+    async redirect({ url, baseUrl }) {
+      // allows relative callback URLs
+      if (url.startsWith('/')) return `${baseUrl}${url}`
+      // allows callback URLs that end with valid klicker domains
+      else if (url.endsWith('klicker.local')) return url
+      // return the homepage for all other URLs
+      return baseUrl
     },
   },
 }

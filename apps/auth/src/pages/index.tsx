@@ -2,9 +2,12 @@ import { signIn, signOut, useSession } from 'next-auth/react'
 
 import { Button, H1 } from '@uzh-bf/design-system'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import Footer from 'shared-components/src/Footer'
 
 function SignInOutButton() {
+  const router = useRouter()
+
   const { data: session } = useSession()
 
   if (session) {
@@ -17,7 +20,16 @@ function SignInOutButton() {
   }
 
   return (
-    <Button className={{ root: 'p-4' }} onClick={() => signIn('eduid-test')}>
+    <Button
+      className={{ root: 'p-4' }}
+      onClick={() =>
+        signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
+          callbackUrl:
+            (router.query?.redirectTo as string) ??
+            process.env.NEXT_PUBLIC_DEFAULT_REDIRECT,
+        })
+      }
+    >
       <Image
         src="/edu-id-logo.svg"
         width={300}
