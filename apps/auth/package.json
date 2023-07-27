@@ -1,6 +1,7 @@
 {
   "name": "@klicker-uzh/auth",
   "version": "3.0.0-beta.4",
+  "license": "AGPL-3.0",
   "scripts": {
     "dev": "next dev --port 3010",
     "dev:offline": "next dev --port 3010",

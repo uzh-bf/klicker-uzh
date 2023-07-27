@@ -23,12 +23,6 @@
   "engines": {
     "node": "=18"
   },
-  "size-limit": [
-    {
-      "path": "dist/index.js",
-      "limit": "10 KB"
-    }
-  ],
   "devDependencies": {
     "@tsconfig/node18": "^2.0.0",
     "@tsconfig/recommended": "^1.0.2",
