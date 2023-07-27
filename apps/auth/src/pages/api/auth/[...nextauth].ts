@@ -4,29 +4,18 @@ import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
 import type { NextAuthOptions } from 'next-auth'
 import NextAuth from 'next-auth'
-import { DefaultJWT } from 'next-auth/jwt'
+import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
 import { Provider } from 'next-auth/providers/index'
 
 import prisma from 'src/lib/prisma'
 
-export async function decode({
-  token,
-  secret,
-}: {
-  token: string
-  secret: string
-}) {
+export async function decode({ token, secret }: JWTDecodeParams) {
+  if (!token) return null
   return JWT.verify(token, secret) as DefaultJWT
 }
 
-export async function encode({
-  token,
-  secret,
-}: {
-  token: string
-  secret: string
-}) {
-  return JWT.sign(token, secret)
+export async function encode({ token, secret }: JWTEncodeParams) {
+  return JWT.sign(token ?? '', secret)
 }
 
 function generateRandomString(length: number) {
