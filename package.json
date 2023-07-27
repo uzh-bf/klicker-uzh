@@ -61,6 +61,7 @@
   },
   "devDependencies": {
     "@cypress/code-coverage": "3.10.6",
+    "@prisma/nextjs-monorepo-workaround-plugin": "5.0.0",
     "@testing-library/cypress": "9.0.0",
     "azure-functions-core-tools": "4.0.5198",
     "cypress": "12.12.0",
