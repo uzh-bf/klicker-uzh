@@ -6,6 +6,7 @@ const nextConfig = {
     locales: ['en', 'de'],
     defaultLocale: 'de',
   },
+  output: 'standalone',
   transpilePackages: ['shared-components'],
   compress: true,
   output: 'standalone',
