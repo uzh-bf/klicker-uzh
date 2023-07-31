@@ -258,7 +258,7 @@ function StepOne(_: StepProps) {
           name="name"
           label="Name"
           tooltip="Der Name soll Ihnen ermöglichen, dieses Lernelement von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
-          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
           data-cy="insert-learning-element-name"
         />
         <FormikTextField
@@ -267,7 +267,7 @@ function StepOne(_: StepProps) {
           name="displayName"
           label="Anzeigename"
           tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
-          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
           data-cy="insert-learning-element-display-name"
         />
       </div>
@@ -302,6 +302,7 @@ function StepTwo(props: StepProps) {
           tooltip="Für die Erstellung einer Micro-Session ist die Auswahl des zugehörigen Kurses erforderlich."
           label="Kurs"
           data={{ cy: 'select-course' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="courseId"
@@ -324,6 +325,7 @@ function StepTwo(props: StepProps) {
             { label: 'Vierfach (4x)', value: '4' },
           ]}
           data={{ cy: 'select-multiplier' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="multiplier"
@@ -339,6 +341,7 @@ function StepTwo(props: StepProps) {
           tooltip="Wählen Sie einen Zeitraum nach welchem die Studierenden die Micro-Session wiederholen können."
           className={{
             input: 'w-20',
+            tooltip: 'z-20',
           }}
           required
           hideError={true}
@@ -362,6 +365,7 @@ function StepTwo(props: StepProps) {
           })}
           required
           data={{ cy: 'select-order' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="order"
