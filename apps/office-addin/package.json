@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@fluentui/react": "8.109.5",
-    "@uzh-bf/design-system": "2.0.2",
+    "@uzh-bf/design-system": "2.0.6",
     "core-js": "3.30.2",
     "es6-promise": "4.2.8",
     "formik": "2.2.9",
