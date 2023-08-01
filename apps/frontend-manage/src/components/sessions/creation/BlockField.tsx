@@ -18,7 +18,7 @@ function BlockField({ fieldName }: BlockFieldProps) {
           label="Fragen:"
           className={{
             root: 'font-bold',
-            tooltip: 'font-normal text-sm !w-1/2',
+            tooltip: 'font-normal text-sm !w-1/2 z-20',
           }}
           tooltip="Fügen Sie mittels Drag&Drop Fragen zu Ihrer Micro-Session hinzu."
           showTooltipSymbol={true}

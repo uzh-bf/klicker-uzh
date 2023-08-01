@@ -243,7 +243,7 @@ function StepOne(_: StepProps) {
           name="name"
           label="Name"
           tooltip="Der Name soll Ihnen ermöglichen, diese Micro-Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
-          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
           data-cy="insert-micro-session-name"
         />
         <FormikTextField
@@ -252,7 +252,7 @@ function StepOne(_: StepProps) {
           name="displayName"
           label="Anzeigename"
           tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
-          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
           data-cy="insert-micro-session-display-name"
         />
       </div>
@@ -287,6 +287,7 @@ function StepTwo(props: StepProps) {
           tooltip="Für die Erstellung einer Micro-Session ist die Auswahl des zugehörigen Kurses erforderlich."
           label="Kurs"
           data={{ cy: 'select-course' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="courseId"
@@ -302,6 +303,7 @@ function StepTwo(props: StepProps) {
         className={{
           root: 'w-[24rem]',
           input: 'bg-uzh-grey-20',
+          tooltip: 'z-20',
         }}
         data={{ cy: 'select-start-date' }}
       />
@@ -313,6 +315,7 @@ function StepTwo(props: StepProps) {
         className={{
           root: 'w-[24rem]',
           input: 'bg-uzh-grey-20',
+          tooltip: 'z-20',
         }}
         data={{ cy: 'select-end-date' }}
       />
@@ -330,6 +333,7 @@ function StepTwo(props: StepProps) {
             { label: 'Vierfach (4x)', value: '4' },
           ]}
           data={{ cy: 'select-multiplier' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="multiplier"
