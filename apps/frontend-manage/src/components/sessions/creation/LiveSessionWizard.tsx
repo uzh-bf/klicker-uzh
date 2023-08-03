@@ -248,7 +248,7 @@ function StepOne(_: StepProps) {
           name="name"
           label="Name"
           tooltip="Der Name soll Ihnen ermöglichen, diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
-          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
           data-cy="insert-live-session-name"
           shouldValidate={() => true}
         />
@@ -258,14 +258,14 @@ function StepOne(_: StepProps) {
           name="displayName"
           label="Anzeigename"
           tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
-          className={{ root: 'mb-1 w-full md:w-1/2' }}
+          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
           data-cy="insert-live-display-name"
         />
       </div>
       <EditorField
         // key={fieldName.value}
         label="Beschreibung"
-        tooltip="// TODO CONTENT TOOLTIP"
+        tooltip="Hier können Sie eine optionale Beschreibung der Live-Session eingeben. Diese wird in den Studierenden zu Beginn der Session angezeigt."
         fieldName="description"
         showToolbarOnFocus={false}
       />
@@ -294,6 +294,7 @@ function StepTwo(props: StepProps) {
             items={[{ label: 'Kein Kurs', value: '' }, ...props.courses]}
             hideError
             data={{ cy: 'select-course' }}
+            className={{ tooltip: 'z-20' }}
           />
           <ErrorMessage
             name="courseId"
@@ -316,6 +317,7 @@ function StepTwo(props: StepProps) {
           ]}
           required
           data={{ cy: 'select-multiplier' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="multiplier"
@@ -331,6 +333,7 @@ function StepTwo(props: StepProps) {
           required
           standardLabel
           data={{ cy: 'set-gamification' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="isGamificationEnabled"
