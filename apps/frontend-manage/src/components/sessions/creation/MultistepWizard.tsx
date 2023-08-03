@@ -113,6 +113,7 @@ function MultistepWizard({
               // TODO: choose optimal disabled logic - allow to jump between 3 and 1 if all valid
               disabledFrom={isValid ? stepNumber + 2 : stepNumber + 1}
               minimal
+              showTooltipSymbols
               className={{
                 item: 'first:rounded-tl-md last:rounded-tr-md',
               }}
