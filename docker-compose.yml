@@ -1,6 +1,6 @@
 services:
   reverse_proxy:
-    image: traefik:v2.10
+    image: docker.io/library/traefik:v2.10
     command:
       - --api.insecure=true
       - --providers.file=true
@@ -26,6 +26,8 @@ services:
       - 5432:5432
     networks:
       - klicker
+    volumes:
+      - /var/lib/postgresql/data
 
     # redis instance to support session execution
   redis_exec:
