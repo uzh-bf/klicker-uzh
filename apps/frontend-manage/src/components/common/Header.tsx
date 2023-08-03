@@ -6,7 +6,7 @@ import {
   LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Navigation } from '@uzh-bf/design-system'
+import { Navigation, Select } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -17,6 +17,8 @@ interface HeaderProps {
 
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
+  const { pathname, asPath, query } = router
+
   const [logoutUser] = useMutation(LogoutUserDocument)
 
   const { data } = useQuery(GetUserRunningSessionsDocument)
@@ -122,6 +124,24 @@ function Header({ user }: HeaderProps): React.ReactElement {
             data={{ cy: 'logout' }}
           />
         </Navigation.TriggerItem>
+        <Select
+          value={router.locale}
+          items={[
+            { value: 'de', label: 'DE' },
+            { value: 'en', label: 'EN' },
+          ]}
+          onChange={(newValue: string) =>
+            router.push({ pathname, query }, asPath, {
+              locale: newValue,
+            })
+          }
+          className={{
+            root: 'my-auto',
+            trigger:
+              'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
+          }}
+          basic
+        />
       </Navigation>
     </div>
   )
