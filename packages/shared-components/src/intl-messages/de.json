@@ -121,7 +121,7 @@
     },
     "login": {
       "installAndroid": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
-      "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker App auf Ihrem Handy zu installieren."
+      "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH App auf Ihrem Handy zu installieren."
     },
     "courses": {
       "courseInformation": "Kursinformationen",
@@ -267,12 +267,18 @@
       "openGroupActivity": "Zur Gruppenaktivität"
     }
   },
-  "manage": {},
+  "manage": {
+    "login": {
+      "lecturerLogin": "Login Dozierende",
+      "installAndroid": "Installieren Sie die KlickerUZH Manage-App auf Ihrem Handy, um gewisse Funktionen für Dozierenden jederzeit nutzen zu können.",
+      "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Manage-App auf Ihrem Handy zu installieren."
+    }
+  },
   "control": {
     "login": {
       "header": "KlickerUZH Controller-App (Token)",
       "installAndroid": "Installieren Sie die KlickerUZH Controller-App auf Ihrem Handy, um Ihre Sessionen während der Vorlesungen direkt vom Handy aus zu steuern.",
-      "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die Klicker Controller-App auf Ihrem Handy zu installieren und Live-Sessionen direkt zu bedienen."
+      "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Controller-App auf Ihrem Handy zu installieren und Live-Sessionen direkt zu bedienen."
     },
     "home": {
       "courseSelection": "Kursauswahl",

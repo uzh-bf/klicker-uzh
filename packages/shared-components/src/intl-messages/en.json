@@ -100,8 +100,8 @@
     },
     "error": {
       "404": "404 Page not found",
-      "pwaWithoutUser": "Sorry, the page you requested does not exist. You can <login>sign in</login> to see an overview of all Klicker elements your courses offer.",
-      "pwaWithUser": "Sorry, the page you requested does not exist. View an <home>overview</home> of all Klicker elements your courses offer."
+      "pwaWithoutUser": "Sorry, the page you requested does not exist. You can <login>sign in</login> to see an overview of all KlickerUZH elements your courses offer.",
+      "pwaWithUser": "Sorry, the page you requested does not exist. View an <home>overview</home> of all KlickerUZH elements your courses offer."
     }
   },
   "pwa": {
@@ -121,7 +121,7 @@
     },
     "login": {
       "installAndroid": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
-      "installIOS": "Open the Share dialog and click 'Add to Home Screen' to install the Klicker app on your phone."
+      "installIOS": "Open the Share dialog and click 'Add to Home Screen' to install the KlickerUZH app on your phone."
     },
     "courses": {
       "courseInformation": "Course Information",
@@ -267,12 +267,18 @@
       "openGroupActivity": "Open Group Activity"
     }
   },
-  "manage": {},
+  "manage": {
+    "login": {
+      "lecturerLogin": "Login Lecturers",
+      "installAndroid": "Install the KlickerUZH Manage app on your phone to use certain functions for lecturers at any time.",
+      "installIOS": "Open the Share dialog and click 'Add to Home Screen' to install the KlickerUZH Manage app on your phone."
+    }
+  },
   "control": {
     "login": {
       "header": "KlickerUZH Controller-App (Token)",
       "installAndroid": "Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.",
-      "installIOS": "Open the share dialog and click 'Add to Home Screen' to install the Klicker Controller app on your phone and control live sessions directly."
+      "installIOS": "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live sessions directly."
     },
     "home": {
       "courseSelection": "Course Selection",
