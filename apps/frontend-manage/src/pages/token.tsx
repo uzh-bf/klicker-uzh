@@ -99,4 +99,15 @@ function TokenGeneration() {
   )
 }
 
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+    revalidate: 600,
+  }
+}
+
 export default TokenGeneration

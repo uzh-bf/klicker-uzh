@@ -52,4 +52,5 @@ export function getStaticPaths() {
     fallback: 'blocking',
   }
 }
+
 export default QuestionDetails
