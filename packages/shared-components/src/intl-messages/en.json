@@ -272,6 +272,15 @@
       "lecturerLogin": "Login Lecturers",
       "installAndroid": "Install the KlickerUZH Manage app on your phone to use certain functions for lecturers at any time.",
       "installIOS": "Open the Share dialog and click 'Add to Home Screen' to install the KlickerUZH Manage app on your phone."
+    },
+    "token": {
+      "pageName": "Token Generation",
+      "tokenGenerationTitle": "Generation of a Login Token",
+      "tokenGenerationExplanation": "On this page you can generate a token to log into the Klicker control app at <link>{displayLink}</link>. This token has a validity of 10 minutes, but can be regenerated at any time.",
+      "generateToken": "Generate token!",
+      "tokenTitle": "Your login token is:",
+      "remainingValidity": "Remaining validity:",
+      "tokenExpired": "Unfortunately, your token has expired, please generate a new one."
     }
   },
   "control": {

@@ -272,6 +272,15 @@
       "lecturerLogin": "Login Dozierende",
       "installAndroid": "Installieren Sie die KlickerUZH Manage-App auf Ihrem Handy, um gewisse Funktionen für Dozierenden jederzeit nutzen zu können.",
       "installIOS": "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Manage-App auf Ihrem Handy zu installieren."
+    },
+    "token": {
+      "pageName": "Token Generation",
+      "tokenGenerationTitle": "Generation eines Login-Token",
+      "tokenGenerationExplanation": "Auf dieser Seite können Sie einen Token zum Login bei der Controller-App <link>{displayLink}</link> generieren. Dieser Token hat eine Gültigkeit von 10 Minuten, kann allerdings jederzeit wieder neu generiert werden.",
+      "generateToken": "Token generieren!",
+      "tokenTitle": "Ihr Token lautet:",
+      "remainingValidity": "Verbleibende Gültigkeit:",
+      "tokenExpired": "Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen."
     }
   },
   "control": {
