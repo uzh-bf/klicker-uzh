@@ -268,6 +268,13 @@
     }
   },
   "manage": {
+    "general": {
+      "questionPool": "Question Pool",
+      "sessions": "Sessions",
+      "courses": "Courses",
+      "generateToken": "Generate login token",
+      "404Message": "The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation."
+    },
     "login": {
       "lecturerLogin": "Login Lecturers",
       "installAndroid": "Install the KlickerUZH Manage app on your phone to use certain functions for lecturers at any time.",
