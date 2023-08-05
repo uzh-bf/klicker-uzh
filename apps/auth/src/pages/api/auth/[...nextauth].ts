@@ -78,8 +78,14 @@ const CredentialProvider: Provider = CredentialsProvider({
       type: 'text',
       placeholder: 'banking23',
       required: true,
+      'data-cy': 'identifier-field',
     },
-    password: { label: 'Password', type: 'password', required: true },
+    password: {
+      label: 'Password',
+      type: 'password',
+      required: true,
+      'data-cy': 'password-field',
+    },
   },
 
   async authorize(credentials, req) {

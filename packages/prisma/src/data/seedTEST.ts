@@ -39,7 +39,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       id: USER_ID_TEST,
       email: 'lecturer@bf.uzh.ch',
       shortname: 'lecturer',
-      password: process.env.INITIAL_PASSWORD as string,
+      password: 'abcd',
     })
   )
 

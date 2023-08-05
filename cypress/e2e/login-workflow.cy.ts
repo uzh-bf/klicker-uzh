@@ -30,24 +30,23 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.viewport("macbook-16");
   })
 
-  it('signs in into lecturer account', () => {
+  it.only('signs in into lecturer account', () => {
     cy.clearAllCookies();
     cy.viewport("macbook-16");
     cy.visit(Cypress.env('URL_MANAGE'));
-    cy.get('[data-cy="login-logo"]').should('exist');
-    cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'));
+
+    cy.get('[data-cy="login-button"').click()
+
+    cy.get('[data-cy="delegated-login-button"').click()
+
+    cy.get('[data-cy="identifier-field"]').type(Cypress.env('LECTURER_EMAIL'));
     cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'));
-    cy.get('[data-cy="submit-login"]').click();
+
+    cy.get(':nth-child(2) > form > button').click();
+
     cy.get('[data-cy="homepage"]').should('exist');
 
     cy.get('[data-cy="user-menu"]').click();
 
-    // FIXME: logout with redirect to klicker mainpage breaks the test
-    // Error: Cannot set property message of [object DOMException] which has only a getter
-    // Probably an issue with CORS or similar
-
-    // cy.get('[data-cy="logout"]').click();
-    // cy.wait(1000);
-    // cy.url().then(url => url.includes("www.klicker.uzh.ch"));
   })
 })

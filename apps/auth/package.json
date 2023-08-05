@@ -6,7 +6,9 @@
     "dev": "next dev --port 3010",
     "dev:offline": "next dev --port 3010",
     "build": "next build",
-    "start": "next start",
+    "build:test": "cross-env NODE_ENV=test next build",
+    "start": "next start --port 3010",
+    "start:test": "cross-env NODE_ENV=test npm start",
     "lint": "next lint"
   },
   "devDependencies": {
@@ -14,6 +16,7 @@
     "@types/react": "18.2.15",
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.14",
+    "cross-env": "7.0.3",
     "cssnano": "6.0.1",
     "eslint": "8.45.0",
     "eslint-config-next": "13.4.12",

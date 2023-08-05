@@ -22,6 +22,7 @@ function SignInOutButton() {
   return (
     <div className="flex flex-col gap-4">
       <Button
+        data={{ cy: 'eduid-login-button' }}
         className={{ root: 'p-4' }}
         onClick={() =>
           signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
@@ -41,6 +42,7 @@ function SignInOutButton() {
         />
       </Button>
       <Button
+        data={{ cy: 'delegated-login-button' }}
         onClick={() =>
           signIn('delegation', {
             callbackUrl:
