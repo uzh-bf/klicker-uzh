@@ -61,8 +61,11 @@
   },
   "devDependencies": {
     "@cypress/code-coverage": "3.10.6",
+    "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
     "@testing-library/cypress": "9.0.0",
+    "axios": "1.4.0",
     "azure-functions-core-tools": "4.0.5198",
+    "code-review-gpt": "0.0.26",
     "cypress": "12.12.0",
     "husky": "8.0.3",
     "nyc": "15.1.0",
@@ -74,10 +77,8 @@
     "yaml": "2.3.0"
   },
   "dependencies": {
-    "@prisma/client": "4.16.0",
-    "axios": "1.4.0",
-    "code-review-gpt": "0.0.26",
-    "prisma": "4.16.0"
+    "@prisma/client": "4.14.1",
+    "prisma": "4.14.1"
   },
   "volta": {
     "node": "18.17.0"
