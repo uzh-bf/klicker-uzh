@@ -717,7 +717,7 @@ model ConfusionTimestep {
 model ParticipantAccount {
   id String @id @default(uuid()) @db.Uuid
 
-  ssoId String
+  ssoId String @unique
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
