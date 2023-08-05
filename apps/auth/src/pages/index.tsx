@@ -1,5 +1,4 @@
 import { signIn, signOut, useSession } from 'next-auth/react'
-
 import { Button, H1 } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import { useRouter } from 'next/router'

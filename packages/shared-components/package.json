@@ -22,19 +22,19 @@
     "@klicker-uzh/markdown": "*",
     "@uzh-bf/design-system": "^2.0.0",
     "dayjs": "^1.11.6",
+    "formik": "^2.2.9",
     "is-hotkey": "^0.2.0",
+    "lodash": "^4.17.21",
+    "next-intl": "^2.10.4",
     "ramda": "^0.29.0",
     "react": "^18.2.0",
+    "recharts": "^2.4.1",
     "slate": "^0.94.1",
     "slate-history": "^0.93.0",
     "slate-react": "^0.94.2",
     "tailwind-merge": "^1.8.0",
     "typescript": "^5.0.0",
-    "yup": "^1.0.0",
-    "recharts": "^2.4.1",
-    "lodash": "^4.17.21",
-    "next-intl": "^2.10.4",
-    "formik": "^2.2.9"
+    "yup": "^1.0.0"
   },
   "volta": {
     "extends": "../../package.json"
@@ -43,7 +43,9 @@
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.3",
     "@tailwindcss/typography": "^0.5.7",
+    "@types/node": "^18.17.3",
     "npm-run-all": "^4.1.5",
+    "prettier-plugin-tailwindcss": "0.3.0",
     "tailwindcss": "^3.2.4"
   }
 }

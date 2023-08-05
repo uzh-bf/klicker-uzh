@@ -53,6 +53,7 @@
     "@types/express": "^4.17.13",
     "@types/jest": "^29.0.0",
     "@types/mathjs": "9.4.2",
+    "@types/node": "^18.17.3",
     "@types/node-schedule": "^2.1.0",
     "@types/validator": "^13.7.5",
     "@types/web-push": "^3.3.2",
