@@ -3,8 +3,6 @@ export function performLecturerLogin(cy) {
   cy.viewport("macbook-16");
   cy.visit(Cypress.env("URL_MANAGE"));
 
-  cy.get('[data-cy="login-button"').click();
-
   cy.get('[data-cy="delegated-login-button"').click();
 
   cy.get('[data-cy="identifier-field"]').type(
