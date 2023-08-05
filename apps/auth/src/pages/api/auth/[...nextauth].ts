@@ -1,10 +1,11 @@
 import { UserRole } from '@klicker-uzh/prisma'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import bcrypt from 'bcryptjs'
+import bcrypt from 'bcrypt'
 import JWT from 'jsonwebtoken'
 import type { NextAuthOptions } from 'next-auth'
 import NextAuth from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
+import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
 
 import prisma from 'src/lib/prisma'
@@ -35,46 +36,96 @@ function generateRandomString(length: number) {
   return result
 }
 
+const EduIDProvider: Provider = {
+  id: process.env.NEXT_PUBLIC_EDUID_ID as string,
+  wellKnown: process.env.EDUID_WELL_KNOWN as string,
+  clientId: process.env.EDUID_CLIENT_ID as string,
+  clientSecret: process.env.EDUID_CLIENT_SECRET as string,
+
+  name: 'EduID',
+  type: 'oauth',
+  authorization: {
+    params: {
+      claims: {
+        id_token: {
+          sub: { essential: true },
+          email: { essential: true },
+          swissEduPersonUniqueID: { essential: true },
+        },
+      },
+      scope: 'openid email https://login.eduid.ch/authz/User.Read',
+    },
+  },
+  idToken: true,
+  checks: ['pkce', 'state'],
+
+  profile(profile) {
+    return {
+      id: profile.sub,
+      email: profile.email,
+      shortname: generateRandomString(8),
+      lastLoginAt: new Date(),
+    }
+  },
+}
+
+const CredentialProvider: Provider = CredentialsProvider({
+  name: 'Delegation',
+
+  credentials: {
+    identifier: {
+      label: 'Identifier',
+      type: 'text',
+      placeholder: 'banking23',
+      required: true,
+    },
+    password: { label: 'Password', type: 'password', required: true },
+  },
+
+  async authorize(credentials, req) {
+    if (!credentials) return null
+
+    const user = await prisma.user.findUnique({
+      where: { shortname: credentials.identifier },
+      include: {
+        logins: true,
+      },
+    })
+
+    if (!user) return null
+
+    // go through each login and compare credentials with the login password
+    for (let login of user.logins) {
+      const isLoginValid = await bcrypt.compare(
+        credentials.password,
+        login.password
+      )
+
+      if (isLoginValid) {
+        await prisma.userLogin.update({
+          where: { id: login.id },
+          data: { lastLoginAt: new Date() },
+        })
+
+        return {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          scope: login.scope,
+        }
+      }
+    }
+
+    return null
+  },
+})
+
 export const authOptions: NextAuthOptions = {
   secret: process.env.APP_SECRET,
 
   adapter: PrismaAdapter(prisma),
 
-  providers: [
-    {
-      id: process.env.NEXT_PUBLIC_EDUID_ID,
-      wellKnown: process.env.EDUID_WELL_KNOWN,
-      clientId: process.env.EDUID_CLIENT_ID,
-      clientSecret: process.env.EDUID_CLIENT_SECRET,
-
-      name: 'EduID',
-      type: 'oauth',
-      authorization: {
-        params: {
-          claims: {
-            id_token: {
-              sub: { essential: true },
-              email: { essential: true },
-              swissEduPersonUniqueID: { essential: true },
-            },
-          },
-          scope: 'openid email https://login.eduid.ch/authz/User.Read',
-        },
-      },
-      idToken: true,
-      checks: ['pkce', 'state'],
-
-      profile(profile) {
-        return {
-          id: profile.sub,
-          email: profile.email,
-          password: bcrypt.hashSync(generateRandomString(8), 10),
-          shortname: generateRandomString(8),
-          lastLoginAt: new Date(),
-        }
-      },
-    } as Provider,
-  ],
+  providers: [EduIDProvider, CredentialProvider],
   session: {
     strategy: 'jwt',
   },
@@ -101,6 +152,7 @@ export const authOptions: NextAuthOptions = {
       // otherwise, the login is related to a participant
       if (user && account) {
         token.role = UserRole.USER
+        token.scope = (user as any).scope
       }
       return token
     },

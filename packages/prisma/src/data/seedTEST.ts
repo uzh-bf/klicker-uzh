@@ -207,7 +207,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       return prisma.participant.upsert(
         await prepareParticipant({
           id,
-          password: 'testing',
+          password: 'abcd',
           username: `testuser${ix + 1}`,
           courseIds: [COURSE_ID_TEST],
         })
@@ -223,7 +223,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       return prisma.participant.upsert(
         await prepareParticipant({
           id,
-          password: 'testing',
+          password: 'abcd',
           username: `testuser${ix + 11}`,
           courseIds: [],
         })

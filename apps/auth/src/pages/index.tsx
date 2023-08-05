@@ -20,25 +20,38 @@ function SignInOutButton() {
   }
 
   return (
-    <Button
-      className={{ root: 'p-4' }}
-      onClick={() =>
-        signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
-          callbackUrl:
-            (router.query?.redirectTo as string) ??
-            process.env.NEXT_PUBLIC_DEFAULT_REDIRECT,
-        })
-      }
-    >
-      <Image
-        src="/edu-id-logo.svg"
-        width={300}
-        height={90}
-        alt="Logo"
-        className="mx-auto"
-        data-cy="login-logo"
-      />
-    </Button>
+    <div className="flex flex-col gap-4">
+      <Button
+        className={{ root: 'p-4' }}
+        onClick={() =>
+          signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
+            callbackUrl:
+              (router.query?.redirectTo as string) ??
+              process.env.NEXT_PUBLIC_DEFAULT_REDIRECT,
+          })
+        }
+      >
+        <Image
+          src="/edu-id-logo.svg"
+          width={300}
+          height={90}
+          alt="Logo"
+          className="mx-auto"
+          data-cy="login-logo"
+        />
+      </Button>
+      <Button
+        onClick={() =>
+          signIn('delegation', {
+            callbackUrl:
+              (router.query?.redirectTo as string) ??
+              process.env.NEXT_PUBLIC_DEFAULT_REDIRECT,
+          })
+        }
+      >
+        Delegated Login
+      </Button>
+    </div>
   )
 }
 

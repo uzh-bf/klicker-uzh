@@ -23,8 +23,7 @@ export async function loginUser(
     where: { email: normalizedEmail },
   })
 
-  if (!user) return null
-  if (!user.isActive) return null
+  if (!user || !user.password) return null
 
   const isLoginValid = await bcrypt.compare(password, user.password)
 
@@ -84,7 +83,6 @@ export async function loginUserToken(
   })
 
   if (!user) return null
-  if (!user.isActive) return null
 
   const isLoginValid =
     token === user.loginToken &&

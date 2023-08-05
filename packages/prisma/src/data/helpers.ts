@@ -1,7 +1,11 @@
 import Prisma from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
-import { QuestionInstanceType, QuestionStackType } from '../client'
+import {
+  QuestionInstanceType,
+  QuestionStackType,
+  UserLoginScope,
+} from '../client'
 
 export async function prepareUser({
   password,
@@ -16,8 +20,12 @@ export async function prepareUser({
 
   const data = {
     ...args,
-    password: hashedPassword,
-    isActive: true,
+    logins: {
+      create: {
+        password: hashedPassword,
+        scope: UserLoginScope.FULL_ACCESS,
+      },
+    },
   }
 
   return {

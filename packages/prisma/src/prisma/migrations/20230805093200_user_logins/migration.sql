@@ -18,6 +18,7 @@ CREATE TABLE "UserLogin" (
     "id" UUID NOT NULL,
     "password" TEXT NOT NULL,
     "scope" "UserLoginScope" NOT NULL DEFAULT 'READ_ONLY',
+    "lastLoginAt" TIMESTAMP(3),
     "userId" UUID NOT NULL,
 
     CONSTRAINT "UserLogin_pkey" PRIMARY KEY ("id")

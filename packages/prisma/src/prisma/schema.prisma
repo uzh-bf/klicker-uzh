@@ -72,8 +72,9 @@ enum UserLoginScope {
 model UserLogin {
   id String @id @default(uuid()) @db.Uuid
 
-  password String
-  scope    UserLoginScope @default(READ_ONLY)
+  password    String
+  scope       UserLoginScope @default(READ_ONLY)
+  lastLoginAt DateTime?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @db.Uuid
