@@ -143,7 +143,7 @@ export const authOptions: NextAuthOptions = {
     sessionToken: {
       name: 'next-auth.session-token',
       options: {
-        domain: 'klicker.local',
+        domain: process.env.COOKIE_DOMAIN,
         path: '/',
         httpOnly: true,
         sameSite: 'lax',
@@ -166,7 +166,8 @@ export const authOptions: NextAuthOptions = {
       // allows relative callback URLs
       if (url.startsWith('/')) return `${baseUrl}${url}`
       // allows callback URLs that end with valid klicker domains
-      else if (url.endsWith('klicker.local')) return url
+      else if (url.endsWith('klicker.local') || url.includes('127.0.0.1'))
+        return url
       // return the homepage for all other URLs
       return baseUrl
     },

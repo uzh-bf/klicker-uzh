@@ -1,6 +1,7 @@
 import { Button } from '@uzh-bf/design-system'
 import Link from 'next/link'
 
+// TODO: redirect to auth app with redirectTo kept in place
 function Login() {
   return (
     <div>
