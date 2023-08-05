@@ -166,7 +166,7 @@ export const authOptions: NextAuthOptions = {
       // allows relative callback URLs
       if (url.startsWith('/')) return `${baseUrl}${url}`
       // allows callback URLs that end with valid klicker domains
-      else if (url.endsWith('klicker.local') || url.includes('127.0.0.1'))
+      else if (url.includes('klicker.local') || url.includes('127.0.0.1'))
         return url
       // return the homepage for all other URLs
       return baseUrl

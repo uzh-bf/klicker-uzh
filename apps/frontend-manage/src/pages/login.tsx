@@ -1,25 +1,25 @@
-import { Button } from '@uzh-bf/design-system'
-import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
-// TODO: redirect to auth app with redirectTo kept in place
 function Login() {
-  return (
-    <div>
-      <Link href={process.env.NEXT_PUBLIC_AUTH_URL as string}>
-        <Button data={{ cy: 'login-button' }}>LOGIN</Button>
-      </Link>
-    </div>
-  )
-}
+  const router = useRouter()
 
-export function getStaticProps({ locale }: any) {
-  return {
-    props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
-    },
-  }
+  useEffect(() => {
+    let origin = '/'
+
+    const urlParams = new URLSearchParams(window?.location?.search)
+    if (urlParams?.get('redirect_to')) {
+      origin = decodeURIComponent(urlParams.get('redirect_to') as string)
+    }
+
+    const redirection = encodeURIComponent(
+      `${process.env.NEXT_PUBLIC_MANAGE_URL as string}${origin}`
+    )
+
+    router.push(`${process.env.NEXT_PUBLIC_AUTH_URL}?redirectTo=${redirection}`)
+  })
+
+  return null
 }
 
 export default Login
