@@ -20,7 +20,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@klicker-uzh/grading": "^3.0.0-alpha.0",
+    "@klicker-uzh/grading": "*",
     "@sentry/node": "7.52.1",
     "ioredis": "5.3.2",
     "jsonwebtoken": "9.0.0",

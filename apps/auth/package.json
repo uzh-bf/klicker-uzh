@@ -27,7 +27,7 @@
     "typescript": "5.0.4"
   },
   "dependencies": {
-    "@klicker-uzh/prisma": "^3.0.0-alpha.0",
+    "@klicker-uzh/prisma": "*",
     "@next-auth/prisma-adapter": "1.0.7",
     "@uzh-bf/design-system": "2.0.5",
     "bcrypt": "5.1.0",

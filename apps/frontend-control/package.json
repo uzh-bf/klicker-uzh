@@ -21,9 +21,9 @@
     "@fortawesome/free-regular-svg-icons": "6.4.0",
     "@fortawesome/free-solid-svg-icons": "6.4.0",
     "@fortawesome/react-fontawesome": "0.2.0",
-    "@klicker-uzh/graphql": "^3.0.0-alpha.0",
-    "@klicker-uzh/markdown": "^3.0.0-alpha.0",
-    "@klicker-uzh/prisma": "^3.0.0-alpha.0",
+    "@klicker-uzh/graphql": "*",
+    "@klicker-uzh/markdown": "*",
+    "@klicker-uzh/prisma": "*",
     "@sentry/nextjs": "7.52.1",
     "@socialgouv/matomo-next": "1.6.1",
     "@uzh-bf/design-system": "2.0.6",
@@ -78,8 +78,5 @@
   },
   "engines": {
     "node": ">=16"
-  },
-  "overrides": {
-    "next": "13.4.12"
   }
 }
