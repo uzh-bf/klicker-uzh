@@ -30,7 +30,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.viewport("macbook-16");
   })
 
-  it.only('signs in into lecturer account', () => {
+  it('signs in into lecturer account', () => {
     cy.clearAllCookies();
     cy.viewport("macbook-16");
     cy.visit(Cypress.env('URL_MANAGE'));
@@ -39,7 +39,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
 
     cy.get('[data-cy="delegated-login-button"').click()
 
-    cy.get('[data-cy="identifier-field"]').type(Cypress.env('LECTURER_EMAIL'));
+    cy.get('[data-cy="identifier-field"]').type(Cypress.env('LECTURER_IDENTIFIER'));
     cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'));
 
     cy.get(':nth-child(2) > form > button').click();
