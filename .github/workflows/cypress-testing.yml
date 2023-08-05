@@ -252,6 +252,8 @@ jobs:
           npm run build
           npm run prisma:reset:raw -- -f
           npm run seed:test
+        env:
+          DATABASE_URL: postgres://klicker:klicker@localhost:5432/main
 
       - name: Cypress run
         uses: cypress-io/github-action@v5
