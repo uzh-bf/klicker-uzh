@@ -239,7 +239,6 @@ jobs:
 
       - name: Prepare .env and local.settings.json files
         run: |
-          mv packages/prisma/.env.template packages/prisma/.env
           mv apps/backend-docker/.env.template apps/backend-docker/.env
           echo "$FUNC_RESPONSES_SETTINGS" > apps/backend-responses/local.settings.json
           echo "$FUNC_RESPONSE_PROCESSOR_SETTINGS" > apps/backend-response-processor/local.settings.json
@@ -267,5 +266,6 @@ jobs:
         env:
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          DATABASE_URL: postgres://klicker:klicker@localhost:5432/main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
