@@ -63,11 +63,24 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model User {
+enum UserLoginScope {
+  FULL_ACCESS
+  SESSION_EXEC
+  READ_ONLY
+}
+
+model UserLogin {
   id String @id @default(uuid()) @db.Uuid
 
-  isActive Boolean @default(false)
-  isAAI    Boolean @default(false)
+  password String
+  scope    UserLoginScope @default(READ_ONLY)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
 
   name          String?
   email         String    @unique
@@ -75,7 +88,7 @@ model User {
   image         String?
 
   shortname           String    @unique
-  password            String
+  password            String?
   description         String?
   lastLoginAt         DateTime?
   deletionToken       String?
@@ -85,6 +98,7 @@ model User {
 
   role UserRole @default(USER)
 
+  logins            UserLogin[]
   session           Session[]
   accounts          Account[]
   courses           Course[]
