@@ -43,8 +43,10 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     new JWTStrategy(
       {
         jwtFromRequest(req: Request) {
-          if (req.headers?.['authorization'])
+          if (req.headers?.['authorization']) {
             return req.headers['authorization']?.replace('Bearer ', '')
+          }
+
           // if (req.cookies?.['next-auth.session-token']) {
           //   decode({
           //     token: req.cookies['next-auth.session-token'],
@@ -55,8 +57,6 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           // }
 
           if (req.cookies) {
-            console.log(req.cookies)
-
             return (
               req.cookies['next-auth.session-token'] ||
               req.cookies['participant_token']
@@ -71,8 +71,6 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
         // audience: 'localhost',
       },
       (jwt, done) => {
-        console.log(jwt)
-
         // TODO: if there is a user matching the JWT, return it
         // TODO: if there was an error, return it
         // TODO: if there was no user and no error, return
