@@ -74,9 +74,9 @@
     "yaml": "2.3.0"
   },
   "dependencies": {
-    "@prisma/client": "4.14.1",
+    "@prisma/client": "4.16.0",
     "code-review-gpt": "0.0.26",
-    "prisma": "4.14.1"
+    "prisma": "4.16.0"
   },
   "volta": {
     "node": "18.17.0"
