@@ -583,6 +583,31 @@
       "noDataAvailable": "Keine Daten verfügbar...",
       "audienceInteractionNotActivated": "Publikumsinteraktion ist nicht aktiviert.",
       "noFeedbacks": "Bisher wurden keine Feedbacks eingegeben oder angepinnt..."
+    },
+    "courseList": {
+      "selectCourse": "Bitte wählen Sie einen Kurs aus",
+      "createNewCourse": "Neuen Kurs erstellen",
+      "noCoursesFound": "Es konnten keine Kurse gefunden werden.",
+      "createCourseNow": "Jetzt einen Kurs erstellen!",
+      "courseNameReq": "Bitte geben Sie einen Namen für den Kurs an.",
+      "courseDisplayNameReq": "Bitte geben Sie einen Anzeigenamen für den Kurs an.",
+      "courseColorReq": "Bitte wählen Sie eine Farbe für den Kurs.",
+      "courseStartReq": "Bitte geben Sie ein Startdatum für Ihren Kurs ein. Die Daten können auch nach Erstellen des Kurses noch verändert werden.",
+      "courseEndReq": "Bitte geben Sie ein Enddatum für Ihren Kurs ein. Die Daten können auch nach dem Erstellen des Kurses noch verändert werden.",
+      "endDateFuture": "Das Enddatum muss in der Zukunft liegen.",
+      "endAfterStart": "Das Enddatum muss nach dem Startdatum liegen.",
+      "courseName": "Kursname",
+      "courseNameTooltip": "Der Kursname dient Ihnen zur Identifizierung des Kurses. Den Studierenden wird dieser Name nicht angezeigt.",
+      "courseDisplayName": "Kursanzeigename",
+      "courseDisplayNameTooltip": "Der Anzeigename wird den Studierenden angezeigt. Er kann vom Kursnamen abweichen.",
+      "courseDescriptionTooltip": "Die Beschreibung wird den Studierenden angezeigt. Sie können hier z.B. die Ziele des Kurses beschreiben.",
+      "addDescription": "Beschreibung hinzufügen",
+      "startDate": "Startdatum",
+      "startDateTooltip": "Ab dem Startdatum können die Studierenden auf die freigeschalteten Inhalte des Kurses zugreifen. Das Startdatum können Sie auch nach Erstellen des Kurses noch verändern.",
+      "endDate": "Enddatum",
+      "endDateTooltip": "Nach dem Enddatum wird der Kurs für die Studierenden als archiviert angezeigt, sie können aber weiterhin auf die Inhalte zugreifen. Das Enddatum können Sie auch nach Erstellen des Kurses noch verändern.",
+      "courseColor": "Kursfarbe",
+      "courseCreationFailed": "Erstellen des Kurses fehlgeschlagen..."
     }
   },
   "control": {

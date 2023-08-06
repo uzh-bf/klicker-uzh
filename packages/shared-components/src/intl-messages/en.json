@@ -583,6 +583,31 @@
       "noDataAvailable": "No data available...",
       "audienceInteractionNotActivated": "Audience interaction has not been activated.",
       "noFeedbacks": "No feedbacks received or pinned yet..."
+    },
+    "courseList": {
+      "selectCourse": "Please select a course",
+      "createNewCourse": "Create new course",
+      "noCoursesFound": "No courses found.",
+      "createCourseNow": "Create a course now!",
+      "courseNameReq": "Please enter a name for the course.",
+      "courseDisplayNameReq": "Please enter a display name for the course.",
+      "courseColorReq": "Please select a color for the course.",
+      "courseStartReq": "Please enter a start date for your course. The dates can be changed after creating the course.",
+      "courseEndReq": "Please enter an end date for your course. The dates can be changed after creating the course.",
+      "endDateFuture": "The end date must be in the future.",
+      "endAfterStart": "The end date must be after the start date.",
+      "courseName": "Course name",
+      "courseNameTooltip": "The course name is used for identification purposes. Students will not see this name.",
+      "courseDisplayName": "Course display name",
+      "courseDisplayNameTooltip": "The display name is shown to students. It can differ from the course name.",
+      "courseDescriptionTooltip": "The description is shown to students. You can use it to describe the goals of the course.",
+      "addDescription": "Add description",
+      "startDate": "Start date",
+      "startDateTooltip": "After the start date, students can access the course's content. The start date can be changed after creating the course.",
+      "endDate": "End date",
+      "endDateTooltip": "After the end date, the course will be shown as archived to students, but they can still access the content. The end date can be changed after creating the course.",
+      "courseColor": "Course color",
+      "courseCreationFailed": "Failed to create course..."
     }
   },
   "control": {
