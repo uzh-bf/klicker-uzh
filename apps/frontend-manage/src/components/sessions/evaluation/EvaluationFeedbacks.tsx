@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import useFeedbackFilter from '@lib/hooks/useFeedbackFilter'
 import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
 import FeedbackSearchAndFilters from '../../interaction/feedbacks/FeedbackSearchAndFilters'
 
 interface EvaluationFeedbacksProps {
@@ -11,6 +12,7 @@ interface EvaluationFeedbacksProps {
 }
 
 function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
+  const t = useTranslations()
   const { sortedFeedbacks, filterProps } = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })
@@ -28,10 +30,7 @@ function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
         {...filterProps}
       />
       {sortedFeedbacks?.length === 0 && (
-        <div>
-          Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen
-          überein...
-        </div>
+        <div>{t('manage.evaluation.noFeedbacksMatchFilter')}</div>
       )}
       {sortedFeedbacks?.map((feedback) => (
         <div key={feedback.content}>
@@ -48,7 +47,7 @@ function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
               {feedback.isResolved && (
                 <div className="flex flex-row items-center">
                   <FontAwesomeIcon icon={faCheck} className="mr-1.5" />
-                  <div>Während der Session gelöst</div>
+                  <div>{t('manage.evaluation.resolvedDuringSession')}</div>
                 </div>
               )}
             </div>

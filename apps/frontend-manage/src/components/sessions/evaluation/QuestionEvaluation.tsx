@@ -1,6 +1,7 @@
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Select } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import {
   ACTIVE_CHART_TYPES,
@@ -32,6 +33,7 @@ function QuestionEvaluation({
   setChartType,
   className,
 }: QuestionEvaluationProps) {
+  const t = useTranslations()
   const [statisticStates, setStatisticStates] = useState<{
     [key: string]: boolean
   }>({
@@ -76,7 +78,11 @@ function QuestionEvaluation({
         >
           <Select
             className={{ root: 'w-full mt-2', trigger: 'border-slate-400' }}
-            items={ACTIVE_CHART_TYPES[currentInstance.questionData.type]}
+            items={ACTIVE_CHART_TYPES[currentInstance.questionData.type].map(
+              (item) => {
+                return { label: t(item.label), value: item.value }
+              }
+            )}
             value={chartType}
             onChange={(newValue: string) => setChartType(newValue)}
           />
@@ -85,7 +91,9 @@ function QuestionEvaluation({
             currentInstance.questionData.type === 'MC' ||
             currentInstance.questionData.type === 'KPRIM') && (
             <div className="flex flex-col flex-1 min-h-0 gap-2 mt-2">
-              <div className="flex-none font-bold">Antwortmöglichkeiten</div>
+              <div className="flex-none font-bold">
+                {t('manage.questionForms.answerOptions')}
+              </div>
               <div className="flex-1 overflow-y-auto">
                 {currentInstance.questionData.options.choices.map(
                   (choice, innerIndex) => (
@@ -132,7 +140,9 @@ function QuestionEvaluation({
 
           {currentInstance.questionData.type === 'NUMERICAL' && (
             <div>
-              <div className="font-bold">Erlaubter Antwortbereich:</div>
+              <div className="font-bold">
+                {t('manage.evaluation.validSolutionRange')}:
+              </div>
               <div>
                 [
                 {currentInstance.questionData.options.restrictions?.min ?? '-∞'}
@@ -140,7 +150,9 @@ function QuestionEvaluation({
                 {currentInstance.questionData.options.restrictions?.max ?? '+∞'}
                 ]
               </div>
-              <div className="mt-4 font-bold">Statistik:</div>
+              <div className="mt-4 font-bold">
+                {t('manage.evaluation.statistics')}:
+              </div>
               {Object.entries(currentInstance.statistics)
                 .slice(1)
                 .sort(
@@ -174,7 +186,7 @@ function QuestionEvaluation({
                 currentInstance.questionData.options.solutionRanges && (
                   <div>
                     <div className="mt-4 font-bold">
-                      Korrekte Lösungsbereiche:
+                      {t('manage.evaluation.correctSolutionRanges')}:
                     </div>
                     {currentInstance.questionData.options.solutionRanges.map(
                       (range, innerIndex) => (
@@ -191,7 +203,9 @@ function QuestionEvaluation({
             currentInstance.questionData.options.solutions &&
             showSolution && (
               <div>
-                <div className="font-bold">Schlüsselwörter Lösung:</div>
+                <div className="font-bold">
+                  {t('manage.evaluation.keywordsSolution')}:
+                </div>
                 <ul>
                   {currentInstance.questionData.options.solutions.map(
                     (keyword, innerIndex) => (

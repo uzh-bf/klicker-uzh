@@ -1,4 +1,5 @@
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import { useTranslations } from 'next-intl'
 import React from 'react'
 import Histogram from 'shared-components/src/Histogram'
 import { TextSizeType } from '../sessions/evaluation/constants'
@@ -27,6 +28,8 @@ function Chart({
   textSize,
   statisticsShowSolution,
 }: ChartProps): React.ReactElement {
+  const t = useTranslations()
+
   if (chartType === 'table') {
     // TODO: add resizing possibility with sizeMe: <SizeMe refreshRate={250}>{({ size }) => <Component />}</SizeMe>
     return (
@@ -68,7 +71,7 @@ function Chart({
       />
     )
   } else {
-    return <div>There exists no chart for this question type yet</div>
+    return <div>{t('manage.evaluation.noChartsAvailable')}</div>
   }
 }
 

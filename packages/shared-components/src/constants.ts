@@ -103,26 +103,26 @@ export const ACTIVE_CHART_TYPES: Record<
   { label: string; value: string }[]
 > = {
   FREE_TEXT: [
-    { label: 'Tabelle', value: 'table' },
-    { label: 'Word Cloud', value: 'wordCloud' },
+    { label: 'manage.evaluation.table', value: 'table' },
+    { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
   ],
   NUMERICAL: [
-    { label: 'Histogramm', value: 'histogram' },
-    { label: 'Tabelle', value: 'table' },
-    { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Word Cloud', value: 'wordCloud' },
+    { label: 'manage.evaluation.histogram', value: 'histogram' },
+    { label: 'manage.evaluation.table', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: 'barChart' },
+    { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
   ],
   SC: [
-    { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Tabelle', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: 'barChart' },
+    { label: 'manage.evaluation.table', value: 'table' },
   ],
   MC: [
-    { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Tabelle', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: 'barChart' },
+    { label: 'manage.evaluation.table', value: 'table' },
   ],
   KPRIM: [
-    { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Tabelle', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: 'barChart' },
+    { label: 'manage.evaluation.table', value: 'table' },
   ],
 }
 
