@@ -1,6 +1,6 @@
 import { UserRole } from '@klicker-uzh/prisma'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
 import type { NextAuthOptions } from 'next-auth'
 import NextAuth from 'next-auth'
