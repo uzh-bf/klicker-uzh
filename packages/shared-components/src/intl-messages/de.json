@@ -41,6 +41,7 @@
       "start": "Starten",
       "continue": "Weiter",
       "cancel": "Abbrechen",
+      "confirm": "Bestätigen",
       "close": "Schliessen",
       "sendAnswer": "Antwort senden",
       "loading": "Laden...",
@@ -467,6 +468,24 @@
       "feedbackContent": "Bitte fügen Sie einen Inhalt zu Ihrem Antwortfeedback hinzu.",
       "SCAnswersCorrect": "Bei SC-Fragen muss genau eine Antwort korrekt sein.",
       "MCAnswersCorrect": "Bei MC-Fragen muss mindestens eine Antwort korrekt sein."
+    },
+    "sessions": {
+      "runningSessions": "Laufende Sessionen",
+      "plannedSessions": "Geplante Sessionen",
+      "preparedSessions": "Vorbereitete Sessionen",
+      "completedSessions": "Abgeschlossene Sessionen",
+      "embeddingEvaluation": "Einbettung Evaluation",
+      "lecturerCockpit": "Dozierenden Cockpit",
+      "sessionEvaluation": "Session Evaluation",
+      "startSession": "Start Session",
+      "editSession": "Session bearbeiten",
+      "deleteSession": "Session löschen",
+      "nBlocksQuestions": "{blocks} Blöcke, {questions} Fragen",
+      "blockXQuestions": "Block {block} ({questions} Frage(n))",
+      "deleteLiveSession": "Live-Session löschen",
+      "confirmLiveSessionDeletion": "Sind Sie sich sicher, dass Sie die folgende Live-Session löschen möchten?",
+      "liveSessionDeletionHint": "Das Löschen einer Live-Session ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live-Sessions können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.",
+      "evaluationLinksEmbedding": "Evaluations-Links für die Einbettung in PowerPoint"
     }
   },
   "control": {

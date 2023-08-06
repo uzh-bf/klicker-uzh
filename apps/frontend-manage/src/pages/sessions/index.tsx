@@ -3,11 +3,13 @@ import { GetUserSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Session from '../../components/sessions/Session'
 
 import { H2 } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { SESSION_STATUS } from 'shared-components/src/constants'
 import Layout from '../../components/Layout'
 
 function SessionList() {
+  const t = useTranslations()
   const {
     loading: loadingSessions,
     error: errorSessions,
@@ -39,7 +41,7 @@ function SessionList() {
   }, [dataSessions])
 
   if (!dataSessions || loadingSessions) {
-    return <div>Loading...</div>
+    return <div>{t('shared.generic.loading')}</div>
   }
 
   return (
@@ -47,7 +49,7 @@ function SessionList() {
       <div className="flex flex-col gap-5">
         {runningSessions && runningSessions.length > 0 && (
           <div>
-            <H2>Laufende Sessionen</H2>
+            <H2>{t('manage.sessions.runningSessions')}</H2>
             <div className="flex flex-col gap-2">
               {runningSessions.map((session) => (
                 <Session key={session.id} session={session} />
@@ -57,7 +59,7 @@ function SessionList() {
         )}
         {scheduledSessions && scheduledSessions.length > 0 && (
           <div>
-            <H2>Geplante Sessionen</H2>
+            <H2>{t('manage.sessions.plannedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {scheduledSessions.map((session) => (
                 <Session key={session.id} session={session} />
@@ -67,7 +69,7 @@ function SessionList() {
         )}
         {preparedSessions && preparedSessions.length > 0 && (
           <div>
-            <H2>Vorbereitete Sessionen</H2>
+            <H2>{t('manage.sessions.preparedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {preparedSessions.map((session) => (
                 <Session key={session.id} session={session} />
@@ -77,7 +79,7 @@ function SessionList() {
         )}
         {completedSessions && completedSessions.length > 0 && (
           <div>
-            <H2>Abgeschlossene Sessionen</H2>
+            <H2>{t('manage.sessions.completedSessions')}</H2>
             <div className="flex flex-col gap-2">
               {completedSessions.map((session) => (
                 <Session key={session.id} session={session} />

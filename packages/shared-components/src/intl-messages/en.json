@@ -41,6 +41,7 @@
       "start": "Start",
       "continue": "Continue",
       "cancel": "Cancel",
+      "confirm": "Confirm",
       "close": "Close",
       "sendAnswer": "Send answer",
       "loading": "Loading...",
@@ -467,6 +468,24 @@
       "feedbackContent": "Please add some content to your answer feedback.",
       "SCAnswersCorrect": "For SC questions exactly one answer has to be marked as correct.",
       "MCAnswersCorrect": "For MC questions at least one answer has to be marked as correct."
+    },
+    "sessions": {
+      "runningSessions": "Running Sessions",
+      "plannedSessions": "Planned Sessions",
+      "preparedSessions": "Prepared Sessions",
+      "completedSessions": "Completed Sessions",
+      "embeddingEvaluation": "Embedding Evaluation",
+      "lecturerCockpit": "Lecturer Cockpit",
+      "sessionEvaluation": "Session Evaluation",
+      "startSession": "Start Session",
+      "editSession": "Edit Session",
+      "deleteSession": "Delete Session",
+      "nBlocksQuestions": "{blocks} blocks, {questions} questions",
+      "blockXQuestions": "Block {block} ({questions} question(s))",
+      "deleteLiveSession": "Delete Live Session",
+      "confirmLiveSessionDeletion": "Are you sure you want to delete the following live session?",
+      "liveSessionDeletionHint": "Deleting a live session is only possible as long as it has not been started. Deleted live sessions cannot be restored at a later date.",
+      "evaluationLinksEmbedding": "Evaluation links for embedding in PowerPoint"
     }
   },
   "control": {
