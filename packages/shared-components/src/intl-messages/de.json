@@ -578,6 +578,11 @@
       "wordCloud": "Word Cloud",
       "histogram": "Histogramm",
       "barChart": "Balkendiagramm"
+    },
+    "lecturer": {
+      "noDataAvailable": "Keine Daten verfügbar...",
+      "audienceInteractionNotActivated": "Publikumsinteraktion ist nicht aktiviert.",
+      "noFeedbacks": "Bisher wurden keine Feedbacks eingegeben oder angepinnt..."
     }
   },
   "control": {
