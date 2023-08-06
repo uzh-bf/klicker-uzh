@@ -20,12 +20,14 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Select, TextField } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
 
 function Index() {
   const router = useRouter()
+  const t = useTranslations()
 
   const [searchInput, setSearchInput] = useState('')
   const [creationMode, setCreationMode] = useState<
@@ -83,11 +85,6 @@ function Index() {
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
 
-  const dropdownItems = [
-    { value: 'CREATED', label: 'Datum' },
-    { value: 'TITLE', label: 'Titel' },
-  ]
-
   const [sortBy, setSortBy] = useState('')
 
   const sortIcon = useMemo(() => {
@@ -104,7 +101,7 @@ function Index() {
 
   return (
     <Layout
-      displayName="Fragepool"
+      displayName={t('manage.general.questionPool')}
       data={{ cy: 'homepage' }}
       className={{ children: 'pb-2' }}
     >
@@ -112,7 +109,7 @@ function Index() {
         <div className="grid md:grid-cols-4 gap-1 md:gap-2 mb-4">
           <CreationButton
             icon={faUsersLine}
-            text="Live-Session erstellen"
+            text={t('manage.questionPool.createLiveSession')}
             onClick={() => {
               setCreationMode('liveSession')
             }}
@@ -120,7 +117,7 @@ function Index() {
           />
           <CreationButton
             icon={faChalkboardUser}
-            text="Micro-Session erstellen"
+            text={t('manage.questionPool.createMicroSession')}
             onClick={() => {
               setCreationMode('microSession')
             }}
@@ -128,7 +125,7 @@ function Index() {
           />
           <CreationButton
             icon={faGraduationCap}
-            text="Lernelement erstellen"
+            text={t('manage.questionPool.createLearningElement')}
             onClick={() => {
               setCreationMode('learningElement')
             }}
@@ -136,7 +133,7 @@ function Index() {
           />
           <CreationButton
             icon={faUserGroup}
-            text="Gruppentask erstellen"
+            text={t('manage.questionPool.createGroupTask')}
             onClick={() => {
               setCreationMode('groupTask')
             }}
@@ -199,13 +196,13 @@ function Index() {
         <div className="flex flex-col flex-1 w-full overflow-auto">
           {!dataQuestions || loadingQuestions ? (
             // TODO: replace by nice loader
-            <div>Loading...</div>
+            <div>{t('shared.generic.loading')}</div>
           ) : (
             <>
               <div className="flex flex-row content-center justify-between flex-none pl-7">
                 <div className="flex flex-row pb-3">
                   <TextField
-                    placeholder="Suchen.."
+                    placeholder={t('manage.general.searchPlaceholder')}
                     value={searchInput}
                     onChange={(newValue: string) => {
                       setSearchInput(newValue)
@@ -235,8 +232,11 @@ function Index() {
                       root: 'min-w-30',
                       trigger: 'h-10',
                     }}
-                    placeholder="Sortieren nach.."
-                    items={dropdownItems}
+                    placeholder={t('manage.general.sortBy')}
+                    items={[
+                      { value: 'CREATED', label: t('manage.general.date') },
+                      { value: 'TITLE', label: t('manage.general.title') },
+                    ]}
                     onChange={(newSortBy: string) => {
                       setSortBy(newSortBy)
                       handleSortByChange(newSortBy)
@@ -252,7 +252,7 @@ function Index() {
                   }}
                   data={{ cy: 'create-question' }}
                 >
-                  FRAGE ERSTELLEN
+                  {t('manage.questionPool.createQuestionCaps')}
                 </Button>
               </div>
 

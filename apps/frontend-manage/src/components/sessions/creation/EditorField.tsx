@@ -1,5 +1,6 @@
 import { Label } from '@uzh-bf/design-system'
 import { useField } from 'formik'
+import { useTranslations } from 'next-intl'
 import ContentInput from 'shared-components/src/ContentInput'
 import { twMerge } from 'tailwind-merge'
 
@@ -20,6 +21,7 @@ function EditorField({
   className,
   data_cy,
 }: EditorFieldProps) {
+  const t = useTranslations()
   const [field, meta, helpers] = useField(fieldName)
 
   return (
@@ -42,7 +44,7 @@ function EditorField({
           helpers.setTouched(true)
         }}
         showToolbarOnFocus={showToolbarOnFocus}
-        placeholder="Inhalt hier eingeben…"
+        placeholder={t('manage.sessionForms.enterContentHere')}
         className={{
           editor: '!leading-3 h-14 overflow-x-auto',
           root: 'w-full',

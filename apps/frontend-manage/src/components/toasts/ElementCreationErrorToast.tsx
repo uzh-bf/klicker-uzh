@@ -1,4 +1,5 @@
 import { Toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 
 interface ElementCreationErrorToastProps {
   error: string
@@ -11,6 +12,8 @@ function ElementCreationErrorToast({
   open,
   setOpen,
 }: ElementCreationErrorToastProps): React.ReactElement {
+  const t = useTranslations()
+
   return (
     <Toast
       duration={6000}
@@ -20,7 +23,7 @@ function ElementCreationErrorToast({
     >
       <div>
         <div>{error}</div>
-        <div>Bitte beachten Sie die Fehlermeldungen im Formular</div>
+        <div>{t('manage.sessionForms.considerFormErrors')}</div>
       </div>
     </Toast>
   )
