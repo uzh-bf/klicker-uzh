@@ -26,7 +26,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
 
   return (
     <div
-      className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800"
+      className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800 print:!hidden"
       data-cy="navigation"
     >
       <Navigation className={{ root: 'bg-slate-800' }}>
