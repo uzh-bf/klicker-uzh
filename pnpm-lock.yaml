@@ -253,6 +253,9 @@ importers:
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5
+      nyc:
+        specifier: 15.1.0
+        version: 15.1.0
       prisma:
         specifier: 4.14.1
         version: 4.14.1
@@ -1096,9 +1099,6 @@ importers:
       cypress:
         specifier: 12.12.0
         version: 12.12.0
-      nyc:
-        specifier: 15.1.0
-        version: 15.1.0
       typescript:
         specifier: 5.0.4
         version: 5.0.4
