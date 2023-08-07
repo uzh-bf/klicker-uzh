@@ -1,20 +1,33 @@
-# Install dependencies only when needed
-FROM node:18-alpine AS deps
+FROM docker.io/library/node:18-alpine AS base
 
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+ARG NODE_ENV production
+ENV NODE_ENV $NODE_ENV
+
+FROM base AS builder
+WORKDIR /app
+
 RUN apk add --no-cache libc6-compat
+RUN apk update
 
+RUN npm i -g pnpm turbo
+
+COPY . .
+
+RUN turbo prune --scope=@klicker-uzh/frontend-control --docker
+
+
+FROM base AS installer
 WORKDIR /app
 
-COPY package.json ./
+RUN apk add --no-cache libc6-compat
+RUN apk update
 
-RUN npm install
+RUN npm i -g pnpm turbo
 
+COPY --from=builder /app/out/json/ .
+COPY --from=builder /app/out/pnpm* .
 
-# Rebuild the source code only when needed
-FROM node:18-alpine AS builder
-
-WORKDIR /app
+RUN pnpm i --frozen-lockfile
 
 ARG NODE_ENV="production"
 ARG COOKIE_DOMAIN
@@ -32,34 +45,27 @@ ARG NEXT_PUBLIC_MATOMO_ID
 
 ENV NEXT_TELEMETRY_DISABLED 1
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-RUN npm run build
+COPY --from=builder /app/out/full/ .
+RUN pnpm run build --filter=@klicker-uzh/frontend-control
 
 
-# Production image, copy all the files and run next
-FROM node:18-alpine AS runner
-
+FROM base AS runner
 WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+USER nextjs
+
+COPY --from=installer /app/apps/frontend-control/next.config.js .
+COPY --from=installer /app/apps/frontend-control/package.json .
+
+COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-control/.next/standalone ./
+COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-control/.next/static ./apps/frontend-control/.next/static
+COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-control/public ./apps/frontend-control/public
 
 ARG NODE_ENV="production"
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-
 EXPOSE 3000
 
-ENV PORT 3000
-
-CMD ["node", "server.js"]
+CMD node apps/frontend-control/server.js
