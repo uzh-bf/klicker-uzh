@@ -12,6 +12,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Countdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -33,6 +34,7 @@ function SessionBlock({
   active,
   block,
 }: SessionBlockProps): React.ReactElement {
+  const t = useTranslations()
   const untilExpiration = useMemo(
     () =>
       block.expiresAt
@@ -57,7 +59,7 @@ function SessionBlock({
         <div>
           <FontAwesomeIcon icon={ICON_MAP[block.status]} />
         </div>
-        <div>Block {block.order! + 1}</div>
+        <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
         {untilExpiration && (
           <Countdown
             isStatic={!block.expiresAt}

@@ -2,6 +2,7 @@ import { faEye } from '@fortawesome/free-regular-svg-icons'
 import { faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 
 interface CompletionStepProps {
   completionSuccessMessage?: (elementName: string) => React.ReactNode
@@ -22,21 +23,23 @@ function CompletionStep({
   resetForm,
   setStepNumber,
 }: CompletionStepProps) {
+  const t = useTranslations()
+
   return (
     <div className="flex flex-col items-center gap-4 p-4">
       <div>
         {completionSuccessMessage
           ? completionSuccessMessage(name)
           : editMode
-          ? 'Änderungen gespeichert'
-          : 'Element erfolgreich erstellt'}
+          ? t('manage.sessionForms.changesSaved')
+          : t('manage.sessionForms.elementCreated')}
       </div>
       <div className="space-x-2">
         <Button onClick={onViewElement} data={{ cy: 'load-session-list' }}>
           <Button.Icon>
             <FontAwesomeIcon icon={faEye} />
           </Button.Icon>
-          <Button.Label>Übersicht öffnen</Button.Label>
+          <Button.Label>{t('manage.sessionForms.openOverview')}</Button.Label>
         </Button>
         <Button
           onClick={() => {
@@ -48,7 +51,9 @@ function CompletionStep({
           <Button.Icon>
             <FontAwesomeIcon icon={faSync} />
           </Button.Icon>
-          <Button.Label>Weiteres Element erstellen</Button.Label>
+          <Button.Label>
+            {t('manage.sessionForms.createNewElement')}
+          </Button.Label>
         </Button>
       </div>
     </div>

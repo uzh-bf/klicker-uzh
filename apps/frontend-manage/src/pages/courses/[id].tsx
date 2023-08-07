@@ -17,6 +17,7 @@ import {
   Toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { sort } from 'ramda'
@@ -31,6 +32,7 @@ import SessionTile from '../../components/courses/SessionTile'
 import QRPopup from '../../components/sessions/cockpit/QRPopup'
 
 function CourseOverviewPage() {
+  const t = useTranslations()
   const router = useRouter()
 
   const [descriptionEditMode, setDescriptionEditMode] = useState(false)
@@ -57,7 +59,7 @@ function CourseOverviewPage() {
     return <div>{error.message}</div>
   }
 
-  if (loading || !data?.course) return <div>Loading...</div>
+  if (loading || !data?.course) return <div>{t('shared.generic.loading')}</div>
 
   const { course } = data
 
@@ -73,19 +75,20 @@ function CourseOverviewPage() {
       <div className="w-full mb-4">
         <div className="flex flex-row items-center justify-between">
           <H1>
-            Kurs: {course.name} (PIN:{' '}
-            {String(course.pinCode)
-              .match(/.{1,3}/g)
-              ?.join(' ')}
-            )
+            {t('manage.course.nameWithPin', {
+              name: course.name,
+              pin: String(course.pinCode)
+                .match(/.{1,3}/g)
+                ?.join(' '),
+            })}
           </H1>
           <div className="flex flex-row items-center gap-4 mb-2">
             <QRPopup
               relativeLink={`/course/${course.id}/join?pin=${course.pinCode}`}
-              triggerText="Kurs beitreten"
+              triggerText={t('manage.course.joinCourse')}
               className={{ modal: 'w-[40rem]' }}
             >
-              <H2>Kurs beitreten</H2>
+              <H2>{t('manage.course.joinCourse')}</H2>
               <Link
                 href={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}
                 target="_blank"
@@ -93,16 +96,18 @@ function CourseOverviewPage() {
               >{`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}</Link>
 
               <div className="mt-4">
-                Der für den Beitritt benötigte PIN lautet:{' '}
-                <span className="font-bold">
-                  {String(course.pinCode)
+                {t.rich('manage.course.requiredPin', {
+                  b: (text) => <strong>{text}</strong>,
+                  pin: String(course.pinCode)
                     .match(/.{1,3}/g)
-                    ?.join(' ')}
-                </span>
+                    ?.join(' '),
+                })}
               </div>
             </QRPopup>
             <div className="italic">
-              {course.numOfParticipants} Teilnehmende
+              {t('manage.course.nParticipants', {
+                number: course.numOfParticipants,
+              })}
             </div>
           </div>
         </div>
@@ -111,7 +116,7 @@ function CourseOverviewPage() {
             <CourseDescription
               description={course.description}
               courseId={router.query.id as string}
-              submitText="Beschreibung speichern"
+              submitText={t('manage.course.saveDescription')}
               setDescriptionEditMode={setDescriptionEditMode}
             />
           ) : (
@@ -134,24 +139,24 @@ function CourseOverviewPage() {
           <CourseDescription
             description={course.description ?? '<br>'}
             courseId={router.query.id as string}
-            submitText="Beschreibung hinzufügen"
+            submitText={t('manage.courseList.addDescription')}
             setDescriptionEditMode={setDescriptionEditMode}
           />
         )}
         <div className="flex flex-row items-center gap-8 pt-1 h-11">
           <div className="flex flex-row">
-            <div className="pr-3">Kursfarbe</div>
+            <div className="pr-3">{t('manage.courseList.courseColor')}</div>
             <ColorPicker
               color={course.color ?? '#0028A5'}
               onSubmit={(color) =>
                 changeCourseColor({ variables: { color, courseId: course.id } })
               }
-              abortText="Abbrechen"
-              submitText="Speichern"
+              abortText={t('shared.generic.cancel')}
+              submitText={t('shared.generic.save')}
             />
           </div>
           <DateChanger
-            label="Startdatum:"
+            label={`${t('shared.generic.startDate')}:`}
             date={course.startDate}
             edit={editStartDate}
             onEdit={() => setEditStartDate(true)}
@@ -173,7 +178,7 @@ function CourseOverviewPage() {
             }}
           />
           <DateChanger
-            label="Enddatum:"
+            label={`${t('shared.generic.endDate')}:`}
             date={course.endDate}
             edit={editEndDate}
             onEdit={() => setEditEndDate(true)}
@@ -200,7 +205,7 @@ function CourseOverviewPage() {
             setOpenExternal={setDateToastSuccess}
             type="success"
           >
-            Datum wurde erfolgreich angepasst.
+            {t('manage.course.changedDate')}
           </Toast>
           <Toast
             duration={4000}
@@ -208,15 +213,14 @@ function CourseOverviewPage() {
             setOpenExternal={setDateToastError}
             type="error"
           >
-            Beim Anpassen des Datums ist ein Fehler aufgetreten. Bitte
-            überprüfen Sie die Eingabe.
+            {t('manage.course.dateChangeFailed')}
           </Toast>
         </div>
       </div>
       <div className="flex flex-col md:flex-row">
         <div className="w-full md:w-2/3 md:border-r-[0.1rem] md:border-solid md:border-uzh-grey-80">
           <div className="mb-4">
-            <H3>Sessionen</H3>
+            <H3>{t('manage.general.sessions')}</H3>
             {course.sessions && course.sessions.length > 0 ? (
               <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
                 {sort((a, b) => {
@@ -229,11 +233,11 @@ function CourseOverviewPage() {
                 ))}
               </div>
             ) : (
-              <div>Keine Sessionen vorhanden</div>
+              <div>{t('manage.course.noSessions')}</div>
             )}
           </div>
           <div className="mb-4">
-            <H3>Lernelemente</H3>
+            <H3>{t('shared.generic.learningElements')}</H3>
             {course.learningElements && course.learningElements.length > 0 ? (
               <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
                 {course.learningElements.map((learningElement) => (
@@ -245,11 +249,11 @@ function CourseOverviewPage() {
                 ))}
               </div>
             ) : (
-              <div>Keine Lernelemente vorhanden</div>
+              <div>{t('manage.course.noLearningElements')}</div>
             )}
           </div>
           <div className="mb-4">
-            <H3>Micro-Sessions</H3>
+            <H3>{t('shared.generic.microSessions')}</H3>
             {course.microSessions && course.microSessions.length > 0 ? (
               <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
                 {course.microSessions.map((microSession) => (
@@ -260,27 +264,37 @@ function CourseOverviewPage() {
                 ))}
               </div>
             ) : (
-              <div>Keine Micro-Sessions vorhanden</div>
+              <div>{t('manage.course.noMicroSessions')}</div>
             )}
           </div>
         </div>
         <div className="w-full md:w-1/3 md:pl-2">
-          <H3>Kurs Leaderboard</H3>
+          <H3>{t('manage.course.courseLeaderboard')}</H3>
           <Leaderboard
             className={{ root: 'max-h-[31rem] overflow-y-scroll' }}
             leaderboard={course.leaderboard ?? []}
           />
           <div className="mt-2 text-sm italic text-right text-gray-500">
             <div>
-              Teilnehmende Leaderboard: {course.numOfActiveParticipants}
+              {t('manage.course.participantsLeaderboard', {
+                number: course.numOfActiveParticipants,
+              })}
             </div>
             <div>
-              Durchschnittl. Punkte: {course.averageActiveScore?.toFixed(2)}
+              {t('manage.course.avgPoints', {
+                points: course.averageActiveScore?.toFixed(2),
+              })}
             </div>
             <div className="mt-1">
-              Kursteilnehmende: {course.numOfParticipants}
+              {t('manage.course.courseParticipants', {
+                number: course.numOfParticipants,
+              })}
             </div>
-            <div>Durchschnittl. Punkte: {course.averageScore?.toFixed(2)}</div>
+            <div>
+              {t('manage.course.avgPoints', {
+                points: course.averageScore?.toFixed(2),
+              })}
+            </div>
           </div>
         </div>
       </div>

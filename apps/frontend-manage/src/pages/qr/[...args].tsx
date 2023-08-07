@@ -19,13 +19,16 @@ export function QR({ path, width = 334 }: Props): React.ReactElement {
   )
 }
 
-export const getStaticProps: GetStaticProps = function ({ params }) {
+export const getStaticProps: GetStaticProps = function ({ params, locale }) {
   // TODO: adapt this function (possibly to getServerSideProps in order to also forward the query parameters to the QR component)
   const args = params!.args as string[]
 
   return {
     props: {
       path: `/${args.join('/')}`,
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
     },
   }
 }

@@ -4,7 +4,7 @@
 @import '@uzh-bf/design-system/dist/index.esm.css';
 
 @import 'tailwindcss/components';
-@import '@klicker-uzh/markdown/dist/components.css';
+/* @import '@klicker-uzh/markdown/dist/components.css'; */
 @import 'shared-components/dist/components.css';
 
 @import 'tailwindcss/utilities';

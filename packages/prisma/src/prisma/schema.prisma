@@ -46,6 +46,11 @@ model Account {
   createdAt DateTime @default(now())
 }
 
+enum Locale {
+  en
+  de
+}
+
 model User {
   id String @id @default(uuid()) @db.Uuid
 
@@ -61,6 +66,8 @@ model User {
   deletionRequestedAt DateTime?
   loginToken          String?
   loginTokenExpiresAt DateTime?
+
+  locale Locale @default(en)
 
   role UserRole @default(USER)
 
@@ -702,6 +709,8 @@ model Participant {
   xp             Int     @default(0)
 
   lastLoginAt DateTime?
+
+  locale Locale @default(en)
 
   participantGroups       ParticipantGroup[]
   accounts                ParticipantAccount[]

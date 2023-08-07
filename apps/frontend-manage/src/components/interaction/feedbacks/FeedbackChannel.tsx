@@ -10,6 +10,7 @@ import { Button } from '@uzh-bf/design-system'
 
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
+import { useTranslations } from 'next-intl'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 
@@ -36,6 +37,7 @@ function FeedbackChannel({
   handleRespondToFeedback,
   handleDeleteFeedbackResponse,
 }: Props) {
+  const t = useTranslations()
   const { sortedFeedbacks, filterProps } = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })
@@ -72,7 +74,7 @@ function FeedbackChannel({
         {/* // TODO: styling */}
         {!feedbacks ||
           (feedbacks.length === 0 && (
-            <div>Bisher keine Feedbacks erhalten...</div>
+            <div>{t('manage.cockpit.noFeedbacksYet')}</div>
           ))}
 
         {/* // TODO: styling */}
@@ -80,10 +82,7 @@ function FeedbackChannel({
           feedbacks.length > 0 &&
           sortedFeedbacks &&
           sortedFeedbacks.length === 0 && (
-            <div>
-              Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen
-              überein...
-            </div>
+            <div>{t('manage.cockpit.noFeedbackFilterMatch')}</div>
           )}
 
         {sortedFeedbacks?.map(

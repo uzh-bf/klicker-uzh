@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import LiveSessionDeletionModal from '@components/courses/modals/LiveSessionDeletionModal'
 import {
   faArrowUpRightFromSquare,
   faCalendarDays,
@@ -20,6 +19,7 @@ import {
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Collapsible, H3 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -27,6 +27,7 @@ import {
   QUESTION_TYPES_SHORT,
   SESSION_STATUS,
 } from 'shared-components/src/constants'
+import LiveSessionDeletionModal from '../courses/modals/LiveSessionDeletionModal'
 import EmbeddingModal from './EmbeddingModal'
 
 interface SessionProps {
@@ -34,6 +35,7 @@ interface SessionProps {
 }
 
 function Session({ session }: SessionProps) {
+  const t = useTranslations()
   const [startSession] = useMutation(StartSessionDocument, {
     variables: { id: session.id },
     refetchQueries: [
@@ -105,7 +107,9 @@ function Session({ session }: SessionProps) {
                       <Button.Icon>
                         <FontAwesomeIcon icon={faCode} size="sm" />
                       </Button.Icon>
-                      <Button.Label>Einbettung Evaluation</Button.Label>
+                      <Button.Label>
+                        {t('manage.sessions.embeddingEvaluation')}
+                      </Button.Label>
                     </Button>
                     <EmbeddingModal
                       key={session.id}
@@ -126,7 +130,7 @@ function Session({ session }: SessionProps) {
                       data-cy="session-cockpit"
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      <div>Dozierenden Cockpit</div>
+                      <div>{t('manage.sessions.lecturerCockpit')}</div>
                     </div>
                   </Link>
                 )}
@@ -137,7 +141,7 @@ function Session({ session }: SessionProps) {
                   >
                     <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      <div>Session Evaluation</div>
+                      <div>{t('manage.sessions.sessionEvaluation')}</div>
                     </div>
                   </Link>
                 )}
@@ -153,7 +157,7 @@ function Session({ session }: SessionProps) {
                   >
                     <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
-                      <div>Start Session</div>
+                      <div>{t('manage.sessions.startSession')}</div>
                     </div>
                   </Button>
                 )}
@@ -166,7 +170,10 @@ function Session({ session }: SessionProps) {
           }
           closedContent={
             <div className="italic">
-              {session.numOfBlocks} Blöcke, {session.numOfQuestions} Fragen
+              {t('manage.sessions.nBlocksQuestions', {
+                blocks: session.numOfBlocks,
+                questions: session.numOfQuestions,
+              })}
             </div>
           }
           primary={
@@ -185,7 +192,9 @@ function Session({ session }: SessionProps) {
                   <Button.Icon className={{ root: 'text-slate-600' }}>
                     <FontAwesomeIcon icon={faPencil} />
                   </Button.Icon>
-                  <Button.Label>Session bearbeiten</Button.Label>
+                  <Button.Label>
+                    {t('manage.sessions.editSession')}
+                  </Button.Label>
                 </Button>
                 <Button
                   className={{
@@ -196,7 +205,9 @@ function Session({ session }: SessionProps) {
                   <Button.Icon className={{ root: 'text-red-400' }}>
                     <FontAwesomeIcon icon={faTrash} />
                   </Button.Icon>
-                  <Button.Label>Session löschen</Button.Label>
+                  <Button.Label>
+                    {t('manage.sessions.deleteSession')}
+                  </Button.Label>
                 </Button>
               </div>
             )
@@ -206,8 +217,10 @@ function Session({ session }: SessionProps) {
             {session.blocks?.map((block, index) => (
               <div key={block.id} className="flex flex-col gap-1">
                 <div className="italic">
-                  Block {index + 1} ({block.instances?.length}{' '}
-                  {(block.instances?.length || 0) > 1 ? 'Fragen' : 'Frage'})
+                  {t('manage.sessions.blockXQuestions', {
+                    block: index + 1,
+                    questions: block.instances?.length,
+                  })}
                 </div>
                 {block.instances?.map((instance) => (
                   <div

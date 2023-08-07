@@ -81,6 +81,28 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      changeUserLocale: asUser.field({
+        nullable: true,
+        type: User,
+        args: {
+          locale: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeUserLocale(args, ctx)
+        },
+      }),
+
+      changeParticipantLocale: asParticipant.field({
+        nullable: true,
+        type: Participant,
+        args: {
+          locale: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeParticipantLocale(args, ctx)
+        },
+      }),
+
       cancelSession: asUser.field({
         nullable: true,
         type: Session,

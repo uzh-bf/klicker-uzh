@@ -9,6 +9,7 @@ import {
   MicroSession,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
+import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import CreationTitle from './CreationTitle'
 import LearningElementWizard from './LearningElementWizard'
@@ -28,6 +29,7 @@ function SessionCreation({
   sessionId,
   editMode,
 }: SessionCreationProps) {
+  const t = useTranslations()
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
     skip: !sessionId || editMode !== 'liveSession',
@@ -56,7 +58,8 @@ function SessionCreation({
     [dataCourses]
   )
 
-  if (!errorCourses && loadingCourses) return <div>Loading...</div>
+  if (!errorCourses && loadingCourses)
+    return <div>{t('shared.generic.loading')}</div>
 
   return (
     <div className="flex flex-col justify-center print-hidden">
@@ -64,7 +67,7 @@ function SessionCreation({
         {creationMode === 'liveSession' && (
           <>
             <CreationTitle
-              text="Live-Session"
+              text={t('shared.generic.liveSession')}
               editMode={!!editMode}
               closeWizard={closeWizard}
             />
@@ -79,7 +82,7 @@ function SessionCreation({
         {creationMode === 'microSession' && (
           <>
             <CreationTitle
-              text="Micro-Session"
+              text={t('shared.generic.microlearning')}
               editMode={!!editMode}
               closeWizard={closeWizard}
             />
@@ -95,7 +98,7 @@ function SessionCreation({
         {creationMode === 'learningElement' && (
           <>
             <CreationTitle
-              text="Lernelement"
+              text={t('shared.generic.learningElement')}
               editMode={!!editMode}
               closeWizard={closeWizard}
             />

@@ -2,6 +2,7 @@ import { faClipboard } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { QuestionInstance } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 
 interface EmbeddingModalProps {
   open: boolean
@@ -16,16 +17,20 @@ function EmbeddingModal({
   sessionId,
   questions,
 }: EmbeddingModalProps) {
+  const t = useTranslations()
+
   return (
     <Modal
       open={open}
       onClose={onClose}
       className={{ content: 'h-2/3' }}
       hideCloseButton
-      onPrimaryAction={<Button onClick={onClose}>Schliessen</Button>}
+      onPrimaryAction={
+        <Button onClick={onClose}>{t('shared.generic.close')}</Button>
+      }
     >
       <H2 className={{ root: 'mb-4' }}>
-        Evaluations-Links für die Einbettung in PowerPoint
+        {t('manage.sessions.evaluationLinksEmbedding')}
       </H2>
       <div className="flex flex-col gap-2">
         {questions?.map((question: QuestionInstance, ix: number) => {
@@ -53,7 +58,9 @@ function EmbeddingModal({
           )
         })}
         <div className="flex flex-row items-center gap-2">
-          <div className="font-bold w-30">Leaderboard:</div>
+          <div className="font-bold w-30">
+            {t('shared.generic.leaderboard')}:
+          </div>
           <div className="flex flex-row items-center gap-3 px-1.5 py-0.5 mr-2 border border-solid rounded bg-uzh-grey-40">
             <FontAwesomeIcon
               icon={faClipboard}
