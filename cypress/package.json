@@ -9,7 +9,8 @@
     "@cypress/code-coverage": "3.10.6",
     "@testing-library/cypress": "9.0.0",
     "cypress": "12.12.0",
-    "nyc": "15.1.0"
+    "nyc": "15.1.0",
+    "typescript": "5.0.4"
   },
   "volta": {
     "extends": "../package.json"

@@ -1111,6 +1111,9 @@ importers:
       nyc:
         specifier: 15.1.0
         version: 15.1.0
+      typescript:
+        specifier: 5.0.4
+        version: 5.0.4
 
   packages/grading:
     dependencies:
