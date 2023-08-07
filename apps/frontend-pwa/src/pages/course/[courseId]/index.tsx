@@ -11,6 +11,7 @@ import {
   LeaveCourseDocument,
   LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { Button, H3, H4 } from '@uzh-bf/design-system'
@@ -20,7 +21,6 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import Leaderboard from 'shared-components/src/Leaderboard'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
@@ -638,7 +638,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     props: {
       courseId: ctx.params.courseId,
       messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`),
       },
     },
   })

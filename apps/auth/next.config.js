@@ -7,7 +7,7 @@ const nextConfig = {
     defaultLocale: 'de',
   },
   output: 'standalone',
-  transpilePackages: ['shared-components'],
+  transpilePackages: ['@klicker-uzh/shared-components'],
   compress: true,
   output: 'standalone',
   reactStrictMode: true,

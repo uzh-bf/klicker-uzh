@@ -114,7 +114,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     props: {
       shortname: ctx.params.shortname,
       messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`),
       },
     },
   })

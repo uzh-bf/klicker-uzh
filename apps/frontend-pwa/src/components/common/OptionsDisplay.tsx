@@ -6,6 +6,8 @@ import {
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import FREETextAnswerOptions from '@klicker-uzh/shared-components/src/questions/FREETextAnswerOptions'
+import NUMERICALAnswerOptions from '@klicker-uzh/shared-components/src/questions/NUMERICALAnswerOptions'
 import {
   validateFreeTextResponse,
   validateKprimResponse,
@@ -17,8 +19,6 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { indexBy } from 'ramda'
 import { useMemo } from 'react'
-import FREETextAnswerOptions from 'shared-components/src/questions/FREETextAnswerOptions'
-import NUMERICALAnswerOptions from 'shared-components/src/questions/NUMERICALAnswerOptions'
 import { twMerge } from 'tailwind-merge'
 
 interface ChoiceOptionsProps {
@@ -432,7 +432,7 @@ export function getStaticProps({ locale }: any) {
   return {
     props: {
       messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
       },
     },
   }

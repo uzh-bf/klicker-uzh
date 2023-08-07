@@ -4,10 +4,10 @@
 @import '@uzh-bf/design-system/dist/index.esm.css';
 
 @import 'tailwindcss/components';
-@import 'shared-components/dist/components.css';
+@import '@klicker-uzh/shared-components/dist/components.css';
 
 @import 'tailwindcss/utilities';
-@import 'shared-components/dist/utilities.css';
+@import '@klicker-uzh/shared-components/dist/utilities.css';
 
 html {
   font-size: 18px;

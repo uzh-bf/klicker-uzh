@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  transpilePackages: ['shared-components'],
+  transpilePackages: ['@klicker-uzh/shared-components'],
   i18n: {
     locales: ['en', 'de'],
     defaultLocale: 'de',

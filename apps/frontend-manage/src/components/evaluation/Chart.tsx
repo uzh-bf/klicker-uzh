@@ -1,6 +1,6 @@
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import Histogram from '@klicker-uzh/shared-components/src/Histogram'
 import React from 'react'
-import Histogram from 'shared-components/src/Histogram'
 import { TextSizeType } from '../sessions/evaluation/constants'
 import BarChart from './BarChart'
 import TableChart from './TableChart'

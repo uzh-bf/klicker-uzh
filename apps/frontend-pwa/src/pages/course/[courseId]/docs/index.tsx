@@ -92,7 +92,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     props: {
       courseId: ctx.params.courseId,
       messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`),
       },
     },
   })

@@ -4,6 +4,7 @@ import {
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   FormikSelectField,
@@ -17,7 +18,6 @@ import { useRouter } from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
 import { useEffect, useState } from 'react'
-import { AVATAR_OPTIONS } from 'shared-components/src/constants'
 import * as yup from 'yup'
 import Layout from '../components/Layout'
 
@@ -256,7 +256,7 @@ export function getStaticProps({ locale }: any) {
   return {
     props: {
       messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
       },
     },
   }

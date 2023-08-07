@@ -18,15 +18,15 @@ import {
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
+import {
+  QUESTION_TYPES_SHORT,
+  SESSION_STATUS,
+} from '@klicker-uzh/shared-components/src/constants'
 import { Button, Collapsible, H3 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import {
-  QUESTION_TYPES_SHORT,
-  SESSION_STATUS,
-} from 'shared-components/src/constants'
 import EmbeddingModal from './EmbeddingModal'
 
 interface SessionProps {

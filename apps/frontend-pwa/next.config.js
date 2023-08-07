@@ -5,7 +5,7 @@ const nextConfig = {
     locales: ['en', 'de'],
     defaultLocale: 'de',
   },
-  transpilePackages: ['shared-components'],
+  transpilePackages: ['@klicker-uzh/shared-components'],
   modularizeImports: {
     ramda: {
       transform: 'ramda/es/{{member}}',

@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetSingleQuestionDocument } from '@klicker-uzh/graphql/dist/ops'
+import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 import { useRouter } from 'next/router'
-import StudentQuestion from 'shared-components/src/StudentQuestion'
 
 function QuestionDetails() {
   const router = useRouter()
@@ -39,7 +39,7 @@ export function getStaticProps({ locale }: any) {
   return {
     props: {
       messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
       },
     },
     revalidate: 600,

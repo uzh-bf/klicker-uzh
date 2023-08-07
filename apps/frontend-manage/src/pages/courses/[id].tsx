@@ -7,6 +7,8 @@ import {
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
+import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   ColorPicker,
@@ -21,8 +23,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { sort } from 'ramda'
 import { useEffect, useState } from 'react'
-import Leaderboard from 'shared-components/src/Leaderboard'
-import { SESSION_STATUS } from 'shared-components/src/constants'
 import Layout from '../../components/Layout'
 import CourseDescription from '../../components/courses/CourseDescription'
 import LearningElementTile from '../../components/courses/LearningElementTile'
@@ -292,7 +292,7 @@ export function getStaticProps({ locale }: any) {
   return {
     props: {
       messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
       },
     },
     revalidate: 600,

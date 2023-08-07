@@ -10,9 +10,12 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetUserTagsDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
+import {
+  QUESTION_TYPES,
+  TYPES_LABELS,
+} from '@klicker-uzh/shared-components/src/constants'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
-import { QUESTION_TYPES, TYPES_LABELS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 import TagHeader from './TagHeader'
 import TagItem from './TagItem'

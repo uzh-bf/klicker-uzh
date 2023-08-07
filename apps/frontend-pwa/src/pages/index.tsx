@@ -15,11 +15,11 @@ import {
   SubscribeToPushDocument,
   UnsubscribeFromPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import usePushNotifications from 'shared-components/src/hooks/usePushNotifications'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
@@ -297,7 +297,7 @@ export function getStaticProps({ locale }: any) {
   return {
     props: {
       messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
       },
     },
   }

@@ -7,9 +7,9 @@ import {
   RunningSessionUpdatedDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { GetServerSideProps } from 'next'
 import { useEffect, useState } from 'react'
-import { QUESTION_GROUPS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 
 import { useQuery } from '@apollo/client'
@@ -260,7 +260,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     props: {
       id: ctx.params.id,
       messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`),
       },
     },
   })

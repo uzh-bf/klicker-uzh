@@ -134,7 +134,7 @@ export const getStaticProps: GetStaticProps = async (ctx) => {
     props: {
       id: ctx.params.id,
       messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`),
       },
     },
     revalidate: 60,

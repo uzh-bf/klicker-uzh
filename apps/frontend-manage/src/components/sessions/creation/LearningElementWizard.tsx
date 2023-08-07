@@ -6,6 +6,7 @@ import {
   LearningElementOrderType,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { LEARNING_ELEMENT_ORDERS } from '@klicker-uzh/shared-components/src/constants'
 import {
   FormikNumberField,
   FormikSelectField,
@@ -14,7 +15,6 @@ import {
 import { ErrorMessage } from 'formik'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { LEARNING_ELEMENT_ORDERS } from 'shared-components/src/constants'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'

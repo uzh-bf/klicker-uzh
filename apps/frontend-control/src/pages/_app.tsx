@@ -1,13 +1,13 @@
 import { ApolloProvider } from '@apollo/client'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
+import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
-import { NextIntlProvider } from 'next-intl'
+import { IntlErrorCode, NextIntlProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
-import { sourceSansPro } from 'shared-components/src/font'
 import ErrorBoundary from '../components/layout/ErrorBoundary'
 
 import '../globals.css'
@@ -16,6 +16,33 @@ config.autoAddCss = false
 
 const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
+
+function onError(error: any) {
+  console.error(error)
+
+  if (error.code === IntlErrorCode.MISSING_MESSAGE) {
+    // Missing translations are expected and should only log an error
+    console.error(error)
+  }
+}
+
+function getMessageFallback({
+  namespace,
+  key,
+  error,
+}: {
+  namespace: string
+  key: string
+  error: any
+}) {
+  const path = [namespace, key].filter((part) => part != null).join('.')
+
+  if (error.code === IntlErrorCode.MISSING_MESSAGE) {
+    return `${path} is not yet translated`
+  } else {
+    return `Dear developer, please fix this message: ${path}`
+  }
+}
 
 function App({ Component, pageProps }: AppProps) {
   const { locale } = useRouter()
@@ -30,13 +57,18 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
-      <NextIntlProvider messages={pageProps.messages} locale={locale}>
-        <ErrorBoundary>
+      <ErrorBoundary>
+        <NextIntlProvider
+          messages={pageProps.messages}
+          locale={locale}
+          getMessageFallback={getMessageFallback}
+          onError={onError}
+        >
           <ApolloProvider client={apolloClient}>
             <Component {...pageProps} />
           </ApolloProvider>
-        </ErrorBoundary>
-      </NextIntlProvider>
+        </NextIntlProvider>
+      </ErrorBoundary>
       <style jsx global>{`
         :root {
           --source-sans-pro: ${sourceSansPro.variable};

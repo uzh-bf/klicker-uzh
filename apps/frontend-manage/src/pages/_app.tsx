@@ -1,15 +1,15 @@
 import { ApolloProvider } from '@apollo/client'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
+import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { init } from '@socialgouv/matomo-next'
-import { NextIntlProvider } from 'next-intl'
+import { IntlErrorCode, NextIntlProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
-import { sourceSansPro } from 'shared-components/src/font'
 import { useApollo } from '../lib/apollo'
 
 import '../globals.css'
@@ -18,6 +18,31 @@ config.autoAddCss = false
 
 const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
+
+function onError(error: any) {
+  if (error.code === IntlErrorCode.MISSING_MESSAGE) {
+    // Missing translations are expected and should only log an error
+    console.error(error)
+  }
+}
+
+function getMessageFallback({
+  namespace,
+  key,
+  error,
+}: {
+  namespace: string
+  key: string
+  error: any
+}) {
+  const path = [namespace, key].filter((part) => part != null).join('.')
+
+  if (error.code === IntlErrorCode.MISSING_MESSAGE) {
+    return `${path} is not yet translated`
+  } else {
+    return `Dear developer, please fix this message: ${path}`
+  }
+}
 
 function App({ Component, pageProps }: AppProps) {
   const { locale } = useRouter()
@@ -41,7 +66,12 @@ function App({ Component, pageProps }: AppProps) {
         />
       </Head>
       <ApolloProvider client={apolloClient}>
-        <NextIntlProvider messages={pageProps.messages} locale={locale}>
+        <NextIntlProvider
+          messages={pageProps.messages}
+          locale={locale}
+          onError={onError}
+          getMessageFallback={getMessageFallback}
+        >
           <DndProvider backend={HTML5Backend}>
             <Component {...pageProps} />
           </DndProvider>
