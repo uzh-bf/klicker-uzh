@@ -38,6 +38,56 @@
     "tailwind-merge": "1.12.0",
     "yup": "1.1.1"
   },
+  "peerDependenciesMeta": {
+    "@fortawesome/fontawesome-svg-core": {
+      "optional": true
+    },
+    "@fortawesome/free-regular-svg-icons": {
+      "optional": true
+    },
+    "@fortawesome/free-solid-svg-icons": {
+      "optional": true
+    },
+    "@fortawesome/react-fontawesome": {
+      "optional": true
+    },
+    "@klicker-uzh/graphql": {
+      "optional": true
+    },
+    "@klicker-uzh/markdown": {
+      "optional": true
+    },
+    "dayjs": {
+      "optional": true
+    },
+    "formik": {
+      "optional": true
+    },
+    "is-hotkey": {
+      "optional": true
+    },
+    "lodash": {
+      "optional": true
+    },
+    "ramda": {
+      "optional": true
+    },
+    "recharts": {
+      "optional": true
+    },
+    "slate": {
+      "optional": true
+    },
+    "slate-history": {
+      "optional": true
+    },
+    "slate-react": {
+      "optional": true
+    },
+    "yup": {
+      "optional": true
+    }
+  },
   "volta": {
     "extends": "../../package.json"
   },
