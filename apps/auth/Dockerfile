@@ -29,6 +29,14 @@ COPY --from=builder /app/out/pnpm* .
 
 RUN pnpm i --frozen-lockfile
 
+ARG NODE_ENV="production"
+ARG COOKIE_DOMAIN
+ARG NEXTAUTH_URL
+ARG EDUID_CLIENT_ID
+ARG EDUID_WELL_KNOWN
+ARG NEXT_PUBLIC_EDUID_ID
+ARG NEXT_PUBLIC_DEFAULT_REDIRECT
+
 COPY --from=builder /app/out/full/ .
 RUN pnpm run build --filter=@klicker-uzh/auth
 
@@ -46,6 +54,9 @@ COPY --from=installer /app/apps/auth/package.json .
 COPY --from=installer --chown=nextjs:nodejs /app/apps/auth/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs /app/apps/auth/.next/static ./apps/auth/.next/static
 COPY --from=installer --chown=nextjs:nodejs /app/apps/auth/public ./apps/auth/public
+
+ARG NODE_ENV="production"
+ENV NEXT_TELEMETRY_DISABLED 1
 
 EXPOSE 3000
 
