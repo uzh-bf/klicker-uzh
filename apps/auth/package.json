@@ -37,6 +37,7 @@
     "jsonwebtoken": "9.0.1",
     "next": "13.4.13",
     "next-auth": "4.22.3",
+    "next-intl": "2.19.1",
     "nookies": "2.5.2",
     "react": "18.2.0",
     "react-dom": "18.2.0"
