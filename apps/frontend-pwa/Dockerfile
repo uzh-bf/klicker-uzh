@@ -1,7 +1,5 @@
 FROM docker.io/library/node:18-alpine AS base
 
-ARG NODE_ENV production
-ENV NODE_ENV $NODE_ENV
 
 FROM base AS builder
 WORKDIR /app
@@ -9,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g pnpm turbo
+RUN npm i -g pnpm@8.6.12 turbo@1.10.12
 
 COPY . .
 
@@ -22,7 +20,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g pnpm turbo
+RUN npm i -g pnpm@8.6.12 turbo@1.10.12
 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .

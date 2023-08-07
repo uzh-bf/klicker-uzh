@@ -18,26 +18,36 @@
     "extends": "../../package.json"
   },
   "peerDependencies": {
-    "@uzh-bf/design-system": "2.0.6",
+    "@fortawesome/fontawesome-svg-core": "6.4.2",
+    "@fortawesome/free-regular-svg-icons": "6.4.2",
+    "@fortawesome/free-solid-svg-icons": "6.4.2",
+    "@fortawesome/react-fontawesome": "0.2.0",
+    "@uzh-bf/design-system": "2.0.7",
     "next": "13.4.13",
     "next-intl": "2.19.1",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "tailwind-merge": "1.14.0",
+    "yup": "1.2.0"
   },
   "devDependencies": {
     "@klicker-uzh/markdown": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/forms": "^0.5.3",
-    "@tailwindcss/typography": "^0.5.7",
+    "@tailwindcss/aspect-ratio": "0.4.2",
+    "@tailwindcss/forms": "0.5.4",
+    "@tailwindcss/typography": "0.5.9",
     "@tsconfig/node18": "^2.0.1",
     "@tsconfig/recommended": "^1.0.2",
     "@types/node": "^18.17.3",
     "@types/react": "^18.2.18",
-    "formik": "2.4.2",
-    "npm-run-all": "^4.1.5",
-    "prettier-plugin-tailwindcss": "0.3.0",
-    "tailwindcss": "^3.3.2",
+    "@types/react-dom": "^18.2.7",
+    "autoprefixer": "10.4.14",
+    "formik": "2.4.3",
+    "npm-run-all": "4.1.5",
+    "postcss-import": "15.1.0",
+    "prettier-plugin-tailwindcss": "0.4.1",
+    "tailwindcss": "3.3.3",
+    "tailwindcss-radix": "2.8.0",
     "typescript": "5.0.4"
   }
 }

@@ -10,3 +10,5 @@ newsletter/
 **/.next/
 **/node_modules/
 util/
+
+Dockerfile

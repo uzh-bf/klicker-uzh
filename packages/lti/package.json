@@ -26,7 +26,10 @@
     }
   ],
   "peerDependencies": {
-    "next": "^13.0.0"
+    "@uzh-bf/design-system": "2.0.7",
+    "next": "13.4.13",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",

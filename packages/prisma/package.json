@@ -62,7 +62,7 @@
     "seed": "npm run seed"
   },
   "engines": {
-    "node": ">=18"
+    "node": "=18"
   },
   "size-limit": [
     {
