@@ -48,8 +48,9 @@ RUN pnpm i --frozen-lockfile --prod --ignore-scripts
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
-RUN mkdir -p /app/apps/backend-docker/dist
-
+COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
+COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
+COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
 COPY --from=builder /app/apps/backend-docker/dist/ /app/apps/backend-docker/dist/
 
 USER nodejs
