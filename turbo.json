@@ -48,6 +48,12 @@
     "start:test": {
       "dependsOn": ["^build:test", "build:test"],
       "outputs": ["dist/**", ".next/**"]
+    },
+    "test": {
+      "cache": false
+    },
+    "test:run": {
+      "cache": false
     }
   }
 }
