@@ -85,7 +85,7 @@ describe('Different live-session workflows', () => {
         cy.get('[data-cy="next-or-submit"]').click();
 
         // step 2
-        cy.get('[data-cy="select-course"]').should('exist').contains('Kein Kurs');
+        cy.get('[data-cy="select-course"]').should('exist').contains('No course');
         cy.get('[data-cy="select-course"]').click().siblings().eq(0).findByText('Testkurs').parent().click();
         cy.get('[data-cy="select-course"]').contains('Testkurs');
         cy.get('[data-cy="select-multiplier"]').should('exist').contains('Simple (1x)');
