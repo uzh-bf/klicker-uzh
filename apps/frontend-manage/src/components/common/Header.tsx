@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faPlayCircle, faUserCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ChangeUserLocaleDocument,
   GetUserRunningSessionsDocument,
   LogoutUserDocument,
   User,
@@ -21,6 +22,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const { pathname, asPath, query } = router
 
   const [logoutUser] = useMutation(LogoutUserDocument)
+  const [changeUserLocale] = useMutation(ChangeUserLocaleDocument)
 
   const { data } = useQuery(GetUserRunningSessionsDocument)
 
@@ -131,11 +133,12 @@ function Header({ user }: HeaderProps): React.ReactElement {
             { value: 'de', label: 'DE' },
             { value: 'en', label: 'EN' },
           ]}
-          onChange={(newValue: string) =>
+          onChange={(newValue: string) => {
+            changeUserLocale({ variables: { locale: newValue } })
             router.push({ pathname, query }, asPath, {
               locale: newValue,
             })
-          }
+          }}
           className={{
             root: 'my-auto',
             trigger:
