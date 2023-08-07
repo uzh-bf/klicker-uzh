@@ -67,7 +67,7 @@ describe('Different micro-session workflows', () => {
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.draft);
 
         // publish a micro-session
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains(messages.manage.course.publishMicroSession).click();
         cy.get('[data-cy="verify-publish-action"]').click()
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.published);
 
@@ -152,7 +152,7 @@ describe('Different micro-session workflows', () => {
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.draft);
 
         // publish a micro-session
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains(messages.manage.course.publishMicroSession).click();
         cy.get('[data-cy="verify-publish-action"]').click()
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.published);
 
@@ -218,7 +218,7 @@ describe('Different micro-session workflows', () => {
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.draft);
 
         // publish a micro-session
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains(messages.manage.course.publishMicroSession).click();
         cy.get('[data-cy="verify-publish-action"]').click()
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.published);
 
