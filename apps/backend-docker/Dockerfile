@@ -1,7 +1,5 @@
 FROM docker.io/library/node:18-alpine AS base
 
-ARG NODE_ENV production
-ENV NODE_ENV $NODE_ENV
 
 FROM base AS deps
 WORKDIR /app
@@ -27,7 +25,7 @@ RUN npm i -g pnpm@8.6.12 turbo@1.10.12
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
 
-RUN pnpm i --frozen-lockfile
+RUN pnpm i --frozen-lockfile --ignore-scripts
 
 ARG NODE_ENV="production"
 
@@ -35,18 +33,27 @@ COPY --from=deps /app/out/full/ .
 RUN pnpm run build --filter=@klicker-uzh/backend-docker
 
 
-# FROM base AS runner
-# WORKDIR /app
+FROM base AS runtime
+WORKDIR /app
 
-# RUN addgroup --system --gid 1001 nodejs
-# RUN adduser --system --uid 1001 nodejs
-# USER nodejs
+ARG NODE_ENV="production"
 
-# COPY --from=builder /app/node_modules ./node_modules
-# COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+RUN npm i -g pnpm@8.6.12 turbo@1.10.12
 
-# ARG NODE_ENV="production"
+COPY --from=deps /app/out/json/ .
+COPY --from=deps /app/out/pnpm* .
 
-# EXPOSE 3000
+RUN pnpm i --frozen-lockfile --prod --ignore-scripts
 
-# CMD node /app/dist/index.js
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+RUN mkdir -p /app/apps/backend-docker/dist
+
+COPY --from=builder /app/apps/backend-docker/dist/ /app/apps/backend-docker/dist/
+
+USER nodejs
+
+EXPOSE 3000
+
+CMD node /app/apps/backend-docker/dist/index.js

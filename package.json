@@ -60,17 +60,9 @@
     "prisma:migrate": "npm run -w packages/prisma prisma:migrate",
     "prisma:reset": "npm run -w packages/prisma prisma:reset"
   },
-  "dependencies": {
-    "@uzh-bf/design-system": "2.0.7"
-  },
   "devDependencies": {
     "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
-    "axios": "1.4.0",
-    "code-review-gpt": "0.0.26",
     "husky": "8.0.3",
-    "prettier": "2.8.8",
-    "prettier-plugin-organize-imports": "3.2.2",
-    "prettier-plugin-tailwindcss": "0.3.0",
     "standard-version": "9.5.0",
     "turbo": "1.10.12",
     "yaml": "2.3.0"
