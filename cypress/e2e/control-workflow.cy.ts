@@ -1,5 +1,4 @@
 describe('Test functionalities of frontend-control application', () => {
-
     it('Test the basic functionalities of the control application: login and session management', () => {
         // log into frontend-manage
         cy.visit(Cypress.env('URL_MANAGE'));
@@ -16,7 +15,7 @@ describe('Test functionalities of frontend-control application', () => {
         const sessionTitle = 'Test Session ' + randomNumber;
         const session = 'Displayed Test Session Name ' + randomNumber;
         const course = "Testkurs"
-     
+
         cy.get('[data-cy="create-question"]').click();
         cy.get('[data-cy="insert-question-title"]').type(questionTitle);
         cy.get('[data-cy="insert-question-text"]').click().type(question);
@@ -24,13 +23,13 @@ describe('Test functionalities of frontend-control application', () => {
         cy.get('[data-cy="add-new-answer"]').click({force: true});
         cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%');
         cy.get('[data-cy="save-new-question"]').click({force: true});
-     
+
         cy.get('[data-cy="create-live-session"]').click();
         cy.get('[data-cy="insert-live-session-name"]').type(sessionTitle);
         cy.get('[data-cy="insert-live-display-name"]').type(session);
         cy.get('[data-cy="next-or-submit"]').click();
         cy.get('[data-cy="next-or-submit"]').click();
-     
+
         const dataTransfer = new DataTransfer();
         cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
           dataTransfer
@@ -39,7 +38,7 @@ describe('Test functionalities of frontend-control application', () => {
           dataTransfer
         });
         cy.get('[data-cy="next-or-submit"]').click();
-     
+
         cy.get('[data-cy="load-session-list"]').click();
         cy.contains('[data-cy="session-block"]', sessionTitle);
 

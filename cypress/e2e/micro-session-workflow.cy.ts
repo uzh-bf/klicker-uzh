@@ -1,3 +1,5 @@
+import * as messages from '../../packages/shared-components/src/intl-messages/en.json'
+
 describe('Different micro-session workflows', () => {
     beforeEach(() => {
         cy.visit(Cypress.env('URL_MANAGE'));
@@ -43,9 +45,9 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
         cy.get('[data-cy="select-start-date"]').click().type("2023-01-01T18:00");
         cy.get('[data-cy="select-end-date"]').click().type("2023-12-31T18:00");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Simple (1x)');
-        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Double (2x)').parent().click();
-        cy.get('[data-cy="select-multiplier"]').contains('Double (2x)');
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains(messages.manage.sessionForms.multiplier1);
+        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText(messages.manage.sessionForms.multiplier2).parent().click();
+        cy.get('[data-cy="select-multiplier"]').contains(messages.manage.sessionForms.multiplier2);
         cy.get('[data-cy="next-or-submit"]').click()
 
         // step 3
@@ -62,12 +64,12 @@ describe('Different micro-session workflows', () => {
 
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="micro-session"]').contains(microSessionName);
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Draft');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.draft);
 
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
         cy.get('[data-cy="verify-publish-action"]').click()
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.published);
 
         // sign in as student on a laptop and respond to one question
         cy.clearAllCookies();
@@ -130,9 +132,9 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
         cy.get('[data-cy="select-start-date"]').click().type("2024-01-01T18:00");
         cy.get('[data-cy="select-end-date"]').click().type("2024-12-31T18:00");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Simple (1x)');
-        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Double (2x)').parent().click();
-        cy.get('[data-cy="select-multiplier"]').contains('Double (2x)');
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains(messages.manage.sessionForms.multiplier1);
+        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText(messages.manage.sessionForms.multiplier2).parent().click();
+        cy.get('[data-cy="select-multiplier"]').contains(messages.manage.sessionForms.multiplier2);
         cy.get('[data-cy="next-or-submit"]').click()
 
         // step 3
@@ -147,12 +149,12 @@ describe('Different micro-session workflows', () => {
 
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="micro-session"]').contains(microSessionName);
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Draft');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.draft);
 
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
         cy.get('[data-cy="verify-publish-action"]').click()
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.published);
 
         // sign in as student
         cy.clearAllCookies();
@@ -196,9 +198,9 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
         cy.get('[data-cy="select-start-date"]').click().type("2021-01-01T18:00");
         cy.get('[data-cy="select-end-date"]').click().type("2021-12-31T18:00");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Simple (1x)');
-        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Double (2x)').parent().click();
-        cy.get('[data-cy="select-multiplier"]').contains('Double (2x)');
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains(messages.manage.sessionForms.multiplier1);
+        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText(messages.manage.sessionForms.multiplier2).parent().click();
+        cy.get('[data-cy="select-multiplier"]').contains(messages.manage.sessionForms.multiplier2);
         cy.get('[data-cy="next-or-submit"]').click()
 
         // step 3
@@ -213,12 +215,12 @@ describe('Different micro-session workflows', () => {
 
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="micro-session"]').contains(microSessionName);
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Draft');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.draft);
 
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
         cy.get('[data-cy="verify-publish-action"]').click()
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains(messages.shared.generic.published);
 
         // sign in as student
         cy.clearAllCookies();

@@ -1,3 +1,5 @@
+import * as messages from '../../packages/shared-components/src/intl-messages/en.json'
+
 describe('Different live-session workflows', () => {
     beforeEach(() => {
         cy.visit(Cypress.env('URL_MANAGE'));
@@ -85,12 +87,12 @@ describe('Different live-session workflows', () => {
         cy.get('[data-cy="next-or-submit"]').click();
 
         // step 2
-        cy.get('[data-cy="select-course"]').should('exist').contains('No course');
+        cy.get('[data-cy="select-course"]').should('exist').contains(messages.manage.sessionForms.liveSessionNoCourse);
         cy.get('[data-cy="select-course"]').click().siblings().eq(0).findByText('Testkurs').parent().click();
         cy.get('[data-cy="select-course"]').contains('Testkurs');
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Simple (1x)');
-        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Double (2x)').parent().click();
-        cy.get('[data-cy="select-multiplier"]').contains('Double (2x)');
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains(messages.manage.sessionForms.multiplier1);
+        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText(messages.manage.sessionForms.multiplier2).parent().click();
+        cy.get('[data-cy="select-multiplier"]').contains(messages.manage.sessionForms.multiplier2);
         cy.get('[data-cy="set-gamification"]').should('not.be.checked');
         cy.get('[data-cy="set-gamification"]').click();
         // cy.get('[data-cy="set-gamification"]').should('be.checked'); // TODO: This does not work properly as it should be checked after a click
