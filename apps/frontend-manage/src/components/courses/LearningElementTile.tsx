@@ -47,14 +47,14 @@ function LearningElementTile({
           {learningElement.status === LearningElementStatus.Draft && (
             <StatusTag
               color="bg-gray-200"
-              status={t('manage.course.draft')}
+              status={t('shared.generic.draft')}
               icon={faPencil}
             />
           )}
           {learningElement.status === LearningElementStatus.Published && (
             <StatusTag
               color="bg-green-300"
-              status={t('manage.course.published')}
+              status={t('shared.generic.published')}
               icon={faUserGroup}
             />
           )}

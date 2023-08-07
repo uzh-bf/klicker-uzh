@@ -649,8 +649,6 @@
       "runningSession": "Laufende Session",
       "publicAccess": "Öffentlicher Zugriff",
       "restrictedAccess": "Restriktierter Zugriff",
-      "draft": "Entwurf",
-      "published": "Öffentlich",
       "startAt": "Start: {time}",
       "endAt": "Ende: {time}",
       "nQuestions": "{number} Fragen",

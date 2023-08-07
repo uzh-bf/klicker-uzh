@@ -64,14 +64,14 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         {microSession.status === MicroSessionStatus.Draft && (
           <StatusTag
             color="bg-gray-200"
-            status={t('manage.course.draft')}
+            status={t('shared.generic.draft')}
             icon={faPencil}
           />
         )}
         {microSession.status === MicroSessionStatus.Published && (
           <StatusTag
             color="bg-green-300"
-            status={t('manage.course.published')}
+            status={t('shared.generic.published')}
             icon={
               microSession.status === MicroSessionStatus.Published
                 ? faPlay
