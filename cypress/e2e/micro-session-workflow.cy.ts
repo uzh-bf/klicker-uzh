@@ -67,7 +67,7 @@ describe('Different micro-session workflows', () => {
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
         cy.get('[data-cy="verify-publish-action"]').click()
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Öffentlich');
 
         // sign in as student on a laptop and respond to one question
         cy.clearAllCookies();
@@ -152,7 +152,7 @@ describe('Different micro-session workflows', () => {
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
         cy.get('[data-cy="verify-publish-action"]').click()
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Öffentlich');
 
         // sign in as student
         cy.clearAllCookies();
@@ -218,7 +218,7 @@ describe('Different micro-session workflows', () => {
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
         cy.get('[data-cy="verify-publish-action"]').click()
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Öffentlich');
 
         // sign in as student
         cy.clearAllCookies();
