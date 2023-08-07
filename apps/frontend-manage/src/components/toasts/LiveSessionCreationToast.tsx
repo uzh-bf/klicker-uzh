@@ -1,6 +1,7 @@
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
 interface LiveSessionCreationToastProps {
@@ -14,6 +15,8 @@ function LiveSessionCreationToast({
   open,
   setOpen,
 }: LiveSessionCreationToastProps): React.ReactElement {
+  const t = useTranslations()
+
   return (
     <Toast
       duration={6000}
@@ -23,20 +26,23 @@ function LiveSessionCreationToast({
     >
       <div>
         {editMode ? (
-          <div>Session erfolgreich angepasst!</div>
+          <div>{t('manage.toasts.liveSessionEdit')}</div>
         ) : (
-          <div>Session erfolgreich erstellt!</div>
+          <div>{t('manage.toasts.liveSessionCreate')}</div>
         )}
         <div className="flex flex-row items-center">
           <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
-          Zur
-          <Link
-            href="/sessions"
-            className="ml-1 text-primary"
-            data-cy="load-session-list"
-          >
-            Session-Liste
-          </Link>
+          {t.rich('manage.toasts.toSessionList', {
+            link: (text) => (
+              <Link
+                href="/sessions"
+                className="ml-1 text-primary"
+                data-cy="load-session-list"
+              >
+                {text}
+              </Link>
+            ),
+          })}
         </div>
       </div>
     </Toast>

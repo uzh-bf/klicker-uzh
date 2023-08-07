@@ -3,6 +3,7 @@ import {
   ChoicesQuestionData,
   InstanceResult,
 } from '@klicker-uzh/graphql/dist/ops'
+import { useTranslations } from 'next-intl'
 import React from 'react'
 import {
   Bar,
@@ -33,6 +34,8 @@ function BarChart({
   showSolution,
   textSize,
 }: BarChartProps): React.ReactElement {
+  const t = useTranslations()
+
   // add labelIn and labelOut attributes to data, set labelIn to votes if votes/totalResponses > SMALL_BAR_THRESHOLD and set labelOut to votes otherwise
   const dataWithLabels = Object.values(
     data.results as Record<string, { count: number; value: string }>
@@ -97,7 +100,7 @@ function BarChart({
           label={{
             angle: -90,
             position: 'insideLeft',
-            value: 'Antworten',
+            value: t('shared.generic.responses'),
             className: textSize.textXl,
           }}
         />

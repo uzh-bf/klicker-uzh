@@ -5,12 +5,14 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs, { Dayjs } from 'dayjs'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import Countdown from '../components/common/Countdown'
 
 function TokenGeneration() {
+  const t = useTranslations()
   const [tokenValid, setTokenValid] = useState(false)
   const [hadToken, setHadToken] = useState(false)
   const [token, setToken] = useState<string>('')
@@ -32,20 +34,21 @@ function TokenGeneration() {
   }, [tokenData])
 
   return (
-    <Layout displayName="Token Generation">
+    <Layout displayName={t('manage.token.pageName')}>
       <div className="max-w-2xl mx-auto">
-        <H2>Generation eines Login-Token</H2>
+        <H2>{t('manage.token.tokenGenerationTitle')}</H2>
         <div className="mb-2">
-          Auf dieser Seite können Sie einen Token zum Login bei der
-          Controller-App{' '}
-          <Link
-            href={process.env.NEXT_PUBLIC_CONTROL_URL || ''}
-            className="text-primary"
-          >
-            {process.env.NEXT_PUBLIC_CONTROL_URL}
-          </Link>{' '}
-          generieren. Dieser Token hat eine Gültigkeit von 10 Minuten, kann
-          allerdings jederzeit wieder neu generiert werden.
+          {t.rich('manage.token.tokenGenerationExplanation', {
+            link: (displayLink) => (
+              <Link
+                href={process.env.NEXT_PUBLIC_CONTROL_URL || ''}
+                className="text-primary"
+              >
+                {displayLink}
+              </Link>
+            ),
+            displayLink: process.env.NEXT_PUBLIC_CONTROL_URL,
+          })}
         </div>
         <Button
           data={{ cy: 'generate-token' }}
@@ -62,12 +65,12 @@ function TokenGeneration() {
           }}
           className={{ root: 'text-white mb-3 bg-primary-80' }}
         >
-          Token generieren!
+          {t('manage.token.generateToken')}
         </Button>
 
         {tokenValid && (
           <UserNotification
-            message={`Ihr Token lautet:`}
+            message={t('manage.token.tokenTitle')}
             className={{ root: 'text-base', content: 'mt-0' }}
             type="success"
           >
@@ -77,7 +80,7 @@ function TokenGeneration() {
                 ?.join(' ')}
             </div>
             <div className="mt-2">
-              Verbleibende Gültigkeit:{' '}
+              {t('manage.token.remainingValidity')}{' '}
               <Countdown
                 endTime={endTime}
                 onExpire={() => {
@@ -90,13 +93,23 @@ function TokenGeneration() {
         {hadToken && !tokenValid && (
           <UserNotification
             className={{ root: 'text-base' }}
-            message="Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen."
+            message={t('manage.token.tokenExpired')}
             type="error"
           />
         )}
       </div>
     </Layout>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
 }
 
 export default TokenGeneration

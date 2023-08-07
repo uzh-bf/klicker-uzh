@@ -6,6 +6,7 @@ import {
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 
 interface TagDeletionModalProps {
   tag: Tag
@@ -18,6 +19,7 @@ function TagDeletionModal({
   isDeletionModalOpen,
   setIsDeletionModalOpen,
 }: TagDeletionModalProps) {
+  const t = useTranslations()
   const [deleteTag] = useMutation(DeleteTagDocument)
 
   return (
@@ -42,12 +44,12 @@ function TagDeletionModal({
           }}
           className={{ root: 'bg-red-600 font-bold text-white' }}
         >
-          Löschen
+          {t('shared.generic.delete')}
         </Button>
       }
       onSecondaryAction={
         <Button onClick={(): void => setIsDeletionModalOpen(false)}>
-          Abbrechen
+          {t('shared.generic.cancel')}
         </Button>
       }
       onClose={(): void => setIsDeletionModalOpen(false)}
@@ -56,16 +58,13 @@ function TagDeletionModal({
       className={{ content: 'w-[40rem] h-max self-center pt-0' }}
     >
       <div>
-        <H2>Tag löschen</H2>
-        <div>
-          Sind Sie sich sicher, dass Sie den folgenden Tag löschen möchten?
-        </div>
+        <H2>{t('manage.tags.deleteTag')}</H2>
+        <div>{t('manage.tags.confirmTagDeletion')}</div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{tag.name}</H3>
         </div>
         <div className="mt-6 mb-2 text-sm italic">
-          Gelöschte Tags können nicht wieder hergestellt werden. Alle Fragen mit
-          diesem Tag bleiben bestehen, der Tag wird jedoch entfernt.
+          {t('manage.tags.tagDeletionHint')}
         </div>
       </div>
     </Modal>

@@ -56,21 +56,16 @@ function Login() {
         {({ isSubmitting }) => {
           return (
             <LoginForm
-              header="Login Dozierende"
-              labelIdentifier="E-Mail Adresse"
+              header={t('manage.login.lecturerLogin')}
+              labelIdentifier={t('shared.generic.email')}
               fieldIdentifier="email"
               dataIdentifier={{ cy: 'email-field' }}
-              labelSecret="Passwort"
+              labelSecret={t('shared.generic.password')}
               fieldSecret="password"
               dataSecret={{ cy: 'password-field' }}
               isSubmitting={isSubmitting}
-              installAndroid={
-                'Installieren Sie die KlickerUZH-App direkt auf Ihrem Handy'
-              } // only placeholder, better text at: t('manage.login.installAndroid')
-              installIOS={
-                'Installieren Sie die KlickerUZH-App direkt auf Ihrem Handy'
-              }
-              // only placeholder, better text at: t('manage.login.installIOS')
+              installAndroid={t('manage.login.installAndroid')}
+              installIOS={t('manage.login.installIOS')}
             />
           )
         }}

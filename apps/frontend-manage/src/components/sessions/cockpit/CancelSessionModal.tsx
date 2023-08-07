@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { CancelSessionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 
 interface CancelSessionModalProps {
@@ -20,6 +21,7 @@ function CancelSessionModal({
     variables: { id: sessionId },
   })
   const router = useRouter()
+  const t = useTranslations()
 
   return (
     <Modal
@@ -31,12 +33,12 @@ function CancelSessionModal({
           }}
           className={{ root: 'bg-red-600 font-bold text-white' }}
         >
-          Bestätigen
+          {t('shared.generic.confirm')}
         </Button>
       }
       onSecondaryAction={
         <Button onClick={(): void => setIsDeletionModalOpen(false)}>
-          Abbrechen
+          {t('shared.generic.cancel')}
         </Button>
       }
       onClose={(): void => setIsDeletionModalOpen(false)}
@@ -45,18 +47,13 @@ function CancelSessionModal({
       className={{ content: 'w-[40rem] h-max self-center pt-0' }}
     >
       <div>
-        <H2>Session abbrechen</H2>
-        <div>
-          Sind Sie sich sicher, dass Sie die folgende Session abbrechen möchten?
-        </div>
+        <H2>{t('manage.cockpit.abortSession')}</H2>
+        <div>{t('manage.cockpit.confirmAbortSession')}</div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{title}</H3>
         </div>
         <div className="mt-6 mb-2 text-sm italic">
-          Beim Abbrechen einer Session wird die Session zurückgesetzt, sodass
-          sie zu einem späteren Zeitpunkt von Beginn an wieder gestartet werden
-          kann. Bitte beachten Sie, dass alle bisherigen Antworten, Feebacks,
-          usw. verloren gehen.
+          {t('manage.cockpit.abortSessionHint')}
         </div>
       </div>
     </Modal>
