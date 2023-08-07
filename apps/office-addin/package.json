@@ -10,6 +10,7 @@
   "scripts": {
     "package": "webpack --mode production",
     "build:dev": "webpack --mode development",
+    "run-dev": "run-s clear dev-server",
     "dev-server": "webpack serve --mode development",
     "lint": "office-addin-lint check",
     "lint:fix": "office-addin-lint fix",
@@ -27,7 +28,6 @@
     "clear": ".\\scripts\\clear.bat",
     "dev:tailwind": "tailwindcss -i ./src/content/content.css -o ./src/content/output.css --watch",
     "dev-addin": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
-    "predev": "npm run clear",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "tsc --noEmit"

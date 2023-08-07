@@ -123,7 +123,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.deleteTag(args, ctx)
+          return QuestionService.deleteTag(args, ctx) as any
         },
       }),
 
@@ -135,7 +135,7 @@ export const Mutation = builder.mutationType({
           content: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.createFeedback(args, ctx)
+          return FeedbackService.createFeedback(args, ctx) as any
         },
       }),
 
@@ -146,7 +146,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedback(args, ctx)
+          return FeedbackService.deleteFeedback(args, ctx) as any
         },
       }),
 
@@ -157,7 +157,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedbackResponse(args, ctx)
+          return FeedbackService.deleteFeedbackResponse(args, ctx) as any
         },
       }),
 
@@ -168,7 +168,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.deleteQuestion(args, ctx)
+          return QuestionService.deleteQuestion(args, ctx) as any
         },
       }),
 
@@ -180,7 +180,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.editTag(args, ctx)
+          return QuestionService.editTag(args, ctx) as any
         },
       }),
 
@@ -227,7 +227,7 @@ export const Mutation = builder.mutationType({
           incrementDownvote: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.voteFeedbackResponse(args, ctx)
+          return FeedbackService.voteFeedbackResponse(args, ctx) as any
         },
       }),
 
@@ -239,7 +239,7 @@ export const Mutation = builder.mutationType({
           increment: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.upvoteFeedback(args, ctx)
+          return FeedbackService.upvoteFeedback(args, ctx) as any
         },
       }),
 
@@ -332,7 +332,7 @@ export const Mutation = builder.mutationType({
           isPinned: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.pinFeedback(args, ctx)
+          return FeedbackService.pinFeedback(args, ctx) as any
         },
       }),
 
@@ -344,7 +344,7 @@ export const Mutation = builder.mutationType({
           isPublished: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.publishFeedback(args, ctx)
+          return FeedbackService.publishFeedback(args, ctx) as any
         },
       }),
 
@@ -356,7 +356,7 @@ export const Mutation = builder.mutationType({
           isResolved: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.resolveFeedback(args, ctx)
+          return FeedbackService.resolveFeedback(args, ctx) as any
         },
       }),
 
@@ -368,7 +368,7 @@ export const Mutation = builder.mutationType({
           responseContent: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.respondToFeedback(args, ctx)
+          return FeedbackService.respondToFeedback(args, ctx) as any
         },
       }),
 
@@ -435,7 +435,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: User,
         resolve(_, __, ctx) {
-          return AccountService.generateLoginToken(ctx)
+          return AccountService.generateLoginToken(ctx) as any
         },
       }),
 
@@ -501,7 +501,7 @@ export const Mutation = builder.mutationType({
           speed: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.addConfusionTimestep(args, ctx)
+          return FeedbackService.addConfusionTimestep(args, ctx) as any
         },
       }),
 
@@ -717,7 +717,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args as any, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx) as any
         },
       }),
 
@@ -742,7 +742,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args as any, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx) as any
         },
       }),
 
@@ -767,7 +767,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args as any, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx) as any
         },
       }),
 

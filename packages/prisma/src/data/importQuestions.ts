@@ -1,4 +1,4 @@
-import Prisma, { QuestionType } from '@klicker-uzh/prisma'
+import Prisma, { QuestionType } from '../../dist'
 import { readFile } from 'fs/promises'
 // import { fromString } from 'uuidv4'
 

@@ -256,8 +256,9 @@ export async function getLoginToken(_: any, ctx: ContextWithUser) {
   if (
     !user.loginTokenExpiresAt ||
     dayjs(user.loginTokenExpiresAt).isBefore(dayjs())
-  )
+  ) {
     return null
+  }
 
   return user
 }

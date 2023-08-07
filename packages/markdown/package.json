@@ -34,12 +34,12 @@
   ],
   "peerDependencies": {
     "@fortawesome/free-regular-svg-icons": "^6.3.0",
-    "@fortawesome/free-solid-svg-icons": "^6.2.0",
+    "@fortawesome/free-solid-svg-icons": "^6.3.0",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@uzh-bf/design-system": "^2.0.0",
     "next": "^13.0.0",
     "react": "^18.2.0",
-    "tailwind-merge": "^1.8.0"
+    "tailwind-merge": "^1.8.1"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",

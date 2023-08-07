@@ -1,4 +1,4 @@
-import Prisma, { Question } from '@klicker-uzh/prisma'
+import Prisma, { Question } from '../../dist'
 // const klickerUZHPrisma = require('@klicker-uzh/prisma')
 // const Prisma = klickerUZHPrisma.Prisma
 // const Question = klickerUZHPrisma.Question

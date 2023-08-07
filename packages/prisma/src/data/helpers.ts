@@ -1,4 +1,4 @@
-import Prisma from '@klicker-uzh/prisma'
+import Prisma from '../../dist'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
 import {
