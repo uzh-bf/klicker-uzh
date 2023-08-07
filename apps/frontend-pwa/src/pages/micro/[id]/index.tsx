@@ -137,7 +137,6 @@ export const getStaticProps: GetStaticProps = async (ctx) => {
         ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
       },
     },
-    revalidate: 60,
   })
 }
 

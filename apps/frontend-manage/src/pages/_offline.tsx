@@ -8,7 +8,6 @@ export function getStaticProps({ locale }: any) {
         ...require(`shared-components/src/intl-messages/${locale}.json`),
       },
     },
-    revalidate: 600,
   }
 }
 

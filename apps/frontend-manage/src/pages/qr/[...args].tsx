@@ -30,7 +30,6 @@ export const getStaticProps: GetStaticProps = function ({ params, locale }) {
         ...require(`shared-components/src/intl-messages/${locale}.json`),
       },
     },
-    revalidate: 600,
   }
 }
 
