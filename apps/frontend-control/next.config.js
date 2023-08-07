@@ -4,7 +4,7 @@ const nextConfig = {
   transpilePackages: ['@klicker-uzh/shared-components'],
   i18n: {
     locales: ['en', 'de'],
-    defaultLocale: 'de',
+    defaultLocale: 'en',
   },
   modularizeImports: {
     ramda: {

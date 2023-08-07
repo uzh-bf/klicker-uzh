@@ -3,7 +3,7 @@
 const nextConfig = {
   i18n: {
     locales: ['en', 'de'],
-    defaultLocale: 'de',
+    defaultLocale: 'en',
   },
   transpilePackages: ['@klicker-uzh/shared-components'],
   modularizeImports: {

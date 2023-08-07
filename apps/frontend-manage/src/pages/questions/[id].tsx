@@ -42,7 +42,6 @@ export function getStaticProps({ locale }: any) {
         ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
       },
     },
-    revalidate: 600,
   }
 }
 
@@ -52,4 +51,5 @@ export function getStaticPaths() {
     fallback: 'blocking',
   }
 }
+
 export default QuestionDetails

@@ -30,7 +30,6 @@ import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 import {
   QUESTION_GROUPS,
   QUESTION_TYPES,
-  TYPES_LABELS,
 } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
@@ -42,161 +41,13 @@ import {
   Switch,
   UserNotification,
 } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 
 enum QuestionEditMode {
   DUPLICATE = 'DUPLICATE',
   EDIT = 'EDIT',
   CREATE = 'CREATE',
 }
-
-const questionManipulationSchema = Yup.object().shape({
-  name: Yup.string().required('Geben Sie einen Namen für die Frage ein.'),
-  tags: Yup.array().of(Yup.string()),
-  type: Yup.string()
-    .oneOf(['SC', 'MC', 'KPRIM', 'NUMERICAL', 'KPRIM', 'FREE_TEXT'])
-    .required(),
-  displayMode: Yup.string().oneOf(['LIST', 'GRID']),
-  content: Yup.string()
-    .required('Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu')
-    .test({
-      message: 'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu',
-      test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-    }),
-  explanation: Yup.string().nullable(true),
-  hasSampleSolution: Yup.boolean(),
-  hasAnswerFeedbacks: Yup.boolean(),
-
-  // TODO: adapt validation structure for attachments once they are available
-  attachments: Yup.array()
-    .of(
-      Yup.object().shape({
-        href: Yup.string().required(
-          'Bitte geben Sie eine URL für den Anhang ein'
-        ),
-        name: Yup.string().required(
-          'Bitte geben Sie einen Namen für den Anhang ein'
-        ),
-        originalName: Yup.string(),
-        description: Yup.string(),
-      })
-    )
-    .nullable(),
-
-  options: Yup.object().when(
-    ['type', 'hasSampleSolution', 'hasAnswerFeedbacks'],
-    ([type, hasSampleSolution, hasAnswerFeedbacks], schema) => {
-      switch (type) {
-        case 'SC':
-        case 'MC':
-        case 'KPRIM': {
-          const baseChoicesSchema = Yup.array()
-            .of(
-              Yup.object().shape({
-                ix: Yup.number(),
-                value: Yup.string().test({
-                  message:
-                    'Bitte fügen Sie einen Inhalt zu Ihrer Antwortoption hinzu',
-                  test: (content) =>
-                    !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-                }),
-                correct: Yup.boolean().nullable(),
-                feedback: hasAnswerFeedbacks
-                  ? Yup.string().test({
-                      message:
-                        'Bitte fügen Sie einen Inhalt zu Ihrem Antwortfeedback hinzu',
-                      test: (content) =>
-                        !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-                    })
-                  : Yup.string().nullable(),
-              })
-            )
-            .min(1)
-
-          if (type === 'KPRIM')
-            return schema.shape({
-              choices: baseChoicesSchema,
-            })
-
-          if (type === 'SC')
-            return schema.shape({
-              choices: baseChoicesSchema.test({
-                message: 'Bei SC-Fragen muss genau eine Antwort korrekt sein.',
-                test: (choices) => {
-                  return (
-                    !hasSampleSolution ||
-                    choices.filter((choice) => choice.correct).length === 1
-                  )
-                },
-              }),
-            })
-
-          return schema.shape({
-            choices: baseChoicesSchema.test({
-              message:
-                'Bei MC-Fragen muss mindestens eine Antwort korrekt sein.',
-              test: (choices) => {
-                return (
-                  !hasSampleSolution ||
-                  choices.filter((choice) => choice.correct).length >= 1
-                )
-              },
-            }),
-          })
-        }
-
-        case 'NUMERICAL': {
-          const baseSolutionRanges = Yup.array().of(
-            Yup.object().shape({
-              min: Yup.number().nullable(),
-              // TODO: min less than max if defined
-              // .when('max', {
-              //   is: (max) => typeof max !== 'undefined',
-              //   then: (schema) => schema.lessThan(Yup.ref('max')),
-              // }),
-              max: Yup.number().nullable(),
-              // TODO: max more than min if defined
-              // .when('min', {
-              //   is: (min) => typeof min !== 'undefined',
-              //   then: (schema) => schema.moreThan(Yup.ref('min')),
-              // }),
-            })
-          )
-
-          return schema.shape({
-            accuracy: Yup.number().nullable().min(0),
-            unit: Yup.string().nullable(),
-
-            restrictions: Yup.object().shape({
-              min: Yup.number().nullable(),
-              // TODO: less than if max defined
-              // .lessThan(Yup.ref('max')),
-              max: Yup.number().nullable(),
-              // TODO: more than if min defined
-              // .moreThan(Yup.ref('min')),
-            }),
-
-            solutionRanges: hasSampleSolution
-              ? baseSolutionRanges.min(1)
-              : baseSolutionRanges,
-          })
-        }
-
-        case 'FREE_TEXT': {
-          const baseSolutions = Yup.array().of(Yup.string().required().min(1))
-
-          return schema.shape({
-            restrictions: Yup.object().shape({
-              // TODO: ensure that this check does not fail if the user enters a number and then deletes it
-              maxLength: Yup.number().min(1).nullable(),
-            }),
-
-            solutions: hasSampleSolution ? baseSolutions.min(1) : baseSolutions,
-          })
-        }
-      }
-    }
-  ),
-})
 
 interface QuestionEditModalProps {
   isOpen: boolean
@@ -212,6 +63,149 @@ function QuestionEditModal({
   mode,
 }: QuestionEditModalProps): React.ReactElement {
   const isDuplication = mode === QuestionEditMode.DUPLICATE
+  const t = useTranslations()
+
+  const questionManipulationSchema = Yup.object().shape({
+    name: Yup.string().required(t('manage.formErrors.questionName')),
+    tags: Yup.array().of(Yup.string()),
+    type: Yup.string().oneOf(Object.values(QuestionType)).required(),
+    displayMode: Yup.string().oneOf(Object.values(QuestionDisplayMode)),
+    content: Yup.string()
+      .required(t('manage.formErrors.questionContent'))
+      .test({
+        message: t('manage.formErrors.questionContent'),
+        test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+      }),
+    explanation: Yup.string().nullable(),
+    hasSampleSolution: Yup.boolean(),
+    hasAnswerFeedbacks: Yup.boolean(),
+
+    // TODO: adapt validation structure for attachments once they are available
+    attachments: Yup.array()
+      .of(
+        Yup.object().shape({
+          href: Yup.string().required(t('manage.formErrors.attachmentURL')),
+          name: Yup.string().required(t('manage.formErrors.attachmentName')),
+          originalName: Yup.string(),
+          description: Yup.string(),
+        })
+      )
+      .nullable(),
+
+    options: Yup.object().when(
+      ['type', 'hasSampleSolution', 'hasAnswerFeedbacks'],
+      ([type, hasSampleSolution, hasAnswerFeedbacks], schema) => {
+        switch (type) {
+          case 'SC':
+          case 'MC':
+          case 'KPRIM': {
+            const baseChoicesSchema = Yup.array()
+              .of(
+                Yup.object().shape({
+                  ix: Yup.number(),
+                  value: Yup.string().test({
+                    message: t('manage.formErrors.answerContent'),
+                    test: (content) =>
+                      !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+                  }),
+                  correct: Yup.boolean().nullable(),
+                  feedback: hasAnswerFeedbacks
+                    ? Yup.string().test({
+                        message: t('manage.formErrors.feedbackContent'),
+                        test: (content) =>
+                          !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+                      })
+                    : Yup.string().nullable(),
+                })
+              )
+              .min(1)
+
+            if (type === 'KPRIM')
+              return schema.shape({
+                choices: baseChoicesSchema,
+              })
+
+            if (type === 'SC')
+              return schema.shape({
+                choices: baseChoicesSchema.test({
+                  message: t('manage.formErrors.SCAnswersCorrect'),
+                  test: (choices) => {
+                    return (
+                      !hasSampleSolution ||
+                      choices.filter((choice) => choice.correct).length === 1
+                    )
+                  },
+                }),
+              })
+
+            return schema.shape({
+              choices: baseChoicesSchema.test({
+                message: t('manage.formErrors.MCAnswersCorrect'),
+                test: (choices) => {
+                  return (
+                    !hasSampleSolution ||
+                    choices.filter((choice) => choice.correct).length >= 1
+                  )
+                },
+              }),
+            })
+          }
+
+          case 'NUMERICAL': {
+            const baseSolutionRanges = Yup.array().of(
+              Yup.object().shape({
+                min: Yup.number().nullable(),
+                // TODO: min less than max if defined
+                // .when('max', {
+                //   is: (max) => typeof max !== 'undefined',
+                //   then: (schema) => schema.lessThan(Yup.ref('max')),
+                // }),
+                max: Yup.number().nullable(),
+                // TODO: max more than min if defined
+                // .when('min', {
+                //   is: (min) => typeof min !== 'undefined',
+                //   then: (schema) => schema.moreThan(Yup.ref('min')),
+                // }),
+              })
+            )
+
+            return schema.shape({
+              accuracy: Yup.number().nullable().min(0),
+              unit: Yup.string().nullable(),
+
+              restrictions: Yup.object().shape({
+                min: Yup.number().nullable(),
+                // TODO: less than if max defined
+                // .lessThan(Yup.ref('max')),
+                max: Yup.number().nullable(),
+                // TODO: more than if min defined
+                // .moreThan(Yup.ref('min')),
+              }),
+
+              solutionRanges: hasSampleSolution
+                ? baseSolutionRanges.min(1)
+                : baseSolutionRanges,
+            })
+          }
+
+          case 'FREE_TEXT': {
+            const baseSolutions = Yup.array().of(Yup.string().required().min(1))
+
+            return schema.shape({
+              restrictions: Yup.object().shape({
+                // TODO: ensure that this check does not fail if the user enters a number and then deletes it
+                maxLength: Yup.number().min(1).nullable(),
+              }),
+
+              solutions: hasSampleSolution
+                ? baseSolutions.min(1)
+                : baseSolutions,
+            })
+          }
+        }
+      }
+    ),
+  })
 
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
     inputValue: '',
@@ -238,16 +232,12 @@ function QuestionEditModal({
     ManipulateFreeTextQuestionDocument
   )
 
-  const dropdownOptions = useMemo(() => {
-    return Object.keys(TYPES_LABELS).map((key) => ({
-      value: key,
-      label: TYPES_LABELS[key],
-    }))
-  }, [])
+  const dropdownOptions = Object.values(QuestionType).map((type) => ({
+    value: type,
+    label: t(`shared.${type}.typeLabel`),
+  }))
 
-  const [newQuestionType, setNewQuestionType] = useState(
-    Object.keys(TYPES_LABELS)[0]
-  )
+  const [newQuestionType, setNewQuestionType] = useState(QuestionType.Sc)
 
   const questionType = useMemo(() => {
     return mode === QuestionEditMode.CREATE
@@ -460,17 +450,11 @@ function QuestionEditModal({
           return <div></div>
         }
 
-        const titles = {
-          [QuestionEditMode.CREATE]: 'Frage erstellen',
-          [QuestionEditMode.EDIT]: 'Frage bearbeiten',
-          [QuestionEditMode.DUPLICATE]: 'Frage duplizieren',
-        }
-
         return (
           <Modal
             asPortal
             fullScreen
-            title={titles[mode]}
+            title={t(`manage.questionForms.${mode}Title`)}
             className={{
               content: 'max-w-[1400px]',
               title: 'text-xl',
@@ -488,7 +472,7 @@ function QuestionEditModal({
                 form="question-manipulation-form"
                 data={{ cy: 'save-new-question' }}
               >
-                <Button.Label>Speichern</Button.Label>
+                <Button.Label>{t('shared.generic.save')}</Button.Label>
               </Button>
             }
             onSecondaryAction={
@@ -496,7 +480,7 @@ function QuestionEditModal({
                 className={{ root: 'mt-2 border-uzh-grey-80' }}
                 onClick={() => handleSetIsOpen(false)}
               >
-                <Button.Label>Schliessen</Button.Label>
+                <Button.Label>{t('shared.generic.close')}</Button.Label>
               </Button>
             }
           >
@@ -504,9 +488,9 @@ function QuestionEditModal({
               <div className="flex-1 max-w-5xl">
                 <div className="z-0 flex flex-row">
                   <Label
-                    label="Fragetyp"
+                    label={t('manage.questionForms.questionType')}
                     className={{
-                      root: 'mr-2 text-lg font-bold w-32',
+                      root: 'mr-2 text-lg font-bold w-max',
                       tooltip:
                         'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                     }}
@@ -516,7 +500,7 @@ function QuestionEditModal({
                   />
                   {mode === QuestionEditMode.CREATE ? (
                     <Select
-                      placeholder="Fragetyp auswählen"
+                      placeholder={t('manage.questionForms.selectQuestionType')}
                       items={dropdownOptions}
                       onChange={(newValue: string) => {
                         resetForm()
@@ -527,7 +511,9 @@ function QuestionEditModal({
                     />
                   ) : (
                     <div className="my-auto">
-                      {TYPES_LABELS[question?.type || '']}{' '}
+                      {(question?.type as QuestionType)
+                        ? t(`shared.${question?.type}.typeLabel`)
+                        : ''}
                     </div>
                   )}
                 </div>
@@ -535,13 +521,13 @@ function QuestionEditModal({
                 <Form className="w-full" id="question-manipulation-form">
                   <div className="flex flex-row mt-2">
                     <Label
-                      label="Fragetitel"
+                      label={t('manage.questionForms.questionTitle')}
                       className={{
-                        root: 'mr-2 text-lg font-bold w-36',
+                        root: 'mr-2 text-lg font-bold w-56',
                         tooltip:
                           'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                       }}
-                      tooltip="Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht."
+                      tooltip={t('manage.questionForms.titleTooltip')}
                       showTooltipSymbol
                       required
                     />
@@ -557,13 +543,13 @@ function QuestionEditModal({
                   <div className="mt-2">
                     <div className="flex flex-row">
                       <Label
-                        label="Tags"
+                        label={t('manage.questionPool.tags')}
                         className={{
                           root: 'my-auto mr-2 text-lg font-bold w-36',
                           tooltip:
                             'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                         }}
-                        tooltip="Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern)."
+                        tooltip={t('manage.questionForms.tagsTooltip')}
                         showTooltipSymbol={true}
                       />
                       <FastField
@@ -577,20 +563,20 @@ function QuestionEditModal({
                       />
                     </div>
                     <div className="italic text-red-600">
-                      Temporarily required formatting: Enter tags separated by
-                      commas e.g.: Tag1,Tag2,Tag3
+                      {/* // TODO: remove this hint once a proper input field for tags has been introduced */}
+                      {t('manage.questionForms.tagFormatting')}
                     </div>
                   </div>
 
                   <div className="z-0 flex flex-row">
                     <Label
-                      label="Multiplier"
+                      label={t('shared.generic.multiplier')}
                       className={{
                         root: 'mr-2 text-lg font-bold w-32',
                         tooltip:
                           'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                       }}
-                      tooltip="// TODO: tooltip content"
+                      tooltip={t('manage.questionForms.multiplierTooltip')}
                       showTooltipSymbol
                       required
                     />
@@ -625,13 +611,13 @@ function QuestionEditModal({
 
                   <div className="mt-4">
                     <Label
-                      label="Frage"
+                      label={t('shared.generic.question')}
                       className={{
                         root: 'my-auto mr-2 text-lg font-bold',
                         tooltip:
                           'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                       }}
-                      tooltip="Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen."
+                      tooltip={t('manage.questionForms.questionTooltip')}
                       showTooltipSymbol
                       required
                     />
@@ -656,7 +642,9 @@ function QuestionEditModal({
                               setFieldValue('content', newValue)
                             }
                             showToolbarOnFocus={false}
-                            placeholder="Fragetext hier eingeben…"
+                            placeholder={t(
+                              'manage.questionForms.questionPlaceholder'
+                            )}
                             key={`${questionType}-content`}
                             data_cy="insert-question-text"
                             className={{ content: 'max-w-none' }}
@@ -668,13 +656,13 @@ function QuestionEditModal({
 
                   <div className="mt-4">
                     <Label
-                      label="Erklärung"
+                      label={t('shared.generic.explanation')}
                       className={{
                         root: 'my-auto mr-2 text-lg font-bold',
                         tooltip:
                           'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
                       }}
-                      tooltip="Geben Sie hier eine generische Erklärung zu Ihrer Frage ein, welche den Studierenden unabhängig von Ihrer Antwort in Lernelementen und Micro-Sessions angezeigt wird."
+                      tooltip={t('manage.questionForms.explanationTooltip')}
                       showTooltipSymbol={true}
                     />
 
@@ -696,7 +684,9 @@ function QuestionEditModal({
                             onChange={(newValue: string) =>
                               setFieldValue('explanation', newValue)
                             }
-                            placeholder="Erklärung hier eingeben…"
+                            placeholder={t(
+                              'manage.questionForms.explanationPlaceholder'
+                            )}
                             key={`${questionType}-explanation`}
                             data_cy="insert-question-explanation"
                           />
@@ -708,7 +698,7 @@ function QuestionEditModal({
                   {/* // TODO: to be released
                 <div className="mb-4">
                   <Label
-                    label="Anhänge:"
+                    label={t("manage.questionForms.attachments")}
                     className="my-auto mr-2 text-lg font-bold"
                     tooltipStyle="text-base font-normal"
                     tooltip="// TODO Tooltip Content"
@@ -720,12 +710,14 @@ function QuestionEditModal({
                     {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                       <div className="flex-1">
                         <Label
-                          label="Antwortmöglichkeiten"
+                          label={t('manage.questionForms.answerOptions')}
                           className={{
                             root: 'my-auto mr-2 text-lg font-bold',
                             tooltip: 'text-base font-normal',
                           }}
-                          tooltip="// TODO Tooltip Content"
+                          tooltip={t(
+                            'manage.questionForms.answerOptionsTooltip'
+                          )}
                           showTooltipSymbol
                           required
                         />
@@ -734,12 +726,12 @@ function QuestionEditModal({
                     {QUESTION_GROUPS.FREE.includes(questionType) && (
                       <div className="flex-1">
                         <Label
-                          label="Optionen"
+                          label={t('shared.generic.options')}
                           className={{
                             root: 'my-auto mr-2 text-lg font-bold',
                             tooltip: 'text-base font-normal',
                           }}
-                          tooltip="// TODO Tooltip Content"
+                          tooltip={t('manage.questionForms.FTOptionsTooltip')}
                           showTooltipSymbol={true}
                         />
                       </div>
@@ -750,7 +742,7 @@ function QuestionEditModal({
                         setFieldValue('hasSampleSolution', newValue)
                         validateForm()
                       }}
-                      label="Musterlösung"
+                      label={t('shared.generic.sampleSolution')}
                       data={{ cy: 'configure-sample-solution' }}
                     />
                     {QUESTION_GROUPS.CHOICES.includes(questionType) && (
@@ -760,7 +752,7 @@ function QuestionEditModal({
                           setFieldValue('hasAnswerFeedbacks', newValue)
                           validateForm()
                         }}
-                        label="Antwort-Feedbacks"
+                        label={t('manage.questionPool.answerFeedbacks')}
                         disabled={!values.hasSampleSolution}
                         className={{
                           root: twMerge(
@@ -774,16 +766,12 @@ function QuestionEditModal({
                     ) && (
                       <FormikSelectField
                         name="displayMode"
-                        items={[
-                          {
-                            value: QuestionDisplayMode.List,
-                            label: 'Anzeige als Liste',
-                          },
-                          {
-                            value: QuestionDisplayMode.Grid,
-                            label: 'Anzeige als Grid',
-                          },
-                        ]}
+                        items={Object.values(QuestionDisplayMode).map(
+                          (mode) => ({
+                            value: mode,
+                            label: t(`manage.questionForms.${mode}Display`),
+                          })
+                        )}
                       />
                     )}
                   </div>
@@ -842,7 +830,9 @@ function QuestionEditModal({
                                           )
                                         }}
                                         showToolbarOnFocus={true}
-                                        placeholder="Antwortmöglichkeit eingeben…"
+                                        placeholder={t(
+                                          'manage.questionForms.answerOptionPlaceholder'
+                                        )}
                                         className={{
                                           root: 'bg-white',
                                         }}
@@ -854,11 +844,13 @@ function QuestionEditModal({
 
                                   {values.hasSampleSolution && (
                                     <div className="flex flex-row items-center ml-2">
-                                      <div className="mr-2">Korrekt?</div>
+                                      <div className="mr-2">
+                                        {t('shared.generic.correct')}?
+                                      </div>
                                       <FastField
                                         name={`options.choices.${index}.correct`}
                                       >
-                                        {({ field, meta }: FieldProps) => (
+                                        {({ field }: FieldProps) => (
                                           <Switch
                                             checked={field.value || false}
                                             label=""
@@ -897,7 +889,7 @@ function QuestionEditModal({
                                   values.hasSampleSolution && (
                                     <div className="">
                                       <div className="mt-2 text-sm font-bold">
-                                        Feedback
+                                        {t('shared.generic.feedback')}
                                       </div>
                                       <FastField
                                         name={`options.choices.${index}.feedback`}
@@ -932,7 +924,9 @@ function QuestionEditModal({
                                                 'w-full rounded border border-uzh-grey-100 focus:border-primary-40',
                                             }}
                                             showToolbarOnFocus={true}
-                                            placeholder="Feedback eingeben…"
+                                            placeholder={t(
+                                              'manage.questionForms.feedbackPlaceholder'
+                                            )}
                                             key={`${questionType}-feedback-${index}`}
                                           />
                                         )}
@@ -964,7 +958,7 @@ function QuestionEditModal({
                             }
                             data={{ cy: 'add-new-answer' }}
                           >
-                            Neue Antwort hinzufügen
+                            {t('manage.questionForms.addAnswer')}
                           </Button>
                         </div>
                       )}
@@ -975,25 +969,31 @@ function QuestionEditModal({
                     <div>
                       <div className="w-full">
                         <div className="flex flex-row items-center gap-2">
-                          <div className="font-bold">Min: </div>
+                          <div className="font-bold">
+                            {t('shared.generic.min')}:{' '}
+                          </div>
                           <FastField
                             name="options.restrictions.min"
                             type="number"
                             className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
-                            placeholder="Minimum"
+                            placeholder={t('shared.generic.minLong')}
                             data-cy="set-numerical-minimum"
                           />
-                          <div className="font-bold">Max: </div>
+                          <div className="font-bold">
+                            {t('shared.generic.max')}:{' '}
+                          </div>
                           <FastField
                             name="options.restrictions.max"
                             type="number"
                             className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
-                            placeholder="Maximum"
+                            placeholder={t('shared.generic.maxLong')}
                             data-cy="set-numerical-maximum"
                           />
                         </div>
                         <div className="flex flex-row items-center gap-2">
-                          <div className="font-bold">Einheit: </div>
+                          <div className="font-bold">
+                            {t('shared.generic.unit')}:{' '}
+                          </div>
                           <FastField
                             name="options.unit"
                             type="text"
@@ -1001,12 +1001,14 @@ function QuestionEditModal({
                             placeholder="CHF"
                             data-cy="set-numerical-unit"
                           />
-                          <div className="font-bold">Präzision: </div>
+                          <div className="font-bold">
+                            {t('shared.generic.precision')}:{' '}
+                          </div>
                           <FastField
                             name="options.accuracy"
                             type="number"
                             className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
-                            placeholder="Präzision"
+                            placeholder={0}
                             data-cy="set-numerical-accuracy"
                           />
                         </div>
@@ -1014,12 +1016,14 @@ function QuestionEditModal({
                       {values.hasSampleSolution && (
                         <div className="mt-3">
                           <Label
-                            label="Lösungsbereiche"
+                            label={t('manage.questionForms.solutionRanges')}
                             className={{
                               root: 'my-auto mr-2 text-lg font-bold',
                               tooltip: 'text-base font-normal',
                             }}
-                            tooltip="// TODO Tooltip Content"
+                            tooltip={t(
+                              'manage.questionForms.solutionRangesTooltip'
+                            )}
                             showTooltipSymbol={true}
                           />
                           <FieldArray name="options.solutionRanges">
@@ -1031,19 +1035,27 @@ function QuestionEditModal({
                                       className="flex flex-row items-center gap-2"
                                       key={index}
                                     >
-                                      <div className="font-bold">Min: </div>
+                                      <div className="font-bold">
+                                        {t('shared.generic.min')}:{' '}
+                                      </div>
                                       <FastField
                                         name={`options.solutionRanges.${index}.min`}
                                         type="number"
                                         className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
-                                        placeholder="Minimum"
+                                        placeholder={t(
+                                          'shared.generic.minLong'
+                                        )}
                                       />
-                                      <div className="font-bold">Max: </div>
+                                      <div className="font-bold">
+                                        {t('shared.generic.max')}:{' '}
+                                      </div>
                                       <FastField
                                         name={`options.solutionRanges.${index}.max`}
                                         type="number"
                                         className="w-40 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
-                                        placeholder="Maximum"
+                                        placeholder={t(
+                                          'shared.generic.maxLong'
+                                        )}
                                       />
                                       <Button
                                         onClick={() => remove(index)}
@@ -1051,7 +1063,7 @@ function QuestionEditModal({
                                           root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
                                         }}
                                       >
-                                        Löschen
+                                        {t('shared.generic.delete')}
                                       </Button>
                                     </div>
                                   )
@@ -1068,7 +1080,7 @@ function QuestionEditModal({
                                     })
                                   }
                                 >
-                                  Neuen Lösungsbereich hinzufügen
+                                  {t('manage.questionForms.addSolutionRange')}
                                 </Button>
                               </div>
                             )}
@@ -1081,12 +1093,14 @@ function QuestionEditModal({
                   {questionType === QuestionType.FreeText && (
                     <div className="flex flex-col">
                       <div className="flex flex-row items-center mb-4">
-                        <div className="mr-2 font-bold">Maximale Länge:</div>
+                        <div className="mr-2 font-bold">
+                          {t('manage.questionForms.maximumLength')}:
+                        </div>
                         <FastField
                           name="options.restrictions.maxLength"
                           type="number"
                           className="mr-2 bg-opacity-50 border rounded w-44 border-uzh-grey-100 h-9 focus:border-primary-40"
-                          placeholder="Antwort Länge"
+                          placeholder={t('manage.questionForms.answerLength')}
                           min={0}
                           data-cy="set-free-text-length"
                         />
@@ -1102,13 +1116,17 @@ function QuestionEditModal({
                                     key={index}
                                   >
                                     <div className="w-40 font-bold">
-                                      Mögliche Lösung {String(index + 1)}:{' '}
+                                      {t(
+                                        'manage.questionForms.possibleSolutionN',
+                                        { number: String(index + 1) }
+                                      )}
+                                      :{' '}
                                     </div>
                                     <FastField
                                       name={`options.solutions.${index}`}
                                       type="text"
                                       className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
-                                      placeholder="Lösung"
+                                      placeholder={t('shared.generic.solution')}
                                     />
                                     <Button
                                       onClick={() => remove(index)}
@@ -1116,7 +1134,7 @@ function QuestionEditModal({
                                         root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
                                       }}
                                     >
-                                      Löschen
+                                      {t('shared.generic.delete')}
                                     </Button>
                                   </div>
                                 )
@@ -1128,7 +1146,7 @@ function QuestionEditModal({
                                 }}
                                 onClick={() => push('')}
                               >
-                                Neue Lösung hinzufügen
+                                {t('manage.questionForms.addSolution')}
                               </Button>
                             </div>
                           )}
@@ -1151,7 +1169,7 @@ function QuestionEditModal({
                 )}
               </div>
               <div className="flex-1 max-w-sm">
-                <H3>Vorschau</H3>
+                <H3>{t('shared.generic.preview')}</H3>
                 <div className="p-4 border rounded">
                   <StudentQuestion
                     activeIndex={0}
@@ -1185,13 +1203,13 @@ function QuestionEditModal({
                 </div>
                 {values.explanation && (
                   <div className="mt-4">
-                    <H3>Erklärung</H3>
+                    <H3>{t('shared.generic.explanation')}</H3>
                     <Markdown content={values.explanation} />
                   </div>
                 )}
                 {QUESTION_GROUPS.CHOICES.includes(questionType) && (
                   <div className="mt-4">
-                    <H3>Feedbacks</H3>
+                    <H3>{t('shared.generic.feedbacks')}</H3>
                     {values.options?.choices?.map((choice, index) => (
                       <div
                         key={index}
@@ -1200,7 +1218,7 @@ function QuestionEditModal({
                         {choice.feedback ? (
                           <Markdown content={choice.feedback} />
                         ) : (
-                          'Kein Feedback definiert'
+                          t('manage.questionForms.noFeedbackDefined')
                         )}
                       </div>
                     ))}

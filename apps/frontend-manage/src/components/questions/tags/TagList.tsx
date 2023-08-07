@@ -9,12 +9,13 @@ import {
   faRectangleList as faListSolid,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetUserTagsDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
 import {
-  QUESTION_TYPES,
-  TYPES_LABELS,
-} from '@klicker-uzh/shared-components/src/constants'
+  GetUserTagsDocument,
+  QuestionType,
+  Tag,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import TagHeader from './TagHeader'
@@ -45,6 +46,7 @@ function TagList({
   handleSampleSolutionClick,
   handleAnswerFeedbacksClick,
 }: Props): React.ReactElement {
+  const t = useTranslations()
   const {
     data: tagsData,
     loading: tagsLoading,
@@ -87,7 +89,7 @@ function TagList({
         <Button.Icon className={{ root: 'mr-1' }}>
           <FontAwesomeIcon icon={faCircleXmark} />
         </Button.Icon>
-        <Button.Label>Filter zurücksetzen</Button.Label>
+        <Button.Label>{t('manage.questionPool.resetFilters')}</Button.Label>
       </Button>
 
       {/* <Button
@@ -100,21 +102,21 @@ function TagList({
           <Button.Icon>
             <FontAwesomeIcon icon={faBoxArchive} />
           </Button.Icon>
-          <Button.Label>Archiv Anzeigen</Button.Label>
+          <Button.Label>{t("manage.questionPool.showArchive")}</Button.Label>
         </Button> */}
 
       <div>
         <TagHeader
-          text="Fragetypen"
+          text={t('manage.questionPool.questionTypes')}
           state={questionTypesVisible}
           setState={setQuestionTypesVisible}
         />
         {questionTypesVisible && (
           <ul className="list-none">
-            {Object.values(QUESTION_TYPES).map((type) => (
+            {Object.values(QuestionType).map((type) => (
               <TagItem
                 key={type}
-                text={TYPES_LABELS[type]}
+                text={t(`shared.${type}.typeLabel`)}
                 icon={activeType === type ? faListSolid : faListRegular}
                 active={activeType === type}
                 onClick={(): void => handleTagClick(type, true)}
@@ -124,14 +126,14 @@ function TagList({
         )}
 
         <TagHeader
-          text="Tags"
+          text={t('manage.questionPool.tags')}
           state={userTagsVisible}
           setState={setUserTagsVisible}
         />
         {userTagsVisible &&
           ((): React.ReactElement => {
             if (tagsLoading) {
-              return <div>Loading...</div>
+              return <div>{t('shared.generic.loading')}</div>
             }
 
             if (tagsError) {
@@ -143,7 +145,7 @@ function TagList({
             if (tags?.length === 0) {
               return (
                 <UserNotification type="info">
-                  Keine Tags verfügbar
+                  {t('manage.questionPool.noTagsAvailable')}
                 </UserNotification>
               )
             }
@@ -165,20 +167,20 @@ function TagList({
           })()}
 
         <TagHeader
-          text="Gamification"
+          text={t('shared.generic.gamification')}
           state={gamificationTagsVisible}
           setState={setGamificationTagsVisible}
         />
         {gamificationTagsVisible && (
           <ul className="list-none">
             <TagItem
-              text="Musterlösung"
+              text={t('shared.generic.sampleSolution')}
               icon={faCheckCircle}
               active={sampleSolution}
               onClick={(): void => handleSampleSolutionClick(!sampleSolution)}
             />
             <TagItem
-              text="Antwort-Feedbacks"
+              text={t('manage.questionPool.answerFeedbacks')}
               icon={faCommentDots}
               active={answerFeedbacks}
               onClick={(): void => {

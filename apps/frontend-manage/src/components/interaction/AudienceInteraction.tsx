@@ -19,6 +19,7 @@ import Link from 'next/link'
 import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+import { useTranslations } from 'next-intl'
 import ConfusionCharts from './confusion/ConfusionCharts'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 interface Props {
@@ -44,6 +45,8 @@ function AudienceInteraction({
   isGamificationEnabled,
   subscribeToMore,
 }: Props) {
+  const t = useTranslations()
+
   useEffect(() => {
     if (!sessionId) return
 
@@ -76,7 +79,7 @@ function AudienceInteraction({
   return (
     <div className="flex flex-col justify-between md:flex-row md:flex-wrap">
       <div className="hidden print:block">
-        <h1>Session &quot;{sessionName}&quot; - Feedback-Channel</h1>
+        <h1>{t('manage.cockpit.printTitle', { name: sessionName })}</h1>
       </div>
 
       <div
@@ -86,7 +89,9 @@ function AudienceInteraction({
       >
         <div className="flex flex-col flex-grow gap-4 md:w-2/3">
           <div className="flex flex-row flex-wrap items-end justify-between">
-            <div className="flex text-2xl font-bold">Live Q&A</div>
+            <div className="flex text-2xl font-bold">
+              {t('manage.cockpit.liveQA')}
+            </div>
             <div className="flex flex-row flex-wrap items-end gap-4">
               <Link
                 href={`/sessions/${sessionId}/lecturer`}
@@ -94,7 +99,7 @@ function AudienceInteraction({
                 className="inline-flex items-center gap-1"
               >
                 <FontAwesomeIcon icon={faUpRightFromSquare} />
-                Dozierendenansicht
+                {t('manage.cockpit.lecturerView')}
               </Link>
               <Switch
                 checked={isLiveQAEnabled}
@@ -113,7 +118,7 @@ function AudienceInteraction({
                       : 'Feedback Channel Deactivated',
                   ])
                 }}
-                label="Live Q&A aktivieren"
+                label={t('manage.cockpit.activateQA')}
               />
               <Switch
                 checked={isModerationEnabled}
@@ -132,7 +137,7 @@ function AudienceInteraction({
                     String(!isModerationEnabled),
                   ])
                 }}
-                label="Moderation aktivieren"
+                label={t('manage.cockpit.activateModeration')}
                 className={{
                   element: twMerge(!isLiveQAEnabled && 'bg-uzh-grey-40'),
                   label: twMerge(!isLiveQAEnabled && 'text-gray-40'),
@@ -143,7 +148,7 @@ function AudienceInteraction({
 
           {!isLiveQAEnabled && (
             <div className="flex items-center justify-center flex-1 font-bold border rounded">
-              Live Q&A nicht aktiv.
+              {t('manage.cockpit.QaNotActive')}
             </div>
           )}
 
@@ -234,7 +239,9 @@ function AudienceInteraction({
         </div>
         <div className="flex flex-col md:w-[250px] flex-auto gap-4 md:flex-row md:flex-wrap">
           <div className="flex flex-row flex-wrap items-end justify-between flex-none w-full gap-2">
-            <div className="text-2xl font-bold">Feedback</div>
+            <div className="text-2xl font-bold">
+              {t('shared.generic.feedback')}
+            </div>
             <Switch
               checked={isConfusionFeedbackEnabled}
               onCheckedChange={(): void => {
@@ -251,7 +258,7 @@ function AudienceInteraction({
                   String(!isConfusionFeedbackEnabled),
                 ])
               }}
-              label="Feedback aktivieren"
+              label={t('manage.cockpit.activateFeedback')}
               className={{
                 root: twMerge('items-start'),
               }}
@@ -264,7 +271,7 @@ function AudienceInteraction({
             ) : (
               // </div>
               <div className="flex min-h-[355px] justify-center items-center font-bold">
-                Feedback nicht aktiv.
+                {t('manage.cockpit.feedbackNotActive')}
               </div>
             )}
           </div>

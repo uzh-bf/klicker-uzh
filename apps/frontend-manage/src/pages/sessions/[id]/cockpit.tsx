@@ -10,12 +10,15 @@ import {
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
-import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
+import { useTranslations } from 'next-intl'
 import Layout from '../../../components/Layout'
+import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import SessionTimeline from '../../../components/sessions/cockpit/SessionTimeline'
 
 function Cockpit() {
   const router = useRouter()
+  const t = useTranslations()
+
   const [isEvaluationPublic, setEvaluationPublic] = useState(false)
 
   const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
@@ -77,7 +80,7 @@ function Cockpit() {
   })
 
   // data has not been received yet
-  if (cockpitLoading) return <div>Loading...</div>
+  if (cockpitLoading) return <div>{t('shared.generic.loading')}</div>
 
   // loading is finished, but was not successful
   if (!cockpitData?.cockpitSession || cockpitError) {
@@ -148,6 +151,23 @@ function Cockpit() {
       />
     </Layout>
   )
+}
+
+export function getStaticProps({ locale }: any) {
+  return {
+    props: {
+      messages: {
+        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
+      },
+    },
+  }
+}
+
+export function getStaticPaths() {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
 }
 
 export default Cockpit
