@@ -62,7 +62,7 @@ describe('Different learning element workflows', () => {
 
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="learning-element"]').contains(learningElementName);
-        cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').contains('Draft');
+        cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').contains('Entwurf');
 
         // publish learning element
         cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').find('[data-cy="publish-learning-element"]').click();

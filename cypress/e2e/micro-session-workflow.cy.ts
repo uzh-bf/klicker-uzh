@@ -62,7 +62,7 @@ describe('Different micro-session workflows', () => {
     
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="micro-session"]').contains(microSessionName);
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Draft');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Entwurf');
     
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
@@ -147,7 +147,7 @@ describe('Different micro-session workflows', () => {
     
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="micro-session"]').contains(microSessionName);
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Draft');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Entwurf');
     
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
@@ -213,7 +213,7 @@ describe('Different micro-session workflows', () => {
     
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="micro-session"]').contains(microSessionName);
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Draft');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Entwurf');
     
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
