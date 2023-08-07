@@ -21,11 +21,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Inject shared-components
-        shell: bash
-        run: |
-          cp -R packages/shared-components apps/auth/shared-components
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -48,7 +43,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: apps/auth
+          context: .
           file: apps/auth/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}

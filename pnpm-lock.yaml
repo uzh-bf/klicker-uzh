@@ -7,41 +7,19 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@prisma/client':
-        specifier: 4.14.1
-        version: 4.14.1(prisma@4.14.1)
-      prisma:
-        specifier: 4.14.1
-        version: 4.14.1
     devDependencies:
-      '@cypress/code-coverage':
-        specifier: 3.10.6
-        version: 3.10.6(@babel/core@7.22.9)(@babel/preset-env@7.22.9)(babel-loader@9.1.3)(cypress@12.12.0)(webpack@5.88.2)
       '@prisma/nextjs-monorepo-workaround-plugin':
         specifier: 4.14.1
         version: 4.14.1
-      '@testing-library/cypress':
-        specifier: 9.0.0
-        version: 9.0.0(cypress@12.12.0)
       axios:
         specifier: 1.4.0
         version: 1.4.0
-      azure-functions-core-tools:
-        specifier: 4.0.5198
-        version: 4.0.5198
       code-review-gpt:
         specifier: 0.0.26
         version: 0.0.26(axios@1.4.0)
-      cypress:
-        specifier: 12.12.0
-        version: 12.12.0
       husky:
         specifier: 8.0.3
         version: 8.0.3
-      nyc:
-        specifier: 15.1.0
-        version: 15.1.0
       prettier:
         specifier: 2.8.8
         version: 2.8.8
@@ -333,6 +311,9 @@ importers:
       '@uzh-bf/design-system':
         specifier: 2.0.6
         version: 2.0.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+      azure-functions-core-tools:
+        specifier: 4.0.5198
+        version: 4.0.5198
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -385,6 +366,9 @@ importers:
       '@uzh-bf/design-system':
         specifier: 2.0.6
         version: 2.0.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+      azure-functions-core-tools:
+        specifier: 4.0.5198
+        version: 4.0.5198
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -1113,6 +1097,21 @@ importers:
         specifier: 4.15.0
         version: 4.15.0(webpack-cli@5.1.1)(webpack@5.83.1)
 
+  cypress:
+    devDependencies:
+      '@cypress/code-coverage':
+        specifier: 3.10.6
+        version: 3.10.6(@babel/core@7.22.9)(@babel/preset-env@7.22.9)(babel-loader@9.1.3)(cypress@12.12.0)(webpack@5.88.2)
+      '@testing-library/cypress':
+        specifier: 9.0.0
+        version: 9.0.0(cypress@12.12.0)
+      cypress:
+        specifier: 12.12.0
+        version: 12.12.0
+      nyc:
+        specifier: 15.1.0
+        version: 15.1.0
+
   packages/grading:
     dependencies:
       ramda:
@@ -1320,7 +1319,7 @@ importers:
         version: 1.20.2
       next:
         specifier: ^13.0.0
-        version: 13.0.0(@babel/core@7.22.9)(react-dom@18.2.0)(react@18.2.0)
+        version: 13.0.0(react-dom@18.2.0)(react@18.2.0)
     devDependencies:
       '@size-limit/preset-small-lib':
         specifier: 8.2.4
@@ -1360,7 +1359,7 @@ importers:
         version: 2.0.0(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.3.0)(@fortawesome/free-solid-svg-icons@6.3.0)(@fortawesome/react-fontawesome@0.2.0)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.8.1)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.2)(yup@1.2.0)
       next:
         specifier: ^13.0.0
-        version: 13.0.0(@babel/core@7.22.9)(react-dom@18.2.0)(react@18.2.0)
+        version: 13.0.0(react-dom@18.2.0)(react@18.2.0)
       react:
         specifier: ^18.2.0
         version: 18.2.0
@@ -1491,73 +1490,6 @@ importers:
         version: 6.2.13
 
   packages/shared-components:
-    dependencies:
-      '@fortawesome/fontawesome-svg-core':
-        specifier: 6.4.0
-        version: 6.4.0
-      '@fortawesome/free-regular-svg-icons':
-        specifier: 6.4.0
-        version: 6.4.0
-      '@fortawesome/free-solid-svg-icons':
-        specifier: 6.4.0
-        version: 6.4.0
-      '@fortawesome/react-fontawesome':
-        specifier: 0.2.0
-        version: 0.2.0(@fortawesome/fontawesome-svg-core@6.4.0)(react@18.2.0)
-      '@klicker-uzh/graphql':
-        specifier: workspace:*
-        version: link:../graphql
-      '@klicker-uzh/markdown':
-        specifier: workspace:*
-        version: link:../markdown
-      '@uzh-bf/design-system':
-        specifier: 2.0.6
-        version: 2.0.6(@fortawesome/fontawesome-svg-core@6.4.0)(@fortawesome/free-regular-svg-icons@6.4.0)(@fortawesome/free-solid-svg-icons@6.4.0)(@fortawesome/react-fontawesome@0.2.0)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.7)(formik@2.4.2)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.12.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.2)(yup@1.1.1)
-      dayjs:
-        specifier: 1.11.7
-        version: 1.11.7
-      formik:
-        specifier: 2.4.2
-        version: 2.4.2(react@18.2.0)
-      is-hotkey:
-        specifier: 0.2.0
-        version: 0.2.0
-      lodash:
-        specifier: 4.17.21
-        version: 4.17.21
-      next:
-        specifier: 13.4.13
-        version: 13.4.13(@babel/core@7.22.9)(react-dom@18.2.0)(react@18.2.0)
-      next-intl:
-        specifier: 2.19.1
-        version: 2.19.1(next@13.4.13)(react@18.2.0)
-      ramda:
-        specifier: 0.29.0
-        version: 0.29.0
-      react:
-        specifier: 18.2.0
-        version: 18.2.0
-      react-dom:
-        specifier: 18.2.0
-        version: 18.2.0(react@18.2.0)
-      recharts:
-        specifier: 2.6.2
-        version: 2.6.2(prop-types@15.8.1)(react-dom@18.2.0)(react@18.2.0)
-      slate:
-        specifier: 0.94.1
-        version: 0.94.1
-      slate-history:
-        specifier: 0.93.0
-        version: 0.93.0(slate@0.94.1)
-      slate-react:
-        specifier: 0.94.2
-        version: 0.94.2(react-dom@18.2.0)(react@18.2.0)(slate@0.94.1)
-      tailwind-merge:
-        specifier: 1.12.0
-        version: 1.12.0
-      yup:
-        specifier: 1.1.1
-        version: 1.1.1
     devDependencies:
       '@tailwindcss/aspect-ratio':
         specifier: ^0.4.2
@@ -12471,15 +12403,10 @@ packages:
 
   /@types/node@18.11.18:
     resolution: {integrity: sha512-DHQpWGjyQKSHj3ebjFI/wRKcqQcdR+MoFBygntYOZytCqNfkd2ZC4ARDJ2DQqhjH5p85Nnd3jhUJIXrszFX/JA==}
+    dev: true
 
   /@types/node@18.17.3:
     resolution: {integrity: sha512-2x8HWtFk0S99zqVQABU9wTpr8wPoaDHZUcAkoTKH+nL7kPv3WUI9cRi/Kk5Mz4xdqXSqTkKP7IWNoQQYCnDsTA==}
-
-  /@types/node@20.4.8:
-    resolution: {integrity: sha512-0mHckf6D2DiIAzh8fM8f3HQCvMKDpK94YQ0DSVkfWTG9BZleYIWudw9cJxX8oCk9bM+vAkDyujDV6dmKHbvQpg==}
-    requiresBuild: true
-    dev: true
-    optional: true
 
   /@types/normalize-package-data@2.4.1:
     resolution: {integrity: sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==}
@@ -12812,7 +12739,7 @@ packages:
     resolution: {integrity: sha512-Cn6WYCm0tXv8p6k+A8PvbDG763EDpBoTzHdA+Q/MF6H3sapGjCm9NzoaJncJS9tUKSuCoDs9XHxYYsQDgxR6kw==}
     requiresBuild: true
     dependencies:
-      '@types/node': 20.4.8
+      '@types/node': 18.0.0
     dev: true
     optional: true
 
@@ -13298,59 +13225,6 @@ packages:
       - '@types/react-dom'
     dev: false
 
-  /@uzh-bf/design-system@2.0.6(@fortawesome/fontawesome-svg-core@6.4.0)(@fortawesome/free-regular-svg-icons@6.4.0)(@fortawesome/free-solid-svg-icons@6.4.0)(@fortawesome/react-fontawesome@0.2.0)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.7)(formik@2.4.2)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.12.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.2)(yup@1.1.1):
-    resolution: {integrity: sha512-K4TTlhB2hn3e33w/Yejq+ozRo0lWb9IsIICKGkJSdg2UN65GWpbT0N1AQv4zORQu1TN1qdQZO6NeqRULiTNdsw==}
-    engines: {node: '>=16'}
-    peerDependencies:
-      '@fortawesome/fontawesome-svg-core': ^6.3.0
-      '@fortawesome/free-regular-svg-icons': ^6.3.0
-      '@fortawesome/free-solid-svg-icons': ^6.3.0
-      '@fortawesome/react-fontawesome': ^0.2.0
-      autoprefixer: ^10.0.0
-      dayjs: ^1.0.0
-      formik: ^2.2.9
-      postcss-import: ^15.1.0
-      react: ^18.2.0
-      react-dom: ^18.2.0
-      tailwind-merge: ^1.8.1
-      tailwindcss: ^3.3.0
-      tailwindcss-radix: ^2.8.0
-      yup: ^1.0.0
-    dependencies:
-      '@fortawesome/fontawesome-svg-core': 6.4.0
-      '@fortawesome/free-regular-svg-icons': 6.4.0
-      '@fortawesome/free-solid-svg-icons': 6.4.0
-      '@fortawesome/react-fontawesome': 0.2.0(@fortawesome/fontawesome-svg-core@6.4.0)(react@18.2.0)
-      '@radix-ui/react-checkbox': 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-collapsible': 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-dialog': 1.0.4(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-dropdown-menu': 2.0.5(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-label': 2.0.2(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-navigation-menu': 1.1.3(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-progress': 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-select': 1.2.2(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-slider': 1.1.2(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-switch': 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-tabs': 1.0.4(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-toast': 1.1.4(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-tooltip': 1.0.6(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
-      autoprefixer: 10.4.14(postcss@8.4.27)
-      dayjs: 1.11.7
-      formik: 2.4.2(react@18.2.0)
-      postcss-import: 15.1.0(postcss@8.4.27)
-      react: 18.2.0
-      react-colorful: 5.6.1(react-dom@18.2.0)(react@18.2.0)
-      react-countdown-circle-timer: 3.2.1(react@18.2.0)
-      react-dom: 18.2.0(react@18.2.0)
-      tailwind-merge: 1.12.0
-      tailwindcss: 3.3.2
-      tailwindcss-radix: 2.8.0
-      yup: 1.1.1
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-    dev: false
-
   /@uzh-bf/design-system@2.0.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.0.0)(@types/react@18.0.0)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.2.9)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.2)(yup@1.2.0):
     resolution: {integrity: sha512-K4TTlhB2hn3e33w/Yejq+ozRo0lWb9IsIICKGkJSdg2UN65GWpbT0N1AQv4zORQu1TN1qdQZO6NeqRULiTNdsw==}
     engines: {node: '>=16'}
@@ -13814,6 +13688,7 @@ packages:
     resolution: {integrity: sha512-xjIYgE8HBrkpd/sJqOGNspf8uHG+NOHGOw6a/Urj8taM2EXfdNAH2oFcPeIFfsv3+kz/mJrS5VuMqbNLjCa2vw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+    dev: true
 
   /add-stream@1.0.0:
     resolution: {integrity: sha512-qQLMr+8o0WC4FZGQTcJiKBVC59JylcPSrTtk6usvmIDFUOCKegapy1VHQwRbFMOFyb/inzUVqHs+eMYKDM1YeQ==}
@@ -16397,6 +16272,7 @@ packages:
     dependencies:
       ms: 2.1.3
       supports-color: 5.5.0
+    dev: true
 
   /debug@3.2.7(supports-color@8.1.1):
     resolution: {integrity: sha512-CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==}
@@ -16408,7 +16284,6 @@ packages:
     dependencies:
       ms: 2.1.3
       supports-color: 8.1.1
-    dev: true
 
   /debug@4.3.4(supports-color@8.1.1):
     resolution: {integrity: sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==}
@@ -17271,7 +17146,7 @@ packages:
   /eslint-import-resolver-node@0.3.8:
     resolution: {integrity: sha512-tEe+Pok22qIGaK3KoMP+N96GVDS66B/zreoVVmiavLvRUEmGRtvb4B8wO9jwnb8d2lvHtrkhZ7UD73dWBVnf/Q==}
     dependencies:
-      debug: 3.2.7(supports-color@5.5.0)
+      debug: 3.2.7(supports-color@8.1.1)
       is-core-module: 2.13.0
       resolve: 1.22.4
     transitivePeerDependencies:
@@ -17348,7 +17223,7 @@ packages:
         optional: true
     dependencies:
       '@typescript-eslint/parser': 6.2.1(eslint@8.45.0)(typescript@5.0.4)
-      debug: 3.2.7(supports-color@5.5.0)
+      debug: 3.2.7(supports-color@8.1.1)
       eslint: 8.45.0
       eslint-import-resolver-node: 0.3.8
       eslint-import-resolver-typescript: 3.5.5(@typescript-eslint/parser@6.2.1)(eslint-import-resolver-node@0.3.8)(eslint-plugin-import@2.28.0)(eslint@8.45.0)
@@ -17378,7 +17253,7 @@ packages:
         optional: true
     dependencies:
       '@typescript-eslint/parser': 6.2.1(eslint@8.46.0)(typescript@5.0.4)
-      debug: 3.2.7(supports-color@5.5.0)
+      debug: 3.2.7(supports-color@8.1.1)
       eslint: 8.46.0
       eslint-import-resolver-node: 0.3.8
       eslint-import-resolver-typescript: 3.5.5(@typescript-eslint/parser@6.2.1)(eslint-import-resolver-node@0.3.8)(eslint-plugin-import@2.28.0)(eslint@8.46.0)
@@ -17401,7 +17276,7 @@ packages:
       array.prototype.findlastindex: 1.2.2
       array.prototype.flat: 1.3.1
       array.prototype.flatmap: 1.3.1
-      debug: 3.2.7(supports-color@5.5.0)
+      debug: 3.2.7(supports-color@8.1.1)
       doctrine: 2.1.0
       eslint: 8.45.0
       eslint-import-resolver-node: 0.3.8
@@ -17437,7 +17312,7 @@ packages:
       array.prototype.findlastindex: 1.2.2
       array.prototype.flat: 1.3.1
       array.prototype.flatmap: 1.3.1
-      debug: 3.2.7(supports-color@5.5.0)
+      debug: 3.2.7(supports-color@8.1.1)
       doctrine: 2.1.0
       eslint: 8.46.0
       eslint-import-resolver-node: 0.3.8
@@ -20795,7 +20670,7 @@ packages:
     resolution: {integrity: sha512-7vuh85V5cdDofPyxn58nrPjBktZo0u9x1g8WtjQol+jZDaE+fhN+cIvTj11GndBnMnyfrUOG1sZQxCdjKh+DKg==}
     engines: {node: '>= 10.13.0'}
     dependencies:
-      '@types/node': 18.11.18
+      '@types/node': 18.17.3
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -22521,7 +22396,7 @@ packages:
       - webpack
     dev: false
 
-  /next@13.0.0(@babel/core@7.22.9)(react-dom@18.2.0)(react@18.2.0):
+  /next@13.0.0(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-puH1WGM6rGeFOoFdXXYfUxN9Sgi4LMytCV5HkQJvVUOhHfC1DoVqOfvzaEteyp6P04IW+gbtK2Q9pInVSrltPA==}
     engines: {node: '>=14.6.0'}
     hasBin: true
@@ -22545,7 +22420,7 @@ packages:
       postcss: 8.4.14
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      styled-jsx: 5.1.0(@babel/core@7.22.9)(react@18.2.0)
+      styled-jsx: 5.1.0(react@18.2.0)
       use-sync-external-store: 1.2.0(react@18.2.0)
     optionalDependencies:
       '@next/swc-android-arm-eabi': 13.0.0
@@ -23599,7 +23474,7 @@ packages:
     resolution: {integrity: sha512-uWlGT3YSnK9x3BQJaOdcZwrnV6hPpd8jFH1/ucpiLRPh/2zCVJKS19E4GvYHvaCcACn3foXZ0cLB9Wrx1KGe5g==}
     dependencies:
       no-case: 3.0.4
-      tslib: 2.5.3
+      tslib: 2.6.1
     dev: true
 
   /passport-jwt@4.0.1:
@@ -25924,7 +25799,7 @@ packages:
   /rhea-promise@3.0.1:
     resolution: {integrity: sha512-Fcqgml7lgoyi7fH1ClsSyFr/xwToijEN3rULFgrIcL+7EHeduxkWogFxNHjFzHf2YGScAckJDaDxS1RdlTUQYw==}
     dependencies:
-      debug: 3.2.7(supports-color@5.5.0)
+      debug: 3.2.7(supports-color@8.1.1)
       rhea: 3.0.2
       tslib: 2.6.1
     transitivePeerDependencies:
@@ -26864,7 +26739,7 @@ packages:
       inline-style-parser: 0.1.1
     dev: false
 
-  /styled-jsx@5.1.0(@babel/core@7.22.9)(react@18.2.0):
+  /styled-jsx@5.1.0(react@18.2.0):
     resolution: {integrity: sha512-/iHaRJt9U7T+5tp6TRelLnqBqiaIT0HsO0+vgyj8hK2KUk7aejFqRrumqPUlAqDwAj8IbS/1hk3IhBAAK/FCUQ==}
     engines: {node: '>= 12.0.0'}
     peerDependencies:
@@ -26877,7 +26752,6 @@ packages:
       babel-plugin-macros:
         optional: true
     dependencies:
-      '@babel/core': 7.22.9
       client-only: 0.0.1
       react: 18.2.0
     dev: false
@@ -27228,7 +27102,7 @@ packages:
     hasBin: true
     dependencies:
       '@jridgewell/source-map': 0.3.5
-      acorn: 8.8.2
+      acorn: 8.10.0
       commander: 2.20.3
       source-map-support: 0.5.21
 

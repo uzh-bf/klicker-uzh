@@ -60,25 +60,16 @@
     "prisma:reset": "npm run -w packages/prisma prisma:reset"
   },
   "devDependencies": {
-    "@cypress/code-coverage": "3.10.6",
     "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
-    "@testing-library/cypress": "9.0.0",
     "axios": "1.4.0",
-    "azure-functions-core-tools": "4.0.5198",
     "code-review-gpt": "0.0.26",
-    "cypress": "12.12.0",
     "husky": "8.0.3",
-    "nyc": "15.1.0",
     "prettier": "2.8.8",
     "prettier-plugin-organize-imports": "3.2.2",
     "prettier-plugin-tailwindcss": "0.3.0",
     "standard-version": "9.5.0",
     "turbo": "1.10.12",
     "yaml": "2.3.0"
-  },
-  "dependencies": {
-    "@prisma/client": "4.14.1",
-    "prisma": "4.14.1"
   },
   "volta": {
     "node": "18.17.0",
