@@ -229,3 +229,43 @@ export async function getLoginToken(_: any, ctx: ContextWithUser) {
 
   return user
 }
+
+interface ChangeUserLocaleArgs {
+  locale: string
+}
+
+export async function changeUserLocale(
+  { locale }: ChangeUserLocaleArgs,
+  ctx: ContextWithUser
+) {
+  const user = await ctx.prisma.user.update({
+    where: { id: ctx.user.sub },
+    data: { locale },
+  })
+
+  if (!user) return null
+
+  ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
+
+  return user
+}
+
+interface ChangeParticipantLocaleArgs {
+  locale: string
+}
+
+export async function changeParticipantLocale(
+  { locale }: ChangeParticipantLocaleArgs,
+  ctx: ContextWithUser
+) {
+  const participant = await ctx.prisma.participant.update({
+    where: { id: ctx.user.sub },
+    data: { locale },
+  })
+
+  if (!participant) return null
+
+  ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
+
+  return participant
+}

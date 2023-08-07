@@ -1,0 +1,6 @@
+mutation ChangeParticipantLocale($locale: String!) {
+  changeParticipantLocale(locale: $locale) {
+    id
+    locale
+  }
+}
