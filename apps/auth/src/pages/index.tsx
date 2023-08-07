@@ -1,8 +1,8 @@
-import { signIn, signOut, useSession } from 'next-auth/react'
+import Footer from '@klicker-uzh/shared-components/src/Footer'
 import { Button, H1 } from '@uzh-bf/design-system'
+import { signIn, signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import Footer from '@klicker-uzh/shared-components/src/Footer'
 
 function SignInOutButton() {
   const router = useRouter()
