@@ -47,4 +47,6 @@ COPY --from=installer --chown=nextjs:nodejs /app/apps/auth/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs /app/apps/auth/.next/static ./apps/auth/.next/static
 COPY --from=installer --chown=nextjs:nodejs /app/apps/auth/public ./apps/auth/public
 
+EXPOSE 3000
+
 CMD node apps/auth/server.js
