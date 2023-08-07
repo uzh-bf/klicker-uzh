@@ -1130,6 +1130,12 @@ importers:
       jest:
         specifier: 29.5.0
         version: 29.5.0(@types/node@18.17.3)
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.0.4)
       size-limit:
         specifier: 8.2.4
         version: 8.2.4
@@ -1290,6 +1296,12 @@ importers:
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
       size-limit:
         specifier: 8.2.4
         version: 8.2.4
@@ -1339,6 +1351,12 @@ importers:
       '@types/node':
         specifier: ^18.17.3
         version: 18.17.3
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.0.4)
       size-limit:
         specifier: 8.2.4
         version: 8.2.4
@@ -1436,6 +1454,15 @@ importers:
       postcss-import:
         specifier: 15.1.0
         version: 15.1.0(postcss@8.4.27)
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.0.4)
+      prettier-plugin-tailwindcss:
+        specifier: 0.3.0
+        version: 0.3.0(prettier-plugin-organize-imports@3.2.2)(prettier@2.8.8)
       size-limit:
         specifier: 8.2.4
         version: 8.2.4
@@ -1491,6 +1518,12 @@ importers:
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
       prisma:
         specifier: 4.14.1
         version: 4.14.1
@@ -1591,9 +1624,15 @@ importers:
       postcss-import:
         specifier: 15.1.0
         version: 15.1.0(postcss@8.4.27)
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.0.4)
       prettier-plugin-tailwindcss:
-        specifier: 0.4.1
-        version: 0.4.1(prettier@3.0.1)
+        specifier: 0.3.0
+        version: 0.3.0(prettier-plugin-organize-imports@3.2.2)(prettier@2.8.8)
       tailwindcss:
         specifier: 3.3.3
         version: 3.3.3(ts-node@10.9.1)
@@ -19707,6 +19746,23 @@ packages:
       typescript: 5.0.4
     dev: true
 
+  /prettier-plugin-organize-imports@3.2.2(prettier@2.8.8)(typescript@5.1.6):
+    resolution: {integrity: sha512-e97lE6odGSiHonHJMTYC0q0iLXQyw0u5z/PJpvP/3vRy6/Zi9kLBwFAbEGjDzIowpjQv8b+J04PDamoUSQbzGA==}
+    peerDependencies:
+      '@volar/vue-language-plugin-pug': ^1.0.4
+      '@volar/vue-typescript': ^1.0.4
+      prettier: '>=2.0'
+      typescript: '>=2.9'
+    peerDependenciesMeta:
+      '@volar/vue-language-plugin-pug':
+        optional: true
+      '@volar/vue-typescript':
+        optional: true
+    dependencies:
+      prettier: 2.8.8
+      typescript: 5.1.6
+    dev: true
+
   /prettier-plugin-tailwindcss@0.3.0(prettier-plugin-organize-imports@3.2.2)(prettier@2.8.8):
     resolution: {integrity: sha512-009/Xqdy7UmkcTBpwlq7jsViDqXAYSOMLDrHAdTMlVZOrKfM2o9Ci7EMWTMZ7SkKBFTG04UM9F9iM2+4i6boDA==}
     engines: {node: '>=12.17.0'}
@@ -19763,70 +19819,9 @@ packages:
       prettier-plugin-organize-imports: 3.2.2(prettier@2.8.8)(typescript@5.0.4)
     dev: true
 
-  /prettier-plugin-tailwindcss@0.4.1(prettier@3.0.1):
-    resolution: {integrity: sha512-hwn2EiJmv8M+AW4YDkbjJ6HlZCTzLyz1QlySn9sMuKV/Px0fjwldlB7tol8GzdgqtkdPtzT3iJ4UzdnYXP25Ag==}
-    engines: {node: '>=12.17.0'}
-    peerDependencies:
-      '@ianvs/prettier-plugin-sort-imports': '*'
-      '@prettier/plugin-pug': '*'
-      '@shopify/prettier-plugin-liquid': '*'
-      '@shufo/prettier-plugin-blade': '*'
-      '@trivago/prettier-plugin-sort-imports': '*'
-      prettier: ^2.2 || ^3.0
-      prettier-plugin-astro: '*'
-      prettier-plugin-css-order: '*'
-      prettier-plugin-import-sort: '*'
-      prettier-plugin-jsdoc: '*'
-      prettier-plugin-marko: '*'
-      prettier-plugin-organize-attributes: '*'
-      prettier-plugin-organize-imports: '*'
-      prettier-plugin-style-order: '*'
-      prettier-plugin-svelte: '*'
-      prettier-plugin-twig-melody: '*'
-    peerDependenciesMeta:
-      '@ianvs/prettier-plugin-sort-imports':
-        optional: true
-      '@prettier/plugin-pug':
-        optional: true
-      '@shopify/prettier-plugin-liquid':
-        optional: true
-      '@shufo/prettier-plugin-blade':
-        optional: true
-      '@trivago/prettier-plugin-sort-imports':
-        optional: true
-      prettier-plugin-astro:
-        optional: true
-      prettier-plugin-css-order:
-        optional: true
-      prettier-plugin-import-sort:
-        optional: true
-      prettier-plugin-jsdoc:
-        optional: true
-      prettier-plugin-marko:
-        optional: true
-      prettier-plugin-organize-attributes:
-        optional: true
-      prettier-plugin-organize-imports:
-        optional: true
-      prettier-plugin-style-order:
-        optional: true
-      prettier-plugin-svelte:
-        optional: true
-      prettier-plugin-twig-melody:
-        optional: true
-    dependencies:
-      prettier: 3.0.1
-    dev: true
-
   /prettier@2.8.8:
     resolution: {integrity: sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==}
     engines: {node: '>=10.13.0'}
-    hasBin: true
-    dev: true
-
-  /prettier@3.0.1:
-    resolution: {integrity: sha512-fcOWSnnpCrovBsmFZIGIy9UqK2FaI7Hqax+DIO0A9UxeVoY4iweyaFjS5TavZN97Hfehph0nhsZnjlVKzEQSrQ==}
-    engines: {node: '>=14'}
     hasBin: true
     dev: true
 
