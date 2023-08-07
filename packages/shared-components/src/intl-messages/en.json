@@ -118,7 +118,19 @@
       "order": "Order",
       "link": "Link",
       "respond": "Respond",
-      "responses": "Responses"
+      "responses": "Responses",
+      "ok": "OK"
+    },
+    "contentInput": {
+      "boldStyle": "Select this setting for bold text. The same can also be achieved with the standard keyboard shortcut cmd/ctrl+b.",
+      "italicStyle": "Select this setting for italic text. The same can also be achieved with the standard keyboard shortcut cmd/ctrl+i.",
+      "codeStyle": "Select this setting for code styling.",
+      "citationStyle": "Select this option to insert a citation. Please note that currently new paragraphs (by a line break / Enter) are displayed as separate citations.",
+      "numberedList": "This option creates a numbered list. To create new points, simply insert a new line after an existing element. To return to standard text, press this button again.",
+      "unnumberedList": "This option creates an unnumbered list. To create new points, simply insert a new line after an existing element. To return to standard text, press this button again.",
+      "image": "Select this setting to include an image. Use the same syntax to include formulas in answer options.",
+      "latex": "Select this setting to include an inline LaTeX formula. Use the same syntax to include formulas in answer options.",
+      "latexCentered": "Select this setting to include a LaTeX formula centered on a separate line."
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -135,7 +147,8 @@
     "error": {
       "404": "404 Page not found",
       "pwaWithoutUser": "Sorry, the page you requested does not exist. You can <login>sign in</login> to see an overview of all KlickerUZH elements your courses offer.",
-      "pwaWithUser": "Sorry, the page you requested does not exist. View an <home>overview</home> of all KlickerUZH elements your courses offer."
+      "pwaWithUser": "Sorry, the page you requested does not exist. View an <home>overview</home> of all KlickerUZH elements your courses offer.",
+      "offlineHint": "You seem to be offline at the moment. Connect your device to the Internet to use the KlickerUZH app."
     }
   },
   "pwa": {
@@ -343,6 +356,12 @@
       "deleteQuestion": "Delete question",
       "confirmDeletion": "Are you sure you want to delete the following question(s)?",
       "noQuestionRecovery": "This action cannot be undone. The question(s) will be permanently deleted and cannot be restored. Questions will not be removed from existing sessions."
+    },
+    "tags": {
+      "deleteTag": "Delete tag",
+      "confirmTagDeletion": "Are you sure you want to delete the following tag?",
+      "tagDeletionHint": "Deleted tags cannot be restored. All questions with this tag will remain, but the tag will be removed.",
+      "validName": "Please enter a valid name for your tag."
     },
     "questionForms": {
       "CREATETitle": "Create question",
@@ -650,6 +669,16 @@
       "deleteLearningElement": "Delete learning element",
       "confirmDeletionLearningElement": "Are you sure you want to delete the following learning element?",
       "hintDeletionLearningElement": "Deleting a learning element is only possible as long as it is not used in an active course. Deleted learning elements cannot be restored at a later date."
+    },
+    "toasts": {
+      "learningElementEdit": "Learning element successfully edited!",
+      "learningElementCreate": "Learning element successfully created!",
+      "toCourseOverview": "To <link>course overview</link>",
+      "liveSessionEdit": "Session successfully edited!",
+      "liveSessionCreate": "Session successfully created!",
+      "toSessionList": "To <link>session list</link>",
+      "microSessionEdit": "Micro-session successfully edited!",
+      "microSessionCreate": "Micro-session successfully created!"
     }
   },
   "control": {

@@ -118,7 +118,19 @@
       "order": "Reihenfolge",
       "link": "Link",
       "respond": "Antworten",
-      "responses": "Antworten"
+      "responses": "Antworten",
+      "ok": "OK"
+    },
+    "contentInput": {
+      "boldStyle": "Wählen Sie diese Einstellung für fetten Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+b erreicht werden.",
+      "italicStyle": "Wählen Sie diese Einstellung für kursiven Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+i erreicht werden.",
+      "codeStyle": "Wählen Sie diese Einstellung für Code-Styling.",
+      "citationStyle": "Wählen Sie diese Option, um ein Zitat einzufügen. Beachten Sie hier, dass aktuell neue Paragraphen (durch einen Zeilenumbruch / Enter) als separate Zitate dargestellt werden.",
+      "numberedList": "Diese Option erzeugt eine nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut.",
+      "unnumberedList": "Diese Option erzeugt eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut.",
+      "image": "Wählen Sie diese Einstellung, um ein Bild einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.",
+      "latex": "Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.",
+      "latexCentered": "Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden."
     },
     "leaderboard": {
       "sessionTitle": "Session Leaderboard",
@@ -135,7 +147,8 @@
     "error": {
       "404": "404 Seite nicht gefunden",
       "pwaWithoutUser": "Die von Ihnen aufgerufene Seite existiert leider nicht. Sie können sich <login>anmelden</login>, um eine Übersicht aller Klicker-Elemente Ihrer Kurse zu sehen.",
-      "pwaWithUser": "Die von Ihnen aufgerufene Seite existiert leider nicht. Sehen Sie sich eine <home>Übersicht</home> aller Klicker-Elemente Ihrer Kurse an."
+      "pwaWithUser": "Die von Ihnen aufgerufene Seite existiert leider nicht. Sehen Sie sich eine <home>Übersicht</home> aller Klicker-Elemente Ihrer Kurse an.",
+      "offlineHint": "Sie scheinen im Moment offline zu sein. Verbinden Sie Ihr Gerät mit dem Internet, um die KlickerUZH App nutzen zu können."
     }
   },
   "pwa": {
@@ -343,6 +356,12 @@
       "deleteQuestion": "Frage löschen",
       "confirmDeletion": "Sind Sie sich sicher, dass Sie die folgende(n) Frage(n) löschen möchten?",
       "noQuestionRecovery": "Gelöschte Fragen können nicht wiederhergestellt werden. Aus bestehenden Sessionen werden gelöschte Fragen nicht entfernt."
+    },
+    "tags": {
+      "deleteTag": "Tag löschen",
+      "confirmTagDeletion": "Sind Sie sich sicher, dass Sie den folgenden Tag löschen möchten?",
+      "tagDeletionHint": "Gelöschte Tags können nicht wieder hergestellt werden. Alle Fragen mit diesem Tag bleiben bestehen, der Tag wird jedoch entfernt.",
+      "validName": "Geben Sie einen gültigen Namen für Ihren Tag ein."
     },
     "questionForms": {
       "CREATETitle": "Frage erstellen",
@@ -650,6 +669,16 @@
       "deleteLearningElement": "Lernelement löschen",
       "confirmDeletionLearningElement": "Sind Sie sich sicher, dass Sie das folgende Lernelement löschen möchten?",
       "hintDeletionLearningElement": "Das Löschen eines Lernelements ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Lernelemente können nicht zu einem späteren Zeitpunkt wiederhergestellt werden."
+    },
+    "toasts": {
+      "learningElementEdit": "Lernelement erfolgreich angepasst!",
+      "learningElementCreate": "Lernelement erfolgreich erstellt!",
+      "toCourseOverview": "Zur <link>Kursübersicht</link>",
+      "liveSessionEdit": "Session erfolgreich angepasst!",
+      "liveSessionCreate": "Session erfolgreich erstellt!",
+      "toSessionList": "Zur <link>Session-Liste</link>",
+      "microSessionEdit": "Micro-Session erfolgreich angepasst!",
+      "microSessionCreate": "Micro-Session erfolgreich erstellt!"
     }
   },
   "control": {
