@@ -34,6 +34,8 @@
       "installButton": "Jetzt installieren"
     },
     "generic": {
+      "draft": "Entwurf",
+      "published": "Öffentlich",
       "points": "Punkte",
       "title": "KlickerUZH",
       "send": "Absenden",
