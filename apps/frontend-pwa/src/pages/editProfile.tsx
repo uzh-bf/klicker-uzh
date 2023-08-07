@@ -13,6 +13,7 @@ import {
   Toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import hash from 'object-hash'
@@ -252,12 +253,14 @@ function EditProfile() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
+        )
+      ).default,
     },
   }
 }

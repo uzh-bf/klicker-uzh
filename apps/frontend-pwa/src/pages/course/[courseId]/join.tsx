@@ -14,7 +14,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { GetServerSideProps } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -287,7 +287,7 @@ function JoinCourse({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
@@ -314,9 +314,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         color: data?.basicCourseInformation?.color,
         description: data?.basicCourseInformation?.description,
         courseLoading: loading,
-        messages: {
-          ...require(`@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`),
-        },
+        messages: (
+          await import(
+            `@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`
+          )
+        ).default,
       },
     }
   } catch {

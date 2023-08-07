@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import { faList, faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
 import { GetControlCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H4, UserNotification } from '@uzh-bf/design-system'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import ListButton from '../components/common/ListButton'
@@ -79,12 +80,14 @@ function Index() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
+        )
+      ).default,
     },
   }
 }

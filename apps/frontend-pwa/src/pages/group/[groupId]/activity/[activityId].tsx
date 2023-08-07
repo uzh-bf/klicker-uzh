@@ -9,6 +9,7 @@ import { QuestionType } from '@type/app'
 import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
+import { GetStaticPropsContext } from 'next'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -392,12 +393,14 @@ function GroupActivityDetails() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
+        )
+      ).default,
     },
     revalidate: 600,
   }

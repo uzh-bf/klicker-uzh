@@ -10,6 +10,7 @@ import {
   SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
@@ -229,12 +230,14 @@ function RunningSession() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
+        )
+      ).default,
     },
   }
 }

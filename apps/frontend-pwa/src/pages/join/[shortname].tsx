@@ -5,7 +5,7 @@ import { GetRunningSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { Button } from '@uzh-bf/design-system'
-import { GetServerSideProps } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import Link from 'next/link'
 import Layout from '../../components/Layout'
 
@@ -57,7 +57,7 @@ function Join({ isInactive, shortname }: Props) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.shortname !== 'string') {
     return {
       redirect: {
@@ -113,9 +113,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       shortname: ctx.params.shortname,
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`
+        )
+      ).default,
     },
   })
 }

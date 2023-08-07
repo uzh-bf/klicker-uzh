@@ -4,6 +4,7 @@ import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Layout from '../../components/Layout'
@@ -72,12 +73,14 @@ function CourseSelectionPage() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
+        )
+      ).default,
     },
   }
 }

@@ -18,6 +18,7 @@ import {
 import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import CourseElement from '../components/CourseElement'
@@ -293,12 +294,14 @@ const Index = function () {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
+        )
+      ).default,
     },
   }
 }

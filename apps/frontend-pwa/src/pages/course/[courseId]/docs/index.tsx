@@ -1,7 +1,7 @@
 import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { GetServerSideProps } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import dynamic from 'next/dynamic'
 import DocsLayout from '../../../../components/docs/DocsLayout'
 
@@ -37,7 +37,7 @@ In dieser Dokumentation finden Sie die wichtigsten Informationen zum KlickerUZH 
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
@@ -91,9 +91,11 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       courseId: ctx.params.courseId,
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`
+        )
+      ).default,
     },
   })
 }

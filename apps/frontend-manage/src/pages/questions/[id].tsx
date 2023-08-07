@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetSingleQuestionDocument } from '@klicker-uzh/graphql/dist/ops'
 import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
+import { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 
 function QuestionDetails() {
@@ -35,12 +36,14 @@ function QuestionDetails() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
+        )
+      ).default,
     },
   }
 }

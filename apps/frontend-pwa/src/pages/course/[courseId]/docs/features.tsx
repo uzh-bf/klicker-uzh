@@ -1,4 +1,5 @@
 import { Markdown } from '@klicker-uzh/markdown'
+import { GetServerSidePropsContext } from 'next'
 import DocsLayout from '../../../../components/docs/DocsLayout'
 
 function Features() {
@@ -56,12 +57,16 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
   )
 }
 
-export function getServerSideProps({ locale }: any) {
+export async function getServerSideProps({
+  locale,
+}: GetServerSidePropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
+        )
+      ).default,
     },
   }
 }

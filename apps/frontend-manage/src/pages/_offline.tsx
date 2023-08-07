@@ -1,12 +1,15 @@
 import { fallback } from '@klicker-uzh/shared-components/src/OfflineFallback'
+import { GetStaticPropsContext } from 'next'
 import Layout from '../components/Layout'
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
+        )
+      ).default,
     },
   }
 }

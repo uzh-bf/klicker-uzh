@@ -168,12 +168,14 @@ function EvaluationDisplay({
   }
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: any) {
   return {
     props: {
-      messages: {
-        ...require(`@klicker-uzh/shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (
+        await import(
+          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
+        )
+      ).default,
     },
   }
 }

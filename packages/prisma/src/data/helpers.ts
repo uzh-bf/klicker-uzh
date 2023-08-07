@@ -1,6 +1,6 @@
-import Prisma from '../../dist'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
+import Prisma from '../../dist'
 import {
   QuestionInstanceType,
   QuestionStackType,

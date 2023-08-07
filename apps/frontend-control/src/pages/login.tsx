@@ -3,6 +3,7 @@ import { LoginUserTokenDocument } from '@klicker-uzh/graphql/dist/ops'
 import LoginForm from '@klicker-uzh/shared-components/src/LoginForm'
 import { Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Router from 'next/router'
 import { useState } from 'react'
@@ -75,7 +76,7 @@ function Login() {
   )
 }
 
-export async function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
       messages: (
