@@ -1,10 +1,26 @@
 import { UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
+import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context'
+
+const COOKIE_SETTINGS: CookieOptions = {
+  domain: process.env.COOKIE_DOMAIN,
+  path: '/',
+  httpOnly: true,
+  maxAge: 1000 * 60 * 60 * 24 * 13,
+  secure:
+    process.env.NODE_ENV === 'production' &&
+    process.env.COOKIE_DOMAIN !== '127.0.0.1',
+  sameSite:
+    process.env.NODE_ENV === 'development' ||
+    process.env.COOKIE_DOMAIN === '127.0.0.1'
+      ? 'lax'
+      : 'none',
+}
 
 interface LoginUserArgs {
   email: string
@@ -48,20 +64,9 @@ export async function loginUser(
     }
   )
 
-  ctx.res.cookie('user_token', jwt, {
-    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
-    path: '/',
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 13,
-    secure:
-      process.env.NODE_ENV === 'production' &&
-      process.env.COOKIE_DOMAIN !== '127.0.0.1',
-    sameSite:
-      process.env.NODE_ENV === 'development' ||
-      process.env.COOKIE_DOMAIN === '127.0.0.1'
-        ? 'lax'
-        : 'none',
-  })
+  ctx.res.cookie('user_token', jwt, COOKIE_SETTINGS)
+
+  ctx.res.cookie('NEXT_LOCALE', user.locale, COOKIE_SETTINGS)
 
   return user.id
 }
@@ -111,37 +116,19 @@ export async function loginUserToken(
   )
 
   ctx.res.cookie('user_token', jwt, {
-    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
-    path: '/',
-    httpOnly: true,
+    ...COOKIE_SETTINGS,
     maxAge: 1000 * 60 * 60 * 24 * 27,
-    secure:
-      process.env.NODE_ENV === 'production' &&
-      process.env.COOKIE_DOMAIN !== '127.0.0.1',
-    sameSite:
-      process.env.NODE_ENV === 'development' ||
-      process.env.COOKIE_DOMAIN === '127.0.0.1'
-        ? 'lax'
-        : 'none',
   })
+
+  ctx.res.cookie('NEXT_LOCALE', user.locale, COOKIE_SETTINGS)
 
   return user.id
 }
 
 export async function logoutUser(_: any, ctx: ContextWithUser) {
   ctx.res.cookie('user_token', 'logoutString', {
-    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
-    path: '/',
-    httpOnly: true,
+    ...COOKIE_SETTINGS,
     maxAge: 0,
-    secure:
-      process.env.NODE_ENV === 'production' &&
-      process.env.COOKIE_DOMAIN !== '127.0.0.1',
-    sameSite:
-      process.env.NODE_ENV === 'development' ||
-      process.env.COOKIE_DOMAIN === '127.0.0.1'
-        ? 'lax'
-        : 'none',
   })
 
   return ctx.user.sub
@@ -196,20 +183,9 @@ export async function loginParticipant(
 
   const jwt = createParticipantToken(participant.id)
 
-  ctx.res.cookie('participant_token', jwt, {
-    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
-    path: '/',
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 13,
-    secure:
-      process.env.NODE_ENV === 'production' &&
-      process.env.COOKIE_DOMAIN !== '127.0.0.1',
-    sameSite:
-      process.env.NODE_ENV === 'development' ||
-      process.env.COOKIE_DOMAIN === '127.0.0.1'
-        ? 'lax'
-        : 'none',
-  })
+  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+
+  ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
 
   // TODO: return more data (e.g. Avatar etc.)
   return participant.id
@@ -217,18 +193,8 @@ export async function loginParticipant(
 
 export async function logoutParticipant(_: any, ctx: ContextWithUser) {
   ctx.res.cookie('participant_token', 'logoutString', {
-    domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
-    path: '/',
-    httpOnly: true,
+    ...COOKIE_SETTINGS,
     maxAge: 0,
-    secure:
-      process.env.NODE_ENV === 'production' &&
-      process.env.COOKIE_DOMAIN !== '127.0.0.1',
-    sameSite:
-      process.env.NODE_ENV === 'development' ||
-      process.env.COOKIE_DOMAIN === '127.0.0.1'
-        ? 'lax'
-        : 'none',
   })
 
   return ctx.user.sub
