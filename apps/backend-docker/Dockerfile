@@ -3,7 +3,7 @@ FROM docker.io/library/node:18-alpine AS base
 ARG NODE_ENV production
 ENV NODE_ENV $NODE_ENV
 
-FROM base AS builder
+FROM base AS deps
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
@@ -16,7 +16,7 @@ COPY . .
 RUN turbo prune --scope=@klicker-uzh/backend-docker --docker
 
 
-FROM base AS installer
+FROM base AS builder
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
@@ -24,14 +24,14 @@ RUN apk update
 
 RUN npm i -g pnpm@8.6.12 turbo@1.10.12
 
-COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/pnpm* .
+COPY --from=deps /app/out/json/ .
+COPY --from=deps /app/out/pnpm* .
 
 RUN pnpm i --frozen-lockfile
 
 ARG NODE_ENV="production"
 
-COPY --from=builder /app/out/full/ .
+COPY --from=deps /app/out/full/ .
 RUN pnpm run build --filter=@klicker-uzh/backend-docker
 
 
@@ -43,10 +43,10 @@ RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/apps/backend-docker/dist ./dist
 
 ARG NODE_ENV="production"
 
 EXPOSE 3000
 
-CMD node apps/backend-docker/dist/index.js
+CMD node /app/dist/index.js
