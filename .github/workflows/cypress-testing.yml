@@ -253,7 +253,7 @@ jobs:
         run: |
           cd packages/prisma
           pnpm run build
-          pnpm run prisma:reset:raw -- -f
+          pnpm run prisma:reset:raw -f
           pnpm run seed:test
         env:
           DATABASE_URL: postgres://klicker:klicker@localhost:5432/main
