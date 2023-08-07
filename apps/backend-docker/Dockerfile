@@ -35,18 +35,18 @@ COPY --from=deps /app/out/full/ .
 RUN pnpm run build --filter=@klicker-uzh/backend-docker
 
 
-FROM base AS runner
-WORKDIR /app
+# FROM base AS runner
+# WORKDIR /app
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodejs
-USER nodejs
+# RUN addgroup --system --gid 1001 nodejs
+# RUN adduser --system --uid 1001 nodejs
+# USER nodejs
 
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/apps/backend-docker/dist ./dist
+# COPY --from=builder /app/node_modules ./node_modules
+# COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 
-ARG NODE_ENV="production"
+# ARG NODE_ENV="production"
 
-EXPOSE 3000
+# EXPOSE 3000
 
-CMD node /app/dist/index.js
+# CMD node /app/dist/index.js
