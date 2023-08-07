@@ -39,13 +39,13 @@ describe('Different learning element workflows', () => {
 
         // step 2
         cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)');
-        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Doppelt (2x)').parent().click();
-        cy.get('[data-cy="select-multiplier"]').contains('Doppelt (2x)');
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Simple (1x)');
+        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Double (2x)').parent().click();
+        cy.get('[data-cy="select-multiplier"]').contains('Double (2x)');
         cy.get('[data-cy="insert-reset-time-days"]').clear().type('4');
-        cy.get('[data-cy="select-order"]').should('exist').contains('Sequenziell');
-        cy.get('[data-cy="select-order"]').click().siblings().eq(0).findByText('Zufällig').parent().click();
-        cy.get('[data-cy="select-order"]').contains('Zufällig');
+        cy.get('[data-cy="select-order"]').should('exist').contains('Sequential');
+        cy.get('[data-cy="select-order"]').click().siblings().eq(0).findByText('Random').parent().click();
+        cy.get('[data-cy="select-order"]').contains('Random');
         cy.get('[data-cy="next-or-submit"]').click()
 
         // step 3

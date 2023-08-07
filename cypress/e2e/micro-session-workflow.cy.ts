@@ -43,9 +43,9 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
         cy.get('[data-cy="select-start-date"]').click().type("2023-01-01T18:00");
         cy.get('[data-cy="select-end-date"]').click().type("2023-12-31T18:00");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)');
-        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Doppelt (2x)').parent().click();
-        cy.get('[data-cy="select-multiplier"]').contains('Doppelt (2x)');
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Simple (1x)');
+        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Double (2x)').parent().click();
+        cy.get('[data-cy="select-multiplier"]').contains('Double (2x)');
         cy.get('[data-cy="next-or-submit"]').click()
 
         // step 3
@@ -130,9 +130,9 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
         cy.get('[data-cy="select-start-date"]').click().type("2024-01-01T18:00");
         cy.get('[data-cy="select-end-date"]').click().type("2024-12-31T18:00");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)');
-        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Doppelt (2x)').parent().click();
-        cy.get('[data-cy="select-multiplier"]').contains('Doppelt (2x)');
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Simple (1x)');
+        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Double (2x)').parent().click();
+        cy.get('[data-cy="select-multiplier"]').contains('Double (2x)');
         cy.get('[data-cy="next-or-submit"]').click()
 
         // step 3
@@ -196,9 +196,9 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
         cy.get('[data-cy="select-start-date"]').click().type("2021-01-01T18:00");
         cy.get('[data-cy="select-end-date"]').click().type("2021-12-31T18:00");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)');
-        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Doppelt (2x)').parent().click();
-        cy.get('[data-cy="select-multiplier"]').contains('Doppelt (2x)');
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Simple (1x)');
+        cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Double (2x)').parent().click();
+        cy.get('[data-cy="select-multiplier"]').contains('Double (2x)');
         cy.get('[data-cy="next-or-submit"]').click()
 
         // step 3
