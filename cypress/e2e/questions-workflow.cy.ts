@@ -136,7 +136,7 @@ describe('Create questions', () => {
 
     // duplicate question and save
     cy.get(`[data-cy="duplicate-question-${questionTitle}"]`).click();
-    cy.findByText("Frage duplizieren").should('exist');
+    cy.findByText(messages.manage.questionForms.DUPLICATETitle).should('exist');
     cy.get('[data-cy="save-new-question"]').click({force: true});
 
     // check if duplicated question exists alongside original question
