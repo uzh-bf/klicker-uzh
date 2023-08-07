@@ -25,12 +25,12 @@ describe('Different learning element workflows', () => {
         cy.get('[data-cy="add-new-answer"]').click({force: true});
         cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%');
         cy.get('[data-cy="save-new-question"]').click({force: true});
-        
+
         // create learning element
         cy.get('[data-cy="create-learning-element"]').click();
         cy.get('[data-cy="cancel-session-creation"]').click();
         cy.get('[data-cy="create-learning-element"]').click();
-            
+
         // step 1
         cy.get('[data-cy="insert-learning-element-name"]').click().type(learningElementName);
         cy.get('[data-cy="insert-learning-element-display-name"]').click().type(learningElementDisplayName);
@@ -39,11 +39,11 @@ describe('Different learning element workflows', () => {
 
         // step 2
         cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)'); 
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)');
         cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Doppelt (2x)').parent().click();
-        cy.get('[data-cy="select-multiplier"]').contains('Doppelt (2x)'); 
+        cy.get('[data-cy="select-multiplier"]').contains('Doppelt (2x)');
         cy.get('[data-cy="insert-reset-time-days"]').clear().type('4');
-        cy.get('[data-cy="select-order"]').should('exist').contains('Sequenziell'); 
+        cy.get('[data-cy="select-order"]').should('exist').contains('Sequenziell');
         cy.get('[data-cy="select-order"]').click().siblings().eq(0).findByText('Zufällig').parent().click();
         cy.get('[data-cy="select-order"]').contains('Zufällig');
         cy.get('[data-cy="next-or-submit"]').click()
@@ -62,12 +62,12 @@ describe('Different learning element workflows', () => {
 
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="learning-element"]').contains(learningElementName);
-        cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').contains('Entwurf');
+        cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').contains('Draft');
 
         // publish learning element
         cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').find('[data-cy="publish-learning-element"]').click();
         cy.get('[data-cy="verify-publish-action"]').click()
-        cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').contains('Öffentlich');
+        cy.findByText(learningElementName).parentsUntil('[data-cy="learning-element"]').contains('Published');
 
         // sign in as student and answer learning element
         cy.clearAllCookies();

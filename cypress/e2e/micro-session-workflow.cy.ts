@@ -16,7 +16,7 @@ describe('Different micro-session workflows', () => {
         const microSessionName = 'Test Micro-Session ' + randomNumber;
         const microSessionDisplayName = 'Displayed Name ' + randomNumber;
         const description = 'This is the official descriptioin of ' + randomNumber
-    
+
         // set up question
         cy.get('[data-cy="create-question"]').click();
         cy.get('[data-cy="insert-question-title"]').click().type(questionTitle);
@@ -27,7 +27,7 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="add-new-answer"]').click({force: true});
         cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%');
         cy.get('[data-cy="save-new-question"]').click({force: true});
-        // 
+        //
         // create a micro-session
         cy.get('[data-cy="create-micro-session"]').click();
         cy.get('[data-cy="cancel-session-creation"]').click();
@@ -38,16 +38,16 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="insert-micro-session-display-name"]').click().type(microSessionDisplayName);
         cy.get('[data-cy="insert-micro-session-description"]').click().type(description)
         cy.get('[data-cy="next-or-submit"]').click();
-    
+
         // step 2
-        cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs"); 
+        cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
         cy.get('[data-cy="select-start-date"]').click().type("2023-01-01T18:00");
         cy.get('[data-cy="select-end-date"]').click().type("2023-12-31T18:00");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)'); 
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)');
         cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Doppelt (2x)').parent().click();
         cy.get('[data-cy="select-multiplier"]').contains('Doppelt (2x)');
         cy.get('[data-cy="next-or-submit"]').click()
-    
+
         // step 3
         for (let i = 0; i < 2; i++) {
           const dataTransfer = new DataTransfer();
@@ -59,15 +59,15 @@ describe('Different micro-session workflows', () => {
           });
         }
         cy.get('[data-cy="next-or-submit"]').click();
-    
+
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="micro-session"]').contains(microSessionName);
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Entwurf');
-    
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Draft');
+
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
         cy.get('[data-cy="verify-publish-action"]').click()
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Öffentlich');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
 
         // sign in as student on a laptop and respond to one question
         cy.clearAllCookies();
@@ -105,7 +105,7 @@ describe('Different micro-session workflows', () => {
         const microSessionName = 'Test Micro-Session ' + randomNumber;
         const microSessionDisplayName = 'Displayed Name ' + randomNumber;
         const description = 'This is the official descriptioin of ' + randomNumber
-    
+
         // set up question
         cy.get('[data-cy="create-question"]').click();
         cy.get('[data-cy="insert-question-title"]').click().type(questionTitle);
@@ -116,25 +116,25 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="add-new-answer"]').click({force: true});
         cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%');
         cy.get('[data-cy="save-new-question"]').click({force: true});
-         
+
         // create a micro-session
         cy.get('[data-cy="create-micro-session"]').click();
-         
+
         // step 1
         cy.get('[data-cy="insert-micro-session-name"]').click().type(microSessionName);
         cy.get('[data-cy="insert-micro-session-display-name"]').click().type(microSessionDisplayName);
         cy.get('[data-cy="insert-micro-session-description"]').click().type(description)
         cy.get('[data-cy="next-or-submit"]').click();
-    
+
         // step 2
-        cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs"); 
+        cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
         cy.get('[data-cy="select-start-date"]').click().type("2024-01-01T18:00");
         cy.get('[data-cy="select-end-date"]').click().type("2024-12-31T18:00");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)'); 
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)');
         cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Doppelt (2x)').parent().click();
         cy.get('[data-cy="select-multiplier"]').contains('Doppelt (2x)');
         cy.get('[data-cy="next-or-submit"]').click()
-    
+
         // step 3
         const dataTransfer = new DataTransfer();
         cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
@@ -144,15 +144,15 @@ describe('Different micro-session workflows', () => {
           dataTransfer
         });
         cy.get('[data-cy="next-or-submit"]').click();
-    
+
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="micro-session"]').contains(microSessionName);
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Entwurf');
-    
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Draft');
+
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
         cy.get('[data-cy="verify-publish-action"]').click()
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Öffentlich');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
 
         // sign in as student
         cy.clearAllCookies();
@@ -171,7 +171,7 @@ describe('Different micro-session workflows', () => {
         const microSessionName = 'Test Micro-Session ' + randomNumber;
         const microSessionDisplayName = 'Displayed Name ' + randomNumber;
         const description = 'This is the official descriptioin of ' + randomNumber
-    
+
         // set up question
         cy.get('[data-cy="create-question"]').click();
         cy.get('[data-cy="insert-question-title"]').click().type(questionTitle);
@@ -182,25 +182,25 @@ describe('Different micro-session workflows', () => {
         cy.get('[data-cy="add-new-answer"]').click({force: true});
         cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%');
         cy.get('[data-cy="save-new-question"]').click({force: true});
-         
+
         // create a micro-session
         cy.get('[data-cy="create-micro-session"]').click();
-         
+
         // step 1
         cy.get('[data-cy="insert-micro-session-name"]').click().type(microSessionName);
         cy.get('[data-cy="insert-micro-session-display-name"]').click().type(microSessionDisplayName);
         cy.get('[data-cy="insert-micro-session-description"]').click().type(description)
         cy.get('[data-cy="next-or-submit"]').click();
-    
+
         // step 2
-        cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs"); 
+        cy.get('[data-cy="select-course"]').should('exist').contains("Testkurs");
         cy.get('[data-cy="select-start-date"]').click().type("2021-01-01T18:00");
         cy.get('[data-cy="select-end-date"]').click().type("2021-12-31T18:00");
-        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)'); 
+        cy.get('[data-cy="select-multiplier"]').should('exist').contains('Einfach (1x)');
         cy.get('[data-cy="select-multiplier"]').click().siblings().eq(0).findByText('Doppelt (2x)').parent().click();
         cy.get('[data-cy="select-multiplier"]').contains('Doppelt (2x)');
         cy.get('[data-cy="next-or-submit"]').click()
-    
+
         // step 3
         const dataTransfer = new DataTransfer();
         cy.get('[data-cy="question-block"]').contains(questionTitle).trigger('dragstart', {
@@ -210,15 +210,15 @@ describe('Different micro-session workflows', () => {
           dataTransfer
         });
         cy.get('[data-cy="next-or-submit"]').click();
-    
+
         cy.get('[data-cy="load-session-list"]').click();
         cy.get('[data-cy="micro-session"]').contains(microSessionName);
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Entwurf');
-    
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Draft');
+
         // publish a micro-session
         cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').siblings().children().get('[data-cy="publish-micro-session"]').contains('Micro-Session veröffentlichen').click();
         cy.get('[data-cy="verify-publish-action"]').click()
-        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Öffentlich');
+        cy.findByText(microSessionName).parentsUntil('[data-cy="micro-session"]').contains('Published');
 
         // sign in as student
         cy.clearAllCookies();
