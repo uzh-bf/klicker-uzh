@@ -185,15 +185,9 @@ describe('Different live-session workflows', () => {
       cy.findByText('25%').click()
       cy.get('[data-cy="student-submit-answer"]').click()
       cy.wait(500)
-      cy.viewport('macbook-16')
 
-      cy.clearAllCookies()
-      cy.visit(Cypress.env('URL_MANAGE'))
-      cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'))
-      cy.get('[data-cy="password-field"]').type(
-        Cypress.env('LECTURER_PASSWORD')
-      )
-      cy.get('[data-cy="submit-login"]').click()
+      performLecturerLogin(cy)
+
       cy.get('[data-cy="sessions"]').click()
       cy.findByText(sessionTitle)
         .parentsUntil('[data-cy="session"]')
@@ -231,15 +225,9 @@ describe('Different live-session workflows', () => {
       cy.findByText('25%').click()
       cy.get('[data-cy="student-submit-answer"]').click()
       cy.wait(500)
-      cy.viewport('macbook-16')
 
-      cy.clearAllCookies()
-      cy.visit(Cypress.env('URL_MANAGE'))
-      cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'))
-      cy.get('[data-cy="password-field"]').type(
-        Cypress.env('LECTURER_PASSWORD')
-      )
-      cy.get('[data-cy="submit-login"]').click()
+      performLecturerLogin(cy)
+
       cy.get('[data-cy="sessions"]').click()
       cy.findByText(sessionTitle)
         .parentsUntil('[data-cy="session"]')
