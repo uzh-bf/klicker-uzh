@@ -1,5 +1,5 @@
 import { performLecturerLogin } from './login-workflow.cy'
-import * as messages from '../../../packages/shared-components/src/intl-messages/en.json'
+import * as messages from '../../../packages/i18n/messages/en.json'
 
 describe('Create questions', () => {
   beforeEach(() => {
