@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../../../components/Layout'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
@@ -153,12 +154,11 @@ function Cockpit() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

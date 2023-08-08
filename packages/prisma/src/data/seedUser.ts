@@ -1,4 +1,4 @@
-import Prisma from '@klicker-uzh/prisma'
+import Prisma from '../../dist'
 import { prepareCourse, prepareUser } from './helpers'
 
 async function seedUser(prisma: Prisma.PrismaClient) {

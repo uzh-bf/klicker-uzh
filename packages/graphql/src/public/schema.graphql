@@ -838,7 +838,6 @@ type Title {
 type User {
   email: String!
   id: ID!
-  isActive: Boolean!
   locale: String!
   loginToken: String
   loginTokenExpiresAt: Date

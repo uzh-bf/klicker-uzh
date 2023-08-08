@@ -1,5 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { CreateCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import ContentInput from '@klicker-uzh/shared-components/src/ContentInput'
 import {
   Button,
   FormikColorPicker,
@@ -13,7 +14,6 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import ContentInput from 'shared-components/src/ContentInput'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'

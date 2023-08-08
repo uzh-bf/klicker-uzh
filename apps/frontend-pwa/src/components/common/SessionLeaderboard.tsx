@@ -3,12 +3,12 @@ import {
   GetSessionLeaderboardDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { ParticipantOther } from '@klicker-uzh/shared-components/src/Participant'
+import { Podium } from '@klicker-uzh/shared-components/src/Podium'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
-import { ParticipantOther } from 'shared-components/src/Participant'
-import { Podium } from 'shared-components/src/Podium'
 import { twMerge } from 'tailwind-merge'
 
 import Rank1Img from '../../../public/rank1.svg'

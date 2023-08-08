@@ -2,17 +2,17 @@ name: Build Docker image for backend-docker
 
 on:
   push:
-    tags: [ 'v*.*.*' ]
+    tags: ['v*.*.*']
     branches:
-      - "v3"
+      - 'v3'
     paths:
-      - "apps/backend-docker/**"
-      - ".github/workflows/v3_backend-docker**"
+      - 'apps/backend-docker/**'
+      - '.github/workflows/v3_backend-docker**'
   pull_request:
     # branches: [ "v3" ]
     paths:
-      - "apps/backend-docker/**"
-      - ".github/workflows/v3_backend-docker**"
+      - 'apps/backend-docker/**'
+      - '.github/workflows/v3_backend-docker**'
 
 env:
   REGISTRY: ghcr.io
@@ -51,7 +51,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: apps/backend-docker
+          context: .
           file: apps/backend-docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}

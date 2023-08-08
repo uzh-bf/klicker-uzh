@@ -7,9 +7,10 @@ export default defineConfig({
     URL_MANAGE: 'http://127.0.0.1:3002',
     URL_CONTROL: 'http://127.0.0.1:3003',
     LECTURER_EMAIL: 'lecturer@bf.uzh.ch',
+    LECTURER_IDENTIFIER: 'lecturer',
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
-    STUDENT_PASSWORD: 'testing',
+    STUDENT_PASSWORD: 'abcd',
 
     codeCoverage: {
       expectBackendCoverageOnly: true,

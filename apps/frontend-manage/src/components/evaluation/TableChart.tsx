@@ -8,10 +8,10 @@ import {
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { Button, Table } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useMemo, useRef } from 'react'
-import { QUESTION_GROUPS } from 'shared-components/src/constants'
 
 type RowType = {
   count: number

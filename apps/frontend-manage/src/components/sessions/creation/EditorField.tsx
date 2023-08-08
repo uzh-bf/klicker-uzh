@@ -1,7 +1,7 @@
+import ContentInput from '@klicker-uzh/shared-components/src/ContentInput'
 import { Label } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import ContentInput from 'shared-components/src/ContentInput'
 import { twMerge } from 'tailwind-merge'
 
 interface EditorFieldProps {

@@ -2,10 +2,10 @@ name: Build Docker image for frontend-control (Production)
 
 on:
   push:
-    tags: [ 'v*.*.*' ]
+    tags: ['v*.*.*']
     paths:
-      - "apps/frontend-control/**"
-      - ".github/workflows/v3_frontend-control**"
+      - 'apps/frontend-control/**'
+      - '.github/workflows/v3_frontend-control**'
 
 env:
   REGISTRY: ghcr.io
@@ -20,11 +20,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Replace .env.production with .env.qa
-        shell: bash
-        run: |
-          cp -R packages/shared-components apps/frontend-control/shared-components
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -48,7 +43,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: apps/frontend-control
+          context: .
           file: apps/frontend-control/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}

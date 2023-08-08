@@ -1,6 +1,6 @@
 import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import { ACTIVE_CHART_TYPES } from '@klicker-uzh/shared-components/src/constants'
 import { useEffect } from 'react'
-import { ACTIVE_CHART_TYPES } from 'shared-components/src/constants'
 
 interface useEvaluationInitializationProps {
   selectedInstanceIndex: number

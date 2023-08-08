@@ -10,6 +10,7 @@ import Head from 'next/head'
 import { useMemo } from 'react'
 import ConfusionCharts from '../../../components/interaction/confusion/ConfusionCharts'
 
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
@@ -149,12 +150,11 @@ function LecturerView() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

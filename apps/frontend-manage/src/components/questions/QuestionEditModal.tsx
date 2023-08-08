@@ -25,6 +25,12 @@ import * as Yup from 'yup'
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
+import ContentInput from '@klicker-uzh/shared-components/src/ContentInput'
+import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
+import {
+  QUESTION_GROUPS,
+  QUESTION_TYPES,
+} from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   FormikSelectField,
@@ -36,12 +42,6 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import ContentInput from 'shared-components/src/ContentInput'
-import StudentQuestion from 'shared-components/src/StudentQuestion'
-import {
-  QUESTION_GROUPS,
-  QUESTION_TYPES,
-} from 'shared-components/src/constants'
 
 enum QuestionEditMode {
   DUPLICATE = 'DUPLICATE',

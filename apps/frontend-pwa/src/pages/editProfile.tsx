@@ -4,6 +4,7 @@ import {
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   FormikSelectField,
@@ -12,12 +13,12 @@ import {
   Toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
 import { useEffect, useState } from 'react'
-import { AVATAR_OPTIONS } from 'shared-components/src/constants'
 import * as yup from 'yup'
 import Layout from '../components/Layout'
 
@@ -252,12 +253,11 @@ function EditProfile() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }
