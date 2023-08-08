@@ -1,5 +1,5 @@
-import { performLecturerLogin } from './login-workflow.cy'
 import * as messages from '../../../packages/i18n/messages/en.json'
+import { performLecturerLogin } from './login-workflow.cy'
 
 describe('Different micro-session workflows', () => {
   beforeEach(() => {
