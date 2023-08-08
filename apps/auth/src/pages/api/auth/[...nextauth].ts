@@ -22,7 +22,7 @@ export async function encode({ token, secret }: JWTEncodeParams) {
 function generateRandomString(length: number) {
   let result = ''
   let characters
-  for (var i = 0; i < length; i++) {
+  for (let i = 0; i < length; i++) {
     if (i === 0 || i === length - 1) {
       characters =
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
