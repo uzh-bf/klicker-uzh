@@ -95,6 +95,10 @@ const config = {
     ],
   ],
   themeConfig: {
+    colorMode: {
+      defaultMode: 'light',
+      disableSwitch: true,
+    },
     metadata: [
       {
         name: 'keywords',

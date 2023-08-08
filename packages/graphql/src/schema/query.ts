@@ -104,7 +104,7 @@ export const Query = builder.queryType({
         nullable: true,
         type: User,
         resolve(_, __, args, ctx) {
-          return AccountService.getLoginToken(args, ctx)
+          return AccountService.getLoginToken(args, ctx) as any
         },
       }),
 
@@ -131,7 +131,7 @@ export const Query = builder.queryType({
         nullable: true,
         type: User,
         resolve(_, __, ___, ctx) {
-          return AccountService.getUserProfile(ctx)
+          return AccountService.getUserProfile(ctx) as any
         },
       }),
 
@@ -317,7 +317,7 @@ export const Query = builder.queryType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.getSingleQuestion(args, ctx)
+          return QuestionService.getSingleQuestion(args, ctx) as any
         },
       }),
 

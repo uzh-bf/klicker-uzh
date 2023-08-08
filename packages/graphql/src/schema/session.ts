@@ -27,7 +27,7 @@ export const BlockInput = builder.inputType('BlockInput', {
   }),
 })
 
-export interface ISession extends DB.Session {
+export interface ISession extends DB.LiveSession {
   numOfBlocks?: number
   numOfQuestions?: number
   activeBlock?: DB.SessionBlock | null

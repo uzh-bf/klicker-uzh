@@ -1,9 +1,10 @@
 import { useQuery } from '@apollo/client'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import Footer from '@klicker-uzh/shared-components/src/Footer'
+import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
-import Footer from 'shared-components/src/Footer'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
 
@@ -23,6 +24,7 @@ function Layout({
   className,
   data,
 }: LayoutProps) {
+  const t = useTranslations()
   const router = useRouter()
 
   const {
@@ -35,7 +37,7 @@ function Layout({
     router.push('/login')
   }
   if (!dataUser) {
-    return <div>Loading...</div>
+    return <div>{t('shared.generic.loading')}</div>
   }
 
   return (

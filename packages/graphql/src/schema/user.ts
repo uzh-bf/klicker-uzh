@@ -5,8 +5,7 @@ export const User = builder.prismaObject('User', {
     id: t.exposeID('id'),
     email: t.exposeString('email'),
     shortname: t.exposeString('shortname'),
-
-    isActive: t.exposeBoolean('isActive'),
+    locale: t.exposeString('locale'),
 
     loginToken: t.exposeString('loginToken', { nullable: true }),
     loginTokenExpiresAt: t.expose('loginTokenExpiresAt', {

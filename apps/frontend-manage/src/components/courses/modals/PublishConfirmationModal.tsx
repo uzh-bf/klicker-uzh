@@ -4,6 +4,7 @@ import {
   PublishMicroSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 
 const LABELS = {
   LEARNING_ELEMENT: 'Lernelement',
@@ -24,6 +25,7 @@ function PublishConfirmationModal({
   open,
   setOpen,
 }: PublishConfirmationModalProps) {
+  const t = useTranslations()
   const [publishLearningElement] = useMutation(PublishLearningElementDocument, {
     variables: {
       id: elementId,
@@ -52,11 +54,13 @@ function PublishConfirmationModal({
           }}
           data={{ cy: 'verify-publish-action' }}
         >
-          Bestätigen
+          {t('shared.generic.confirm')}
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={(): void => setOpen(false)}>Abbrechen</Button>
+        <Button onClick={(): void => setOpen(false)}>
+          {t('shared.generic.cancel')}
+        </Button>
       }
       onClose={(): void => setOpen(false)}
       open={open}
@@ -64,21 +68,15 @@ function PublishConfirmationModal({
       className={{ content: 'w-[40rem] h-max self-center pt-0' }}
     >
       <div>
-        <H2>{LABELS[elementType]} publizieren</H2>
-        <div>
-          Sind Sie sich sicher, dass Sie das folgende Element publizieren
-          möchten?
-        </div>
+        <H2>{t('manage.course.publishItem', { name: LABELS[elementType] })}</H2>
+        <div>{t('manage.course.confirmPublishing')}</div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{title}</H3>
         </div>
         <div className="mt-6 mb-2 text-sm italic">
-          Das Publizieren eines Lernelements oder einer Micro-Session macht das
-          Element für alle Teilnehmenden sichtbar. Dieser Prozess kann nicht
-          rückgängig gemacht werden. Änderungen am Inhalt eines Elements können
-          nach dem Publizieren nicht mehr vorgenommen werden.
+          {t('manage.course.publishingHint')}
           {elementType === 'MICRO_SESSION' &&
-            'Micro-Sessions sind ausserdem nur innerhalb des spezifizierten Datumsbereichs sichtbar.'}
+            t('manage.course.microPublishingHint')}
         </div>
       </div>
     </Modal>

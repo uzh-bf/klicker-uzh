@@ -5,6 +5,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 
 interface QuestionBlockProps {
   index: number
@@ -26,13 +27,17 @@ function QuestionBlock({
   remove,
   move,
 }: QuestionBlockProps): React.ReactElement {
+  const t = useTranslations()
+
   return (
     <div
       key={index}
       className="flex flex-col p-2 border border-solid rounded-md w-52"
     >
       <div className="flex flex-row items-center justify-between">
-        <div className="font-bold">Frage {index + 1}</div>
+        <div className="font-bold">{`${t('shared.generic.question')} ${
+          index + 1
+        }`}</div>
         <div className="flex flex-row gap-1 ml-2">
           <Button
             basic

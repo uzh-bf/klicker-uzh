@@ -1,48 +1,60 @@
-# Install dependencies only when needed
-FROM node:18-alpine AS deps
+FROM docker.io/library/node:18-alpine AS base
 
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+
+FROM base AS deps
+WORKDIR /app
+
 RUN apk add --no-cache libc6-compat
+RUN apk update
 
-WORKDIR /app
+RUN npm i -g --ignore-scripts pnpm@8.6.12 turbo@1.10.12
 
-COPY package.json ./
-
-RUN npm install
-
-
-# Rebuild the source code only when needed
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-
-ARG NODE_ENV production
-ENV NODE_ENV $NODE_ENV
-
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN npm run build && npm prune --omit dev
+RUN turbo prune --scope=@klicker-uzh/backend-docker --docker
 
 
-# Production image, copy all the files and run next
-FROM node:18-alpine AS runner
-
+FROM base AS builder
 WORKDIR /app
 
-ARG NODE_ENV production
-ENV NODE_ENV $NODE_ENV
+RUN apk add --no-cache libc6-compat
+RUN apk update
+
+RUN npm i -g --ignore-scripts pnpm@8.6.12 turbo@1.10.12
+
+COPY --from=deps /app/out/json/ .
+COPY --from=deps /app/out/pnpm* .
+
+RUN pnpm i --frozen-lockfile --ignore-scripts
+
+ARG NODE_ENV="production"
+
+COPY --from=deps /app/out/full/ .
+RUN pnpm run build --filter=@klicker-uzh/backend-docker
+
+
+FROM base AS runtime
+WORKDIR /app
+
+ARG NODE_ENV="production"
+
+RUN npm i -g --ignore-scripts pnpm@8.6.12 turbo@1.10.12
+
+COPY --from=deps /app/out/json/ .
+COPY --from=deps /app/out/pnpm* .
+
+RUN pnpm i --frozen-lockfile --prod --ignore-scripts
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
+COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
+COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
+COPY --from=builder /app/apps/backend-docker/dist/ /app/apps/backend-docker/dist/
 
 USER nodejs
 
 EXPOSE 3000
 
-ENV PORT 3000
-
-CMD ["node", "dist/index.js"]
+CMD node /app/apps/backend-docker/dist/index.js

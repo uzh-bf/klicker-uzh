@@ -1,7 +1,7 @@
 module.exports = {
   plugins: {
     'postcss-import': {
-      addModulesDirectories: ['.', 'shared-components'],
+      addModulesDirectories: ['.', '@klicker-uzh/shared-components'],
     },
     tailwindcss: {},
     autoprefixer: {},

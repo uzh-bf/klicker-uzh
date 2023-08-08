@@ -2,9 +2,9 @@ name: Check file formatting and linting
 
 on:
   push:
-    branches: ["v3"]
+    branches: ['v3']
   pull_request:
-    branches: ["v3"]
+    branches: ['v3']
     types: [opened, synchronize, reopened]
 
 env:
@@ -18,28 +18,37 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8.6.12
+          run_install: true
       - name: Check formatting
         shell: bash
         run: |
-          npm ci
-          npm run format:check
+          pnpm run format:check
   lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8.6.12
+          run_install: true
       - name: Check linting
         shell: bash
         run: |
-          npm ci
-          npm run lint
+          pnpm run lint
   check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8.6.12
+          run_install: true
       - name: Check types
         shell: bash
         run: |
-          npm ci
-          npm run check
+          pnpm run check

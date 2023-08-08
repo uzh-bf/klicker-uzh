@@ -30,7 +30,10 @@ function prepareApp({ prisma, redisCache, redisExec }: any) {
           if (req.headers?.['authorization'])
             return req.headers['authorization']?.replace('Bearer ', '')
           if (req.cookies)
-            return req.cookies['user_token'] || req.cookies['participant_token']
+            return (
+              req.cookies['next-auth.session-token'] ||
+              req.cookies['participant_token']
+            )
           return null
         },
         secretOrKey: process.env.APP_SECRET,

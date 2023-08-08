@@ -14,6 +14,7 @@ import durationPlugin from 'dayjs/plugin/duration'
 
 import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
 import { SessionBlock as ISessionBlock } from '@klicker-uzh/graphql/dist/ops'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import CancelSessionModal from './CancelSessionModal'
 import QRPopup from './QRPopup'
@@ -59,22 +60,18 @@ function SessionTimeline({
   handleOpenBlock,
   handleCloseBlock,
 }: Props): React.ReactElement {
+  const t = useTranslations()
   const isFeedbackSession = blocks?.length === 0
 
   const [cancelSessionModal, setCancelSessionModal] = useState(false)
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
 
   // logic: keep track of the current and previous block
-  const [buttonState, setButtonState] = useState('firstBlock')
+  const [buttonState, setButtonState] = useState<
+    'firstBlock' | 'blockActive' | 'nextBlock' | 'endSession'
+  >('firstBlock')
   const [activeBlockId, setActiveBlockId] = useState(-1)
   const [lastActiveBlockId, setLastActiveBlockId] = useState(-1)
-
-  const buttonNames: Record<string, string> = {
-    firstBlock: 'Ersten Block starten',
-    blockActive: 'Block schliessen',
-    nextBlock: 'Nächsten Block starten',
-    endSession: 'Session beenden',
-  }
 
   const startingTime = runtime.includes('d')
     ? dayjs(startedAt).format('DD.MM HH:mm:ss')
@@ -157,7 +154,7 @@ function SessionTimeline({
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
-                <Button.Label>Publikumsansicht</Button.Label>
+                <Button.Label>{t('manage.cockpit.audienceView')}</Button.Label>
               </Button>
             </a>
           </div>
@@ -177,7 +174,9 @@ function SessionTimeline({
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
-                <Button.Label>Auswertung (Resultate)</Button.Label>
+                <Button.Label>
+                  {t('manage.cockpit.evaluationResults')}
+                </Button.Label>
               </Button>
             </Link>
           </div>
@@ -229,7 +228,7 @@ function SessionTimeline({
               onClick={() => setCancelSessionModal(true)}
               className={{ root: 'bg-red-800 text-white' }}
             >
-              Session abbrechen
+              {t('manage.cockpit.abortSession')}
             </Button>
             <Button
               className={{
@@ -257,7 +256,7 @@ function SessionTimeline({
               }}
               data={{ cy: 'interaction-first-block' }}
             >
-              <Button.Label>{buttonNames[buttonState]}</Button.Label>
+              <Button.Label>{t(`manage.cockpit.${buttonState}`)}</Button.Label>
             </Button>
           </div>
           <CancelSessionModal

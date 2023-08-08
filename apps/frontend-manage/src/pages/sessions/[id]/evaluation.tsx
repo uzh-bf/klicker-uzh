@@ -9,16 +9,17 @@ import {
   SessionBlockStatus,
   TabData,
 } from '@klicker-uzh/graphql/dist/ops'
+import Footer from '@klicker-uzh/shared-components/src/Footer'
+import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import {
   Button,
   Switch,
   UserNotification,
   useArrowNavigation,
 } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useReducer, useState } from 'react'
-import Footer from 'shared-components/src/Footer'
-import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationInitialization from '../../../components/hooks/useEvaluationInitialization'
 import EvaluationConfusion from '../../../components/sessions/evaluation/EvaluationConfusion'
@@ -37,6 +38,7 @@ export type EvaluationBlock = Omit<Block, 'tabData'> & {
 
 function Evaluation() {
   const router = useRouter()
+  const t = useTranslations()
 
   const [selectedBlockIndex, setSelectedBlockIndex] = useState<number>(0)
   const [showLeaderboard, setLeaderboard] = useState<boolean>(false)
@@ -167,9 +169,8 @@ function Evaluation() {
     }
   }, [router.query.leaderboard])
 
-  if (error && !data)
-    return <div>An error occurred, please try again later.</div>
-  if (loading || !data) return <div>Loading...</div>
+  if (error && !data) return <div>{t('shared.generic.systemError')}</div>
+  if (loading || !data) return <div>{t('shared.generic.loading')}</div>
 
   if (!currentInstance.id && selectedInstanceIndex !== -1) {
     return (
@@ -178,7 +179,7 @@ function Evaluation() {
           className={{
             root: 'max-w-[80%] lg:max-w-[60%] 2xl:max-w-[50%] text-lg',
           }}
-          message="Die Evaluation zu dieser Frage kann leider (noch) nicht angezeigt werden. Sollten Sie diese Seite irgendwo einbinden wollen, beispielsweise über das PowerPoint-Plugin, wird die Evaluation automatisch nach Starten der Frage angezeigt."
+          message={t('manage.evaluation.evaluationNotYetAvailable')}
         />
       </div>
     )
@@ -241,8 +242,7 @@ function Evaluation() {
                   <UserNotification
                     className={{ message: 'text-lg' }}
                     type="warning"
-                    message="Bisher waren keine Teilnehmenden während dieser Session
-              angemeldet und haben Punkte gesammelt."
+                    message={t('manage.evaluation.noSignedInStudents')}
                   />
                 )}
               </div>
@@ -260,7 +260,7 @@ function Evaluation() {
                   <UserNotification
                     className={{ message: 'text-lg' }}
                     type="warning"
-                    message="Diese Session enthält bisher keine Feedbacks."
+                    message={t('manage.evaluation.noFeedbacksYet')}
                   />
                 )}
               </div>
@@ -278,7 +278,7 @@ function Evaluation() {
                   <UserNotification
                     className={{ message: 'text-lg' }}
                     type="warning"
-                    message="Diese Session enthält bisher keine Confusion Feedbacks."
+                    message={t('manage.evaluation.noConfusionFeedbacksYet')}
                   />
                 )}
               </div>
@@ -300,12 +300,14 @@ function Evaluation() {
             !showLeaderboard && (
               <div className="flex flex-row items-center justify-between px-4 py-2.5 pr-8 m-0">
                 <div className="text-lg" data-cy="session-total-participants">
-                  Total Teilnehmende: {currentInstance.participants}
+                  {t('manage.evaluation.totalParticipants', {
+                    number: currentInstance.participants,
+                  })}
                 </div>
                 <div className="flex flex-row items-center gap-5">
                   <Switch
                     checked={showSolution}
-                    label="Lösung anzeigen"
+                    label={t('manage.evaluation.showSolution')}
                     onCheckedChange={(newValue) => setShowSolution(newValue)}
                   />
                   <div className="flex flex-row items-center gap-2 ml-2">
@@ -330,7 +332,7 @@ function Evaluation() {
                       </Button.Icon>
                     </Button>
                     <FontAwesomeIcon icon={faFont} size="lg" />
-                    Schriftgrösse
+                    {t('manage.evaluation.fontSize')}
                   </div>
                 </div>
               </div>
@@ -341,12 +343,11 @@ function Evaluation() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: any) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
     revalidate: 600,
   }

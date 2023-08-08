@@ -3,6 +3,7 @@
 import { faFilter, faPrint } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Checkbox, Dropdown, Select } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
@@ -52,28 +53,29 @@ function FeedbackSearchAndFilters({
   setSortBy,
   className,
 }: Props) {
+  const t = useTranslations()
   const filter: {
     label: string
     checked: boolean
     onChange: () => void
   }[] = [
     {
-      label: 'Gelöst',
+      label: t('manage.cockpit.filterSolved'),
       checked: showResolved,
       onChange: () => setShowResolved((current: boolean) => !current),
     },
     {
-      label: 'Offen',
+      label: t('manage.cockpit.filterOpen'),
       checked: showOpen,
       onChange: () => setShowOpen((current: boolean) => !current),
     },
     {
-      label: 'Ungepinnt',
+      label: t('manage.cockpit.filterUnpinned'),
       checked: showUnpinned,
       onChange: () => setShowUnpinned((current: boolean) => !current),
     },
     {
-      label: 'Unveröffentlicht',
+      label: t('manage.cockpit.filterUnpublished'),
       checked: showUnpublished,
       onChange: () => setShowUnpublished((current: boolean) => !current),
     },
@@ -93,7 +95,7 @@ function FeedbackSearchAndFilters({
             disabled={disabled?.search}
             value={searchString}
             onChange={(e: any) => setSearchString(e.target.value)}
-            placeholder="Suche..."
+            placeholder={t('manage.general.searchPlaceholder')}
             className={twMerge(
               'py-2 px-1.5 border border-solid rounded-md border-uzh-grey-60 order-1 w-full md:mr-2 md:w-64 md:order-0',
               disabled?.search && 'cursor-not-allowed'
@@ -185,8 +187,8 @@ function FeedbackSearchAndFilters({
             disabled={disabled?.sorting}
             value={sortBy}
             items={[
-              { value: 'votes', label: 'Nach Stimmen sortieren' },
-              { value: 'recency', label: 'Nach Zeitpunkt sortieren' },
+              { value: 'votes', label: t('manage.cockpit.sortByVotes') },
+              { value: 'recency', label: t('manage.cockpit.sortByTime') },
             ]}
             onChange={(newValue: string) => setSortBy(newValue)}
           />

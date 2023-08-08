@@ -10,6 +10,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, NumberField } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { move as RamdaMove } from 'ramda'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
@@ -32,6 +33,7 @@ function SessionCreationBlock({
   move,
   replace,
 }: SessionCreationBlockProps): React.ReactElement {
+  const t = useTranslations()
   const [openSettings, setOpenSettings] = useState(false)
 
   const [{ isOver }, drop] = useDrop(
@@ -60,8 +62,8 @@ function SessionCreationBlock({
   return (
     <div key={index} className="flex flex-col md:w-56">
       <div className="flex flex-row items-center justify-between bg-slate-200 rounded py-1 px-2 text-slate-700">
-        <div className="" data-cy="block-container-header">
-          Block {index + 1}
+        <div data-cy="block-container-header">
+          {t('control.session.blockN', { number: index + 1 })}
         </div>
         <div className="flex flex-row gap-1 text-xs">
           <Button
@@ -226,8 +228,10 @@ function SessionCreationBlock({
       </div>
       <Modal open={openSettings} onClose={() => setOpenSettings(false)}>
         <NumberField
-          label="Zeit-Limit"
-          tooltip={`Zeit-Limit für Block ${index + 1} in Sekunden`}
+          label={t('manage.sessionForms.timeLimit')}
+          tooltip={t('manage.sessionForms.timeLimitTooltip', {
+            blockIx: index + 1,
+          })}
           id={`timeLimits.${index}`}
           value={block.timeLimit || ''}
           onChange={(newValue: string) => {
@@ -236,7 +240,7 @@ function SessionCreationBlock({
               timeLimit: newValue === '' ? undefined : parseInt(newValue),
             })
           }}
-          placeholder={`optionales Zeit-Limit`}
+          placeholder={t('manage.sessionForms.optionalTimeLimit')}
         />
       </Modal>
     </div>

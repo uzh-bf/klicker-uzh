@@ -1,7 +1,4 @@
-import Prisma, { Question } from '@klicker-uzh/prisma'
-// const klickerUZHPrisma = require('@klicker-uzh/prisma')
-// const Prisma = klickerUZHPrisma.Prisma
-// const Question = klickerUZHPrisma.Question
+import Prisma, { Question } from '../../dist'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 import * as DATA_TEST from './data/TEST'
 import {
@@ -39,7 +36,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       id: USER_ID_TEST,
       email: 'lecturer@bf.uzh.ch',
       shortname: 'lecturer',
-      password: process.env.INITIAL_PASSWORD as string,
+      password: 'abcd',
     })
   )
 
@@ -99,7 +96,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   const sessionsTest = await Promise.all(
     DATA_TEST.SESSIONS.map(async (data) =>
-      prisma.session.upsert(
+      prisma.liveSession.upsert(
         await prepareSession({
           ...data,
           blocks: data.blocks.map((block, ix) => ({
@@ -207,7 +204,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       return prisma.participant.upsert(
         await prepareParticipant({
           id,
-          password: 'testing',
+          password: 'abcd',
           username: `testuser${ix + 1}`,
           courseIds: [COURSE_ID_TEST],
         })
@@ -223,7 +220,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       return prisma.participant.upsert(
         await prepareParticipant({
           id,
-          password: 'testing',
+          password: 'abcd',
           username: `testuser${ix + 11}`,
           courseIds: [],
         })

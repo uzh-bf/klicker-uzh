@@ -1,13 +1,9 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions", "fieldReference", "orderByNulls", "extendedWhereUnique"]
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions", "fieldReference", "extendedWhereUnique"]
   output          = "../client"
   binaryTargets   = ["native", "windows", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x"]
 }
-
-// generator erd {
-//   provider = "prisma-erd-generator"
-// }
 
 generator pothos {
   provider     = "prisma-pothos-types"
@@ -29,32 +25,76 @@ enum UserRole {
   ADMIN
 }
 
-enum SSOType {
-  Shibboleth
-  LTI
-}
-
 model Account {
   id String @id @default(uuid()) @db.Uuid
 
-  ssoType SSOType
-  ssoId   String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @db.Uuid
 
-  createdAt DateTime @default(now())
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+
+  sessionToken String   @unique
+  expires      DateTime
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum UserLoginScope {
+  FULL_ACCESS
+  SESSION_EXEC
+  READ_ONLY
+}
+
+model UserLogin {
+  id String @id @default(uuid()) @db.Uuid
+
+  password    String
+  scope       UserLoginScope @default(READ_ONLY)
+  lastLoginAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+}
+
+enum Locale {
+  en
+  de
 }
 
 model User {
   id String @id @default(uuid()) @db.Uuid
 
-  isActive Boolean @default(false)
-  isAAI    Boolean @default(false)
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
 
-  email               String    @unique
   shortname           String    @unique
-  password            String
+  password            String?
   description         String?
   lastLoginAt         DateTime?
   deletionToken       String?
@@ -62,15 +102,19 @@ model User {
   loginToken          String?
   loginTokenExpiresAt DateTime?
 
+  locale Locale @default(en)
+
   role UserRole @default(USER)
 
+  logins            UserLogin[]
+  session           Session[]
   accounts          Account[]
   courses           Course[]
   questions         Question[]
   attachments       Attachment[]
   tags              Tag[]
   questionInstances QuestionInstance[]
-  sessions          Session[]
+  sessions          LiveSession[]
   learningElements  LearningElement[]
   microSessions     MicroSession[]
   groupActivities   GroupActivity[]
@@ -290,7 +334,7 @@ model Course {
   notificationEmail     String?
   isGamificationEnabled Boolean   @default(true)
 
-  sessions          Session[]
+  sessions          LiveSession[]
   learningElements  LearningElement[]
   microSessions     MicroSession[]
   leaderboard       LeaderboardEntry[]
@@ -338,8 +382,8 @@ model LeaderboardEntry {
   sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId Int?
 
-  session   Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String?  @db.Uuid
+  session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionId String?      @db.Uuid
 
   course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   courseId String? @db.Uuid
@@ -372,10 +416,10 @@ model SessionBlock {
   instances   QuestionInstance[]
   leaderboard LeaderboardEntry[]
 
-  activeInSession Session[] @relation(name: "ActiveSessionBlock")
+  activeInSession LiveSession[] @relation(name: "ActiveSessionBlock")
 
-  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String  @db.Uuid
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionId String      @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -395,7 +439,7 @@ enum AccessMode {
   RESTRICTED
 }
 
-model Session {
+model LiveSession {
   id String @id @default(uuid()) @db.Uuid
 
   isLiveQAEnabled            Boolean @default(false)
@@ -642,8 +686,8 @@ model Feedback {
 
   resolvedAt DateTime?
 
-  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String  @db.Uuid
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionId String      @db.Uuid
 
   participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String?      @db.Uuid
@@ -672,26 +716,22 @@ model ConfusionTimestep {
   difficulty Int
   speed      Int
 
-  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String  @db.Uuid
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionId String      @db.Uuid
 
   createdAt DateTime @default(now())
 }
 
 // ----- PARTICIPANTS -----
-
 model ParticipantAccount {
   id String @id @default(uuid()) @db.Uuid
 
-  ssoType SSOType
-  ssoId   String
+  ssoId String @unique
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
   createdAt DateTime @default(now())
-
-  @@unique([ssoType, ssoId])
 }
 
 model Participant {
@@ -704,6 +744,8 @@ model Participant {
   xp             Int     @default(0)
 
   lastLoginAt DateTime?
+
+  locale Locale @default(en)
 
   participantGroups       ParticipantGroup[]
   accounts                ParticipantAccount[]

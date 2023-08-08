@@ -2,10 +2,10 @@ import {
   InstanceEvaluation,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
+import Histogram from '@klicker-uzh/shared-components/src/Histogram'
 import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import Histogram from 'shared-components/src/Histogram'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
@@ -168,12 +168,11 @@ function EvaluationDisplay({
   }
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: any) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

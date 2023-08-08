@@ -1,6 +1,11 @@
+import { useMutation } from '@apollo/client'
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Course, Participant } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChangeParticipantLocaleDocument,
+  Course,
+  Participant,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, H2, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -23,6 +28,8 @@ function Header({
   const router = useRouter()
   const { pathname, asPath, query } = router
   const t = useTranslations()
+
+  const [changeParticipantLocale] = useMutation(ChangeParticipantLocaleDocument)
 
   const pageInFrame =
     global?.window &&
@@ -56,11 +63,12 @@ function Header({
               { value: 'de', label: 'DE' },
               { value: 'en', label: 'EN' },
             ]}
-            onChange={(newValue: string) =>
+            onChange={(newValue: string) => {
+              changeParticipantLocale({ variables: { locale: newValue } })
               router.push({ pathname, query }, asPath, {
                 locale: newValue,
               })
-            }
+            }}
             className={{
               trigger:
                 'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',

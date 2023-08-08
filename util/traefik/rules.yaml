@@ -1,0 +1,62 @@
+http:
+  routers:
+    api:
+      rule: "Host(`api.klicker.local`)"
+      entrypoints:
+        - "web"
+      service: "api"
+
+    pwa:
+      rule: "Host(`pwa.klicker.local`)"
+      entrypoints:
+        - "web"
+      service: "pwa"
+
+    manage:
+      rule: "Host(`manage.klicker.local`)"
+      entrypoints:
+        - "web"
+      service: "manage"
+
+    control:
+      rule: "Host(`control.klicker.local`)"
+      entrypoints:
+        - "web"
+      service: "control"
+
+    auth:
+      rule: "Host(`auth.klicker.local`)"
+      entrypoints:
+        - "web"
+      service: "auth"
+
+  services:
+    api:
+      loadBalancer:
+        servers:
+          - url: "http://host.containers.internal:3000"
+          # - url: "http://host.docker.internal:3010"
+
+    pwa:
+      loadBalancer:
+        servers:
+          - url: "http://host.containers.internal:3001"
+          # - url: "http://host.docker.internal:3010"
+
+    manage:
+      loadBalancer:
+        servers:
+          - url: "http://host.containers.internal:3002"
+          # - url: "http://host.docker.internal:3010"
+
+    control:
+      loadBalancer:
+        servers:
+          - url: "http://host.containers.internal:3003"
+          # - url: "http://host.docker.internal:3010"
+
+    auth:
+      loadBalancer:
+        servers:
+          - url: "http://host.containers.internal:3010"
+          # - url: "http://host.docker.internal:3010"
