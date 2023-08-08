@@ -7,8 +7,6 @@ export const User = builder.prismaObject('User', {
     shortname: t.exposeString('shortname'),
     locale: t.exposeString('locale'),
 
-    isActive: t.exposeBoolean('isActive'),
-
     loginToken: t.exposeString('loginToken', { nullable: true }),
     loginTokenExpiresAt: t.expose('loginTokenExpiresAt', {
       type: 'Date',

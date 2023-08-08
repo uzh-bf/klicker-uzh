@@ -1,4 +1,4 @@
-import { MicroSessionStatus, SessionStatus, SSOType } from '@klicker-uzh/prisma'
+import { MicroSessionStatus, SessionStatus } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
 import * as R from 'ramda'
@@ -112,10 +112,7 @@ export async function registerParticipantFromLTI(
   try {
     let participant = await ctx.prisma.participantAccount.findUnique({
       where: {
-        ssoType_ssoId: {
-          ssoType: SSOType.LTI,
-          ssoId: participantId,
-        },
+        ssoId: participantId,
       },
       include: {
         participant: true,
@@ -148,7 +145,6 @@ export async function registerParticipantFromLTI(
 
       participant = await ctx.prisma.participantAccount.create({
         data: {
-          ssoType: SSOType.LTI,
           ssoId: participantId,
           participant: {
             create: {

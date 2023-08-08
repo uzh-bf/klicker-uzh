@@ -39,8 +39,7 @@ export async function loginUser(
     where: { email: normalizedEmail },
   })
 
-  if (!user) return null
-  if (!user.isActive) return null
+  if (!user?.password) return null
 
   const isLoginValid = await bcrypt.compare(password, user.password)
 
@@ -64,7 +63,7 @@ export async function loginUser(
     }
   )
 
-  ctx.res.cookie('user_token', jwt, COOKIE_SETTINGS)
+  ctx.res.cookie('next-auth.session-token', jwt, COOKIE_SETTINGS)
 
   ctx.res.cookie('NEXT_LOCALE', user.locale, COOKIE_SETTINGS)
 
@@ -88,12 +87,15 @@ export async function loginUserToken(
     where: { email: normalizedEmail },
   })
 
+  console.log(user)
+
   if (!user) return null
-  if (!user.isActive) return null
 
   const isLoginValid =
     token === user.loginToken &&
     dayjs(user.loginTokenExpiresAt).isAfter(dayjs())
+
+  console.log(token, user.loginToken, isLoginValid)
 
   if (!isLoginValid) return null
 
@@ -115,7 +117,7 @@ export async function loginUserToken(
     }
   )
 
-  ctx.res.cookie('user_token', jwt, {
+  ctx.res.cookie('next-auth.session-token', jwt, {
     ...COOKIE_SETTINGS,
     maxAge: 1000 * 60 * 60 * 24 * 27,
   })
@@ -126,7 +128,7 @@ export async function loginUserToken(
 }
 
 export async function logoutUser(_: any, ctx: ContextWithUser) {
-  ctx.res.cookie('user_token', 'logoutString', {
+  ctx.res.cookie('next-auth.session-token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
@@ -224,8 +226,9 @@ export async function getLoginToken(_: any, ctx: ContextWithUser) {
   if (
     !user.loginTokenExpiresAt ||
     dayjs(user.loginTokenExpiresAt).isBefore(dayjs())
-  )
+  ) {
     return null
+  }
 
   return user
 }

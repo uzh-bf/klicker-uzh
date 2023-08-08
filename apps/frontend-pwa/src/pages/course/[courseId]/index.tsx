@@ -11,16 +11,16 @@ import {
   LeaveCourseDocument,
   LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { GetServerSideProps } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import Leaderboard from 'shared-components/src/Leaderboard'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
@@ -35,7 +35,11 @@ import Rank3Img from 'public/rank3.svg'
 
 // TODO: replace fields in this component through our own design system components
 
-function CourseOverview({ courseId }: any) {
+interface Props {
+  courseId: string
+}
+
+function CourseOverview({ courseId }: Props) {
   const t = useTranslations()
   const router = useRouter()
   const [selectedTab, setSelectedTab] = useState('global')
@@ -583,7 +587,7 @@ function CourseOverview({ courseId }: any) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
@@ -637,9 +641,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       courseId: ctx.params.courseId,
-      messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+        .default,
     },
   })
 }

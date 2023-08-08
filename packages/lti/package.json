@@ -26,12 +26,18 @@
     }
   ],
   "peerDependencies": {
-    "next": "^13.0.0"
+    "@uzh-bf/design-system": "2.0.7",
+    "next": "13.4.13",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
     "@tsconfig/node18": "^2.0.0",
     "@tsconfig/recommended": "^1.0.2",
+    "@types/node": "^18.17.3",
+    "prettier": "2.8.8",
+    "prettier-plugin-organize-imports": "3.2.2",
     "size-limit": "8.2.4",
     "tsup": "6.7.0",
     "typescript": "5.0.4"

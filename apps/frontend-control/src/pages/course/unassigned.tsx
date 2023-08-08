@@ -1,9 +1,10 @@
 import { useQuery } from '@apollo/client'
 import { GetUnassignedSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import { UserNotification } from '@uzh-bf/design-system'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import { SESSION_STATUS } from 'shared-components/src/constants'
 import Layout from '../../components/Layout'
 import SessionLists from '../../components/sessions/SessionLists'
 
@@ -58,12 +59,11 @@ function UnassignedSessions() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

@@ -9,6 +9,8 @@ import {
   SessionBlockStatus,
   TabData,
 } from '@klicker-uzh/graphql/dist/ops'
+import Footer from '@klicker-uzh/shared-components/src/Footer'
+import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import {
   Button,
   Switch,
@@ -18,8 +20,6 @@ import {
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useReducer, useState } from 'react'
-import Footer from 'shared-components/src/Footer'
-import Leaderboard from 'shared-components/src/Leaderboard'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationInitialization from '../../../components/hooks/useEvaluationInitialization'
 import EvaluationConfusion from '../../../components/sessions/evaluation/EvaluationConfusion'
@@ -343,12 +343,11 @@ function Evaluation() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: any) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
     revalidate: 600,
   }

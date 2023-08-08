@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
-import { GetStaticPaths, GetStaticProps } from 'next'
+import { GetStaticPaths, GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
@@ -103,7 +103,7 @@ function MicroSessionIntroduction({ id }: Props) {
   )
 }
 
-export const getStaticProps: GetStaticProps = async (ctx) => {
+export async function getStaticProps(ctx: GetStaticPropsContext) {
   if (typeof ctx.params?.id !== 'string') {
     return {
       redirect: {
@@ -133,9 +133,8 @@ export const getStaticProps: GetStaticProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
-      messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+        .default,
     },
     revalidate: 60,
   })

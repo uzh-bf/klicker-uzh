@@ -1,4 +1,4 @@
-import Prisma from '@klicker-uzh/prisma'
+import Prisma from '../../../dist'
 import { LearningElementStatus } from '../../client'
 const { AttachmentType, QuestionType, SessionStatus, OrderType } = Prisma
 

@@ -1,4 +1,4 @@
-import Prisma, { Question } from '@klicker-uzh/prisma'
+import Prisma, { Question } from '../../dist'
 import { COURSE_ID_BF2, USER_ID_BF2 } from './constants'
 import * as DATA_BF2 from './data/BF2'
 import { prepareLearningElement } from './helpers'

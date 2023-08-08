@@ -3,6 +3,12 @@ import {
   ChoicesQuestionData,
   InstanceResult,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CHART_COLORS,
+  CHART_SOLUTION_COLORS,
+  QUESTION_GROUPS,
+  SMALL_BAR_THRESHOLD,
+} from '@klicker-uzh/shared-components/src/constants'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import {
@@ -15,12 +21,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import {
-  CHART_COLORS,
-  CHART_SOLUTION_COLORS,
-  QUESTION_GROUPS,
-  SMALL_BAR_THRESHOLD,
-} from 'shared-components/src/constants'
 import { TextSizeType } from '../sessions/evaluation/constants'
 
 interface BarChartProps {

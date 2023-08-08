@@ -7,9 +7,9 @@ import {
   RunningSessionUpdatedDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { GetServerSideProps } from 'next'
+import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
+import { GetServerSidePropsContext } from 'next'
 import { useEffect, useState } from 'react'
-import { QUESTION_GROUPS } from 'shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 
 import { useQuery } from '@apollo/client'
@@ -229,7 +229,7 @@ function Index({ id }: Props) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.id !== 'string') {
     return {
       redirect: {
@@ -259,9 +259,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
-      messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+        .default,
     },
   })
 }

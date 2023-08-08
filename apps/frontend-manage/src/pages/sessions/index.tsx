@@ -2,10 +2,11 @@ import { useQuery } from '@apollo/client'
 import { GetUserSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Session from '../../components/sessions/Session'
 
+import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import { H2 } from '@uzh-bf/design-system'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import { SESSION_STATUS } from 'shared-components/src/constants'
 import Layout from '../../components/Layout'
 
 function SessionList() {
@@ -92,12 +93,11 @@ function SessionList() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

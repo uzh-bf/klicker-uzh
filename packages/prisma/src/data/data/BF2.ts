@@ -1,4 +1,4 @@
-import Prisma from '@klicker-uzh/prisma'
+import Prisma from '../../../dist'
 const { AttachmentType, QuestionType, SessionStatus, OrderType } = Prisma
 
 export const LEARNING_ELEMENTS = [

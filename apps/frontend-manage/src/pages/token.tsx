@@ -5,6 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs, { Dayjs } from 'dayjs'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -102,12 +103,11 @@ function TokenGeneration() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

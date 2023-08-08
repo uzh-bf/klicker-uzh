@@ -1,52 +1,14 @@
-/** @type {import('next').NextConfig} */
+const {
+  getNextBaseConfig,
+  getNextPWAConfig,
+} = require('@klicker-uzh/next-config')
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['shared-components'],
-  i18n: {
-    locales: ['en', 'de'],
-    defaultLocale: 'en',
-  },
-  modularizeImports: {
-    ramda: {
-      transform: 'ramda/es/{{member}}',
-    },
-    lodash: {
-      transform: 'lodash/{{member}}',
-    },
-  },
-  // TODO: disable compression if it is done on the ingress
-  compress: true,
-  output: 'standalone',
-  reactStrictMode: true,
-  swcMinify: true,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  images: {
-    domains: [
-      process.env.S3_HOSTNAME,
-      '127.0.0.1',
-      'upload.wikimedia.org',
-      'tc-klicker-prod.s3.amazonaws.com',
-    ],
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'tc-klicker-prod.s3.amazonaws.com',
-        port: '443',
-        pathname: '/images/**',
-      },
-      {
-        protocol: 'https',
-        hostname: process.env.S3_HOSTNAME,
-        port: '443',
-        pathname: process.env.S3_PATHNAME,
-      },
-    ],
-  },
+  ...getNextBaseConfig({
+    S3_HOSTNAME: process.env.S3_HOSTNAME,
+    S3_PATHNAME: process.env.S3_PATHNAME,
+  }),
   publicRuntimeConfig: {
     API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
@@ -58,12 +20,9 @@ const nextConfig = {
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  const withPWA = require('next-pwa')({
-    dest: 'public',
-    skipWaiting: true,
-    dynamicStartUrlRedirect: true,
-    disable: process.env.NODE_ENV === 'development',
-  })
+  const withPWA = require('next-pwa')(
+    getNextPWAConfig({ NODE_ENV: process.env.NODE_ENV })
+  )
   module.exports = withPWA(nextConfig)
 } else {
   module.exports = nextConfig

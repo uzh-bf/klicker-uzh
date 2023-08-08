@@ -1,4 +1,4 @@
-import Prisma from '@klicker-uzh/prisma'
+import Prisma from '../../dist'
 
 async function seedAchievements(prisma: Prisma.PrismaClient) {
   const pilotAchievement = await prisma.achievement.upsert({

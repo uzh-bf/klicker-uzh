@@ -1,10 +1,10 @@
 import { useQuery } from '@apollo/client'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import Footer from '@klicker-uzh/shared-components/src/Footer'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
-import Footer from 'shared-components/src/Footer'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
 
