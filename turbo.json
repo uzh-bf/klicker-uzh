@@ -9,7 +9,9 @@
       "outputMode": "errors-only"
     },
     "check": {
-      "outputMode": "errors-only"
+      "cache": false,
+      "outputMode": "errors-only",
+      "dependsOn": ["^build"]
     },
     "build": {
       "dependsOn": ["^build"],
