@@ -258,16 +258,19 @@ jobs:
         env:
           DATABASE_URL: postgres://klicker:klicker@localhost:5432/main
 
+      - name: Start services in the background
+        run: pnpm run start:test &
+
       - name: Cypress run
         uses: cypress-io/github-action@v5
         timeout-minutes: 20
         with:
           install: false
-          start: pnpm run start:test
           wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
           wait-on-timeout: 240
           record: true
           browser: chrome
+          working-directory: cypress
         env:
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
