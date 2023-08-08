@@ -26,6 +26,9 @@ importers:
 
   apps/auth:
     dependencies:
+      '@klicker-uzh/next-config':
+        specifier: workspace:*
+        version: link:../../packages/next-config
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -411,6 +414,9 @@ importers:
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
+      '@klicker-uzh/next-config':
+        specifier: workspace:*
+        version: link:../../packages/next-config
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -577,6 +583,9 @@ importers:
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
+      '@klicker-uzh/next-config':
+        specifier: workspace:*
+        version: link:../../packages/next-config
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -782,6 +791,9 @@ importers:
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
+      '@klicker-uzh/next-config':
+        specifier: workspace:*
+        version: link:../../packages/next-config
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -1484,6 +1496,12 @@ importers:
       typescript:
         specifier: 5.0.4
         version: 5.0.4
+
+  packages/next-config:
+    dependencies:
+      next:
+        specifier: 13.4.13
+        version: 13.4.13(@babel/core@7.22.10)(react-dom@18.2.0)(react@18.2.0)
 
   packages/prisma:
     dependencies:

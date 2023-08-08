@@ -39,7 +39,7 @@ export async function loginUser(
     where: { email: normalizedEmail },
   })
 
-  if (!user || !user.password) return null
+  if (!user?.password) return null
 
   const isLoginValid = await bcrypt.compare(password, user.password)
 

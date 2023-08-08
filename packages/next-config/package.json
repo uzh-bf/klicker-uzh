@@ -1,0 +1,9 @@
+{
+  "name": "@klicker-uzh/next-config",
+  "files": [
+    "index.js"
+  ],
+  "peerDependencies": {
+    "next": "13.4.13"
+  }
+}
