@@ -6,7 +6,7 @@ function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
     output: 'standalone',
     reactStrictMode: true,
     swcMinify: true,
-    transpilePackages: ['@klicker-uzh/shared-components'],
+    transpilePackages: ['@klicker-uzh/shared-components', '@klicker-uzh/i18n'],
     eslint: {
       ignoreDuringBuilds: true,
     },

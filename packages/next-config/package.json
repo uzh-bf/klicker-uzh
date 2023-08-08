@@ -5,5 +5,8 @@
   ],
   "peerDependencies": {
     "next": "13.4.13"
+  },
+  "volta": {
+    "extends": "../../package.json"
   }
 }

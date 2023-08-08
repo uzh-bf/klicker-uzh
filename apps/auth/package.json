@@ -34,6 +34,7 @@
     "typescript": "5.0.4"
   },
   "dependencies": {
+    "@klicker-uzh/i18n": "workspace:*",
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",

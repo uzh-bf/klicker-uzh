@@ -96,11 +96,8 @@ function SessionList() {
 export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: (
-        await import(
-          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
-        )
-      ).default,
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

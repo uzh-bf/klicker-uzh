@@ -26,6 +26,9 @@ importers:
 
   apps/auth:
     dependencies:
+      '@klicker-uzh/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@klicker-uzh/next-config':
         specifier: workspace:*
         version: link:../../packages/next-config
@@ -411,6 +414,9 @@ importers:
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
+      '@klicker-uzh/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -580,6 +586,9 @@ importers:
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
+      '@klicker-uzh/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -788,6 +797,9 @@ importers:
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
+      '@klicker-uzh/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -1338,6 +1350,22 @@ importers:
       web-push:
         specifier: 3.6.1
         version: 3.6.1
+
+  packages/i18n:
+    dependencies:
+      next-intl:
+        specifier: 2.19.1
+        version: 2.19.1(next@13.4.13)(react@18.2.0)
+    devDependencies:
+      '@tsconfig/node18':
+        specifier: 18.2.0
+        version: 18.2.0
+      '@tsconfig/recommended':
+        specifier: 1.0.2
+        version: 1.0.2
+      typescript:
+        specifier: 5.0.4
+        version: 5.0.4
 
   packages/lti:
     dependencies:
@@ -8153,6 +8181,10 @@ packages:
 
   /@tsconfig/node16@1.0.4:
     resolution: {integrity: sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA==}
+
+  /@tsconfig/node18@18.2.0:
+    resolution: {integrity: sha512-yhxwIlFVSVcMym3O31HoMnRXpoenmpIxcj4Yoes2DUpe+xCJnA7ECQP1Vw889V0jTt/2nzvpLQ/UuMYCd3JPIg==}
+    dev: true
 
   /@tsconfig/node18@2.0.0:
     resolution: {integrity: sha512-uI/B0ShkiEwTk036pncXucVlj4y11EW6mycQvCEzC1PkR2TBvdQZ5Wf96dp+XXWAc70FEDfvwTqanoaDpP6rPw==}

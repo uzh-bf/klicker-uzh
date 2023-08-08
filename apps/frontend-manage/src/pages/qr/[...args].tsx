@@ -29,11 +29,8 @@ export async function getStaticProps({
   return {
     props: {
       path: `/${args.join('/')}`,
-      messages: (
-        await import(
-          `@klicker-uzh/shared-components/src/intl-messages/${locale}.json`
-        )
-      ).default,
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }
