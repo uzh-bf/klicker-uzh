@@ -60,8 +60,8 @@ COPY --from=installer /app/apps/frontend-pwa/next.config.js .
 COPY --from=installer /app/apps/frontend-pwa/package.json .
 
 COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-pwa/.next/standalone ./
-COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-pwa/.next/static ./apps/frontend-pwa/.next/static
-COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-pwa/public ./apps/frontend-pwa/public
+COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/frontend-pwa/.next/static ./apps/frontend-pwa/.next/static
+COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/frontend-pwa/public ./apps/frontend-pwa/public
 
 ARG NODE_ENV="production"
 ENV NEXT_TELEMETRY_DISABLED 1

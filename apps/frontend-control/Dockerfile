@@ -58,8 +58,8 @@ COPY --from=installer /app/apps/frontend-control/next.config.js .
 COPY --from=installer /app/apps/frontend-control/package.json .
 
 COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-control/.next/standalone ./
-COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-control/.next/static ./apps/frontend-control/.next/static
-COPY --from=installer --chown=nextjs:nodejs /app/apps/frontend-control/public ./apps/frontend-control/public
+COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/frontend-control/.next/static ./apps/frontend-control/.next/static
+COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/frontend-control/public ./apps/frontend-control/public
 
 ARG NODE_ENV="production"
 ENV NEXT_TELEMETRY_DISABLED 1

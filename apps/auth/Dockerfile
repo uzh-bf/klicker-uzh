@@ -52,8 +52,8 @@ COPY --from=installer /app/apps/auth/next.config.js .
 COPY --from=installer /app/apps/auth/package.json .
 
 COPY --from=installer --chown=nextjs:nodejs /app/apps/auth/.next/standalone ./
-COPY --from=installer --chown=nextjs:nodejs /app/apps/auth/.next/static ./apps/auth/.next/static
-COPY --from=installer --chown=nextjs:nodejs /app/apps/auth/public ./apps/auth/public
+COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/auth/.next/static ./apps/auth/.next/static
+COPY --from=installer --chown=nextjs:nodejs --chmod=550 /app/apps/auth/public ./apps/auth/public
 
 ARG NODE_ENV="production"
 ENV NEXT_TELEMETRY_DISABLED 1
