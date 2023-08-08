@@ -56,7 +56,7 @@ function SignInOutButton() {
   )
 }
 
-export function Index({}) {
+export function Index() {
   return (
     <div className="m-auto flex max-w-2xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center gap-8 md:p-8">

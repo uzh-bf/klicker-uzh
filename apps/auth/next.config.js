@@ -9,7 +9,6 @@ const nextConfig = {
   output: 'standalone',
   transpilePackages: ['@klicker-uzh/shared-components'],
   compress: true,
-  output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,
   typescript: {
