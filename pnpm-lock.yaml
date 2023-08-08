@@ -722,6 +722,9 @@ importers:
       babel-loader:
         specifier: 8.2.5
         version: 8.2.5(@babel/core@7.22.10)(webpack@5.88.2)
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
       cssnano:
         specifier: 6.0.1
         version: 6.0.1(postcss@8.4.23)
@@ -894,6 +897,9 @@ importers:
       babel-loader:
         specifier: 8.2.5
         version: 8.2.5(@babel/core@7.22.10)(webpack@5.88.2)
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
       cssnano:
         specifier: 6.0.1
         version: 6.0.1(postcss@8.4.23)
@@ -2251,9 +2257,9 @@ packages:
       '@azure/core-tracing': 1.0.1
       '@azure/core-util': 1.4.0
       '@azure/logger': 1.0.4
-      '@azure/msal-browser': 2.38.0
+      '@azure/msal-browser': 2.38.1
       '@azure/msal-common': 7.6.0
-      '@azure/msal-node': 1.18.0
+      '@azure/msal-node': 1.18.1
       events: 3.3.0
       jws: 4.0.0
       open: 8.4.2
@@ -2275,9 +2281,9 @@ packages:
       '@azure/core-tracing': 1.0.1
       '@azure/core-util': 1.4.0
       '@azure/logger': 1.0.4
-      '@azure/msal-browser': 2.38.0
-      '@azure/msal-common': 13.2.0
-      '@azure/msal-node': 1.18.0
+      '@azure/msal-browser': 2.38.1
+      '@azure/msal-common': 13.2.1
+      '@azure/msal-node': 1.18.1
       events: 3.3.0
       jws: 4.0.0
       open: 8.4.2
@@ -2328,15 +2334,15 @@ packages:
       - encoding
     dev: true
 
-  /@azure/msal-browser@2.38.0:
-    resolution: {integrity: sha512-gxBh83IumHgEP9uMCm9pJLKLRwICMQTxG9TX3AytdNt3oLUI3tytm/szYD5u5zKJgSkhHvwFSM+NPnM04hYw3w==}
+  /@azure/msal-browser@2.38.1:
+    resolution: {integrity: sha512-NROo7mLpw7aWtj8tWy9ZPz3WWiudwVAOIDZ1K3PPrjDAA4kFYayWlbZiJl1T1sD5Oqwa6FOtwzFSvuUj1CWp6Q==}
     engines: {node: '>=0.8.0'}
     dependencies:
-      '@azure/msal-common': 13.2.0
+      '@azure/msal-common': 13.2.1
     dev: true
 
-  /@azure/msal-common@13.2.0:
-    resolution: {integrity: sha512-rnstQ7Zgn3fSTKNQO+/YNV34/QXJs0vni7IA0/3QB1EEyrJg14xyRmTqlw9ta+pdSuT5OJwUP8kI3D/rBwUIBw==}
+  /@azure/msal-common@13.2.1:
+    resolution: {integrity: sha512-9CtyVdDtAOw+raemKg8gdBuE7gleObgSb7p4bzMIlUt8eM69/Gaow7uqr1gK3jLYINSrss32OZW8mBbdgVLiHg==}
     engines: {node: '>=0.8.0'}
     dev: true
 
@@ -2345,11 +2351,11 @@ packages:
     engines: {node: '>=0.8.0'}
     dev: true
 
-  /@azure/msal-node@1.18.0:
-    resolution: {integrity: sha512-N6GX1Twxw524e7gaJvj7hKtrPRmZl9qGY7U4pmUdx4XzoWYRFfYk4H1ZjVhQ7pwb5Ks88NNhbXVCagsuYPTEFg==}
+  /@azure/msal-node@1.18.1:
+    resolution: {integrity: sha512-B4kUOWJoN4vD8b3pGJ9Q9mIZhaDb8EnQM1aN0x1otlQgTfzDvEk6rWc6fy8uGdtXqcNddBtiXdc4oRiItroVkA==}
     engines: {node: 10 || 12 || 14 || 16 || 18}
     dependencies:
-      '@azure/msal-common': 13.2.0
+      '@azure/msal-common': 13.2.1
       jsonwebtoken: 9.0.1
       uuid: 8.3.2
     dev: true
@@ -5957,7 +5963,7 @@ packages:
       '@azure/core-auth': 1.5.0
       '@azure/identity': 3.2.4
       '@azure/ms-rest-js': 2.7.0
-      '@azure/msal-node': 1.18.0
+      '@azure/msal-node': 1.18.1
       '@azure/storage-blob': 12.15.0
       '@feathersjs/hooks': 0.6.5
       '@microsoft/dev-tunnels-contracts': 1.0.7414
