@@ -101,11 +101,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     props: {
       id: ctx.params.id,
       courseId: ctx.params.courseId,
-      messages: (
-        await import(
-          `@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`
-        )
-      ).default,
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+        .default,
     },
   })
 }

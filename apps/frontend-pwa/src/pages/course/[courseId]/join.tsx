@@ -315,9 +315,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         description: data?.basicCourseInformation?.description,
         courseLoading: loading,
         messages: (
-          await import(
-            `@klicker-uzh/shared-components/src/intl-messages/${ctx.locale}.json`
-          )
+          await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`)
         ).default,
       },
     }

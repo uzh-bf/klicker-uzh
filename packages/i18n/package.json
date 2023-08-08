@@ -2,7 +2,7 @@
   "name": "@klicker-uzh/i18n",
   "files": [
     "index.ts",
-    "messages"
+    "messages/"
   ],
   "peerDependencies": {
     "next-intl": "2.19.1"
