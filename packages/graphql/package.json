@@ -15,7 +15,7 @@
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
     "dev:offline": "npm run dev",
     "dev:ts": "NODE_ENV=development doppler run --config dev -- tsup --watch --dts",
-    "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch '**/**.graphql' --watch '**/**.ts'",
+    "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch 'src/**.graphql' --watch 'src/**.ts'",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "size": "size-limit",
