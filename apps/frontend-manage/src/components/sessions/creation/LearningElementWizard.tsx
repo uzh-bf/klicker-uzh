@@ -10,12 +10,11 @@ import {
   FormikNumberField,
   FormikSelectField,
   FormikTextField,
-  H3,
 } from '@uzh-bf/design-system'
 import { ErrorMessage } from 'formik'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { LEARNING_ELEMENT_ORDERS } from 'shared-components/src/constants'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
@@ -30,70 +29,12 @@ interface LearningElementWizardProps {
   initialValues?: LearningElement
 }
 
-const stepOneValidationSchema = yup.object().shape({
-  name: yup
-    .string()
-    .required('Bitte geben Sie einen Namen für Ihre Session ein.'),
-  displayName: yup
-    .string()
-    .required('Bitte geben Sie einen Anzeigenamen für Ihre Session ein.'),
-  description: yup.string(),
-})
-
-//TODO: adjust validation
-const stepTwoValidationSchema = yup.object().shape({
-  multiplier: yup
-    .string()
-    .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
-  courseId: yup.string(),
-  order: yup.string(),
-  resetTimeDays: yup
-    .string()
-    .required(
-      'Bitte geben Sie eine Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.'
-    )
-    .matches(
-      /^[0-9]+$/,
-      'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.'
-    ),
-})
-
-const stepThreeValidationSchema = yup.object().shape({
-  questions: yup
-    .array()
-    .of(
-      yup.object().shape({
-        id: yup.string(),
-        title: yup.string(),
-        type: yup
-          .string()
-          .oneOf(
-            [
-              QuestionType.Sc,
-              QuestionType.Mc,
-              QuestionType.Kprim,
-              QuestionType.Numerical,
-            ],
-            'Lernelemente können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.'
-          ),
-        // hasAnswerFeedbacks: yup.boolean().when('type', {
-        //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
-        //   then: yup.boolean().isTrue(),
-        // }),
-        // hasAnswerFeedbacks: yup.boolean().isTrue(),
-        hasSampleSolution: yup
-          .boolean()
-          .isTrue('Bitte fügen Sie nur Fragen mit Lösung hinzu.'),
-      })
-    )
-    .min(1),
-})
-
 function LearningElementWizard({
   courses,
   initialValues,
 }: LearningElementWizardProps) {
   const router = useRouter()
+  const t = useTranslations()
 
   const [createLearningElement] = useMutation(CreateLearningElementDocument)
   const [editLearningElement] = useMutation(EditLearningElementDocument)
@@ -101,6 +42,61 @@ function LearningElementWizard({
   const [editMode, setEditMode] = useState(!!initialValues)
   const [selectedCourseId, setSelectedCourseId] = useState('')
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
+
+  const stepOneValidationSchema = yup.object().shape({
+    name: yup.string().required(t('manage.sessionForms.sessionName')),
+    displayName: yup
+      .string()
+      .required(t('manage.sessionForms.sessionDisplayName')),
+    description: yup.string(),
+  })
+
+  //TODO: adjust validation
+  const stepTwoValidationSchema = yup.object().shape({
+    multiplier: yup
+      .string()
+      .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
+    courseId: yup.string(),
+    order: yup.string(),
+    resetTimeDays: yup
+      .string()
+      .required(t('manage.sessionForms.learningElementResetDays'))
+      .matches(
+        /^[0-9]+$/,
+        t('manage.sessionForms.learningElementValidResetDays')
+      ),
+  })
+
+  const stepThreeValidationSchema = yup.object().shape({
+    questions: yup
+      .array()
+      .of(
+        yup.object().shape({
+          id: yup.string(),
+          title: yup.string(),
+          type: yup
+            .string()
+            .oneOf(
+              [
+                QuestionType.Sc,
+                QuestionType.Mc,
+                QuestionType.Kprim,
+                QuestionType.Numerical,
+              ],
+              t('manage.sessionForms.learningElementTypes')
+            ),
+          // hasAnswerFeedbacks: yup.boolean().when('type', {
+          //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
+          //   then: yup.boolean().isTrue(),
+          // }),
+          // hasAnswerFeedbacks: yup.boolean().isTrue(),
+          hasSampleSolution: yup
+            .boolean()
+            .isTrue(t('manage.sessionForms.learningElementSolutionReq')),
+        })
+      )
+      .min(1),
+  })
 
   const onSubmit = async (values: LearningElementFormValues) => {
     try {
@@ -148,8 +144,7 @@ function LearningElementWizard({
       }
     } catch (error) {
       console.log(error)
-      // TODO: set edit mode value correctly once editing is implemented
-      setEditMode(false)
+      setEditMode(!!initialValues)
       setErrorToastOpen(true)
     }
   }
@@ -159,8 +154,15 @@ function LearningElementWizard({
       <MultistepWizard
         completionSuccessMessage={(elementName) => (
           <div>
-            Lernelement <strong>{elementName}</strong> erfolgreich{' '}
-            {editMode ? 'modifiziert' : 'erstellt'}.
+            {editMode
+              ? t.rich('manage.sessionForms.learningElementUpdated', {
+                  b: (text) => <strong>{text}</strong>,
+                  name: elementName,
+                })
+              : t.rich('manage.sessionForms.learningElementCreated', {
+                  b: (text) => <strong>{text}</strong>,
+                  name: elementName,
+                })}
           </div>
         )}
         initialValues={{
@@ -188,17 +190,34 @@ function LearningElementWizard({
             : '1',
           courseId: initialValues?.courseId || courses[0].value,
           order:
-            initialValues?.orderType || Object.keys(LEARNING_ELEMENT_ORDERS)[0],
+            initialValues?.orderType || LearningElementOrderType.Sequential,
           resetTimeDays: initialValues?.resetTimeDays || '6',
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
+        editMode={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}
         onViewElement={() => {
           router.push(`/courses/${selectedCourseId}`)
         }}
+        workflowItems={[
+          {
+            title: t('shared.generic.description'),
+            tooltip: t('manage.sessionForms.learningElementDescription'),
+          },
+          {
+            title: t('shared.generic.settings'),
+            tooltip: t('manage.sessionForms.learningElementSettings'),
+            tooltipDisabled: t('manage.sessionForms.checkValues'),
+          },
+          {
+            title: t('shared.generic.questions'),
+            tooltip: t('manage.sessionForms.learningElementContent'),
+            tooltipDisabled: t('manage.sessionForms.checkValues'),
+          },
+        ]}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
@@ -209,8 +228,8 @@ function LearningElementWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? 'Anpassen des Lernelements fehlgeschlagen...'
-            : 'Erstellen des Lernelements fehlgeschlagen...'
+            ? t('manage.sessionForms.learningElementEditingFailed')
+            : t('manage.sessionForms.learningElementCreationFailed')
         }
       />
     </div>
@@ -230,32 +249,37 @@ interface StepProps {
 }
 
 function StepOne(_: StepProps) {
+  const t = useTranslations()
+
   return (
     <>
-      <FormikTextField
-        required
-        autoComplete="off"
-        name="name"
-        label="Name"
-        tooltip="Der Name soll Ihnen ermöglichen, dieses Lernelement von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
-        className={{ root: 'mb-1' }}
-        data-cy="insert-learning-element-name"
-      />
-      <FormikTextField
-        required
-        autoComplete="off"
-        name="displayName"
-        label="Anzeigename"
-        tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
-        className={{ root: 'mb-1' }}
-        data-cy="insert-learning-element-display-name"
-      />
+      <div className="flex flex-col w-full gap-4 md:flex-row">
+        <FormikTextField
+          required
+          autoComplete="off"
+          name="name"
+          label={t('manage.sessionForms.name')}
+          tooltip={t('manage.sessionForms.learningElementName')}
+          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
+          data-cy="insert-learning-element-name"
+        />
+        <FormikTextField
+          required
+          autoComplete="off"
+          name="displayName"
+          label={t('manage.sessionForms.displayName')}
+          tooltip={t('manage.sessionForms.displayNameTooltip')}
+          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
+          data-cy="insert-learning-element-display-name"
+        />
+      </div>
 
       <EditorField
-        label="Beschreibung"
-        tooltip="Fügen Sie eine Beschreibung zu Ihrer Micro-Session hinzu, welche den Teilnehmern zu Beginn angezeigt wird."
+        label={t('shared.generic.description')}
+        tooltip={t('manage.sessionForms.learningElementDescField')}
         fieldName="description"
         data_cy="insert-learning-element-description"
+        showToolbarOnFocus={false}
       />
 
       <div className="w-full text-right">
@@ -270,17 +294,19 @@ function StepOne(_: StepProps) {
 }
 
 function StepTwo(props: StepProps) {
+  const t = useTranslations()
+
   return (
     <div className="flex flex-col gap-2">
-      <H3 className={{ root: 'mb-0' }}>Einstellungen</H3>
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
           name="courseId"
           items={props.courses || [{ label: '', value: '' }]}
           required
-          tooltip="Für die Erstellung einer Micro-Session ist die Auswahl des zugehörigen Kurses erforderlich."
-          label="Kurs"
+          tooltip={t('manage.sessionForms.learningElementSelectCourse')}
+          label={t('shared.generic.course')}
           data={{ cy: 'select-course' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="courseId"
@@ -291,18 +317,19 @@ function StepTwo(props: StepProps) {
 
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
-          label="Multiplier"
+          label={t('shared.generic.multiplier')}
           required
-          tooltip="Wählen Sie einen Multiplier aus. Alle Punkte die von den Studierenden in dieser Session erreicht werden, werden mit dem Multiplier multipliziert."
+          tooltip={t('manage.sessionForms.learningElementMultiplier')}
           name="multiplier"
-          placeholder="Default: 1x"
+          placeholder={t('manage.sessionForms.multiplierDefault')}
           items={[
-            { label: 'Einfach (1x)', value: '1' },
-            { label: 'Doppelt (2x)', value: '2' },
-            { label: 'Dreifach (3x)', value: '3' },
-            { label: 'Vierfach (4x)', value: '4' },
+            { label: t('manage.sessionForms.multiplier1'), value: '1' },
+            { label: t('manage.sessionForms.multiplier2'), value: '2' },
+            { label: t('manage.sessionForms.multiplier3'), value: '3' },
+            { label: t('manage.sessionForms.multiplier4'), value: '4' },
           ]}
           data={{ cy: 'select-multiplier' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="multiplier"
@@ -314,10 +341,11 @@ function StepTwo(props: StepProps) {
       <div className="flex flex-row items-center gap-4">
         <FormikNumberField
           name="resetTimeDays"
-          label="Wiederholungszeitraum:"
-          tooltip="Wählen Sie einen Zeitraum nach welchem die Studierenden die Micro-Session wiederholen können."
+          label={t('shared.generic.repetitionInterval')}
+          tooltip={t('manage.sessionForms.learningElementRepetition')}
           className={{
             input: 'w-20',
+            tooltip: 'z-20',
           }}
           required
           hideError={true}
@@ -332,15 +360,19 @@ function StepTwo(props: StepProps) {
 
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
-          label="Reihenfolge"
-          tooltip="Wählen Sie eine Reihenfolge in welcher die Fragen für die Studierenden zu lösen sind."
+          label={t('shared.generic.order')}
+          tooltip={t('manage.sessionForms.learningElementOrder')}
           name="order"
-          placeholder="Reihenfolge wählen"
-          items={Object.keys(LEARNING_ELEMENT_ORDERS).map((key) => {
-            return { value: key, label: LEARNING_ELEMENT_ORDERS[key] }
+          placeholder={t('manage.sessionForms.learningElemenSelectOrder')}
+          items={Object.values(LearningElementOrderType).map((order) => {
+            return {
+              value: order,
+              label: t(`manage.sessionForms.learningElement${order}`),
+            }
           })}
           required
           data={{ cy: 'select-order' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="order"
@@ -354,10 +386,8 @@ function StepTwo(props: StepProps) {
 
 function StepThree(_: StepProps) {
   return (
-    <>
-      <div className="mt-2 mb-2">
-        <BlockField fieldName="questions" />
-      </div>
-    </>
+    <div className="mt-2 mb-2">
+      <BlockField fieldName="questions" />
+    </div>
   )
 }

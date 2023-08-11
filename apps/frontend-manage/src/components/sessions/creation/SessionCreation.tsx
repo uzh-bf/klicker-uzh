@@ -9,20 +9,27 @@ import {
   MicroSession,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Tab, TabContent, TabList, Tabs } from '@uzh-bf/design-system'
-import { useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { useMemo } from 'react'
+import CreationTitle from './CreationTitle'
 import LearningElementWizard from './LearningElementWizard'
 import LiveSessionWizard from './LiveSessionWizard'
 import MicroSessionWizard from './MicroSessionWizard'
 
 interface SessionCreationProps {
+  creationMode: 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
+  closeWizard: () => void
   sessionId?: string
   editMode?: string
 }
 
-function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
-  const [selectedForm, setSelectedForm] = useState(editMode)
-
+function SessionCreation({
+  creationMode,
+  closeWizard,
+  sessionId,
+  editMode,
+}: SessionCreationProps) {
+  const t = useTranslations()
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
     variables: { sessionId: sessionId || '' },
     skip: !sessionId || editMode !== 'liveSession',
@@ -52,73 +59,34 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
     [dataCourses]
   )
 
-  if (!errorCourses && loadingCourses) return <div>Loading...</div>
+  if (!errorCourses && loadingCourses)
+    return <div>{t('shared.generic.loading')}</div>
 
   return (
     <div className="flex flex-col justify-center print-hidden">
-      <div className="w-full h-full border rounded">
-        <Tabs
-          defaultValue="liveSession"
-          value={selectedForm}
-          onValueChange={(newValue: string) => setSelectedForm(newValue)}
-        >
-          <TabList
-            className={{
-              root: 'flex flex-row justify-between w-full h-8',
-            }}
-          >
-            <Tab
-              key="liveSession"
-              value="liveSession"
-              label="Live-Session"
-              className={{
-                root: 'flex-1 hover:bg-primary-20',
-                label:
-                  'font-bold text-base flex flex-col justify-center h-full',
-              }}
+      <div className="w-full h-full rounded-lg">
+        {creationMode === 'liveSession' && (
+          <>
+            <CreationTitle
+              text={t('shared.generic.liveSession')}
+              editMode={!!editMode}
+              closeWizard={closeWizard}
             />
-            <Tab
-              key="microSession"
-              value="microSession"
-              label="Micro-Session"
-              className={{
-                root: 'flex-1 hover:bg-primary-20',
-                label:
-                  'font-bold text-base flex flex-col justify-center h-full',
-              }}
-              disabled={courseSelection?.length === 0}
-              data={{ cy: 'create-micro-session' }}
-            />
-            <Tab
-              key="learningElement"
-              value="learningElement"
-              label="Lernelement"
-              className={{
-                root: 'flex-1 hover:bg-primary-20',
-                label:
-                  'font-bold text-base flex flex-col justify-center h-full',
-              }}
-              disabled={courseSelection?.length === 0}
-              data={{ cy: 'create-learning-element' }}
-            />
-          </TabList>
-          <TabContent
-            key="liveSession"
-            value="liveSession"
-            className={{ root: 'p-0' }}
-          >
             <LiveSessionWizard
               courses={courseSelection || [{ label: '', value: '' }]}
               initialValues={
                 (dataLiveSession?.liveSession as Session) ?? undefined
               }
             />
-          </TabContent>
-          <TabContent
-            key="microSession"
-            value="microSession"
-            className={{ root: 'p-0' }}
-          >
+          </>
+        )}
+        {creationMode === 'microSession' && (
+          <>
+            <CreationTitle
+              text={t('shared.generic.microlearning')}
+              editMode={!!editMode}
+              closeWizard={closeWizard}
+            />
             <MicroSessionWizard
               courses={courseSelection || [{ label: '', value: '' }]}
               initialValues={
@@ -126,12 +94,15 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
                 undefined
               }
             />
-          </TabContent>
-          <TabContent
-            key="learningElement"
-            value="learningElement"
-            className={{ root: 'p-0' }}
-          >
+          </>
+        )}
+        {creationMode === 'learningElement' && (
+          <>
+            <CreationTitle
+              text={t('shared.generic.learningElement')}
+              editMode={!!editMode}
+              closeWizard={closeWizard}
+            />
             <LearningElementWizard
               courses={courseSelection || [{ label: '', value: '' }]}
               initialValues={
@@ -139,8 +110,8 @@ function SessionCreation({ sessionId, editMode }: SessionCreationProps) {
                 undefined
               }
             />
-          </TabContent>
-        </Tabs>
+          </>
+        )}
       </div>
     </div>
   )

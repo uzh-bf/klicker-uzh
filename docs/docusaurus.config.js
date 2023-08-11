@@ -1,19 +1,15 @@
-module.exports = {
+// @ts-check
+
+/** @type {import('@docusaurus/types').Config} */
+const config = {
   trailingSlash: false,
   title: 'KlickerUZH',
-  tagline: 'Open source instant audience response system',
+  tagline: 'Open Source Audience Interaction',
   url: 'https://www.klicker.uzh.ch',
   baseUrl: '/',
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
-  scripts: [
-    // 'https://buttons.github.io/buttons.js',
-    {
-      src: 'https://betteruptime.com/widgets/announcement.js',
-      'data-id': '133428',
-      async: true,
-    },
-  ],
+  scripts: [],
   stylesheets: [
     'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap',
   ],
@@ -22,9 +18,6 @@ module.exports = {
     title_index: 'Klicker',
     subtitle_index: 'UZH',
     users: [],
-    fonts: {
-      myFont: ['Source Sans Pro', 'Serif'],
-    },
     repoUrl: 'https://github.com/uzh-bf/klicker-uzh',
   },
   onBrokenLinks: 'log',
@@ -102,6 +95,10 @@ module.exports = {
     ],
   ],
   themeConfig: {
+    colorMode: {
+      defaultMode: 'light',
+      disableSwitch: true,
+    },
     metadata: [
       {
         name: 'keywords',
@@ -110,6 +107,7 @@ module.exports = {
       },
     ],
     navbar: {
+      hideOnScroll: false,
       logo: {
         src: '/img/KlickerLogo.png',
         srcDark: '/img/KlickerLogo.png',
@@ -146,7 +144,10 @@ module.exports = {
         //   label: 'Knowledge Base',
         //   position: 'left',
         // },
-
+        {
+          type: 'docsVersionDropdown',
+          position: 'right',
+        },
         {
           to: 'https://community.klicker.uzh.ch',
           label: 'Community',
@@ -164,10 +165,70 @@ module.exports = {
         },
       ],
     },
+    footer: {
+      logo: {
+        alt: 'KlickerUZH Logo',
+        src: '/img/KlickerLogo.png',
+        width: 250,
+        // height: 51,
+      },
+      copyright: `Copyright ${new Date().getFullYear()} Teaching Center, Department of Banking and Finance (https://www.bf.uzh.ch), University of Zurich. <br/>All rights reserved. Products and Services displayed herein are trademarks or registered trademarks of their respective owners.`,
+      links: [
+        {
+          title: 'Docs',
+          items: [
+            {
+              label: 'Home',
+              to: '/home',
+            },
+            {
+              label: 'Privacy Policy',
+              to: '/privacy_policy',
+            },
+            {
+              label: 'Terms of Service',
+              to: '/terms_of_service',
+            },
+          ],
+        },
+        {
+          title: 'Support',
+          items: [
+            {
+              label: 'FAQ',
+              to: '/faq',
+            },
+            {
+              label: 'Feedback',
+              href: 'https://klicker-uzh.feedbear.com',
+            },
+            {
+              label: 'Community',
+              href: 'https://community.klicker.uzh.ch',
+            },
+          ],
+        },
+        {
+          title: 'Technical',
+          items: [
+            {
+              label: 'System Status',
+              href: 'https://klicker-uzh.betteruptime.com/',
+            },
+            {
+              label: 'Source Code',
+              href: 'https://github.com/uzh-bf/klicker-uzh',
+            },
+          ],
+        },
+      ],
+    },
     algolia: {
       appId: 'TZ15XJ66MJ',
-      apiKey: '1c175419aef4dbdbff3c5becd8613a8a',
+      apiKey: '591a723cb9f36f1a60d80180a3463d2f',
       indexName: 'klicker-uzh',
     },
   },
 }
+
+module.exports = config

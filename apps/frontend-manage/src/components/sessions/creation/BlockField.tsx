@@ -1,5 +1,6 @@
 import { Label } from '@uzh-bf/design-system'
 import { FieldArray, FieldArrayRenderProps, useField } from 'formik'
+import { useTranslations } from 'next-intl'
 import AddQuestionField from './AddQuestionField'
 import QuestionBlock from './QuestionBlock'
 import WizardErrorMessage from './WizardErrorMessage'
@@ -8,6 +9,7 @@ interface BlockFieldProps {
 }
 
 function BlockField({ fieldName }: BlockFieldProps) {
+  const t = useTranslations()
   const [field, meta, helpers] = useField(fieldName)
 
   return (
@@ -15,12 +17,12 @@ function BlockField({ fieldName }: BlockFieldProps) {
       <div className="flex flex-row items-center flex-1 gap-2">
         <Label
           required
-          label="Fragen:"
+          label={`${t('shared.generic.questions')}:`}
           className={{
             root: 'font-bold',
-            tooltip: 'font-normal text-sm !w-1/2',
+            tooltip: 'font-normal text-sm !w-1/2 z-20',
           }}
-          tooltip="Fügen Sie mittels Drag&Drop Fragen zu Ihrer Micro-Session hinzu."
+          tooltip={t('manage.sessionForms.questionsDragDrop')}
           showTooltipSymbol={true}
         />
         <FieldArray name={fieldName}>

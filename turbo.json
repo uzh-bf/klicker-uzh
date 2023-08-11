@@ -9,7 +9,9 @@
       "outputMode": "errors-only"
     },
     "check": {
-      "outputMode": "errors-only"
+      "cache": false,
+      "outputMode": "errors-only",
+      "dependsOn": ["^build"]
     },
     "build": {
       "dependsOn": ["^build"],
@@ -22,12 +24,20 @@
     "dev": {
       "cache": false,
       "outputs": ["dist/**", ".next/**"],
-      "dependsOn": ["@klicker-uzh/prisma#build", "@klicker-uzh/markdown#build"]
+      "dependsOn": [
+        "@klicker-uzh/prisma#build",
+        "@klicker-uzh/graphql#build",
+        "@klicker-uzh/markdown#build"
+      ]
     },
     "dev:offline": {
       "cache": false,
       "outputs": ["dist/**", ".next/**"],
-      "dependsOn": ["@klicker-uzh/prisma#build", "@klicker-uzh/markdown#build"]
+      "dependsOn": [
+        "@klicker-uzh/prisma#build",
+        "@klicker-uzh/graphql#build",
+        "@klicker-uzh/markdown#build"
+      ]
     },
     "publish": {
       "cache": false,
@@ -40,6 +50,12 @@
     "start:test": {
       "dependsOn": ["^build:test", "build:test"],
       "outputs": ["dist/**", ".next/**"]
+    },
+    "test": {
+      "cache": false
+    },
+    "test:run": {
+      "cache": false
     }
   }
 }

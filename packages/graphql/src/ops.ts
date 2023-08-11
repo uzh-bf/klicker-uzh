@@ -4,50 +4,52 @@ export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
+export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
+export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: string;
-  String: string;
-  Boolean: boolean;
-  Int: number;
-  Float: number;
+  ID: { input: string; output: string; }
+  String: { input: string; output: string; }
+  Boolean: { input: boolean; output: boolean; }
+  Int: { input: number; output: number; }
+  Float: { input: number; output: number; }
   /** A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar. */
-  Date: any;
+  Date: { input: any; output: any; }
   /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
-  Json: any;
+  Json: { input: any; output: any; }
 };
 
 export type Achievement = {
   __typename?: 'Achievement';
-  description: Scalars['String'];
-  icon: Scalars['String'];
-  iconColor?: Maybe<Scalars['String']>;
-  id: Scalars['Int'];
-  name: Scalars['String'];
+  description: Scalars['String']['output'];
+  icon: Scalars['String']['output'];
+  iconColor?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
 };
 
 export type Attachment = {
   __typename?: 'Attachment';
-  description?: Maybe<Scalars['String']>;
-  href: Scalars['String'];
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  originalName?: Maybe<Scalars['String']>;
+  description?: Maybe<Scalars['String']['output']>;
+  href: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  originalName?: Maybe<Scalars['String']['output']>;
   type: AttachmentType;
 };
 
 export type AttachmentInput = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 export type AttachmentInstance = {
   __typename?: 'AttachmentInstance';
-  description?: Maybe<Scalars['String']>;
-  href: Scalars['String'];
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  originalName?: Maybe<Scalars['String']>;
-  type: Scalars['String'];
+  description?: Maybe<Scalars['String']['output']>;
+  href: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  originalName?: Maybe<Scalars['String']['output']>;
+  type: Scalars['String']['output'];
 };
 
 export enum AttachmentType {
@@ -60,48 +62,48 @@ export enum AttachmentType {
 }
 
 export type AvatarSettingsInput = {
-  accessory: Scalars['String'];
-  clothing: Scalars['String'];
-  clothingColor: Scalars['String'];
-  eyes: Scalars['String'];
-  facialHair: Scalars['String'];
-  hair: Scalars['String'];
-  hairColor: Scalars['String'];
-  mouth: Scalars['String'];
-  skinTone: Scalars['String'];
+  accessory: Scalars['String']['input'];
+  clothing: Scalars['String']['input'];
+  clothingColor: Scalars['String']['input'];
+  eyes: Scalars['String']['input'];
+  facialHair: Scalars['String']['input'];
+  hair: Scalars['String']['input'];
+  hairColor: Scalars['String']['input'];
+  mouth: Scalars['String']['input'];
+  skinTone: Scalars['String']['input'];
 };
 
 export type AwardEntry = {
   __typename?: 'AwardEntry';
-  description: Scalars['String'];
-  displayName: Scalars['String'];
-  id: Scalars['Int'];
-  name: Scalars['String'];
-  order: Scalars['Int'];
+  description: Scalars['String']['output'];
+  displayName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
+  order: Scalars['Int']['output'];
   participant?: Maybe<Participant>;
   participantGroup?: Maybe<ParticipantGroup>;
-  type: Scalars['String'];
+  type: Scalars['String']['output'];
 };
 
 export type BlockInput = {
-  questionIds: Array<Scalars['Int']>;
-  randomSelection?: InputMaybe<Scalars['Int']>;
-  timeLimit?: InputMaybe<Scalars['Int']>;
+  questionIds: Array<Scalars['Int']['input']>;
+  randomSelection?: InputMaybe<Scalars['Int']['input']>;
+  timeLimit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type Choice = {
   __typename?: 'Choice';
-  correct?: Maybe<Scalars['Boolean']>;
-  feedback?: Maybe<Scalars['String']>;
-  ix: Scalars['Int'];
-  value: Scalars['String'];
+  correct?: Maybe<Scalars['Boolean']['output']>;
+  feedback?: Maybe<Scalars['String']['output']>;
+  ix: Scalars['Int']['output'];
+  value: Scalars['String']['output'];
 };
 
 export type ChoiceInput = {
-  correct?: InputMaybe<Scalars['Boolean']>;
-  feedback?: InputMaybe<Scalars['String']>;
-  ix: Scalars['Int'];
-  value: Scalars['String'];
+  correct?: InputMaybe<Scalars['Boolean']['input']>;
+  feedback?: InputMaybe<Scalars['String']['input']>;
+  ix: Scalars['Int']['input'];
+  value: Scalars['String']['input'];
 };
 
 export type ChoiceQuestionOptions = {
@@ -111,164 +113,164 @@ export type ChoiceQuestionOptions = {
 
 export type ChoicesQuestionData = QuestionData & {
   __typename?: 'ChoicesQuestionData';
-  content: Scalars['String'];
+  content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
-  explanation?: Maybe<Scalars['String']>;
-  id: Scalars['Int'];
-  name: Scalars['String'];
+  explanation?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
   options: ChoiceQuestionOptions;
-  pointsMultiplier?: Maybe<Scalars['Int']>;
+  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
   type: QuestionType;
 };
 
 export type ClassAchievementInstance = {
   __typename?: 'ClassAchievementInstance';
-  id: Scalars['Int'];
+  id: Scalars['Int']['output'];
 };
 
 export type ConfusionSummary = {
   __typename?: 'ConfusionSummary';
-  difficulty: Scalars['Float'];
-  numberOfParticipants?: Maybe<Scalars['Int']>;
-  speed: Scalars['Float'];
+  difficulty: Scalars['Float']['output'];
+  numberOfParticipants?: Maybe<Scalars['Int']['output']>;
+  speed: Scalars['Float']['output'];
 };
 
 export type ConfusionTimestep = {
   __typename?: 'ConfusionTimestep';
-  createdAt: Scalars['Date'];
-  difficulty: Scalars['Int'];
-  speed: Scalars['Int'];
+  createdAt: Scalars['Date']['output'];
+  difficulty: Scalars['Int']['output'];
+  speed: Scalars['Int']['output'];
 };
 
 export type Course = {
   __typename?: 'Course';
-  averageActiveScore?: Maybe<Scalars['Float']>;
-  averageScore?: Maybe<Scalars['Float']>;
+  averageActiveScore?: Maybe<Scalars['Float']['output']>;
+  averageScore?: Maybe<Scalars['Float']['output']>;
   awards?: Maybe<Array<AwardEntry>>;
-  color?: Maybe<Scalars['String']>;
-  createdAt: Scalars['Date'];
-  description?: Maybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  endDate: Scalars['Date'];
+  color?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['Date']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  endDate: Scalars['Date']['output'];
   groupActivities?: Maybe<Array<GroupActivity>>;
-  groupDeadlineDate?: Maybe<Scalars['Date']>;
-  id: Scalars['ID'];
-  isArchived: Scalars['Boolean'];
-  isGamificationEnabled: Scalars['Boolean'];
-  isGroupDeadlinePassed?: Maybe<Scalars['Boolean']>;
+  groupDeadlineDate?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  isArchived: Scalars['Boolean']['output'];
+  isGamificationEnabled: Scalars['Boolean']['output'];
+  isGroupDeadlinePassed?: Maybe<Scalars['Boolean']['output']>;
   leaderboard?: Maybe<Array<LeaderboardEntry>>;
   learningElements?: Maybe<Array<LearningElement>>;
   microSessions?: Maybe<Array<MicroSession>>;
-  name: Scalars['String'];
-  notificationEmail?: Maybe<Scalars['String']>;
-  numOfActiveParticipants?: Maybe<Scalars['Int']>;
-  numOfParticipants?: Maybe<Scalars['Int']>;
+  name: Scalars['String']['output'];
+  notificationEmail?: Maybe<Scalars['String']['output']>;
+  numOfActiveParticipants?: Maybe<Scalars['Int']['output']>;
+  numOfParticipants?: Maybe<Scalars['Int']['output']>;
   owner?: Maybe<User>;
-  pinCode?: Maybe<Scalars['Int']>;
+  pinCode?: Maybe<Scalars['Int']['output']>;
   sessions?: Maybe<Array<Session>>;
-  startDate: Scalars['Date'];
-  updatedAt: Scalars['Date'];
+  startDate: Scalars['Date']['output'];
+  updatedAt: Scalars['Date']['output'];
 };
 
 export type EvaluationBlock = {
   __typename?: 'EvaluationBlock';
-  blockIx?: Maybe<Scalars['Int']>;
+  blockIx?: Maybe<Scalars['Int']['output']>;
   blockStatus: SessionBlockStatus;
   tabData: Array<TabData>;
 };
 
 export type Feedback = {
   __typename?: 'Feedback';
-  content: Scalars['String'];
-  createdAt: Scalars['Date'];
-  id: Scalars['Int'];
-  isPinned: Scalars['Boolean'];
-  isPublished: Scalars['Boolean'];
-  isResolved: Scalars['Boolean'];
-  resolvedAt?: Maybe<Scalars['Date']>;
+  content: Scalars['String']['output'];
+  createdAt: Scalars['Date']['output'];
+  id: Scalars['Int']['output'];
+  isPinned: Scalars['Boolean']['output'];
+  isPublished: Scalars['Boolean']['output'];
+  isResolved: Scalars['Boolean']['output'];
+  resolvedAt?: Maybe<Scalars['Date']['output']>;
   responses: Array<FeedbackResponse>;
-  votes: Scalars['Int'];
+  votes: Scalars['Int']['output'];
 };
 
 export type FeedbackResponse = {
   __typename?: 'FeedbackResponse';
-  content: Scalars['String'];
-  createdAt: Scalars['Date'];
-  id: Scalars['Int'];
-  negativeReactions: Scalars['Int'];
-  positiveReactions: Scalars['Int'];
+  content: Scalars['String']['output'];
+  createdAt: Scalars['Date']['output'];
+  id: Scalars['Int']['output'];
+  negativeReactions: Scalars['Int']['output'];
+  positiveReactions: Scalars['Int']['output'];
 };
 
 export type FreeTextQuestionData = QuestionData & {
   __typename?: 'FreeTextQuestionData';
-  content: Scalars['String'];
+  content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
-  explanation?: Maybe<Scalars['String']>;
-  id: Scalars['Int'];
-  name: Scalars['String'];
+  explanation?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
   options: FreeTextQuestionOptions;
-  pointsMultiplier?: Maybe<Scalars['Int']>;
+  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
   type: QuestionType;
 };
 
 export type FreeTextQuestionOptions = {
   __typename?: 'FreeTextQuestionOptions';
   restrictions: FreeTextRestrictions;
-  solutions: Array<Scalars['String']>;
+  solutions: Array<Scalars['String']['output']>;
 };
 
 export type FreeTextRestrictions = {
   __typename?: 'FreeTextRestrictions';
-  maxLength?: Maybe<Scalars['Int']>;
+  maxLength?: Maybe<Scalars['Int']['output']>;
 };
 
 export type FreeTextRestrictionsInput = {
-  maxLength?: InputMaybe<Scalars['Int']>;
-  minLength?: InputMaybe<Scalars['Int']>;
-  pattern?: InputMaybe<Scalars['String']>;
+  maxLength?: InputMaybe<Scalars['Int']['input']>;
+  minLength?: InputMaybe<Scalars['Int']['input']>;
+  pattern?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GroupAchievementInstance = {
   __typename?: 'GroupAchievementInstance';
-  id: Scalars['Int'];
+  id: Scalars['Int']['output'];
 };
 
 export type GroupActivity = {
   __typename?: 'GroupActivity';
-  description?: Maybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  id: Scalars['ID'];
-  scheduledEndAt: Scalars['Date'];
-  scheduledStartAt: Scalars['Date'];
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  scheduledEndAt: Scalars['Date']['output'];
+  scheduledStartAt: Scalars['Date']['output'];
 };
 
 export type GroupActivityClue = {
   __typename?: 'GroupActivityClue';
-  displayName: Scalars['String'];
-  id: Scalars['Int'];
-  name: Scalars['String'];
+  displayName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
 };
 
 export type GroupActivityClueAssignment = {
   __typename?: 'GroupActivityClueAssignment';
-  id: Scalars['Int'];
+  id: Scalars['Int']['output'];
 };
 
 export type GroupActivityClueInstance = {
   __typename?: 'GroupActivityClueInstance';
-  displayName: Scalars['String'];
-  id: Scalars['Int'];
-  name: Scalars['String'];
+  displayName: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
   participant: Participant;
   type: ParameterType;
-  unit?: Maybe<Scalars['String']>;
-  value?: Maybe<Scalars['String']>;
+  unit?: Maybe<Scalars['String']['output']>;
+  value?: Maybe<Scalars['String']['output']>;
 };
 
 export type GroupActivityDecisionInput = {
-  id: Scalars['Int'];
-  response?: InputMaybe<Scalars['String']>;
-  selectedOptions?: InputMaybe<Array<Scalars['Int']>>;
+  id: Scalars['Int']['input'];
+  response?: InputMaybe<Scalars['String']['input']>;
+  selectedOptions?: InputMaybe<Array<Scalars['Int']['input']>>;
 };
 
 export type GroupActivityDetails = {
@@ -276,104 +278,104 @@ export type GroupActivityDetails = {
   activityInstance?: Maybe<GroupActivityInstance>;
   clues: Array<GroupActivityClue>;
   course: Course;
-  description?: Maybe<Scalars['String']>;
-  displayName: Scalars['String'];
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
   group: ParticipantGroup;
-  id: Scalars['String'];
+  id: Scalars['String']['output'];
   instances: Array<QuestionInstance>;
-  name: Scalars['String'];
-  scheduledEndAt?: Maybe<Scalars['Date']>;
-  scheduledStartAt?: Maybe<Scalars['Date']>;
+  name: Scalars['String']['output'];
+  scheduledEndAt?: Maybe<Scalars['Date']['output']>;
+  scheduledStartAt?: Maybe<Scalars['Date']['output']>;
 };
 
 export type GroupActivityInstance = {
   __typename?: 'GroupActivityInstance';
   clues?: Maybe<Array<GroupActivityClueInstance>>;
-  decisions?: Maybe<Scalars['Json']>;
-  decisionsSubmittedAt?: Maybe<Scalars['Date']>;
-  groupActivityId: Scalars['ID'];
-  id: Scalars['Int'];
-  results?: Maybe<Scalars['Json']>;
+  decisions?: Maybe<Scalars['Json']['output']>;
+  decisionsSubmittedAt?: Maybe<Scalars['Date']['output']>;
+  groupActivityId: Scalars['ID']['output'];
+  id: Scalars['Int']['output'];
+  results?: Maybe<Scalars['Json']['output']>;
 };
 
 export type GroupActivityParameter = {
   __typename?: 'GroupActivityParameter';
-  id: Scalars['Int'];
+  id: Scalars['Int']['output'];
 };
 
 export type GroupLeaderboardEntry = {
   __typename?: 'GroupLeaderboardEntry';
-  id: Scalars['ID'];
-  isMember?: Maybe<Scalars['Boolean']>;
-  name: Scalars['String'];
-  rank: Scalars['Int'];
-  score: Scalars['Float'];
+  id: Scalars['ID']['output'];
+  isMember?: Maybe<Scalars['Boolean']['output']>;
+  name: Scalars['String']['output'];
+  rank: Scalars['Int']['output'];
+  score: Scalars['Float']['output'];
 };
 
 export type InstanceEvaluation = {
   __typename?: 'InstanceEvaluation';
-  answers?: Maybe<Scalars['Json']>;
-  choices?: Maybe<Scalars['Json']>;
+  answers?: Maybe<Scalars['Json']['output']>;
+  choices?: Maybe<Scalars['Json']['output']>;
   feedbacks?: Maybe<Array<QuestionFeedback>>;
-  newPointsFrom?: Maybe<Scalars['Date']>;
-  newXpFrom?: Maybe<Scalars['Date']>;
-  percentile?: Maybe<Scalars['Float']>;
-  pointsAwarded?: Maybe<Scalars['Float']>;
-  score: Scalars['Float'];
-  xpAwarded?: Maybe<Scalars['Int']>;
+  newPointsFrom?: Maybe<Scalars['Date']['output']>;
+  newXpFrom?: Maybe<Scalars['Date']['output']>;
+  percentile?: Maybe<Scalars['Float']['output']>;
+  pointsAwarded?: Maybe<Scalars['Float']['output']>;
+  score: Scalars['Float']['output'];
+  xpAwarded?: Maybe<Scalars['Int']['output']>;
 };
 
 export type InstanceResult = {
   __typename?: 'InstanceResult';
-  blockIx?: Maybe<Scalars['Int']>;
-  id: Scalars['String'];
-  instanceIx?: Maybe<Scalars['Int']>;
-  participants: Scalars['Int'];
+  blockIx?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['String']['output'];
+  instanceIx?: Scalars['Int']['output'];
+  participants: Scalars['Int']['output'];
   questionData: QuestionData;
-  results: Scalars['Json'];
+  results: Scalars['Json']['output'];
   statistics?: Maybe<Statistics>;
   status: SessionBlockStatus;
 };
 
 export type LeaderboardEntry = {
   __typename?: 'LeaderboardEntry';
-  avatar?: Maybe<Scalars['String']>;
-  id: Scalars['Int'];
-  isSelf?: Maybe<Scalars['Boolean']>;
-  lastBlockOrder: Scalars['Int'];
+  avatar?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  isSelf?: Maybe<Scalars['Boolean']['output']>;
+  lastBlockOrder: Scalars['Int']['output'];
   participant?: Maybe<Participant>;
-  participantId: Scalars['String'];
+  participantId: Scalars['String']['output'];
   participation: Participation;
-  rank: Scalars['Int'];
-  score: Scalars['Float'];
-  username: Scalars['String'];
+  rank: Scalars['Int']['output'];
+  score: Scalars['Float']['output'];
+  username: Scalars['String']['output'];
 };
 
 export type LeaderboardStatistics = {
   __typename?: 'LeaderboardStatistics';
-  averageScore: Scalars['Float'];
-  participantCount: Scalars['Int'];
+  averageScore: Scalars['Float']['output'];
+  participantCount: Scalars['Int']['output'];
 };
 
 export type LearningElement = {
   __typename?: 'LearningElement';
   course?: Maybe<Course>;
-  courseId?: Maybe<Scalars['String']>;
-  description?: Maybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  id: Scalars['String'];
-  name: Scalars['String'];
-  numOfQuestions?: Maybe<Scalars['Int']>;
+  courseId?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  numOfQuestions?: Maybe<Scalars['Int']['output']>;
   orderType: LearningElementOrderType;
-  pointsMultiplier: Scalars['Int'];
-  previousPointsAwarded?: Maybe<Scalars['Float']>;
-  previousScore?: Maybe<Scalars['Float']>;
-  previouslyAnswered?: Maybe<Scalars['Int']>;
-  resetTimeDays?: Maybe<Scalars['Int']>;
+  pointsMultiplier: Scalars['Int']['output'];
+  previousPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  previousScore?: Maybe<Scalars['Float']['output']>;
+  previouslyAnswered?: Maybe<Scalars['Int']['output']>;
+  resetTimeDays?: Maybe<Scalars['Int']['output']>;
   stacks?: Maybe<Array<QuestionStack>>;
-  stacksWithQuestions?: Maybe<Scalars['Int']>;
+  stacksWithQuestions?: Maybe<Scalars['Int']['output']>;
   status: LearningElementStatus;
-  totalTrials?: Maybe<Scalars['Int']>;
+  totalTrials?: Maybe<Scalars['Int']['output']>;
 };
 
 export enum LearningElementOrderType {
@@ -389,33 +391,33 @@ export enum LearningElementStatus {
 
 export type LeaveCourseParticipation = {
   __typename?: 'LeaveCourseParticipation';
-  id: Scalars['String'];
+  id: Scalars['String']['output'];
   participation: Participation;
 };
 
 export type Level = {
   __typename?: 'Level';
-  avatar?: Maybe<Scalars['String']>;
-  id: Scalars['Int'];
-  index: Scalars['Int'];
-  name?: Maybe<Scalars['String']>;
+  avatar?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  index: Scalars['Int']['output'];
+  name?: Maybe<Scalars['String']['output']>;
   nextLevel?: Maybe<Level>;
-  requiredXp: Scalars['Int'];
+  requiredXp: Scalars['Int']['output'];
 };
 
 export type MicroSession = {
   __typename?: 'MicroSession';
-  arePushNotificationsSent: Scalars['Boolean'];
+  arePushNotificationsSent: Scalars['Boolean']['output'];
   course?: Maybe<Course>;
-  description?: Maybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  id: Scalars['ID'];
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
   instances?: Maybe<Array<QuestionInstance>>;
-  name: Scalars['String'];
-  numOfInstances?: Maybe<Scalars['Int']>;
-  pointsMultiplier: Scalars['Float'];
-  scheduledEndAt: Scalars['Date'];
-  scheduledStartAt: Scalars['Date'];
+  name: Scalars['String']['output'];
+  numOfInstances?: Maybe<Scalars['Int']['output']>;
+  pointsMultiplier: Scalars['Float']['output'];
+  scheduledEndAt: Scalars['Date']['output'];
+  scheduledStartAt: Scalars['Date']['output'];
   status: MicroSessionStatus;
 };
 
@@ -433,7 +435,9 @@ export type Mutation = {
   changeCourseColor?: Maybe<Course>;
   changeCourseDates?: Maybe<Course>;
   changeCourseDescription?: Maybe<Course>;
+  changeParticipantLocale?: Maybe<Participant>;
   changeSessionSettings?: Maybe<Session>;
+  changeUserLocale?: Maybe<User>;
   createCourse?: Maybe<Course>;
   createFeedback?: Maybe<Feedback>;
   createLearningElement?: Maybe<LearningElement>;
@@ -454,18 +458,18 @@ export type Mutation = {
   editSession?: Maybe<Session>;
   editTag?: Maybe<Tag>;
   endSession?: Maybe<Session>;
-  flagQuestion?: Maybe<Scalars['String']>;
+  flagQuestion?: Maybe<Scalars['String']['output']>;
   generateLoginToken?: Maybe<User>;
   joinCourse?: Maybe<ParticipantLearningData>;
   joinCourseWithPin?: Maybe<Participant>;
   joinParticipantGroup?: Maybe<ParticipantGroup>;
   leaveCourse?: Maybe<LeaveCourseParticipation>;
   leaveParticipantGroup?: Maybe<ParticipantGroup>;
-  loginParticipant?: Maybe<Scalars['ID']>;
-  loginUser?: Maybe<Scalars['String']>;
-  loginUserToken?: Maybe<Scalars['ID']>;
-  logoutParticipant?: Maybe<Scalars['ID']>;
-  logoutUser?: Maybe<Scalars['ID']>;
+  loginParticipant?: Maybe<Scalars['ID']['output']>;
+  loginUser?: Maybe<Scalars['String']['output']>;
+  loginUserToken?: Maybe<Scalars['ID']['output']>;
+  logoutParticipant?: Maybe<Scalars['ID']['output']>;
+  logoutUser?: Maybe<Scalars['ID']['output']>;
   manipulateChoicesQuestion?: Maybe<Question>;
   manipulateFreeTextQuestion?: Maybe<Question>;
   manipulateNumericalQuestion?: Maybe<Question>;
@@ -478,13 +482,13 @@ export type Mutation = {
   resolveFeedback?: Maybe<Feedback>;
   respondToFeedback?: Maybe<Feedback>;
   respondToQuestionInstance?: Maybe<QuestionInstance>;
-  sendPushNotifications: Scalars['Boolean'];
+  sendPushNotifications: Scalars['Boolean']['output'];
   startGroupActivity?: Maybe<GroupActivityDetails>;
   startSession?: Maybe<Session>;
   submitGroupActivityDecisions?: Maybe<GroupActivityInstance>;
   subscribeToPush?: Maybe<Participation>;
-  unsubscribeFromPush?: Maybe<Scalars['Boolean']>;
-  updateGroupAverageScores: Scalars['Boolean'];
+  unsubscribeFromPush?: Maybe<Scalars['Boolean']['output']>;
+  updateGroupAverageScores: Scalars['Boolean']['output'];
   updateParticipantProfile?: Maybe<Participant>;
   upvoteFeedback?: Maybe<Feedback>;
   voteFeedbackResponse?: Maybe<FeedbackResponse>;
@@ -492,451 +496,461 @@ export type Mutation = {
 
 
 export type MutationActivateSessionBlockArgs = {
-  sessionBlockId: Scalars['Int'];
-  sessionId: Scalars['String'];
+  sessionBlockId: Scalars['Int']['input'];
+  sessionId: Scalars['String']['input'];
 };
 
 
 export type MutationAddConfusionTimestepArgs = {
-  difficulty: Scalars['Int'];
-  sessionId: Scalars['String'];
-  speed: Scalars['Int'];
+  difficulty: Scalars['Int']['input'];
+  sessionId: Scalars['String']['input'];
+  speed: Scalars['Int']['input'];
 };
 
 
 export type MutationBookmarkQuestionArgs = {
-  bookmarked: Scalars['Boolean'];
-  courseId: Scalars['String'];
-  stackId: Scalars['Int'];
+  bookmarked: Scalars['Boolean']['input'];
+  courseId: Scalars['String']['input'];
+  stackId: Scalars['Int']['input'];
 };
 
 
 export type MutationCancelSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type MutationChangeCourseColorArgs = {
-  color: Scalars['String'];
-  courseId: Scalars['String'];
+  color: Scalars['String']['input'];
+  courseId: Scalars['String']['input'];
 };
 
 
 export type MutationChangeCourseDatesArgs = {
-  courseId: Scalars['String'];
-  endDate?: InputMaybe<Scalars['Date']>;
-  startDate?: InputMaybe<Scalars['Date']>;
+  courseId: Scalars['String']['input'];
+  endDate?: InputMaybe<Scalars['Date']['input']>;
+  startDate?: InputMaybe<Scalars['Date']['input']>;
 };
 
 
 export type MutationChangeCourseDescriptionArgs = {
-  courseId: Scalars['String'];
-  input: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  input: Scalars['String']['input'];
+};
+
+
+export type MutationChangeParticipantLocaleArgs = {
+  locale: Scalars['String']['input'];
 };
 
 
 export type MutationChangeSessionSettingsArgs = {
-  id: Scalars['String'];
-  isConfusionFeedbackEnabled?: InputMaybe<Scalars['Boolean']>;
-  isGamificationEnabled?: InputMaybe<Scalars['Boolean']>;
-  isLiveQAEnabled?: InputMaybe<Scalars['Boolean']>;
-  isModerationEnabled?: InputMaybe<Scalars['Boolean']>;
+  id: Scalars['String']['input'];
+  isConfusionFeedbackEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  isGamificationEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  isLiveQAEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  isModerationEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+export type MutationChangeUserLocaleArgs = {
+  locale: Scalars['String']['input'];
 };
 
 
 export type MutationCreateCourseArgs = {
-  color?: InputMaybe<Scalars['String']>;
-  description?: InputMaybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  endDate: Scalars['Date'];
-  groupDeadlineDate?: InputMaybe<Scalars['Date']>;
-  isGamificationEnabled: Scalars['Boolean'];
-  name: Scalars['String'];
-  notificationEmail?: InputMaybe<Scalars['String']>;
-  startDate: Scalars['Date'];
+  color?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  endDate: Scalars['Date']['input'];
+  groupDeadlineDate?: InputMaybe<Scalars['Date']['input']>;
+  isGamificationEnabled: Scalars['Boolean']['input'];
+  name: Scalars['String']['input'];
+  notificationEmail?: InputMaybe<Scalars['String']['input']>;
+  startDate: Scalars['Date']['input'];
 };
 
 
 export type MutationCreateFeedbackArgs = {
-  content: Scalars['String'];
-  sessionId: Scalars['String'];
+  content: Scalars['String']['input'];
+  sessionId: Scalars['String']['input'];
 };
 
 
 export type MutationCreateLearningElementArgs = {
-  courseId?: InputMaybe<Scalars['String']>;
-  description?: InputMaybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  multiplier: Scalars['Int'];
-  name: Scalars['String'];
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
   order: LearningElementOrderType;
-  resetTimeDays: Scalars['Int'];
+  resetTimeDays: Scalars['Int']['input'];
   stacks: Array<StackInput>;
 };
 
 
 export type MutationCreateMicroSessionArgs = {
-  courseId?: InputMaybe<Scalars['String']>;
-  description?: InputMaybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  endDate: Scalars['Date'];
-  multiplier: Scalars['Int'];
-  name: Scalars['String'];
-  questions: Array<Scalars['Int']>;
-  startDate: Scalars['Date'];
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  endDate: Scalars['Date']['input'];
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  questions: Array<Scalars['Int']['input']>;
+  startDate: Scalars['Date']['input'];
 };
 
 
 export type MutationCreateParticipantAndJoinCourseArgs = {
-  courseId: Scalars['String'];
-  password: Scalars['String'];
-  pin: Scalars['Int'];
-  username: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+  pin: Scalars['Int']['input'];
+  username: Scalars['String']['input'];
 };
 
 
 export type MutationCreateParticipantGroupArgs = {
-  courseId: Scalars['String'];
-  name: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  name: Scalars['String']['input'];
 };
 
 
 export type MutationCreateSessionArgs = {
   blocks: Array<BlockInput>;
-  courseId?: InputMaybe<Scalars['String']>;
-  description?: InputMaybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  isGamificationEnabled?: InputMaybe<Scalars['Boolean']>;
-  multiplier: Scalars['Int'];
-  name: Scalars['String'];
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  isGamificationEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
 };
 
 
 export type MutationDeactivateSessionBlockArgs = {
-  sessionBlockId: Scalars['Int'];
-  sessionId: Scalars['String'];
+  sessionBlockId: Scalars['Int']['input'];
+  sessionId: Scalars['String']['input'];
 };
 
 
 export type MutationDeleteFeedbackArgs = {
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 };
 
 
 export type MutationDeleteFeedbackResponseArgs = {
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 };
 
 
 export type MutationDeleteLearningElementArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type MutationDeleteMicroSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type MutationDeleteQuestionArgs = {
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 };
 
 
 export type MutationDeleteSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type MutationDeleteTagArgs = {
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 };
 
 
 export type MutationEditLearningElementArgs = {
-  courseId?: InputMaybe<Scalars['String']>;
-  description?: InputMaybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  id: Scalars['String'];
-  multiplier: Scalars['Int'];
-  name: Scalars['String'];
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  id: Scalars['String']['input'];
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
   order: LearningElementOrderType;
-  resetTimeDays: Scalars['Int'];
+  resetTimeDays: Scalars['Int']['input'];
   stacks: Array<StackInput>;
 };
 
 
 export type MutationEditMicroSessionArgs = {
-  courseId?: InputMaybe<Scalars['String']>;
-  description?: InputMaybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  endDate: Scalars['Date'];
-  id: Scalars['String'];
-  multiplier: Scalars['Int'];
-  name: Scalars['String'];
-  questions: Array<Scalars['Int']>;
-  startDate: Scalars['Date'];
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  endDate: Scalars['Date']['input'];
+  id: Scalars['String']['input'];
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  questions: Array<Scalars['Int']['input']>;
+  startDate: Scalars['Date']['input'];
 };
 
 
 export type MutationEditSessionArgs = {
   blocks: Array<BlockInput>;
-  courseId?: InputMaybe<Scalars['String']>;
-  description?: InputMaybe<Scalars['String']>;
-  displayName: Scalars['String'];
-  id: Scalars['String'];
-  isGamificationEnabled?: InputMaybe<Scalars['Boolean']>;
-  multiplier: Scalars['Int'];
-  name: Scalars['String'];
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  id: Scalars['String']['input'];
+  isGamificationEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
 };
 
 
 export type MutationEditTagArgs = {
-  id: Scalars['Int'];
-  name: Scalars['String'];
+  id: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
 };
 
 
 export type MutationEndSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type MutationFlagQuestionArgs = {
-  content: Scalars['String'];
-  questionInstanceId: Scalars['Int'];
+  content: Scalars['String']['input'];
+  questionInstanceId: Scalars['Int']['input'];
 };
 
 
 export type MutationJoinCourseArgs = {
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 };
 
 
 export type MutationJoinCourseWithPinArgs = {
-  pin: Scalars['Int'];
+  pin: Scalars['Int']['input'];
 };
 
 
 export type MutationJoinParticipantGroupArgs = {
-  code: Scalars['Int'];
-  courseId: Scalars['String'];
+  code: Scalars['Int']['input'];
+  courseId: Scalars['String']['input'];
 };
 
 
 export type MutationLeaveCourseArgs = {
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 };
 
 
 export type MutationLeaveParticipantGroupArgs = {
-  courseId: Scalars['String'];
-  groupId: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  groupId: Scalars['String']['input'];
 };
 
 
 export type MutationLoginParticipantArgs = {
-  password: Scalars['String'];
-  username: Scalars['String'];
+  password: Scalars['String']['input'];
+  username: Scalars['String']['input'];
 };
 
 
 export type MutationLoginUserArgs = {
-  email: Scalars['String'];
-  password: Scalars['String'];
+  email: Scalars['String']['input'];
+  password: Scalars['String']['input'];
 };
 
 
 export type MutationLoginUserTokenArgs = {
-  email: Scalars['String'];
-  token: Scalars['String'];
+  email: Scalars['String']['input'];
+  token: Scalars['String']['input'];
 };
 
 
 export type MutationManipulateChoicesQuestionArgs = {
   attachments?: InputMaybe<Array<AttachmentInput>>;
-  content?: InputMaybe<Scalars['String']>;
+  content?: InputMaybe<Scalars['String']['input']>;
   displayMode?: InputMaybe<QuestionDisplayMode>;
-  explanation?: InputMaybe<Scalars['String']>;
-  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']>;
-  hasSampleSolution?: InputMaybe<Scalars['Boolean']>;
-  id?: InputMaybe<Scalars['Int']>;
-  name?: InputMaybe<Scalars['String']>;
+  explanation?: InputMaybe<Scalars['String']['input']>;
+  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']['input']>;
+  hasSampleSolution?: InputMaybe<Scalars['Boolean']['input']>;
+  id?: InputMaybe<Scalars['Int']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<OptionsChoicesInput>;
-  pointsMultiplier?: InputMaybe<Scalars['Int']>;
-  tags?: InputMaybe<Array<Scalars['String']>>;
+  pointsMultiplier?: InputMaybe<Scalars['Int']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
   type: QuestionType;
 };
 
 
 export type MutationManipulateFreeTextQuestionArgs = {
   attachments?: InputMaybe<Array<AttachmentInput>>;
-  content?: InputMaybe<Scalars['String']>;
-  explanation?: InputMaybe<Scalars['String']>;
-  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']>;
-  hasSampleSolution?: InputMaybe<Scalars['Boolean']>;
-  id?: InputMaybe<Scalars['Int']>;
-  name?: InputMaybe<Scalars['String']>;
+  content?: InputMaybe<Scalars['String']['input']>;
+  explanation?: InputMaybe<Scalars['String']['input']>;
+  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']['input']>;
+  hasSampleSolution?: InputMaybe<Scalars['Boolean']['input']>;
+  id?: InputMaybe<Scalars['Int']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<OptionsFreeTextInput>;
-  pointsMultiplier?: InputMaybe<Scalars['Int']>;
-  tags?: InputMaybe<Array<Scalars['String']>>;
+  pointsMultiplier?: InputMaybe<Scalars['Int']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
   type: QuestionType;
 };
 
 
 export type MutationManipulateNumericalQuestionArgs = {
   attachments?: InputMaybe<Array<AttachmentInput>>;
-  content?: InputMaybe<Scalars['String']>;
-  explanation?: InputMaybe<Scalars['String']>;
-  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']>;
-  hasSampleSolution?: InputMaybe<Scalars['Boolean']>;
-  id?: InputMaybe<Scalars['Int']>;
-  name?: InputMaybe<Scalars['String']>;
+  content?: InputMaybe<Scalars['String']['input']>;
+  explanation?: InputMaybe<Scalars['String']['input']>;
+  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']['input']>;
+  hasSampleSolution?: InputMaybe<Scalars['Boolean']['input']>;
+  id?: InputMaybe<Scalars['Int']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<OptionsNumericalInput>;
-  pointsMultiplier?: InputMaybe<Scalars['Int']>;
-  tags?: InputMaybe<Array<Scalars['String']>>;
+  pointsMultiplier?: InputMaybe<Scalars['Int']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
   type: QuestionType;
 };
 
 
 export type MutationMarkMicroSessionCompletedArgs = {
-  courseId: Scalars['String'];
-  id: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  id: Scalars['String']['input'];
 };
 
 
 export type MutationPinFeedbackArgs = {
-  id: Scalars['Int'];
-  isPinned: Scalars['Boolean'];
+  id: Scalars['Int']['input'];
+  isPinned: Scalars['Boolean']['input'];
 };
 
 
 export type MutationPublishFeedbackArgs = {
-  id: Scalars['Int'];
-  isPublished: Scalars['Boolean'];
+  id: Scalars['Int']['input'];
+  isPublished: Scalars['Boolean']['input'];
 };
 
 
 export type MutationPublishLearningElementArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type MutationPublishMicroSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type MutationRegisterParticipantFromLtiArgs = {
-  courseId: Scalars['String'];
-  participantId: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  participantId: Scalars['String']['input'];
 };
 
 
 export type MutationResolveFeedbackArgs = {
-  id: Scalars['Int'];
-  isResolved: Scalars['Boolean'];
+  id: Scalars['Int']['input'];
+  isResolved: Scalars['Boolean']['input'];
 };
 
 
 export type MutationRespondToFeedbackArgs = {
-  id: Scalars['Int'];
-  responseContent: Scalars['String'];
+  id: Scalars['Int']['input'];
+  responseContent: Scalars['String']['input'];
 };
 
 
 export type MutationRespondToQuestionInstanceArgs = {
-  courseId: Scalars['String'];
-  id: Scalars['Int'];
+  courseId: Scalars['String']['input'];
+  id: Scalars['Int']['input'];
   response: ResponseInput;
 };
 
 
 export type MutationStartGroupActivityArgs = {
-  activityId: Scalars['String'];
-  groupId: Scalars['String'];
+  activityId: Scalars['String']['input'];
+  groupId: Scalars['String']['input'];
 };
 
 
 export type MutationStartSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type MutationSubmitGroupActivityDecisionsArgs = {
-  activityInstanceId: Scalars['Int'];
+  activityInstanceId: Scalars['Int']['input'];
   decisions: Array<GroupActivityDecisionInput>;
 };
 
 
 export type MutationSubscribeToPushArgs = {
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
   subscriptionObject: SubscriptionObjectInput;
 };
 
 
 export type MutationUnsubscribeFromPushArgs = {
-  courseId: Scalars['String'];
-  endpoint: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  endpoint: Scalars['String']['input'];
 };
 
 
 export type MutationUpdateParticipantProfileArgs = {
-  avatar?: InputMaybe<Scalars['String']>;
+  avatar?: InputMaybe<Scalars['String']['input']>;
   avatarSettings?: InputMaybe<AvatarSettingsInput>;
-  password?: InputMaybe<Scalars['String']>;
-  username?: InputMaybe<Scalars['String']>;
+  password?: InputMaybe<Scalars['String']['input']>;
+  username?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type MutationUpvoteFeedbackArgs = {
-  feedbackId: Scalars['Int'];
-  increment: Scalars['Int'];
+  feedbackId: Scalars['Int']['input'];
+  increment: Scalars['Int']['input'];
 };
 
 
 export type MutationVoteFeedbackResponseArgs = {
-  id: Scalars['Int'];
-  incrementDownvote: Scalars['Int'];
-  incrementUpvote: Scalars['Int'];
+  id: Scalars['Int']['input'];
+  incrementDownvote: Scalars['Int']['input'];
+  incrementUpvote: Scalars['Int']['input'];
 };
 
 export type NumericalQuestionData = QuestionData & {
   __typename?: 'NumericalQuestionData';
-  content: Scalars['String'];
+  content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
-  explanation?: Maybe<Scalars['String']>;
-  id: Scalars['Int'];
-  name: Scalars['String'];
+  explanation?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
   options: NumericalQuestionOptions;
-  pointsMultiplier?: Maybe<Scalars['Int']>;
+  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
   type: QuestionType;
 };
 
 export type NumericalQuestionOptions = {
   __typename?: 'NumericalQuestionOptions';
-  accuracy?: Maybe<Scalars['Int']>;
-  placeholder?: Maybe<Scalars['String']>;
+  accuracy?: Maybe<Scalars['Int']['output']>;
+  placeholder?: Maybe<Scalars['String']['output']>;
   restrictions: NumericalRestrictions;
   solutionRanges: Array<NumericalSolutionRange>;
-  unit?: Maybe<Scalars['String']>;
+  unit?: Maybe<Scalars['String']['output']>;
 };
 
 export type NumericalRestrictions = {
   __typename?: 'NumericalRestrictions';
-  max?: Maybe<Scalars['Float']>;
-  min?: Maybe<Scalars['Float']>;
+  max?: Maybe<Scalars['Float']['output']>;
+  min?: Maybe<Scalars['Float']['output']>;
 };
 
 export type NumericalRestrictionsInput = {
-  max?: InputMaybe<Scalars['Float']>;
-  min?: InputMaybe<Scalars['Float']>;
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
 };
 
 export type NumericalSolutionRange = {
   __typename?: 'NumericalSolutionRange';
-  max?: Maybe<Scalars['Float']>;
-  min?: Maybe<Scalars['Float']>;
+  max?: Maybe<Scalars['Float']['output']>;
+  min?: Maybe<Scalars['Float']['output']>;
 };
 
 export type OptionsChoicesInput = {
@@ -944,18 +958,18 @@ export type OptionsChoicesInput = {
 };
 
 export type OptionsFreeTextInput = {
-  feedback?: InputMaybe<Scalars['String']>;
-  placeholder?: InputMaybe<Scalars['String']>;
+  feedback?: InputMaybe<Scalars['String']['input']>;
+  placeholder?: InputMaybe<Scalars['String']['input']>;
   restrictions?: InputMaybe<FreeTextRestrictionsInput>;
-  solutions?: InputMaybe<Array<Scalars['String']>>;
+  solutions?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type OptionsNumericalInput = {
-  accuracy?: InputMaybe<Scalars['Int']>;
-  feedback?: InputMaybe<Scalars['String']>;
+  accuracy?: InputMaybe<Scalars['Int']['input']>;
+  feedback?: InputMaybe<Scalars['String']['input']>;
   restrictions?: InputMaybe<NumericalRestrictionsInput>;
   solutionRanges?: InputMaybe<Array<SolutionRangeInput>>;
-  unit?: InputMaybe<Scalars['String']>;
+  unit?: InputMaybe<Scalars['String']['input']>;
 };
 
 export enum ParameterType {
@@ -966,37 +980,38 @@ export enum ParameterType {
 export type Participant = {
   __typename?: 'Participant';
   achievements?: Maybe<Array<ParticipantAchievementInstance>>;
-  avatar?: Maybe<Scalars['String']>;
-  avatarSettings?: Maybe<Scalars['Json']>;
-  id: Scalars['ID'];
-  isSelf?: Maybe<Scalars['Boolean']>;
-  lastLoginAt?: Maybe<Scalars['Date']>;
-  level?: Maybe<Scalars['Int']>;
+  avatar?: Maybe<Scalars['String']['output']>;
+  avatarSettings?: Maybe<Scalars['Json']['output']>;
+  id: Scalars['ID']['output'];
+  isSelf?: Maybe<Scalars['Boolean']['output']>;
+  lastLoginAt?: Maybe<Scalars['Date']['output']>;
+  level?: Maybe<Scalars['Int']['output']>;
   levelData?: Maybe<Level>;
+  locale: Scalars['String']['output'];
   participantGroups?: Maybe<Array<ParticipantGroup>>;
-  rank?: Maybe<Scalars['Int']>;
-  score?: Maybe<Scalars['Float']>;
-  username: Scalars['String'];
-  xp: Scalars['Int'];
+  rank?: Maybe<Scalars['Int']['output']>;
+  score?: Maybe<Scalars['Float']['output']>;
+  username: Scalars['String']['output'];
+  xp: Scalars['Int']['output'];
 };
 
 export type ParticipantAchievementInstance = {
   __typename?: 'ParticipantAchievementInstance';
-  achievedAt: Scalars['Date'];
-  achievedCount: Scalars['Int'];
+  achievedAt: Scalars['Date']['output'];
+  achievedCount: Scalars['Int']['output'];
   achievement: Achievement;
-  id: Scalars['Int'];
+  id: Scalars['Int']['output'];
 };
 
 export type ParticipantGroup = {
   __typename?: 'ParticipantGroup';
-  averageMemberScore: Scalars['Float'];
-  code: Scalars['Int'];
-  groupActivityScore: Scalars['Float'];
-  id: Scalars['ID'];
-  name: Scalars['String'];
+  averageMemberScore: Scalars['Float']['output'];
+  code: Scalars['Int']['output'];
+  groupActivityScore: Scalars['Float']['output'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
   participants: Array<Participant>;
-  score?: Maybe<Scalars['Float']>;
+  score?: Maybe<Scalars['Float']['output']>;
 };
 
 export type ParticipantLearningData = {
@@ -1005,11 +1020,11 @@ export type ParticipantLearningData = {
   groupActivityInstances?: Maybe<Array<GroupActivityInstance>>;
   groupLeaderboard?: Maybe<Array<GroupLeaderboardEntry>>;
   groupLeaderboardStatistics?: Maybe<LeaderboardStatistics>;
-  id: Scalars['String'];
+  id: Scalars['String']['output'];
   leaderboard?: Maybe<Array<LeaderboardEntry>>;
   leaderboardStatistics?: Maybe<LeaderboardStatistics>;
   participant?: Maybe<Participant>;
-  participantToken?: Maybe<Scalars['String']>;
+  participantToken?: Maybe<Scalars['String']['output']>;
   participation?: Maybe<Participation>;
 };
 
@@ -1022,18 +1037,18 @@ export type ParticipantWithAchievements = {
 export type Participation = {
   __typename?: 'Participation';
   bookmarkedStacks?: Maybe<Array<QuestionStack>>;
-  completedMicroSessions: Array<Scalars['String']>;
+  completedMicroSessions: Array<Scalars['String']['output']>;
   course?: Maybe<Course>;
-  id: Scalars['Int'];
-  isActive: Scalars['Boolean'];
+  id: Scalars['Int']['output'];
+  isActive: Scalars['Boolean']['output'];
   participant?: Maybe<Participant>;
   subscriptions?: Maybe<Array<PushSubscription>>;
 };
 
 export type PushSubscription = {
   __typename?: 'PushSubscription';
-  endpoint: Scalars['String'];
-  id: Scalars['Int'];
+  endpoint: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
 };
 
 export type Query = {
@@ -1079,154 +1094,154 @@ export type Query = {
 
 
 export type QueryBasicCourseInformationArgs = {
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 };
 
 
 export type QueryCockpitSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QueryControlCourseArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QueryControlSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QueryCourseArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QueryFeedbacksArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QueryGetBookmarkedQuestionsArgs = {
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 };
 
 
 export type QueryGetBookmarksLearningElementArgs = {
-  courseId: Scalars['String'];
-  elementId: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  elementId: Scalars['String']['input'];
 };
 
 
 export type QueryGetCourseOverviewDataArgs = {
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 };
 
 
 export type QueryGroupActivityDetailsArgs = {
-  activityId: Scalars['String'];
-  groupId: Scalars['String'];
+  activityId: Scalars['String']['input'];
+  groupId: Scalars['String']['input'];
 };
 
 
 export type QueryLearningElementArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QueryLiveSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QueryMicroSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QueryParticipantDetailsArgs = {
-  participantId: Scalars['String'];
+  participantId: Scalars['String']['input'];
 };
 
 
 export type QueryParticipantGroupsArgs = {
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 };
 
 
 export type QueryParticipationsArgs = {
-  endpoint?: InputMaybe<Scalars['String']>;
+  endpoint?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryPinnedFeedbacksArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QueryQuestionArgs = {
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 };
 
 
 export type QueryQuestionStackArgs = {
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 };
 
 
 export type QueryRunningSessionsArgs = {
-  shortname: Scalars['String'];
+  shortname: Scalars['String']['input'];
 };
 
 
 export type QuerySessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QuerySessionEvaluationArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 
 export type QuerySessionLeaderboardArgs = {
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 };
 
 
 export type QuerySingleMicroSessionArgs = {
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 };
 
 export type Question = {
   __typename?: 'Question';
   attachments: Array<Attachment>;
-  content: Scalars['String'];
-  createdAt: Scalars['Date'];
+  content: Scalars['String']['output'];
+  createdAt: Scalars['Date']['output'];
   displayMode: QuestionDisplayMode;
-  explanation?: Maybe<Scalars['String']>;
-  hasAnswerFeedbacks: Scalars['Boolean'];
-  hasSampleSolution: Scalars['Boolean'];
-  id: Scalars['Int'];
-  isArchived: Scalars['Boolean'];
-  isDeleted: Scalars['Boolean'];
-  name: Scalars['String'];
-  options: Scalars['Json'];
-  pointsMultiplier: Scalars['Int'];
+  explanation?: Maybe<Scalars['String']['output']>;
+  hasAnswerFeedbacks: Scalars['Boolean']['output'];
+  hasSampleSolution: Scalars['Boolean']['output'];
+  id: Scalars['Int']['output'];
+  isArchived: Scalars['Boolean']['output'];
+  isDeleted: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  options: Scalars['Json']['output'];
+  pointsMultiplier: Scalars['Int']['output'];
   questionData: QuestionData;
   tags: Array<Tag>;
   type: QuestionType;
-  updatedAt: Scalars['Date'];
+  updatedAt: Scalars['Date']['output'];
 };
 
 export type QuestionData = {
-  content: Scalars['String'];
+  content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
-  explanation?: Maybe<Scalars['String']>;
-  id: Scalars['Int'];
-  name: Scalars['String'];
-  pointsMultiplier?: Maybe<Scalars['Int']>;
+  explanation?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
+  pointsMultiplier?: Maybe<Scalars['Int']['output']>;
   type: QuestionType;
 };
 
@@ -1237,38 +1252,38 @@ export enum QuestionDisplayMode {
 
 export type QuestionFeedback = {
   __typename?: 'QuestionFeedback';
-  correct?: Maybe<Scalars['Boolean']>;
-  feedback?: Maybe<Scalars['String']>;
-  ix: Scalars['Int'];
-  value: Scalars['String'];
+  correct?: Maybe<Scalars['Boolean']['output']>;
+  feedback?: Maybe<Scalars['String']['output']>;
+  ix: Scalars['Int']['output'];
+  value: Scalars['String']['output'];
 };
 
 export type QuestionInstance = {
   __typename?: 'QuestionInstance';
   attachments?: Maybe<Array<Attachment>>;
   evaluation?: Maybe<InstanceEvaluation>;
-  id: Scalars['Int'];
-  pointsMultiplier: Scalars['Int'];
+  id: Scalars['Int']['output'];
+  pointsMultiplier: Scalars['Int']['output'];
   questionData: QuestionData;
 };
 
 export type QuestionResponse = {
   __typename?: 'QuestionResponse';
-  id: Scalars['Int'];
+  id: Scalars['Int']['output'];
 };
 
 export type QuestionResponseDetail = {
   __typename?: 'QuestionResponseDetail';
-  id: Scalars['Int'];
+  id: Scalars['Int']['output'];
 };
 
 export type QuestionStack = {
   __typename?: 'QuestionStack';
-  description?: Maybe<Scalars['String']>;
-  displayName?: Maybe<Scalars['String']>;
+  description?: Maybe<Scalars['String']['output']>;
+  displayName?: Maybe<Scalars['String']['output']>;
   elements?: Maybe<Array<StackElement>>;
-  id: Scalars['Int'];
-  order?: Maybe<Scalars['Int']>;
+  id: Scalars['Int']['output'];
+  order?: Maybe<Scalars['Int']['output']>;
   type: QuestionStackType;
 };
 
@@ -1288,8 +1303,8 @@ export enum QuestionType {
 }
 
 export type ResponseInput = {
-  choices?: InputMaybe<Array<Scalars['Int']>>;
-  value?: InputMaybe<Scalars['String']>;
+  choices?: InputMaybe<Array<Scalars['Int']['input']>>;
+  value?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type Session = {
@@ -1300,27 +1315,27 @@ export type Session = {
   confusionFeedbacks?: Maybe<Array<ConfusionTimestep>>;
   confusionSummary?: Maybe<ConfusionSummary>;
   course?: Maybe<Course>;
-  createdAt: Scalars['Date'];
-  description?: Maybe<Scalars['String']>;
-  displayName: Scalars['String'];
+  createdAt: Scalars['Date']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
   feedbacks?: Maybe<Array<Feedback>>;
-  finishedAt?: Maybe<Scalars['Date']>;
-  id: Scalars['ID'];
-  isConfusionFeedbackEnabled: Scalars['Boolean'];
-  isGamificationEnabled: Scalars['Boolean'];
-  isLiveQAEnabled: Scalars['Boolean'];
-  isModerationEnabled: Scalars['Boolean'];
-  linkTo?: Maybe<Scalars['String']>;
-  linkToJoin?: Maybe<Scalars['String']>;
-  name: Scalars['String'];
-  namespace: Scalars['String'];
-  numOfBlocks?: Maybe<Scalars['Int']>;
-  numOfQuestions?: Maybe<Scalars['Int']>;
-  pinCode?: Maybe<Scalars['Int']>;
-  pointsMultiplier: Scalars['Int'];
-  startedAt?: Maybe<Scalars['Date']>;
+  finishedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  isConfusionFeedbackEnabled: Scalars['Boolean']['output'];
+  isGamificationEnabled: Scalars['Boolean']['output'];
+  isLiveQAEnabled: Scalars['Boolean']['output'];
+  isModerationEnabled: Scalars['Boolean']['output'];
+  linkTo?: Maybe<Scalars['String']['output']>;
+  linkToJoin?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  namespace: Scalars['String']['output'];
+  numOfBlocks?: Maybe<Scalars['Int']['output']>;
+  numOfQuestions?: Maybe<Scalars['Int']['output']>;
+  pinCode?: Maybe<Scalars['Int']['output']>;
+  pointsMultiplier: Scalars['Int']['output'];
+  startedAt?: Maybe<Scalars['Date']['output']>;
   status: SessionStatus;
-  updatedAt?: Maybe<Scalars['Date']>;
+  updatedAt?: Maybe<Scalars['Date']['output']>;
 };
 
 export enum SessionAccessMode {
@@ -1330,14 +1345,14 @@ export enum SessionAccessMode {
 
 export type SessionBlock = {
   __typename?: 'SessionBlock';
-  execution?: Maybe<Scalars['Int']>;
-  expiresAt?: Maybe<Scalars['Date']>;
-  id: Scalars['Int'];
+  execution?: Maybe<Scalars['Int']['output']>;
+  expiresAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['Int']['output'];
   instances?: Maybe<Array<QuestionInstance>>;
-  order?: Maybe<Scalars['Int']>;
-  randomSelection?: Maybe<Scalars['Int']>;
+  order?: Maybe<Scalars['Int']['output']>;
+  randomSelection?: Maybe<Scalars['Int']['output']>;
   status: SessionBlockStatus;
-  timeLimit?: Maybe<Scalars['Int']>;
+  timeLimit?: Maybe<Scalars['Int']['output']>;
 };
 
 export enum SessionBlockStatus {
@@ -1351,9 +1366,9 @@ export type SessionEvaluation = {
   blocks: Array<EvaluationBlock>;
   confusionFeedbacks: Array<ConfusionTimestep>;
   feedbacks: Array<Feedback>;
-  id: Scalars['String'];
+  id: Scalars['String']['output'];
   instanceResults: Array<InstanceResult>;
-  isGamificationEnabled: Scalars['Boolean'];
+  isGamificationEnabled: Scalars['Boolean']['output'];
   status: SessionStatus;
 };
 
@@ -1365,21 +1380,21 @@ export enum SessionStatus {
 }
 
 export type SolutionRangeInput = {
-  max?: InputMaybe<Scalars['Float']>;
-  min?: InputMaybe<Scalars['Float']>;
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
 };
 
 export type StackElement = {
   __typename?: 'StackElement';
-  id: Scalars['Int'];
-  mdContent?: Maybe<Scalars['String']>;
-  order?: Maybe<Scalars['Int']>;
+  id: Scalars['Int']['output'];
+  mdContent?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<Scalars['Int']['output']>;
   questionInstance?: Maybe<QuestionInstance>;
 };
 
 export type StackElementInput = {
-  mdContent?: InputMaybe<Scalars['String']>;
-  questionId?: InputMaybe<Scalars['Int']>;
+  mdContent?: InputMaybe<Scalars['String']['input']>;
+  questionId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type StackInput = {
@@ -1388,87 +1403,87 @@ export type StackInput = {
 
 export type Statistics = {
   __typename?: 'Statistics';
-  max: Scalars['Float'];
-  mean: Scalars['Float'];
-  median: Scalars['Float'];
-  min: Scalars['Float'];
-  q1: Scalars['Float'];
-  q3: Scalars['Float'];
-  sd: Scalars['Float'];
+  max: Scalars['Float']['output'];
+  mean: Scalars['Float']['output'];
+  median: Scalars['Float']['output'];
+  min: Scalars['Float']['output'];
+  q1: Scalars['Float']['output'];
+  q3: Scalars['Float']['output'];
+  sd: Scalars['Float']['output'];
 };
 
 export type Subscription = {
   __typename?: 'Subscription';
   feedbackAdded: Feedback;
   feedbackCreated: Feedback;
-  feedbackRemoved: Scalars['String'];
+  feedbackRemoved: Scalars['String']['output'];
   feedbackUpdated: Feedback;
   runningSessionUpdated?: Maybe<SessionBlock>;
 };
 
 
 export type SubscriptionFeedbackAddedArgs = {
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 };
 
 
 export type SubscriptionFeedbackCreatedArgs = {
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 };
 
 
 export type SubscriptionFeedbackRemovedArgs = {
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 };
 
 
 export type SubscriptionFeedbackUpdatedArgs = {
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 };
 
 
 export type SubscriptionRunningSessionUpdatedArgs = {
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 };
 
 export type SubscriptionKeysInput = {
-  auth: Scalars['String'];
-  p256dh: Scalars['String'];
+  auth: Scalars['String']['input'];
+  p256dh: Scalars['String']['input'];
 };
 
 export type SubscriptionObjectInput = {
-  endpoint: Scalars['String'];
-  expirationTime?: InputMaybe<Scalars['Int']>;
+  endpoint: Scalars['String']['input'];
+  expirationTime?: InputMaybe<Scalars['Int']['input']>;
   keys: SubscriptionKeysInput;
 };
 
 export type TabData = {
   __typename?: 'TabData';
-  id: Scalars['String'];
-  name: Scalars['String'];
-  questionIx?: Maybe<Scalars['Int']>;
-  status?: Maybe<Scalars['String']>;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  questionIx?: Maybe<Scalars['Int']['output']>;
+  status?: Maybe<Scalars['String']['output']>;
 };
 
 export type Tag = {
   __typename?: 'Tag';
-  id: Scalars['Int'];
-  name: Scalars['String'];
+  id: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
 };
 
 export type Title = {
   __typename?: 'Title';
-  id: Scalars['Int'];
+  id: Scalars['Int']['output'];
 };
 
 export type User = {
   __typename?: 'User';
-  email: Scalars['String'];
-  id: Scalars['ID'];
-  isActive: Scalars['Boolean'];
-  loginToken?: Maybe<Scalars['String']>;
-  loginTokenExpiresAt?: Maybe<Scalars['Date']>;
-  shortname: Scalars['String'];
+  email: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  locale: Scalars['String']['output'];
+  loginToken?: Maybe<Scalars['String']['output']>;
+  loginTokenExpiresAt?: Maybe<Scalars['Date']['output']>;
+  shortname: Scalars['String']['output'];
 };
 
 export type FeedbackDataFragment = { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> };
@@ -1478,275 +1493,289 @@ export type QuestionDataFragment = { __typename?: 'QuestionInstance', questionDa
 export type QuestionDataWithoutSolutionsFragment = { __typename?: 'QuestionInstance', questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'FreeTextQuestionOptions', restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'NumericalQuestionOptions', unit?: string | null, accuracy?: number | null, placeholder?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } } } };
 
 export type ActivateSessionBlockMutationVariables = Exact<{
-  sessionId: Scalars['String'];
-  sessionBlockId: Scalars['Int'];
+  sessionId: Scalars['String']['input'];
+  sessionBlockId: Scalars['Int']['input'];
 }>;
 
 
 export type ActivateSessionBlockMutation = { __typename?: 'Mutation', activateSessionBlock?: { __typename?: 'Session', id: string, status: SessionStatus, blocks?: Array<{ __typename?: 'SessionBlock', id: number, status: SessionBlockStatus }> | null } | null };
 
 export type AddConfusionTimestepMutationVariables = Exact<{
-  sessionId: Scalars['String'];
-  difficulty: Scalars['Int'];
-  speed: Scalars['Int'];
+  sessionId: Scalars['String']['input'];
+  difficulty: Scalars['Int']['input'];
+  speed: Scalars['Int']['input'];
 }>;
 
 
 export type AddConfusionTimestepMutation = { __typename?: 'Mutation', addConfusionTimestep?: { __typename?: 'ConfusionTimestep', difficulty: number, speed: number } | null };
 
 export type BookmarkQuestionMutationVariables = Exact<{
-  stackId: Scalars['Int'];
-  courseId: Scalars['String'];
-  bookmarked: Scalars['Boolean'];
+  stackId: Scalars['Int']['input'];
+  courseId: Scalars['String']['input'];
+  bookmarked: Scalars['Boolean']['input'];
 }>;
 
 
 export type BookmarkQuestionMutation = { __typename?: 'Mutation', bookmarkQuestion?: Array<{ __typename?: 'QuestionStack', id: number }> | null };
 
 export type CancelSessionMutationVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type CancelSessionMutation = { __typename?: 'Mutation', cancelSession?: { __typename?: 'Session', id: string } | null };
 
 export type ChangeCourseColorMutationVariables = Exact<{
-  color: Scalars['String'];
-  courseId: Scalars['String'];
+  color: Scalars['String']['input'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type ChangeCourseColorMutation = { __typename?: 'Mutation', changeCourseColor?: { __typename?: 'Course', id: string, color?: string | null } | null };
 
 export type ChangeCourseDatesMutationVariables = Exact<{
-  courseId: Scalars['String'];
-  startDate?: InputMaybe<Scalars['Date']>;
-  endDate?: InputMaybe<Scalars['Date']>;
+  courseId: Scalars['String']['input'];
+  startDate?: InputMaybe<Scalars['Date']['input']>;
+  endDate?: InputMaybe<Scalars['Date']['input']>;
 }>;
 
 
 export type ChangeCourseDatesMutation = { __typename?: 'Mutation', changeCourseDates?: { __typename?: 'Course', id: string, startDate: any, endDate: any } | null };
 
 export type ChangeCourseDescriptionMutationVariables = Exact<{
-  input: Scalars['String'];
-  courseId: Scalars['String'];
+  input: Scalars['String']['input'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type ChangeCourseDescriptionMutation = { __typename?: 'Mutation', changeCourseDescription?: { __typename?: 'Course', id: string, description?: string | null } | null };
 
+export type ChangeParticipantLocaleMutationVariables = Exact<{
+  locale: Scalars['String']['input'];
+}>;
+
+
+export type ChangeParticipantLocaleMutation = { __typename?: 'Mutation', changeParticipantLocale?: { __typename?: 'Participant', id: string, locale: string } | null };
+
 export type ChangeSessionSettingsMutationVariables = Exact<{
-  id: Scalars['String'];
-  isLiveQAEnabled?: InputMaybe<Scalars['Boolean']>;
-  isConfusionFeedbackEnabled?: InputMaybe<Scalars['Boolean']>;
-  isModerationEnabled?: InputMaybe<Scalars['Boolean']>;
-  isGamificationEnabled?: InputMaybe<Scalars['Boolean']>;
+  id: Scalars['String']['input'];
+  isLiveQAEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  isConfusionFeedbackEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  isModerationEnabled?: InputMaybe<Scalars['Boolean']['input']>;
+  isGamificationEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
 export type ChangeSessionSettingsMutation = { __typename?: 'Mutation', changeSessionSettings?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean } | null };
 
+export type ChangeUserLocaleMutationVariables = Exact<{
+  locale: Scalars['String']['input'];
+}>;
+
+
+export type ChangeUserLocaleMutation = { __typename?: 'Mutation', changeUserLocale?: { __typename?: 'User', id: string, locale: string } | null };
+
 export type CreateCourseMutationVariables = Exact<{
-  name: Scalars['String'];
-  displayName: Scalars['String'];
-  description?: InputMaybe<Scalars['String']>;
-  color?: InputMaybe<Scalars['String']>;
-  startDate: Scalars['Date'];
-  endDate: Scalars['Date'];
-  groupDeadlineDate?: InputMaybe<Scalars['Date']>;
-  notificationEmail?: InputMaybe<Scalars['String']>;
-  isGamificationEnabled: Scalars['Boolean'];
+  name: Scalars['String']['input'];
+  displayName: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  color?: InputMaybe<Scalars['String']['input']>;
+  startDate: Scalars['Date']['input'];
+  endDate: Scalars['Date']['input'];
+  groupDeadlineDate?: InputMaybe<Scalars['Date']['input']>;
+  notificationEmail?: InputMaybe<Scalars['String']['input']>;
+  isGamificationEnabled: Scalars['Boolean']['input'];
 }>;
 
 
 export type CreateCourseMutation = { __typename?: 'Mutation', createCourse?: { __typename?: 'Course', id: string, name: string, displayName: string, description?: string | null, color?: string | null, startDate: any, endDate: any, groupDeadlineDate?: any | null, notificationEmail?: string | null, isGamificationEnabled: boolean } | null };
 
 export type CreateFeedbackMutationVariables = Exact<{
-  sessionId: Scalars['String'];
-  content: Scalars['String'];
+  sessionId: Scalars['String']['input'];
+  content: Scalars['String']['input'];
 }>;
 
 
 export type CreateFeedbackMutation = { __typename?: 'Mutation', createFeedback?: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number } | null };
 
 export type CreateLearningElementMutationVariables = Exact<{
-  name: Scalars['String'];
-  displayName: Scalars['String'];
-  description?: InputMaybe<Scalars['String']>;
+  name: Scalars['String']['input'];
+  displayName: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
   stacks: Array<StackInput> | StackInput;
-  courseId?: InputMaybe<Scalars['String']>;
-  multiplier: Scalars['Int'];
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  multiplier: Scalars['Int']['input'];
   order: LearningElementOrderType;
-  resetTimeDays: Scalars['Int'];
+  resetTimeDays: Scalars['Int']['input'];
 }>;
 
 
 export type CreateLearningElementMutation = { __typename?: 'Mutation', createLearningElement?: { __typename?: 'LearningElement', id: string } | null };
 
 export type CreateMicroSessionMutationVariables = Exact<{
-  name: Scalars['String'];
-  displayName: Scalars['String'];
-  description?: InputMaybe<Scalars['String']>;
-  questions: Array<Scalars['Int']> | Scalars['Int'];
-  courseId?: InputMaybe<Scalars['String']>;
-  multiplier: Scalars['Int'];
-  startDate: Scalars['Date'];
-  endDate: Scalars['Date'];
+  name: Scalars['String']['input'];
+  displayName: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  questions: Array<Scalars['Int']['input']> | Scalars['Int']['input'];
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  multiplier: Scalars['Int']['input'];
+  startDate: Scalars['Date']['input'];
+  endDate: Scalars['Date']['input'];
 }>;
 
 
 export type CreateMicroSessionMutation = { __typename?: 'Mutation', createMicroSession?: { __typename?: 'MicroSession', id: string } | null };
 
 export type CreateParticipantAndJoinCourseMutationVariables = Exact<{
-  username: Scalars['String'];
-  password: Scalars['String'];
-  courseId: Scalars['String'];
-  pin: Scalars['Int'];
+  username: Scalars['String']['input'];
+  password: Scalars['String']['input'];
+  courseId: Scalars['String']['input'];
+  pin: Scalars['Int']['input'];
 }>;
 
 
 export type CreateParticipantAndJoinCourseMutation = { __typename?: 'Mutation', createParticipantAndJoinCourse?: { __typename?: 'Participant', id: string, username: string, avatar?: string | null } | null };
 
 export type CreateParticipantGroupMutationVariables = Exact<{
-  courseId: Scalars['String'];
-  name: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  name: Scalars['String']['input'];
 }>;
 
 
 export type CreateParticipantGroupMutation = { __typename?: 'Mutation', createParticipantGroup?: { __typename?: 'ParticipantGroup', id: string, name: string, code: number, participants: Array<{ __typename?: 'Participant', id: string, username: string }> } | null };
 
 export type CreateSessionMutationVariables = Exact<{
-  name: Scalars['String'];
-  displayName: Scalars['String'];
-  description?: InputMaybe<Scalars['String']>;
+  name: Scalars['String']['input'];
+  displayName: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
   blocks: Array<BlockInput> | BlockInput;
-  courseId?: InputMaybe<Scalars['String']>;
-  multiplier: Scalars['Int'];
-  isGamificationEnabled?: InputMaybe<Scalars['Boolean']>;
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  multiplier: Scalars['Int']['input'];
+  isGamificationEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
 export type CreateSessionMutation = { __typename?: 'Mutation', createSession?: { __typename?: 'Session', id: string } | null };
 
 export type DeactivateSessionBlockMutationVariables = Exact<{
-  sessionId: Scalars['String'];
-  sessionBlockId: Scalars['Int'];
+  sessionId: Scalars['String']['input'];
+  sessionBlockId: Scalars['Int']['input'];
 }>;
 
 
 export type DeactivateSessionBlockMutation = { __typename?: 'Mutation', deactivateSessionBlock?: { __typename?: 'Session', id: string, status: SessionStatus, activeBlock?: { __typename?: 'SessionBlock', id: number } | null, blocks?: Array<{ __typename?: 'SessionBlock', id: number, status: SessionBlockStatus }> | null } | null };
 
 export type DeleteFeedbackMutationVariables = Exact<{
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 }>;
 
 
 export type DeleteFeedbackMutation = { __typename?: 'Mutation', deleteFeedback?: { __typename?: 'Feedback', id: number } | null };
 
 export type DeleteFeedbackResponseMutationVariables = Exact<{
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 }>;
 
 
 export type DeleteFeedbackResponseMutation = { __typename?: 'Mutation', deleteFeedbackResponse?: { __typename?: 'Feedback', id: number } | null };
 
 export type DeleteLearningElementMutationVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type DeleteLearningElementMutation = { __typename?: 'Mutation', deleteLearningElement?: { __typename?: 'LearningElement', id: string } | null };
 
 export type DeleteMicroSessionMutationVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type DeleteMicroSessionMutation = { __typename?: 'Mutation', deleteMicroSession?: { __typename?: 'MicroSession', id: string } | null };
 
 export type DeleteQuestionMutationVariables = Exact<{
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 }>;
 
 
 export type DeleteQuestionMutation = { __typename?: 'Mutation', deleteQuestion?: { __typename?: 'Question', id: number } | null };
 
 export type DeleteSessionMutationVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type DeleteSessionMutation = { __typename?: 'Mutation', deleteSession?: { __typename?: 'Session', id: string } | null };
 
 export type DeleteTagMutationVariables = Exact<{
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 }>;
 
 
 export type DeleteTagMutation = { __typename?: 'Mutation', deleteTag?: { __typename?: 'Tag', id: number } | null };
 
 export type EditLearningElementMutationVariables = Exact<{
-  id: Scalars['String'];
-  name: Scalars['String'];
-  displayName: Scalars['String'];
-  description?: InputMaybe<Scalars['String']>;
+  id: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  displayName: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
   stacks: Array<StackInput> | StackInput;
-  courseId?: InputMaybe<Scalars['String']>;
-  multiplier: Scalars['Int'];
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  multiplier: Scalars['Int']['input'];
   order: LearningElementOrderType;
-  resetTimeDays: Scalars['Int'];
+  resetTimeDays: Scalars['Int']['input'];
 }>;
 
 
 export type EditLearningElementMutation = { __typename?: 'Mutation', editLearningElement?: { __typename?: 'LearningElement', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays?: number | null, orderType: LearningElementOrderType, previouslyAnswered?: number | null, previousScore?: number | null, previousPointsAwarded?: number | null, totalTrials?: number | null, stacksWithQuestions?: number | null, numOfQuestions?: number | null, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null } | null, stacks?: Array<{ __typename?: 'QuestionStack', id: number, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'StackElement', id: number, order?: number | null, mdContent?: string | null, questionInstance?: { __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } } } | null }> | null }> | null } | null };
 
 export type EditMicroSessionMutationVariables = Exact<{
-  id: Scalars['String'];
-  name: Scalars['String'];
-  displayName: Scalars['String'];
-  description?: InputMaybe<Scalars['String']>;
-  questions: Array<Scalars['Int']> | Scalars['Int'];
-  courseId?: InputMaybe<Scalars['String']>;
-  multiplier: Scalars['Int'];
-  startDate: Scalars['Date'];
-  endDate: Scalars['Date'];
+  id: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  displayName: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  questions: Array<Scalars['Int']['input']> | Scalars['Int']['input'];
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  multiplier: Scalars['Int']['input'];
+  startDate: Scalars['Date']['input'];
+  endDate: Scalars['Date']['input'];
 }>;
 
 
 export type EditMicroSessionMutation = { __typename?: 'Mutation', editMicroSession?: { __typename?: 'MicroSession', id: string } | null };
 
 export type EditSessionMutationVariables = Exact<{
-  id: Scalars['String'];
-  name: Scalars['String'];
-  displayName: Scalars['String'];
-  description?: InputMaybe<Scalars['String']>;
+  id: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  displayName: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
   blocks: Array<BlockInput> | BlockInput;
-  courseId?: InputMaybe<Scalars['String']>;
-  multiplier: Scalars['Int'];
-  isGamificationEnabled?: InputMaybe<Scalars['Boolean']>;
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  multiplier: Scalars['Int']['input'];
+  isGamificationEnabled?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
 export type EditSessionMutation = { __typename?: 'Mutation', editSession?: { __typename?: 'Session', id: string } | null };
 
 export type EditTagMutationVariables = Exact<{
-  id: Scalars['Int'];
-  name: Scalars['String'];
+  id: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
 }>;
 
 
 export type EditTagMutation = { __typename?: 'Mutation', editTag?: { __typename?: 'Tag', id: number, name: string } | null };
 
 export type EndSessionMutationVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type EndSessionMutation = { __typename?: 'Mutation', endSession?: { __typename?: 'Session', id: string, status: SessionStatus } | null };
 
 export type FlagQuestionMutationVariables = Exact<{
-  questionInstanceId: Scalars['Int'];
-  content: Scalars['String'];
+  questionInstanceId: Scalars['Int']['input'];
+  content: Scalars['String']['input'];
 }>;
 
 
@@ -1758,61 +1787,61 @@ export type GenerateLoginTokenMutationVariables = Exact<{ [key: string]: never; 
 export type GenerateLoginTokenMutation = { __typename?: 'Mutation', generateLoginToken?: { __typename?: 'User', id: string, loginToken?: string | null, loginTokenExpiresAt?: any | null } | null };
 
 export type JoinCourseMutationVariables = Exact<{
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type JoinCourseMutation = { __typename?: 'Mutation', joinCourse?: { __typename?: 'ParticipantLearningData', id: string, participation?: { __typename?: 'Participation', id: number, isActive: boolean } | null } | null };
 
 export type JoinCourseWithPinMutationVariables = Exact<{
-  pin: Scalars['Int'];
+  pin: Scalars['Int']['input'];
 }>;
 
 
 export type JoinCourseWithPinMutation = { __typename?: 'Mutation', joinCourseWithPin?: { __typename?: 'Participant', id: string } | null };
 
 export type JoinParticipantGroupMutationVariables = Exact<{
-  courseId: Scalars['String'];
-  code: Scalars['Int'];
+  courseId: Scalars['String']['input'];
+  code: Scalars['Int']['input'];
 }>;
 
 
 export type JoinParticipantGroupMutation = { __typename?: 'Mutation', joinParticipantGroup?: { __typename?: 'ParticipantGroup', id: string, name: string, code: number, participants: Array<{ __typename?: 'Participant', id: string, username: string }> } | null };
 
 export type LeaveCourseMutationVariables = Exact<{
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type LeaveCourseMutation = { __typename?: 'Mutation', leaveCourse?: { __typename?: 'LeaveCourseParticipation', id: string, participation: { __typename?: 'Participation', id: number, isActive: boolean } } | null };
 
 export type LeaveParticipantGroupMutationVariables = Exact<{
-  groupId: Scalars['String'];
-  courseId: Scalars['String'];
+  groupId: Scalars['String']['input'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type LeaveParticipantGroupMutation = { __typename?: 'Mutation', leaveParticipantGroup?: { __typename?: 'ParticipantGroup', id: string, name: string, code: number, participants: Array<{ __typename?: 'Participant', id: string, username: string }> } | null };
 
 export type LoginParticipantMutationVariables = Exact<{
-  username: Scalars['String'];
-  password: Scalars['String'];
+  username: Scalars['String']['input'];
+  password: Scalars['String']['input'];
 }>;
 
 
 export type LoginParticipantMutation = { __typename?: 'Mutation', loginParticipant?: string | null };
 
 export type LoginUserMutationVariables = Exact<{
-  email: Scalars['String'];
-  password: Scalars['String'];
+  email: Scalars['String']['input'];
+  password: Scalars['String']['input'];
 }>;
 
 
 export type LoginUserMutation = { __typename?: 'Mutation', loginUser?: string | null };
 
 export type LoginUserTokenMutationVariables = Exact<{
-  email: Scalars['String'];
-  token: Scalars['String'];
+  email: Scalars['String']['input'];
+  token: Scalars['String']['input'];
 }>;
 
 
@@ -1829,120 +1858,120 @@ export type LogoutUserMutationVariables = Exact<{ [key: string]: never; }>;
 export type LogoutUserMutation = { __typename?: 'Mutation', logoutUser?: string | null };
 
 export type ManipulateChoicesQuestionMutationVariables = Exact<{
-  id?: InputMaybe<Scalars['Int']>;
+  id?: InputMaybe<Scalars['Int']['input']>;
   type: QuestionType;
-  name?: InputMaybe<Scalars['String']>;
-  content?: InputMaybe<Scalars['String']>;
-  explanation?: InputMaybe<Scalars['String']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  content?: InputMaybe<Scalars['String']['input']>;
+  explanation?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<OptionsChoicesInput>;
   displayMode?: InputMaybe<QuestionDisplayMode>;
-  hasSampleSolution?: InputMaybe<Scalars['Boolean']>;
-  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']>;
-  pointsMultiplier?: InputMaybe<Scalars['Int']>;
+  hasSampleSolution?: InputMaybe<Scalars['Boolean']['input']>;
+  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']['input']>;
+  pointsMultiplier?: InputMaybe<Scalars['Int']['input']>;
   attachments?: InputMaybe<Array<AttachmentInput> | AttachmentInput>;
-  tags?: InputMaybe<Array<Scalars['String']> | Scalars['String']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
 }>;
 
 
 export type ManipulateChoicesQuestionMutation = { __typename?: 'Mutation', manipulateChoicesQuestion?: { __typename?: 'Question', id: number, name: string, type: QuestionType, content: string, explanation?: string | null, displayMode: QuestionDisplayMode, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, pointsMultiplier: number, questionData: { __typename?: 'ChoicesQuestionData', options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } }, tags: Array<{ __typename?: 'Tag', id: number, name: string }>, attachments: Array<{ __typename?: 'Attachment', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: AttachmentType }> } | null };
 
 export type ManipulateFreeTextQuestionMutationVariables = Exact<{
-  id?: InputMaybe<Scalars['Int']>;
-  name?: InputMaybe<Scalars['String']>;
-  content?: InputMaybe<Scalars['String']>;
-  explanation?: InputMaybe<Scalars['String']>;
+  id?: InputMaybe<Scalars['Int']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  content?: InputMaybe<Scalars['String']['input']>;
+  explanation?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<OptionsFreeTextInput>;
-  hasSampleSolution?: InputMaybe<Scalars['Boolean']>;
-  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']>;
-  pointsMultiplier?: InputMaybe<Scalars['Int']>;
+  hasSampleSolution?: InputMaybe<Scalars['Boolean']['input']>;
+  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']['input']>;
+  pointsMultiplier?: InputMaybe<Scalars['Int']['input']>;
   attachments?: InputMaybe<Array<AttachmentInput> | AttachmentInput>;
-  tags?: InputMaybe<Array<Scalars['String']> | Scalars['String']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
 }>;
 
 
 export type ManipulateFreeTextQuestionMutation = { __typename?: 'Mutation', manipulateFreeTextQuestion?: { __typename?: 'Question', id: number, name: string, type: QuestionType, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, pointsMultiplier: number, questionData: { __typename?: 'ChoicesQuestionData', options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } }, tags: Array<{ __typename?: 'Tag', id: number, name: string }>, attachments: Array<{ __typename?: 'Attachment', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: AttachmentType }> } | null };
 
 export type ManipulateNumericalQuestionMutationVariables = Exact<{
-  id?: InputMaybe<Scalars['Int']>;
-  name?: InputMaybe<Scalars['String']>;
-  content?: InputMaybe<Scalars['String']>;
-  explanation?: InputMaybe<Scalars['String']>;
+  id?: InputMaybe<Scalars['Int']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  content?: InputMaybe<Scalars['String']['input']>;
+  explanation?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<OptionsNumericalInput>;
-  hasSampleSolution?: InputMaybe<Scalars['Boolean']>;
-  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']>;
-  pointsMultiplier?: InputMaybe<Scalars['Int']>;
+  hasSampleSolution?: InputMaybe<Scalars['Boolean']['input']>;
+  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']['input']>;
+  pointsMultiplier?: InputMaybe<Scalars['Int']['input']>;
   attachments?: InputMaybe<Array<AttachmentInput> | AttachmentInput>;
-  tags?: InputMaybe<Array<Scalars['String']> | Scalars['String']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
 }>;
 
 
 export type ManipulateNumericalQuestionMutation = { __typename?: 'Mutation', manipulateNumericalQuestion?: { __typename?: 'Question', id: number, name: string, type: QuestionType, content: string, explanation?: string | null, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, pointsMultiplier: number, questionData: { __typename?: 'ChoicesQuestionData', options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } }, tags: Array<{ __typename?: 'Tag', id: number, name: string }>, attachments: Array<{ __typename?: 'Attachment', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: AttachmentType }> } | null };
 
 export type MarkMicroSessionCompletedMutationVariables = Exact<{
-  courseId: Scalars['String'];
-  id: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type MarkMicroSessionCompletedMutation = { __typename?: 'Mutation', markMicroSessionCompleted?: { __typename?: 'Participation', id: number, completedMicroSessions: Array<string> } | null };
 
 export type PinFeedbackMutationVariables = Exact<{
-  id: Scalars['Int'];
-  isPinned: Scalars['Boolean'];
+  id: Scalars['Int']['input'];
+  isPinned: Scalars['Boolean']['input'];
 }>;
 
 
 export type PinFeedbackMutation = { __typename?: 'Mutation', pinFeedback?: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number } | null };
 
 export type PublishFeedbackMutationVariables = Exact<{
-  id: Scalars['Int'];
-  isPublished: Scalars['Boolean'];
+  id: Scalars['Int']['input'];
+  isPublished: Scalars['Boolean']['input'];
 }>;
 
 
 export type PublishFeedbackMutation = { __typename?: 'Mutation', publishFeedback?: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number } | null };
 
 export type PublishLearningElementMutationVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type PublishLearningElementMutation = { __typename?: 'Mutation', publishLearningElement?: { __typename?: 'LearningElement', id: string, name: string, displayName: string, status: LearningElementStatus } | null };
 
 export type PublishMicroSessionMutationVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type PublishMicroSessionMutation = { __typename?: 'Mutation', publishMicroSession?: { __typename?: 'MicroSession', id: string, name: string, displayName: string, status: MicroSessionStatus, numOfInstances?: number | null } | null };
 
 export type RegisterParticipantFromLtiMutationVariables = Exact<{
-  courseId: Scalars['String'];
-  participantId: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  participantId: Scalars['String']['input'];
 }>;
 
 
 export type RegisterParticipantFromLtiMutation = { __typename?: 'Mutation', registerParticipantFromLTI?: { __typename?: 'ParticipantLearningData', id: string, participantToken?: string | null, participant?: { __typename?: 'Participant', id: string, avatar?: string | null, username: string } | null, participation?: { __typename?: 'Participation', id: number, isActive: boolean } | null, course?: { __typename?: 'Course', id: string, name: string, displayName: string } | null } | null };
 
 export type ResolveFeedbackMutationVariables = Exact<{
-  id: Scalars['Int'];
-  isResolved: Scalars['Boolean'];
+  id: Scalars['Int']['input'];
+  isResolved: Scalars['Boolean']['input'];
 }>;
 
 
 export type ResolveFeedbackMutation = { __typename?: 'Mutation', resolveFeedback?: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number } | null };
 
 export type RespondToFeedbackMutationVariables = Exact<{
-  id: Scalars['Int'];
-  responseContent: Scalars['String'];
+  id: Scalars['Int']['input'];
+  responseContent: Scalars['String']['input'];
 }>;
 
 
 export type RespondToFeedbackMutation = { __typename?: 'Mutation', respondToFeedback?: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> } | null };
 
 export type ResponseToQuestionInstanceMutationVariables = Exact<{
-  courseId: Scalars['String'];
-  id: Scalars['Int'];
+  courseId: Scalars['String']['input'];
+  id: Scalars['Int']['input'];
   response: ResponseInput;
 }>;
 
@@ -1955,22 +1984,22 @@ export type SendPushNotificationsMutationVariables = Exact<{ [key: string]: neve
 export type SendPushNotificationsMutation = { __typename?: 'Mutation', sendPushNotifications: boolean };
 
 export type StartGroupActivityMutationVariables = Exact<{
-  activityId: Scalars['String'];
-  groupId: Scalars['String'];
+  activityId: Scalars['String']['input'];
+  groupId: Scalars['String']['input'];
 }>;
 
 
 export type StartGroupActivityMutation = { __typename?: 'Mutation', startGroupActivity?: { __typename?: 'GroupActivityDetails', id: string } | null };
 
 export type StartSessionMutationVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type StartSessionMutation = { __typename?: 'Mutation', startSession?: { __typename?: 'Session', id: string, status: SessionStatus } | null };
 
 export type SubmitGroupActivityDecisionsMutationVariables = Exact<{
-  activityInstanceId: Scalars['Int'];
+  activityInstanceId: Scalars['Int']['input'];
   decisions: Array<GroupActivityDecisionInput> | GroupActivityDecisionInput;
 }>;
 
@@ -1978,7 +2007,7 @@ export type SubmitGroupActivityDecisionsMutationVariables = Exact<{
 export type SubmitGroupActivityDecisionsMutation = { __typename?: 'Mutation', submitGroupActivityDecisions?: { __typename?: 'GroupActivityInstance', id: number } | null };
 
 export type SubscribeToPushMutationVariables = Exact<{
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
   subscriptionObject: SubscriptionObjectInput;
 }>;
 
@@ -1986,8 +2015,8 @@ export type SubscribeToPushMutationVariables = Exact<{
 export type SubscribeToPushMutation = { __typename?: 'Mutation', subscribeToPush?: { __typename?: 'Participation', id: number, subscriptions?: Array<{ __typename?: 'PushSubscription', id: number, endpoint: string }> | null } | null };
 
 export type UnsubscribeFromPushMutationVariables = Exact<{
-  courseId: Scalars['String'];
-  endpoint: Scalars['String'];
+  courseId: Scalars['String']['input'];
+  endpoint: Scalars['String']['input'];
 }>;
 
 
@@ -1999,63 +2028,63 @@ export type UpdateGroupAverageScoresMutationVariables = Exact<{ [key: string]: n
 export type UpdateGroupAverageScoresMutation = { __typename?: 'Mutation', updateGroupAverageScores: boolean };
 
 export type UpdateParticipantProfileMutationVariables = Exact<{
-  avatar?: InputMaybe<Scalars['String']>;
+  avatar?: InputMaybe<Scalars['String']['input']>;
   avatarSettings?: InputMaybe<AvatarSettingsInput>;
-  username?: InputMaybe<Scalars['String']>;
-  password?: InputMaybe<Scalars['String']>;
+  username?: InputMaybe<Scalars['String']['input']>;
+  password?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
 export type UpdateParticipantProfileMutation = { __typename?: 'Mutation', updateParticipantProfile?: { __typename?: 'Participant', id: string, username: string, avatar?: string | null, avatarSettings?: any | null } | null };
 
 export type UpvoteFeedbackMutationVariables = Exact<{
-  feedbackId: Scalars['Int'];
-  increment: Scalars['Int'];
+  feedbackId: Scalars['Int']['input'];
+  increment: Scalars['Int']['input'];
 }>;
 
 
 export type UpvoteFeedbackMutation = { __typename?: 'Mutation', upvoteFeedback?: { __typename?: 'Feedback', id: number, votes: number } | null };
 
 export type VoteFeedbackResponseMutationVariables = Exact<{
-  id: Scalars['Int'];
-  incrementUpvote: Scalars['Int'];
-  incrementDownvote: Scalars['Int'];
+  id: Scalars['Int']['input'];
+  incrementUpvote: Scalars['Int']['input'];
+  incrementDownvote: Scalars['Int']['input'];
 }>;
 
 
 export type VoteFeedbackResponseMutation = { __typename?: 'Mutation', voteFeedbackResponse?: { __typename?: 'FeedbackResponse', id: number, positiveReactions: number, negativeReactions: number } | null };
 
 export type GetBasicCourseInformationQueryVariables = Exact<{
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type GetBasicCourseInformationQuery = { __typename?: 'Query', basicCourseInformation?: { __typename?: 'Course', id: string, displayName: string, description?: string | null, color?: string | null, owner?: { __typename?: 'User', shortname: string } | null } | null };
 
 export type GetBookmarkedQuestionsQueryVariables = Exact<{
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type GetBookmarkedQuestionsQuery = { __typename?: 'Query', getBookmarkedQuestions?: Array<{ __typename?: 'QuestionStack', id: number, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'StackElement', id: number, order?: number | null, mdContent?: string | null, questionInstance?: { __typename?: 'QuestionInstance', id: number, pointsMultiplier: number, evaluation?: { __typename?: 'InstanceEvaluation', choices?: any | null, answers?: any | null, score: number, pointsAwarded?: number | null, percentile?: number | null, newPointsFrom?: any | null, xpAwarded?: number | null, newXpFrom?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix: number, feedback?: string | null, correct?: boolean | null, value: string }> | null } | null, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } } } | null }> | null }> | null };
 
 export type GetBookmarksLearningElementQueryVariables = Exact<{
-  elementId: Scalars['String'];
-  courseId: Scalars['String'];
+  elementId: Scalars['String']['input'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type GetBookmarksLearningElementQuery = { __typename?: 'Query', getBookmarksLearningElement?: Array<{ __typename?: 'QuestionStack', id: number }> | null };
 
 export type GetCockpitSessionQueryVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type GetCockpitSessionQuery = { __typename?: 'Query', cockpitSession?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, namespace: string, name: string, displayName: string, status: SessionStatus, startedAt?: any | null, course?: { __typename?: 'Course', id: string, displayName: string } | null, blocks?: Array<{ __typename?: 'SessionBlock', id: number, order?: number | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances?: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: QuestionType, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: QuestionType, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: QuestionType, content: string } }> | null }> | null, activeBlock?: { __typename?: 'SessionBlock', id: number } | null, confusionSummary?: { __typename?: 'ConfusionSummary', speed: number, difficulty: number, numberOfParticipants?: number | null } | null, feedbacks?: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, createdAt: any, resolvedAt?: any | null, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> }> | null } | null };
 
 export type GetControlCourseQueryVariables = Exact<{
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
@@ -2067,28 +2096,28 @@ export type GetControlCoursesQueryVariables = Exact<{ [key: string]: never; }>;
 export type GetControlCoursesQuery = { __typename?: 'Query', controlCourses?: Array<{ __typename?: 'Course', id: string, name: string, isArchived: boolean, displayName: string, description?: string | null }> | null };
 
 export type GetControlSessionQueryVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type GetControlSessionQuery = { __typename?: 'Query', controlSession?: { __typename?: 'Session', id: string, name: string, displayName: string, course?: { __typename?: 'Course', id: string, displayName: string } | null, blocks?: Array<{ __typename?: 'SessionBlock', id: number, order?: number | null, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances?: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: QuestionType, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: QuestionType, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: QuestionType, content: string } }> | null }> | null, activeBlock?: { __typename?: 'SessionBlock', id: number, order?: number | null } | null } | null };
 
 export type GetCourseOverviewDataQueryVariables = Exact<{
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type GetCourseOverviewDataQuery = { __typename?: 'Query', getCourseOverviewData?: { __typename?: 'ParticipantLearningData', id: string, participant?: { __typename?: 'Participant', id: string, avatar?: string | null, username: string, xp: number, level?: number | null } | null, participation?: { __typename?: 'Participation', id: number, isActive: boolean } | null, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null, description?: string | null, isGamificationEnabled: boolean, groupDeadlineDate?: any | null, isGroupDeadlinePassed?: boolean | null, awards?: Array<{ __typename?: 'AwardEntry', id: number, order: number, type: string, displayName: string, description: string, participant?: { __typename?: 'Participant', id: string, username: string, avatar?: string | null } | null, participantGroup?: { __typename?: 'ParticipantGroup', id: string, name: string } | null }> | null, groupActivities?: Array<{ __typename?: 'GroupActivity', id: string, displayName: string, description?: string | null, scheduledStartAt: any, scheduledEndAt: any }> | null } | null, leaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, participantId: string, username: string, avatar?: string | null, score: number, isSelf?: boolean | null, rank: number }> | null, leaderboardStatistics?: { __typename?: 'LeaderboardStatistics', participantCount: number, averageScore: number } | null, groupLeaderboard?: Array<{ __typename?: 'GroupLeaderboardEntry', id: string, name: string, score: number }> | null, groupLeaderboardStatistics?: { __typename?: 'LeaderboardStatistics', participantCount: number, averageScore: number } | null, groupActivityInstances?: Array<{ __typename?: 'GroupActivityInstance', id: number, decisionsSubmittedAt?: any | null, results?: any | null, groupActivityId: string }> | null } | null, participantGroups?: Array<{ __typename?: 'ParticipantGroup', id: string, name: string, code: number, averageMemberScore: number, groupActivityScore: number, score?: number | null, participants: Array<{ __typename?: 'Participant', id: string, username: string, avatar?: string | null, score?: number | null, isSelf?: boolean | null }> }> | null };
 
 export type GetFeedbacksQueryVariables = Exact<{
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 }>;
 
 
 export type GetFeedbacksQuery = { __typename?: 'Query', feedbacks?: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> }> | null };
 
 export type GetLearningElementQueryVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
@@ -2105,7 +2134,7 @@ export type GetLoginTokenQueryVariables = Exact<{ [key: string]: never; }>;
 export type GetLoginTokenQuery = { __typename?: 'Query', getLoginToken?: { __typename?: 'User', loginToken?: string | null, loginTokenExpiresAt?: any | null } | null };
 
 export type GetMicroSessionQueryVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
@@ -2117,84 +2146,84 @@ export type GetParticipantCoursesQueryVariables = Exact<{ [key: string]: never; 
 export type GetParticipantCoursesQuery = { __typename?: 'Query', participantCourses?: Array<{ __typename?: 'Course', id: string, isArchived: boolean, displayName: string, description?: string | null }> | null };
 
 export type GetParticipantDetailsQueryVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type GetParticipantDetailsQuery = { __typename?: 'Query', participantDetails?: { __typename?: 'Participant', id: string, username: string, avatar?: string | null, avatarSettings?: any | null, level?: number | null, xp: number, levelData?: { __typename?: 'Level', id: number, avatar?: string | null, name?: string | null, index: number, requiredXp: number, nextLevel?: { __typename?: 'Level', id: number, index: number, avatar?: string | null, requiredXp: number, name?: string | null } | null } | null, achievements?: Array<{ __typename?: 'ParticipantAchievementInstance', id: number, achievedAt: any, achievedCount: number, achievement: { __typename?: 'Achievement', id: number, name: string, description: string, icon: string, iconColor?: string | null } }> | null } | null };
 
 export type GetParticipantGroupsQueryVariables = Exact<{
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type GetParticipantGroupsQuery = { __typename?: 'Query', participantGroups?: Array<{ __typename?: 'ParticipantGroup', id: string, name: string, code: number, score?: number | null, participants: Array<{ __typename?: 'Participant', id: string, username: string, score?: number | null, isSelf?: boolean | null, rank?: number | null }> }> | null };
 
 export type GetPinnedFeedbacksQueryVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type GetPinnedFeedbacksQuery = { __typename?: 'Query', pinnedFeedbacks?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, confusionSummary?: { __typename?: 'ConfusionSummary', speed: number, difficulty: number, numberOfParticipants?: number | null } | null, feedbacks?: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, createdAt: any, resolvedAt?: any | null, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> }> | null } | null };
 
 export type GetRunningSessionQueryVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type GetRunningSessionQuery = { __typename?: 'Query', session?: { __typename?: 'Session', id: string, isLiveQAEnabled: boolean, isConfusionFeedbackEnabled: boolean, isModerationEnabled: boolean, isGamificationEnabled: boolean, namespace: string, displayName: string, status: SessionStatus, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null } | null, activeBlock?: { __typename?: 'SessionBlock', id: number, status: SessionBlockStatus, expiresAt?: any | null, timeLimit?: number | null, randomSelection?: number | null, execution?: number | null, instances?: Array<{ __typename?: 'QuestionInstance', id: number, attachments?: Array<{ __typename?: 'Attachment', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: AttachmentType }> | null, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'FreeTextQuestionOptions', restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'NumericalQuestionOptions', unit?: string | null, accuracy?: number | null, placeholder?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } } } }> | null } | null } | null };
 
 export type GetRunningSessionsQueryVariables = Exact<{
-  shortname: Scalars['String'];
+  shortname: Scalars['String']['input'];
 }>;
 
 
 export type GetRunningSessionsQuery = { __typename?: 'Query', runningSessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, linkTo?: string | null, course?: { __typename?: 'Course', id: string, displayName: string } | null }> | null };
 
 export type GetSessionEvaluationQueryVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type GetSessionEvaluationQuery = { __typename?: 'Query', sessionEvaluation?: { __typename?: 'SessionEvaluation', id: string, status: SessionStatus, isGamificationEnabled: boolean, blocks: Array<{ __typename?: 'EvaluationBlock', blockIx?: number | null, blockStatus: SessionBlockStatus, tabData: Array<{ __typename?: 'TabData', id: string, questionIx?: number | null, name: string, status?: string | null }> }>, instanceResults: Array<{ __typename?: 'InstanceResult', id: string, blockIx?: number | null, instanceIx?: number | null, status: SessionBlockStatus, participants: number, results: any, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: QuestionType, content: string, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: QuestionType, content: string, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: QuestionType, content: string, options: { __typename?: 'NumericalQuestionOptions', restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } }, statistics?: { __typename?: 'Statistics', max: number, mean: number, median: number, min: number, q1: number, q3: number, sd: number } | null }>, feedbacks: Array<{ __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, createdAt: any, content: string, positiveReactions: number, negativeReactions: number }> }>, confusionFeedbacks: Array<{ __typename?: 'ConfusionTimestep', speed: number, difficulty: number, createdAt: any }> } | null, sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, participantId: string, rank: number, username: string, avatar?: string | null, score: number }> | null };
 
 export type GetSessionLeaderboardQueryVariables = Exact<{
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 }>;
 
 
 export type GetSessionLeaderboardQuery = { __typename?: 'Query', sessionLeaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, participantId: string, rank: number, username: string, avatar?: string | null, score: number, isSelf?: boolean | null, lastBlockOrder: number }> | null };
 
 export type GetSingleCourseQueryVariables = Exact<{
-  courseId: Scalars['String'];
+  courseId: Scalars['String']['input'];
 }>;
 
 
 export type GetSingleCourseQuery = { __typename?: 'Query', course?: { __typename?: 'Course', id: string, isArchived: boolean, pinCode?: number | null, name: string, displayName: string, description?: string | null, color?: string | null, numOfParticipants?: number | null, numOfActiveParticipants?: number | null, averageScore?: number | null, averageActiveScore?: number | null, startDate: any, endDate: any, sessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, isGamificationEnabled: boolean, pinCode?: number | null, accessMode: SessionAccessMode, status: SessionStatus, createdAt: any, numOfBlocks?: number | null, numOfQuestions?: number | null }> | null, learningElements?: Array<{ __typename?: 'LearningElement', id: string, name: string, displayName: string, status: LearningElementStatus, stacksWithQuestions?: number | null, numOfQuestions?: number | null }> | null, microSessions?: Array<{ __typename?: 'MicroSession', id: string, name: string, displayName: string, status: MicroSessionStatus, scheduledStartAt: any, scheduledEndAt: any, numOfInstances?: number | null }> | null, leaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, score: number, rank: number, username: string, avatar?: string | null, participation: { __typename?: 'Participation', isActive: boolean } }> | null } | null };
 
 export type GetSingleLiveSessionQueryVariables = Exact<{
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 }>;
 
 
 export type GetSingleLiveSessionQuery = { __typename?: 'Query', liveSession?: { __typename?: 'Session', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, isGamificationEnabled: boolean, blocks?: Array<{ __typename?: 'SessionBlock', id: number, status: SessionBlockStatus, timeLimit?: number | null, instances?: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string } | { __typename?: 'NumericalQuestionData', id: number, name: string } }> | null }> | null, course?: { __typename?: 'Course', id: string } | null } | null };
 
 export type GetSingleMicroSessionQueryVariables = Exact<{
-  id: Scalars['String'];
+  id: Scalars['String']['input'];
 }>;
 
 
 export type GetSingleMicroSessionQuery = { __typename?: 'Query', singleMicroSession?: { __typename?: 'MicroSession', id: string, name: string, displayName: string, description?: string | null, scheduledStartAt: any, scheduledEndAt: any, pointsMultiplier: number, course?: { __typename?: 'Course', id: string } | null, instances?: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string } | { __typename?: 'NumericalQuestionData', id: number, name: string } }> | null } | null };
 
 export type GetSingleQuestionQueryVariables = Exact<{
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 }>;
 
 
 export type GetSingleQuestionQuery = { __typename?: 'Query', question?: { __typename?: 'Question', id: number, name: string, type: QuestionType, content: string, explanation?: string | null, displayMode: QuestionDisplayMode, pointsMultiplier: number, hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, questionData: { __typename?: 'ChoicesQuestionData', options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', options: { __typename?: 'NumericalQuestionOptions', unit?: string | null, accuracy?: number | null, placeholder?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } }, tags: Array<{ __typename?: 'Tag', id: number, name: string }>, attachments: Array<{ __typename?: 'Attachment', id: string, href: string, name: string, originalName?: string | null, description?: string | null, type: AttachmentType }> } | null };
 
 export type GetSingleQuestionStackQueryVariables = Exact<{
-  id: Scalars['Int'];
+  id: Scalars['Int']['input'];
 }>;
 
 
@@ -2231,15 +2260,15 @@ export type GetUserTagsQueryVariables = Exact<{ [key: string]: never; }>;
 export type GetUserTagsQuery = { __typename?: 'Query', userTags?: Array<{ __typename?: 'Tag', id: number, name: string }> | null };
 
 export type GroupActivityDetailsQueryVariables = Exact<{
-  activityId: Scalars['String'];
-  groupId: Scalars['String'];
+  activityId: Scalars['String']['input'];
+  groupId: Scalars['String']['input'];
 }>;
 
 
 export type GroupActivityDetailsQuery = { __typename?: 'Query', groupActivityDetails?: { __typename?: 'GroupActivityDetails', id: string, displayName: string, description?: string | null, scheduledStartAt?: any | null, scheduledEndAt?: any | null, clues: Array<{ __typename?: 'GroupActivityClue', id: number, displayName: string }>, instances: Array<{ __typename?: 'QuestionInstance', id: number, evaluation?: { __typename?: 'InstanceEvaluation', choices?: any | null, score: number, pointsAwarded?: number | null, percentile?: number | null, newPointsFrom?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix: number, feedback?: string | null, correct?: boolean | null, value: string }> | null } | null, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'ChoiceQuestionOptions', choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'FreeTextQuestionOptions', solutions: Array<string>, restrictions: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } } } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: QuestionType, displayMode?: QuestionDisplayMode | null, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null }, solutionRanges: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> } } }>, course: { __typename?: 'Course', id: string, displayName: string, color?: string | null }, group: { __typename?: 'ParticipantGroup', id: string, name: string, participants: Array<{ __typename?: 'Participant', id: string, username: string, avatar?: string | null, isSelf?: boolean | null }> }, activityInstance?: { __typename?: 'GroupActivityInstance', id: number, decisions?: any | null, decisionsSubmittedAt?: any | null, clues?: Array<{ __typename?: 'GroupActivityClueInstance', id: number, displayName: string, type: ParameterType, unit?: string | null, value?: string | null, participant: { __typename?: 'Participant', id: string, username: string, avatar?: string | null, isSelf?: boolean | null } }> | null } | null } | null };
 
 export type ParticipationsQueryVariables = Exact<{
-  endpoint?: InputMaybe<Scalars['String']>;
+  endpoint?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -2258,38 +2287,38 @@ export type SelfWithAchievementsQuery = { __typename?: 'Query', selfWithAchievem
 export type UserProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserProfileQuery = { __typename?: 'Query', userProfile?: { __typename?: 'User', id: string, isActive: boolean, email: string, shortname: string } | null };
+export type UserProfileQuery = { __typename?: 'Query', userProfile?: { __typename?: 'User', id: string, email: string, shortname: string } | null };
 
 export type FeedbackAddedSubscriptionVariables = Exact<{
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 }>;
 
 
 export type FeedbackAddedSubscription = { __typename?: 'Subscription', feedbackAdded: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> } };
 
 export type FeedbackCreatedSubscriptionVariables = Exact<{
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 }>;
 
 
 export type FeedbackCreatedSubscription = { __typename?: 'Subscription', feedbackCreated: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> } };
 
 export type FeedbackRemovedSubscriptionVariables = Exact<{
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 }>;
 
 
 export type FeedbackRemovedSubscription = { __typename?: 'Subscription', feedbackRemoved: string };
 
 export type FeedbackUpdatedSubscriptionVariables = Exact<{
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 }>;
 
 
 export type FeedbackUpdatedSubscription = { __typename?: 'Subscription', feedbackUpdated: { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> } };
 
 export type RunningSessionUpdatedSubscriptionVariables = Exact<{
-  sessionId: Scalars['String'];
+  sessionId: Scalars['String']['input'];
 }>;
 
 
@@ -2305,7 +2334,9 @@ export const CancelSessionDocument = {"kind":"Document","definitions":[{"kind":"
 export const ChangeCourseColorDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeCourseColor"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"color"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeCourseColor"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"color"},"value":{"kind":"Variable","name":{"kind":"Name","value":"color"}}},{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}}]}}]} as unknown as DocumentNode<ChangeCourseColorMutation, ChangeCourseColorMutationVariables>;
 export const ChangeCourseDatesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeCourseDates"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"startDate"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Date"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"endDate"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Date"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeCourseDates"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}},{"kind":"Argument","name":{"kind":"Name","value":"startDate"},"value":{"kind":"Variable","name":{"kind":"Name","value":"startDate"}}},{"kind":"Argument","name":{"kind":"Name","value":"endDate"},"value":{"kind":"Variable","name":{"kind":"Name","value":"endDate"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}}]}}]}}]} as unknown as DocumentNode<ChangeCourseDatesMutation, ChangeCourseDatesMutationVariables>;
 export const ChangeCourseDescriptionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeCourseDescription"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeCourseDescription"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}},{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}}]}}]} as unknown as DocumentNode<ChangeCourseDescriptionMutation, ChangeCourseDescriptionMutationVariables>;
+export const ChangeParticipantLocaleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeParticipantLocale"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"locale"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeParticipantLocale"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"locale"},"value":{"kind":"Variable","name":{"kind":"Name","value":"locale"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"locale"}}]}}]}}]} as unknown as DocumentNode<ChangeParticipantLocaleMutation, ChangeParticipantLocaleMutationVariables>;
 export const ChangeSessionSettingsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeSessionSettings"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"isLiveQAEnabled"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"isConfusionFeedbackEnabled"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"isModerationEnabled"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"isGamificationEnabled"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeSessionSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"isLiveQAEnabled"},"value":{"kind":"Variable","name":{"kind":"Name","value":"isLiveQAEnabled"}}},{"kind":"Argument","name":{"kind":"Name","value":"isConfusionFeedbackEnabled"},"value":{"kind":"Variable","name":{"kind":"Name","value":"isConfusionFeedbackEnabled"}}},{"kind":"Argument","name":{"kind":"Name","value":"isModerationEnabled"},"value":{"kind":"Variable","name":{"kind":"Name","value":"isModerationEnabled"}}},{"kind":"Argument","name":{"kind":"Name","value":"isGamificationEnabled"},"value":{"kind":"Variable","name":{"kind":"Name","value":"isGamificationEnabled"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isLiveQAEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isConfusionFeedbackEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isModerationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}}]}}]}}]} as unknown as DocumentNode<ChangeSessionSettingsMutation, ChangeSessionSettingsMutationVariables>;
+export const ChangeUserLocaleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeUserLocale"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"locale"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeUserLocale"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"locale"},"value":{"kind":"Variable","name":{"kind":"Name","value":"locale"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"locale"}}]}}]}}]} as unknown as DocumentNode<ChangeUserLocaleMutation, ChangeUserLocaleMutationVariables>;
 export const CreateCourseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateCourse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"displayName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"description"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"color"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"startDate"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Date"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"endDate"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Date"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"groupDeadlineDate"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Date"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"notificationEmail"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"isGamificationEnabled"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createCourse"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}},{"kind":"Argument","name":{"kind":"Name","value":"displayName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"displayName"}}},{"kind":"Argument","name":{"kind":"Name","value":"description"},"value":{"kind":"Variable","name":{"kind":"Name","value":"description"}}},{"kind":"Argument","name":{"kind":"Name","value":"color"},"value":{"kind":"Variable","name":{"kind":"Name","value":"color"}}},{"kind":"Argument","name":{"kind":"Name","value":"startDate"},"value":{"kind":"Variable","name":{"kind":"Name","value":"startDate"}}},{"kind":"Argument","name":{"kind":"Name","value":"endDate"},"value":{"kind":"Variable","name":{"kind":"Name","value":"endDate"}}},{"kind":"Argument","name":{"kind":"Name","value":"groupDeadlineDate"},"value":{"kind":"Variable","name":{"kind":"Name","value":"groupDeadlineDate"}}},{"kind":"Argument","name":{"kind":"Name","value":"notificationEmail"},"value":{"kind":"Variable","name":{"kind":"Name","value":"notificationEmail"}}},{"kind":"Argument","name":{"kind":"Name","value":"isGamificationEnabled"},"value":{"kind":"Variable","name":{"kind":"Name","value":"isGamificationEnabled"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"color"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"groupDeadlineDate"}},{"kind":"Field","name":{"kind":"Name","value":"notificationEmail"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}}]}}]}}]} as unknown as DocumentNode<CreateCourseMutation, CreateCourseMutationVariables>;
 export const CreateFeedbackDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateFeedback"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"content"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createFeedback"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"content"},"value":{"kind":"Variable","name":{"kind":"Name","value":"content"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isPublished"}},{"kind":"Field","name":{"kind":"Name","value":"isPinned"}},{"kind":"Field","name":{"kind":"Name","value":"isResolved"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"votes"}}]}}]}}]} as unknown as DocumentNode<CreateFeedbackMutation, CreateFeedbackMutationVariables>;
 export const CreateLearningElementDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateLearningElement"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"displayName"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"description"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stacks"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"StackInput"}}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"multiplier"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"order"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"LearningElementOrderType"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"resetTimeDays"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createLearningElement"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}},{"kind":"Argument","name":{"kind":"Name","value":"displayName"},"value":{"kind":"Variable","name":{"kind":"Name","value":"displayName"}}},{"kind":"Argument","name":{"kind":"Name","value":"description"},"value":{"kind":"Variable","name":{"kind":"Name","value":"description"}}},{"kind":"Argument","name":{"kind":"Name","value":"stacks"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stacks"}}},{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}},{"kind":"Argument","name":{"kind":"Name","value":"multiplier"},"value":{"kind":"Variable","name":{"kind":"Name","value":"multiplier"}}},{"kind":"Argument","name":{"kind":"Name","value":"order"},"value":{"kind":"Variable","name":{"kind":"Name","value":"order"}}},{"kind":"Argument","name":{"kind":"Name","value":"resetTimeDays"},"value":{"kind":"Variable","name":{"kind":"Name","value":"resetTimeDays"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<CreateLearningElementMutation, CreateLearningElementMutationVariables>;
@@ -2396,7 +2427,7 @@ export const GroupActivityDetailsDocument = {"kind":"Document","definitions":[{"
 export const ParticipationsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Participations"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"endpoint"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participations"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"endpoint"},"value":{"kind":"Variable","name":{"kind":"Name","value":"endpoint"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"completedMicroSessions"}},{"kind":"Field","name":{"kind":"Name","value":"subscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"endpoint"}}]}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"microSessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledStartAt"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledEndAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"sessions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"linkTo"}}]}}]}}]}}]}}]} as unknown as DocumentNode<ParticipationsQuery, ParticipationsQueryVariables>;
 export const SelfDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Self"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"self"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"avatarSettings"}},{"kind":"Field","name":{"kind":"Name","value":"xp"}},{"kind":"Field","name":{"kind":"Name","value":"level"}},{"kind":"Field","name":{"kind":"Name","value":"levelData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"requiredXp"}},{"kind":"Field","name":{"kind":"Name","value":"nextLevel"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"requiredXp"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]}}]} as unknown as DocumentNode<SelfQuery, SelfQueryVariables>;
 export const SelfWithAchievementsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SelfWithAchievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"selfWithAchievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participant"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"avatarSettings"}},{"kind":"Field","name":{"kind":"Name","value":"xp"}},{"kind":"Field","name":{"kind":"Name","value":"level"}},{"kind":"Field","name":{"kind":"Name","value":"levelData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"requiredXp"}},{"kind":"Field","name":{"kind":"Name","value":"nextLevel"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"requiredXp"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"achievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"achievedAt"}},{"kind":"Field","name":{"kind":"Name","value":"achievedCount"}},{"kind":"Field","name":{"kind":"Name","value":"achievement"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"iconColor"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"achievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"iconColor"}}]}}]}}]}}]} as unknown as DocumentNode<SelfWithAchievementsQuery, SelfWithAchievementsQueryVariables>;
-export const UserProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"UserProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"shortname"}}]}}]}}]} as unknown as DocumentNode<UserProfileQuery, UserProfileQueryVariables>;
+export const UserProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"UserProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userProfile"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"shortname"}}]}}]}}]} as unknown as DocumentNode<UserProfileQuery, UserProfileQueryVariables>;
 export const FeedbackAddedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackAdded"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackAdded"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"FeedbackData"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"FeedbackData"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Feedback"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isPublished"}},{"kind":"Field","name":{"kind":"Name","value":"isPinned"}},{"kind":"Field","name":{"kind":"Name","value":"isResolved"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"votes"}},{"kind":"Field","name":{"kind":"Name","value":"resolvedAt"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"responses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"positiveReactions"}},{"kind":"Field","name":{"kind":"Name","value":"negativeReactions"}}]}}]}}]} as unknown as DocumentNode<FeedbackAddedSubscription, FeedbackAddedSubscriptionVariables>;
 export const FeedbackCreatedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackCreated"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackCreated"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"FeedbackData"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"FeedbackData"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Feedback"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isPublished"}},{"kind":"Field","name":{"kind":"Name","value":"isPinned"}},{"kind":"Field","name":{"kind":"Name","value":"isResolved"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"votes"}},{"kind":"Field","name":{"kind":"Name","value":"resolvedAt"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"responses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"positiveReactions"}},{"kind":"Field","name":{"kind":"Name","value":"negativeReactions"}}]}}]}}]} as unknown as DocumentNode<FeedbackCreatedSubscription, FeedbackCreatedSubscriptionVariables>;
 export const FeedbackRemovedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"FeedbackRemoved"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"feedbackRemoved"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sessionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sessionId"}}}]}]}}]} as unknown as DocumentNode<FeedbackRemovedSubscription, FeedbackRemovedSubscriptionVariables>;

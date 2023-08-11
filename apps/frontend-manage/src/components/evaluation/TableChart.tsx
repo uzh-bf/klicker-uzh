@@ -8,9 +8,10 @@ import {
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { Button, Table } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import React, { useMemo, useRef } from 'react'
-import { QUESTION_GROUPS } from 'shared-components/src/constants'
 
 type RowType = {
   count: number
@@ -30,6 +31,7 @@ function TableChart({
   showSolution,
   textSize,
 }: TableChartProps): React.ReactElement {
+  const t = useTranslations()
   const ref = useRef<{ reset: () => void }>(null)
 
   console.log('TableChart - data: ', data)
@@ -65,9 +67,9 @@ function TableChart({
   }, [data])
 
   let columns = [
-    { label: 'Count', accessor: 'count', sortable: true },
+    { label: t('manage.evaluation.count'), accessor: 'count', sortable: true },
     {
-      label: 'Value',
+      label: t('manage.evaluation.value'),
       accessor: 'value',
       sortable: true,
       formatter: ({ row }: { row: RowType }) => {
@@ -131,7 +133,7 @@ function TableChart({
           <Button.Icon className={{ root: 'mr-1.5' }}>
             <FontAwesomeIcon icon={faRepeat} />
           </Button.Icon>
-          <Button.Label>Reset Sorting</Button.Label>
+          <Button.Label>{t('manage.evaluation.resetSorting')}</Button.Label>
         </Button>
       )}
     </div>

@@ -9,11 +9,11 @@ import {
   FormikDateField,
   FormikSelectField,
   FormikTextField,
-  H3,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import { ErrorMessage } from 'formik'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import * as yup from 'yup'
@@ -30,58 +30,12 @@ interface MicroSessionWizardProps {
   initialValues?: MicroSession
 }
 
-const stepOneValidationSchema = yup.object().shape({
-  name: yup
-    .string()
-    .required('Bitte geben Sie einen Namen für Ihre Session ein.'),
-  displayName: yup
-    .string()
-    .required('Bitte geben Sie einen Anzeigenamen für Ihre Session ein.'),
-  description: yup.string(),
-})
-
-const stepTwoValidationSchema = yup.object().shape({
-  startDate: yup
-    .date()
-    .required('Bitte geben Sie ein Startdatum für Ihre Session ein.'),
-  endDate: yup
-    .date()
-    .min(yup.ref('startDate'), 'Das Enddatum muss nach dem Startdatum liegen.')
-    .required('Bitte geben Sie ein Enddatum für Ihre Session ein.'),
-  multiplier: yup
-    .string()
-    .matches(/^[0-9]+$/, 'Bitte geben Sie einen gültigen Multiplikator ein.'),
-  courseId: yup.string(),
-})
-
-const stepThreeValidationSchema = yup.object().shape({
-  questions: yup
-    .array()
-    .of(
-      yup.object().shape({
-        id: yup.string(),
-        title: yup.string(),
-        type: yup
-          .string()
-          .oneOf(
-            [
-              QuestionType.Sc,
-              QuestionType.Mc,
-              QuestionType.Kprim,
-              QuestionType.Numerical,
-            ],
-            'Micro-Sessions können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.'
-          ),
-      })
-    )
-    .min(1),
-})
-
 function MicroSessionWizard({
   courses,
   initialValues,
 }: MicroSessionWizardProps) {
   const router = useRouter()
+  const t = useTranslations()
 
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [editMode, setEditMode] = useState(false)
@@ -92,6 +46,49 @@ function MicroSessionWizard({
   dayjs.extend(utc)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
+
+  const stepOneValidationSchema = yup.object().shape({
+    name: yup.string().required(t('manage.sessionForms.sessionName')),
+    displayName: yup
+      .string()
+      .required(t('manage.sessionForms.sessionDisplayName')),
+    description: yup.string(),
+  })
+
+  const stepTwoValidationSchema = yup.object().shape({
+    startDate: yup.date().required(t('manage.sessionForms.startDate')),
+    endDate: yup
+      .date()
+      .min(yup.ref('startDate'), t('manage.sessionForms.endAfterStart'))
+      .required(t('manage.sessionForms.endDate')),
+    multiplier: yup
+      .string()
+      .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
+    courseId: yup.string(),
+  })
+
+  const stepThreeValidationSchema = yup.object().shape({
+    questions: yup
+      .array()
+      .of(
+        yup.object().shape({
+          id: yup.string(),
+          title: yup.string(),
+          type: yup
+            .string()
+            .oneOf(
+              [
+                QuestionType.Sc,
+                QuestionType.Mc,
+                QuestionType.Kprim,
+                QuestionType.Numerical,
+              ],
+              t('manage.sessionForms.microSessionTypes')
+            ),
+        })
+      )
+      .min(1),
+  })
 
   const onSubmit = async (values) => {
     try {
@@ -145,8 +142,15 @@ function MicroSessionWizard({
       <MultistepWizard
         completionSuccessMessage={(elementName) => (
           <div>
-            Micro Session <strong>{elementName}</strong> erfolgreich{' '}
-            {editMode ? 'modifiziert' : 'erstellt'}.
+            {editMode
+              ? t.rich('manage.sessionForms.microSessionCreated', {
+                  b: (text) => <strong>{text}</strong>,
+                  name: elementName,
+                })
+              : t.rich('manage.sessionForms.microSessionEdited', {
+                  b: (text) => <strong>{text}</strong>,
+                  name: elementName,
+                })}
           </div>
         )}
         initialValues={{
@@ -177,12 +181,29 @@ function MicroSessionWizard({
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
+        editMode={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}
         onViewElement={() => {
           router.push(`/courses/${selectedCourseId}`)
         }}
+        workflowItems={[
+          {
+            title: t('shared.generic.description'),
+            tooltip: t('manage.sessionForms.microSessionDescription'),
+          },
+          {
+            title: t('shared.generic.settings'),
+            tooltip: t('manage.sessionForms.microSessionSettings'),
+            tooltipDisabled: t('manage.sessionForms.checkValues'),
+          },
+          {
+            title: t('shared.generic.questions'),
+            tooltip: t('manage.sessionForms.microSessionQuestions'),
+            tooltipDisabled: t('manage.sessionForms.checkValues'),
+          },
+        ]}
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
@@ -193,8 +214,8 @@ function MicroSessionWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? 'Anpassen der Micro-Session fehlgeschlagen...'
-            : 'Erstellen der Micro-Session fehlgeschlagen...'
+            ? t('manage.sessionForms.microSessionEditingFailed')
+            : t('manage.sessionForms.microSessionCreationFailed')
         }
       />
     </div>
@@ -213,32 +234,37 @@ interface StepProps {
 }
 
 function StepOne(_: StepProps) {
+  const t = useTranslations()
+
   return (
     <>
-      <FormikTextField
-        required
-        autoComplete="off"
-        name="name"
-        label="Name"
-        tooltip="Der Name soll Ihnen ermöglichen, diese Micro-Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld."
-        className={{ root: 'mb-1' }}
-        data-cy="insert-micro-session-name"
-      />
-      <FormikTextField
-        required
-        autoComplete="off"
-        name="displayName"
-        label="Anzeigename"
-        tooltip="Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt."
-        className={{ root: 'mb-1' }}
-        data-cy="insert-micro-session-display-name"
-      />
+      <div className="flex flex-col w-full gap-4 md:flex-row">
+        <FormikTextField
+          required
+          autoComplete="off"
+          name="name"
+          label={t('manage.sessionForms.name')}
+          tooltip={t('manage.sessionForms.microSessionName')}
+          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
+          data-cy="insert-micro-session-name"
+        />
+        <FormikTextField
+          required
+          autoComplete="off"
+          name="displayName"
+          label={t('manage.sessionForms.displayName')}
+          tooltip={t('manage.sessionForms.displayNameTooltip')}
+          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
+          data-cy="insert-micro-session-display-name"
+        />
+      </div>
 
       <EditorField
-        label="Beschreibung"
-        tooltip="Fügen Sie eine Beschreibung zu Ihrer Micro-Session hinzu, welche den Teilnehmern zu Beginn angezeigt wird."
+        label={t('shared.generic.description')}
+        tooltip={t('manage.sessionForms.microSessionDescField')}
         fieldName="description"
         data_cy="insert-micro-session-description"
+        showToolbarOnFocus={false}
       />
 
       <div className="w-full text-right">
@@ -253,17 +279,19 @@ function StepOne(_: StepProps) {
 }
 
 function StepTwo(props: StepProps) {
+  const t = useTranslations()
+
   return (
     <div className="flex flex-col gap-2">
-      <H3 className={{ root: 'mb-0' }}>Einstellungen</H3>
       <div className="flex flex-row items-center gap-4 text-left">
         <FormikSelectField
           name="courseId"
           items={props.courses || []}
           required
-          tooltip="Für die Erstellung einer Micro-Session ist die Auswahl des zugehörigen Kurses erforderlich."
-          label="Kurs"
+          tooltip={t('manage.sessionForms.microSessionCourse')}
+          label={t('shared.generic.course')}
           data={{ cy: 'select-course' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="courseId"
@@ -272,41 +300,44 @@ function StepTwo(props: StepProps) {
         />
       </div>
       <FormikDateField
-        label="Startdatum"
+        label={t('shared.generic.startDate')}
         name="startDate"
-        tooltip="Wählen Sie das Startdatum der Micro-Session aus. Die Session wird den Teilnehmenden ab diesem Zeitpunkt angezeigt."
+        tooltip={t('manage.sessionForms.microSessionStartDate')}
         required
         className={{
           root: 'w-[24rem]',
           input: 'bg-uzh-grey-20',
+          tooltip: 'z-20',
         }}
         data={{ cy: 'select-start-date' }}
       />
       <FormikDateField
-        label="Enddatum"
+        label={t('shared.generic.endDate')}
         name="endDate"
-        tooltip="Wählen Sie das Enddatum der Micro-Session aus. Die Session wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt."
+        tooltip={t('manage.sessionForms.microSessionEndDate')}
         required
         className={{
           root: 'w-[24rem]',
           input: 'bg-uzh-grey-20',
+          tooltip: 'z-20',
         }}
         data={{ cy: 'select-end-date' }}
       />
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
           name="multiplier"
-          placeholder="Default: 1x"
-          label="Multiplier"
-          tooltip="Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einer gamifizierten Micro-Session multipliziert werden."
+          placeholder={t('manage.sessionForms.multiplierDefault')}
+          label={t('shared.generic.multiplier')}
+          tooltip={t('manage.sessionForms.microSessionMultiplier')}
           required
           items={[
-            { label: 'Einfach (1x)', value: '1' },
-            { label: 'Doppelt (2x)', value: '2' },
-            { label: 'Dreifach (3x)', value: '3' },
-            { label: 'Vierfach (4x)', value: '4' },
+            { label: t('manage.sessionForms.multiplier1'), value: '1' },
+            { label: t('manage.sessionForms.multiplier2'), value: '2' },
+            { label: t('manage.sessionForms.multiplier3'), value: '3' },
+            { label: t('manage.sessionForms.multiplier4'), value: '4' },
           ]}
           data={{ cy: 'select-multiplier' }}
+          className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="multiplier"

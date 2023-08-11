@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import { EditTagDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -11,12 +12,11 @@ interface TagEditFormProps {
 }
 
 function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
+  const t = useTranslations()
   const [editTag] = useMutation(EditTagDocument)
 
   const TagModifierSchema = Yup.object().shape({
-    tag: Yup.string().required(
-      'Geben Sie einen gültigen Namen für Ihren Tag ein.'
-    ),
+    tag: Yup.string().required(t('manage.tags.validName')),
   })
 
   return (
@@ -61,7 +61,7 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
                     ),
                   }}
                 >
-                  OK
+                  {t('shared.generic.ok')}
                 </Button>
               </div>
 

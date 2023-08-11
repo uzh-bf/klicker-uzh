@@ -1,6 +1,8 @@
+import { QuestionType, SessionStatus } from '@klicker-uzh/graphql/dist/ops'
+
 export const SMALL_BAR_THRESHOLD: number = 0.05
 
-export const SESSION_STATUS: Record<string, string> = {
+export const SESSION_STATUS: Record<SessionStatus, string> = {
   PREPARED: 'PREPARED',
   SCHEDULED: 'SCHEDULED',
   RUNNING: 'RUNNING',
@@ -36,7 +38,7 @@ export const CHART_SOLUTION_COLORS = {
   incorrect: '#ff0000',
 }
 
-export const QUESTION_TYPES: Record<string, string> = {
+export const QUESTION_TYPES: Record<QuestionType, string> = {
   FREE_TEXT: 'FREE_TEXT',
   NUMERICAL: 'NUMERICAL',
   MC: 'MC',
@@ -64,18 +66,7 @@ export const QUESTION_GROUPS: Record<string, string[]> = {
   WITH_STATISTICS: [QUESTION_TYPES.NUMERICAL],
 }
 
-export const QUESTION_SORTINGS: {
-  content: string
-  id: string
-  labelStart: string
-}[] = [
-  { content: 'Creation Date', id: 'CREATED', labelStart: 'sort numeric' },
-  { content: 'Last Usage', id: 'USED', labelStart: 'sort numeric' },
-  { content: 'Question Type', id: 'TYPE', labelStart: 'sort content' },
-  { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
-]
-
-export const QUESTION_TYPES_SHORT: Record<string, string> = {
+export const QUESTION_TYPES_SHORT: Record<QuestionType, string> = {
   SC: 'SC',
   MC: 'MC',
   FREE_TEXT: 'FT',
@@ -99,15 +90,7 @@ export const AVATAR_OPTIONS: Record<string, string[]> = {
   // body: ['breasts', 'chest'],
 }
 
-export const TYPES_LABELS: Record<string, string> = {
-  SC: 'Single Choice (SC)',
-  MC: 'Multiple Choice (MC)',
-  KPRIM: 'KPRIM (KP)',
-  NUMERICAL: 'Numerisch (NR)',
-  FREE_TEXT: 'Freitext (FT)',
-}
-
-export const TYPES_SHORT: Record<string, string> = {
+export const TYPES_SHORT: Record<QuestionType, string> = {
   NUMERICAL: 'NR',
   FREE_TEXT: 'FT',
   MC: 'MC',
@@ -120,26 +103,26 @@ export const ACTIVE_CHART_TYPES: Record<
   { label: string; value: string }[]
 > = {
   FREE_TEXT: [
-    { label: 'Tabelle', value: 'table' },
-    { label: 'Word Cloud', value: 'wordCloud' },
+    { label: 'manage.evaluation.table', value: 'table' },
+    { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
   ],
   NUMERICAL: [
-    { label: 'Histogramm', value: 'histogram' },
-    { label: 'Tabelle', value: 'table' },
-    { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Word Cloud', value: 'wordCloud' },
+    { label: 'manage.evaluation.histogram', value: 'histogram' },
+    { label: 'manage.evaluation.table', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: 'barChart' },
+    { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
   ],
   SC: [
-    { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Tabelle', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: 'barChart' },
+    { label: 'manage.evaluation.table', value: 'table' },
   ],
   MC: [
-    { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Tabelle', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: 'barChart' },
+    { label: 'manage.evaluation.table', value: 'table' },
   ],
   KPRIM: [
-    { label: 'Bar Chart', value: 'barChart' },
-    { label: 'Tabelle', value: 'table' },
+    { label: 'manage.evaluation.barChart', value: 'barChart' },
+    { label: 'manage.evaluation.table', value: 'table' },
   ],
 }
 

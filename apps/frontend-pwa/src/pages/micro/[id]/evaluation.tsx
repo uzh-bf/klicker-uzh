@@ -4,6 +4,7 @@ import {
   MarkMicroSessionCompletedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3 } from '@uzh-bf/design-system'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
@@ -96,12 +97,11 @@ function Evaluation() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetServerSidePropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
     revalidate: 600,
   }
