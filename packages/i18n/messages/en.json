@@ -382,6 +382,7 @@
       "explanationPlaceholder": "Enter your explanation here...",
       "attachments": "Attachments",
       "answerOptions": "Answer options",
+      "answerOption": "Answer option",
       "answerOptionsTooltip": "Enter the possible answers that students can select for the question here.",
       "answerOptionPlaceholder": "Enter your answer option here...",
       "FTOptionsTooltip": "Enter optional settings for the free text question here.",
@@ -395,6 +396,7 @@
       "maximumLength": "Maximum length",
       "answerLength": "Answer length",
       "possibleSolutionN": "Possible solution {number}",
+      "possibleSolutions": "Possible solutions",
       "addSolution": "Add new solution",
       "noFeedbackDefined": "No feedback defined",
       "createElement": "Create {element}",
@@ -485,6 +487,7 @@
       "learningElementLAST_RESPONSE": "Last response first"
     },
     "formErrors": {
+      "resolveErrors": "Please ensure that the following errors in the form are resolved before saving the question:",
       "questionName": "Please enter a name for the question.",
       "questionContent": "Please add some content to your question.",
       "attachmentURL": "Please enter a valid URL for the attachment.",
@@ -492,7 +495,12 @@
       "answerContent": "Please add some content to your answer option.",
       "feedbackContent": "Please add some content to your answer feedback.",
       "SCAnswersCorrect": "For SC questions exactly one answer has to be marked as correct.",
-      "MCAnswersCorrect": "For MC questions at least one answer has to be marked as correct."
+      "MCAnswersCorrect": "For MC questions at least one answer has to be marked as correct.",
+      "enterSolution": "Please enter a solution.",
+      "FTMaxLength": "The maximum length of a free text question response has to be at least 1.",
+      "solutionRequired": "Please enter at least one solution of deactivate the sample solution.",
+      "NRPrecision": "The number of decimal places must be at least 0.",
+      "solutionRangeRequired": "Please enter at least one valid solution range."
     },
     "sessions": {
       "runningSessions": "Running Sessions",
