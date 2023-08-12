@@ -1,5 +1,6 @@
 import { LearningElement } from '@klicker-uzh/graphql/dist/ops'
 import { StepProgress } from '@uzh-bf/design-system'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ElementOverview from './ElementOverview'
 import ElementSummary from './ElementSummary'
@@ -19,6 +20,9 @@ function LearningElement({
   handleNextQuestion,
 }: LearningElementProps) {
   const currentStack = element.stacks?.[currentIx]
+  const [stepStatus, setStepStatus] = useState<
+    ('unanswered' | 'incorrect' | 'partial' | 'correct')[]
+  >(Array.from({ length: element.stacks?.length ?? 0 }, () => 'unanswered'))
 
   return (
     <div
@@ -32,7 +36,9 @@ function LearningElement({
           <StepProgress
             displayOffset={(element.stacks?.length ?? 0) > 15 ? 3 : undefined}
             value={currentIx}
-            max={element.stacks?.length ?? 0}
+            items={stepStatus.map((state) => {
+              return { status: state }
+            })}
             onItemClick={(ix: number) => setCurrentIx(ix)}
             data={{ cy: 'learning-element-progress' }}
           />
@@ -61,6 +67,13 @@ function LearningElement({
           currentStep={currentIx + 1}
           totalSteps={element.stacksWithQuestions ?? 0}
           handleNextQuestion={handleNextQuestion}
+          setStepStatus={(newStatus) =>
+            setStepStatus((prev) => {
+              const next = [...prev]
+              next[currentIx] = newStatus
+              return next
+            })
+          }
         />
       )}
 

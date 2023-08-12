@@ -77,6 +77,7 @@ function evaluateQuestionResponse(
             pointsPercentage,
             multiplier: multiplier ?? 1,
           }),
+          percentile: pointsPercentage,
         }
       } else if (data.type === QuestionType.MC) {
         const pointsPercentage = gradeQuestionMC({
@@ -96,6 +97,7 @@ function evaluateQuestionResponse(
             pointsPercentage,
             multiplier: multiplier ?? 1,
           }),
+          percentile: pointsPercentage,
         }
       } else {
         const pointsPercentage = gradeQuestionKPRIM({
@@ -115,6 +117,7 @@ function evaluateQuestionResponse(
             pointsPercentage,
             multiplier: multiplier ?? 1,
           }),
+          percentile: pointsPercentage,
         }
       }
     }
@@ -137,6 +140,7 @@ function evaluateQuestionResponse(
           pointsPercentage: correct,
           multiplier: multiplier ?? 1,
         }),
+        percentile: correct,
       }
     }
 
@@ -157,6 +161,7 @@ function evaluateQuestionResponse(
           pointsPercentage: correct,
           multiplier: multiplier ?? 1,
         }),
+        percentile: correct,
       }
     }
 

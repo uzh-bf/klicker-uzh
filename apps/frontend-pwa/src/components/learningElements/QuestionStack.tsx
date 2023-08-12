@@ -30,6 +30,9 @@ interface QuestionStackProps {
   currentStep: number
   totalSteps: number
   handleNextQuestion: () => void
+  setStepStatus: (
+    newStatus: 'unanswered' | 'incorrect' | 'partial' | 'correct'
+  ) => void
 }
 
 function QuestionStack({
@@ -38,6 +41,7 @@ function QuestionStack({
   currentStep,
   totalSteps,
   handleNextQuestion,
+  setStepStatus,
 }: QuestionStackProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -49,7 +53,6 @@ function QuestionStack({
   const [informationOnly, setInformationOnly] = useState(true)
   const [inputValid, setInputValid] = useState<Record<number, boolean>>({})
   const [allValid, setAllValid] = useState(false)
-  const [flagModalOpen, setFlagModalOpen] = useState(false)
 
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
@@ -143,16 +146,58 @@ function QuestionStack({
           [element.id]: '',
         }))
       }
+    })
+  }, [stack])
 
-      if (element.questionInstance?.evaluation) {
-        setIsEvaluation(true)
+  // check if the current stack is showing evaluation data and which elements were answered correctly
+  useEffect(() => {
+    if (
+      stack.elements?.every(
+        (element) =>
+          !element.questionInstance || element.questionInstance.evaluation
+      ) ??
+      false
+    ) {
+      setIsEvaluation(true)
+    }
+
+    let overallScore: 'correct' | 'incorrect' | 'partial' | 'unanswered' =
+      'unanswered'
+    stack.elements?.forEach((element) => {
+      // text elements will not be considered to contribute to correctness of a response
+      if (!element.questionInstance) return
+
+      // if question instance is defined, but evaluation is not, the question was not answered
+      if (!element.questionInstance.evaluation) {
+        return
+      }
+
+      // check if the element was answered wrong or only partially correct
+      const percentile = element.questionInstance.evaluation.percentile ?? 0
+      if (percentile === 0) {
+        // for wrong answer: correct -> partial, incorrect -> incorrect, partial -> partial, unanswered -> incorrect
+        overallScore === 'partial' || overallScore === 'correct'
+          ? (overallScore = 'partial')
+          : (overallScore = 'incorrect')
+      } else if (percentile > 0 && percentile < 1) {
+        // for partially correct answer: correct -> partial, incorrect -> partial, partial -> partial, unanswered -> partial
+        overallScore = 'partial'
+      } else if (percentile === 1) {
+        // for correct answers: correct -> correct, partial -> partial, incorrect -> partial, unanswered -> correct
+        overallScore === 'correct' || overallScore === 'unanswered'
+          ? (overallScore = 'correct')
+          : (overallScore = 'partial')
       }
     })
 
-    return () => {
-      setResponses({})
-      setIsEvaluation(false)
+    setStepStatus(overallScore)
+  }, [stack])
+
+  // check if the current stack only contains information elements
+  useEffect(() => {
+    if (stack.elements?.every((element) => !!element.mdContent) ?? true) {
       setInformationOnly(true)
+      setStepStatus('correct')
     }
   }, [stack])
 
@@ -165,10 +210,6 @@ function QuestionStack({
         [element.id]: false,
       }))
     })
-
-    return () => {
-      setInputValid({})
-    }
   }, [stack])
 
   useEffect(() => {
