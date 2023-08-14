@@ -15,13 +15,10 @@ import { twMerge } from 'tailwind-merge'
 import { useQuery } from '@apollo/client'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { useTranslations } from 'next-intl'
-import getConfig from 'next/config'
 import Layout from '../../components/Layout'
 import SessionLeaderboard from '../../components/common/SessionLeaderboard'
 import FeedbackArea from '../../components/liveSession/FeedbackArea'
 import QuestionArea from '../../components/liveSession/QuestionArea'
-
-const { publicRuntimeConfig } = getConfig()
 
 function Subscriber({ id, subscribeToMore }) {
   useEffect(() => {
@@ -68,7 +65,6 @@ function Index({ id }: Props) {
     isConfusionFeedbackEnabled,
     isModerationEnabled,
     isGamificationEnabled,
-    name,
     namespace,
     status,
     course,
@@ -109,7 +105,7 @@ function Index({ id }: Props) {
     }
     try {
       const response = await fetch(
-        publicRuntimeConfig.ADD_RESPONSE_URL,
+        process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
         requestOptions
       )
     } catch (e) {
@@ -183,13 +179,13 @@ function Index({ id }: Props) {
             <QuestionArea
               expiresAt={activeBlock?.expiresAt}
               questions={
-                activeBlock?.instances.map((question: any) => {
+                activeBlock?.instances?.map((question: any) => {
                   return {
                     ...question.questionData,
                     instanceId: question.id,
                     attachments: question.attachments,
                   }
-                }) || []
+                }) ?? []
               }
               handleNewResponse={handleNewResponse}
               sessionId={id}
