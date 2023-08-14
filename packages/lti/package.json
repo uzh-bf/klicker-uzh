@@ -26,7 +26,7 @@
     }
   ],
   "peerDependencies": {
-    "@uzh-bf/design-system": "2.0.9",
+    "@uzh-bf/design-system": "2.0.10",
     "next": "13.4.13",
     "react": "18.2.0",
     "react-dom": "18.2.0"

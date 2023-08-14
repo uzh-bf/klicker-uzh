@@ -10,6 +10,7 @@ import {
   FormikSelectField,
   FormikSwitchField,
   FormikTextField,
+  H3,
   Prose,
   Toast,
 } from '@uzh-bf/design-system'
@@ -43,7 +44,7 @@ function EditProfile() {
   }, [])
 
   if (loading || !data?.self) {
-    return <div>Loading...</div>
+    return <div>{t('shared.generic.loading')}</div>
   }
 
   return (
@@ -155,7 +156,7 @@ function EditProfile() {
           })
 
           if (result.data?.updateParticipantProfile && !result.errors) {
-            router.replace(decodedRedirectPath)
+            // router.replace(decodedRedirectPath)
           } else {
             setShowError(true)
           }
@@ -163,36 +164,14 @@ function EditProfile() {
       >
         {({ values, isSubmitting, isValid }) => {
           return (
-            <div className="flex flex-col md:w-full md:border md:p-8 md:rounded md:max-w-3xl md:mx-auto">
-              <BigHead
-                // @ts-ignore
-                className="border-b-4 h-36 md:h-48 border-primary-80"
-                eyebrows="raised"
-                faceMask={false}
-                lashes={false}
-                mask={false}
-                clothing={values.clothing}
-                hat="none"
-                graphic="none"
-                accessory={values.accessory}
-                body="chest"
-                skinTone={values.skinTone}
-                clothingColor={values.clothingColor}
-                eyes={values.eyes}
-                hair={values.hair}
-                hairColor={values.hairColor}
-                mouth={values.mouth}
-                facialHair={values.facialHair}
-              />
-
-              <Form>
-                <div className="flex flex-col w-full gap-8 mt-8 md:flex-row md:gap-16">
-                  <div className="flex flex-col justify-between flex-1 order-2 gap-4 md:order-1">
-                    {!data.self?.avatar && (
-                      <Prose>{t('pwa.profile.welcomeMessage')}</Prose>
-                    )}
-
-                    <div className="space-y-4">
+            <Form>
+              <div className="flex flex-col md:w-full md:max-w-4xl md:mx-auto gap-4">
+                <div className="flex flex-col w-full md:flex-row gap-4">
+                  <div className="flex flex-col justify-between flex-1 order-2 gap-3 md:order-1 bg-slate-50 p-4 rounded">
+                    <H3 className={{ root: 'border-b mb-0' }}>
+                      {t('shared.generic.profile')}
+                    </H3>
+                    <div className="space-y-3 mb-2">
                       <FormikTextField
                         name="email"
                         label={t('shared.generic.email')}
@@ -237,24 +216,76 @@ function EditProfile() {
                       </div>
                     </div>
 
-                    <div>
-                      <Button
-                        fluid
-                        type="submit"
-                        disabled={isSubmitting || !isValid}
-                      >
-                        {t('shared.generic.save')}
-                      </Button>
-                    </div>
+                    <Button
+                      fluid
+                      type="submit"
+                      disabled={isSubmitting || !isValid}
+                    >
+                      {t('shared.generic.save')}
+                    </Button>
                   </div>
 
-                  <div className="flex-1 order-1 space-y-2 md:order-2">
-                    {Object.keys(AVATAR_OPTIONS).map((key) => (
-                      <div className="flex flex-row items-center" key={key}>
-                        <div className="flex-1">
-                          <p className="font-bold">{t(`pwa.avatar.${key}`)}</p>
-                        </div>
+                  <div className="flex-1 order-1 md:order-2 bg-slate-50 p-4 rounded justify-between flex flex-col text-sm">
+                    <div className="flex-initial">
+                      <Prose className={{ root: 'text-md' }}>
+                        <p>{t('pwa.profile.welcomeMessage')}</p>
+                        <p>Some privacy blabla</p>
+                        <p>
+                          Some blabla with link to data protection agreement
+                        </p>
+                      </Prose>
+                    </div>
+                    <div className="flex-initial space-y-2">
+                      <H3 className={{ root: 'border-b mb-0' }}>
+                        {t('pwa.profile.deleteProfile')}
+                      </H3>
+                      <Prose className={{ root: 'text-sm' }}>
+                        {t('pwa.profile.deleteProfileDescription')}
+                      </Prose>
+                      <Button disabled>{t('shared.generic.delete')}</Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded space-y-2">
+                  <H3 className={{ root: 'border-b' }}>Avatar</H3>
+                  <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+                    <div className="flex-1">
+                      <BigHead
+                        // @ts-ignore
+                        className="border-b-4 md:h-48 border-primary-80 w-full"
+                        eyebrows="raised"
+                        faceMask={false}
+                        lashes={false}
+                        mask={false}
+                        clothing={values.clothing}
+                        hat="none"
+                        graphic="none"
+                        accessory={values.accessory}
+                        body="chest"
+                        skinTone={values.skinTone}
+                        clothingColor={values.clothingColor}
+                        eyes={values.eyes}
+                        hair={values.hair}
+                        hairColor={values.hairColor}
+                        mouth={values.mouth}
+                        facialHair={values.facialHair}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                      {Object.keys(AVATAR_OPTIONS).map((key) => (
                         <FormikSelectField
+                          className={{
+                            root: 'w-full',
+                            label: 'font-bold text-md',
+                            select: {
+                              root: 'w-full md:w-36',
+                              trigger: 'w-full md:p-1 justify-between md:px-3',
+                            },
+                          }}
+                          key={key}
+                          label={t(`pwa.avatar.${key}`)}
+                          labelType="small"
                           name={key}
                           items={AVATAR_OPTIONS[key].map((value) => {
                             return {
@@ -263,12 +294,15 @@ function EditProfile() {
                             }
                           })}
                         />
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+                  <Button type="submit" disabled={isSubmitting || !isValid}>
+                    {t('shared.generic.save')}
+                  </Button>
                 </div>
-              </Form>
-            </div>
+              </div>
+            </Form>
           )
         }}
       </Formik>

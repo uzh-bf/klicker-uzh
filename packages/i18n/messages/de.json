@@ -34,6 +34,7 @@
       "installButton": "Jetzt installieren"
     },
     "generic": {
+      "profile": "Profil",
       "yes": "Ja",
       "no": "Nein",
       "draft": "Entwurf",
@@ -252,7 +253,7 @@
     },
     "profile": {
       "publicProfile": "Profilsichtbarkeit",
-      "isProfilePublic": "Soll Dein Profil anderen Teilnehmenden angezeigt werden?",
+      "isProfilePublic": "Soll Dein Profil und Pseudonym anderen Teilnehmenden angezeigt werden?",
       "editProfile": "Profil editieren",
       "editProfileFailed": "Leider ist beim Speichern der Änderungen ein Fehler aufgetreten. Möglicherweise ist der von Ihnen gewählte Nutzername bereits vergeben. Bitte überprüfen Sie Ihre Eingaben und versuchen es nochmal.",
       "achievements": "Errungenschaften",
@@ -265,7 +266,9 @@
       "emailInvalid": "Bitte geben Sie eine gültige E-Mail Adresse ein.",
       "usernameRequired": "Bitte geben Sie einen Benutzernamen ein.",
       "passwordRequired": "Bitte geben Sie ein Passwort ein.",
-      "welcomeMessage": "Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar."
+      "welcomeMessage": "Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar.",
+      "deleteProfile": "Konto löschen",
+      "deleteProfileDescription": "Das Löschen Deines KlickerUZH-Kontos wird alle verbundenen Informationen löschen und sicherstellen, dass in Deinem aktuellen Browser kein neues Konto erstellt wird."
     },
     "avatar": {
       "hair": "Frisur",
