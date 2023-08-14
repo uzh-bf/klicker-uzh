@@ -257,6 +257,8 @@
       "usernameMaxLength": "The username must not be longer than {length} characters.",
       "passwordMinLength": "The password must be at least {length} characters long.",
       "identicalPasswords": "Passwords must match.",
+      "emailRequired": "Please enter an e-mail address.",
+      "emailInvalid": "Please enter a valid e-mail address.",
       "usernameRequired": "Please enter a username here.",
       "passwordRequired": "Please enter a password here.",
       "welcomeMessage": "Welcome to KlickerUZH! If this is your first time here, please set a password and define your own username and avatar."

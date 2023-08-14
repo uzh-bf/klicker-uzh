@@ -257,6 +257,8 @@
       "usernameMaxLength": "Der Benutzername darf nicht länger als {length} Zeichen sein.",
       "passwordMinLength": "Das Passwort muss mindestens {length} Zeichen lang sein.",
       "identicalPasswords": "Passwörter müssen übereinstimmen.",
+      "emailRequired": "Bitte geben Sie eine E-Mail Adresse ein.",
+      "emailInvalid": "Bitte geben Sie eine gültige E-Mail Adresse ein.",
       "usernameRequired": "Bitte geben Sie einen Benutzernamen ein.",
       "passwordRequired": "Bitte geben Sie ein Passwort ein.",
       "welcomeMessage": "Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar."

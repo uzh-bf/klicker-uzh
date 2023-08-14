@@ -91,6 +91,7 @@ export const Participant = ParticipantRef.implement({
 
     locale: t.exposeString('locale'),
 
+    email: t.exposeString('email', { nullable: true }),
     username: t.exposeString('username', { nullable: false }),
     avatar: t.exposeString('avatar', { nullable: true }),
     avatarSettings: t.expose('avatarSettings', {

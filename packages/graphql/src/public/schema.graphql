@@ -510,6 +510,7 @@ type Participant {
   achievements: [ParticipantAchievementInstance!]
   avatar: String
   avatarSettings: Json
+  email: String
   id: ID!
   isSelf: Boolean
   lastLoginAt: Date

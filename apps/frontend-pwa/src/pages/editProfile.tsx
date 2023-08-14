@@ -52,6 +52,10 @@ function EditProfile() {
     >
       <Formik
         validationSchema={yup.object({
+          email: yup
+            .string()
+            .required(t('pwa.profile.emailRequired'))
+            .email(t('pwa.profile.emailInvalid')),
           username: yup
             .string()
             .required(t('pwa.profile.usernameRequired'))
@@ -76,6 +80,7 @@ function EditProfile() {
           }),
         })}
         initialValues={{
+          email: data.self.email,
           username: data.self.username,
           password: '',
           passwordRepetition: '',
@@ -127,6 +132,7 @@ function EditProfile() {
             variables: {
               password: values.password,
               username: values.username,
+              email: values.email,
               avatar: avatarHash,
               avatarSettings: pick(
                 [
@@ -145,7 +151,7 @@ function EditProfile() {
             },
           })
 
-          if (result.data?.updateParticipantProfile) {
+          if (result.data?.updateParticipantProfile && !result.errors) {
             router.replace(decodedRedirectPath)
           } else {
             setShowError(true)
@@ -184,6 +190,12 @@ function EditProfile() {
                     )}
 
                     <div className="space-y-4">
+                      <FormikTextField
+                        name="email"
+                        label={t('shared.generic.email')}
+                        labelType="small"
+                        className={{ label: 'font-bold text-md text-black' }}
+                      />
                       <FormikTextField
                         name="username"
                         label={t('shared.generic.username')}

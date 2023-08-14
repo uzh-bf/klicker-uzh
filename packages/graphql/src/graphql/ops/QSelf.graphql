@@ -1,6 +1,7 @@
 query Self {
   self {
     id
+    email
     username
     avatar
     avatarSettings
