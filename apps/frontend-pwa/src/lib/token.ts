@@ -60,6 +60,7 @@ export async function getParticipantToken({
           variables: {
             courseId: query.courseId as string,
             participantId: request.body.lis_person_sourcedid,
+            email: request.body.lis_person_contact_email_primary,
           },
           context: {
             headers: {

@@ -34,6 +34,8 @@
       "installButton": "Install Now"
     },
     "generic": {
+      "yes": "Yes",
+      "no": "No",
       "draft": "Draft",
       "published": "Published",
       "points": "Points",
@@ -249,6 +251,8 @@
       "solvedAt": "Resolved at {date}"
     },
     "profile": {
+      "publicProfile": "Profile Visibility",
+      "isProfilePublic": "Should your profile be displayed to other participants?",
       "editProfile": "Edit profile",
       "editProfileFailed": "Unfortunately, an error occurred while saving the changes. The username you have chosen may already be taken. Please check your entries and try again.",
       "achievements": "Achievements",

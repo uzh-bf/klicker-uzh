@@ -5,6 +5,7 @@ query Self {
     username
     avatar
     avatarSettings
+    isProfilePublic
     xp
     level
     levelData {

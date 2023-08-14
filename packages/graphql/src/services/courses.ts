@@ -1,4 +1,8 @@
-import { GroupActivityStatus, LearningElementStatus } from '@klicker-uzh/prisma'
+import {
+  GroupActivityStatus,
+  LeaderboardEntry,
+  LearningElementStatus,
+} from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 
@@ -207,8 +211,12 @@ export async function getCourseOverviewData(
               {
                 id: entry.id,
                 score: entry.courseLeaderboard?.score ?? 0,
-                username: entry.participant.username,
-                avatar: entry.participant.avatar,
+                username: entry.participant.isProfilePublic
+                  ? entry.participant.username
+                  : 'Anonymous',
+                avatar: entry.participant.isProfilePublic
+                  ? entry.participant.avatar
+                  : null,
                 participantId: entry.participant.id,
                 isSelf: ctx.user?.sub === entry.participant.id,
               },

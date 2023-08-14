@@ -269,6 +269,8 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
+          isProfilePublic: t.arg.boolean({ required: false }),
+          email: t.arg.string({ required: false }),
           username: t.arg.string({ required: false }),
           avatar: t.arg.string({ required: false }),
           password: t.arg.string({ required: false }),
@@ -683,6 +685,7 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
           participantId: t.arg.string({ required: true }),
+          email: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
           return ParticipantService.registerParticipantFromLTI(args, ctx)

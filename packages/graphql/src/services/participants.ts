@@ -2,18 +2,28 @@ import { MicroSessionStatus, SessionStatus } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
 import * as R from 'ramda'
+import isEmail from 'validator/lib/isEmail'
 import { Context, ContextWithUser } from '../lib/context'
 import { createParticipantToken } from './accounts'
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
   username?: string | null
+  email?: string | null
+  isProfilePublic?: boolean | null
   avatar?: string | null
   avatarSettings?: any
 }
 
 export async function updateParticipantProfile(
-  { password, username, avatar, avatarSettings }: UpdateParticipantProfileArgs,
+  {
+    password,
+    username,
+    avatar,
+    avatarSettings,
+    email,
+    isProfilePublic,
+  }: UpdateParticipantProfileArgs,
   ctx: ContextWithUser
 ) {
   if (typeof username === 'string') {
@@ -42,6 +52,9 @@ export async function updateParticipantProfile(
   const participant = await ctx.prisma.participant.update({
     where: { id: ctx.user.sub },
     data: {
+      isProfilePublic:
+        typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
+      email: email ?? undefined,
       username: username ?? undefined,
       avatar: avatar ?? undefined,
       avatarSettings: avatarSettings ?? undefined,
@@ -99,15 +112,18 @@ export async function getParticipations(
 interface RegisterParticipantFromLTIArgs {
   courseId: string
   participantId: string
+  email: string
 }
 
 export async function registerParticipantFromLTI(
-  { courseId, participantId }: RegisterParticipantFromLTIArgs,
+  { courseId, participantId, email }: RegisterParticipantFromLTIArgs,
   ctx: Context
 ) {
   console.log('args', courseId, participantId)
 
   if (!courseId) return null
+
+  if (!isEmail(email)) return null
 
   try {
     let participant = await ctx.prisma.participantAccount.findUnique({
@@ -150,6 +166,8 @@ export async function registerParticipantFromLTI(
             create: {
               password: hash,
               username,
+              email,
+              isEmailValid: true,
               participations: {
                 create: {
                   isActive: false,

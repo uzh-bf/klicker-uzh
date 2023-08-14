@@ -432,7 +432,7 @@ type Mutation {
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   publishLearningElement(id: String!): LearningElement
   publishMicroSession(id: String!): MicroSession
-  registerParticipantFromLTI(courseId: String!, participantId: String!): ParticipantLearningData
+  registerParticipantFromLTI(courseId: String!, email: String!, participantId: String!): ParticipantLearningData
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
@@ -443,7 +443,7 @@ type Mutation {
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
-  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
+  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, email: String, isProfilePublic: Boolean, password: String, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
@@ -512,6 +512,7 @@ type Participant {
   avatarSettings: Json
   email: String
   id: ID!
+  isProfilePublic: Boolean
   isSelf: Boolean
   lastLoginAt: Date
   level: Int

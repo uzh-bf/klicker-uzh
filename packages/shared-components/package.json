@@ -4,7 +4,8 @@
   "types": "src/index.ts",
   "private": true,
   "scripts": {
-    "//dev": "run-p dev:tw:*",
+    "dev": "run-p dev:tw:*",
+    "dev:offline": "run-p dev:tw:*",
     "dev:tw:components": "tailwindcss -i src/components.css -o dist/components.css -w",
     "dev:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css -w",
     "build": "run-p build:tw:*",

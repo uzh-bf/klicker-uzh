@@ -67,7 +67,7 @@ function GroupActivityDetails() {
   if (!data.groupActivityDetails) {
     return (
       <Layout>
-        Die Gruppenquest ist nicht aktiv oder noch nicht freigeschalten.
+        Die Gruppenaktivität ist nicht aktiv oder noch nicht freigeschalten.
       </Layout>
     )
   }

@@ -34,6 +34,8 @@
       "installButton": "Jetzt installieren"
     },
     "generic": {
+      "yes": "Ja",
+      "no": "Nein",
       "draft": "Entwurf",
       "published": "Öffentlich",
       "points": "Punkte",
@@ -249,6 +251,8 @@
       "solvedAt": "Gelöst am {date}"
     },
     "profile": {
+      "publicProfile": "Profilsichtbarkeit",
+      "isProfilePublic": "Soll Dein Profil anderen Teilnehmenden angezeigt werden?",
       "editProfile": "Profil editieren",
       "editProfileFailed": "Leider ist beim Speichern der Änderungen ein Fehler aufgetreten. Möglicherweise ist der von Ihnen gewählte Nutzername bereits vergeben. Bitte überprüfen Sie Ihre Eingaben und versuchen es nochmal.",
       "achievements": "Errungenschaften",

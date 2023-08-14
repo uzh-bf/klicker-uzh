@@ -743,6 +743,8 @@ model Participant {
   avatarSettings Json?
   xp             Int     @default(0)
 
+  isProfilePublic Boolean @default(true)
+
   lastLoginAt DateTime?
 
   locale Locale @default(en)

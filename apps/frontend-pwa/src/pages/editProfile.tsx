@@ -8,6 +8,7 @@ import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   FormikSelectField,
+  FormikSwitchField,
   FormikTextField,
   Prose,
   Toast,
@@ -80,6 +81,7 @@ function EditProfile() {
           }),
         })}
         initialValues={{
+          isProfilePublic: data.self.isProfilePublic,
           email: data.self.email,
           username: data.self.username,
           password: '',
@@ -130,6 +132,7 @@ function EditProfile() {
 
           const result = await updateParticipantProfile({
             variables: {
+              isProfilePublic: values.isProfilePublic,
               password: values.password,
               username: values.username,
               email: values.email,
@@ -216,6 +219,22 @@ function EditProfile() {
                         className={{ label: 'font-bold text-md text-black' }}
                         type="password"
                       />
+                      <div>
+                        <div className="font-bold">
+                          {t('pwa.profile.publicProfile')}
+                        </div>
+                        <div className="flex flex-row space-between gap-2">
+                          <div className="flex-1">
+                            {t('pwa.profile.isProfilePublic')}
+                          </div>
+                          <div className="flex flex-col items-center gap-1">
+                            <FormikSwitchField name="isProfilePublic" />
+                            {values.isProfilePublic
+                              ? t('shared.generic.yes')
+                              : t('shared.generic.no')}
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div>

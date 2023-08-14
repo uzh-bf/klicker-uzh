@@ -1,10 +1,12 @@
 mutation RegisterParticipantFromLTI(
   $courseId: String!
   $participantId: String!
+  $email: String!
 ) {
   registerParticipantFromLTI(
     courseId: $courseId
     participantId: $participantId
+    email: $email
   ) {
     id
     participantToken
