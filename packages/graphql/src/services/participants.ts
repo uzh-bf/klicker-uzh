@@ -258,7 +258,6 @@ export async function createParticipantAndJoinCourse(
         },
       },
       create: {
-        isActive: true,
         course: {
           connect: {
             id: courseId,
@@ -300,7 +299,6 @@ export async function createParticipantAndJoinCourse(
         password: hashedPassword,
         participations: {
           create: {
-            isActive: true,
             course: {
               connect: {
                 id: courseId,

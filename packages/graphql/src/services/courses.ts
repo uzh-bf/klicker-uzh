@@ -119,6 +119,8 @@ export async function leaveCourse(
     },
   })
 
+  // TODO: delete the leaderboard entries related to this participation
+
   if (!participation) return null
 
   return {

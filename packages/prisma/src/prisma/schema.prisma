@@ -735,6 +735,8 @@ model ParticipantAccount {
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
+  email          String? @unique
+  isEmailValid   Boolean @default(false)
   username       String  @unique
   password       String
   avatar         String?
@@ -790,7 +792,7 @@ model Participation {
 
   // enable participants to disable their participation
   // keeps the collected points but removes them from all views
-  isActive Boolean @default(true)
+  isActive Boolean @default(false)
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
