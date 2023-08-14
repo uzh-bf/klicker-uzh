@@ -24,3 +24,5 @@ packages/prisma/src/seed
 
 migration/dump
 migration/export_v2_data/exported_json_files
+
+packages/prisma/src/importedImages

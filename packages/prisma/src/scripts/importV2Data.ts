@@ -1,3 +1,5 @@
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { BlobServiceClient, StorageSharedKeyCredential } from "@azure/storage-blob";
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url';
@@ -33,6 +35,59 @@ function sliceIntoChunks(array: any[], chunkSize: number) {
     index += chunkSize;
     }
     return result;
+}
+
+//TODO: test and finish implementation
+const migrateFiles = async (files: any, user) => {
+    
+    // setup s3 client
+    const s3Client = new S3Client({
+        region: process.env.AWS_REGION,
+        credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        },
+    })
+
+    // setup Azure Blob Storage client
+    const account = process.env.AZURE_STORAGE_ACCOUNT_NAME
+    const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY
+    const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey)
+    const blobServiceClient = new BlobServiceClient(
+        `https://${account}.blob.core.windows.net`,
+        sharedKeyCredential
+    )
+
+
+    try {
+        const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_CONTAINER_NAME)
+        for (const file of files) {
+            // download file from s3
+            const params = {
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: file.name,
+            }
+            const command = new GetObjectCommand(params)
+            const s3Response = await s3Client.send(command)
+            // const { Body } = await s3Client.send(command)
+            // const filePath = path.join(__dirname, '../importedImages', file.name)
+            // fs.writeFileSync(filePath, Body)
+
+            // upload file to azure blob storage
+            const blockBlobClient = containerClient.getBlockBlobClient(file.originalName)
+            const uploadBlobResponse = await blockBlobClient.uploadStream(s3Response.Body, s3Response.ContentLength)
+
+            if (uploadBlobResponse.response.status ! == 201) {
+                console.log("Something went wrong while uploading file to azure blob storage: ", uploadBlobResponse)
+            } else {
+                console.log(`Uploaded ${file.originalName} to Azure Blob storage successfully!`);
+                const azureBlobUrl = blockBlobClient.URL;
+                console.log(`Azure Blob URL: ${azureBlobUrl}`);
+            }
+        }
+    } catch (error) {
+        console.log("Something went wrong while importing files: ", error)
+    }
 }
 
 const importTags = async (prisma: PrismaClient, tags: any, user, batchSize: number) => {
