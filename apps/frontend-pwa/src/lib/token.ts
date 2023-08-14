@@ -3,10 +3,7 @@ import { RegisterParticipantFromLtiDocument } from '@klicker-uzh/graphql/dist/op
 import bodyParser from 'body-parser'
 import JWT from 'jsonwebtoken'
 import { GetServerSidePropsContext } from 'next'
-import getConfig from 'next/config'
 import nookies from 'nookies'
-
-const { serverRuntimeConfig } = getConfig()
 
 export async function getParticipantToken({
   apolloClient,
@@ -38,7 +35,7 @@ export async function getParticipantToken({
       })
 
       if (request?.body?.lis_person_sourcedid) {
-        const secret = process.env.APP_SECRET ?? serverRuntimeConfig.APP_SECRET
+        const secret = process.env.APP_SECRET as string
 
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
         const token = JWT.sign(
@@ -74,8 +71,7 @@ export async function getParticipantToken({
           participantToken =
             result.data.registerParticipantFromLTI.participantToken
           nookies.set(ctx, 'participant_token', participantToken, {
-            domain:
-              process.env.COOKIE_DOMAIN ?? serverRuntimeConfig.COOKIE_DOMAIN,
+            domain: process.env.COOKIE_DOMAIN,
             path: '/',
             httpOnly: true,
             maxAge: 60 * 60 * 24 * 6,
