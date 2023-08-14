@@ -252,10 +252,11 @@ const importQuestionInstances = async (prisma: PrismaClient, importedQuestionIns
                         // lostResults.push(questionInstance)
                         // TODO: restore results from legacy db
                         questionInstance.results = await getLegacyResults(extractString(questionInstance._id))
+                        console.log("Fetched questionInstanceResults: ", questionInstance.results)
                         if (questionInstance.results == null) {
                             lostResults.push(questionInstance)
                         }
-                        // console.log("importQuestionInstances restored results: ", questionInstance.results)
+                        console.log("importQuestionInstances restored results: ", questionInstance.results)
                     }
 
                     let results = {};
@@ -371,7 +372,8 @@ const getSessionStatus = (status: string) => {
 const importSessions = async (prisma: PrismaClient, importedSessions: any, mappedQuestionInstanceIds: Record<string, number>, user,  batchSize: number) => {
     //new uuid is generated for each session -> string
     let mappedSessionIds: Record<string, string> = {}
-    const sessionsInDb = await prisma.session.findMany()
+    const sessionsInDb = await prisma.liveSession.findMany()
+    console.log("#sessionsInDb: ", sessionsInDb.length)
     const sessionsDict: Record<string, any> = sessionsInDb.reduce((acc, s) => {
         if (s.originalId != null) {
             acc[s.originalId] = s;
@@ -395,7 +397,7 @@ const importSessions = async (prisma: PrismaClient, importedSessions: any, mappe
                 }
 
 
-                const newSession = await prisma.session.create({
+                const newSession = await prisma.liveSession.create({
                     data: {
                         originalId: extractString(session._id),
                         namespace: session.namespace,
@@ -517,6 +519,7 @@ const importV2Data = async () => {
     // const filePath = path.join(dirPath, 'exported_data_2023-07-06_17-10-52.json');
     const filePath = path.join(dirPath, 'exported_data_2023-07-14_10-03-00.json');
     // const filePath = path.join(dirPath, "exported_data_no_questioninstances_results.json");
+    // const filePath = path.join(dirPath, 'exported_data_2023-08-11_14-44-29.json');
 
     let importData;
     if (fs.existsSync(dirPath)) {

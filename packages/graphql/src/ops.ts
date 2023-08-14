@@ -329,7 +329,7 @@ export type InstanceResult = {
   __typename?: 'InstanceResult';
   blockIx?: Maybe<Scalars['Int']['output']>;
   id: Scalars['String']['output'];
-  instanceIx?: Scalars['Int']['output'];
+  instanceIx?: Maybe<Scalars['Int']['output']>;
   participants: Scalars['Int']['output'];
   questionData: QuestionData;
   results: Scalars['Json']['output'];
