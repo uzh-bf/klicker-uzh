@@ -997,7 +997,7 @@ function QuestionEditModal({
                               input: 'bg-white text-gray-500',
                             }}
                             placeholder={t('shared.generic.minLong')}
-                            data-cy="set-numerical-minimum"
+                            data={{ cy: 'set-numerical-minimum' }}
                             hideError
                           />
                           <div className="font-bold">
@@ -1010,7 +1010,7 @@ function QuestionEditModal({
                               input: 'bg-white text-gray-500',
                             }}
                             placeholder={t('shared.generic.maxLong')}
-                            data-cy="set-numerical-maximum"
+                            data={{ cy: 'set-numerical-maximum' }}
                             hideError
                           />
                         </div>
@@ -1035,7 +1035,7 @@ function QuestionEditModal({
                               input: 'bg-white text-gray-500',
                             }}
                             precision={0}
-                            data-cy="set-numerical-accuracy"
+                            data={{ cy: 'set-numerical-accuracy' }}
                             hideError
                           />
                         </div>
@@ -1135,7 +1135,7 @@ function QuestionEditModal({
                           }}
                           placeholder={t('manage.questionForms.answerLength')}
                           precision={0}
-                          data-cy="set-free-text-length"
+                          data={{ cy: 'set-free-text-length' }}
                           hideError
                         />
                       </div>
