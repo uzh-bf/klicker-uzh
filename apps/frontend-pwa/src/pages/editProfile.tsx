@@ -1,5 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
+import { faSave } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   SelfDocument,
   UpdateParticipantProfileDocument,
@@ -165,52 +167,56 @@ function EditProfile() {
         {({ values, isSubmitting, isValid }) => {
           return (
             <Form>
-              <div className="flex flex-col md:w-full md:max-w-4xl md:mx-auto gap-4">
+              <div className="flex flex-col md:w-full md:max-w-5xl md:mx-auto gap-4">
                 <div className="flex flex-col w-full md:flex-row gap-4">
-                  <div className="flex flex-col justify-between flex-1 order-2 gap-3 md:order-1 bg-slate-50 p-4 rounded">
-                    <H3 className={{ root: 'border-b mb-0' }}>
-                      {t('shared.generic.profile')}
-                    </H3>
-                    <div className="space-y-3 mb-2">
-                      <FormikTextField
-                        name="email"
-                        label={t('shared.generic.email')}
-                        labelType="small"
-                        className={{ label: 'font-bold text-md text-black' }}
-                      />
-                      <FormikTextField
-                        name="username"
-                        label={t('shared.generic.username')}
-                        labelType="small"
-                        className={{ label: 'font-bold text-md text-black' }}
-                      />
-                      <FormikTextField
-                        name="password"
-                        label={t('shared.generic.password')}
-                        labelType="small"
-                        className={{ label: 'font-bold text-md text-black' }}
-                        type="password"
-                      />
-                      <FormikTextField
-                        name="passwordRepetition"
-                        label={t('shared.generic.passwordRepetition')}
-                        labelType="small"
-                        className={{ label: 'font-bold text-md text-black' }}
-                        type="password"
-                      />
-                      <div>
-                        <div className="font-bold">
-                          {t('pwa.profile.publicProfile')}
-                        </div>
-                        <div className="flex flex-row space-between gap-2">
-                          <div className="flex-1">
-                            {t('pwa.profile.isProfilePublic')}
+                  <div className="flex flex-col justify-between flex-1 order-2 gap-3 md:order-1 md:bg-slate-50 md:p-4 rounded">
+                    <div>
+                      <H3 className={{ root: 'border-b mb-0' }}>
+                        {t('shared.generic.profile')}
+                      </H3>
+                      <div className="space-y-3 mb-2">
+                        <FormikTextField
+                          name="email"
+                          label={t('shared.generic.email')}
+                          labelType="small"
+                          className={{ label: 'font-bold text-md text-black' }}
+                        />
+                        <FormikTextField
+                          name="username"
+                          label={t('shared.generic.username')}
+                          labelType="small"
+                          className={{ label: 'font-bold text-md text-black' }}
+                        />
+                        <FormikTextField
+                          name="password"
+                          label={t('shared.generic.password')}
+                          labelType="small"
+                          className={{ label: 'font-bold text-md text-black' }}
+                          type="password"
+                        />
+                        <FormikTextField
+                          name="passwordRepetition"
+                          label={t('shared.generic.passwordRepetition')}
+                          labelType="small"
+                          className={{ label: 'font-bold text-md text-black' }}
+                          type="password"
+                        />
+                        <div>
+                          <div className="font-bold">
+                            {t('pwa.profile.publicProfile')}
                           </div>
-                          <div className="flex flex-col items-center gap-1">
-                            <FormikSwitchField name="isProfilePublic" />
-                            {values.isProfilePublic
-                              ? t('shared.generic.yes')
-                              : t('shared.generic.no')}
+                          <div className="flex flex-row space-between gap-4">
+                            <div className="flex flex-col items-center gap-1">
+                              <FormikSwitchField name="isProfilePublic" />
+                              {values.isProfilePublic
+                                ? t('shared.generic.yes')
+                                : t('shared.generic.no')}
+                            </div>
+                            <div className="flex-1">
+                              <Prose className={{ root: 'prose-sm' }}>
+                                {t('pwa.profile.isProfilePublic')}
+                              </Prose>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -221,25 +227,63 @@ function EditProfile() {
                       type="submit"
                       disabled={isSubmitting || !isValid}
                     >
-                      {t('shared.generic.save')}
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faSave} />
+                      </Button.Icon>
+                      <Button.Label>{t('shared.generic.save')}</Button.Label>
                     </Button>
                   </div>
 
-                  <div className="flex-1 order-1 md:order-2 bg-slate-50 p-4 rounded justify-between flex flex-col text-sm">
-                    <div className="flex-initial">
-                      <Prose className={{ root: 'text-md' }}>
-                        <p>{t('pwa.profile.welcomeMessage')}</p>
-                        <p>Some privacy blabla</p>
-                        <p>
-                          Some blabla with link to data protection agreement
-                        </p>
-                      </Prose>
-                    </div>
+                  <div className="flex-1 order-1 md:order-2 md:bg-slate-50 md:p-4 rounded justify-between flex flex-col space-y-4">
+                    {!data.self?.isActive && (
+                      <div className="flex-initial space-y-2">
+                        <H3 className={{ root: 'border-b mb-0' }}>Privacy</H3>
+                        <Prose>
+                          <p>
+                            When you create an account and participate in
+                            courses and activities using KlickerUZH, your course
+                            managers will be able to see your{' '}
+                            <span className="font-bold">e-mail address</span>{' '}
+                            alongside some information on the activities you
+                            participated in, and might use this information for
+                            the purpose of their teaching.
+                          </p>
+                          <p>
+                            The detailed content of your questions (e.g., in
+                            Live Q&A) or responses (e.g., in quizzes) will not
+                            be shared, except in aggregate or anonymously. Only{' '}
+                            <span className="font-bold">nonsensitive</span>{' '}
+                            information like the number of interactions and
+                            collected points per interaction will be shared in
+                            an identifiable way.
+                          </p>
+                          <p>
+                            More details on the collection and processing of
+                            data can be found in our{' '}
+                            <a
+                              href="https://www.klicker.uzh.ch/privacy"
+                              target="_blank"
+                            >
+                              Privacy Policy
+                            </a>
+                            . By creating an account and continuing to use
+                            KlickerUZH, you agree to the terms as specified
+                            therein. If you{' '}
+                            <span className="font-bold">do not consent</span>,
+                            please{' '}
+                            <span className="font-bold">
+                              delete your account
+                            </span>{' '}
+                            using the button below.
+                          </p>
+                        </Prose>
+                      </div>
+                    )}
                     <div className="flex-initial space-y-2">
                       <H3 className={{ root: 'border-b mb-0' }}>
                         {t('pwa.profile.deleteProfile')}
                       </H3>
-                      <Prose className={{ root: 'text-sm' }}>
+                      <Prose className={{ root: '' }}>
                         {t('pwa.profile.deleteProfileDescription')}
                       </Prose>
                       <Button disabled>{t('shared.generic.delete')}</Button>
@@ -247,7 +291,7 @@ function EditProfile() {
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded space-y-2">
+                <div className="md:bg-slate-50 md:p-4 rounded space-y-2">
                   <H3 className={{ root: 'border-b' }}>Avatar</H3>
                   <div className="flex flex-col md:flex-row gap-4 md:gap-8">
                     <div className="flex-1">
@@ -297,8 +341,15 @@ function EditProfile() {
                       ))}
                     </div>
                   </div>
-                  <Button type="submit" disabled={isSubmitting || !isValid}>
-                    {t('shared.generic.save')}
+                  <Button
+                    fluid
+                    type="submit"
+                    disabled={isSubmitting || !isValid}
+                  >
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faSave} />
+                    </Button.Icon>
+                    <Button.Label>{t('shared.generic.save')}</Button.Label>
                   </Button>
                 </div>
               </div>

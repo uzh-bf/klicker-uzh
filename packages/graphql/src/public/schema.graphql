@@ -512,6 +512,7 @@ type Participant {
   avatarSettings: Json
   email: String
   id: ID!
+  isActive: Boolean!
   isProfilePublic: Boolean
   isSelf: Boolean
   lastLoginAt: Date

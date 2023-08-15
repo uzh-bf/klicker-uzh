@@ -253,7 +253,7 @@
     },
     "profile": {
       "publicProfile": "Profilsichtbarkeit",
-      "isProfilePublic": "Soll Dein Profil und Pseudonym anderen Teilnehmenden angezeigt werden?",
+      "isProfilePublic": "Soll Dein Profil und Pseudonym anderen Teilnehmenden angezeigt werden? Wenn Du diese Option deaktivierst, sehen dich andere Teilnehmende nur noch als Anonymous, Du alle anderen Teilnehmenden allerdings auch.",
       "editProfile": "Profil editieren",
       "editProfileFailed": "Leider ist beim Speichern der Änderungen ein Fehler aufgetreten. Möglicherweise ist der von Ihnen gewählte Nutzername bereits vergeben. Bitte überprüfen Sie Ihre Eingaben und versuchen es nochmal.",
       "achievements": "Errungenschaften",

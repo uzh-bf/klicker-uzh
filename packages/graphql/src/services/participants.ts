@@ -32,12 +32,21 @@ export async function updateParticipantProfile(
     }
   }
 
+  if (typeof email === 'string') {
+    if (!isEmail(email)) {
+      return null
+    }
+  }
+
   if (typeof password === 'string') {
     if (password.length >= 8) {
       const hashedPassword = await bcrypt.hash(password, 12)
       return ctx.prisma.participant.update({
         where: { id: ctx.user.sub },
         data: {
+          isActive: true,
+          isProfilePublic:
+            typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
           password: hashedPassword,
           username: username ?? undefined,
           avatar: avatar ?? undefined,
@@ -52,6 +61,7 @@ export async function updateParticipantProfile(
   const participant = await ctx.prisma.participant.update({
     where: { id: ctx.user.sub },
     data: {
+      isActive: true,
       isProfilePublic:
         typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
       email: email ?? undefined,

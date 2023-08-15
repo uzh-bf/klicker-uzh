@@ -253,7 +253,7 @@
     },
     "profile": {
       "publicProfile": "Profile Visibility",
-      "isProfilePublic": "Should your profile and pseudonym be displayed to other participants?",
+      "isProfilePublic": "Should your profile and pseudonym be displayed to other participants? If you deactivate this option, you will be displayed as Anonymous to other participants. Note that you will see all other participants as Anonymous as well.",
       "editProfile": "Edit profile",
       "editProfileFailed": "Unfortunately, an error occurred while saving the changes. The username you have chosen may already be taken. Please check your entries and try again.",
       "achievements": "Achievements",
