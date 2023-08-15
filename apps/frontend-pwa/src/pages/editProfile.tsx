@@ -6,6 +6,7 @@ import {
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Markdown } from '@klicker-uzh/markdown'
 import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
@@ -238,45 +239,11 @@ function EditProfile() {
                     {!data.self?.isActive && (
                       <div className="flex-initial space-y-2">
                         <H3 className={{ root: 'border-b mb-0' }}>Privacy</H3>
-                        <Prose>
-                          <p>
-                            When you create an account and participate in
-                            courses and activities using KlickerUZH, your course
-                            managers will be able to see your{' '}
-                            <span className="font-bold">e-mail address</span>{' '}
-                            alongside some information on the activities you
-                            participated in, and might use this information for
-                            the purpose of their teaching.
-                          </p>
-                          <p>
-                            The detailed content of your questions (e.g., in
-                            Live Q&A) or responses (e.g., in quizzes) will not
-                            be shared, except in aggregate or anonymously. Only{' '}
-                            <span className="font-bold">nonsensitive</span>{' '}
-                            information like the number of interactions and
-                            collected points per interaction will be shared in
-                            an identifiable way.
-                          </p>
-                          <p>
-                            More details on the collection and processing of
-                            data can be found in our{' '}
-                            <a
-                              href="https://www.klicker.uzh.ch/privacy"
-                              target="_blank"
-                            >
-                              Privacy Policy
-                            </a>
-                            . By creating an account and continuing to use
-                            KlickerUZH, you agree to the terms as specified
-                            therein. If you{' '}
-                            <span className="font-bold">do not consent</span>,
-                            please{' '}
-                            <span className="font-bold">
-                              delete your account
-                            </span>{' '}
-                            using the button below.
-                          </p>
-                        </Prose>
+                        <Markdown
+                          withProse
+                          withLinkButtons={false}
+                          content={t('pwa.profile.privacyNotice')}
+                        />
                       </div>
                     )}
                     <div className="flex-initial space-y-2">

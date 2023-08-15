@@ -7,6 +7,7 @@ function Features() {
     <DocsLayout>
       {(courseInformation) => (
         <Markdown
+          withProse
           className={{ root: 'prose-headings:mt-0' }}
           content={`
 ### Funktionen im KlickerUZH
