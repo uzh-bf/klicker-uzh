@@ -12,6 +12,7 @@ import {
   QuestionType,
   ResponseToQuestionInstanceDocument,
   SelfDocument,
+  StackElement,
 } from '@klicker-uzh/graphql/dist/ops'
 import formatResponse from '@lib/formatResponse'
 import { Button, H2 } from '@uzh-bf/design-system'
@@ -122,94 +123,91 @@ function QuestionStack({
   })
 
   useEffect(() => {
-    stack.elements?.map((element) => {
-      if (element.mdContent) return
+    setInformationOnly(true)
+    setIsEvaluation(true)
 
-      const questionType = element.questionInstance?.questionData.type
-      setInformationOnly(false)
-      if (
-        questionType === QuestionType.Sc ||
-        questionType === QuestionType.Mc
-      ) {
-        setResponses((prev) => ({
-          ...prev,
-          [element.id]: [],
-        }))
-      } else if (questionType === QuestionType.Kprim) {
-        setResponses((prev) => ({
-          ...prev,
-          [element.id]: {},
-        }))
-      } else {
-        setResponses((prev) => ({
-          ...prev,
-          [element.id]: '',
-        }))
-      }
-    })
-  }, [stack])
+    const result = stack.elements?.reduce<{
+      inputValid: Record<number, boolean>
+      responses: Record<string, string | Object | number[] | null>
+    }>(
+      (acc, element: StackElement) => {
+        if (element.mdContent) {
+          return acc
+        }
 
-  // check if the current stack is showing evaluation data and which elements were answered correctly
-  useEffect(() => {
-    if (
-      stack.elements?.every(
-        (element) =>
-          !element.questionInstance || element.questionInstance.evaluation
-      ) ??
-      false
-    ) {
-      setIsEvaluation(true)
-    }
+        if (!element.questionInstance?.evaluation) {
+          setIsEvaluation(false)
+        }
 
-    let overallScore: 'correct' | 'incorrect' | 'partial' | 'unanswered' =
-      'unanswered'
-    stack.elements?.forEach((element) => {
-      // text elements will not be considered to contribute to correctness of a response
-      if (!element.questionInstance) return
+        const questionType = element.questionInstance?.questionData.type
+        setInformationOnly(false)
+        if (
+          questionType === QuestionType.Sc ||
+          questionType === QuestionType.Mc
+        ) {
+          return {
+            inputValid: { ...acc.inputValid, [element.id]: false },
+            responses: { ...acc.responses, [element.id]: [] },
+          }
+        } else if (questionType === QuestionType.Kprim) {
+          return {
+            inputValid: { ...acc.inputValid, [element.id]: false },
+            responses: { ...acc.responses, [element.id]: {} },
+          }
+        }
+        return {
+          inputValid: { ...acc.inputValid, [element.id]: false },
+          responses: { ...acc.responses, [element.id]: '' },
+        }
+      },
+      { inputValid: {}, responses: {} }
+    )
 
-      // if question instance is defined, but evaluation is not, the question was not answered
-      if (!element.questionInstance.evaluation) {
-        return
-      }
+    setInputValid(result?.inputValid || {})
+    setResponses(result?.responses || {})
 
-      // check if the element was answered wrong or only partially correct
-      const percentile = element.questionInstance.evaluation.percentile ?? 0
-      if (percentile === 0) {
-        // for wrong answer: correct -> partial, incorrect -> incorrect, partial -> partial, unanswered -> incorrect
-        overallScore === 'partial' || overallScore === 'correct'
-          ? (overallScore = 'partial')
-          : (overallScore = 'incorrect')
-      } else if (percentile > 0 && percentile < 1) {
-        // for partially correct answer: correct -> partial, incorrect -> partial, partial -> partial, unanswered -> partial
-        overallScore = 'partial'
-      } else if (percentile === 1) {
-        // for correct answers: correct -> correct, partial -> partial, incorrect -> partial, unanswered -> correct
-        overallScore === 'correct' || overallScore === 'unanswered'
-          ? (overallScore = 'correct')
-          : (overallScore = 'partial')
-      }
-    })
+    const correctness = stack.elements?.reduce<{
+      result: 'correct' | 'incorrect' | 'partial' | 'unanswered'
+      questions: number
+    }>(
+      (acc, element) => {
+        // text elements will not be considered to contribute to correctness of a response
+        if (!element.questionInstance) {
+          return acc
+        }
 
-    setStepStatus(overallScore)
-  }, [stack])
+        // if question instance is defined, but evaluation is not, the question was not answered
+        if (!element.questionInstance.evaluation) {
+          return { result: 'unanswered', questions: acc.questions + 1 }
+        }
 
-  // check if the current stack only contains information elements
-  useEffect(() => {
-    if (stack.elements?.every((element) => !!element.mdContent) ?? true) {
-      setInformationOnly(true)
+        // check if the element was answered wrong or only partially correct
+        const percentile = element.questionInstance.evaluation.percentile ?? 0
+        if (percentile === 0) {
+          // for wrong answer: correct -> partial, incorrect -> incorrect, partial -> partial, unanswered -> incorrect
+          return acc.result === 'partial' || acc.result === 'correct'
+            ? { result: 'partial', questions: acc.questions + 1 }
+            : { result: 'incorrect', questions: acc.questions + 1 }
+        } else if (percentile > 0 && percentile < 1) {
+          // for partially correct answer: correct -> partial, incorrect -> partial, partial -> partial, unanswered -> partial
+          return { result: 'partial', questions: acc.questions + 1 }
+        } else if (percentile === 1) {
+          // for correct answers: correct -> correct, partial -> partial, incorrect -> partial, unanswered -> correct
+          return acc.result === 'correct' || acc.result === 'unanswered'
+            ? { result: 'correct', questions: acc.questions + 1 }
+            : { result: 'partial', questions: acc.questions + 1 }
+        }
+
+        return acc
+      },
+      { result: 'unanswered', questions: 0 }
+    )
+
+    if (correctness?.questions) {
+      setStepStatus(correctness.result || 'unanswered')
+    } else {
       setStepStatus('correct')
     }
-  }, [stack])
-
-  useEffect(() => {
-    stack.elements?.map((element) => {
-      if (element.mdContent) return
-
-      return setInputValid((prev) => ({
-        ...prev,
-        [element.id]: false,
-      }))
-    })
   }, [stack])
 
   useEffect(() => {
