@@ -3,6 +3,7 @@ import { BigHead } from '@bigheads/core'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  DeleteParticipantAccountDocument,
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -14,6 +15,7 @@ import {
   FormikSwitchField,
   FormikTextField,
   H3,
+  Modal,
   Prose,
   Toast,
 } from '@uzh-bf/design-system'
@@ -34,9 +36,13 @@ function EditProfile() {
   const [updateParticipantProfile] = useMutation(
     UpdateParticipantProfileDocument
   )
+  const [deleteParticipantAccount] = useMutation(
+    DeleteParticipantAccountDocument
+  )
 
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/profile')
   const [showError, setShowError] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
@@ -253,7 +259,41 @@ function EditProfile() {
                       <Prose className={{ root: '' }}>
                         {t('pwa.profile.deleteProfileDescription')}
                       </Prose>
-                      <Button disabled>{t('shared.generic.delete')}</Button>
+
+                      <Modal
+                        title={t('pwa.profile.deleteProfile')}
+                        open={deleteModalOpen}
+                        onClose={(): void => setDeleteModalOpen(false)}
+                        hideCloseButton={true}
+                        className={{ content: 'h-max max-w-md' }}
+                        onPrimaryAction={
+                          <Button
+                            className={{
+                              root: 'bg-red-600 border-red-700 text-white',
+                            }}
+                            onClick={async () => {
+                              await deleteParticipantAccount()
+                              window?.location.reload()
+                            }}
+                          >
+                            {t('shared.generic.confirm')}
+                          </Button>
+                        }
+                        onSecondaryAction={
+                          <Button onClick={() => setDeleteModalOpen(false)}>
+                            {t('shared.generic.cancel')}
+                          </Button>
+                        }
+                        trigger={
+                          <Button
+                            onClick={(): void => setDeleteModalOpen(true)}
+                          >
+                            {t('shared.generic.delete')}
+                          </Button>
+                        }
+                      >
+                        {t('pwa.profile.deleteProfileConfirmation')}
+                      </Modal>
                     </div>
                   </div>
                 </div>

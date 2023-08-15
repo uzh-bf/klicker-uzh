@@ -51,7 +51,7 @@ import {
   FeedbackResponse,
   Session,
 } from './session'
-import { User } from './user'
+import { LocaleType, User } from './user'
 
 export const Mutation = builder.mutationType({
   fields(t) {
@@ -85,7 +85,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: User,
         args: {
-          locale: t.arg.string({ required: true }),
+          locale: t.arg({ type: LocaleType, required: true }),
         },
         resolve(_, args, ctx) {
           return AccountService.changeUserLocale(args, ctx) as any
@@ -96,7 +96,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
-          locale: t.arg.string({ required: true }),
+          locale: t.arg({ type: LocaleType, required: true }),
         },
         resolve(_, args, ctx) {
           return AccountService.changeParticipantLocale(args, ctx)
@@ -918,6 +918,13 @@ export const Mutation = builder.mutationType({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
           return NotificationService.sendPushNotifications(ctx)
+        },
+      }),
+
+      deleteParticipantAccount: asParticipant.boolean({
+        nullable: true,
+        resolve(_, __, ctx) {
+          return AccountService.deleteParticipantAccount(ctx)
         },
       }),
     }

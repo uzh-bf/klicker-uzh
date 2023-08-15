@@ -268,7 +268,8 @@
       "passwordRequired": "Bitte geben Sie ein Passwort ein.",
       "welcomeMessage": "Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar.",
       "deleteProfile": "Konto löschen",
-      "deleteProfileDescription": "Das Löschen Deines KlickerUZH-Kontos wird alle verbundenen Informationen löschen und sicherstellen, dass in Deinem aktuellen Browser kein neues Konto erstellt wird."
+      "deleteProfileDescription": "Das Löschen Deines KlickerUZH-Kontos wird alle verbundenen Informationen löschen und sicherstellen, dass in Deinem aktuellen Browser kein neues Konto erstellt wird.",
+      "deleteProfileConfirmation": "Bist Du sicher, dass Du Dein Konto löschen möchtest? Alle Daten, die mit Deinem Konto assoziiert sind, werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
     },
     "avatar": {
       "hair": "Frisur",

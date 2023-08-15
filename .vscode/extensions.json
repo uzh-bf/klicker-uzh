@@ -26,6 +26,7 @@
     "prisma.prisma",
     "wix.glean",
     "wix.vscode-import-cost",
-    "yzhang.markdown-all-in-one"
+    "yzhang.markdown-all-in-one",
+    "stivo.tailwind-fold"
   ]
 }

@@ -803,7 +803,7 @@ model Participation {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
-  courseLeaderboard   LeaderboardEntry? @relation(fields: [courseLeaderboardId], references: [id])
+  courseLeaderboard   LeaderboardEntry? @relation(fields: [courseLeaderboardId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   courseLeaderboardId Int?              @unique
 
   sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")

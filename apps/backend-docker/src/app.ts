@@ -57,6 +57,10 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           // }
 
           if (req.cookies) {
+            if (req.cookies['no-account']) {
+              return null
+            }
+
             return (
               req.cookies['next-auth.session-token'] ||
               req.cookies['participant_token']

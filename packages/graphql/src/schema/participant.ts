@@ -18,6 +18,7 @@ import type { IGroupActivityInstance } from './groupActivity'
 import { GroupActivityInstanceRef } from './groupActivity'
 import type { IQuestionStack } from './learningElements'
 import { QuestionStackRef } from './learningElements'
+import { LocaleType } from './user'
 
 export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
   fields: (t) => ({
@@ -89,7 +90,7 @@ export const Participant = ParticipantRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
-    locale: t.exposeString('locale'),
+    locale: t.expose('locale', { type: LocaleType }),
 
     email: t.exposeString('email', { nullable: true }),
     username: t.exposeString('username', { nullable: false }),

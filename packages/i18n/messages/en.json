@@ -268,7 +268,8 @@
       "passwordRequired": "Please enter a password here.",
       "welcomeMessage": "Welcome to KlickerUZH! If this is your first time here, please set a password and define your own username and avatar.",
       "deleteProfile": "Delete Account",
-      "deleteProfileDescription": "Deleting your KlickerUZH account will delete all associated data and prevent a new account from being created in your current browser."
+      "deleteProfileDescription": "Deleting your KlickerUZH account will delete all associated data and prevent a new account from being created in your current browser.",
+      "deleteProfileConfirmation": "Are you sure you want to delete your account? All data related to your account will be deleted. This action cannot be undone."
     },
     "avatar": {
       "hair": "Hair",

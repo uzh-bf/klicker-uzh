@@ -1,4 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import { Locale, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
@@ -234,7 +234,7 @@ export async function getLoginToken(_: any, ctx: ContextWithUser) {
 }
 
 interface ChangeUserLocaleArgs {
-  locale: string
+  locale: Locale
 }
 
 export async function changeUserLocale(
@@ -254,7 +254,7 @@ export async function changeUserLocale(
 }
 
 interface ChangeParticipantLocaleArgs {
-  locale: string
+  locale: Locale
 }
 
 export async function changeParticipantLocale(
@@ -271,4 +271,24 @@ export async function changeParticipantLocale(
   ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
 
   return participant
+}
+
+export async function deleteParticipantAccount(ctx: ContextWithUser) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+  })
+
+  if (!participant) return false
+
+  await ctx.prisma.participant.delete({
+    where: { id: ctx.user.sub },
+  })
+
+  // set a cookie that lives forever and will be used to ensure that no new account is created through LTI
+  ctx.res.cookie('no-account', 'true', {
+    ...COOKIE_SETTINGS,
+    maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
+  })
+
+  return true
 }
