@@ -154,6 +154,8 @@ export async function leaveCourse(
     where: { participation: { id: participation.id } },
   })
 
+  // TODO:: reset collected points and points dates on questionresponse and questionresponsedetail
+
   if (!participation) return null
 
   return {
