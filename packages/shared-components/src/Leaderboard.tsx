@@ -137,8 +137,10 @@ function Leaderboard({
               content={t('pwa.general.joinLeaderboardNotice')}
             />
             <Button fluid className={{ root: 'bg-white' }} onClick={onJoin}>
-              Join the leaderboard for{' '}
-              <span className="font-bold">{courseName}</span>
+              {t.rich('pwa.courses.joinLeaderboardCourse', {
+                name: courseName,
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
             </Button>
           </div>
         )}
