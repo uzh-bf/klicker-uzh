@@ -1,5 +1,6 @@
 import { LearningElement } from '@klicker-uzh/graphql/dist/ops'
 import { StepProgress } from '@uzh-bf/design-system'
+import * as R from 'ramda'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ElementOverview from './ElementOverview'
@@ -22,7 +23,7 @@ function LearningElement({
   const currentStack = element.stacks?.[currentIx]
   const [stepStatus, setStepStatus] = useState<
     ('unanswered' | 'incorrect' | 'partial' | 'correct')[]
-  >(Array.from({ length: element.stacks?.length ?? 0 }, () => 'unanswered'))
+  >(R.repeat('unanswered', element.stacks?.length ?? 0))
 
   return (
     <div
