@@ -382,6 +382,7 @@
       "explanationPlaceholder": "Erklärung hier eingeben…",
       "attachments": "Anhänge",
       "answerOptions": "Antwortmöglichkeiten",
+      "answerOption": "Antwortmöglichkeit",
       "answerOptionsTooltip": "Erfassen Sie hier die möglichen Antworten, welche von den Studierenden für die Frage ausgewählt werden können.",
       "FTOptionsTooltip": "Nehmen Sie hier optionale Einstellungen für die offene Frage vor.",
       "answerOptionPlaceholder": "Antwortmöglichkeit hier eingeben…",
@@ -395,6 +396,7 @@
       "maximumLength": "Maximale Länge",
       "answerLength": "Antwort Länge",
       "possibleSolutionN": "Mögliche Lösung {number}",
+      "possibleSolutions": "Mögliche Lösungen",
       "addSolution": "Neue Lösung hinzufügen",
       "noFeedbackDefined": "Kein Feedback definiert",
       "createElement": "{element} erstellen",
@@ -485,6 +487,7 @@
       "learningElementLAST_RESPONSE": "Letzte Antwort zuletzt"
     },
     "formErrors": {
+      "resolveErrors": "Bitte stellen Sie sicher, dass die folgenden Fehler im Formular behoben sind, bevor die Frage gespeichert werden kann:",
       "questionName": "Geben Sie einen Namen für die Frage ein.",
       "questionContent": "Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu.",
       "attachmentURL": "Bitte geben Sie eine URL für den Anhang ein.",
@@ -492,7 +495,12 @@
       "answerContent": "Bitte fügen Sie einen Inhalt zu Ihrer Antwortoption hinzu.",
       "feedbackContent": "Bitte fügen Sie einen Inhalt zu Ihrem Antwortfeedback hinzu.",
       "SCAnswersCorrect": "Bei SC-Fragen muss genau eine Antwort korrekt sein.",
-      "MCAnswersCorrect": "Bei MC-Fragen muss mindestens eine Antwort korrekt sein."
+      "MCAnswersCorrect": "Bei MC-Fragen muss mindestens eine Antwort korrekt sein.",
+      "enterSolution": "Bitte geben Sie eine Lösung ein.",
+      "FTMaxLength": "Die maximale Länge der Lösung muss mindestens 1 betragen.",
+      "solutionRequired": "Bitte geben Sie mindestens eine Lösung an oder deaktivieren Sie die Musterlösung.",
+      "NRPrecision": "Die Anzahl Nachkommastellen muss mindestens 0 sein.",
+      "solutionRangeRequired": "Bitte geben Sie mindestens einen Lösungsbereich an."
     },
     "sessions": {
       "runningSessions": "Laufende Sessionen",

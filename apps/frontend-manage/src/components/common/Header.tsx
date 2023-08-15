@@ -123,10 +123,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           <Navigation.DropdownItem
             title={t('shared.generic.logout')}
             onClick={async () => {
-              const userIdLogout = await logoutUser()
-              userIdLogout.data?.logoutUser
-                ? router.push('https://www.klicker.uzh.ch')
-                : console.log('Logout failed')
+              router.push(process.env.NEXT_PUBLIC_AUTH_URL + '/logout')
             }}
             className={{ title: 'text-base font-bold', root: 'p-2' }}
             data={{ cy: 'logout' }}
