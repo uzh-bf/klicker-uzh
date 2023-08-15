@@ -90,6 +90,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     ctx,
   })
 
+  if (participant && !participant.isActive) {
+    return {
+      redirect: {
+        destination: `/editProfile?redirect_to=${encodeURIComponent(
+          `/join/${ctx.params.shortname}`
+        )}`,
+        statusCode: 302,
+      },
+    }
+  }
+
   // if only a single session is running, redirect directly to the corresponding session page
   // or if linkTo is set, redirect to the specified link
   if (result.data.runningSessions.length === 1) {

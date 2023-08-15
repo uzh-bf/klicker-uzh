@@ -604,7 +604,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     ctx,
   })
 
-  if (participant && !participant.avatar) {
+  if (participant && !participant.isActive) {
     return {
       redirect: {
         destination: `/editProfile?redirect_to=${encodeURIComponent(

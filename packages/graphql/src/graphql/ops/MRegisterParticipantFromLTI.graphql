@@ -12,6 +12,7 @@ mutation RegisterParticipantFromLTI(
     participantToken
     participant {
       id
+      isActive
       avatar
       username
     }
