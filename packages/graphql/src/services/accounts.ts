@@ -297,14 +297,30 @@ interface CreateParticipantAccountArgs {
   email: string
   username: string
   password: string
-  signedLtiData?: string
+  isProfilePublic: boolean
+  signedLtiData?: string | null
 }
 
 export async function createParticipantAccount(
   args: CreateParticipantAccountArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   // TODO: if set, verify signedLtiData and use the email and ssoId provided within
   // TODO: if not set, use the user provided email and generate a new account without SSO
   // TODO: log-in the user after account creation
+
+  console.log(args, ctx)
+
+  if (args.signedLtiData) {
+    try {
+      // const ltiData = JWT.verify(
+      //   args.signedLtiData,
+      //   process.env.APP_SECRET as string
+      // )
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  return null
 }

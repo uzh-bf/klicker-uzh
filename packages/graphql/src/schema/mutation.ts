@@ -927,6 +927,21 @@ export const Mutation = builder.mutationType({
           return AccountService.deleteParticipantAccount(ctx)
         },
       }),
+
+      createParticipantAccount: t.field({
+        nullable: true,
+        type: Participant,
+        args: {
+          username: t.arg.string({ required: true }),
+          password: t.arg.string({ required: true }),
+          email: t.arg.string({ required: true }),
+          isProfilePublic: t.arg.boolean({ required: true }),
+          signedLtiData: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.createParticipantAccount(args, ctx)
+        },
+      }),
     }
   },
 })

@@ -7,7 +7,6 @@ import {
   H4,
   Prose,
 } from '@uzh-bf/design-system'
-import bodyParser from 'body-parser'
 import { Form, Formik } from 'formik'
 import generatePassword from 'generate-password'
 import JWT from 'jsonwebtoken'
@@ -17,9 +16,11 @@ import { useRouter } from 'next/router'
 import nookies from 'nookies'
 import * as yup from 'yup'
 
+import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Layout from 'src/components/Layout'
 
@@ -30,14 +31,13 @@ interface CreateAccountProps {
   username: string
 }
 
-function CreateAccount({
-  signedLtiData,
-  ssoId,
-  email,
-  username,
-}: CreateAccountProps) {
+function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
   const t = useTranslations()
   const router = useRouter()
+
+  const [createParticipantAccount] = useMutation(
+    CreateParticipantAccountDocument
+  )
 
   const createAccountSchema = yup.object({
     email: yup
@@ -73,8 +73,7 @@ function CreateAccount({
       <Formik
         isInitialValid={false}
         initialValues={{
-          ssoId,
-          email,
+          email: email ?? '',
           username,
           password: '',
           passwordRepetition: '',
@@ -84,7 +83,16 @@ function CreateAccount({
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
 
-          // send ssoId, email, signature, etc. to the backend for signup
+          await createParticipantAccount({
+            variables: {
+              email: values.email,
+              username: values.username,
+              password: values.password,
+              isProfilePublic: values.isProfilePublic,
+              signedLtiData,
+            },
+          })
+
           setSubmitting(false)
         }}
       >
@@ -259,65 +267,73 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   //   }
   // }
 
-  if (req.method === 'POST') {
-    // extract the body from the LTI request
-    // if there is a body, request a participant token
-    // TODO: verify that there is an LTI body and that it is valid
+  // if (req.method === 'POST') {
+  //   // extract the body from the LTI request
+  //   // if there is a body, request a participant token
+  //   // TODO: verify that there is an LTI body and that it is valid
 
-    const { request }: any = await new Promise((resolve) => {
-      bodyParser.urlencoded({ extended: true })(req, res, () => {
-        bodyParser.json()(req, res, () => {
-          resolve({ request: req })
-        })
-      })
-    })
+  //   const { request }: any = await new Promise((resolve) => {
+  //     bodyParser.urlencoded({ extended: true })(req, res, () => {
+  //       bodyParser.json()(req, res, () => {
+  //         resolve({ request: req })
+  //       })
+  //     })
+  //   })
 
-    if (request?.body?.lis_person_sourcedid) {
-      const secret = process.env.APP_SECRET as string
-
-      const signedLtiData = JWT.sign(
-        {
-          sub: request.body.lis_person_sourcedid,
-          email: request.body.lis_person_contact_email_primary,
-        },
-        secret,
-        {
-          algorithm: 'HS256',
-          expiresIn: '1h',
-        }
-      )
-
-      return {
-        props: {
-          signedLtiData,
-          ssoId: request.body.lis_person_sourcedid,
-          email: request.body.lis_person_contact_email_primary,
-          username: generatePassword.generate({
-            length: 8,
-            uppercase: true,
-            symbols: false,
-            numbers: true,
-          }),
-          messages: (
-            await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`)
-          ).default,
-        },
-      }
-    }
-  }
-
-  return {
-    props: {
-      username: generatePassword.generate({
-        length: 8,
-        uppercase: true,
-        symbols: false,
-        numbers: true,
-      }),
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
-        .default,
+  // HACK: dev prefill with data
+  const request = {
+    body: {
+      lis_person_sourcedid: '123',
+      lis_person_contact_email_primary: 'roli@boli.ch',
     },
   }
+
+  if (request?.body?.lis_person_sourcedid) {
+    const signedLtiData = JWT.sign(
+      {
+        sub: request.body.lis_person_sourcedid,
+        email: request.body.lis_person_contact_email_primary,
+      },
+      process.env.APP_SECRET as string,
+      {
+        algorithm: 'HS256',
+        expiresIn: '1h',
+      }
+    )
+
+    console.warn(signedLtiData, process.env.APP_SECRET)
+
+    return {
+      props: {
+        signedLtiData,
+        ssoId: request.body.lis_person_sourcedid,
+        email: request.body.lis_person_contact_email_primary,
+        username: generatePassword.generate({
+          length: 8,
+          uppercase: true,
+          symbols: false,
+          numbers: true,
+        }),
+        messages: (
+          await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`)
+        ).default,
+      },
+    }
+  }
+  // }
+
+  // return {
+  //   props: {
+  //     username: generatePassword.generate({
+  //       length: 8,
+  //       uppercase: true,
+  //       symbols: false,
+  //       numbers: true,
+  //     }),
+  //     messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+  //       .default,
+  //   },
+  // }
 }
 
 export default CreateAccount

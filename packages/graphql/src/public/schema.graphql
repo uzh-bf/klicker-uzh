@@ -401,6 +401,7 @@ type Mutation {
   createFeedback(content: String!, sessionId: String!): Feedback
   createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
   createMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
+  createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): Participant
   createParticipantAndJoinCourse(courseId: String!, password: String!, pin: Int!, username: String!): Participant
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
