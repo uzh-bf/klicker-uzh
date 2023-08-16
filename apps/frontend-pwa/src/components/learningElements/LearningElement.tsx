@@ -1,12 +1,27 @@
+import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
+import {
+  faBookOpen,
+  faCheck,
+  faCheckDouble,
+  faInbox,
+  faX,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LearningElement } from '@klicker-uzh/graphql/dist/ops'
-import { StepProgress } from '@uzh-bf/design-system'
+import { StepItem, StepProgress } from '@uzh-bf/design-system'
 import * as R from 'ramda'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ElementOverview from './ElementOverview'
 import ElementSummary from './ElementSummary'
-import QuestionStack from './QuestionStack'
+import QuestionStack, { ItemStatus } from './QuestionStack'
 
+const ICON_MAP: Record<string, IconDefinition> = {
+  correct: faCheckDouble,
+  incorrect: faX,
+  partial: faCheck,
+  unanswered: faInbox,
+}
 interface LearningElementProps {
   element: LearningElement
   currentIx: number
@@ -21,30 +36,79 @@ function LearningElement({
   handleNextQuestion,
 }: LearningElementProps) {
   const currentStack = element.stacks?.[currentIx]
-  const [stepStatus, setStepStatus] = useState<
-    ('unanswered' | 'incorrect' | 'partial' | 'correct')[]
-  >(R.repeat('unanswered', element.stacks?.length ?? 0))
+  const [itemStatus, setItemStatus] = useState<
+    {
+      status: ItemStatus
+      score?: number | null
+    }[]
+  >(R.repeat({ status: 'unanswered' }, element.stacks?.length ?? 0))
 
   return (
     <div
       className={twMerge(
-        'flex-1 space-y-4 md:max-w-6xl md:mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded',
-        (currentIx === -1 || currentStack) && 'md:w-full'
+        'flex-1 space-y-4 md:max-w-6xl md:mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded w-full'
       )}
     >
-      {(currentIx === -1 || currentStack) && (
-        <div>
-          <StepProgress
-            displayOffset={(element.stacks?.length ?? 0) > 15 ? 3 : undefined}
-            value={currentIx}
-            items={stepStatus.map((state) => {
-              return { status: state }
-            })}
-            onItemClick={(ix: number) => setCurrentIx(ix)}
-            data={{ cy: 'learning-element-progress' }}
-          />
-        </div>
-      )}
+      <StepProgress
+        displayOffset={(element.stacks?.length ?? 0) > 15 ? 3 : undefined}
+        value={currentIx}
+        items={itemStatus}
+        onItemClick={(ix: number) => setCurrentIx(ix)}
+        data={{ cy: 'learning-element-progress' }}
+        formatter={({ element, ix }) => {
+          function render({
+            className,
+            element,
+          }: {
+            className: string
+            element: StepItem
+          }) {
+            return {
+              className,
+              element: (
+                <div className="flex w-full flex-row items-center justify-between px-2">
+                  <div>{ix + 1}</div>
+                  {typeof element.score !== 'undefined' &&
+                  element.score !== null ? (
+                    <div>{element.score}p</div>
+                  ) : (
+                    <div>
+                      <FontAwesomeIcon icon={faBookOpen} />
+                    </div>
+                  )}
+                  <FontAwesomeIcon icon={ICON_MAP[element.status]} />
+                </div>
+              ),
+            }
+          }
+
+          if (element.status === 'correct') {
+            return render({
+              element,
+              className: 'bg-green-600 bg-opacity-60 text-white',
+            })
+          }
+
+          if (element.status === 'incorrect') {
+            return render({
+              element,
+              className: 'bg-red-600 bg-opacity-60 text-white',
+            })
+          }
+
+          if (element.status === 'partial') {
+            return render({
+              element,
+              className: 'bg-uzh-red-100 bg-opacity-60 text-white',
+            })
+          }
+
+          return render({
+            element,
+            className: '',
+          })
+        }}
+      />
 
       {currentIx === -1 && (
         <ElementOverview
@@ -68,10 +132,10 @@ function LearningElement({
           currentStep={currentIx + 1}
           totalSteps={element.stacksWithQuestions ?? 0}
           handleNextQuestion={handleNextQuestion}
-          setStepStatus={(newStatus) =>
-            setStepStatus((prev) => {
+          setStepStatus={(value) =>
+            setItemStatus((prev) => {
               const next = [...prev]
-              next[currentIx] = newStatus
+              next[currentIx] = value
               return next
             })
           }

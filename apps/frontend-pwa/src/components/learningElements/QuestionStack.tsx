@@ -25,15 +25,21 @@ import DynamicMarkdown from './DynamicMarkdown'
 import LearningElementPoints from './LearningElementPoints'
 import SingleQuestion from './SingleQuestion'
 
+export type ItemStatus = 'unanswered' | 'incorrect' | 'partial' | 'correct'
+
 interface QuestionStackProps {
   elementId: string
   stack: QuestionStack
   currentStep: number
   totalSteps: number
   handleNextQuestion: () => void
-  setStepStatus: (
-    newStatus: 'unanswered' | 'incorrect' | 'partial' | 'correct'
-  ) => void
+  setStepStatus: ({
+    status,
+    score,
+  }: {
+    status: ItemStatus
+    score?: number | null
+  }) => void
 }
 
 function QuestionStack({
@@ -167,7 +173,8 @@ function QuestionStack({
     setResponses(result?.responses || {})
 
     const correctness = stack.elements?.reduce<{
-      result: 'correct' | 'incorrect' | 'partial' | 'unanswered'
+      result: ItemStatus
+      score?: number | null
       questions: number
     }>(
       (acc, element) => {
@@ -178,35 +185,72 @@ function QuestionStack({
 
         // if question instance is defined, but evaluation is not, the question was not answered
         if (!element.questionInstance.evaluation) {
-          return { result: 'unanswered', questions: acc.questions + 1 }
+          return {
+            // if we dont have an evaluation for the current question but the previous state
+            // was not unanswered, the entire stack is partially answered, and the score does not change with this item
+            result: acc.result === 'unanswered' ? 'unanswered' : 'partial',
+            questions: acc.questions + 1,
+            score: acc.score,
+          }
         }
 
         // check if the element was answered wrong or only partially correct
         const percentile = element.questionInstance.evaluation.percentile ?? 0
+        const score = element.questionInstance.evaluation.score
         if (percentile === 0) {
           // for wrong answer: correct -> partial, incorrect -> incorrect, partial -> partial, unanswered -> incorrect
           return acc.result === 'partial' || acc.result === 'correct'
-            ? { result: 'partial', questions: acc.questions + 1 }
-            : { result: 'incorrect', questions: acc.questions + 1 }
+            ? {
+                result: 'partial',
+                questions: acc.questions + 1,
+                score:
+                  typeof acc.score === 'number' ? acc.score + score : score,
+              }
+            : {
+                result: 'incorrect',
+                questions: acc.questions + 1,
+                score:
+                  typeof acc.score === 'number' ? acc.score + score : score,
+              }
         } else if (percentile > 0 && percentile < 1) {
           // for partially correct answer: correct -> partial, incorrect -> partial, partial -> partial, unanswered -> partial
-          return { result: 'partial', questions: acc.questions + 1 }
+          return {
+            result: 'partial',
+            questions: acc.questions + 1,
+            score: typeof acc.score === 'number' ? acc.score + score : score,
+          }
         } else if (percentile === 1) {
           // for correct answers: correct -> correct, partial -> partial, incorrect -> partial, unanswered -> correct
           return acc.result === 'correct' || acc.result === 'unanswered'
-            ? { result: 'correct', questions: acc.questions + 1 }
-            : { result: 'partial', questions: acc.questions + 1 }
+            ? {
+                result: 'correct',
+                questions: acc.questions + 1,
+                score:
+                  typeof acc.score === 'number' ? acc.score + score : score,
+              }
+            : {
+                result: 'partial',
+                questions: acc.questions + 1,
+                score:
+                  typeof acc.score === 'number' ? acc.score + score : score,
+              }
         }
 
         return acc
       },
-      { result: 'unanswered', questions: 0 }
+      { result: 'unanswered', questions: 0, score: null }
     )
 
     if (correctness?.questions) {
-      setStepStatus(correctness.result || 'unanswered')
+      setStepStatus({
+        status: correctness.result || 'unanswered',
+        score: correctness.score,
+      })
     } else {
-      setStepStatus('correct')
+      setStepStatus({
+        status: 'correct',
+        score: null,
+      })
     }
   }, [stack])
 
