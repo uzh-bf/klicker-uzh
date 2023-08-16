@@ -1,9 +1,10 @@
-import { initializeApollo } from '@lib/apollo'
 import {
   Button,
+  Collapsible,
   FormikSwitchField,
   FormikTextField,
   H3,
+  H4,
   Prose,
 } from '@uzh-bf/design-system'
 import bodyParser from 'body-parser'
@@ -16,11 +17,10 @@ import { useRouter } from 'next/router'
 import nookies from 'nookies'
 import * as yup from 'yup'
 
-import FormikAvatarEditor from '@components/participant/FormikAvatarEditor'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
+import { faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
-import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
 import Layout from 'src/components/Layout'
 
 interface CreateAccountProps {
@@ -51,7 +51,7 @@ function CreateAccount({
       .max(10, t('pwa.profile.usernameMaxLength', { length: '10' })),
     password: yup
       .string()
-      .optional()
+      .required()
       .min(8, t('pwa.profile.passwordMinLength', { length: '8' })),
     passwordRepetition: yup.string().when('password', {
       is: (val: string) => val && val.length > 0,
@@ -71,6 +71,7 @@ function CreateAccount({
   return (
     <Layout displayName={t('pwa.profile.createProfile')}>
       <Formik
+        isInitialValid={false}
         initialValues={{
           ssoId,
           email,
@@ -78,16 +79,6 @@ function CreateAccount({
           password: '',
           passwordRepetition: '',
           isProfilePublic: true,
-          // TODO: canton or country on the shirts
-          skinTone: AVATAR_OPTIONS.skinTone[0],
-          eyes: AVATAR_OPTIONS.eyes[0],
-          mouth: AVATAR_OPTIONS.mouth[0],
-          hair: AVATAR_OPTIONS.hair[0],
-          facialHair: AVATAR_OPTIONS.facialHair[0],
-          accessory: AVATAR_OPTIONS.accessory[0],
-          hairColor: AVATAR_OPTIONS.hairColor[0],
-          clothing: AVATAR_OPTIONS.clothing[0],
-          clothingColor: AVATAR_OPTIONS.clothingColor[0],
         }}
         validationSchema={createAccountSchema}
         onSubmit={async (values, { setSubmitting }) => {
@@ -100,12 +91,30 @@ function CreateAccount({
         {({ values, isSubmitting, isValid }) => {
           return (
             <Form>
-              <div className="grid md:grid-cols-2 md:w-full md:max-w-[1090px] md:mx-auto gap-2">
-                <div className="col-span-2 flex flex-row justify-between bg-slate-100 rounded p-1">
-                  <div></div>
+              <div className="flex flex-col md:grid md:grid-cols-2 md:w-full md:max-w-[1090px] md:mx-auto gap-2">
+                <div className="order-3 md:col-span-2 gap-2 md:gap-4 flex flex-col justify-between md:flex-row bg-slate-100 rounded p-4 md:px-4 py-2 items-center">
+                  <div className="flex flex-row items-center gap-4">
+                    <div className="flex-none text-2xl text-slate-600">
+                      <FontAwesomeIcon icon={faWarning} />
+                    </div>
+                    <div className="flex-1 max-w-xl text-sm text-slate-600">
+                      I agree to the{' '}
+                      <a
+                        className="text-blue-500 hover:text-orange-500 hover:underline"
+                        href="https://www.klicker.uzh.ch/privacy"
+                        target="_blank"
+                      >
+                        privacy policy
+                      </a>{' '}
+                      and consent to the processing of my data as described
+                      therein. I am aware that I can participate in most
+                      activities anonymously if I do not agree to these
+                      conditions.
+                    </div>
+                  </div>
                   <Button
                     className={{
-                      root: '',
+                      root: 'flex-none w-full md:w-max',
                     }}
                     type="submit"
                     disabled={isSubmitting || !isValid}
@@ -118,7 +127,7 @@ function CreateAccount({
                     </Button.Label>
                   </Button>
                 </div>
-                <div className="gap-3 md:bg-slate-50 md:p-4 rounded">
+                <div className="order-2 md:order-1 gap-3 md:bg-slate-50 md:p-4 rounded">
                   <H3 className={{ root: 'border-b mb-0' }}>
                     {t('shared.generic.profile')}
                   </H3>
@@ -178,17 +187,50 @@ function CreateAccount({
                     </div>
                   </div>
                 </div>
-
-                <div className=" md:bg-slate-50 md:p-4 rounded justify-between space-y-4">
-                  <H3 className={{ root: 'border-b mb-0' }}>Privacy</H3>
-                  <Markdown
-                    withProse
-                    withLinkButtons={false}
-                    content={t('pwa.profile.privacyNotice')}
-                  />
+                <div className="order-1 md:order-2 md:bg-slate-50 md:p-4 rounded md:justify-between space-y-2">
+                  <H3 className={{ root: 'border-b mb-0' }}>
+                    Data Processing and Privacy
+                  </H3>
+                  <Collapsible
+                    open
+                    staticContent={<H4>What data do you collect about me?</H4>}
+                  >
+                    <Markdown
+                      withProse
+                      withLinkButtons={false}
+                      content={t('pwa.profile.privacyDataCollection')}
+                    />
+                  </Collapsible>
+                  <Collapsible
+                    staticContent={
+                      <H4>How will my data be shared with others?</H4>
+                    }
+                  >
+                    <Markdown
+                      withProse
+                      withLinkButtons={false}
+                      content={t('pwa.profile.privacyDataSharing')}
+                    />
+                  </Collapsible>
+                  <Collapsible
+                    staticContent={<H4>How is my data being used?</H4>}
+                  >
+                    <Markdown
+                      withProse
+                      withLinkButtons={false}
+                      content={t('pwa.profile.privacyDataUsage')}
+                    />
+                  </Collapsible>
+                  <Collapsible
+                    staticContent={<H4>How long do you store my data?</H4>}
+                  >
+                    <Markdown
+                      withProse
+                      withLinkButtons={false}
+                      content={t('pwa.profile.privacyDataStorage')}
+                    />
+                  </Collapsible>
                 </div>
-
-                <FormikAvatarEditor />
               </div>
             </Form>
           )
@@ -204,7 +246,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const cookies = nookies.get(ctx)
 
   // if the user already has a participant token, skip registration
-  // and redirect to the profile page
+  // and redirect to the edit  profile page
   // let participantToken =
   //   cookies['participant_token'] || cookies['next-auth.session-token']
 
@@ -263,8 +305,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
   }
-
-  const apolloClient = initializeApollo()
 
   return {
     props: {
