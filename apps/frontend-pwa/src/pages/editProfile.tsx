@@ -4,6 +4,7 @@ import {
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
@@ -42,7 +43,14 @@ function EditProfile() {
   }, [])
 
   if (loading || !data?.self) {
-    return <div>Loading...</div>
+    return (
+      <Layout
+        course={{ displayName: t('shared.generic.title') }}
+        displayName={t('pwa.profile.editProfile')}
+      >
+        <Loader />
+      </Layout>
+    )
   }
 
   return (

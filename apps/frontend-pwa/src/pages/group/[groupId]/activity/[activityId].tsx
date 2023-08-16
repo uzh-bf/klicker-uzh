@@ -5,6 +5,7 @@ import {
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QuestionType } from '@type/app'
 import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -61,7 +62,11 @@ function GroupActivityDetails() {
     })
 
   if (!data || loading) {
-    return <Layout></Layout>
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
   }
 
   if (!data.groupActivityDetails) {

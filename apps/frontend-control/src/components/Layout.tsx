@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -27,7 +28,7 @@ function Layout({ title, children, sessionId, className }: LayoutProps) {
     router.push('/login')
   }
   if (!dataUser) {
-    return <div>{t('shared.generic.loading')}</div>
+    return <Loader />
   }
 
   return (

@@ -3,6 +3,7 @@ import {
   GetLearningElementDocument,
   LearningElement as LearningElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -29,7 +30,12 @@ function LearningElementPage({ courseId, id }: Props) {
     variables: { id },
   })
 
-  if (loading) return <p>{t('shared.generic.loading')}</p>
+  if (loading)
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
 
   if (!data?.learningElement) {
     return (
@@ -41,7 +47,9 @@ function LearningElementPage({ courseId, id }: Props) {
       </Layout>
     )
   }
-  if (error) return <p>Oh no... {error.message}</p>
+  if (error) {
+    return <Layout>{t('shared.generic.systemError')}</Layout>
+  }
 
   const handleNextQuestion = () => {
     scrollTo(0, 0)

@@ -5,9 +5,6 @@ import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
 
-import TagList from '@components/questions/tags/TagList'
-import CreationButton from '@components/sessions/creation/CreationButton'
-import SessionCreation from '@components/sessions/creation/SessionCreation'
 import {
   faChalkboardUser,
   faGraduationCap,
@@ -19,12 +16,16 @@ import {
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Select, TextField } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
+import TagList from '../components/questions/tags/TagList'
+import CreationButton from '../components/sessions/creation/CreationButton'
+import SessionCreation from '../components/sessions/creation/SessionCreation'
 
 function Index() {
   const router = useRouter()
@@ -196,8 +197,7 @@ function Index() {
         )}
         <div className="flex flex-col flex-1 w-full overflow-auto">
           {!dataQuestions || loadingQuestions ? (
-            // TODO: replace by nice loader
-            <div>{t('shared.generic.loading')}</div>
+            <Loader />
           ) : (
             <>
               <div className="flex flex-row content-center justify-between flex-none pl-7">

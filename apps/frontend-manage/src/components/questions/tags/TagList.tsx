@@ -14,6 +14,7 @@ import {
   QuestionType,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
@@ -133,7 +134,11 @@ function TagList({
         {userTagsVisible &&
           ((): React.ReactElement => {
             if (tagsLoading) {
-              return <div>{t('shared.generic.loading')}</div>
+              return (
+                <div className="my-4">
+                  <Loader />
+                </div>
+              )
             }
 
             if (tagsError) {

@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { faList, faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
 import { GetControlCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H4, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -18,10 +19,11 @@ function Index() {
   if (loadingCourses) {
     return (
       <Layout title={t('control.home.courseSelection')}>
-        {t('shared.generic.loading')}
+        <Loader />
       </Layout>
     )
   }
+
   if ((!loadingCourses && !dataCourses) || errorCourses) {
     return (
       <Layout title={t('control.home.courseSelection')}>
