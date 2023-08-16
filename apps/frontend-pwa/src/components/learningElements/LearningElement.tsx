@@ -1,6 +1,6 @@
 import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import {
-  faBookOpen,
+  faBarsStaggered,
   faCheck,
   faCheckDouble,
   faInbox,
@@ -73,7 +73,7 @@ function LearningElement({
                     <div>{element.score}p</div>
                   ) : (
                     <div>
-                      <FontAwesomeIcon icon={faBookOpen} />
+                      <FontAwesomeIcon icon={faBarsStaggered} />
                     </div>
                   )}
                   <FontAwesomeIcon icon={ICON_MAP[element.status]} />
