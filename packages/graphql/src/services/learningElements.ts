@@ -476,7 +476,7 @@ export async function respondToQuestionInstance(
           totalScore: {
             increment: score,
           },
-          pointsAwarded:
+          totalPointsAwarded:
             typeof pointsAwarded === 'number'
               ? {
                   increment: pointsAwarded,
