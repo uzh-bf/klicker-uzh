@@ -125,6 +125,7 @@ interface RegisterParticipantFromLTIArgs {
   email: string
 }
 
+// TODO: rework this so it only logs in users if the account already exists
 export async function registerParticipantFromLTI(
   { courseId, participantId, email }: RegisterParticipantFromLTIArgs,
   ctx: Context

@@ -216,7 +216,7 @@ export async function generateLoginToken(ctx: ContextWithUser) {
   return user
 }
 
-export async function getLoginToken(_: any, ctx: ContextWithUser) {
+export async function getLoginToken(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
   })
@@ -291,4 +291,20 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
   })
 
   return true
+}
+
+interface CreateParticipantAccountArgs {
+  email: string
+  username: string
+  password: string
+  signedLtiData?: string
+}
+
+export async function createParticipantAccount(
+  args: CreateParticipantAccountArgs,
+  ctx: ContextWithUser
+) {
+  // TODO: if set, verify signedLtiData and use the email and ssoId provided within
+  // TODO: if not set, use the user provided email and generate a new account without SSO
+  // TODO: log-in the user after account creation
 }
