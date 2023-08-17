@@ -327,7 +327,19 @@
       "notAchievedYet": "Noch nicht erreicht"
     },
     "groupActivity": {
-      "openGroupActivity": "Zur Gruppenaktivität"
+      "openGroupActivity": "Zur Gruppenaktivität",
+      "activityNotYetActive": "Die Gruppenaktivität ist nicht aktiv oder noch nicht freigeschalten.",
+      "baseline": "Ausgangslage",
+      "yourHints": "Eure Hinweise",
+      "coordinateHints": "Jedes Gruppenmitglied erhält ein/mehrere der obigen Hinweise.<br></br> Sprecht euch ab, um alle nötigen Hinweise für die Aufgaben zu sammeln.",
+      "yourGroup": "Deine Gruppe",
+      "groupCompleteQuestion": "Ist deine Gruppe vollständig? Wenn ja, klicke auf Start, um die Hinweise unter deinen Gruppenmitgliedern zu verteilen. Mitglieder, die nach der Zuweisung zu der Gruppe stossen, erhalten keine zusätzlichen Hinweise.",
+      "startCaps": "START",
+      "minTwoPersons": "Gruppen mit einem Mitglied können leider nicht an der Gruppenquest teilnehmen.<br></br> Suche dir mindestens eine:n Partner:in, um mitzumachen, oder schaue dir die Aufgabe im Excel an, die wir nach der Abgabefrist publizieren.",
+      "yourTasks": "Eure Aufgaben",
+      "sendAnswers": "Antworten absenden",
+      "oneSolutionPerGroup": "Jede Gruppe kann nur einmal Lösungen einreichen. Sendet eure Lösungen erst ab, wenn ihr euch sicher seid.",
+      "alreadySubmittedAt": "Deine Gruppe hat ihre Lösungen bereits eingereicht (am {date}).<br></br> Die Bewertung wird später veröffentlicht und separat kommuniziert."
     }
   },
   "manage": {
