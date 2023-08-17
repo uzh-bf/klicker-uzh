@@ -141,7 +141,7 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
                     </Button.Label>
                   </Button>
                 </div>
-                <div className="order-2 md:order-1 gap-3 md:bg-slate-50 md:p-4 rounded">
+                <div className="order-1 md:order-1 gap-3 md:bg-slate-50 md:p-4 rounded">
                   <H3 className={{ root: 'border-b mb-0' }}>
                     {t('shared.generic.profile')}
                   </H3>
@@ -201,7 +201,7 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
                     </div>
                   </div>
                 </div>
-                <div className="order-1 md:order-2 md:bg-slate-50 md:p-4 rounded md:justify-between space-y-2">
+                <div className="order-2 md:order-2 md:bg-slate-50 md:p-4 rounded md:justify-between space-y-2">
                   <H3 className={{ root: 'border-b mb-0' }}>
                     Data Processing and Privacy
                   </H3>
