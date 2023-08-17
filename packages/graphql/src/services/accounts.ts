@@ -284,12 +284,6 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
   })
 
-  // set a cookie that lives forever and will be used to ensure that no new account is created through LTI
-  ctx.res.cookie('no-account', 'true', {
-    ...COOKIE_SETTINGS,
-    maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
-  })
-
   return true
 }
 
