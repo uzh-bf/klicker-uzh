@@ -34,6 +34,9 @@
       "installButton": "Jetzt installieren"
     },
     "generic": {
+      "profile": "Profil",
+      "yes": "Ja",
+      "no": "Nein",
       "draft": "Entwurf",
       "published": "Öffentlich",
       "points": "Punkte",
@@ -184,6 +187,7 @@
       "noGroups": "Bisher wurden noch keine Gruppen gebildet. Los geht's!",
       "noGroupPoints": "Bisher hat noch keine Gruppe Punkte erhalten. Los geht's!",
       "groupLeaderboardUpdate": "Das Gruppenleaderboard wird täglich aktualisiert.<b>x</b>Gruppen mit einem Mitglied erhalten keine Punkte.",
+      "joinLeaderboardCourse": "Treten Sie dem Leaderboard für <b>{name}</b> bei",
       "membersScore": "Punkte durch Mitglieder",
       "groupActivityScore": "Punkte durch Gruppenaktivitäten",
       "totalScore": "Total Punkte",
@@ -218,7 +222,6 @@
       "totalPoints": "Total Punkte (gesammelt): {points}",
       "totalXp": "{xp} XP gesammelt",
       "questionTypeNotSupported": "Dieser Fragetyp ist aktuell für Lernelemente nicht verfügbar.",
-      "questionProgress": "Frage: {current}/{total}",
       "newPointsFrom": "Erneute Punkte/XP ab:",
       "othersAnswered": "So haben andere geantwortet",
       "flagQuestion": "Frage melden",
@@ -248,6 +251,8 @@
       "solvedAt": "Gelöst am {date}"
     },
     "profile": {
+      "publicProfile": "Profilsichtbarkeit",
+      "isProfilePublic": "Soll Dein Profil und Pseudonym anderen Teilnehmenden angezeigt werden? Wenn Du diese Option deaktivierst, sehen dich andere Teilnehmende nur noch als Anonymous, Du alle anderen Teilnehmenden allerdings auch.",
       "editProfile": "Profil editieren",
       "editProfileFailed": "Leider ist beim Speichern der Änderungen ein Fehler aufgetreten. Möglicherweise ist der von Ihnen gewählte Nutzername bereits vergeben. Bitte überprüfen Sie Ihre Eingaben und versuchen es nochmal.",
       "achievements": "Errungenschaften",
@@ -256,9 +261,14 @@
       "usernameMaxLength": "Der Benutzername darf nicht länger als {length} Zeichen sein.",
       "passwordMinLength": "Das Passwort muss mindestens {length} Zeichen lang sein.",
       "identicalPasswords": "Passwörter müssen übereinstimmen.",
+      "emailRequired": "Bitte geben Sie eine E-Mail Adresse ein.",
+      "emailInvalid": "Bitte geben Sie eine gültige E-Mail Adresse ein.",
       "usernameRequired": "Bitte geben Sie einen Benutzernamen ein.",
       "passwordRequired": "Bitte geben Sie ein Passwort ein.",
-      "welcomeMessage": "Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar."
+      "welcomeMessage": "Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar.",
+      "deleteProfile": "Konto löschen",
+      "deleteProfileDescription": "Das Löschen Deines KlickerUZH-Kontos wird alle verbundenen Informationen löschen und sicherstellen, dass in Deinem aktuellen Browser kein neues Konto erstellt wird.",
+      "deleteProfileConfirmation": "Bist Du sicher, dass Du Dein Konto löschen möchtest? Alle Daten, die mit Deinem Konto assoziiert sind, werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
     },
     "avatar": {
       "hair": "Frisur",
@@ -651,7 +661,6 @@
       "noMicroSessions": "Keine Micro-Sessions vorhanden",
       "courseLeaderboard": "Kurs Leaderboard",
       "participantsLeaderboard": "Teilnehmende Leaderboard: {number}",
-      "courseParticipants": "Kursteilnehmende: {number}",
       "avgPoints": "Durchschnittl. Punkte: {points}",
       "runningSession": "Laufende Session",
       "publicAccess": "Öffentlicher Zugriff",

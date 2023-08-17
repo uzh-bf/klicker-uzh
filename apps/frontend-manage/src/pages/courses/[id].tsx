@@ -292,16 +292,6 @@ function CourseOverviewPage() {
                 points: course.averageActiveScore?.toFixed(2),
               })}
             </div>
-            <div className="mt-1">
-              {t('manage.course.courseParticipants', {
-                number: course.numOfParticipants,
-              })}
-            </div>
-            <div>
-              {t('manage.course.avgPoints', {
-                points: course.averageScore?.toFixed(2),
-              })}
-            </div>
           </div>
         </div>
       </div>

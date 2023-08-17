@@ -9,15 +9,6 @@ const nextConfig = {
     S3_HOSTNAME: process.env.S3_HOSTNAME,
     S3_PATHNAME: process.env.S3_PATHNAME,
   }),
-  publicRuntimeConfig: {
-    API_URL: process.env.NEXT_PUBLIC_API_URL,
-    ADD_RESPONSE_URL: process.env.NEXT_PUBLIC_ADD_RESPONSE_URL,
-  },
-  serverRuntimeConfig: {
-    API_URL_SSR: process.env.NEXT_PUBLIC_API_URL_SSR,
-    APP_SECRET: process.env.APP_SECRET,
-    COOKIE_DOMAIN: process.env.COOKIE_DOMAIN,
-  },
 }
 
 if (process.env.NODE_ENV !== 'test') {

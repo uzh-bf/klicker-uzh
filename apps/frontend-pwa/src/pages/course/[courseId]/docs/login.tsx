@@ -7,6 +7,7 @@ function Login() {
     <DocsLayout>
       {(courseInformation) => (
         <Markdown
+          withProse
           className={{ root: 'prose-headings:mt-0' }}
           content={`
 ### Erstmaliges Login und Profileinrichtung

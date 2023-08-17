@@ -1,9 +1,12 @@
 query Self {
   self {
     id
+    email
     username
     avatar
     avatarSettings
+    isActive
+    isProfilePublic
     xp
     level
     levelData {
