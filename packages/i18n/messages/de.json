@@ -114,6 +114,8 @@
       "preview": "Vorschau",
       "createdAt": "Erstellt am {date}",
       "updatedAt": "Editiert am {date}",
+      "startAt": "Start am {time}",
+      "finishedAt": "Beendet am {time}",
       "description": "Beschreibung",
       "settings": "Einstellungen",
       "course": "Kurs",
@@ -169,7 +171,9 @@
       "firstLogin": "Erstmaliges Login und Profileinrichtung",
       "polls": "Umfragen",
       "liveQA": "Live-Q&A",
-      "userNotLoggedIn": "Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten."
+      "userNotLoggedIn": "Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten.",
+      "noSessionsActive": "Keine Sessions aktiv.",
+      "activeSessionsBy": "Aktive Sessions von <i>{name}</i>"
     },
     "login": {
       "installAndroid": "Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.",
