@@ -1,23 +1,37 @@
 import { MicroSessionStatus, SessionStatus } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
-import generatePassword from 'generate-password'
 import * as R from 'ramda'
-import { Context, ContextWithUser } from '../lib/context'
-import { createParticipantToken } from './accounts'
+import isEmail from 'validator/lib/isEmail'
+import { ContextWithUser } from '../lib/context'
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
   username?: string | null
+  email?: string | null
+  isProfilePublic?: boolean | null
   avatar?: string | null
   avatarSettings?: any
 }
 
 export async function updateParticipantProfile(
-  { password, username, avatar, avatarSettings }: UpdateParticipantProfileArgs,
+  {
+    password,
+    username,
+    avatar,
+    avatarSettings,
+    email,
+    isProfilePublic,
+  }: UpdateParticipantProfileArgs,
   ctx: ContextWithUser
 ) {
   if (typeof username === 'string') {
     if (username.length < 5 || username.length > 10) {
+      return null
+    }
+  }
+
+  if (typeof email === 'string') {
+    if (!isEmail(email)) {
       return null
     }
   }
@@ -28,6 +42,9 @@ export async function updateParticipantProfile(
       return ctx.prisma.participant.update({
         where: { id: ctx.user.sub },
         data: {
+          isActive: true,
+          isProfilePublic:
+            typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
           password: hashedPassword,
           username: username ?? undefined,
           avatar: avatar ?? undefined,
@@ -42,6 +59,10 @@ export async function updateParticipantProfile(
   const participant = await ctx.prisma.participant.update({
     where: { id: ctx.user.sub },
     data: {
+      isActive: true,
+      isProfilePublic:
+        typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
+      email: email ?? undefined,
       username: username ?? undefined,
       avatar: avatar ?? undefined,
       avatarSettings: avatarSettings ?? undefined,
@@ -96,244 +117,248 @@ export async function getParticipations(
   )
 }
 
-interface RegisterParticipantFromLTIArgs {
-  courseId: string
-  participantId: string
-}
+// interface RegisterParticipantFromLTIArgs {
+//   courseId: string
+//   participantId: string
+//   email: string
+// }
 
-export async function registerParticipantFromLTI(
-  { courseId, participantId }: RegisterParticipantFromLTIArgs,
-  ctx: Context
-) {
-  console.log('args', courseId, participantId)
+// // TODO: rework this so it only logs in users if the account already exists
+// export async function registerParticipantFromLTI(
+//   { courseId, participantId, email }: RegisterParticipantFromLTIArgs,
+//   ctx: Context
+// ) {
+//   console.log('args', courseId, participantId)
 
-  if (!courseId) return null
+//   if (!courseId) return null
 
-  try {
-    let participant = await ctx.prisma.participantAccount.findUnique({
-      where: {
-        ssoId: participantId,
-      },
-      include: {
-        participant: true,
-      },
-    })
+//   if (!isEmail(email)) return null
 
-    let participation = null
+//   try {
+//     let participant = await ctx.prisma.participantAccount.findUnique({
+//       where: {
+//         ssoId: participantId,
+//       },
+//       include: {
+//         participant: true,
+//       },
+//     })
 
-    // if there is no participant matching the SSO id from LTI
-    // create a new participant and participant account
-    if (!participant) {
-      let username
-      let password
-      // generate a random username that can be changed later on
-      username = generatePassword.generate({
-        length: 8,
-        uppercase: true,
-        symbols: false,
-        numbers: true,
-      })
-      // generate a random password that can be changed later on
-      password = generatePassword.generate({
-        length: 16,
-        uppercase: true,
-        symbols: true,
-        numbers: true,
-      })
+//     let participation = null
 
-      const hash = await bcrypt.hash(password, 12)
+//     // if there is no participant matching the SSO id from LTI
+//     // create a new participant and participant account
+//     if (!participant) {
+//       let username
+//       let password
+//       // generate a random username that can be changed later on
+//       username = generatePassword.generate({
+//         length: 8,
+//         uppercase: true,
+//         symbols: false,
+//         numbers: true,
+//       })
+//       // generate a random password that can be changed later on
+//       password = generatePassword.generate({
+//         length: 16,
+//         uppercase: true,
+//         symbols: true,
+//         numbers: true,
+//       })
 
-      participant = await ctx.prisma.participantAccount.create({
-        data: {
-          ssoId: participantId,
-          participant: {
-            create: {
-              password: hash,
-              username,
-              participations: {
-                create: {
-                  isActive: false,
-                  course: {
-                    connect: { id: courseId },
-                  },
-                },
-              },
-            },
-          },
-        },
-        include: {
-          participant: true,
-        },
-      })
-    } else {
-      participation = await ctx.prisma.participation.upsert({
-        where: {
-          courseId_participantId: {
-            courseId,
-            participantId: participant.participantId,
-          },
-        },
-        create: {
-          isActive: false,
-          course: {
-            connect: {
-              id: courseId,
-            },
-          },
-          participant: {
-            connect: {
-              id: participant.participantId,
-            },
-          },
-        },
-        update: {},
-        include: {
-          participant: true,
-        },
-      })
+//       const hash = await bcrypt.hash(password, 12)
 
-      console.log('new participation', participation)
-    }
+//       participant = await ctx.prisma.participantAccount.create({
+//         data: {
+//           ssoId: participantId,
+//           participant: {
+//             create: {
+//               password: hash,
+//               username,
+//               email,
+//               isEmailValid: true,
+//               participations: {
+//                 create: {
+//                   isActive: false,
+//                   course: {
+//                     connect: { id: courseId },
+//                   },
+//                 },
+//               },
+//             },
+//           },
+//         },
+//         include: {
+//           participant: true,
+//         },
+//       })
+//     } else {
+//       participation = await ctx.prisma.participation.upsert({
+//         where: {
+//           courseId_participantId: {
+//             courseId,
+//             participantId: participant.participantId,
+//           },
+//         },
+//         create: {
+//           isActive: false,
+//           course: {
+//             connect: {
+//               id: courseId,
+//             },
+//           },
+//           participant: {
+//             connect: {
+//               id: participant.participantId,
+//             },
+//           },
+//         },
+//         update: {},
+//         include: {
+//           participant: true,
+//         },
+//       })
 
-    const jwt = createParticipantToken(participant.participant.id)
+//       console.log('new participation', participation)
+//     }
 
-    return {
-      id: `${courseId}-${participant.participant.id}`,
-      participantToken: jwt,
-      participant: participant.participant ?? participation?.participant,
-      participation,
-      course: null,
-    }
-  } catch (e) {
-    console.error(e)
-    return null
-  }
-}
+//     const jwt = createParticipantToken(participant.participant.id)
 
-interface CreateParticipantAndJoinCourseArgs {
-  username: string
-  password: string
-  courseId: string
-  pin: number
-}
+//     return {
+//       id: `${courseId}-${participant.participant.id}`,
+//       participantToken: jwt,
+//       participant: participant.participant ?? participation?.participant,
+//       participation,
+//       course: null,
+//     }
+//   } catch (e) {
+//     console.error(e)
+//     return null
+//   }
+// }
 
-export async function createParticipantAndJoinCourse(
-  { username, password, courseId, pin }: CreateParticipantAndJoinCourseArgs,
-  ctx: Context
-) {
-  if (typeof username === 'string') {
-    if (username.length < 5 || username.length > 10) {
-      return null
-    }
-  }
+// interface CreateParticipantAndJoinCourseArgs {
+//   username: string
+//   password: string
+//   courseId: string
+//   pin: number
+// }
 
-  const existingParticipant = await ctx.prisma.participant.findUnique({
-    where: { username },
-  })
-  const isLoginValid = await bcrypt.compare(
-    password,
-    existingParticipant?.password || ''
-  )
+// export async function createParticipantAndJoinCourse(
+//   { username, password, courseId, pin }: CreateParticipantAndJoinCourseArgs,
+//   ctx: Context
+// ) {
+//   if (typeof username === 'string') {
+//     if (username.length < 5 || username.length > 10) {
+//       return null
+//     }
+//   }
 
-  // if the participant already exists, but the login is incorrect, abort this function call
-  if (existingParticipant && !isLoginValid) {
-    return null
-  }
+//   const existingParticipant = await ctx.prisma.participant.findUnique({
+//     where: { username },
+//   })
+//   const isLoginValid = await bcrypt.compare(
+//     password,
+//     existingParticipant?.password || ''
+//   )
 
-  // fetch the course and compare the provided pin with the correct value
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
-  })
+//   // if the participant already exists, but the login is incorrect, abort this function call
+//   if (existingParticipant && !isLoginValid) {
+//     return null
+//   }
 
-  // if the provided pin is wrong for this course, return null
-  if (!course || course.pinCode !== pin) return null
+//   // fetch the course and compare the provided pin with the correct value
+//   const course = await ctx.prisma.course.findUnique({
+//     where: { id: courseId },
+//   })
 
-  if (existingParticipant) {
-    // link the participant to the course by creating a new participation
-    await ctx.prisma.participation.upsert({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId: existingParticipant.id,
-        },
-      },
-      create: {
-        isActive: true,
-        course: {
-          connect: {
-            id: courseId,
-          },
-        },
-        participant: {
-          connect: {
-            id: existingParticipant.id,
-          },
-        },
-      },
-      update: {},
-    })
+//   // if the provided pin is wrong for this course, return null
+//   if (!course || course.pinCode !== pin) return null
 
-    const jwt = createParticipantToken(existingParticipant.id)
+//   if (existingParticipant) {
+//     // link the participant to the course by creating a new participation
+//     await ctx.prisma.participation.upsert({
+//       where: {
+//         courseId_participantId: {
+//           courseId,
+//           participantId: existingParticipant.id,
+//         },
+//       },
+//       create: {
+//         course: {
+//           connect: {
+//             id: courseId,
+//           },
+//         },
+//         participant: {
+//           connect: {
+//             id: existingParticipant.id,
+//           },
+//         },
+//       },
+//       update: {},
+//     })
 
-    ctx.res.cookie('participant_token', jwt, {
-      domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
-      path: '/',
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 13,
-      secure:
-        process.env.NODE_ENV === 'production' &&
-        process.env.COOKIE_DOMAIN !== '127.0.0.1',
-      sameSite:
-        process.env.NODE_ENV === 'development' ||
-        process.env.COOKIE_DOMAIN === '127.0.0.1'
-          ? 'lax'
-          : 'none',
-    })
+//     const jwt = createParticipantToken(existingParticipant.id)
 
-    return existingParticipant
-  } else {
-    const hashedPassword = await bcrypt.hash(password, 12)
-    // create new participant with the provided username and password, and link the participant to the course by creating a new participation
-    const participant = await ctx.prisma.participant.create({
-      data: {
-        username,
-        password: hashedPassword,
-        participations: {
-          create: {
-            isActive: true,
-            course: {
-              connect: {
-                id: courseId,
-              },
-            },
-          },
-        },
-      },
-      include: {
-        participations: true,
-      },
-    })
+//     ctx.res.cookie('participant_token', jwt, {
+//       domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+//       path: '/',
+//       httpOnly: true,
+//       maxAge: 1000 * 60 * 60 * 24 * 13,
+//       secure:
+//         process.env.NODE_ENV === 'production' &&
+//         process.env.COOKIE_DOMAIN !== '127.0.0.1',
+//       sameSite:
+//         process.env.NODE_ENV === 'development' ||
+//         process.env.COOKIE_DOMAIN === '127.0.0.1'
+//           ? 'lax'
+//           : 'none',
+//     })
 
-    const jwt = createParticipantToken(participant.id)
+//     return existingParticipant
+//   } else {
+//     const hashedPassword = await bcrypt.hash(password, 12)
+//     // create new participant with the provided username and password, and link the participant to the course by creating a new participation
+//     const participant = await ctx.prisma.participant.create({
+//       data: {
+//         username,
+//         password: hashedPassword,
+//         participations: {
+//           create: {
+//             course: {
+//               connect: {
+//                 id: courseId,
+//               },
+//             },
+//           },
+//         },
+//       },
+//       include: {
+//         participations: true,
+//       },
+//     })
 
-    ctx.res.cookie('participant_token', jwt, {
-      domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
-      path: '/',
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 13,
-      secure:
-        process.env.NODE_ENV === 'production' &&
-        process.env.COOKIE_DOMAIN !== '127.0.0.1',
-      sameSite:
-        process.env.NODE_ENV === 'development' ||
-        process.env.COOKIE_DOMAIN === '127.0.0.1'
-          ? 'lax'
-          : 'none',
-    })
+//     const jwt = createParticipantToken(participant.id)
 
-    return participant
-  }
-}
+//     ctx.res.cookie('participant_token', jwt, {
+//       domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
+//       path: '/',
+//       httpOnly: true,
+//       maxAge: 1000 * 60 * 60 * 24 * 13,
+//       secure:
+//         process.env.NODE_ENV === 'production' &&
+//         process.env.COOKIE_DOMAIN !== '127.0.0.1',
+//       sameSite:
+//         process.env.NODE_ENV === 'development' ||
+//         process.env.COOKIE_DOMAIN === '127.0.0.1'
+//           ? 'lax'
+//           : 'none',
+//     })
+
+//     return participant
+//   }
+// }
 
 interface BookmarkQuestionArgs {
   stackId: number

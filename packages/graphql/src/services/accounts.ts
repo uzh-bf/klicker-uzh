@@ -1,4 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import { Locale, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
@@ -216,7 +216,7 @@ export async function generateLoginToken(ctx: ContextWithUser) {
   return user
 }
 
-export async function getLoginToken(_: any, ctx: ContextWithUser) {
+export async function getLoginToken(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
   })
@@ -234,7 +234,7 @@ export async function getLoginToken(_: any, ctx: ContextWithUser) {
 }
 
 interface ChangeUserLocaleArgs {
-  locale: string
+  locale: Locale
 }
 
 export async function changeUserLocale(
@@ -254,7 +254,7 @@ export async function changeUserLocale(
 }
 
 interface ChangeParticipantLocaleArgs {
-  locale: string
+  locale: Locale
 }
 
 export async function changeParticipantLocale(
@@ -271,4 +271,141 @@ export async function changeParticipantLocale(
   ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
 
   return participant
+}
+
+export async function deleteParticipantAccount(ctx: ContextWithUser) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+  })
+
+  if (!participant) return false
+
+  await ctx.prisma.participant.delete({
+    where: { id: ctx.user.sub },
+  })
+
+  return true
+}
+
+interface CreateParticipantAccountArgs {
+  email: string
+  username: string
+  password: string
+  isProfilePublic: boolean
+  signedLtiData?: string | null
+}
+
+export async function createParticipantAccount(
+  {
+    email,
+    isProfilePublic,
+    username,
+    password,
+    signedLtiData,
+  }: CreateParticipantAccountArgs,
+  ctx: Context
+) {
+  if (signedLtiData) {
+    try {
+      const ltiData = JWT.verify(
+        signedLtiData,
+        process.env.APP_SECRET as string
+      ) as { email: string; sub: string }
+
+      const account = await ctx.prisma.participantAccount.create({
+        data: {
+          ssoId: ltiData.sub,
+          participant: {
+            create: {
+              email: ltiData.email,
+              username,
+              password: await bcrypt.hash(password, 10),
+              isEmailValid: true,
+              isActive: true,
+              isProfilePublic,
+              isSSOAccount: true,
+              lastLoginAt: new Date(),
+            },
+          },
+        },
+        include: {
+          participant: true,
+        },
+      })
+
+      const jwt = createParticipantToken(account.participant.id)
+
+      ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+
+      ctx.res.cookie('NEXT_LOCALE', account.participant.locale, COOKIE_SETTINGS)
+
+      return {
+        participant: account.participant,
+        participantToken: jwt,
+      }
+    } catch (e) {
+      console.error(e)
+      return null
+    }
+  }
+
+  try {
+    const participant = await ctx.prisma.participant.create({
+      data: {
+        email,
+        username,
+        password: await bcrypt.hash(password, 10),
+        isEmailValid: false,
+        isActive: true,
+        isProfilePublic,
+        isSSOAccount: false,
+        lastLoginAt: new Date(),
+      },
+    })
+
+    const jwt = createParticipantToken(participant.id)
+
+    ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+
+    ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
+
+    return {
+      participant,
+      participantToken: jwt,
+    }
+  } catch (e) {
+    console.error(e)
+    return null
+  }
+}
+
+interface LoginParticipantWithLtiArgs {
+  signedLtiData: string
+}
+
+export async function loginParticipantWithLti(
+  { signedLtiData }: LoginParticipantWithLtiArgs,
+  ctx: Context
+) {
+  const ltiData = JWT.verify(signedLtiData, process.env.APP_SECRET as string)
+
+  const account = await ctx.prisma.participantAccount.findUnique({
+    where: { ssoId: ltiData.sub as string },
+    include: {
+      participant: true,
+    },
+  })
+
+  if (!account?.participant) return null
+
+  const jwt = createParticipantToken(account.participant.id)
+
+  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+
+  ctx.res.cookie('NEXT_LOCALE', account.participant.locale, COOKIE_SETTINGS)
+
+  return {
+    participant: account.participant,
+    participantToken: jwt,
+  }
 }

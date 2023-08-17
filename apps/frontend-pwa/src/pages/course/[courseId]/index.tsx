@@ -182,6 +182,7 @@ function CourseOverview({ courseId }: Props) {
                     </H3>
 
                     <Leaderboard
+                      courseName={course.displayName}
                       leaderboard={leaderboard || []}
                       activeParticipation={participation?.isActive}
                       onJoin={joinCourse}
@@ -269,9 +270,7 @@ function CourseOverview({ courseId }: Props) {
               {/* // TODO: update the translation strings as well, once this hard-coded content has been updated with a flexible implementation */}
               {course?.awards && course?.awards?.length != 0 && (
                 <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
-                  <H3 className={{ root: 'mb-2 text-base' }}>
-                    BF-Champion Awards
-                  </H3>
+                  <H3 className={{ root: 'mb-2 text-base' }}>Awards</H3>
                   <div className="flex flex-col gap-1 text-sm text-gray-700 md:gap-6 md:flex-row md:flex-wrap">
                     <div className="flex-1 space-y-1">
                       {course.awards
@@ -339,6 +338,7 @@ function CourseOverview({ courseId }: Props) {
                   <div className="flex flex-row flex-wrap gap-4">
                     <div className="flex flex-col flex-1">
                       <Leaderboard
+                        courseName={course.displayName}
                         leaderboard={group.participants}
                         participant={participant}
                         onLeave={
@@ -603,17 +603,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     apolloClient,
     ctx,
   })
-
-  if (participant && !participant.avatar) {
-    return {
-      redirect: {
-        destination: `/editProfile?redirect_to=${encodeURIComponent(
-          `/course/${ctx.params.courseId}`
-        )}`,
-        statusCode: 302,
-      },
-    }
-  }
 
   const result = await apolloClient.query({
     query: GetCourseOverviewDataDocument,

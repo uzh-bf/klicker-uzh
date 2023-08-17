@@ -1,4 +1,4 @@
-mutation ChangeUserLocale($locale: String!) {
+mutation ChangeUserLocale($locale: LocaleType!) {
   changeUserLocale(locale: $locale) {
     id
     locale

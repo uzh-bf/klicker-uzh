@@ -43,9 +43,10 @@ export function SCAnswerOptions({
           >
             <Button.Label>
               <Markdown
+                withProse
                 content={choice.value}
                 className={{
-                  root: 'p-1 pt-2 prose prose-img:!m-0 max-w-none prose-p:!m-0',
+                  root: 'p-1 pt-2 prose-img:!m-0 max-w-none prose-p:!m-0',
                 }}
               />
             </Button.Label>

@@ -1,5 +1,10 @@
-import { GroupActivityStatus, LearningElementStatus } from '@klicker-uzh/prisma'
+import {
+  GroupActivityStatus,
+  LeaderboardEntry,
+  LearningElementStatus,
+} from '@klicker-uzh/prisma'
 import * as R from 'ramda'
+import { GroupLeaderboardEntry } from 'src/ops'
 import { Context, ContextWithUser } from '../lib/context'
 
 export async function getBasicCourseInformation(
@@ -58,10 +63,11 @@ export async function joinCourseWithPin(
   return updatedParticipant
 }
 
+// join a course leaderboard as a participant
+// creates a participation and a leaderboard entry
 interface JoinCourseArgs {
   courseId: string
 }
-
 export async function joinCourse(
   { courseId }: JoinCourseArgs,
   ctx: ContextWithUser
@@ -93,16 +99,41 @@ export async function joinCourse(
 
   if (!participation) return null
 
+  const lbEntry = await ctx.prisma.leaderboardEntry.create({
+    data: {
+      type: 'COURSE',
+      participant: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+      participation: {
+        connect: {
+          id: participation.id,
+        },
+      },
+      score: 0,
+    },
+  })
+
   return {
     id: `${courseId}-${ctx.user.sub}`,
     participation,
+    lbEntry,
   }
 }
 
+// leave a course leaderboard as a participant
+// deletes the leaderboard entries related to the course and sets the participation to inactive
+// meaning that no further points will be collected
 interface LeaveCourseArgs {
   courseId: string
 }
-
 export async function leaveCourse(
   { courseId }: LeaveCourseArgs,
   ctx: ContextWithUser
@@ -118,6 +149,12 @@ export async function leaveCourse(
       isActive: false,
     },
   })
+
+  await ctx.prisma.leaderboardEntry.deleteMany({
+    where: { participation: { id: participation.id } },
+  })
+
+  // TODO:: reset collected points and points dates on questionresponse and questionresponsedetail
 
   if (!participation) return null
 
@@ -205,8 +242,12 @@ export async function getCourseOverviewData(
               {
                 id: entry.id,
                 score: entry.courseLeaderboard?.score ?? 0,
-                username: entry.participant.username,
-                avatar: entry.participant.avatar,
+                username: entry.participant.isProfilePublic
+                  ? entry.participant.username
+                  : 'Anonymous',
+                avatar: entry.participant.isProfilePublic
+                  ? entry.participant.avatar
+                  : null,
                 participantId: entry.participant.id,
                 isSelf: ctx.user?.sub === entry.participant.id,
               },
@@ -509,6 +550,11 @@ export async function getCourseData(
         orderBy: {
           score: 'desc',
         },
+        where: {
+          participation: {
+            isActive: true,
+          },
+        },
       },
       participations: true,
     },
@@ -534,45 +580,34 @@ export async function getCourseData(
     }
   })
 
-  const { activeLBEntries, totalSum, activeSum, activeCount } =
-    course?.leaderboard.reduce(
-      (acc, entry) => {
-        if (entry.participation?.isActive) {
-          return {
-            ...acc,
-            activeLBEntries: [
-              ...acc.activeLBEntries,
-              {
-                id: entry?.id,
-                score: entry?.score,
-                rank: acc.activeCount + 1,
-                username: entry.participation?.participant.username,
-                avatar: entry.participation?.participant.avatar,
-                participation: entry.participation,
-              },
-            ],
-            activeSum: acc.activeSum + entry.score,
-            activeCount: acc.activeCount + 1,
-            totalSum: acc.totalSum + entry.score,
-          }
-        }
-
-        return {
-          ...acc,
-          totalSum: acc.totalSum + entry.score,
-        }
-      },
-      {
-        activeLBEntries: [] as typeof course.leaderboard,
-        totalSum: 0,
-        activeSum: 0,
-        activeCount: 0,
+  const { activeLBEntries, activeSum } = course?.leaderboard.reduce(
+    (acc, entry) => {
+      return {
+        ...acc,
+        activeLBEntries: [
+          ...acc.activeLBEntries,
+          {
+            id: entry?.id,
+            score: entry?.score,
+            rank: acc.activeCount + 1,
+            email: entry.participation?.participant.email,
+            username: entry.participation?.participant.username,
+            avatar: entry.participation?.participant.avatar,
+            participation: entry.participation,
+          },
+        ],
+        activeSum: acc.activeSum + entry.score,
+        activeCount: acc.activeCount + 1,
       }
-    )
+    },
+    {
+      activeLBEntries: [] as typeof course.leaderboard,
+      activeSum: 0,
+    }
+  )
 
   const totalCount = course?.participations.length || 0
-  const averageScore = totalCount > 0 ? totalSum / totalCount : 0
-  const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
+  const averageScore = totalCount > 0 ? activeSum / totalCount : 0
 
   const reducedLearningElements = course?.learningElements.map((element) => {
     return {
@@ -605,10 +640,8 @@ export async function getCourseData(
     learningElements: reducedLearningElements,
     microSessions: reducedMicroSessions,
     numOfParticipants: course?.participations.length,
-    numOfActiveParticipants: activeLBEntries?.length ?? [],
     leaderboard: activeLBEntries,
     averageScore,
-    averageActiveScore,
   }
 }
 
