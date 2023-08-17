@@ -324,7 +324,7 @@ function EditProfile() {
                         facialHair={values.facialHair}
                       />
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs md:text-sm">
                       {Object.keys(AVATAR_OPTIONS).map((key) => (
                         <FormikSelectField
                           className={{
