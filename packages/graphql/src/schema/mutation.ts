@@ -487,19 +487,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createParticipantAndJoinCourse: t.field({
-        nullable: true,
-        type: Participant,
-        args: {
-          username: t.arg.string({ required: true }),
-          password: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true }),
-          pin: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.createParticipantAndJoinCourse(args, ctx)
-        },
-      }),
+      // createParticipantAndJoinCourse: t.field({
+      //   nullable: true,
+      //   type: Participant,
+      //   args: {
+      //     username: t.arg.string({ required: true }),
+      //     password: t.arg.string({ required: true }),
+      //     courseId: t.arg.string({ required: true }),
+      //     pin: t.arg.int({ required: true }),
+      //   },
+      //   resolve(_, args, ctx) {
+      //     return ParticipantService.createParticipantAndJoinCourse(args, ctx)
+      //   },
+      // }),
 
       changeSessionSettings: asUser.field({
         nullable: true,
@@ -679,18 +679,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      registerParticipantFromLTI: t.field({
-        nullable: true,
-        type: ParticipantLearningData,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          participantId: t.arg.string({ required: true }),
-          email: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.registerParticipantFromLTI(args, ctx)
-        },
-      }),
+      // registerParticipantFromLTI: t.field({
+      //   nullable: true,
+      //   type: ParticipantLearningData,
+      //   args: {
+      //     courseId: t.arg.string({ required: true }),
+      //     participantId: t.arg.string({ required: true }),
+      //     email: t.arg.string({ required: true }),
+      //   },
+      //   resolve(_, args, ctx) {
+      //     return ParticipantService.registerParticipantFromLTI(args, ctx)
+      //   },
+      // }),
 
       respondToQuestionInstance: t.field({
         nullable: true,

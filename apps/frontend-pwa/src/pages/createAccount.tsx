@@ -22,6 +22,8 @@ import { faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { addApolloState, initializeApollo } from '@lib/apollo'
+import bodyParser from 'body-parser'
 import Layout from 'src/components/Layout'
 
 interface CreateAccountProps {
@@ -83,15 +85,19 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
 
-          await createParticipantAccount({
+          const login = await createParticipantAccount({
             variables: {
               email: values.email,
               username: values.username,
               password: values.password,
               isProfilePublic: values.isProfilePublic,
-              // signedLtiData,
+              signedLtiData,
             },
           })
+
+          if (login) {
+            router.replace('/editProfile')
+          }
 
           setSubmitting(false)
         }}
@@ -255,83 +261,77 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   // if the user already has a participant token, skip registration
   // and redirect to the edit  profile page
-  // let participantToken =
-  //   cookies['participant_token'] || cookies['next-auth.session-token']
+  let participantToken =
+    cookies['participant_token'] || cookies['next-auth.session-token']
 
-  // if (participantToken) {
-  //   return {
-  //     redirect: {
-  //       destination: `/editProfile`,
-  //       permanent: false,
-  //     },
-  //   }
-  // }
-
-  // if (req.method === 'POST') {
-  //   // extract the body from the LTI request
-  //   // if there is a body, request a participant token
-  //   // TODO: verify that there is an LTI body and that it is valid
-
-  //   const { request }: any = await new Promise((resolve) => {
-  //     bodyParser.urlencoded({ extended: true })(req, res, () => {
-  //       bodyParser.json()(req, res, () => {
-  //         resolve({ request: req })
-  //       })
-  //     })
-  //   })
-
-  // HACK: dev prefill with data
-  const request = {
-    body: {
-      lis_person_sourcedid: '123',
-      lis_person_contact_email_primary: 'roli@boli.ch',
-    },
-  }
-
-  if (request?.body?.lis_person_sourcedid) {
-    const signedLtiData = JWT.sign(
-      {
-        sub: request.body.lis_person_sourcedid,
-        email: request.body.lis_person_contact_email_primary,
-      },
-      process.env.APP_SECRET as string,
-      {
-        algorithm: 'HS256',
-        expiresIn: '1h',
-      }
-    )
-
+  if (participantToken) {
     return {
-      props: {
-        signedLtiData,
-        ssoId: request.body.lis_person_sourcedid,
-        email: request.body.lis_person_contact_email_primary,
-        username: generatePassword.generate({
-          length: 8,
-          uppercase: true,
-          symbols: false,
-          numbers: true,
-        }),
-        messages: (
-          await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`)
-        ).default,
+      redirect: {
+        destination: `/editProfile`,
+        permanent: false,
       },
     }
   }
-  // }
 
-  // return {
-  //   props: {
-  //     username: generatePassword.generate({
-  //       length: 8,
-  //       uppercase: true,
-  //       symbols: false,
-  //       numbers: true,
-  //     }),
-  //     messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
-  //       .default,
-  //   },
-  // }
+  if (req.method === 'POST') {
+    // extract the body from the LTI request
+    // if there is a body, request a participant token
+    // TODO: verify that there is an LTI body and that it is valid
+
+    const { request }: any = await new Promise((resolve) => {
+      bodyParser.urlencoded({ extended: true })(req, res, () => {
+        bodyParser.json()(req, res, () => {
+          resolve({ request: req })
+        })
+      })
+    })
+
+    if (!query.disableLti && request?.body?.lis_person_sourcedid) {
+      const signedLtiData = JWT.sign(
+        {
+          sub: request.body.lis_person_sourcedid,
+          email: request.body.lis_person_contact_email_primary,
+        },
+        process.env.APP_SECRET as string,
+        {
+          algorithm: 'HS256',
+          expiresIn: '1h',
+        }
+      )
+
+      const apolloClient = initializeApollo()
+
+      return addApolloState(apolloClient, {
+        props: {
+          signedLtiData,
+          ssoId: request.body.lis_person_sourcedid,
+          email: request.body.lis_person_contact_email_primary,
+          username: generatePassword.generate({
+            length: 8,
+            uppercase: true,
+            symbols: false,
+            numbers: true,
+          }),
+          messages: (
+            await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`)
+          ).default,
+        },
+      })
+    }
+  }
+
+  return {
+    props: {
+      username: generatePassword.generate({
+        length: 8,
+        uppercase: true,
+        symbols: false,
+        numbers: true,
+      }),
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+        .default,
+    },
+  }
 }
 
 export default CreateAccount

@@ -302,27 +302,81 @@ interface CreateParticipantAccountArgs {
 }
 
 export async function createParticipantAccount(
-  args: CreateParticipantAccountArgs,
+  {
+    email,
+    isProfilePublic,
+    username,
+    password,
+    signedLtiData,
+  }: CreateParticipantAccountArgs,
   ctx: Context
 ) {
-  // TODO: if set, verify signedLtiData and use the email and ssoId provided within
-  // TODO: if not set, use the user provided email and generate a new account without SSO
-  // TODO: log-in the user after account creation
+  if (signedLtiData) {
+    try {
+      const ltiData = JWT.verify(
+        signedLtiData,
+        process.env.APP_SECRET as string
+      ) as { email: string; sub: string }
 
-  console.log(args, ctx)
+      const account = await ctx.prisma.participantAccount.create({
+        data: {
+          ssoId: ltiData.sub,
+          participant: {
+            create: {
+              email: ltiData.email,
+              username,
+              password: await bcrypt.hash(password, 10),
+              isEmailValid: true,
+              isActive: true,
+              isProfilePublic,
+              isSSOAccount: true,
+              lastLoginAt: new Date(),
+            },
+          },
+        },
+        include: {
+          participant: true,
+        },
+      })
 
-  // if (args.signedLtiData) {
-  //   try {
-  //     const ltiData = JWT.verify(
-  //       args.signedLtiData,
-  //       process.env.APP_SECRET as string
-  //     )
-  //   } catch (e) {
-  //     console.error(e)
-  //   }
-  // }
+      const jwt = createParticipantToken(account.participant.id)
 
-  return null
+      ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+
+      ctx.res.cookie('NEXT_LOCALE', account.participant.locale, COOKIE_SETTINGS)
+
+      return account.participant
+    } catch (e) {
+      console.error(e)
+      return null
+    }
+  }
+
+  try {
+    const participant = await ctx.prisma.participant.create({
+      data: {
+        email,
+        username,
+        password: await bcrypt.hash(password, 10),
+        isEmailValid: false,
+        isActive: true,
+        isProfilePublic,
+        isSSOAccount: false,
+        lastLoginAt: new Date(),
+      },
+    })
+
+    const jwt = createParticipantToken(participant.id)
+
+    ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+
+    ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
+
+    return participant
+  } catch (e) {
+    console.error(e)
+    return null
+  }
 }
 
 interface LoginParticipantWithLtiArgs {
@@ -330,8 +384,25 @@ interface LoginParticipantWithLtiArgs {
 }
 
 export async function loginParticipantWithLti(
-  args: LoginParticipantWithLtiArgs,
+  { signedLtiData }: LoginParticipantWithLtiArgs,
   ctx: Context
 ) {
-  return null
+  const ltiData = JWT.verify(signedLtiData, process.env.APP_SECRET as string)
+
+  const account = await ctx.prisma.participantAccount.findUnique({
+    where: { ssoId: ltiData.sub as string },
+    include: {
+      participant: true,
+    },
+  })
+
+  if (!account?.participant) return null
+
+  const jwt = createParticipantToken(account.participant.id)
+
+  ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
+
+  ctx.res.cookie('NEXT_LOCALE', account.participant.locale, COOKIE_SETTINGS)
+
+  return account.participant
 }
