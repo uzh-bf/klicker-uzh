@@ -89,7 +89,7 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
               username: values.username,
               password: values.password,
               isProfilePublic: values.isProfilePublic,
-              signedLtiData,
+              // signedLtiData,
             },
           })
 
@@ -300,8 +300,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         expiresIn: '1h',
       }
     )
-
-    console.warn(signedLtiData, process.env.APP_SECRET)
 
     return {
       props: {

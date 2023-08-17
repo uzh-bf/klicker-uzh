@@ -427,6 +427,7 @@ type Mutation {
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
+  loginParticipantWithLti(signedLtiData: String!): Participant
   loginUser(email: String!, password: String!): String
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID

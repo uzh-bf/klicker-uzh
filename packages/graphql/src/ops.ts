@@ -473,6 +473,7 @@ export type Mutation = {
   leaveCourse?: Maybe<LeaveCourseParticipation>;
   leaveParticipantGroup?: Maybe<ParticipantGroup>;
   loginParticipant?: Maybe<Scalars['ID']['output']>;
+  loginParticipantWithLti?: Maybe<Participant>;
   loginUser?: Maybe<Scalars['String']['output']>;
   loginUserToken?: Maybe<Scalars['ID']['output']>;
   logoutParticipant?: Maybe<Scalars['ID']['output']>;
@@ -768,6 +769,11 @@ export type MutationLeaveParticipantGroupArgs = {
 export type MutationLoginParticipantArgs = {
   password: Scalars['String']['input'];
   username: Scalars['String']['input'];
+};
+
+
+export type MutationLoginParticipantWithLtiArgs = {
+  signedLtiData: Scalars['String']['input'];
 };
 
 

@@ -942,6 +942,17 @@ export const Mutation = builder.mutationType({
           return AccountService.createParticipantAccount(args, ctx)
         },
       }),
+
+      loginParticipantWithLti: t.field({
+        nullable: true,
+        type: Participant,
+        args: {
+          signedLtiData: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.loginParticipantWithLti(args, ctx)
+        },
+      }),
     }
   },
 })

@@ -311,16 +311,27 @@ export async function createParticipantAccount(
 
   console.log(args, ctx)
 
-  if (args.signedLtiData) {
-    try {
-      // const ltiData = JWT.verify(
-      //   args.signedLtiData,
-      //   process.env.APP_SECRET as string
-      // )
-    } catch (e) {
-      console.error(e)
-    }
-  }
+  // if (args.signedLtiData) {
+  //   try {
+  //     const ltiData = JWT.verify(
+  //       args.signedLtiData,
+  //       process.env.APP_SECRET as string
+  //     )
+  //   } catch (e) {
+  //     console.error(e)
+  //   }
+  // }
 
+  return null
+}
+
+interface LoginParticipantWithLtiArgs {
+  signedLtiData: string
+}
+
+export async function loginParticipantWithLti(
+  args: LoginParticipantWithLtiArgs,
+  ctx: Context
+) {
   return null
 }
