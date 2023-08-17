@@ -401,8 +401,7 @@ type Mutation {
   createFeedback(content: String!, sessionId: String!): Feedback
   createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
   createMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
-  createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): Participant
-  createParticipantAndJoinCourse(courseId: String!, password: String!, pin: Int!, username: String!): Participant
+  createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
@@ -427,7 +426,7 @@ type Mutation {
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
-  loginParticipantWithLti(signedLtiData: String!): Participant
+  loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
   loginUser(email: String!, password: String!): String
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
@@ -440,7 +439,6 @@ type Mutation {
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
   publishLearningElement(id: String!): LearningElement
   publishMicroSession(id: String!): MicroSession
-  registerParticipantFromLTI(courseId: String!, email: String!, participantId: String!): ParticipantLearningData
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
@@ -562,6 +560,11 @@ type ParticipantLearningData {
   participant: Participant
   participantToken: String
   participation: Participation
+}
+
+type ParticipantTokenData {
+  participant: Participant
+  participantToken: String
 }
 
 type ParticipantWithAchievements {

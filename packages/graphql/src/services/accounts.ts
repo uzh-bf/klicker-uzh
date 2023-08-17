@@ -345,7 +345,10 @@ export async function createParticipantAccount(
 
       ctx.res.cookie('NEXT_LOCALE', account.participant.locale, COOKIE_SETTINGS)
 
-      return account.participant
+      return {
+        participant: account.participant,
+        participantToken: jwt,
+      }
     } catch (e) {
       console.error(e)
       return null
@@ -372,7 +375,10 @@ export async function createParticipantAccount(
 
     ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
 
-    return participant
+    return {
+      participant,
+      participantToken: jwt,
+    }
   } catch (e) {
     console.error(e)
     return null
@@ -404,5 +410,8 @@ export async function loginParticipantWithLti(
 
   ctx.res.cookie('NEXT_LOCALE', account.participant.locale, COOKIE_SETTINGS)
 
-  return account.participant
+  return {
+    participant: account.participant,
+    participantToken: jwt,
+  }
 }

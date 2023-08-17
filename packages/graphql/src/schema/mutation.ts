@@ -30,6 +30,7 @@ import {
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
+  ParticipantTokenData,
   Participation,
   SubscriptionObjectInput,
 } from './participant'
@@ -930,7 +931,7 @@ export const Mutation = builder.mutationType({
 
       createParticipantAccount: t.field({
         nullable: true,
-        type: Participant,
+        type: ParticipantTokenData,
         args: {
           username: t.arg.string({ required: true }),
           password: t.arg.string({ required: true }),
@@ -945,7 +946,7 @@ export const Mutation = builder.mutationType({
 
       loginParticipantWithLti: t.field({
         nullable: true,
-        type: Participant,
+        type: ParticipantTokenData,
         args: {
           signedLtiData: t.arg.string({ required: true }),
         },

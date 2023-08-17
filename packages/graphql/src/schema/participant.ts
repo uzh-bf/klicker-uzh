@@ -302,3 +302,22 @@ export const ParticipantWithAchievements =
       }),
     }),
   })
+
+export interface IParticipantTokenData {
+  participantToken?: string
+  participant?: IParticipant
+}
+
+export const ParticipantTokenDataRef = builder.objectRef<IParticipantTokenData>(
+  'ParticipantTokenData'
+)
+export const ParticipantTokenData = ParticipantTokenDataRef.implement({
+  fields: (t) => ({
+    participantToken: t.exposeString('participantToken', { nullable: true }),
+    participant: t.field({
+      type: ParticipantRef,
+      resolve: (data) => data.participant,
+      nullable: true,
+    }),
+  }),
+})
