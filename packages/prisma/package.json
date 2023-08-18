@@ -57,7 +57,7 @@
     "seed:mockExamPoints": "ENV=production doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/parseMockExamPoints.ts",
     "size": "size-limit",
     "check": "tsc --noEmit",
-    "import": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/importV2Data.ts"
+    "import": "doppler run --config dev -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/importV2Data.ts"
   },
   "prisma": {
     "seed": "npm run seed"
