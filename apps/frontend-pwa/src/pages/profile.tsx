@@ -3,6 +3,7 @@ import {
   LogoutParticipantDocument,
   SelfWithAchievementsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -17,7 +18,15 @@ const Profile = () => {
   const [logoutParticipant] = useMutation(LogoutParticipantDocument)
   const router = useRouter()
 
-  if (loading || !data?.selfWithAchievements) return <div>loading...</div>
+  if (loading || !data?.selfWithAchievements)
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.profile.myProfile')}
+      >
+        <Loader />
+      </Layout>
+    )
 
   const { participant, achievements } = data.selfWithAchievements
   const pageInFrame = window && window?.location !== window?.parent.location

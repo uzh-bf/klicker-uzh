@@ -3,6 +3,7 @@ import {
   GetControlCourseDocument,
   SessionStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -29,10 +30,11 @@ function Course() {
   if (loading) {
     return (
       <Layout title={t('control.course.courseOverview')}>
-        {t('shared.generic.loading')}
+        <Loader />
       </Layout>
     )
   }
+
   if (!data?.controlCourse || error) {
     return (
       <Layout title={t('control.course.courseOverview')}>

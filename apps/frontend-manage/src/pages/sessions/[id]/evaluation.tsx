@@ -11,6 +11,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   Switch,
@@ -170,7 +171,7 @@ function Evaluation() {
   }, [router.query.leaderboard])
 
   if (error && !data) return <div>{t('shared.generic.systemError')}</div>
-  if (loading || !data) return <div>{t('shared.generic.loading')}</div>
+  if (loading || !data) return <Loader />
 
   if (!currentInstance.id && selectedInstanceIndex !== -1) {
     return (

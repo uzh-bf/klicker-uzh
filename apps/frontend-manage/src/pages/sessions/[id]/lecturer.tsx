@@ -10,6 +10,7 @@ import Head from 'next/head'
 import { useMemo } from 'react'
 import ConfusionCharts from '../../../components/interaction/confusion/ConfusionCharts'
 
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -57,7 +58,7 @@ function LecturerView() {
   }, [aggregateConfusion])
 
   if (loading) {
-    return <div className="p-4">{t('shared.generic.loading')}</div>
+    return <Loader />
   }
 
   if (!data) {

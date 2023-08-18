@@ -3,6 +3,7 @@ import {
   GetMicroSessionDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticPropsContext } from 'next'
@@ -35,7 +36,14 @@ function MicroSessionIntroduction({ id }: Props) {
   })
   const { data: selfData } = useQuery(SelfDocument)
 
-  if (loading) return <p>{t('shared.generic.loading')}</p>
+  if (loading) {
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
+  }
+
   if (!data?.microSession) {
     return (
       <Layout>
@@ -46,7 +54,9 @@ function MicroSessionIntroduction({ id }: Props) {
       </Layout>
     )
   }
-  if (error) return <p>Oh no... {error.message}</p>
+  if (error) {
+    return <Layout>{t('shared.generic.systemError')}</Layout>
+  }
 
   return (
     <Layout

@@ -4,6 +4,7 @@ import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -22,7 +23,11 @@ function CourseSelectionPage() {
   } = useQuery(GetUserCoursesDocument)
 
   if (loadingCourses) {
-    return <Layout>{t('shared.generic.loading')}</Layout>
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
   }
 
   return (

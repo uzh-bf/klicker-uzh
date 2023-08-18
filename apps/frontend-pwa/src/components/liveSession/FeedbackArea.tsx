@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import PublicFeedback from './PublicFeedback'
 
 function Subscriber({ subscribeToMore, sessionId }) {
@@ -284,7 +285,7 @@ function FeedbackArea({
   )
 
   if (feedbacksLoading || !feedbacksData?.feedbacks) {
-    return <div>Loading...</div>
+    return <Loader />
   }
 
   return (
@@ -335,7 +336,9 @@ function FeedbackArea({
                   data={{ cy: 'feedback-submit' }}
                 >
                   {isSubmitting ? (
-                    <Button.Label>{t('shared.generic.loading')}</Button.Label>
+                    <Button.Label>
+                      <Loader />
+                    </Button.Label>
                   ) : (
                     <Button.Label>{t('shared.generic.send')}</Button.Label>
                   )}
