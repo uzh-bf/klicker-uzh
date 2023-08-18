@@ -113,6 +113,8 @@
       "preview": "Preview",
       "createdAt": "Created at {date}",
       "updatedAt": "Edited at {date}",
+      "startAt": "Start at {time}",
+      "finishedAt": "Finished at {time}",
       "description": "Description",
       "settings": "Settings",
       "course": "Course",
@@ -168,7 +170,9 @@
       "firstLogin": "First login and profile setup",
       "polls": "Polls",
       "liveQA": "Live-Q&A",
-      "userNotLoggedIn": "You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress."
+      "userNotLoggedIn": "You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress.",
+      "noSessionsActive": "No sessions active.",
+      "activeSessionsBy": "Active sessions by <i>{name}</i>"
     },
     "login": {
       "installAndroid": "Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.",
@@ -327,7 +331,19 @@
       "noAchievements": "No achievements yet."
     },
     "groupActivity": {
-      "openGroupActivity": "Open Group Activity"
+      "openGroupActivity": "Open Group Activity",
+      "activityNotYetActive": "The group activity is not active or not yet unlocked.",
+      "baseline": "Baseline",
+      "yourHints": "Your hints",
+      "coordinateHints": "Each group member receives one or more of the hints above.<br></br> Coordinate with each other to collect all the necessary hints for the tasks.",
+      "yourGroup": "Your group",
+      "groupCompleteQuestion": "Is your group complete? If so, click Start to distribute the hints among your group members. Members who join the group after the assignment will not receive any additional hints.",
+      "startCaps": "START",
+      "minTwoPersons": "Unfortunately, groups with only one member cannot participate in the group quest.<br></br> Find at least one partner to join or check out the task in Excel, which we will publish after the submission deadline.",
+      "yourTasks": "Your tasks",
+      "sendAnswers": "Submit answers",
+      "oneSolutionPerGroup": "Each group can only submit one solution. Only submit your solutions when you are sure.",
+      "alreadySubmittedAt": "Your group has already submitted its solutions (on {date}).<br></br> The evaluation will be published later and communicated separately."
     }
   },
   "manage": {
