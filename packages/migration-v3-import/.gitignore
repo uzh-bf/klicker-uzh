@@ -1,0 +1,11 @@
+*.log
+.DS_Store
+node_modules
+src/client
+dist
+
+src/prisma/ERD.svg
+src/data/exported_questions.json
+.env
+
+mockExam.ts

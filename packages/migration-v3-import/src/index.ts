@@ -1,17 +1,17 @@
 import { BlobServiceClient } from '@azure/storage-blob'
-import { QuestionType } from '@klicker-uzh/prisma'
-import axios from 'axios'
-import fs from 'fs'
-import path, { dirname } from 'path'
-import { fileURLToPath } from 'url'
 import {
   AccessMode,
   PrismaClient,
   QuestionInstanceType,
+  QuestionType,
   SessionBlockStatus,
   SessionStatus,
-} from '../client'
-import { closeLegacyConnection, getLegacyResults } from './getLegacyResults'
+} from '@klicker-uzh/prisma'
+import axios from 'axios'
+import fs from 'fs'
+import path, { dirname } from 'path'
+import { fileURLToPath } from 'url'
+import { closeLegacyConnection, getLegacyResults } from './getLegacyResults.js'
 
 // TODOs:
 // - Test UI after import
@@ -675,7 +675,7 @@ const importV2Data = async () => {
   // __dirname provides the current directory name of the current file
   const dirPath = path.join(
     __dirname,
-    '../../../../migration/export_v2_data/exported_json_files'
+    '../../migration-v2-export/exported_json_files'
   )
   // const filePath = path.join(dirPath, 'exported_data_2023-07-06_17-10-52.json');
   // const filePath = path.join(dirPath, 'exported_data_2023-07-14_10-03-00.json');
