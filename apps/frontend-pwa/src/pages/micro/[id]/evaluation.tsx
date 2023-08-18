@@ -3,6 +3,7 @@ import {
   GetMicroSessionDocument,
   MarkMicroSessionCompletedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3 } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -34,7 +35,11 @@ function Evaluation() {
   }, [data?.microSession])
 
   if (loading || !data?.microSession) {
-    return <div>{t('shared.generic.loading')}</div>
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
   }
 
   return (

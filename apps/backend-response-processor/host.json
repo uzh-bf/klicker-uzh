@@ -4,11 +4,8 @@
   "logging": {
     "fileLoggingMode": "always",
     "logLevel": {
-      "default": "Information",
-      "Host.Results": "Information",
-      "Function": "Information",
-      "Function.ProcessResponses": "Information",
-      "Host.Aggregator": "Information"
+      "default": "Warning",
+      "Function.ProcessResponse": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {
@@ -19,6 +16,6 @@
   },
   "extensionBundle": {
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
-    "version": "[3.3.0, 4.0.0)"
+    "version": "[3.15.0, 4.0.0)"
   }
 }

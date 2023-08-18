@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['ProcessResponses/index.ts'],
+  entry: ['src/index.ts'],
   clean: true,
-  dts: true,
+  noExternal: [/@klicker-uzh.*/],
 })

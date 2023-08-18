@@ -21,6 +21,7 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import Layout from '../../../components/Layout'
 
 function JoinCourse({
@@ -96,7 +97,14 @@ function JoinCourse({
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 
   if (loadingParticipant || courseLoading) {
-    return <div>{t('shared.generic.loading')}</div>
+    return (
+      <Layout
+        displayName={t('pwa.general.joinCourse')}
+        course={{ displayName: displayName, color: color, id: courseId }}
+      >
+        <Loader />
+      </Layout>
+    )
   }
 
   return (

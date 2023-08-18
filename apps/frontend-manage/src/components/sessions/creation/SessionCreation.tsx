@@ -9,6 +9,7 @@ import {
   MicroSession,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import CreationTitle from './CreationTitle'
@@ -59,8 +60,9 @@ function SessionCreation({
     [dataCourses]
   )
 
-  if (!errorCourses && loadingCourses)
-    return <div>{t('shared.generic.loading')}</div>
+  if (!errorCourses && loadingCourses) {
+    return <Loader />
+  }
 
   return (
     <div className="flex flex-col justify-center print-hidden">

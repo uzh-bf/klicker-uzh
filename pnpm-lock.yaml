@@ -267,13 +267,16 @@ importers:
         version: 4.14.1
       tsup:
         specifier: 6.7.0
-        version: 6.7.0(postcss@8.4.27)(ts-node@10.9.1)(typescript@5.0.4)
+        version: 6.7.0(postcss@8.4.27)(typescript@5.0.4)
       typescript:
         specifier: 5.0.4
         version: 5.0.4
 
   apps/backend-response-processor:
     dependencies:
+      '@azure/functions':
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../../packages/grading
@@ -293,14 +296,11 @@ importers:
         specifier: 0.29.0
         version: 0.29.0
     devDependencies:
-      '@azure/functions':
-        specifier: 3.5.1
-        version: 3.5.1
       '@tsconfig/node18':
-        specifier: ^2.0.0
-        version: 2.0.1
+        specifier: 18.2.0
+        version: 18.2.0
       '@tsconfig/recommended':
-        specifier: ^1.0.2
+        specifier: 1.0.2
         version: 1.0.2
       '@types/jsonwebtoken':
         specifier: ^9.0.1
@@ -309,7 +309,7 @@ importers:
         specifier: 2.3.2
         version: 2.3.2
       '@types/node':
-        specifier: ^18.0.0
+        specifier: ^18.11.9
         version: 18.17.4
       '@types/ramda':
         specifier: ^0.29.0
@@ -318,8 +318,8 @@ importers:
         specifier: 2.0.12
         version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       azure-functions-core-tools:
-        specifier: 4.0.5198
-        version: 4.0.5198
+        specifier: 4.0.5274
+        version: 4.0.5274
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -332,18 +332,24 @@ importers:
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5
-      ts-node:
-        specifier: 10.9.1
-        version: 10.9.1(@types/node@18.17.4)(typescript@5.0.4)
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
       tsup:
-        specifier: 6.7.0
-        version: 6.7.0(postcss@8.4.27)(ts-node@10.9.1)(typescript@5.0.4)
+        specifier: 7.2.0
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
       typescript:
-        specifier: 5.0.4
-        version: 5.0.4
+        specifier: 5.1.6
+        version: 5.1.6
 
   apps/backend-responses:
     dependencies:
+      '@azure/functions':
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
       '@azure/service-bus':
         specifier: 7.9.0
         version: 7.9.0
@@ -354,45 +360,48 @@ importers:
         specifier: 9.0.1
         version: 9.0.1
     devDependencies:
-      '@azure/functions':
-        specifier: 3.5.1
-        version: 3.5.1
       '@tsconfig/node18':
-        specifier: ^2.0.0
-        version: 2.0.1
+        specifier: 18.2.0
+        version: 18.2.0
       '@tsconfig/recommended':
-        specifier: ^1.0.2
+        specifier: 1.0.2
         version: 1.0.2
       '@types/jsonwebtoken':
         specifier: ^9.0.1
         version: 9.0.2
       '@types/node':
-        specifier: ^18.0.0
+        specifier: ^18.11.9
         version: 18.17.4
       '@uzh-bf/design-system':
         specifier: 2.0.12
         version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       azure-functions-core-tools:
-        specifier: 4.0.5198
-        version: 4.0.5198
+        specifier: 4.0.5274
+        version: 4.0.5274
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
+      dotenv:
+        specifier: 16.0.3
+        version: 16.0.3
       husky:
         specifier: 8.0.3
         version: 8.0.3
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5
-      ts-node:
-        specifier: 10.9.1
-        version: 10.9.1(@types/node@18.17.4)(typescript@5.0.4)
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
       tsup:
-        specifier: 6.7.0
-        version: 6.7.0(postcss@8.4.27)(ts-node@10.9.1)(typescript@5.0.4)
+        specifier: 7.2.0
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
       typescript:
-        specifier: 5.0.4
-        version: 5.0.4
+        specifier: 5.1.6
+        version: 5.1.6
 
   apps/frontend-control:
     dependencies:
@@ -1177,7 +1186,7 @@ importers:
         version: 29.1.0(@babel/core@7.21.8)(esbuild@0.17.19)(jest@29.5.0)(typescript@5.0.4)
       tsup:
         specifier: 6.7.0
-        version: 6.7.0(postcss@8.4.27)(ts-node@10.9.1)(typescript@5.0.4)
+        version: 6.7.0(postcss@8.4.27)(typescript@5.0.4)
       typescript:
         specifier: 5.0.4
         version: 5.0.4
@@ -1411,7 +1420,7 @@ importers:
         version: 8.2.4
       tsup:
         specifier: 6.7.0
-        version: 6.7.0(postcss@8.4.27)(ts-node@10.9.1)(typescript@5.0.4)
+        version: 6.7.0(postcss@8.4.27)(typescript@5.0.4)
       typescript:
         specifier: 5.0.4
         version: 5.0.4
@@ -1523,7 +1532,7 @@ importers:
         version: 2.8.0
       tsup:
         specifier: 6.7.0
-        version: 6.7.0(postcss@8.4.27)(ts-node@10.9.1)(typescript@5.0.4)
+        version: 6.7.0(postcss@8.4.27)(typescript@5.0.4)
       typescript:
         specifier: 5.0.4
         version: 5.0.4
@@ -2293,13 +2302,13 @@ packages:
       tslib: 2.6.1
     dev: false
 
-  /@azure/functions@3.5.1:
-    resolution: {integrity: sha512-6UltvJiuVpvHSwLcK/Zc6NfUwlkDLOFFx97BHCJzlWNsfiWwzwmTsxJXg4kE/LemKTHxPpfoPE+kOJ8hAdiKFQ==}
+  /@azure/functions@4.0.0-alpha.11:
+    resolution: {integrity: sha512-9Hrg9AkMgI6i9fFiROFQAwOI2Eid2OEZT85kPxb9GJW8UKUdJmgYYEkpMqOoW9gMIVEEEwyNq3nz9PNa1wTQQA==}
+    engines: {node: '>=18.0'}
     dependencies:
-      iconv-lite: 0.6.3
       long: 4.0.0
-      uuid: 8.3.2
-    dev: true
+      undici: 5.23.0
+    dev: false
 
   /@azure/identity@2.1.0:
     resolution: {integrity: sha512-BPDz1sK7Ul9t0l9YKLEa8PHqWU4iCfhGJ+ELJl6c8CP3TpJt2urNCbm0ZHsthmxRsYoMPbz2Dvzj30zXZVmAFw==}
@@ -9902,8 +9911,8 @@ packages:
       dequal: 2.0.3
     dev: true
 
-  /azure-functions-core-tools@4.0.5198:
-    resolution: {integrity: sha512-cUexqiAKiUKLSgzgHJU4YWLPnntD7CjSu64W0LCjYfxRuU9ohnAOLIY+gZYo7Hdcm2/nT3oTrursCv6DYK69hw==}
+  /azure-functions-core-tools@4.0.5274:
+    resolution: {integrity: sha512-chonhkn8ADVkFMs/5cDS01xHtInxMnBM0eMlnHJBepHDvzwwQ1iFVhtbbDPjjEuUed9DoOOCinUorDXbb5c7GA==}
     engines: {node: '>=6.9.1'}
     os: [win32, darwin, linux]
     hasBin: true
@@ -16244,6 +16253,7 @@ packages:
 
   /long@4.0.0:
     resolution: {integrity: sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==}
+    dev: false
 
   /long@5.2.3:
     resolution: {integrity: sha512-lcHwpNoggQTObv5apGNCTdJrO69eHOZMi4BNC+rTLER8iHAqGrUVeLh/irVIM7zTw2bOXA8T6uNPeujwOLg/2Q==}
@@ -18439,7 +18449,7 @@ packages:
       camelcase-css: 2.0.1
       postcss: 8.4.27
 
-  /postcss-load-config@3.1.4(postcss@8.4.27)(ts-node@10.9.1):
+  /postcss-load-config@3.1.4(postcss@8.4.27):
     resolution: {integrity: sha512-6DiM4E7v4coTE4uzA8U//WhtPwyhiim3eyjEMFCnUpzbrkK9wJHgKDT2mR+HbtSrd/NubVaYTOpSpjUl8NQeRg==}
     engines: {node: '>= 10'}
     peerDependencies:
@@ -18453,7 +18463,6 @@ packages:
     dependencies:
       lilconfig: 2.1.0
       postcss: 8.4.27
-      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.0.4)
       yaml: 1.10.2
     dev: true
 
@@ -21657,7 +21666,7 @@ packages:
   /tslib@2.6.1:
     resolution: {integrity: sha512-t0hLfiEKfMUoqhG+U1oid7Pva4bbDPHYfJNiB7BiIjRkj1pyC++4N3huJfqY6aRH6VTB0rvtzQwjM4K6qpfOig==}
 
-  /tsup@6.7.0(postcss@8.4.27)(ts-node@10.9.1)(typescript@5.0.4):
+  /tsup@6.7.0(postcss@8.4.27)(typescript@5.0.4):
     resolution: {integrity: sha512-L3o8hGkaHnu5TdJns+mCqFsDBo83bJ44rlK7e6VdanIvpea4ArPcU3swWGsLVbXak1PqQx/V+SSmFPujBK+zEQ==}
     engines: {node: '>=14.18'}
     hasBin: true
@@ -21682,13 +21691,50 @@ packages:
       globby: 11.1.0
       joycon: 3.1.1
       postcss: 8.4.27
-      postcss-load-config: 3.1.4(postcss@8.4.27)(ts-node@10.9.1)
+      postcss-load-config: 3.1.4(postcss@8.4.27)
       resolve-from: 5.0.0
       rollup: 3.28.0
       source-map: 0.8.0-beta.0
       sucrase: 3.34.0
       tree-kill: 1.2.2
       typescript: 5.0.4
+    transitivePeerDependencies:
+      - supports-color
+      - ts-node
+    dev: true
+
+  /tsup@7.2.0(postcss@8.4.27)(typescript@5.1.6):
+    resolution: {integrity: sha512-vDHlczXbgUvY3rWvqFEbSqmC1L7woozbzngMqTtL2PGBODTtWlRwGDDawhvWzr5c1QjKe4OAKqJGfE1xeXUvtQ==}
+    engines: {node: '>=16.14'}
+    hasBin: true
+    peerDependencies:
+      '@swc/core': ^1
+      postcss: ^8.4.12
+      typescript: '>=4.1.0'
+    peerDependenciesMeta:
+      '@swc/core':
+        optional: true
+      postcss:
+        optional: true
+      typescript:
+        optional: true
+    dependencies:
+      bundle-require: 4.0.1(esbuild@0.18.20)
+      cac: 6.7.14
+      chokidar: 3.5.3
+      debug: 4.3.4(supports-color@8.1.1)
+      esbuild: 0.18.20
+      execa: 5.1.1
+      globby: 11.1.0
+      joycon: 3.1.1
+      postcss: 8.4.27
+      postcss-load-config: 4.0.1(postcss@8.4.27)(ts-node@10.9.1)
+      resolve-from: 5.0.0
+      rollup: 3.28.0
+      source-map: 0.8.0-beta.0
+      sucrase: 3.34.0
+      tree-kill: 1.2.2
+      typescript: 5.1.6
     transitivePeerDependencies:
       - supports-color
       - ts-node
@@ -21989,6 +22035,13 @@ packages:
   /underscore@1.13.6:
     resolution: {integrity: sha512-+A5Sja4HP1M08MaXya7p5LvjuM7K6q/2EaC0+iovj/wOcMsTzMvDFbasi/oSapiwOlt252IqsKqPjCl7huKS0A==}
     dev: true
+
+  /undici@5.23.0:
+    resolution: {integrity: sha512-1D7w+fvRsqlQ9GscLBwcAJinqcZGHUKjbOmXdlE/v8BvEGXjeWAax+341q44EuTcHXXnfyKNbKRq4Lg7OzhMmg==}
+    engines: {node: '>=14.0'}
+    dependencies:
+      busboy: 1.6.0
+    dev: false
 
   /unicode-canonical-property-names-ecmascript@2.0.0:
     resolution: {integrity: sha512-yY5PpDlfVIU5+y/BSCxAJRBIS1Zc2dDG3Ujq+sR0U+JjUevW2JhocOF+soROYDSaAezOzOKuyyixhD6mBknSmQ==}

@@ -1,6 +1,7 @@
 import { faHome } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, NotificationBadgeWrapper } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Router from 'next/router'
 import React from 'react'
 
@@ -25,8 +26,10 @@ function MobileMenuBar({
   onClick,
   participantMissing,
 }: MobileMenuBarProps): React.ReactElement {
+  const t = useTranslations()
+
   const homeMenuItem = {
-    label: 'Home',
+    label: t('shared.generic.home'),
     icon: <FontAwesomeIcon icon={faHome} size="lg" />,
     value: 'home',
     onClick: () => Router.push('/'),

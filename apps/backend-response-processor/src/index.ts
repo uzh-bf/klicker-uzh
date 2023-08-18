@@ -1,4 +1,4 @@
-import type { AzureFunction, Context } from '@azure/functions'
+import { app, InvocationContext } from '@azure/functions'
 import {
   computeAwardedPoints,
   computeAwardedXp,
@@ -29,11 +29,22 @@ Sentry.init()
 
 const redisExec = getRedis()
 
-const serviceBusTrigger: AzureFunction = async function (
-  context: Context,
-  queueItem
+interface Message {
+  messageId: string
+  sessionId: string
+  instanceId: string
+  response: any
+  cookie?: string
+  responseTimestamp: number
+}
+
+const serviceBusTrigger = async function (
+  message: any,
+  context: InvocationContext
 ) {
-  context.log('ProcessResponses function processed a message', queueItem)
+  context.log('ProcessResponse function processing a message', message)
+
+  const queueItem = message as Message
 
   try {
     assert(!!redisExec)
@@ -44,10 +55,9 @@ const serviceBusTrigger: AzureFunction = async function (
     throw new Error(`Redis connection error ${String(e)}`)
   }
 
-  if (queueItem?.sessionId === 'ping') {
-    // await fetch(
-    //   'https://betteruptime.com/api/v1/heartbeat/pT3NjExsLvqufrtTGR3H15Mr'
-    // )
+  if (queueItem.sessionId === 'ping' && process.env.FUNCTION_HEARTBEAT_URL) {
+    // @ts-ignore
+    await fetch(process.env.FUNCTION_HEARTBEAT_URL)
     return { status: 200 }
   }
 
@@ -60,28 +70,31 @@ const serviceBusTrigger: AzureFunction = async function (
     const responseTimestamp = queueItem.responseTimestamp
     const response = queueItem.response
     if (!response) {
-      context.log('Missing response', queueItem)
+      context.error('Missing response', queueItem)
       return { status: 400 }
     }
 
     let participantData: { sub: string } | null = null
-    if (queueItem.cookie) {
+    if (typeof queueItem.cookie === 'string') {
       try {
-        const parsedCookie = queueItem.cookie
+        const parsedCookies = queueItem.cookie
           .split(';')
           .map((v: string) => v.split('='))
-          .reduce((acc: Record<string, string>, v: string) => {
+          .reduce<Record<string, string>>((acc, v) => {
             acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(
               v[1].trim()
             )
             return acc
           }, {})
+
         participantData = JWT.verify(
-          parsedCookie.participant_token,
+          parsedCookies['participant_token'],
           process.env.APP_SECRET as string
         ) as any
+
+        context.log("Participant's JWT verified", participantData)
       } catch (e) {
-        context.log('JWT verification failed', e, queueItem.cookie)
+        context.error('JWT verification failed', e, queueItem.cookie)
         Sentry.captureException(e)
       }
       // if the participant has already responded to the question instance, return instantly
@@ -327,7 +340,7 @@ const serviceBusTrigger: AzureFunction = async function (
       }
     }
   } catch (e) {
-    context.log('Error processing response', e, queueItem)
+    context.error('Error processing response', e, queueItem)
     Sentry.captureException(e)
     redisMulti?.discard()
     await Sentry.flush(500)
@@ -336,9 +349,10 @@ const serviceBusTrigger: AzureFunction = async function (
 
   try {
     await redisMulti.exec()
+    context.log("Successfully processed participant's response", queueItem)
     return { status: 200 }
   } catch (e) {
-    context.log('Redis transaction failed', e, queueItem)
+    context.error('Redis transaction failed', e, queueItem)
     Sentry.captureException(e)
     redisMulti?.discard()
     await Sentry.flush(500)
@@ -347,3 +361,12 @@ const serviceBusTrigger: AzureFunction = async function (
 }
 
 export default serviceBusTrigger
+
+// TODO: check how autoCompleteMessages needs to be applied in v4
+app.serviceBusQueue('ProcessResponse', {
+  connection: 'SERVICE_BUS_CONNECTION_STRING',
+  queueName: process.env.SERVICE_BUS_QUEUE_NAME as string,
+  isSessionsEnabled: true,
+  //autoCompleteMessages: true,
+  handler: serviceBusTrigger,
+})

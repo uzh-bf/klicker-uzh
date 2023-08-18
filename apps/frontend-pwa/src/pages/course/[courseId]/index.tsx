@@ -28,6 +28,7 @@ import Tabs from '../../../components/common/Tabs'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import dayjs from 'dayjs'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
@@ -68,8 +69,16 @@ function CourseOverview({ courseId }: Props) {
   const [joinParticipantGroup] = useMutation(JoinParticipantGroupDocument)
   const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
 
-  if (!data?.getCourseOverviewData || loading) return <div>Loading...</div>
-  if (error) return <p>Oh no... {error.message}</p>
+  if (!data?.getCourseOverviewData || loading)
+    return (
+      <Layout displayName={t('shared.generic.leaderboard')}>
+        <Loader />
+      </Layout>
+    )
+
+  if (error) {
+    return <Layout>{t('shared.generic.systemError')}</Layout>
+  }
 
   const {
     course,

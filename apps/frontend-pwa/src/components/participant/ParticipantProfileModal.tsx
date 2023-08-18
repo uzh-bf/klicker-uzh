@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { GetParticipantDetailsDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Modal } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -27,9 +28,7 @@ function ParticipantProfileModal({
     variables: { id: selectedParticipant },
   })
 
-  if (loading || !data?.participantDetails) return <div>loading...</div>
-
-  const participant = data.participantDetails
+  const participant = data?.participantDetails
 
   const onNext = () => {
     const nextIndex = (currentIndex + 1) % top10Participants.length
@@ -58,30 +57,34 @@ function ParticipantProfileModal({
       onPrev={onPrev}
       title="Top 10"
     >
-      <div className="flex flex-col items-center justify-between w-full h-full px-auto">
-        <ProfileData
-          level={participant.levelData}
-          xp={participant.xp}
-          avatar={participant.avatar}
-          username={participant.username}
-          achievements={participant.achievements}
-        />
-        <div className="grid w-full grid-cols-10 pt-5 justify-items-center">
-          {top10Participants.map((p, index) => (
-            <div
-              key={index}
-              className={twMerge(
-                'w-2 h-2 rounded-full hover:cursor-pointer',
-                index === currentIndex ? 'bg-black' : 'bg-gray-300'
-              )}
-              onClick={() => {
-                setCurrentIndex(index)
-                setSelectedParticipant(top10Participants[index])
-              }}
-            />
-          ))}
+      {loading || !participant ? (
+        <Loader />
+      ) : (
+        <div className="flex flex-col items-center justify-between w-full h-full px-auto">
+          <ProfileData
+            level={participant.levelData}
+            xp={participant.xp}
+            avatar={participant.avatar}
+            username={participant.username}
+            achievements={participant.achievements}
+          />
+          <div className="grid w-full grid-cols-10 pt-5 justify-items-center">
+            {top10Participants.map((p, index) => (
+              <div
+                key={index}
+                className={twMerge(
+                  'w-2 h-2 rounded-full hover:cursor-pointer',
+                  index === currentIndex ? 'bg-black' : 'bg-gray-300'
+                )}
+                onClick={() => {
+                  setCurrentIndex(index)
+                  setSelectedParticipant(top10Participants[index])
+                }}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </Modal>
   )
 }

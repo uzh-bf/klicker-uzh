@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../../../components/Layout'
@@ -31,9 +32,6 @@ function Cockpit() {
       },
     ],
   })
-
-  // TODO: add toast notifications - this react library react-toast-notifications is outdated and will not work with react 18
-  // const { addToast } = useToasts()
 
   // useEffect((): void => {
   //   router.prefetch('/sessions/evaluation')
@@ -57,16 +55,6 @@ function Cockpit() {
 
   // const shortname = _get(accountSummary, 'data.user.shortname')
 
-  // const isAnythingLoading = _some([
-  //   isUpdateSettingsLoading,
-  //   isEndSessionLoading,
-  //   isPauseSessionLoading,
-  //   isResetQuestionBlockLoading,
-  //   isCancelSessionLoading,
-  //   isActivateNextBlockLoading,
-  //   isActivateBlockByIdLoading,
-  // ])
-
   const {
     loading: cockpitLoading,
     error: cockpitError,
@@ -81,7 +69,12 @@ function Cockpit() {
   })
 
   // data has not been received yet
-  if (cockpitLoading) return <div>{t('shared.generic.loading')}</div>
+  if (cockpitLoading)
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
 
   // loading is finished, but was not successful
   if (!cockpitData?.cockpitSession || cockpitError) {
