@@ -1,4 +1,4 @@
-name: Build and deploy backend-responses Function App (QA)
+name: Build and deploy backend-responses to Azure Function App (QA)
 
 on:
   push:
