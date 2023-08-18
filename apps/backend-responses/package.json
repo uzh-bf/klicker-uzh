@@ -18,7 +18,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@azure/functions": "^4.0.0-alpha.7",
+    "@azure/functions": "4.0.0-alpha.11",
     "@azure/service-bus": "7.9.0",
     "@sentry/node": "7.52.1",
     "jsonwebtoken": "9.0.1"
@@ -29,7 +29,7 @@
     "@types/jsonwebtoken": "^9.0.1",
     "@types/node": "^18.0.0",
     "@uzh-bf/design-system": "2.0.12",
-    "azure-functions-core-tools": "4.0.5198",
+    "azure-functions-core-tools": "4.0.5274",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "husky": "8.0.3",

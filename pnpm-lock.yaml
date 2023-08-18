@@ -275,17 +275,14 @@ importers:
   apps/backend-response-processor:
     dependencies:
       '@azure/functions':
-        specifier: ^4.0.0-alpha.7
-        version: 4.0.0-alpha.7
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../../packages/grading
       '@sentry/node':
         specifier: 7.52.1
         version: 7.52.1
-      '@tsconfig/node18':
-        specifier: ^2.0.0
-        version: 2.0.1
       ioredis:
         specifier: 5.3.2
         version: 5.3.2
@@ -299,6 +296,9 @@ importers:
         specifier: 0.29.0
         version: 0.29.0
     devDependencies:
+      '@tsconfig/node18':
+        specifier: ^2.0.0
+        version: 2.0.1
       '@tsconfig/recommended':
         specifier: ^1.0.2
         version: 1.0.2
@@ -345,8 +345,8 @@ importers:
   apps/backend-responses:
     dependencies:
       '@azure/functions':
-        specifier: ^4.0.0-alpha.7
-        version: 4.0.0-alpha.7
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
       '@azure/service-bus':
         specifier: 7.9.0
         version: 7.9.0
@@ -373,8 +373,8 @@ importers:
         specifier: 2.0.12
         version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       azure-functions-core-tools:
-        specifier: 4.0.5198
-        version: 4.0.5198
+        specifier: 4.0.5274
+        version: 4.0.5274
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -2287,8 +2287,8 @@ packages:
       tslib: 2.6.1
     dev: false
 
-  /@azure/functions@4.0.0-alpha.7:
-    resolution: {integrity: sha512-omr809F6zsdCs0G9oKL7dkYCy0gSuiTkf7/XY5EDeS0JgswRY02vSf8+F85SXLRJTxwLWqbQ4JIwI6pReq8Tcw==}
+  /@azure/functions@4.0.0-alpha.11:
+    resolution: {integrity: sha512-9Hrg9AkMgI6i9fFiROFQAwOI2Eid2OEZT85kPxb9GJW8UKUdJmgYYEkpMqOoW9gMIVEEEwyNq3nz9PNa1wTQQA==}
     engines: {node: '>=18.0'}
     dependencies:
       long: 4.0.0
@@ -8024,6 +8024,7 @@ packages:
 
   /@tsconfig/node18@2.0.1:
     resolution: {integrity: sha512-UqdfvuJK0SArA2CxhKWwwAWfnVSXiYe63bVpMutc27vpngCntGUZQETO24pEJ46zU6XM+7SpqYoMgcO3bM11Ew==}
+    dev: true
 
   /@tsconfig/recommended@1.0.2:
     resolution: {integrity: sha512-dbHBtbWBOjq0/otpopAE02NT2Cm05Qe2JsEKeCf/wjSYbI2hz8nCqnpnOJWHATgjDz4fd3dchs3Wy1gQGjfN6w==}
@@ -9918,6 +9919,22 @@ packages:
 
   /azure-functions-core-tools@4.0.5198:
     resolution: {integrity: sha512-cUexqiAKiUKLSgzgHJU4YWLPnntD7CjSu64W0LCjYfxRuU9ohnAOLIY+gZYo7Hdcm2/nT3oTrursCv6DYK69hw==}
+    engines: {node: '>=6.9.1'}
+    os: [win32, darwin, linux]
+    hasBin: true
+    requiresBuild: true
+    dependencies:
+      chalk: 3.0.0
+      extract-zip: 2.0.1(supports-color@8.1.1)
+      https-proxy-agent: 5.0.0
+      progress: 2.0.3
+      rimraf: 3.0.2
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
+  /azure-functions-core-tools@4.0.5274:
+    resolution: {integrity: sha512-chonhkn8ADVkFMs/5cDS01xHtInxMnBM0eMlnHJBepHDvzwwQ1iFVhtbbDPjjEuUed9DoOOCinUorDXbb5c7GA==}
     engines: {node: '>=6.9.1'}
     os: [win32, darwin, linux]
     hasBin: true
