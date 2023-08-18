@@ -1,4 +1,4 @@
-name: Build and deploy backend-responses to Azure Function App (Production)
+name: Build and deploy backend-responses Function App (Production)
 
 on:
   push:
