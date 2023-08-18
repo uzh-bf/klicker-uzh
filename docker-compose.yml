@@ -55,6 +55,18 @@ services:
     networks:
       - klicker
 
+  mongodb:
+    image: mongo:4.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: klicker
+      MONGO_INITDB_ROOT_PASSWORD: klicker
+    ports:
+      - 27017:27017
+    networks:
+      - klicker
+    volumes:
+      - /data/db
+
   frontend_pwa:
     profiles:
       - full
