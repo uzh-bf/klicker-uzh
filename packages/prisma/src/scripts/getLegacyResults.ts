@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
+import mongoose from 'mongoose'
 
-const { Schema, Types } = mongoose;
-const { ObjectId } = Types;
+const { Schema, Types } = mongoose
+const { ObjectId } = Types
 
 const Response = new mongoose.Schema(
   {
@@ -35,43 +35,54 @@ const LegacyQuestionInstance = new mongoose.Schema(
   { timestamps: true }
 )
 
-LegacyQuestionInstance.index({ '$**': 1 });
+LegacyQuestionInstance.index({ '$**': 1 })
 
-const legacyConnection = mongoose.createConnection(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_URL}`, {
-  dbName: 'klicker-prod',
-  authSource: 'admin',
-  keepAlive: true,
+const legacyConnection = mongoose.createConnection(
+  `mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_URL}`,
+  {
+    dbName: 'klicker-prod',
+    authSource: 'admin',
+    keepAlive: true,
+  }
+)
+
+legacyConnection.on('connected', function () {
+  console.log('Mongoose default connection open')
 })
 
-legacyConnection.on('connected', function() {
-  console.log('Mongoose default connection open');
-});
+legacyConnection.on('error', function (err) {
+  console.log('Mongoose default connection error: ' + err)
+})
 
-legacyConnection.on('error', function(err) {
-  console.log('Mongoose default connection error: ' + err);
-});
+legacyConnection.on('disconnected', function () {
+  console.log('Mongoose default connection disconnected')
+})
 
-legacyConnection.on('disconnected', function() {
-  console.log('Mongoose default connection disconnected');
-});
+process.on('SIGINT', function () {
+  legacyConnection.close(function () {
+    console.log(
+      'Mongoose default connection disconnected through app termination'
+    )
+    process.exit(0)
+  })
+})
 
-process.on('SIGINT', function() {
-  legacyConnection.close(function() {
-    console.log('Mongoose default connection disconnected through app termination');
-    process.exit(0);
-  });
-});
-
-const LegacyQuestionInstanceModel = legacyConnection.model('LegacyQuestionInstance', LegacyQuestionInstance, 'questioninstances');
+const LegacyQuestionInstanceModel = legacyConnection.model(
+  'LegacyQuestionInstance',
+  LegacyQuestionInstance,
+  'questioninstances'
+)
 
 export async function getLegacyResults(legacyQuestionInstanceId: string) {
-    console.log("getLegacyResults method called")
-    console.log("legacyQuestionInstanceId", legacyQuestionInstanceId)
-    const legacyInstance = await LegacyQuestionInstanceModel.findById(legacyQuestionInstanceId);
-    console.log("legacyInstance", legacyInstance)
-    return legacyInstance ? legacyInstance.results : null;
+  console.log('getLegacyResults method called')
+  console.log('legacyQuestionInstanceId', legacyQuestionInstanceId)
+  const legacyInstance = await LegacyQuestionInstanceModel.findById(
+    legacyQuestionInstanceId
+  )
+  console.log('legacyInstance', legacyInstance)
+  return legacyInstance ? legacyInstance.results : null
 }
 
 export function closeLegacyConnection() {
-  legacyConnection.close();
+  legacyConnection.close()
 }

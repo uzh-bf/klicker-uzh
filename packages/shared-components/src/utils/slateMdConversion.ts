@@ -68,20 +68,19 @@ export const convertToMd = (slateObj) => {
 }
 
 export const convertToSlate = (mdObj) => {
-
-  console.log("convertToSlate mdObj: ", mdObj)
+  console.log('convertToSlate mdObj: ', mdObj)
   const trimmedMdObj = mdObj.trim() === '' ? '<br>' : mdObj
-  console.log("convertToSlate trimmedMdObj: ", trimmedMdObj)
+  console.log('convertToSlate trimmedMdObj: ', trimmedMdObj)
 
   const result = unified()
     .use(markdown)
     .use(slate)
     .processSync(trimmedMdObj.replace(/\\/g, '\\\\')).result as any
 
-  console.log("convertToSlate result: ", result)
+  console.log('convertToSlate result: ', result)
   return result.map((line: any) => {
     if (line.type === 'paragraph') {
-      console.log("convertToSlate results.map.line.children: ", line.children)
+      console.log('convertToSlate results.map.line.children: ', line.children)
       return {
         type: 'paragraph',
         children: line.children.map((child: any) => {
