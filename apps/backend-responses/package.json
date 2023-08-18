@@ -24,10 +24,10 @@
     "jsonwebtoken": "9.0.1"
   },
   "devDependencies": {
-    "@tsconfig/node18": "^2.0.0",
-    "@tsconfig/recommended": "^1.0.2",
+    "@tsconfig/node18": "18.2.0",
+    "@tsconfig/recommended": "1.0.2",
     "@types/jsonwebtoken": "^9.0.1",
-    "@types/node": "^18.0.0",
+    "@types/node": "^18.11.9",
     "@uzh-bf/design-system": "2.0.12",
     "azure-functions-core-tools": "4.0.5274",
     "cross-env": "7.0.3",

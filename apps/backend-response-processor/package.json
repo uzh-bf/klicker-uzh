@@ -29,11 +29,11 @@
     "ramda": "0.29.0"
   },
   "devDependencies": {
-    "@tsconfig/node18": "^2.0.0",
-    "@tsconfig/recommended": "^1.0.2",
+    "@tsconfig/node18": "18.2.0",
+    "@tsconfig/recommended": "1.0.2",
     "@types/jsonwebtoken": "^9.0.1",
     "@types/md5": "2.3.2",
-    "@types/node": "^18.0.0",
+    "@types/node": "^18.11.9",
     "@types/ramda": "^0.29.0",
     "@uzh-bf/design-system": "2.0.12",
     "azure-functions-core-tools": "4.0.5198",

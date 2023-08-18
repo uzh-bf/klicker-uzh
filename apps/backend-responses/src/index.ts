@@ -5,6 +5,7 @@ import {
   InvocationContext,
 } from '@azure/functions'
 import * as Sentry from '@sentry/node'
+import JWT from 'jsonwebtoken'
 
 import getServiceBus from './sbus'
 
@@ -29,6 +30,11 @@ const httpTrigger = async function (
       body: {},
     })
 
+    if (process.env.FUNCTION_HEARTBEAT_URL) {
+      // @ts-ignore
+      await fetch(process.env.FUNCTION_HEARTBEAT_URL)
+    }
+
     return { status: 200 }
   }
 
@@ -41,38 +47,51 @@ const httpTrigger = async function (
   }
 
   try {
-    // let messageId = undefined
-    // if (req.headers?.cookie) {
-    //   const token = req.headers.cookie.replace('participant_token=', '')
-    //   const participantData = JWT.verify(
-    //     token,
-    //     process.env.APP_SECRET as string
-    //   ) as any
+    let messageId = undefined
 
-    //   if (participantData.sub) {
-    //     messageId = `${participantData.sub}-${req.body.sessionId}`
-    //   }
-    // }
+    const cookie = req.headers.get('cookie')
 
-    await serviceBusSender.sendMessages({
+    if (cookie) {
+      const parsedCookies = cookie
+        .split(';')
+        .map((v: string) => v.split('='))
+        .reduce<Record<string, string>>((acc, v) => {
+          acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim())
+          return acc
+        }, {})
+
+      const participantData = JWT.verify(
+        parsedCookies['participant_token'],
+        process.env.APP_SECRET as string
+      )
+
+      if (participantData.sub) {
+        messageId = `${participantData.sub}-${body.sessionId}`
+      }
+    }
+
+    const message = {
       sessionId: body.sessionId,
-      // messageId,
+      messageId,
       body: {
-        ...req.body,
-        cookie: req.headers.getSetCookie(),
+        ...body,
+        cookie: cookie ?? undefined,
         responseTimestamp: Number(new Date()),
       },
-    })
+    }
+
+    context.log('message: ', message)
+
+    await serviceBusSender.sendMessages(message, {})
 
     context.log('Submitted message to service bus')
+    return { status: 200 }
   } catch (e) {
     context.error('Error sending message to service bus', e)
     Sentry.captureException(e)
     await Sentry.flush(500)
     return { status: 500 }
   }
-
-  return { status: 200 }
 }
 
 app.http('AddResponse', {

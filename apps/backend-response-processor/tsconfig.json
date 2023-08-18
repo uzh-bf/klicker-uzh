@@ -1,9 +1,7 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["src/**/*"],
-  "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "outDir": "./dist"
-  }
+  "extends": [
+    "@tsconfig/node18/tsconfig.json",
+    "@tsconfig/recommended/tsconfig.json"
+  ],
+  "include": ["src/**/*"]
 }

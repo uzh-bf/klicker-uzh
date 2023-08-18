@@ -297,10 +297,10 @@ importers:
         version: 0.29.0
     devDependencies:
       '@tsconfig/node18':
-        specifier: ^2.0.0
-        version: 2.0.1
+        specifier: 18.2.0
+        version: 18.2.0
       '@tsconfig/recommended':
-        specifier: ^1.0.2
+        specifier: 1.0.2
         version: 1.0.2
       '@types/jsonwebtoken':
         specifier: ^9.0.1
@@ -309,7 +309,7 @@ importers:
         specifier: 2.3.2
         version: 2.3.2
       '@types/node':
-        specifier: ^18.0.0
+        specifier: ^18.11.9
         version: 18.17.4
       '@types/ramda':
         specifier: ^0.29.0
@@ -361,16 +361,16 @@ importers:
         version: 9.0.1
     devDependencies:
       '@tsconfig/node18':
-        specifier: ^2.0.0
-        version: 2.0.1
+        specifier: 18.2.0
+        version: 18.2.0
       '@tsconfig/recommended':
-        specifier: ^1.0.2
+        specifier: 1.0.2
         version: 1.0.2
       '@types/jsonwebtoken':
         specifier: ^9.0.1
         version: 9.0.2
       '@types/node':
-        specifier: ^18.0.0
+        specifier: ^18.11.9
         version: 18.17.4
       '@uzh-bf/design-system':
         specifier: 2.0.12

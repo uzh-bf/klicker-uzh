@@ -5,7 +5,7 @@
     "fileLoggingMode": "always",
     "logLevel": {
       "default": "Warning",
-      "Function.ProcessResponses": "Information"
+      "Function.ProcessResponse": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {
