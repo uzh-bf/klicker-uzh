@@ -9,6 +9,7 @@ interface ParticipantProps {
   withAvatar?: boolean
   pseudonym?: string
   points?: number
+  level?: number
   rank?: number | string
   isHighlighted?: boolean
   onClick?: () => void
@@ -19,6 +20,7 @@ function Participant({
   avatar,
   withAvatar = true,
   pseudonym,
+  level,
   isHighlighted,
   onClick,
   children,
@@ -33,7 +35,7 @@ function Participant({
       className={twMerge(
         'flex flex-row items-center gap-1 border border-slate-200 rounded',
         isHighlighted && 'bg-uzh-grey-20',
-        onClick && 'hover:cursor-pointer',
+        onClick && 'hover:cursor-pointer hover:border-orange-200',
         className
       )}
       onClick={onClick}
@@ -42,12 +44,16 @@ function Participant({
         {rank && <div className="w-3 ml-1 text-lg font-bold">{rank}</div>}
 
         {withAvatar && (
-          <div className="w-[30px] h-full">
+          <div className="w-[30px] h-full flex flex-col items-center">
             <Image
-              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`}
+              src={
+                avatar
+                  ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`
+                  : '/user-solid.svg'
+              }
               alt=""
-              height={25}
-              width={30}
+              height={avatar ? 25 : 20}
+              width={avatar ? 30 : 20}
             />
           </div>
         )}
@@ -86,7 +92,7 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
           className={{ root: 'text-sm' }}
           onClick={(e) => {
             e?.stopPropagation()
-            props.onLeaveCourse()
+            props?.onLeaveCourse()
           }}
         >
           {t('shared.generic.leave')}

@@ -10,7 +10,8 @@
   "scripts": {
     "analyze": "size-limit --why",
     "build": "NODE_ENV=production tsup",
-    "build:watch": "NODE_ENV=development tsup --watch",
+    "dev": "NODE_ENV=development tsup --watch",
+    "dev:offline": "npm run dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "size": "size-limit",

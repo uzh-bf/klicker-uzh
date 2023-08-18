@@ -109,10 +109,12 @@ function FlagQuestionModal({
         open={open}
         trigger={
           <Button basic onClick={() => setOpen(true)}>
-            <FontAwesomeIcon
-              icon={faWarning}
-              className="text-red-600 sm:hover:text-red-500"
-            />
+            <Button.Icon>
+              <FontAwesomeIcon
+                icon={faWarning}
+                className="text-red-600 sm:hover:text-red-500"
+              />
+            </Button.Icon>
           </Button>
         }
         onClose={() => setOpen(false)}

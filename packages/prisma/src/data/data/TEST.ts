@@ -329,8 +329,6 @@ export const MICRO_SESSIONS = [
     description: `
 Diese Woche lernen wir...
 
-![Alt text](https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.webp)
-
 Mehr bla bla...
 `,
     questions: [0, 1, 2, 3, 4],

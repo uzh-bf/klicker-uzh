@@ -77,6 +77,7 @@ function evaluateQuestionResponse(
             pointsPercentage,
             multiplier: multiplier ?? 1,
           }),
+          percentile: pointsPercentage ?? 0,
         }
       } else if (data.type === QuestionType.MC) {
         const pointsPercentage = gradeQuestionMC({
@@ -96,6 +97,7 @@ function evaluateQuestionResponse(
             pointsPercentage,
             multiplier: multiplier ?? 1,
           }),
+          percentile: pointsPercentage ?? 0,
         }
       } else {
         const pointsPercentage = gradeQuestionKPRIM({
@@ -115,6 +117,7 @@ function evaluateQuestionResponse(
             pointsPercentage,
             multiplier: multiplier ?? 1,
           }),
+          percentile: pointsPercentage ?? 0,
         }
       }
     }
@@ -137,6 +140,7 @@ function evaluateQuestionResponse(
           pointsPercentage: correct,
           multiplier: multiplier ?? 1,
         }),
+        percentile: correct ?? 0,
       }
     }
 
@@ -157,6 +161,7 @@ function evaluateQuestionResponse(
           pointsPercentage: correct,
           multiplier: multiplier ?? 1,
         }),
+        percentile: correct ?? 0,
       }
     }
 
@@ -173,6 +178,26 @@ export async function respondToQuestionInstance(
   }: { courseId: string; id: number; response: QuestionResponse },
   ctx: Context
 ) {
+  const participation = ctx.user?.sub
+    ? await ctx.prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+          participant: {
+            isActive: true,
+          },
+        },
+        include: {
+          participant: true,
+        },
+      })
+    : null
+
+  // if the participant is logged in but not active, return early and do not track anything
+  if (ctx.user?.sub && !participation) return null
+
   const {
     instance,
     updatedInstance,
@@ -404,6 +429,12 @@ export async function respondToQuestionInstance(
         .toDate()
     }
 
+    // if the user is not participating in the leaderboard, do not award points
+    if (ctx.user.sub && participation?.isActive === false) {
+      pointsAwarded = null
+      lastAwardedAt = undefined
+    }
+
     promises.push(
       ctx.prisma.questionResponse.upsert({
         where: {
@@ -445,9 +476,12 @@ export async function respondToQuestionInstance(
           totalScore: {
             increment: score,
           },
-          totalPointsAwarded: {
-            increment: pointsAwarded,
-          },
+          totalPointsAwarded:
+            typeof pointsAwarded === 'number'
+              ? {
+                  increment: pointsAwarded,
+                }
+              : null,
           totalXpAwarded: {
             increment: xpAwarded,
           },

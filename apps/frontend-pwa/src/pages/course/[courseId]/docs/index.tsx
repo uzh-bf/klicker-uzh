@@ -54,17 +54,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     ctx,
   })
 
-  if (participant && !participant.avatar) {
-    return {
-      redirect: {
-        destination: `/editProfile?redirect_to=${encodeURIComponent(
-          `/course/${ctx.params.courseId}/docs`
-        )}`,
-        statusCode: 302,
-      },
-    }
-  }
-
   const result = await apolloClient.query({
     query: GetBasicCourseInformationDocument,
     variables: {

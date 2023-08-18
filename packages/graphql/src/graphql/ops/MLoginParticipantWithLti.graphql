@@ -1,0 +1,8 @@
+mutation LoginParticipantWithLti($signedLtiData: String!) {
+  loginParticipantWithLti(signedLtiData: $signedLtiData) {
+    participant {
+      id
+    }
+    participantToken
+  }
+}

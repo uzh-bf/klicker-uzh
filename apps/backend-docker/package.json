@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "npm-run-all --parallel dev:build dev:run",
-    "dev:offline": "npm-run-all --parallel dev:build dev:run",
+    "dev:offline": "npm run dev",
     "dev:build": "tsup --watch",
     "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node -r dotenv/config ./dist/index.js'",
     "build": "cross-env NODE_ENV=production tsup",
@@ -35,7 +35,7 @@
     "@types/node": "^18.0.0",
     "@types/passport": "^1.0.10",
     "@types/passport-jwt": "^3.0.6",
-    "@uzh-bf/design-system": "2.0.8",
+    "@uzh-bf/design-system": "2.0.12",
     "axios": "1.4.0",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",

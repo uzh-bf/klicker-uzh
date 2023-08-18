@@ -393,6 +393,11 @@ type Level {
   requiredXp: Int!
 }
 
+enum LocaleType {
+  de
+  en
+}
+
 type MicroSession {
   arePushNotificationsSent: Boolean!
   course: Course
@@ -421,14 +426,14 @@ type Mutation {
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDates(courseId: String!, endDate: Date, startDate: Date): Course
   changeCourseDescription(courseId: String!, input: String!): Course
-  changeParticipantLocale(locale: String!): Participant
+  changeParticipantLocale(locale: LocaleType!): Participant
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
-  changeUserLocale(locale: String!): User
+  changeUserLocale(locale: LocaleType!): User
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date, isGamificationEnabled: Boolean!, name: String!, notificationEmail: String, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
   createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
   createMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
-  createParticipantAndJoinCourse(courseId: String!, password: String!, pin: Int!, username: String!): Participant
+  createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
@@ -436,6 +441,7 @@ type Mutation {
   deleteFeedbackResponse(id: Int!): Feedback
   deleteLearningElement(id: String!): LearningElement
   deleteMicroSession(id: String!): MicroSession
+  deleteParticipantAccount: Boolean
   deleteQuestion(id: Int!): Question
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
@@ -452,6 +458,7 @@ type Mutation {
   leaveCourse(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
+  loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
   loginUser(email: String!, password: String!): String
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
@@ -465,7 +472,6 @@ type Mutation {
   publishFlashcardSet(id: Int!): FlashcardSet
   publishLearningElement(id: String!): LearningElement
   publishMicroSession(id: String!): MicroSession
-  registerParticipantFromLTI(courseId: String!, participantId: String!): ParticipantLearningData
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
@@ -477,7 +483,7 @@ type Mutation {
   unpublishFlashcardSet(id: Int!): FlashcardSet
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
-  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, password: String, username: String): Participant
+  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, email: String, isProfilePublic: Boolean, password: String, username: String): Participant
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
@@ -544,12 +550,15 @@ type Participant {
   achievements: [ParticipantAchievementInstance!]
   avatar: String
   avatarSettings: Json
+  email: String
   id: ID!
+  isActive: Boolean!
+  isProfilePublic: Boolean
   isSelf: Boolean
   lastLoginAt: Date
   level: Int
   levelData: Level
-  locale: String!
+  locale: LocaleType!
   participantGroups: [ParticipantGroup!]
   rank: Int
   score: Float
@@ -585,6 +594,11 @@ type ParticipantLearningData {
   participant: Participant
   participantToken: String
   participation: Participation
+}
+
+type ParticipantTokenData {
+  participant: Participant
+  participantToken: String
 }
 
 type ParticipantWithAchievements {
@@ -873,7 +887,7 @@ type Title {
 type User {
   email: String!
   id: ID!
-  locale: String!
+  locale: LocaleType!
   loginToken: String
   loginTokenExpiresAt: Date
   shortname: String!

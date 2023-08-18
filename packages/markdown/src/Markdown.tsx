@@ -4,6 +4,7 @@ import React, { useMemo } from 'react'
 import rehypeExternalLinks from 'rehype-external-links'
 import katex from 'rehype-katex'
 // import rehypePrism from 'rehype-prism-plus'
+import { Prose } from '@uzh-bf/design-system'
 import rehype2react from 'rehype-react'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import math from 'remark-math'
@@ -34,6 +35,8 @@ export interface MarkdownProps {
     [key: string]: any
   }
   withModal?: boolean
+  withLinkButtons?: boolean
+  withProse?: boolean
 }
 
 function Markdown({
@@ -41,6 +44,8 @@ function Markdown({
   content = '<br>',
   components = {},
   withModal = true,
+  withLinkButtons = true,
+  withProse = false,
 }: MarkdownProps): React.ReactElement {
   const parsedContent = useMemo(() => {
     if (content?.length <= 2) {
@@ -107,30 +112,32 @@ function Markdown({
                   withModal={withModal}
                 />
               ),
-              a: ({
-                href,
-                children,
-              }: {
-                href: string
-                children: React.ReactNode
-              }) => {
-                const isExcel = href.includes('.xls')
-                const isPDF = href.includes('.pdf')
-                return (
-                  <a
-                    className={twMerge(
-                      'px-4 py-3 border rounded sm:hover:bg-slate-200 flex flex-row gap-3 text-sm my-1'
-                    )}
-                    href={href}
-                  >
-                    <div>
-                      {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
-                      {isPDF && <FontAwesomeIcon icon={faFilePdf} />}
-                    </div>
-                    <div>{children}</div>
-                  </a>
-                )
-              },
+              a: withLinkButtons
+                ? ({
+                    href,
+                    children,
+                  }: {
+                    href: string
+                    children: React.ReactNode
+                  }) => {
+                    const isExcel = href.includes('.xls')
+                    const isPDF = href.includes('.pdf')
+                    return (
+                      <a
+                        className={twMerge(
+                          'px-4 py-3 border rounded sm:hover:bg-slate-200 flex flex-row gap-3 text-sm my-1'
+                        )}
+                        href={href}
+                      >
+                        <div>
+                          {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
+                          {isPDF && <FontAwesomeIcon icon={faFilePdf} />}
+                        </div>
+                        <div>{children}</div>
+                      </a>
+                    )
+                  }
+                : 'a',
               ...(components as any),
             },
           })
@@ -141,6 +148,18 @@ function Markdown({
       return 'Failed to parse content.'
     }
   }, [content])
+
+  if (withProse) {
+    return (
+      <Prose
+        className={{
+          root: twMerge('max-w-none prose-p:mt-0', className?.root),
+        }}
+      >
+        {parsedContent}
+      </Prose>
+    )
+  }
 
   return (
     <div className={twMerge('max-w-none', className?.root)}>

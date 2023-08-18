@@ -4,7 +4,8 @@
   "types": "src/index.ts",
   "private": true,
   "scripts": {
-    "//dev": "run-p dev:tw:*",
+    "dev": "run-p dev:tw:*",
+    "dev:offline": "run-p dev:tw:*",
     "dev:tw:components": "tailwindcss -i src/components.css -o dist/components.css -w",
     "dev:tw:utilities": "tailwindcss -i src/utilities.css -o dist/utilities.css -w",
     "build": "run-p build:tw:*",
@@ -22,7 +23,7 @@
     "@fortawesome/free-regular-svg-icons": "6.4.2",
     "@fortawesome/free-solid-svg-icons": "6.4.2",
     "@fortawesome/react-fontawesome": "0.2.0",
-    "@uzh-bf/design-system": "2.0.8",
+    "@uzh-bf/design-system": "2.0.12",
     "formik": "2.4.3",
     "next": "13.4.13",
     "next-intl": "2.19.1",

@@ -107,7 +107,7 @@ export interface IInstanceEvaluation {
   choices?: object[]
   answers?: object[]
   score: number
-  pointsAwarded?: number
+  pointsAwarded?: number | null
   percentile?: number
   newPointsFrom?: Date
   xpAwarded?: number

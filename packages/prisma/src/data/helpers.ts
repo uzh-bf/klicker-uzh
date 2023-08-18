@@ -66,6 +66,7 @@ export function prepareCourse({
 }
 
 export async function prepareParticipant({
+  username,
   password,
   courseIds,
   ...args
@@ -80,6 +81,8 @@ export async function prepareParticipant({
   const data = {
     ...args,
     password: hashedPassword,
+    username,
+    email: `${username}@test.uzh.ch`,
   }
 
   return {

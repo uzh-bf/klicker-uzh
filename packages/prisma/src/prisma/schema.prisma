@@ -737,11 +737,17 @@ model ParticipantAccount {
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
+  email          String? @unique
+  isEmailValid   Boolean @default(false)
   username       String  @unique
   password       String
   avatar         String?
   avatarSettings Json?
   xp             Int     @default(0)
+
+  isActive        Boolean @default(false)
+  isProfilePublic Boolean @default(true)
+  isSSOAccount    Boolean @default(false)
 
   lastLoginAt DateTime?
 
@@ -793,7 +799,7 @@ model Participation {
 
   // enable participants to disable their participation
   // keeps the collected points but removes them from all views
-  isActive Boolean @default(true)
+  isActive Boolean @default(false)
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
@@ -801,7 +807,7 @@ model Participation {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
-  courseLeaderboard   LeaderboardEntry? @relation(fields: [courseLeaderboardId], references: [id])
+  courseLeaderboard   LeaderboardEntry? @relation(fields: [courseLeaderboardId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   courseLeaderboardId Int?              @unique
 
   sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
@@ -937,7 +943,7 @@ model QuestionResponse {
 
   trialsCount        Int       @default(0)
   totalScore         Float     @default(0)
-  totalPointsAwarded Float     @default(0)
+  totalPointsAwarded Float?    @default(0)
   totalXpAwarded     Float     @default(0)
   lastAwardedAt      DateTime?
   lastXpAwardedAt    DateTime?
@@ -962,9 +968,9 @@ model QuestionResponse {
 model QuestionResponseDetail {
   id Int @id @default(autoincrement())
 
-  score         Float @default(0)
-  pointsAwarded Float @default(0)
-  xpAwarded     Float @default(0)
+  score         Float  @default(0)
+  pointsAwarded Float? @default(0)
+  xpAwarded     Float  @default(0)
 
   response Json
 

@@ -10,6 +10,7 @@ import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -19,6 +20,7 @@ import Layout from '../../../../components/Layout'
 import { Options } from '../../../../components/common/OptionsDisplay'
 
 function GroupActivityDetails() {
+  const t = useTranslations()
   const router = useRouter()
 
   const { data, loading, error } = useQuery(GroupActivityDetailsDocument, {
@@ -65,15 +67,11 @@ function GroupActivityDetails() {
   }
 
   if (!data.groupActivityDetails) {
-    return (
-      <Layout>
-        Die Gruppenquest ist nicht aktiv oder noch nicht freigeschalten.
-      </Layout>
-    )
+    return <Layout>{t('pwa.groupActivity.activityNotYetActive')}</Layout>
   }
 
   if (error) {
-    return <Layout>Error: {error.message}</Layout>
+    return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
   return (
@@ -88,18 +86,19 @@ function GroupActivityDetails() {
       <div className="flex flex-col lg:gap-12 p-4 mx-auto border rounded max-w-[1800px] lg:flex-row">
         <div className="lg:flex-1">
           <div className="">
-            <H1>Ausgangslage</H1>
+            <H1>{t('pwa.groupActivity.baseline')}</H1>
 
             <Markdown
+              withProse
               className={{
-                root: 'prose max-w-none prose-img:max-w-[250px] prose-img:mx-auto prose-p:mt-0',
+                root: 'prose-img:max-w-[250px] prose-img:mx-auto prose-p:mt-0',
               }}
               content={data.groupActivityDetails.description}
             />
           </div>
 
           <div className="py-4">
-            <H1>Eure Hinweise</H1>
+            <H1>{t('pwa.groupActivity.yourHints')}</H1>
 
             <div className="grid grid-cols-1 gap-2 mt-2 text-xs md:grid-cols-2">
               {!data.groupActivityDetails.activityInstance &&
@@ -152,8 +151,9 @@ function GroupActivityDetails() {
                               ).toLocaleString()} ${clue.unit}`
                             ) : (
                               <Markdown
+                                withProse
                                 content={clue.value}
-                                className={{ root: 'prose prose-sm' }}
+                                className={{ root: 'prose-sm' }}
                               />
                             )}
                           </div>
@@ -164,10 +164,9 @@ function GroupActivityDetails() {
                 })}
             </div>
             <div className="p-2 mt-4 text-sm text-center rounded text-slate-500 bg-slate-100">
-              Jedes Gruppenmitglied erhält ein/mehrere der obigen Hinweise.
-              <br />
-              Sprecht euch ab, um alle nötigen Hinweise für die Aufgaben zu
-              sammeln.
+              {t.rich('pwa.groupActivity.coordinateHints', {
+                br: () => <br />,
+              })}
             </div>
           </div>
         </div>
@@ -175,7 +174,7 @@ function GroupActivityDetails() {
         <div className="lg:flex-1">
           {!data.groupActivityDetails?.activityInstance && (
             <div className="flex flex-col pt-4 lg:pt-0">
-              <H1>Deine Gruppe</H1>
+              <H1>{t('pwa.groupActivity.yourGroup')}</H1>
 
               <div className="flex flex-row gap-2">
                 {data.groupActivityDetails.group.participants.map(
@@ -199,10 +198,7 @@ function GroupActivityDetails() {
               </div>
 
               <p className="mt-4 prose max-w-none">
-                Ist deine Gruppe vollständig? Wenn ja, klicke auf Start, um die
-                Hinweise unter deinen Gruppenmitgliedern zu verteilen.
-                Mitglieder, die nach der Zuweisung zu der Gruppe stossen,
-                erhalten keine zusätzlichen Hinweise.
+                {t('pwa.groupActivity.groupCompleteQuestion')}
               </p>
               <Button
                 disabled={
@@ -212,16 +208,14 @@ function GroupActivityDetails() {
                 className={{ root: 'self-end mt-4 text-lg font-bold' }}
                 onClick={() => startGroupActivity()}
               >
-                START
+                {t('pwa.groupActivity.startCaps')}
               </Button>
 
               {data.groupActivityDetails.group.participants.length === 1 && (
                 <div className="p-2 mt-4 text-sm text-center text-red-500 bg-red-100 rounded">
-                  Gruppen mit einem Mitglied können leider nicht an der
-                  Gruppenquest teilnehmen.
-                  <br />. Suche dir mindestens eine:n Partner:in, um
-                  mitzumachen, oder schaue dir die Aufgabe im Excel an, die wir
-                  nach der Abgabefrist publizieren.
+                  {t.rich('pwa.groupActivity.minTwoPersons', {
+                    br: () => <br />,
+                  })}
                 </div>
               )}
             </div>
@@ -229,7 +223,7 @@ function GroupActivityDetails() {
 
           {data.groupActivityDetails.activityInstance && (
             <div className="py-4 lg:pt-0">
-              <H1>Eure Aufgaben</H1>
+              <H1>{t('pwa.groupActivity.yourTasks')}</H1>
               <Formik
                 isInitialValid={false}
                 initialValues={data.groupActivityDetails.instances.reduce(
@@ -293,7 +287,7 @@ function GroupActivityDetails() {
                     {}
                   )
                 )}
-                onSubmit={async (values, { setSubmitting }) => {
+                onSubmit={async (values) => {
                   submitGroupActivityDecisions({
                     variables: {
                       activityInstanceId:
@@ -325,7 +319,7 @@ function GroupActivityDetails() {
                 }) => (
                   <Form className="flex flex-col">
                     <div className="flex-1">
-                      {data.groupActivityDetails.instances.map((instance) => (
+                      {data.groupActivityDetails?.instances.map((instance) => (
                         <div
                           key={instance.id}
                           className="py-4 space-y-2 border-b last:border-b-0 first:lg:pt-0"
@@ -351,7 +345,7 @@ function GroupActivityDetails() {
                       ))}
                     </div>
 
-                    {!data.groupActivityDetails.activityInstance.decisions ? (
+                    {!data.groupActivityDetails?.activityInstance?.decisions ? (
                       <div className="flex flex-col">
                         <Button
                           type="submit"
@@ -361,25 +355,21 @@ function GroupActivityDetails() {
                             root: 'self-end mt-4 text-lg font-bold',
                           }}
                         >
-                          Antworten absenden
+                          {t('pwa.groupActivity.sendAnswers')}
                         </Button>
                         <div className="p-2 mt-4 text-sm text-center text-orange-700 bg-orange-200 rounded">
-                          Jede Gruppe kann nur einmal Lösungen einreichen.
-                          Sendet eure Lösungen erst ab, wenn ihr euch sicher
-                          seid.
+                          {t('pwa.groupActivity.oneSolutionPerGroup')}
                         </div>
                       </div>
                     ) : (
                       <div className="p-2 mt-4 text-sm text-center rounded text-slate-500 bg-slate-100">
-                        Deine Gruppe hat ihre Lösungen bereits eingereicht (am{' '}
-                        {dayjs(
-                          data.groupActivityDetails.activityInstance
-                            .decisionsSubmittedAt
-                        ).format('DD.MM.YYYY HH:mm:ss')}
-                        ).
-                        <br />
-                        Die Bewertung wird später veröffentlicht und separat
-                        kommuniziert.
+                        {t.rich('pwa.groupActivity.alreadySubmittedAt', {
+                          br: () => <br />,
+                          date: dayjs(
+                            data.groupActivityDetails.activityInstance
+                              .decisionsSubmittedAt
+                          ).format('DD.MM.YYYY HH:mm:ss'),
+                        })}
                       </div>
                     )}
                   </Form>

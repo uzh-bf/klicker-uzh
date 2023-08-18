@@ -125,20 +125,29 @@ function Header({
             </Button>
           </Link>
         )}
-        <Link href={participant ? '/profile' : '/login'} className="">
+        <Link
+          href={participant ? '/profile' : '/login'}
+          className=""
+          legacyBehavior
+        >
           <Button
             basic
             className={{ root: 'relative' }}
             data={{ cy: 'header-avatar' }}
           >
             <Image
-              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-                participant?.avatar ?? 'placeholder'
-              }.svg`}
+              src={
+                participant?.avatar
+                  ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant?.avatar}.svg`
+                  : '/user-solid.svg'
+              }
               alt=""
-              width="45"
-              height="45"
-              className="bg-white rounded-full cursor-pointer sm:hover:bg-uzh-red-20"
+              width="35"
+              height="35"
+              className={twMerge(
+                'bg-white cursor-pointer rounded-full sm:hover:bg-uzh-red-20',
+                participant?.avatar ? '' : 'p-1'
+              )}
             />
             {participant?.level && (
               <div

@@ -61,21 +61,26 @@ function SinglePodium({
 
       {!noEntries && (
         <Image
-          src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-            avatar || 'placeholder'
-          }.svg`}
+          src={
+            avatar
+              ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`
+              : '/user-solid.svg'
+          }
           alt="User avatar"
           height={50}
           width={50}
-          className="absolute bg-white rounded-full bg-opacity-60"
+          className={twMerge(
+            'absolute rounded-full bg-opacity-60',
+            avatar ? 'bg-white' : 'p-2'
+          )}
           style={{
             top: twMerge(
-              rank === 1 && '24%',
-              rank === 2 && '28%',
-              rank === 3 && '28%'
+              rank === 1 && '17%',
+              rank === 2 && '26%',
+              rank === 3 && '29%'
             ),
-            left: '38%',
-            width: '25%',
+            left: '33%',
+            width: '35%',
           }}
         />
       )}
