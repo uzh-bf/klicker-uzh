@@ -465,7 +465,7 @@ function QuestionEditModal({
         validateForm,
       }) => {
         if (loadingQuestion) {
-          return <div></div>
+          return null
         }
 
         return (

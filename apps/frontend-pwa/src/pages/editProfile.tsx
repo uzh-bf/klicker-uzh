@@ -8,6 +8,7 @@ import {
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
@@ -22,7 +23,6 @@ import {
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
 import { useEffect, useState } from 'react'
@@ -31,7 +31,6 @@ import Layout from '../components/Layout'
 
 function EditProfile() {
   const t = useTranslations()
-  const router = useRouter()
   const { data, loading } = useQuery(SelfDocument)
   const [updateParticipantProfile] = useMutation(
     UpdateParticipantProfileDocument
@@ -53,7 +52,14 @@ function EditProfile() {
   }, [])
 
   if (loading || !data?.self) {
-    return <div>{t('shared.generic.loading')}</div>
+    return (
+      <Layout
+        course={{ displayName: t('shared.generic.title') }}
+        displayName={t('pwa.profile.editProfile')}
+      >
+        <Loader />
+      </Layout>
+    )
   }
 
   return (

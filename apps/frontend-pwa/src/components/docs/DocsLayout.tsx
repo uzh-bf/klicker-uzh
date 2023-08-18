@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { GetBasicCourseInformationDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Navigation } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -24,13 +25,20 @@ function DocsLayout({
   const t = useTranslations()
   const router = useRouter()
 
-  const { data } = useQuery(GetBasicCourseInformationDocument, {
+  const { data, loading } = useQuery(GetBasicCourseInformationDocument, {
     variables: { courseId: router.query.courseId as string },
     skip: !router.query?.courseId,
   })
 
+  if (loading)
+    return (
+      <Layout displayName={t('shared.generic.documentation')}>
+        <Loader />
+      </Layout>
+    )
+
   if (!data?.basicCourseInformation?.id) {
-    return <div>{t('shared.generic.loading')}</div>
+    return <div>{t('shared.generic.systemError')}</div>
   }
 
   return (
@@ -45,7 +53,7 @@ function DocsLayout({
               backgroundColor: `${data.basicCourseInformation.color}`,
             },
           }}
-          className={{ root: `w-full rounded-b-none` }}
+          className={{ root: `w-full !rounded-b-none` }}
         >
           <Navigation.ButtonItem
             label={t('pwa.courses.courseInformation')}
