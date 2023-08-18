@@ -1,7 +1,9 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["AddResponse"],
+  "include": ["src/**/*"],
   "compilerOptions": {
-    "module": "ESNext"
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "outDir": "./dist",
   }
 }
