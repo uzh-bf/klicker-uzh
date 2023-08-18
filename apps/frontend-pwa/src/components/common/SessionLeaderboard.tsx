@@ -3,6 +3,7 @@ import {
   GetSessionLeaderboardDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { ParticipantOther } from '@klicker-uzh/shared-components/src/Participant'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
 import { H2, UserNotification } from '@uzh-bf/design-system'
@@ -83,7 +84,7 @@ function SessionLeaderboard({
   }, [data, selfData?.self?.id])
 
   if (loading || !data) {
-    return <div>Loading...</div>
+    return <Loader />
   }
 
   return (

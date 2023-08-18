@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useQuery } from '@apollo/client'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { useTranslations } from 'next-intl'
 import Layout from '../../components/Layout'
@@ -56,7 +57,13 @@ function Index({ id }: Props) {
 
   const { data: selfData } = useQuery(SelfDocument)
 
-  if (!data?.session) return <p>Loading...</p>
+  if (!data?.session) {
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
+  }
 
   const {
     activeBlock,

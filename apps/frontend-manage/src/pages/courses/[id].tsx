@@ -8,6 +8,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
@@ -60,7 +61,12 @@ function CourseOverviewPage() {
     return <div>{error.message}</div>
   }
 
-  if (loading || !data?.course) return <div>{t('shared.generic.loading')}</div>
+  if (loading || !data?.course)
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
 
   const { course } = data
 

@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client'
 import { GetUserSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Session from '../../components/sessions/Session'
 
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import { H2 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -42,7 +43,11 @@ function SessionList() {
   }, [dataSessions])
 
   if (!dataSessions || loadingSessions) {
-    return <div>{t('shared.generic.loading')}</div>
+    return (
+      <Layout displayName="Sessions">
+        <Loader />
+      </Layout>
+    )
   }
 
   return (

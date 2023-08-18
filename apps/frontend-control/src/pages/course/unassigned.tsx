@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { GetUnassignedSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -33,7 +34,7 @@ function UnassignedSessions() {
   if (loadingSessions) {
     return (
       <Layout title={t('control.home.sessionsNoCourse')}>
-        {t('shared.generic.loading')}
+        <Loader />
       </Layout>
     )
   }
