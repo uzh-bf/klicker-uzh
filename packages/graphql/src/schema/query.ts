@@ -101,8 +101,8 @@ export const Query = builder.queryType({
       getLoginToken: asUser.prismaField({
         nullable: true,
         type: User,
-        resolve(_, __, args, ctx) {
-          return AccountService.getLoginToken(args, ctx) as any
+        resolve(_, __, ___, ctx) {
+          return AccountService.getLoginToken(ctx) as any
         },
       }),
 

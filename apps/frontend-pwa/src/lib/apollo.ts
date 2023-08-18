@@ -17,7 +17,6 @@ import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
 import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
-import getConfig from 'next/config'
 import Router from 'next/router'
 import { equals } from 'ramda'
 import { useMemo } from 'react'
@@ -32,8 +31,6 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
 function createIsomorphLink() {
-  const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
-
   const isBrowser = typeof window !== 'undefined'
 
   const persistedLink =
@@ -82,8 +79,8 @@ function createIsomorphLink() {
 
   let link: ApolloLink = new HttpLink({
     uri: isBrowser
-      ? publicRuntimeConfig.API_URL
-      : serverRuntimeConfig.API_URL_SSR || publicRuntimeConfig.API_URL,
+      ? process.env.NEXT_PUBLIC_API_URL
+      : process.env.NEXT_PUBLIC_API_URL_SSR || process.env.NEXT_PUBLIC_API_URL,
     credentials: 'include',
     headers: {
       'x-graphql-yoga-csrf': 'true',
@@ -104,10 +101,9 @@ function createIsomorphLink() {
 
     const wsLink = new GraphQLWsLink(
       createClient({
-        url: publicRuntimeConfig.API_URL.replace('http://', 'ws://').replace(
-          'https://',
-          'wss://'
-        ),
+        url: (process.env.NEXT_PUBLIC_API_URL as string)
+          .replace('http://', 'ws://')
+          .replace('https://', 'wss://'),
         // connectionParams: () => {
         //   // Note: getSession() is a placeholder function created by you
         //   const session = getSession();

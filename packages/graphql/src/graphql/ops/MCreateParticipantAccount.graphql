@@ -1,0 +1,22 @@
+mutation CreateParticipantAccount(
+  $email: String!
+  $username: String!
+  $password: String!
+  $isProfilePublic: Boolean!
+  $signedLtiData: String
+) {
+  createParticipantAccount(
+    email: $email
+    username: $username
+    password: $password
+    isProfilePublic: $isProfilePublic
+    signedLtiData: $signedLtiData
+  ) {
+    participantToken
+    participant {
+      id
+      email
+      username
+    }
+  }
+}

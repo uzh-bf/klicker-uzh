@@ -30,6 +30,7 @@ import {
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
+  ParticipantTokenData,
   Participation,
   SubscriptionObjectInput,
 } from './participant'
@@ -51,7 +52,7 @@ import {
   FeedbackResponse,
   Session,
 } from './session'
-import { User } from './user'
+import { LocaleType, User } from './user'
 
 export const Mutation = builder.mutationType({
   fields(t) {
@@ -85,7 +86,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: User,
         args: {
-          locale: t.arg.string({ required: true }),
+          locale: t.arg({ type: LocaleType, required: true }),
         },
         resolve(_, args, ctx) {
           return AccountService.changeUserLocale(args, ctx) as any
@@ -96,7 +97,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
-          locale: t.arg.string({ required: true }),
+          locale: t.arg({ type: LocaleType, required: true }),
         },
         resolve(_, args, ctx) {
           return AccountService.changeParticipantLocale(args, ctx)
@@ -269,6 +270,8 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
+          isProfilePublic: t.arg.boolean({ required: false }),
+          email: t.arg.string({ required: false }),
           username: t.arg.string({ required: false }),
           avatar: t.arg.string({ required: false }),
           password: t.arg.string({ required: false }),
@@ -485,19 +488,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createParticipantAndJoinCourse: t.field({
-        nullable: true,
-        type: Participant,
-        args: {
-          username: t.arg.string({ required: true }),
-          password: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true }),
-          pin: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.createParticipantAndJoinCourse(args, ctx)
-        },
-      }),
+      // createParticipantAndJoinCourse: t.field({
+      //   nullable: true,
+      //   type: Participant,
+      //   args: {
+      //     username: t.arg.string({ required: true }),
+      //     password: t.arg.string({ required: true }),
+      //     courseId: t.arg.string({ required: true }),
+      //     pin: t.arg.int({ required: true }),
+      //   },
+      //   resolve(_, args, ctx) {
+      //     return ParticipantService.createParticipantAndJoinCourse(args, ctx)
+      //   },
+      // }),
 
       changeSessionSettings: asUser.field({
         nullable: true,
@@ -677,17 +680,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      registerParticipantFromLTI: t.field({
-        nullable: true,
-        type: ParticipantLearningData,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          participantId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.registerParticipantFromLTI(args, ctx)
-        },
-      }),
+      // registerParticipantFromLTI: t.field({
+      //   nullable: true,
+      //   type: ParticipantLearningData,
+      //   args: {
+      //     courseId: t.arg.string({ required: true }),
+      //     participantId: t.arg.string({ required: true }),
+      //     email: t.arg.string({ required: true }),
+      //   },
+      //   resolve(_, args, ctx) {
+      //     return ParticipantService.registerParticipantFromLTI(args, ctx)
+      //   },
+      // }),
 
       respondToQuestionInstance: t.field({
         nullable: true,
@@ -915,6 +919,39 @@ export const Mutation = builder.mutationType({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
           return NotificationService.sendPushNotifications(ctx)
+        },
+      }),
+
+      deleteParticipantAccount: asParticipant.boolean({
+        nullable: true,
+        resolve(_, __, ctx) {
+          return AccountService.deleteParticipantAccount(ctx)
+        },
+      }),
+
+      createParticipantAccount: t.field({
+        nullable: true,
+        type: ParticipantTokenData,
+        args: {
+          username: t.arg.string({ required: true }),
+          password: t.arg.string({ required: true }),
+          email: t.arg.string({ required: true }),
+          isProfilePublic: t.arg.boolean({ required: true }),
+          signedLtiData: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.createParticipantAccount(args, ctx)
+        },
+      }),
+
+      loginParticipantWithLti: t.field({
+        nullable: true,
+        type: ParticipantTokenData,
+        args: {
+          signedLtiData: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.loginParticipantWithLti(args, ctx)
         },
       }),
     }

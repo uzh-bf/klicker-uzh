@@ -33,6 +33,7 @@ import {
 } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
+  FormikNumberField,
   FormikSelectField,
   H3,
   Label,
@@ -65,6 +66,7 @@ function QuestionEditModal({
   const isDuplication = mode === QuestionEditMode.DUPLICATE
   const t = useTranslations()
 
+  // TODO: ensure that every validation schema change is also reflected in an adaption of the error messages
   const questionManipulationSchema = Yup.object().shape({
     name: Yup.string().required(t('manage.formErrors.questionName')),
     tags: Yup.array().of(Yup.string()),
@@ -170,7 +172,9 @@ function QuestionEditModal({
             )
 
             return schema.shape({
-              accuracy: Yup.number().nullable().min(0),
+              accuracy: Yup.number()
+                .nullable()
+                .min(0, t('manage.formErrors.NRPrecision')),
               unit: Yup.string().nullable(),
 
               restrictions: Yup.object().shape({
@@ -183,23 +187,33 @@ function QuestionEditModal({
               }),
 
               solutionRanges: hasSampleSolution
-                ? baseSolutionRanges.min(1)
+                ? baseSolutionRanges.min(
+                    1,
+                    t('manage.formErrors.solutionRangeRequired')
+                  )
                 : baseSolutionRanges,
             })
           }
 
           case 'FREE_TEXT': {
-            const baseSolutions = Yup.array().of(Yup.string().required().min(1))
+            const baseSolutions = Yup.array().of(
+              Yup.string()
+                .required(t('manage.formErrors.enterSolution'))
+                .min(1, t('manage.formErrors.enterSolution'))
+            )
 
             return schema.shape({
               restrictions: Yup.object().shape({
                 // TODO: ensure that this check does not fail if the user enters a number and then deletes it
-                maxLength: Yup.number().min(1).nullable(),
+                maxLength: Yup.number()
+                  .min(1, t('manage.formErrors.FTMaxLength'))
+                  .nullable(),
               }),
 
-              solutions: hasSampleSolution
-                ? baseSolutions.min(1)
-                : baseSolutions,
+              // TODO: ensure that this check does not fail if the user enters a feedback and then deactivates the sample solution option again
+              solutions:
+                hasSampleSolution &&
+                baseSolutions.min(1, t('manage.formErrors.solutionRequired')),
             })
           }
         }
@@ -378,24 +392,26 @@ function QuestionEditModal({
                 id: isDuplication ? undefined : questionId,
                 options: {
                   unit: values.options?.unit,
-                  accuracy: values.options?.accuracy,
+                  accuracy: parseInt(values.options?.accuracy),
                   restrictions: {
                     min:
                       !values.options?.restrictions ||
                       values.options?.restrictions?.min === ''
                         ? undefined
-                        : values.options.restrictions?.min,
+                        : parseFloat(values.options.restrictions?.min),
                     max:
                       !values.options?.restrictions ||
                       values.options?.restrictions?.max === ''
                         ? undefined
-                        : values.options.restrictions?.max,
+                        : parseFloat(values.options.restrictions?.max),
                   },
                   solutionRanges: values.options?.solutionRanges?.map(
                     (range: any) => {
                       return {
-                        min: range.min === '' ? undefined : range.min,
-                        max: range.max === '' ? undefined : range.max,
+                        min:
+                          range.min === '' ? undefined : parseFloat(range.min),
+                        max:
+                          range.max === '' ? undefined : parseFloat(range.max),
                       }
                     }
                   ),
@@ -416,7 +432,9 @@ function QuestionEditModal({
                 options: {
                   placeholder: values.options?.placeholder,
                   restrictions: {
-                    maxLength: values.options?.restrictions?.maxLength,
+                    maxLength: parseInt(
+                      values.options?.restrictions?.maxLength
+                    ),
                   },
                   solutions: values.options?.solutions,
                 },
@@ -968,26 +986,32 @@ function QuestionEditModal({
                   {questionType === QuestionType.Numerical && (
                     <div>
                       <div className="w-full">
-                        <div className="flex flex-row items-center gap-2">
+                        <div className="flex flex-row items-center gap-2 mb-2">
                           <div className="font-bold">
                             {t('shared.generic.min')}:{' '}
                           </div>
-                          <FastField
+                          <FormikNumberField
                             name="options.restrictions.min"
-                            type="number"
-                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
+                            className={{
+                              root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
+                              input: 'bg-white text-gray-500',
+                            }}
                             placeholder={t('shared.generic.minLong')}
-                            data-cy="set-numerical-minimum"
+                            data={{ cy: 'set-numerical-minimum' }}
+                            hideError
                           />
                           <div className="font-bold">
                             {t('shared.generic.max')}:{' '}
                           </div>
-                          <FastField
+                          <FormikNumberField
                             name="options.restrictions.max"
-                            type="number"
-                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
+                            className={{
+                              root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
+                              input: 'bg-white text-gray-500',
+                            }}
                             placeholder={t('shared.generic.maxLong')}
-                            data-cy="set-numerical-maximum"
+                            data={{ cy: 'set-numerical-maximum' }}
+                            hideError
                           />
                         </div>
                         <div className="flex flex-row items-center gap-2">
@@ -1004,12 +1028,15 @@ function QuestionEditModal({
                           <div className="font-bold">
                             {t('shared.generic.precision')}:{' '}
                           </div>
-                          <FastField
+                          <FormikNumberField
                             name="options.accuracy"
-                            type="number"
-                            className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
-                            placeholder={0}
-                            data-cy="set-numerical-accuracy"
+                            className={{
+                              root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
+                              input: 'bg-white text-gray-500',
+                            }}
+                            precision={0}
+                            data={{ cy: 'set-numerical-accuracy' }}
+                            hideError
                           />
                         </div>
                       </div>
@@ -1038,10 +1065,12 @@ function QuestionEditModal({
                                       <div className="font-bold">
                                         {t('shared.generic.min')}:{' '}
                                       </div>
-                                      <FastField
+                                      <FormikNumberField
                                         name={`options.solutionRanges.${index}.min`}
-                                        type="number"
-                                        className="w-40 mr-2 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
+                                        className={{
+                                          root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
+                                          input: 'bg-white text-gray-500',
+                                        }}
                                         placeholder={t(
                                           'shared.generic.minLong'
                                         )}
@@ -1049,10 +1078,12 @@ function QuestionEditModal({
                                       <div className="font-bold">
                                         {t('shared.generic.max')}:{' '}
                                       </div>
-                                      <FastField
+                                      <FormikNumberField
                                         name={`options.solutionRanges.${index}.max`}
-                                        type="number"
-                                        className="w-40 bg-opacity-50 border rounded border-uzh-grey-100 h-9 focus:border-primary-40"
+                                        className={{
+                                          root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
+                                          input: 'bg-white text-gray-500',
+                                        }}
                                         placeholder={t(
                                           'shared.generic.maxLong'
                                         )}
@@ -1096,13 +1127,16 @@ function QuestionEditModal({
                         <div className="mr-2 font-bold">
                           {t('manage.questionForms.maximumLength')}:
                         </div>
-                        <FastField
+                        <FormikNumberField
                           name="options.restrictions.maxLength"
-                          type="number"
-                          className="mr-2 bg-opacity-50 border rounded w-44 border-uzh-grey-100 h-9 focus:border-primary-40"
+                          className={{
+                            field:
+                              'mr-2 bg-opacity-50 border rounded w-44  h-9 focus:border-primary-40',
+                          }}
                           placeholder={t('manage.questionForms.answerLength')}
-                          min={0}
-                          data-cy="set-free-text-length"
+                          precision={0}
+                          data={{ cy: 'set-free-text-length' }}
+                          hideError
                         />
                       </div>
                       {values.hasSampleSolution && (
@@ -1164,8 +1198,100 @@ function QuestionEditModal({
                       message: 'text-red-700',
                     }}
                     type="error"
-                    message={JSON.stringify(errors)}
-                  />
+                  >
+                    <div>{t('manage.formErrors.resolveErrors')}</div>
+                    <ul className="list-disc ml-4">
+                      {errors.name && (
+                        <li>{`${t('manage.questionForms.questionTitle')}: ${
+                          errors.name
+                        }`}</li>
+                      )}
+                      {errors.tags && (
+                        <li>{`${t('manage.questionPool.tags')}: ${
+                          errors.tags
+                        }`}</li>
+                      )}
+                      {errors.pointsMultiplier && (
+                        <li>{`${t('shared.generic.multiplier')}: ${
+                          errors.pointsMultiplier
+                        }`}</li>
+                      )}
+                      {errors.content && (
+                        <li>{`${t('shared.generic.question')}: ${
+                          errors.content
+                        }`}</li>
+                      )}
+                      {errors.explanation && (
+                        <li>{`${t('shared.generic.explanation')}: ${
+                          errors.explanation
+                        }`}</li>
+                      )}
+
+                      {/* error messages specific to SC / MC / KP questions */}
+                      {errors.options &&
+                        errors.options.choices &&
+                        typeof errors.options.choices === 'object' &&
+                        errors.options.choices?.map(
+                          (choiceError: any, ix: number) =>
+                            choiceError && (
+                              <li key={`choice-${ix}`}>{`${t(
+                                'manage.questionForms.answerOption'
+                              )} ${ix + 1}: ${
+                                choiceError.value && choiceError.feedback
+                                  ? `${choiceError.value} ${choiceError.feedback}`
+                                  : choiceError.value || choiceError.feedback
+                              }`}</li>
+                            )
+                        )}
+                      {errors.options &&
+                        errors.options.choices &&
+                        typeof errors.options.choices === 'string' && (
+                          <li>{`${t('manage.questionForms.answerOptions')}: ${
+                            errors.options.choices
+                          }`}</li>
+                        )}
+
+                      {/* error messages specific to NR questions */}
+                      {errors.options && errors.options.accuracy && (
+                        <li>{`${t('shared.generic.precision')}: ${
+                          errors.options.accuracy
+                        }`}</li>
+                      )}
+                      {errors.options &&
+                        errors.options.solutionRanges &&
+                        typeof errors.options.solutionRanges === 'string' && (
+                          <li>{`${t('manage.questionForms.solutionRanges')}: ${
+                            errors.options.solutionRanges
+                          }`}</li>
+                        )}
+
+                      {/* error messages specific to FT questions */}
+                      {errors.options && errors.options.restrictions && (
+                        <li>{`${t('manage.questionForms.answerLength')}: ${
+                          errors.options.restrictions.maxLength
+                        }`}</li>
+                      )}
+                      {errors.options &&
+                        errors.options.solutions &&
+                        typeof errors.options.solutions === 'object' &&
+                        errors.options.solutions?.map(
+                          (solutionError: any, ix: number) =>
+                            solutionError && (
+                              <li key={`solution-${ix}`}>{`${t(
+                                'manage.questionForms.possibleSolutionN',
+                                { number: String(ix + 1) }
+                              )}: ${solutionError}`}</li>
+                            )
+                        )}
+                      {errors.options &&
+                        errors.options.solutions &&
+                        typeof errors.options.solutions === 'string' && (
+                          <li>{`${t(
+                            'manage.questionForms.possibleSolutions'
+                          )}: ${errors.options.solutions}`}</li>
+                        )}
+                    </ul>
+                  </UserNotification>
                 )}
               </div>
               <div className="flex-1 max-w-sm">

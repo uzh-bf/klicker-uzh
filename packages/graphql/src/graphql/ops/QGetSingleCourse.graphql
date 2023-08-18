@@ -49,9 +49,6 @@ query GetSingleCourse($courseId: String!) {
       rank
       username
       avatar
-      participation {
-        isActive
-      }
     }
   }
 }

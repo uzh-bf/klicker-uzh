@@ -47,9 +47,11 @@ function ProfileData({
       <div className="relative mb-2">
         <div className="w-[200px] h-[200px] rounded-full border border-solid border-black">
           <Image
-            src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-              avatar ?? 'placeholder'
-            }.svg`}
+            src={
+              avatar
+                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`
+                : '/user-solid.svg'
+            }
             alt=""
             className="overflow-hidden w-[200px] h-[200px] rounded-full"
             fill

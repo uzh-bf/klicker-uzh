@@ -34,6 +34,9 @@
       "installButton": "Jetzt installieren"
     },
     "generic": {
+      "profile": "Profil",
+      "yes": "Ja",
+      "no": "Nein",
       "draft": "Entwurf",
       "published": "Öffentlich",
       "points": "Punkte",
@@ -185,6 +188,7 @@
       "noGroups": "Bisher wurden noch keine Gruppen gebildet. Los geht's!",
       "noGroupPoints": "Bisher hat noch keine Gruppe Punkte erhalten. Los geht's!",
       "groupLeaderboardUpdate": "Das Gruppenleaderboard wird täglich aktualisiert.<b>x</b>Gruppen mit einem Mitglied erhalten keine Punkte.",
+      "joinLeaderboardCourse": "Treten Sie dem Leaderboard für <b>{name}</b> bei",
       "membersScore": "Punkte durch Mitglieder",
       "groupActivityScore": "Punkte durch Gruppenaktivitäten",
       "totalScore": "Total Punkte",
@@ -219,7 +223,6 @@
       "totalPoints": "Total Punkte (gesammelt): {points}",
       "totalXp": "{xp} XP gesammelt",
       "questionTypeNotSupported": "Dieser Fragetyp ist aktuell für Lernelemente nicht verfügbar.",
-      "questionProgress": "Frage: {current}/{total}",
       "newPointsFrom": "Erneute Punkte/XP ab:",
       "othersAnswered": "So haben andere geantwortet",
       "flagQuestion": "Frage melden",
@@ -249,6 +252,8 @@
       "solvedAt": "Gelöst am {date}"
     },
     "profile": {
+      "publicProfile": "Profilsichtbarkeit",
+      "isProfilePublic": "Soll Dein Profil und Pseudonym anderen Teilnehmenden angezeigt werden? Wenn Du diese Option deaktivierst, sehen dich andere Teilnehmende nur noch als Anonymous, Du alle anderen Teilnehmenden allerdings auch.",
       "editProfile": "Profil editieren",
       "editProfileFailed": "Leider ist beim Speichern der Änderungen ein Fehler aufgetreten. Möglicherweise ist der von Ihnen gewählte Nutzername bereits vergeben. Bitte überprüfen Sie Ihre Eingaben und versuchen es nochmal.",
       "achievements": "Errungenschaften",
@@ -257,9 +262,14 @@
       "usernameMaxLength": "Der Benutzername darf nicht länger als {length} Zeichen sein.",
       "passwordMinLength": "Das Passwort muss mindestens {length} Zeichen lang sein.",
       "identicalPasswords": "Passwörter müssen übereinstimmen.",
+      "emailRequired": "Bitte geben Sie eine E-Mail Adresse ein.",
+      "emailInvalid": "Bitte geben Sie eine gültige E-Mail Adresse ein.",
       "usernameRequired": "Bitte geben Sie einen Benutzernamen ein.",
       "passwordRequired": "Bitte geben Sie ein Passwort ein.",
-      "welcomeMessage": "Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar."
+      "welcomeMessage": "Willkommen beim KlickerUZH! Falls dies dein erstes Mal hier ist, setze bitte ein Passwort und definiere deinen eigenen Benutzernamen und Avatar.",
+      "deleteProfile": "Konto löschen",
+      "deleteProfileDescription": "Das Löschen Deines KlickerUZH-Kontos wird alle verbundenen Informationen löschen und sicherstellen, dass in Deinem aktuellen Browser kein neues Konto erstellt wird.",
+      "deleteProfileConfirmation": "Bist Du sicher, dass Du Dein Konto löschen möchtest? Alle Daten, die mit Deinem Konto assoziiert sind, werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
     },
     "avatar": {
       "hair": "Frisur",
@@ -382,6 +392,7 @@
       "explanationPlaceholder": "Erklärung hier eingeben…",
       "attachments": "Anhänge",
       "answerOptions": "Antwortmöglichkeiten",
+      "answerOption": "Antwortmöglichkeit",
       "answerOptionsTooltip": "Erfassen Sie hier die möglichen Antworten, welche von den Studierenden für die Frage ausgewählt werden können.",
       "FTOptionsTooltip": "Nehmen Sie hier optionale Einstellungen für die offene Frage vor.",
       "answerOptionPlaceholder": "Antwortmöglichkeit hier eingeben…",
@@ -395,6 +406,7 @@
       "maximumLength": "Maximale Länge",
       "answerLength": "Antwort Länge",
       "possibleSolutionN": "Mögliche Lösung {number}",
+      "possibleSolutions": "Mögliche Lösungen",
       "addSolution": "Neue Lösung hinzufügen",
       "noFeedbackDefined": "Kein Feedback definiert",
       "createElement": "{element} erstellen",
@@ -485,6 +497,7 @@
       "learningElementLAST_RESPONSE": "Letzte Antwort zuletzt"
     },
     "formErrors": {
+      "resolveErrors": "Bitte stellen Sie sicher, dass die folgenden Fehler im Formular behoben sind, bevor die Frage gespeichert werden kann:",
       "questionName": "Geben Sie einen Namen für die Frage ein.",
       "questionContent": "Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu.",
       "attachmentURL": "Bitte geben Sie eine URL für den Anhang ein.",
@@ -492,7 +505,12 @@
       "answerContent": "Bitte fügen Sie einen Inhalt zu Ihrer Antwortoption hinzu.",
       "feedbackContent": "Bitte fügen Sie einen Inhalt zu Ihrem Antwortfeedback hinzu.",
       "SCAnswersCorrect": "Bei SC-Fragen muss genau eine Antwort korrekt sein.",
-      "MCAnswersCorrect": "Bei MC-Fragen muss mindestens eine Antwort korrekt sein."
+      "MCAnswersCorrect": "Bei MC-Fragen muss mindestens eine Antwort korrekt sein.",
+      "enterSolution": "Bitte geben Sie eine Lösung ein.",
+      "FTMaxLength": "Die maximale Länge der Lösung muss mindestens 1 betragen.",
+      "solutionRequired": "Bitte geben Sie mindestens eine Lösung an oder deaktivieren Sie die Musterlösung.",
+      "NRPrecision": "Die Anzahl Nachkommastellen muss mindestens 0 sein.",
+      "solutionRangeRequired": "Bitte geben Sie mindestens einen Lösungsbereich an."
     },
     "sessions": {
       "runningSessions": "Laufende Sessionen",
@@ -644,7 +662,6 @@
       "noMicroSessions": "Keine Micro-Sessions vorhanden",
       "courseLeaderboard": "Kurs Leaderboard",
       "participantsLeaderboard": "Teilnehmende Leaderboard: {number}",
-      "courseParticipants": "Kursteilnehmende: {number}",
       "avgPoints": "Durchschnittl. Punkte: {points}",
       "runningSession": "Laufende Session",
       "publicAccess": "Öffentlicher Zugriff",
