@@ -22,7 +22,6 @@ import {
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
 import { useEffect, useState } from 'react'
@@ -31,7 +30,6 @@ import Layout from '../components/Layout'
 
 function EditProfile() {
   const t = useTranslations()
-  const router = useRouter()
   const { data, loading } = useQuery(SelfDocument)
   const [updateParticipantProfile] = useMutation(
     UpdateParticipantProfileDocument

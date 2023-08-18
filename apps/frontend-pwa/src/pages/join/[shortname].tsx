@@ -6,6 +6,7 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { Button } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import Layout from '../../components/Layout'
 
@@ -15,6 +16,7 @@ interface Props {
 }
 
 function Join({ isInactive, shortname }: Props) {
+  const t = useTranslations()
   const { data } = useQuery(GetRunningSessionsDocument, {
     variables: { shortname },
     skip: isInactive,
@@ -26,14 +28,17 @@ function Join({ isInactive, shortname }: Props) {
     !data.runningSessions?.length ||
     data.runningSessions.length === 0
   ) {
-    return <div>Keine Sessions aktiv.</div>
+    return <div>{t('pwa.general.noSessionsActive')}</div>
   }
 
   return (
     <Layout>
       <div className="w-full max-w-md p-4 mx-auto mt-4 border rounded">
         <div className="font-bold">
-          Aktive Sessions von <span className="italic">{shortname}</span>
+          {t.rich('pwa.general.activeSessionsBy', {
+            i: (text) => <span className="italic">{text}</span>,
+            name: shortname,
+          })}
         </div>
         <div className="mt-2 space-y-1">
           {data.runningSessions.map((session) => (
