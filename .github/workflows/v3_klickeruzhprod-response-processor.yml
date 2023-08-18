@@ -30,8 +30,8 @@ jobs:
         shell: pwsh
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          pn run build
-          pn prune --prod
+          pnpm run build
+          pnpm prune --prod
           popd
 
       - name: 'Run Azure Functions Action'
