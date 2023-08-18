@@ -72,9 +72,12 @@ function ContentInput({
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
 
+  console.log('ContentInput content: ', content)
   const editorValue = useMemo(() => {
     return convertToSlate(content)
   }, [content])
+
+  console.log('ContentInput editorValue: ', editorValue)
 
   return (
     <div

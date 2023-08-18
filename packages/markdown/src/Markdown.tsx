@@ -47,6 +47,7 @@ function Markdown({
   withLinkButtons = true,
   withProse = false,
 }: MarkdownProps): React.ReactElement {
+  console.log('content: ', content)
   const parsedContent = useMemo(() => {
     if (content?.length <= 2) {
       return content

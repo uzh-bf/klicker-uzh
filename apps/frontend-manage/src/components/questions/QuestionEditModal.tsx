@@ -329,6 +329,7 @@ function QuestionEditModal({
       : {}
   }, [dataQuestion?.question, mode, questionType])
 
+  console.log('question', question)
   // TODO: styling of tooltips - some are too wide
   // TODO: show errors of form validation below fields as for the login form
 
@@ -1200,7 +1201,7 @@ function QuestionEditModal({
                     type="error"
                   >
                     <div>{t('manage.formErrors.resolveErrors')}</div>
-                    <ul className="list-disc ml-4">
+                    <ul className="ml-4 list-disc">
                       {errors.name && (
                         <li>{`${t('manage.questionForms.questionTitle')}: ${
                           errors.name

@@ -5,7 +5,6 @@ import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 // IMPORTANT: keep the import with .js, otherwise docker build will fail to resolve the module
-import Image from 'next/image.js'
 export interface ImgWithModalProps {
   src: string
   alt?: string
@@ -34,7 +33,7 @@ function ImgWithModal({
       trigger={
         <div className="flex flex-col items-start mb-1">
           <div className="relative">
-            <Image
+            <img
               src={src}
               alt="Image"
               height="0"
@@ -67,7 +66,7 @@ function ImgWithModal({
       className={{ content: className?.modal }}
     >
       <div className="relative w-full h-full">
-        <Image src={src} alt="Image" fill className="object-contain" />
+        <img src={src} alt="Image" fill className="object-contain" />
       </div>
     </Modal>
   )

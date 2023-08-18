@@ -26,7 +26,7 @@ function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
       },
     },
     images: {
-      domains: ['127.0.0.1', 'tc-klicker-prod.s3.amazonaws.com', S3_HOSTNAME],
+      domains: ['127.0.0.1', 'tc-klicker-prod.s3.amazonaws.com', S3_HOSTNAME, "https://klickermigration.blob.core.windows.net"],
       remotePatterns: [
         {
           protocol: 'https',
@@ -39,6 +39,12 @@ function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
           hostname: S3_HOSTNAME,
           port: '443',
           pathname: S3_PATHNAME,
+        },
+        {
+          protocol: 'https',
+          hostname: 'https://klickermigration.blob.core.windows.net',
+          port: '443',
+          pathname: '/images/**',
         },
       ],
     },

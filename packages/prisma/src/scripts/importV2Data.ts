@@ -1,7 +1,7 @@
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { BlobServiceClient, StorageSharedKeyCredential } from "@azure/storage-blob";
+import axios from 'axios'
 import fs from 'fs'
 import path from 'path'
+import { BlobServiceClient } from '@azure/storage-blob'
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { AccessMode, PrismaClient, Question, QuestionInstanceType, SessionBlockStatus, SessionStatus, Tag } from '../client';
@@ -38,56 +38,42 @@ function sliceIntoChunks(array: any[], chunkSize: number) {
 }
 
 //TODO: test and finish implementation
-const migrateFiles = async (files: any, user) => {
-    
-    // setup s3 client
-    const s3Client = new S3Client({
-        region: process.env.AWS_REGION,
-        credentials: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        },
-    })
-
-    // setup Azure Blob Storage client
-    const account = process.env.AZURE_STORAGE_ACCOUNT_NAME
-    const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY
-    const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey)
-    const blobServiceClient = new BlobServiceClient(
-        `https://${account}.blob.core.windows.net`,
-        sharedKeyCredential
-    )
-
-
+const migrateFiles = async (files: any) => {
+    let mappedFileURLs: Record<string, Record<string, string>> = {}
     try {
-        const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_CONTAINER_NAME)
+        // setup Azure Blob Storage client
+        const account = process.env.NEXT_PUBLIC_AZURE_STORAGE_ACCOUNT_NAME
+        const containerName = process.env.NEXT_PUBLIC_AZURE_CONTAINER_NAME
+        const sasToken = process.env.AZURE_SAS_TOKEN
+        console.log("containerName: ", containerName)
+        console.log("sasToken.length: ", sasToken?.length)
+        const blobServiceClient = new BlobServiceClient(
+            `https://${account}.blob.core.windows.net?${sasToken}`
+        )
+
+        const containerClient = blobServiceClient.getContainerClient(containerName);
+
         for (const file of files) {
-            // download file from s3
-            const params = {
-                Bucket: process.env.AWS_BUCKET_NAME,
-                Key: file.name,
-            }
-            const command = new GetObjectCommand(params)
-            const s3Response = await s3Client.send(command)
-            // const { Body } = await s3Client.send(command)
-            // const filePath = path.join(__dirname, '../importedImages', file.name)
-            // fs.writeFileSync(filePath, Body)
+                // download file with public link
+                const response = await axios.get(`https://tc-klicker-prod.s3.amazonaws.com/images/${file.name}`, { responseType: 'arraybuffer' })
+                
+                // upload file to azure blob storage
+                // TODO: discuss if we want to use the original file name or the uuid --> original file name overwrites if not unique
+                const blockBlobClient = containerClient.getBlockBlobClient(file.name)
 
-            // upload file to azure blob storage
-            const blockBlobClient = containerClient.getBlockBlobClient(file.originalName)
-            const uploadBlobResponse = await blockBlobClient.uploadStream(s3Response.Body, s3Response.ContentLength)
+                await blockBlobClient.uploadData(response.data, {
+                    blockSize: 4 * 1024 * 1024, // 4MB block size
+                })
 
-            if (uploadBlobResponse.response.status ! == 201) {
-                console.log("Something went wrong while uploading file to azure blob storage: ", uploadBlobResponse)
-            } else {
-                console.log(`Uploaded ${file.originalName} to Azure Blob storage successfully!`);
-                const azureBlobUrl = blockBlobClient.URL;
-                console.log(`Azure Blob URL: ${azureBlobUrl}`);
+                const publicUrl = blockBlobClient.url.split('?')[0]
+                console.log("publicUrl for file.name: ", file.name, " is: ", publicUrl)
+                mappedFileURLs[extractString(file._id)] = {url: publicUrl, originalName: file.originalName}
             }
-        }
     } catch (error) {
         console.log("Something went wrong while importing files: ", error)
     }
+
+    return mappedFileURLs
 }
 
 const importTags = async (prisma: PrismaClient, tags: any, user, batchSize: number) => {
@@ -143,7 +129,7 @@ const importTags = async (prisma: PrismaClient, tags: any, user, batchSize: numb
     return mappedTags
 }
 
-const importQuestions = async (prisma: PrismaClient, importedQuestions: any, mappedTags: Record<string, Record<string, string | number>>, user,  batchSize: number) => {
+const importQuestions = async (prisma: PrismaClient, importedQuestions: any, mappedTags: Record<string, Record<string, string | number>>, user,  batchSize: number, mappedFileURLs: Record<string, Record<string, string>>) => {
     let mappedQuestionIds: Record<string, number> = {}
     const questionsInDb = await prisma.question.findMany()
     
@@ -153,6 +139,7 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
         }                            
         return acc;
     }, {});
+
     const batches = sliceIntoChunks(importedQuestions, batchSize)
     try {
         for (const batch of batches) {
@@ -172,7 +159,16 @@ const importQuestions = async (prisma: PrismaClient, importedQuestions: any, map
                             originalId: extractString(question._id),
                             name: question.title,
                             type: QuestionTypeMap[question.type],
-                            content: question.versions.content,
+                            content: question.versions.content + (question.versions.files?.length > 0 
+                                ? '\n' +
+                                    question.versions.files
+                                        .map(
+                                        (fileId:string) =>
+                                            `![${mappedFileURLs[extractString(fileId)].originalName}](${mappedFileURLs[extractString(fileId)].url})`
+                                        )
+                                        .join('\n\n') +
+                                    '\n' 
+                                : ''),
                             options: {},
                             hasSampleSolution: false,
                             isDeleted: question.isDeleted,
@@ -572,9 +568,9 @@ const importV2Data = async () => {
     // __dirname provides the current directory name of the current file
     const dirPath = path.join(__dirname, '../../../../migration/export_v2_data/exported_json_files');
     // const filePath = path.join(dirPath, 'exported_data_2023-07-06_17-10-52.json');
-    const filePath = path.join(dirPath, 'exported_data_2023-07-14_10-03-00.json');
+    // const filePath = path.join(dirPath, 'exported_data_2023-07-14_10-03-00.json');
     // const filePath = path.join(dirPath, "exported_data_no_questioninstances_results.json");
-    // const filePath = path.join(dirPath, 'exported_data_2023-08-11_14-44-29.json');
+    const filePath = path.join(dirPath, 'exported_data_2023-08-11_14-44-29.json');
 
     let importData;
     if (fs.existsSync(dirPath)) {
@@ -618,14 +614,17 @@ const importV2Data = async () => {
         let mappedQuestionInstancesIds: Record<string, number> = {}
         //new uuid is generated for each session -> string
         let mappedSessionIds: Record<string, string> = {}
+        let mappedFileURLs: Record<string, Record<string, string>> = {}
     
         const batchSize = 50
+        mappedFileURLs = await migrateFiles(importData.files)
+        console.log("mappedFileURLs: ", mappedFileURLs)
         // import tags
         const tags = importData.tags
         mappedTags = await importTags(prisma, tags, user, batchSize)
         
         const importedQuestions = importData.questions
-        mappedQuestionIds = await importQuestions(prisma, importedQuestions, mappedTags, user, batchSize)
+        mappedQuestionIds = await importQuestions(prisma, importedQuestions, mappedTags, user, batchSize, mappedFileURLs)
 
         const importedQuestionInstances = importData.questioninstances
         mappedQuestionInstancesIds = await importQuestionInstances(prisma, importedQuestionInstances, mappedQuestionIds, user, batchSize)
@@ -633,8 +632,6 @@ const importV2Data = async () => {
         const importedSessions = importData.sessions
         mappedSessionIds = await importSessions(prisma, importedSessions, mappedQuestionInstancesIds, user, batchSize)
         console.log("Successfully imported data")
-
-        // TODO: import files
 
         closeLegacyConnection()
         
