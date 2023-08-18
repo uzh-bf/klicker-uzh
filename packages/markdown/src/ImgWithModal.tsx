@@ -66,7 +66,7 @@ function ImgWithModal({
       className={{ content: className?.modal }}
     >
       <div className="relative w-full h-full">
-        <img src={src} alt="Image" fill className="object-contain" />
+        <img src={src} alt="Image" className="object-contain" />
       </div>
     </Modal>
   )
