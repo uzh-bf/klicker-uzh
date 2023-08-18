@@ -7,7 +7,8 @@ function getServiceBus() {
   if (!serviceBus) {
     try {
       serviceBus = new ServiceBusClient(
-        process.env.SERVICE_BUS_CONNECTION_STRING as string
+        process.env.SERVICE_BUS_CONNECTION_STRING as string,
+        {}
       )
     } catch (e) {
       Sentry.captureException(e)

@@ -33,11 +33,10 @@ const httpTrigger = async function (
   }
 
   const body: any = await req.json()
-  context.info('body: ', body)
-  context.warn('body: ', body)
+  context.log('body: ', body)
 
   if (!body.response || !body.sessionId) {
-    context.log('Missing response or sessionId', body)
+    context.warn('Missing response or sessionId', body)
     return { status: 400 }
   }
 
@@ -64,8 +63,10 @@ const httpTrigger = async function (
         responseTimestamp: Number(new Date()),
       },
     })
+
+    context.log('Submitted message to service bus')
   } catch (e) {
-    context.log('Error sending message to service bus', e)
+    context.error('Error sending message to service bus', e)
     Sentry.captureException(e)
     await Sentry.flush(500)
     return { status: 500 }

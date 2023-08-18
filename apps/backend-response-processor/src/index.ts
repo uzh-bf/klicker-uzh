@@ -33,7 +33,7 @@ const serviceBusTrigger = async function (
   queueItem: any,
   context: InvocationContext
 ) {
-  context.log('ProcessResponses function processed a message', queueItem)
+  context.log('ProcessResponses function processing a message', queueItem)
 
   try {
     assert(!!redisExec)
@@ -351,7 +351,7 @@ export default serviceBusTrigger
 // TODO: check how autoCompleteMessages needs to be applied in v4
 app.serviceBusQueue('ProcessResponse', {
   connection: 'SERVICE_BUS_CONNECTION_STRING',
-  queueName: '%SERVICE_BUS_QUEUE_NAME%',
+  queueName: process.env.SERVICE_BUS_QUEUE_NAME as string,
   isSessionsEnabled: true,
   //autoCompleteMessages: true,
   handler: serviceBusTrigger,

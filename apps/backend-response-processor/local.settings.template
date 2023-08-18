@@ -7,14 +7,7 @@
     "FUNCTIONS_EXTENSION_VERSION": "~4",
     "FUNCTIONS_WORKER_PROCESS_COUNT": 10,
     "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
-    "APP_SECRET": "abcd",
-    "REDIS_HOST": "localhost",
-    "REDIS_PORT": 6379,
     "SERVICE_BUS_CONNECTION_STRING": "",
-    "SERVICE_BUS_QUEUE_NAME": "q-dev"
-  },
-  "Host": {
-    "CORS": "http://127.0.0.1:3001",
-    "CORSCredentials": true
+    "SERVICE_BUS_QUEUE_NAME": ""
   }
 }

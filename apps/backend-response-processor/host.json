@@ -4,11 +4,8 @@
   "logging": {
     "fileLoggingMode": "always",
     "logLevel": {
-      "default": "Information",
-      "Host.Results": "Information",
-      "Function": "Information",
-      "Function.ProcessResponses": "Information",
-      "Host.Aggregator": "Information"
+      "default": "Warning",
+      "Function.ProcessResponses": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {
