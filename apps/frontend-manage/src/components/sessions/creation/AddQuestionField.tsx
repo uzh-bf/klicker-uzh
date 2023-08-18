@@ -1,7 +1,6 @@
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ThemeContext } from '@uzh-bf/design-system'
-import { useContext } from 'react'
+import { useTranslations } from 'next-intl'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 
@@ -10,7 +9,7 @@ interface AddQuestionFieldProps {
 }
 
 function AddQuestionField({ push }: AddQuestionFieldProps) {
-  const theme = useContext(ThemeContext)
+  const t = useTranslations()
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: 'question',
@@ -42,14 +41,14 @@ function AddQuestionField({ push }: AddQuestionFieldProps) {
     <div
       className={twMerge(
         'flex flex-col items-center justify-center rounded text-center border border-solid w-16 p-2',
-        isOver && theme.primaryBg
+        isOver && 'bg-primary-20'
       )}
       id="add-question"
       ref={drop}
       data-cy="drop-questions-here"
     >
       <FontAwesomeIcon icon={faPlus} size="lg" />
-      <div>Neue Frage</div>
+      <div>{t('manage.sessionForms.newQuestion')}</div>
     </div>
   )
 }

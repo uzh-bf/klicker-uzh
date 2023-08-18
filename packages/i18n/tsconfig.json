@@ -1,0 +1,10 @@
+{
+  "extends": [
+    "@tsconfig/node18/tsconfig.json",
+    "@tsconfig/recommended/tsconfig.json"
+  ],
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "resolveJsonModule": true
+  }
+}

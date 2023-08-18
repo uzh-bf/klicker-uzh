@@ -2,11 +2,10 @@ import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ChangeCourseDescriptionDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, ThemeContext } from '@uzh-bf/design-system'
+import ContentInput from '@klicker-uzh/shared-components/src/ContentInput'
+import { Button } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { useContext } from 'react'
-import ContentInput from 'shared-components/src/ContentInput'
-import { twMerge } from 'tailwind-merge'
+import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
 
 interface CourseDescriptionProps {
@@ -22,7 +21,7 @@ function CourseDescription({
   submitText,
   setDescriptionEditMode,
 }: CourseDescriptionProps) {
-  const theme = useContext(ThemeContext)
+  const t = useTranslations()
   const [changeCourseDescription] = useMutation(ChangeCourseDescriptionDocument)
 
   const descriptionSchema = Yup.object().shape({
@@ -61,7 +60,7 @@ function CourseDescription({
         <div className="flex-1">
           <Form>
             <ContentInput
-              placeholder="Beschreibung hinzufügen"
+              placeholder={t('manage.courseList.addDescription')}
               touched={touched.description}
               content={values.description}
               onChange={(newValue: string) =>
@@ -75,10 +74,7 @@ function CourseDescription({
               )}
               <Button
                 className={{
-                  root: twMerge(
-                    'float-right px-5 text-white disabled:opacity-60',
-                    theme.primaryBgDark
-                  ),
+                  root: 'float-right px-5 text-white disabled:opacity-60 bg-primary-80',
                 }}
                 type="submit"
                 disabled={isSubmitting || !isValid}

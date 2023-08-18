@@ -1,9 +1,66 @@
 services:
-  frontend-pwa:
+  reverse_proxy:
+    image: docker.io/library/traefik:v2.10
+    command:
+      - --api.insecure=true
+      - --providers.file=true
+      - --providers.file.filename=/etc/traefik/rules.yaml
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+    ports:
+      - 8088:80
+      - 8080:8080
+    volumes:
+      - './util/traefik/rules.yaml:/etc/traefik/rules.yaml'
+    networks:
+      - klicker
+
+  # main database
+  postgres:
+    image: docker.io/library/postgres:15
+    environment:
+      POSTGRES_USER: klicker
+      POSTGRES_PASSWORD: klicker
+      POSTGRES_DB: main
+    ports:
+      - 5432:5432
+    networks:
+      - klicker
+    volumes:
+      - /var/lib/postgresql/data
+
+    # redis instance to support session execution
+  redis_exec:
+    image: docker.io/library/redis:7
+    ports:
+      - 6379:6379
+    networks:
+      - klicker
+    volumes:
+      - /data
+
+  # redis instance for page caching and rate limiting
+  redis_cache:
+    image: docker.io/library/redis:7
+    ports:
+      - 6380:6379
+    networks:
+      - klicker
+
+  sendria:
+    image: msztolcman/sendria:v2.2.2.0
+    ports:
+      - 1025:1025
+      - 1080:1080
+    networks:
+      - klicker
+
+  frontend_pwa:
     profiles:
       - full
     build:
-      context: apps/frontend-pwa
+      context: .
+      dockerfile: apps/frontend-pwa/Dockerfile
       args:
         NODE_ENV: development
         COOKIE_DOMAIN: 127.0.0.1
@@ -15,13 +72,14 @@ services:
     ports:
       - 3001:3000
     networks:
-      - klicker-dev
+      - klicker
 
-  frontend-manage:
+  frontend_manage:
     profiles:
       - full
     build:
-      context: apps/frontend-manage
+      context: .
+      dockerfile: apps/frontend-manage/Dockerfile
       args:
         NODE_ENV: development
         COOKIE_DOMAIN: 127.0.0.1
@@ -30,13 +88,14 @@ services:
     ports:
       - 3002:3000
     networks:
-      - klicker-dev
+      - klicker
 
-  frontend-control:
+  frontend_control:
     profiles:
       - full
     build:
-      context: apps/frontend-control
+      context: .
+      dockerfile: apps/frontend-control/Dockerfile
       args:
         NODE_ENV: development
         COOKIE_DOMAIN: 127.0.0.1
@@ -45,13 +104,14 @@ services:
     ports:
       - 3003:3000
     networks:
-      - klicker-dev
+      - klicker
 
   backend:
     profiles:
       - full
     build:
-      context: apps/backend-docker
+      context: .
+      dockerfile: apps/backend-docker/Dockerfile
       args:
         NODE_ENV: 'development'
     environment:
@@ -66,46 +126,8 @@ services:
     ports:
       - 3000:3000
     networks:
-      - klicker-dev
-
-  # main database
-  postgres:
-    image: docker.io/library/postgres:15
-    environment:
-      POSTGRES_USER: klicker
-      POSTGRES_PASSWORD: klicker
-      POSTGRES_DB: main
-    ports:
-      - 5432:5432
-    networks:
-      - klicker-dev
-
-    # redis instance to support session execution
-  redis_exec:
-    image: docker.io/library/redis:7
-    ports:
-      - 6379:6379
-    networks:
-      - klicker-dev
-    volumes:
-      - /data
-
-  # redis instance for page caching and rate limiting
-  redis_cache:
-    image: docker.io/library/redis:7
-    ports:
-      - 6380:6379
-    networks:
-      - klicker-dev
-
-  sendria:
-    image: msztolcman/sendria:v2.2.2.0
-    ports:
-      - 1025:1025
-      - 1080:1080
-    networks:
-      - klicker-dev
+      - klicker
 
 networks:
-  klicker-dev:
+  klicker:
     driver: bridge

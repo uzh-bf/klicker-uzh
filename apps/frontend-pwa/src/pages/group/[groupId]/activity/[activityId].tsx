@@ -6,20 +6,19 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { QuestionType } from '@type/app'
-import { Button, H1, ThemeContext } from '@uzh-bf/design-system'
+import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
+import { GetStaticPropsContext } from 'next'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { array, number, object, string } from 'yup'
 import Layout from '../../../../components/Layout'
 import { Options } from '../../../../components/common/OptionsDisplay'
 
 function GroupActivityDetails() {
-  const theme = useContext(ThemeContext)
   const router = useRouter()
 
   const { data, loading, error } = useQuery(GroupActivityDetailsDocument, {
@@ -68,7 +67,7 @@ function GroupActivityDetails() {
   if (!data.groupActivityDetails) {
     return (
       <Layout>
-        Die Gruppenquest ist nicht aktiv oder noch nicht freigeschalten.
+        Die Gruppenaktivität ist nicht aktiv oder noch nicht freigeschalten.
       </Layout>
     )
   }
@@ -92,8 +91,9 @@ function GroupActivityDetails() {
             <H1>Ausgangslage</H1>
 
             <Markdown
+              withProse
               className={{
-                root: 'prose max-w-none prose-img:max-w-[250px] prose-img:mx-auto prose-p:mt-0',
+                root: 'prose-img:max-w-[250px] prose-img:mx-auto prose-p:mt-0',
               }}
               content={data.groupActivityDetails.description}
             />
@@ -120,7 +120,7 @@ function GroupActivityDetails() {
                     <div
                       className={twMerge(
                         'flex flex-row items-center gap-2 py-2 border rounded shadow',
-                        clue.participant.isSelf && theme.primaryBorder
+                        clue.participant.isSelf && 'border-primary-40'
                       )}
                       key={clue.participant.id}
                     >
@@ -153,8 +153,9 @@ function GroupActivityDetails() {
                               ).toLocaleString()} ${clue.unit}`
                             ) : (
                               <Markdown
+                                withProse
                                 content={clue.value}
-                                className={{ root: 'prose prose-sm' }}
+                                className={{ root: 'prose-sm' }}
                               />
                             )}
                           </div>
@@ -394,12 +395,11 @@ function GroupActivityDetails() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
     revalidate: 600,
   }

@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.0.0-alpha.82",
+  "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,8 +9,7 @@
   ],
   "scripts": {
     "analyze": "size-limit --why",
-    "prebuild": "npm run generate",
-    "build": "npm-run-all build:ts build:copy",
+    "build": "run-s generate build:ts build:copy",
     "build:ts": "NODE_ENV=production tsup",
     "build:copy": "node src/copy.js",
     "build:watch": "NODE_ENV=development tsup --watch",
@@ -20,6 +19,7 @@
     "migrate:learningElements": "ENV=development doppler run --config dev -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/migrateLearningElements.ts",
     "migrate:learningElements:prod": "ENV=development doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/migrateLearningElements.ts",
     "prisma:migrate": "doppler run --config dev -- prisma migrate dev --schema=src/prisma/schema.prisma",
+    "prisma:migrate:create": "doppler run --config dev -- prisma migrate dev --schema=src/prisma/schema.prisma --create-only",
     "prisma:deploy:raw": "prisma migrate deploy --schema=src/prisma/schema.prisma",
     "prisma:deploy": "doppler run --config dev -- npm run prisma:deploy:raw",
     "prisma:deploy:qa": "doppler run --config stg -- npm run prisma:deploy:raw",
@@ -38,8 +38,7 @@
     "prisma:studio": "doppler run --config dev -- npm run prisma:studio:raw",
     "prisma:studio:qa": "doppler run --config stg -- npm run prisma:studio:raw",
     "prisma:studio:prod": "doppler run --config prd -- npm run prisma:studio:raw",
-    "preseed": "npm run build",
-    "seed": "ENV=development doppler run --config dev -- npm-run-all seed:test",
+    "seed": "ENV=development doppler run --config dev -- run-s build seed:test",
     "seed:test": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
     "seed:achievements": "ENV=development doppler run --config dev -- ts-node --esm --experimental-specifier-resolution=node src/data/seedAchievements.ts",
     "seed:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config dev -- ts-node --esm --experimental-specifier-resolution=node src/data/importQuestions.ts",
@@ -51,6 +50,7 @@
     "seed:prod:bf2": "ENV=development doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedBF2.ts",
     "seed:prod:ami": "npm run seed:qa:ami",
     "seed:prod:achievements": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedAchievements.ts",
+    "seed:prod:summerSchool": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedSummerSchool.ts",
     "seed:prod:user": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedUser.ts",
     "seed:prod:levels": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedLevels.ts",
     "seed:prod:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/importQuestions.ts",
@@ -62,7 +62,7 @@
     "seed": "npm run seed"
   },
   "engines": {
-    "node": ">=18"
+    "node": "=18"
   },
   "size-limit": [
     {
@@ -71,25 +71,25 @@
     }
   ],
   "devDependencies": {
-    "@mermaid-js/mermaid-cli": "10.1.0",
-    "@pothos/plugin-prisma": "3.51.1",
+    "@pothos/plugin-prisma": "3.56.0",
     "@size-limit/preset-small-lib": "8.2.4",
-    "@tsconfig/node18": "^2.0.0",
+    "@tsconfig/node18": "^2.0.1",
     "@tsconfig/recommended": "^1.0.2",
     "@types/bcryptjs": "^2.4.2",
-    "@types/node": "^18.13.0",
-    "@types/ramda": "^0.29.0",
+    "@types/node": "^18.17.4",
+    "@types/ramda": "^0.29.3",
     "bcryptjs": "2.4.3",
     "dotenv": "16.0.3",
     "dotenv-cli": "7.2.1",
     "npm-run-all": "4.1.5",
+    "prettier": "2.8.8",
+    "prettier-plugin-organize-imports": "3.2.2",
     "prisma": "4.14.1",
-    "prisma-erd-generator": "1.7.0",
     "ramda": "0.29.0",
     "size-limit": "8.2.4",
     "ts-node": "10.9.1",
-    "tsup": "6.7.0",
-    "typescript": "5.0.4",
+    "tsup": "7.2.0",
+    "typescript": "5.1.6",
     "uuidv4": "6.2.13"
   },
   "dependencies": {

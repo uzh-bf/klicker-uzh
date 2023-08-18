@@ -9,24 +9,18 @@ import {
   GetUserRunningSessionsDocument,
   SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  H3,
-  ThemeContext,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
-import { useContext, useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
 import SessionBlock from '../../components/sessions/SessionBlock'
 
 function RunningSession() {
   const t = useTranslations()
   const router = useRouter()
-  const theme = useContext(ThemeContext)
   const [nextBlockOrder, setNextBlockOrder] = useState(-1)
   const [currentBlockOrder, setCurrentBlockOrder] = useState<
     number | undefined
@@ -192,7 +186,7 @@ function RunningSession() {
                 }
               }}
               className={{
-                root: twMerge('float-right text-white', theme.primaryBgDark),
+                root: 'float-right text-white bg-primary-80',
               }}
               data={{ cy: 'activate-next-block' }}
             >
@@ -236,12 +230,11 @@ function RunningSession() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

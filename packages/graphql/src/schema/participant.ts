@@ -18,6 +18,7 @@ import type { IGroupActivityInstance } from './groupActivity'
 import { GroupActivityInstanceRef } from './groupActivity'
 import type { IQuestionStack } from './learningElements'
 import { QuestionStackRef } from './learningElements'
+import { LocaleType } from './user'
 
 export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
   fields: (t) => ({
@@ -89,7 +90,12 @@ export const Participant = ParticipantRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
+    locale: t.expose('locale', { type: LocaleType }),
+
+    email: t.exposeString('email', { nullable: true }),
     username: t.exposeString('username', { nullable: false }),
+    isActive: t.exposeBoolean('isActive', { nullable: false }),
+    isProfilePublic: t.exposeBoolean('isProfilePublic', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
     avatarSettings: t.expose('avatarSettings', {
       type: 'Json',
@@ -296,3 +302,22 @@ export const ParticipantWithAchievements =
       }),
     }),
   })
+
+export interface IParticipantTokenData {
+  participantToken?: string
+  participant?: IParticipant
+}
+
+export const ParticipantTokenDataRef = builder.objectRef<IParticipantTokenData>(
+  'ParticipantTokenData'
+)
+export const ParticipantTokenData = ParticipantTokenDataRef.implement({
+  fields: (t) => ({
+    participantToken: t.exposeString('participantToken', { nullable: true }),
+    participant: t.field({
+      type: ParticipantRef,
+      resolve: (data) => data.participant,
+      nullable: true,
+    }),
+  }),
+})

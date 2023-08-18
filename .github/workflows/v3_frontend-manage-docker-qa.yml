@@ -3,15 +3,15 @@ name: Build Docker image for frontend-manage (QA)
 on:
   push:
     branches:
-      - "v3"
+      - 'v3'
     paths:
-      - "apps/frontend-manage/**"
-      - ".github/workflows/v3_frontend-manage**"
+      - 'apps/frontend-manage/**'
+      - '.github/workflows/v3_frontend-manage**'
   pull_request:
     # branches: [ "v3" ]
     paths:
-      - "apps/frontend-manage/**"
-      - ".github/workflows/v3_frontend-manage**"
+      - 'apps/frontend-manage/**'
+      - '.github/workflows/v3_frontend-manage**'
 
 env:
   REGISTRY: ghcr.io
@@ -32,7 +32,6 @@ jobs:
         run: |
           rm apps/frontend-manage/.env.production
           mv apps/frontend-manage/.env.qa apps/frontend-manage/.env.production
-          cp -R packages/shared-components apps/frontend-manage/shared-components
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -57,7 +56,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: apps/frontend-manage
+          context: .
           file: apps/frontend-manage/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}

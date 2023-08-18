@@ -1,4 +1,5 @@
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 interface LiveSessionDeletionModalProps {
@@ -14,6 +15,7 @@ function LiveSessionDeletionModal({
   open,
   setOpen,
 }: LiveSessionDeletionModalProps) {
+  const t = useTranslations()
   // TODO: implement more efficiently with working update instead of expensive refetch
 
   return (
@@ -28,11 +30,13 @@ function LiveSessionDeletionModal({
             root: twMerge('bg-red-600 font-bold text-white'),
           }}
         >
-          Bestätigen
+          {t('shared.generic.confirm')}
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={(): void => setOpen(false)}>Abbrechen</Button>
+        <Button onClick={(): void => setOpen(false)}>
+          {t('shared.generic.cancel')}
+        </Button>
       }
       onClose={(): void => setOpen(false)}
       open={open}
@@ -40,18 +44,13 @@ function LiveSessionDeletionModal({
       className={{ content: 'w-[40rem] h-max self-center pt-0' }}
     >
       <div>
-        <H2>Live-Session löschen</H2>
-        <div>
-          Sind Sie sich sicher, dass Sie die folgende Live-Session löschen
-          möchten?
-        </div>
+        <H2>{t('manage.sessions.deleteLiveSession')}</H2>
+        <div>{t('manage.sessions.confirmLiveSessionDeletion')}</div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{title}</H3>
         </div>
         <div className="mt-6 mb-2 text-sm italic">
-          Das Löschen einer Live-Session ist nur möglich, solange sie nicht
-          bereits gestartet wurde. Gelöschte Live-Sessions können nicht zu einem
-          späteren Zeitpunkt wiederhergestellt werden.
+          {t('manage.sessions.liveSessionDeletionHint')}
         </div>
       </div>
     </Modal>

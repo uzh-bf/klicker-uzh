@@ -1,4 +1,5 @@
 import { Markdown } from '@klicker-uzh/markdown'
+import { GetStaticPropsContext } from 'next'
 import DocsLayout from '../../../../components/docs/DocsLayout'
 
 function AppSetup() {
@@ -6,6 +7,7 @@ function AppSetup() {
     <DocsLayout>
       {(courseInformation) => (
         <Markdown
+          withProse
           className={{ root: 'prose-headings:mt-0' }}
           content={`
 ### Installation der KlickerUZH-App
@@ -31,12 +33,11 @@ Weitere Details zur Installation und Nutzung der KlickerUZH-App finden Sie in fo
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
     revalidate: 600,
   }

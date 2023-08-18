@@ -1,4 +1,4 @@
-import Prisma from '@klicker-uzh/prisma'
+import Prisma from '../../../dist'
 import { LearningElementStatus } from '../../client'
 const { AttachmentType, QuestionType, SessionStatus, OrderType } = Prisma
 
@@ -328,8 +328,6 @@ export const MICRO_SESSIONS = [
     arePushNotificationsSent: false,
     description: `
 Diese Woche lernen wir...
-
-![Alt text](https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.webp)
 
 Mehr bla bla...
 `,

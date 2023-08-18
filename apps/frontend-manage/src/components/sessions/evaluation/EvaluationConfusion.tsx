@@ -1,11 +1,12 @@
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ConfusionTimestep } from '@klicker-uzh/graphql/dist/ops'
-import { FormikTextField, ThemeContext, Tooltip } from '@uzh-bf/design-system'
+import { FormikTextField, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import { repeat } from 'ramda'
-import { useContext, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Legend,
@@ -17,7 +18,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
 interface EvaluationConfusionProps {
@@ -37,7 +37,7 @@ function MatchingEmoji({ value }: { value: number }) {
 }
 
 function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
-  const theme = useContext(ThemeContext)
+  const t = useTranslations()
   const xIntervalDefault = 120
   const peakValue = 2 // hightest value that can be returned from a feedback (both positive and negative)
   const runningWindowDefault = 3
@@ -122,12 +122,12 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
   const confusionGraphSchema = yup.object().shape({
     xInterval: yup
       .number()
-      .min(60, 'Die Schrittweite muss mindestens 60 Sekunden betragen.')
-      .required('Bitte geben Sie eine gültige Mindestschrittweite ein.'),
+      .min(60, t('manage.evaluation.minStep60s'))
+      .required(t('manage.evaluation.validMinSteps')),
     windowLength: yup
       .number()
-      .min(1, 'Die Fensterlänge muss mindestens 1 betragen.')
-      .required('Bitte geben Sie eine gültige Fensterlänge ein.'),
+      .min(1, t('manage.evaluation.minWindowLength'))
+      .required(t('manage.evaluation.validWindowLength')),
   })
 
   return (
@@ -135,7 +135,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
       <div className="flex-auto min-h-[10rem] w-full">
         <div className="ml-2">
           <Tooltip
-            tooltip="Die Diagramme unten zeigen alle Confusion-Feedbacks der Teilnehmenden von Beginn bis Ende der Klicker-Session. Die Werte werden normalisiert auf dem Intervall [-1,1] dargestellt und auf 0 gesetzt, sollten in einem Zeitabschnitt keine Werte vorhanden sein. Die exakte Anzahl Feedbacks kann durch Hovering der Maus über einem Datenpunkt ausgelesen werden."
+            tooltip={t('manage.evaluation.confusionDiagramsTooltip')}
             className={{
               tooltip: 'max-w-[20%] md:max-w-[30%] text-sm z-10',
             }}
@@ -143,10 +143,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
           >
             <FontAwesomeIcon
               icon={faQuestion}
-              className={twMerge(
-                'w-3 h-3 p-1 mt-1 text-white rounded-full border border-solid border-white',
-                theme.primaryBgMedium
-              )}
+              className="w-3 h-3 p-1 mt-1 text-white border border-white border-solid rounded-full bg-primary-60"
             />
           </Tooltip>
         </div>
@@ -174,19 +171,25 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                         {payload[0].payload.windowStart}
                       </div>
                       <div className="flex flex-row justify-between gap-4 mt-2">
-                        <div className="font-bold">Avg. Difficulty</div>
+                        <div className="font-bold">
+                          {t('manage.evaluation.avgDifficulty')}
+                        </div>
                         <div>
                           <MatchingEmoji value={Number(difficulty?.value)} />
                         </div>
                       </div>
                       <div className="flex flex-row justify-between gap-4 mt-2">
-                        <div className="font-bold">Avg. Speed</div>
+                        <div className="font-bold">
+                          {t('manage.evaluation.avgSpeed')}
+                        </div>
                         <div>
                           <MatchingEmoji value={Number(speed?.value)} />
                         </div>
                       </div>
                       <div className="flex flex-row justify-between gap-4 mt-2">
-                        <div className="font-bold">Feedbacks</div>
+                        <div className="font-bold">
+                          {t('shared.generic.feedbacks')}
+                        </div>
                         <div>{payload[0].payload.numOfElements}</div>
                       </div>
                     </div>
@@ -228,7 +231,9 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
       </div>
 
       <div className="flex-initial p-3 lg:w-1/2">
-        <div className="mb-2 font-bold ">Graph Settings</div>
+        <div className="mb-2 font-bold ">
+          {t('manage.evaluation.graphSettings')}
+        </div>
 
         <Formik
           initialValues={{
@@ -252,8 +257,8 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                         setXInterval(interval)
                       }
                     }}
-                    label="Timesteps X-Axis"
-                    tooltip="In diesem Feld kann die Schrittgrösse auf der x-Achse in Sekunden für die Diagramme eingegeben werden. Der Minimalwert ist 60 Sekunden, der Default-Wert 120 Sekunden."
+                    label={t('manage.evaluation.timestepX')}
+                    tooltip={t('manage.evaluation.timestepXTooltip')}
                     className={{
                       root: !errors.xInterval ? 'mb-1' : '',
                       label: 'font-normal',
@@ -261,7 +266,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                         ? 'border-red-500 bg-red-100'
                         : '',
                     }}
-                    placeholder="min. 60s"
+                    placeholder={t('manage.evaluation.minTimestep')}
                   />
                   {errors.xInterval && (
                     <div className="float-right text-sm text-red-600 mb-1.5">
@@ -279,8 +284,8 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                         setRunningWindow(window)
                       }
                     }}
-                    label="Window Length"
-                    tooltip="In diesem Feld kann ein eigener Faktor (multipliziert mit der Schrittweite auf der x-Achse) für die Grösse des Running Window zur Durchschnittsberechnung festgelegt werden. Der kleinstmögliche Faktor ist 1, der Default-Wert 3."
+                    label={t('manage.evaluation.windowLength')}
+                    tooltip={t('manage.evaluation.windowLengthTooltip')}
                     className={{
                       root: !errors.windowLength ? 'mb-1' : '',
                       label: 'font-normal',
@@ -288,7 +293,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                         ? 'border-red-500 bg-red-100'
                         : '',
                     }}
-                    placeholder="min. 1"
+                    placeholder={t('manage.evaluation.minWindow')}
                   />
                   {errors.windowLength && (
                     <div className="float-right text-sm text-red-600 mb-1.5">
@@ -301,8 +306,14 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
           }}
         </Formik>
 
-        <div className="mt-4">Displayed interval: {xDataInterval} seconds</div>
-        <div>Displayed running window: {runningAvgFactor} times interval</div>
+        <div className="mt-4">
+          {t('manage.evaluation.displayedInterval', {
+            interval: xDataInterval,
+          })}
+        </div>
+        <div>
+          {t('manage.evaluation.displayedWindow', { window: runningAvgFactor })}
+        </div>
       </div>
     </div>
   )

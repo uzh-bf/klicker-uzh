@@ -12,6 +12,7 @@ import {
   QuestionType,
   ResponseToQuestionInstanceDocument,
   SelfDocument,
+  StackElement,
 } from '@klicker-uzh/graphql/dist/ops'
 import formatResponse from '@lib/formatResponse'
 import { Button, H2 } from '@uzh-bf/design-system'
@@ -24,12 +25,21 @@ import DynamicMarkdown from './DynamicMarkdown'
 import LearningElementPoints from './LearningElementPoints'
 import SingleQuestion from './SingleQuestion'
 
+export type ItemStatus = 'unanswered' | 'incorrect' | 'partial' | 'correct'
+
 interface QuestionStackProps {
   elementId: string
   stack: QuestionStack
   currentStep: number
   totalSteps: number
   handleNextQuestion: () => void
+  setStepStatus: ({
+    status,
+    score,
+  }: {
+    status: ItemStatus
+    score?: number | null
+  }) => void
 }
 
 function QuestionStack({
@@ -38,6 +48,7 @@ function QuestionStack({
   currentStep,
   totalSteps,
   handleNextQuestion,
+  setStepStatus,
 }: QuestionStackProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -49,7 +60,6 @@ function QuestionStack({
   const [informationOnly, setInformationOnly] = useState(true)
   const [inputValid, setInputValid] = useState<Record<number, boolean>>({})
   const [allValid, setAllValid] = useState(false)
-  const [flagModalOpen, setFlagModalOpen] = useState(false)
 
   const [respondToQuestionInstance] = useMutation(
     ResponseToQuestionInstanceDocument
@@ -119,55 +129,128 @@ function QuestionStack({
   })
 
   useEffect(() => {
-    stack.elements?.map((element) => {
-      if (element.mdContent) return
+    setInformationOnly(true)
+    setIsEvaluation(true)
 
-      const questionType = element.questionInstance?.questionData.type
-      setInformationOnly(false)
-      if (
-        questionType === QuestionType.Sc ||
-        questionType === QuestionType.Mc
-      ) {
-        setResponses((prev) => ({
-          ...prev,
-          [element.id]: [],
-        }))
-      } else if (questionType === QuestionType.Kprim) {
-        setResponses((prev) => ({
-          ...prev,
-          [element.id]: {},
-        }))
-      } else {
-        setResponses((prev) => ({
-          ...prev,
-          [element.id]: '',
-        }))
-      }
+    const result = stack.elements?.reduce<{
+      inputValid: Record<number, boolean>
+      responses: Record<string, string | Object | number[] | null>
+    }>(
+      (acc, element: StackElement) => {
+        if (element.mdContent) {
+          return acc
+        }
 
-      if (element.questionInstance?.evaluation) {
-        setIsEvaluation(true)
-      }
-    })
+        if (!element.questionInstance?.evaluation) {
+          setIsEvaluation(false)
+        }
 
-    return () => {
-      setResponses({})
-      setIsEvaluation(false)
-      setInformationOnly(true)
-    }
-  }, [stack])
+        const questionType = element.questionInstance?.questionData.type
+        setInformationOnly(false)
+        if (
+          questionType === QuestionType.Sc ||
+          questionType === QuestionType.Mc
+        ) {
+          return {
+            inputValid: { ...acc.inputValid, [element.id]: false },
+            responses: { ...acc.responses, [element.id]: [] },
+          }
+        } else if (questionType === QuestionType.Kprim) {
+          return {
+            inputValid: { ...acc.inputValid, [element.id]: false },
+            responses: { ...acc.responses, [element.id]: {} },
+          }
+        }
+        return {
+          inputValid: { ...acc.inputValid, [element.id]: false },
+          responses: { ...acc.responses, [element.id]: '' },
+        }
+      },
+      { inputValid: {}, responses: {} }
+    )
 
-  useEffect(() => {
-    stack.elements?.map((element) => {
-      if (element.mdContent) return
+    setInputValid(result?.inputValid || {})
+    setResponses(result?.responses || {})
 
-      return setInputValid((prev) => ({
-        ...prev,
-        [element.id]: false,
-      }))
-    })
+    const correctness = stack.elements?.reduce<{
+      result: ItemStatus
+      score?: number | null
+      questions: number
+    }>(
+      (acc, element) => {
+        // text elements will not be considered to contribute to correctness of a response
+        if (!element.questionInstance) {
+          return acc
+        }
 
-    return () => {
-      setInputValid({})
+        // if question instance is defined, but evaluation is not, the question was not answered
+        if (!element.questionInstance.evaluation) {
+          return {
+            // if we dont have an evaluation for the current question but the previous state
+            // was not unanswered, the entire stack is partially answered, and the score does not change with this item
+            result: acc.result === 'unanswered' ? 'unanswered' : 'partial',
+            questions: acc.questions + 1,
+            score: acc.score,
+          }
+        }
+
+        // check if the element was answered wrong or only partially correct
+        const percentile = element.questionInstance.evaluation.percentile ?? 0
+        const score = element.questionInstance.evaluation.score
+        if (percentile === 0) {
+          // for wrong answer: correct -> partial, incorrect -> incorrect, partial -> partial, unanswered -> incorrect
+          return acc.result === 'partial' || acc.result === 'correct'
+            ? {
+                result: 'partial',
+                questions: acc.questions + 1,
+                score:
+                  typeof acc.score === 'number' ? acc.score + score : score,
+              }
+            : {
+                result: 'incorrect',
+                questions: acc.questions + 1,
+                score:
+                  typeof acc.score === 'number' ? acc.score + score : score,
+              }
+        } else if (percentile > 0 && percentile < 1) {
+          // for partially correct answer: correct -> partial, incorrect -> partial, partial -> partial, unanswered -> partial
+          return {
+            result: 'partial',
+            questions: acc.questions + 1,
+            score: typeof acc.score === 'number' ? acc.score + score : score,
+          }
+        } else if (percentile === 1) {
+          // for correct answers: correct -> correct, partial -> partial, incorrect -> partial, unanswered -> correct
+          return acc.result === 'correct' || acc.result === 'unanswered'
+            ? {
+                result: 'correct',
+                questions: acc.questions + 1,
+                score:
+                  typeof acc.score === 'number' ? acc.score + score : score,
+              }
+            : {
+                result: 'partial',
+                questions: acc.questions + 1,
+                score:
+                  typeof acc.score === 'number' ? acc.score + score : score,
+              }
+        }
+
+        return acc
+      },
+      { result: 'unanswered', questions: 0, score: null }
+    )
+
+    if (correctness?.questions) {
+      setStepStatus({
+        status: correctness.result || 'unanswered',
+        score: correctness.score,
+      })
+    } else {
+      setStepStatus({
+        status: 'correct',
+        score: null,
+      })
     }
   }, [stack])
 

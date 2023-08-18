@@ -1,8 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/backend-responses",
-  "version": "3.0.0-alpha.82",
-  "type": "module",
+  "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
@@ -22,14 +21,15 @@
     "@azure/functions": "^4.0.0-alpha.7",
     "@azure/service-bus": "7.9.0",
     "@sentry/node": "7.52.1",
-    "jsonwebtoken": "9.0.0"
+    "jsonwebtoken": "9.0.1"
   },
   "devDependencies": {
     "@tsconfig/node18": "^2.0.0",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jsonwebtoken": "^9.0.1",
     "@types/node": "^18.0.0",
-    "@uzh-bf/design-system": "1.7.1",
+    "@uzh-bf/design-system": "2.0.12",
+    "azure-functions-core-tools": "4.0.5198",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "husky": "8.0.3",

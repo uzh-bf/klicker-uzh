@@ -3,10 +3,8 @@ import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import useFeedbackFilter from '@lib/hooks/useFeedbackFilter'
-import { ThemeContext } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useTranslations } from 'next-intl'
 import FeedbackSearchAndFilters from '../../interaction/feedbacks/FeedbackSearchAndFilters'
 
 interface EvaluationFeedbacksProps {
@@ -14,7 +12,7 @@ interface EvaluationFeedbacksProps {
 }
 
 function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
-  const theme = useContext(ThemeContext)
+  const t = useTranslations()
   const { sortedFeedbacks, filterProps } = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })
@@ -32,10 +30,7 @@ function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
         {...filterProps}
       />
       {sortedFeedbacks?.length === 0 && (
-        <div>
-          Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen
-          überein...
-        </div>
+        <div>{t('manage.evaluation.noFeedbacksMatchFilter')}</div>
       )}
       {sortedFeedbacks?.map((feedback) => (
         <div key={feedback.content}>
@@ -52,7 +47,7 @@ function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
               {feedback.isResolved && (
                 <div className="flex flex-row items-center">
                   <FontAwesomeIcon icon={faCheck} className="mr-1.5" />
-                  <div>Während der Session gelöst</div>
+                  <div>{t('manage.evaluation.resolvedDuringSession')}</div>
                 </div>
               )}
             </div>
@@ -62,12 +57,7 @@ function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
               key={response?.content}
               className="w-full pl-12 mt-1 text-base"
             >
-              <div
-                className={twMerge(
-                  'border border-solid rounded border-uzh-grey-40 p-1.5 bg-opacity-50',
-                  theme.primaryBg
-                )}
-              >
+              <div className="border border-solid rounded border-uzh-grey-40 p-1.5 bg-opacity-50 bg-primary-20">
                 {response?.content}
               </div>
             </div>

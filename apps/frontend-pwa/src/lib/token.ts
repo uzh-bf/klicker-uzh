@@ -1,12 +1,9 @@
 import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
-import { RegisterParticipantFromLtiDocument } from '@klicker-uzh/graphql/dist/ops'
+import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
 import bodyParser from 'body-parser'
 import JWT from 'jsonwebtoken'
 import { GetServerSidePropsContext } from 'next'
-import getConfig from 'next/config'
 import nookies from 'nookies'
-
-const { serverRuntimeConfig } = getConfig()
 
 export async function getParticipantToken({
   apolloClient,
@@ -21,7 +18,8 @@ export async function getParticipantToken({
 
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
-  let participantToken = cookies['participant_token'] || cookies['user_token']
+  let participantToken =
+    cookies['participant_token'] || cookies['next-auth.session-token']
 
   try {
     if (!participantToken && req.method === 'POST') {
@@ -37,54 +35,30 @@ export async function getParticipantToken({
       })
 
       if (request?.body?.lis_person_sourcedid) {
-        const secret = process.env.APP_SECRET ?? serverRuntimeConfig.APP_SECRET
-
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
-        const token = JWT.sign(
+        const signedLtiData = JWT.sign(
           {
-            sub: 'lti-admin',
-            role: 'ADMIN',
+            sub: request?.body?.lis_person_sourcedid,
           },
-          secret,
+          process.env.APP_SECRET as string,
           {
             algorithm: 'HS256',
             expiresIn: '1h',
           }
         )
 
-        console.log('token', token)
-
         const result = await apolloClient.mutate({
-          mutation: RegisterParticipantFromLtiDocument,
+          mutation: LoginParticipantWithLtiDocument,
           variables: {
-            courseId: query.courseId as string,
-            participantId: request.body.lis_person_sourcedid,
-          },
-          context: {
-            headers: {
-              authorization: `Bearer ${token}`,
-            },
+            signedLtiData,
           },
         })
 
-        // if a JWT was received from the API, set a cookie in the participant browser
-        if (result.data?.registerParticipantFromLTI?.participantToken) {
-          participantToken =
-            result.data.registerParticipantFromLTI.participantToken
-          nookies.set(ctx, 'participant_token', participantToken, {
-            domain:
-              process.env.COOKIE_DOMAIN ?? serverRuntimeConfig.COOKIE_DOMAIN,
-            path: '/',
-            httpOnly: true,
-            maxAge: 60 * 60 * 24 * 6,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'none',
-          })
-        }
-
         return {
-          participantToken,
-          participant: result.data?.registerParticipantFromLTI?.participant,
+          participantToken:
+            result.data?.loginParticipantWithLti?.participantToken ??
+            participantToken,
+          participant: result.data?.loginParticipantWithLti,
         }
       }
     }

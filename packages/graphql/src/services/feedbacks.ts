@@ -2,7 +2,7 @@ import { UserRole } from '@klicker-uzh/prisma'
 import { Context, ContextWithUser } from '../lib/context'
 
 export async function getFeedbacks({ id }: { id: string }, ctx: Context) {
-  const sessionWithFeedbacks = await ctx.prisma.session.findUnique({
+  const sessionWithFeedbacks = await ctx.prisma.liveSession.findUnique({
     where: { id },
     include: {
       feedbacks: {
@@ -61,7 +61,7 @@ export async function createFeedback(
   const isLoggedInParticipant =
     ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
 
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: {
       id: sessionId,
     },

@@ -2,10 +2,10 @@ import {
   InstanceResult,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
-import { ThemeContext } from '@uzh-bf/design-system'
 import { maxBy, minBy, round, sumBy } from 'lodash'
-import React, { useContext, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 // TODO: replace lodash with ramda
+import { useTranslations } from 'next-intl'
 import {
   Bar,
   BarChart,
@@ -55,7 +55,7 @@ function Histogram({
   reference,
   className,
 }: HistogramProps): React.ReactElement {
-  const theme = useContext(ThemeContext)
+  const t = useTranslations()
   const [numBins, setNumBins] = useState(20)
 
   const questionData = data.questionData as NumericalQuestionData
@@ -145,9 +145,12 @@ function Histogram({
               if (active && payload && payload.length) {
                 return (
                   <div className="p-2 bg-white border border-solid rounded-md border-uzh-grey-100">
-                    <div>Bereich: {payload[0].payload.label}</div>
-                    <div className={twMerge('font-bold', theme.primaryText)}>
-                      Count: {payload[0].payload.count}
+                    <div>
+                      {t('manage.evaluation.histogramRange')}:{' '}
+                      {payload[0].payload.label}
+                    </div>
+                    <div className="font-bold text-primary">
+                      {t('manage.evaluation.count')}: {payload[0].payload.count}
                     </div>
                   </div>
                 )
@@ -274,7 +277,9 @@ function Histogram({
 
       {!hideBins && (
         <div className="flex flex-row items-center float-right gap-2 mr-4">
-          <div className="font-bold">Bins:</div>
+          <div className="font-bold">
+            {t('manage.evaluation.histogramBins')}:
+          </div>
           <input
             className="rounded-md"
             type="number"

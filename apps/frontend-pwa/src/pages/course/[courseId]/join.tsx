@@ -11,14 +11,13 @@ import {
   H2,
   Label,
   PinField,
-  ThemeContext,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { GetServerSideProps } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
@@ -39,7 +38,6 @@ function JoinCourse({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const theme = useContext(ThemeContext)
   const [showError, setError] = useState(false)
   const [initialPin, setInitialPin] = useState<string>('')
 
@@ -202,8 +200,7 @@ function JoinCourse({
                       name="username"
                       type="text"
                       className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                        theme.primaryBorderFocus,
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2 focus:border-primary-40',
                         errors.username &&
                           touched.username &&
                           'border-red-400 bg-red-50 mb-0'
@@ -224,8 +221,7 @@ function JoinCourse({
                       name="password"
                       type="password"
                       className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                        theme.primaryBorderFocus,
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2 focus:border-primary-40',
                         errors.password &&
                           touched.password &&
                           'border-red-400 bg-red-50 mb-0'
@@ -246,8 +242,7 @@ function JoinCourse({
                       name="passwordRepetition"
                       type="password"
                       className={twMerge(
-                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2',
-                        theme.primaryBorderFocus,
+                        'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 mb-2 focus:border-primary-40',
                         errors.passwordRepetition &&
                           touched.passwordRepetition &&
                           'border-red-400 bg-red-50 mb-0'
@@ -292,7 +287,7 @@ function JoinCourse({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
@@ -319,9 +314,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         color: data?.basicCourseInformation?.color,
         description: data?.basicCourseInformation?.description,
         courseLoading: loading,
-        messages: {
-          ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
-        },
+        messages: (
+          await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`)
+        ).default,
       },
     }
   } catch {

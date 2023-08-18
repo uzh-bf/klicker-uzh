@@ -1,39 +1,48 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
+import { faSave } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  DeleteParticipantAccountDocument,
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Markdown } from '@klicker-uzh/markdown'
+import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   FormikSelectField,
+  FormikSwitchField,
   FormikTextField,
+  H3,
+  Modal,
   Prose,
-  ThemeContext,
   Toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import hash from 'object-hash'
 import { pick } from 'ramda'
-import { useContext, useEffect, useState } from 'react'
-import { AVATAR_OPTIONS } from 'shared-components/src/constants'
-import { twMerge } from 'tailwind-merge'
+import { useEffect, useState } from 'react'
 import * as yup from 'yup'
 import Layout from '../components/Layout'
 
 function EditProfile() {
   const t = useTranslations()
-  const theme = useContext(ThemeContext)
   const router = useRouter()
   const { data, loading } = useQuery(SelfDocument)
   const [updateParticipantProfile] = useMutation(
     UpdateParticipantProfileDocument
   )
+  const [deleteParticipantAccount] = useMutation(
+    DeleteParticipantAccountDocument
+  )
 
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/profile')
   const [showError, setShowError] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
@@ -44,7 +53,7 @@ function EditProfile() {
   }, [])
 
   if (loading || !data?.self) {
-    return <div>Loading...</div>
+    return <div>{t('shared.generic.loading')}</div>
   }
 
   return (
@@ -54,6 +63,10 @@ function EditProfile() {
     >
       <Formik
         validationSchema={yup.object({
+          email: yup
+            .string()
+            .required(t('pwa.profile.emailRequired'))
+            .email(t('pwa.profile.emailInvalid')),
           username: yup
             .string()
             .required(t('pwa.profile.usernameRequired'))
@@ -78,6 +91,8 @@ function EditProfile() {
           }),
         })}
         initialValues={{
+          isProfilePublic: data.self.isProfilePublic,
+          email: data.self.email,
           username: data.self.username,
           password: '',
           passwordRepetition: '',
@@ -127,8 +142,10 @@ function EditProfile() {
 
           const result = await updateParticipantProfile({
             variables: {
+              isProfilePublic: values.isProfilePublic,
               password: values.password,
               username: values.username,
+              email: values.email,
               avatar: avatarHash,
               avatarSettings: pick(
                 [
@@ -147,8 +164,8 @@ function EditProfile() {
             },
           })
 
-          if (result.data?.updateParticipantProfile) {
-            router.replace(decodedRedirectPath)
+          if (result.data?.updateParticipantProfile && !result.errors) {
+            // router.replace(decodedRedirectPath)
           } else {
             setShowError(true)
           }
@@ -156,79 +173,171 @@ function EditProfile() {
       >
         {({ values, isSubmitting, isValid }) => {
           return (
-            <div className="flex flex-col md:w-full md:border md:p-8 md:rounded md:max-w-3xl md:mx-auto">
-              <BigHead
-                // @ts-ignore
-                className={twMerge(
-                  'border-b-4 h-36 md:h-48',
-                  theme.primaryBorderDark
-                )}
-                eyebrows="raised"
-                faceMask={false}
-                lashes={false}
-                mask={false}
-                clothing={values.clothing}
-                hat="none"
-                graphic="none"
-                accessory={values.accessory}
-                body="chest"
-                skinTone={values.skinTone}
-                clothingColor={values.clothingColor}
-                eyes={values.eyes}
-                hair={values.hair}
-                hairColor={values.hairColor}
-                mouth={values.mouth}
-                facialHair={values.facialHair}
-              />
-
-              <Form>
-                <div className="flex flex-col w-full gap-8 mt-8 md:flex-row md:gap-16">
-                  <div className="flex flex-col justify-between flex-1 order-2 gap-4 md:order-1">
-                    {!data.self?.avatar && (
-                      <Prose>{t('pwa.profile.welcomeMessage')}</Prose>
-                    )}
-
-                    <div className="space-y-4">
-                      <FormikTextField
-                        name="username"
-                        label={t('shared.generic.username')}
-                        labelType="small"
-                        className={{ label: 'font-bold text-md text-black' }}
-                      />
-                      <FormikTextField
-                        name="password"
-                        label={t('shared.generic.password')}
-                        labelType="small"
-                        className={{ label: 'font-bold text-md text-black' }}
-                        type="password"
-                      />
-                      <FormikTextField
-                        name="passwordRepetition"
-                        label={t('shared.generic.passwordRepetition')}
-                        labelType="small"
-                        className={{ label: 'font-bold text-md text-black' }}
-                        type="password"
-                      />
-                    </div>
-
+            <Form>
+              <div className="flex flex-col md:w-full md:max-w-5xl md:mx-auto gap-4">
+                <div className="flex flex-col w-full md:flex-row gap-4">
+                  <div className="flex flex-col justify-between flex-1 order-2 gap-3 md:order-1 md:bg-slate-50 md:p-4 rounded">
                     <div>
-                      <Button
-                        fluid
-                        type="submit"
-                        disabled={isSubmitting || !isValid}
-                      >
-                        {t('shared.generic.save')}
-                      </Button>
+                      <H3 className={{ root: 'border-b mb-0' }}>
+                        {t('shared.generic.profile')}
+                      </H3>
+                      <div className="space-y-3 mb-2">
+                        <FormikTextField
+                          disabled={!!values.email}
+                          name="email"
+                          label={t('shared.generic.email')}
+                          labelType="small"
+                          className={{ label: 'font-bold text-md text-black' }}
+                        />
+                        <FormikTextField
+                          name="username"
+                          label={t('shared.generic.username')}
+                          labelType="small"
+                          className={{ label: 'font-bold text-md text-black' }}
+                        />
+                        <FormikTextField
+                          name="password"
+                          label={t('shared.generic.password')}
+                          labelType="small"
+                          className={{ label: 'font-bold text-md text-black' }}
+                          type="password"
+                        />
+                        <FormikTextField
+                          name="passwordRepetition"
+                          label={t('shared.generic.passwordRepetition')}
+                          labelType="small"
+                          className={{ label: 'font-bold text-md text-black' }}
+                          type="password"
+                        />
+                        <div>
+                          <div className="font-bold">
+                            {t('pwa.profile.publicProfile')}
+                          </div>
+                          <div className="flex flex-row space-between gap-4">
+                            <div className="flex flex-col items-center gap-1">
+                              <FormikSwitchField name="isProfilePublic" />
+                              {values.isProfilePublic
+                                ? t('shared.generic.yes')
+                                : t('shared.generic.no')}
+                            </div>
+                            <div className="flex-1">
+                              <Prose className={{ root: 'prose-sm' }}>
+                                {t('pwa.profile.isProfilePublic')}
+                              </Prose>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
+
+                    <Button
+                      fluid
+                      type="submit"
+                      disabled={isSubmitting || !isValid}
+                    >
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={faSave} />
+                      </Button.Icon>
+                      <Button.Label>{t('shared.generic.save')}</Button.Label>
+                    </Button>
                   </div>
 
-                  <div className="flex-1 order-1 space-y-2 md:order-2">
-                    {Object.keys(AVATAR_OPTIONS).map((key) => (
-                      <div className="flex flex-row items-center" key={key}>
-                        <div className="flex-1">
-                          <p className="font-bold">{t(`pwa.avatar.${key}`)}</p>
-                        </div>
+                  <div className="flex-1 order-1 md:order-2 md:bg-slate-50 md:p-4 rounded justify-between flex flex-col space-y-4">
+                    {!data.self?.isActive && (
+                      <div className="flex-initial space-y-2">
+                        <H3 className={{ root: 'border-b mb-0' }}>Privacy</H3>
+                        <Markdown
+                          withProse
+                          withLinkButtons={false}
+                          content={t('pwa.profile.privacyNotice')}
+                        />
+                      </div>
+                    )}
+                    <div className="flex-initial space-y-2">
+                      <H3 className={{ root: 'border-b mb-0' }}>
+                        {t('pwa.profile.deleteProfile')}
+                      </H3>
+                      <Prose className={{ root: '' }}>
+                        {t('pwa.profile.deleteProfileDescription')}
+                      </Prose>
+
+                      <Modal
+                        title={t('pwa.profile.deleteProfile')}
+                        open={deleteModalOpen}
+                        onClose={(): void => setDeleteModalOpen(false)}
+                        hideCloseButton={true}
+                        className={{ content: 'h-max max-w-md' }}
+                        onPrimaryAction={
+                          <Button
+                            className={{
+                              root: 'bg-red-600 border-red-700 text-white',
+                            }}
+                            onClick={async () => {
+                              await deleteParticipantAccount()
+                              window?.location.reload()
+                            }}
+                          >
+                            {t('shared.generic.confirm')}
+                          </Button>
+                        }
+                        onSecondaryAction={
+                          <Button onClick={() => setDeleteModalOpen(false)}>
+                            {t('shared.generic.cancel')}
+                          </Button>
+                        }
+                        trigger={
+                          <Button
+                            onClick={(): void => setDeleteModalOpen(true)}
+                          >
+                            {t('shared.generic.delete')}
+                          </Button>
+                        }
+                      >
+                        {t('pwa.profile.deleteProfileConfirmation')}
+                      </Modal>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="md:bg-slate-50 md:p-4 rounded space-y-2">
+                  <H3 className={{ root: 'border-b' }}>Avatar</H3>
+                  <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+                    <div className="flex-1">
+                      <BigHead
+                        // @ts-ignore
+                        className="border-b-4 md:h-48 border-primary-80 w-full"
+                        eyebrows="raised"
+                        faceMask={false}
+                        lashes={false}
+                        mask={false}
+                        clothing={values.clothing}
+                        hat="none"
+                        graphic="none"
+                        accessory={values.accessory}
+                        body="chest"
+                        skinTone={values.skinTone}
+                        clothingColor={values.clothingColor}
+                        eyes={values.eyes}
+                        hair={values.hair}
+                        hairColor={values.hairColor}
+                        mouth={values.mouth}
+                        facialHair={values.facialHair}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs md:text-sm">
+                      {Object.keys(AVATAR_OPTIONS).map((key) => (
                         <FormikSelectField
+                          className={{
+                            root: 'w-full',
+                            label: 'font-bold text-md',
+                            select: {
+                              root: 'w-full md:w-36',
+                              trigger: 'w-full md:p-1 justify-between md:px-3',
+                            },
+                          }}
+                          key={key}
+                          label={t(`pwa.avatar.${key}`)}
+                          labelType="small"
                           name={key}
                           items={AVATAR_OPTIONS[key].map((value) => {
                             return {
@@ -237,12 +346,22 @@ function EditProfile() {
                             }
                           })}
                         />
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+                  <Button
+                    fluid
+                    type="submit"
+                    disabled={isSubmitting || !isValid}
+                  >
+                    <Button.Icon>
+                      <FontAwesomeIcon icon={faSave} />
+                    </Button.Icon>
+                    <Button.Label>{t('shared.generic.save')}</Button.Label>
+                  </Button>
                 </div>
-              </Form>
-            </div>
+              </div>
+            </Form>
           )
         }}
       </Formik>
@@ -258,12 +377,11 @@ function EditProfile() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

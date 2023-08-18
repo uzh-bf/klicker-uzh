@@ -1,11 +1,12 @@
 import { useMutation } from '@apollo/client'
 import { LoginUserTokenDocument } from '@klicker-uzh/graphql/dist/ops'
+import LoginForm from '@klicker-uzh/shared-components/src/LoginForm'
 import { Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Router from 'next/router'
 import { useState } from 'react'
-import LoginForm from 'shared-components/src/LoginForm'
 import * as Yup from 'yup'
 
 const loginSchema = Yup.object().shape({
@@ -75,12 +76,11 @@ function Login() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

@@ -12,14 +12,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FeedbackResponse } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  FormikTextareaField,
-  ThemeContext,
-} from '@uzh-bf/design-system'
+import { Button, FormikTextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
-import { useContext, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface IFeedback {
@@ -55,7 +52,7 @@ function Feedback({
   onResolveFeedback,
   onRespondToFeedback,
 }: Props) {
-  const theme = useContext(ThemeContext)
+  const t = useTranslations()
   const [isEditingActive, setIsEditingActive] = useState(false)
   const [isBeingDeleted, setIsBeingDeleted] = useState(false)
 
@@ -77,7 +74,9 @@ function Feedback({
                   <FontAwesomeIcon icon={faCheck} className="ml-2" />
                   {responses && responses.length > 0 && (
                     <div className="text-gray-500 ml-7 md:hidden print:hidden">
-                      {responses.length} Antworten gegeben
+                      {t('manage.cockpit.answersGiven', {
+                        number: responses.length,
+                      })}
                     </div>
                   )}
                 </>
@@ -97,7 +96,9 @@ function Feedback({
           <div className="flex flex-row items-end mt-2">
             {responses && responses.length > 0 && (
               <div className="hidden mr-4 text-gray-500 md:block">
-                {responses.length} Antworten gegeben
+                {t('manage.cockpit.answersGiven', {
+                  number: responses.length,
+                })}
               </div>
             )}
             <Button
@@ -216,19 +217,16 @@ function Feedback({
                       name="respondToFeedbackInput"
                       placeholder={
                         resolved
-                          ? 'Öffnen Sie das Feedback wieder, um zu antworten...'
-                          : 'Formulieren Sie Ihre Antwort hier...'
+                          ? t('manage.cockpit.reopenToAnswer')
+                          : t('manage.cockpit.insertResponseHere')
                       }
                       disabled={resolved}
                       maxLength={1000}
-                      maxLengthLabel="Zeichen"
+                      maxLengthLabel={t('shared.generic.characters')}
                     />
                     <Button
                       className={{
-                        root: twMerge(
-                          'float-right px-5 text-white disabled:opacity-60',
-                          theme.primaryBgDark
-                        ),
+                        root: 'float-right px-5 text-white disabled:opacity-60 bg-primary-80',
                       }}
                       type="submit"
                       disabled={isSubmitting || resolved}
@@ -236,7 +234,7 @@ function Feedback({
                       <Button.Icon className={{ root: 'mr-1' }}>
                         <FontAwesomeIcon icon={faPaperPlane} />
                       </Button.Icon>
-                      <Button.Label>Respond</Button.Label>
+                      <Button.Label>{t('shared.generic.respond')}</Button.Label>
                     </Button>
                   </Form>
                 </div>
@@ -252,7 +250,11 @@ function Feedback({
               <Button.Icon className={{ root: 'mr-1' }}>
                 <FontAwesomeIcon icon={faThumbTack} />
               </Button.Icon>
-              <Button.Label>{pinned ? 'Unpin' : 'Pin'}</Button.Label>
+              <Button.Label>
+                {pinned
+                  ? t('manage.cockpit.unpinFeedback')
+                  : t('manage.cockpit.pinFeedback')}
+              </Button.Label>
             </Button>
             <Button
               className={{ root: 'px-5' }}
@@ -273,7 +275,9 @@ function Feedback({
                   <FontAwesomeIcon icon={faLock} />
                 </Button.Icon>
               )}
-              {resolved ? 'Reopen' : 'Resolve'}{' '}
+              {resolved
+                ? t('manage.cockpit.reopen')
+                : t('manage.cockpit.resolve')}
             </Button>
             {/* <Button
               className="px-5 disabled:opacity-60"

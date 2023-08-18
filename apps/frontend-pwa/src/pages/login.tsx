@@ -3,12 +3,13 @@ import {
   LoginParticipantDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import LoginForm from '@klicker-uzh/shared-components/src/LoginForm'
 import { Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import LoginForm from 'shared-components/src/LoginForm'
 import * as Yup from 'yup'
 
 function Login() {
@@ -97,12 +98,11 @@ function Login() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
     },
   }
 }

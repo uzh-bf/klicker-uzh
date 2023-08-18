@@ -2,6 +2,7 @@ import { Question as QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import React from 'react'
 
+import { useTranslations } from 'next-intl'
 import Question from './Question'
 
 interface QuestionListProps {
@@ -17,6 +18,7 @@ function QuestionList({
   questions = [],
   tagfilter = [],
 }: QuestionListProps): React.ReactElement {
+  const t = useTranslations()
   if (!questions) {
     return <></>
   }
@@ -26,13 +28,13 @@ function QuestionList({
       <UserNotification
         type="warning"
         className={{ root: 'ml-7 text-sm' }}
-        message="Wir konnten leider keine Fragen finden, welche den gewünschten Kriterien entsprechen. Bitte versuchen Sie es mit anderen Filtern oder erstellen Sie eine neue Frage."
+        message={t('manage.questionPool.noQuestionsWarning')}
       />
     )
   }
 
   return (
-    <>
+    <div className="space-y-1 md:space-y-2">
       {questions.map((question, index): any => (
         <Question
           checked={selectedQuestions[index]}
@@ -51,7 +53,7 @@ function QuestionList({
           updatedAt={question.updatedAt}
         />
       ))}
-    </>
+    </div>
   )
 }
 

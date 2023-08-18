@@ -6,7 +6,7 @@ import {
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { UserNotification } from '@uzh-bf/design-system'
-import { GetServerSideProps } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Layout from '../../../../components/Layout'
@@ -66,7 +66,7 @@ function LearningElementPage({ courseId, id }: Props) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (
     typeof ctx.params?.courseId !== 'string' ||
     typeof ctx.params?.id !== 'string'
@@ -86,24 +86,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     ctx,
   })
 
-  if (participant && !participant.avatar) {
-    return {
-      redirect: {
-        destination: `/editProfile?redirect_to=${encodeURIComponent(
-          `/course/${ctx.params.courseId}/element/${ctx.params.id}`
-        )}`,
-        statusCode: 302,
-      },
-    }
-  }
-
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
       courseId: ctx.params.courseId,
-      messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+        .default,
     },
   })
 }

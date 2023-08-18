@@ -126,7 +126,7 @@ export async function createSession(
 ) {
   const questionMap = await getQuestionMap(blocks, ctx)
 
-  const session = await ctx.prisma.session.create({
+  const session = await ctx.prisma.liveSession.create({
     data: {
       name,
       displayName: displayName ?? name,
@@ -214,7 +214,7 @@ export async function editSession(
   ctx: ContextWithUser
 ) {
   // find all instances belonging to the old session and delete them as the content of the questions might have changed
-  const oldSession = await ctx.prisma.session.findUnique({
+  const oldSession = await ctx.prisma.liveSession.findUnique({
     where: {
       id,
       ownerId: ctx.user.sub,
@@ -248,7 +248,7 @@ export async function editSession(
       id: { in: oldQuestionInstances.map(({ id }) => id) },
     },
   })
-  await ctx.prisma.session.update({
+  await ctx.prisma.liveSession.update({
     where: { id },
     data: {
       blocks: {
@@ -262,7 +262,7 @@ export async function editSession(
 
   const questionMap = await getQuestionMap(blocks, ctx)
 
-  const session = await ctx.prisma.session.update({
+  const session = await ctx.prisma.liveSession.update({
     where: { id },
     data: {
       name,
@@ -339,7 +339,7 @@ export async function getLiveSessionData(
   }
 
   // TODO: only return data that is required for the live session update
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
       blocks: {
@@ -366,7 +366,7 @@ export async function startSession(
   { id }: StartSessionArgs,
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.session.findFirst({
+  const session = await ctx.prisma.liveSession.findFirst({
     where: {
       id,
       ownerId: ctx.user.sub,
@@ -413,7 +413,7 @@ export async function startSession(
 
       // TODO: if the session is paused, reinitialize and restart
 
-      return ctx.prisma.session.update({
+      return ctx.prisma.liveSession.update({
         where: {
           id,
         },
@@ -432,7 +432,7 @@ interface EndSessionArgs {
 }
 
 export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
-  const session = await ctx.prisma.session.findFirst({
+  const session = await ctx.prisma.liveSession.findFirst({
     where: {
       id,
       ownerId: ctx.user.sub,
@@ -475,6 +475,16 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                 courseId: session.courseId!,
                 participantId,
               },
+              participant: {
+                isActive: true,
+              },
+              participation: {
+                isActive: true,
+              },
+            },
+            include: {
+              participation: true,
+              participant: true,
             },
             create: {
               type: 'COURSE',
@@ -529,6 +539,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
             ctx.prisma.participant.update({
               where: {
                 id: participantId,
+                isActive: true,
               },
               data: {
                 xp: {
@@ -546,7 +557,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
   ctx.redisExec.unlink(`s:${id}:lb`)
   ctx.redisExec.unlink(`s:${id}:xp`)
 
-  return ctx.prisma.session.update({
+  return ctx.prisma.liveSession.update({
     where: {
       id,
     },
@@ -566,7 +577,7 @@ export async function activateSessionBlock(
   { sessionId, sessionBlockId }: ActivateSessionBlockArgs,
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: {
       id: sessionId,
       ownerId: ctx.user.sub,
@@ -591,7 +602,7 @@ export async function activateSessionBlock(
   if (session.activeBlockId === sessionBlockId) return session
 
   // set the new block to active
-  const updatedSession = await ctx.prisma.session.update({
+  const updatedSession = await ctx.prisma.liveSession.update({
     where: { id: sessionId },
     data: {
       activeBlock: {
@@ -823,7 +834,7 @@ export async function deactivateSessionBlock(
   ctx: ContextWithUser,
   isScheduled?: boolean
 ) {
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: {
       id: sessionId,
       ownerId: ctx.user.sub,
@@ -872,7 +883,7 @@ export async function deactivateSessionBlock(
     })
 
   // TODO: what if session gamified and results are reset? are points taken away?
-  const updatedSession = await ctx.prisma.session.update({
+  const updatedSession = await ctx.prisma.liveSession.update({
     where: {
       id: sessionId,
     },
@@ -1016,7 +1027,7 @@ export async function deactivateSessionBlock(
 }
 
 export async function getRunningSession({ id }: { id: string }, ctx: Context) {
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: { id },
     include: {
       activeBlock: {
@@ -1095,7 +1106,7 @@ export async function getLeaderboard(
   { sessionId }: { sessionId: string },
   ctx: Context
 ) {
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: {
       id: sessionId,
     },
@@ -1174,7 +1185,7 @@ export async function changeSessionSettings(
   }: SessionSettingArgs,
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.session.update({
+  const session = await ctx.prisma.liveSession.update({
     where: {
       id,
       ownerId: ctx.user.sub,
@@ -1346,7 +1357,7 @@ export async function getCockpitSession(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
       activeBlock: true,
@@ -1414,7 +1425,7 @@ export async function getControlSession(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
       activeBlock: true,
@@ -1445,7 +1456,7 @@ export async function getPinnedFeedbacks(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {
       confusionFeedbacks: true,
@@ -1558,7 +1569,7 @@ export async function getSessionEvaluation(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: {
       id,
       ownerId: ctx.user.sub,
@@ -1703,7 +1714,7 @@ export async function cancelSession(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.session.findUnique({
+  const session = await ctx.prisma.liveSession.findUnique({
     where: {
       id,
       ownerId: ctx.user.sub,
@@ -1732,7 +1743,7 @@ export async function cancelSession(
   const instances = session.blocks.map((block) => block.instances).flat()
 
   const [updatedSession] = await ctx.prisma.$transaction([
-    ctx.prisma.session.update({
+    ctx.prisma.liveSession.update({
       where: { id },
       data: {
         status: SessionStatus.PREPARED,
@@ -1810,7 +1821,7 @@ export async function deleteSession(
   ctx: ContextWithUser
 ) {
   try {
-    const deletedItem = await ctx.prisma.session.delete({
+    const deletedItem = await ctx.prisma.liveSession.delete({
       where: {
         id,
         ownerId: ctx.user.sub,

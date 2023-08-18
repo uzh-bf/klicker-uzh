@@ -11,16 +11,16 @@ import {
   LeaveCourseDocument,
   LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { Button, H3, H4 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { GetServerSideProps } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import Leaderboard from 'shared-components/src/Leaderboard'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
@@ -35,7 +35,11 @@ import Rank3Img from 'public/rank3.svg'
 
 // TODO: replace fields in this component through our own design system components
 
-function CourseOverview({ courseId }: any) {
+interface Props {
+  courseId: string
+}
+
+function CourseOverview({ courseId }: Props) {
   const t = useTranslations()
   const router = useRouter()
   const [selectedTab, setSelectedTab] = useState('global')
@@ -178,6 +182,7 @@ function CourseOverview({ courseId }: any) {
                     </H3>
 
                     <Leaderboard
+                      courseName={course.displayName}
                       leaderboard={leaderboard || []}
                       activeParticipation={participation?.isActive}
                       onJoin={joinCourse}
@@ -265,9 +270,7 @@ function CourseOverview({ courseId }: any) {
               {/* // TODO: update the translation strings as well, once this hard-coded content has been updated with a flexible implementation */}
               {course?.awards && course?.awards?.length != 0 && (
                 <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
-                  <H3 className={{ root: 'mb-2 text-base' }}>
-                    BF-Champion Awards
-                  </H3>
+                  <H3 className={{ root: 'mb-2 text-base' }}>Awards</H3>
                   <div className="flex flex-col gap-1 text-sm text-gray-700 md:gap-6 md:flex-row md:flex-wrap">
                     <div className="flex-1 space-y-1">
                       {course.awards
@@ -335,6 +338,7 @@ function CourseOverview({ courseId }: any) {
                   <div className="flex flex-row flex-wrap gap-4">
                     <div className="flex flex-col flex-1">
                       <Leaderboard
+                        courseName={course.displayName}
                         leaderboard={group.participants}
                         participant={participant}
                         onLeave={
@@ -583,7 +587,7 @@ function CourseOverview({ courseId }: any) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
@@ -599,17 +603,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     apolloClient,
     ctx,
   })
-
-  if (participant && !participant.avatar) {
-    return {
-      redirect: {
-        destination: `/editProfile?redirect_to=${encodeURIComponent(
-          `/course/${ctx.params.courseId}`
-        )}`,
-        statusCode: 302,
-      },
-    }
-  }
 
   const result = await apolloClient.query({
     query: GetCourseOverviewDataDocument,
@@ -637,9 +630,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       courseId: ctx.params.courseId,
-      messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+        .default,
     },
   })
 }

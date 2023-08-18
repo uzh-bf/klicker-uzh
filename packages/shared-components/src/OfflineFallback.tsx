@@ -1,4 +1,5 @@
 import { UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import React from 'react'
 
 interface OfflineNotificationProps {
@@ -9,12 +10,14 @@ interface OfflineNotificationProps {
 }
 
 const OfflineNotification = ({ LayoutComponent }: OfflineNotificationProps) => {
+  const t = useTranslations()
+
   return (
     <LayoutComponent title="KlickerUZH">
       <div className="flex items-center justify-center align-middle">
         <UserNotification
           type="info"
-          message="Sie scheinen im Moment offline zu sein. Verbinden Sie Ihr Gerät mit dem Internet, um die KlickerUZH App nutzen zu können."
+          message={t('shared.error.offlineHint')}
         ></UserNotification>
       </div>
     </LayoutComponent>

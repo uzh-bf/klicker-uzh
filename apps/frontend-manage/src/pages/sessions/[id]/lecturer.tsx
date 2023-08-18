@@ -10,14 +10,13 @@ import Head from 'next/head'
 import { useMemo } from 'react'
 import ConfusionCharts from '../../../components/interaction/confusion/ConfusionCharts'
 
-// import { Dropdown, Icon } from 'semantic-ui-react'
+import { GetStaticPropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 
-// import PinnedFeedbacksQuery from '../../graphql/queries/PinnedFeedbacksQuery.graphql'
-
-function Feedbacks() {
-  // const [sortBy, setSortBy] = useState('upvotes')
+function LecturerView() {
+  const t = useTranslations()
   const router = useRouter()
 
   const { data, loading, error, subscribeToMore } = useQuery(
@@ -58,11 +57,11 @@ function Feedbacks() {
   }, [aggregateConfusion])
 
   if (loading) {
-    return <div className="p-4">Loading...</div>
+    return <div className="p-4">{t('shared.generic.loading')}</div>
   }
 
   if (!data) {
-    return <div className="p-4">Keine Daten verfügbar...</div>
+    return <div className="p-4">{t('manage.lecturer.noDataAvailable')}</div>
   }
 
   const {
@@ -73,11 +72,19 @@ function Feedbacks() {
   } = data?.pinnedFeedbacks
 
   if (!isLiveQAEnabled && !isConfusionFeedbackEnabled) {
-    return <div className="p-4">Publikumsinteraktion ist nicht aktiviert.</div>
+    return (
+      <div className="p-4">
+        {t('manage.lecturer.audienceInteractionNotActivated')}
+      </div>
+    )
   }
 
   if (error) {
-    return <div className="p-4">Error: {error.message}</div>
+    return (
+      <div className="p-4">
+        {t('shared.generic.error')}: {error.message}
+      </div>
+    )
   }
 
   return (
@@ -88,7 +95,7 @@ function Feedbacks() {
       )}
     >
       <Head>
-        <title>Feedbacks</title>
+        <title>{t('shared.generic.feedbacks')}</title>
       </Head>
 
       {isLiveQAEnabled && (
@@ -106,7 +113,7 @@ function Feedbacks() {
 
           {feedbacks?.length === 0 && (
             <div className="mt-4 flex items-center border border-solid bg-primary-10% border-primary text-2xl p-4">
-              No feedbacks received or pinned yet...
+              {t('manage.lecturer.noFeedbacks')}
             </div>
           )}
 
@@ -143,4 +150,20 @@ function Feedbacks() {
   )
 }
 
-export default Feedbacks
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
+  return {
+    props: {
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+        .default,
+    },
+  }
+}
+
+export function getStaticPaths() {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
+}
+
+export default LecturerView

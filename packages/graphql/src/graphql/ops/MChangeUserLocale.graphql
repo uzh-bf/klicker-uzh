@@ -1,0 +1,6 @@
+mutation ChangeUserLocale($locale: LocaleType!) {
+  changeUserLocale(locale: $locale) {
+    id
+    locale
+  }
+}

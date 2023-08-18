@@ -17,8 +17,9 @@ import {
   InstanceResult,
 } from '@klicker-uzh/graphql/dist/ops'
 import { EvaluationBlock } from '@pages/sessions/[id]/evaluation'
-import { Button, Select, ThemeContext } from '@uzh-bf/design-system'
-import { useContext, useMemo } from 'react'
+import { Button, Select } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationTabs from '../../hooks/useEvaluationTabs'
 
@@ -64,8 +65,7 @@ function EvaluationControlBar({
   confusionFeedbacks,
   isGamificationEnabled,
 }: EvaluationControlBarProps) {
-  const theme = useContext(ThemeContext)
-
+  const t = useTranslations()
   const width = 1
   const tabs = useEvaluationTabs({ blocks, selectedBlock, width })
 
@@ -123,7 +123,9 @@ function EvaluationControlBar({
               <FontAwesomeIcon icon={faArrowRight} />
             </Button>
 
-            <div className="ml-2 font-bold">Frage:</div>
+            <div className="ml-2 font-bold">
+              {t('shared.generic.question')}:
+            </div>
 
             <Select
               items={selectData || []}
@@ -155,8 +157,7 @@ function EvaluationControlBar({
         >
           <div
             className={twMerge(
-              'flex flex-row items-center h-full px-2',
-              theme.primaryBgHover,
+              'flex flex-row items-center h-full px-2 hover:bg-primary-20',
               (blocks.length <= 2 * width + 1 || selectedBlock - width <= 0) &&
                 'text-uzh-grey-80 sm:hover:bg-white cursor-not-allowed'
             )}
@@ -178,13 +179,12 @@ function EvaluationControlBar({
             }}
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent w-[7rem] text-center',
-                theme.primaryBgHover,
+                'px-3 py-2 border-b-2 border-transparent w-[7rem] text-center hover:bg-primary-20',
                 !showLeaderboard &&
                   !showFeedbacks &&
                   !showConfusion &&
                   tab.value === selectedBlock &&
-                  `border-solid ${theme.primaryBorderDark}`
+                  `border-solid border-primary-80`
               ),
             }}
           >
@@ -216,8 +216,7 @@ function EvaluationControlBar({
         >
           <div
             className={twMerge(
-              'flex flex-row items-center h-full px-2',
-              theme.primaryBgHover,
+              'flex flex-row items-center h-full px-2 hover:bg-primary-20',
               (blocks.length <= 2 * width + 1 ||
                 selectedBlock + width >= blocks.length - 1) &&
                 'text-uzh-grey-80 sm:hover:bg-white cursor-not-allowed'
@@ -231,9 +230,8 @@ function EvaluationControlBar({
             basic
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent',
-                theme.primaryBgHover,
-                showLeaderboard && `border-solid ${theme.primaryBorderDark}`
+                'px-3 py-2 border-b-2 border-transparent hover:bg-primary-20',
+                showLeaderboard && `border-solid border-primary-80`
               ),
             }}
             onClick={() => {
@@ -248,7 +246,7 @@ function EvaluationControlBar({
               <div>
                 <FontAwesomeIcon icon={faGamepad} />
               </div>
-              <div>Leaderboard</div>
+              <div>{t('shared.generic.leaderboard')}</div>
             </div>
           </Button>
         )}
@@ -258,9 +256,8 @@ function EvaluationControlBar({
             basic
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent',
-                theme.primaryBgHover,
-                showFeedbacks && `border-solid ${theme.primaryBorderDark}`
+                'px-3 py-2 border-b-2 border-transparent hover:bg-primary-20',
+                showFeedbacks && `border-solid border-primary-80`
               ),
             }}
             onClick={() => {
@@ -275,7 +272,7 @@ function EvaluationControlBar({
               <div>
                 <FontAwesomeIcon icon={faComment} />
               </div>
-              <div>Feedbacks</div>
+              <div>{t('shared.generic.feedbacks')}</div>
             </div>
           </Button>
         )}
@@ -284,9 +281,8 @@ function EvaluationControlBar({
             basic
             className={{
               root: twMerge(
-                'px-3 py-2 border-b-2 border-transparent',
-                theme.primaryBgHover,
-                showConfusion && `border-solid ${theme.primaryBorderDark}`
+                'px-3 py-2 border-b-2 border-transparent hover:bg-primary-20',
+                showConfusion && `border-solid border-primary-80`
               ),
             }}
             onClick={() => {
@@ -301,7 +297,7 @@ function EvaluationControlBar({
               <div>
                 <FontAwesomeIcon icon={faFaceSmile} />
               </div>
-              <div>Confusion</div>
+              <div>{t('manage.evaluation.confusion')}</div>
             </div>
           </Button>
         )}

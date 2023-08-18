@@ -2,10 +2,11 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.0.0-alpha.82",
+  "version": "3.0.0-beta.4",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "cypress"
   ],
   "license": "AGPL-3.0",
   "repository": {
@@ -50,8 +51,8 @@
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
-    "test": "cypress open",
-    "test:run": "cypress run",
+    "test": "turbo run test",
+    "test:run": "turbo run test:run",
     "start": "turbo run start",
     "start:test": "turbo run start:test",
     "prepare": "husky install",
@@ -60,26 +61,17 @@
     "prisma:reset": "npm run -w packages/prisma prisma:reset"
   },
   "devDependencies": {
-    "@cypress/code-coverage": "3.10.6",
-    "@testing-library/cypress": "9.0.0",
-    "azure-functions-core-tools": "4.0.5198",
-    "cypress": "12.12.0",
+    "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
     "husky": "8.0.3",
-    "nyc": "15.1.0",
-    "prettier": "2.8.8",
-    "prettier-plugin-organize-imports": "3.2.2",
     "standard-version": "9.5.0",
-    "turbo": "1.9.8",
+    "turbo": "1.10.12",
     "yaml": "2.3.0"
   },
-  "dependencies": {
-    "@prisma/client": "4.14.1",
-    "prisma": "4.14.1"
-  },
   "volta": {
-    "node": "18.16.0"
+    "node": "18.17.0",
+    "pnpm": "8.6.12"
   },
-  "packageManager": "npm@8.19.3",
+  "packageManager": "pnpm@8.6.12",
   "engines": {
     "node": "=18"
   }

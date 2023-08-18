@@ -1,12 +1,14 @@
+import ContentInput from '@klicker-uzh/shared-components/src/ContentInput'
 import { Label } from '@uzh-bf/design-system'
 import { useField } from 'formik'
-import ContentInput from 'shared-components/src/ContentInput'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 interface EditorFieldProps {
   label: string
   fieldName: string
   tooltip?: string
+  showToolbarOnFocus?: boolean
   className?: string
   data_cy?: string
 }
@@ -15,9 +17,11 @@ function EditorField({
   label,
   fieldName,
   tooltip,
+  showToolbarOnFocus = true,
   className,
   data_cy,
 }: EditorFieldProps) {
+  const t = useTranslations()
   const [field, meta, helpers] = useField(fieldName)
 
   return (
@@ -39,8 +43,8 @@ function EditorField({
           helpers.setValue(newValue)
           helpers.setTouched(true)
         }}
-        showToolbarOnFocus={true}
-        placeholder="Inhalt hier eingeben…"
+        showToolbarOnFocus={showToolbarOnFocus}
+        placeholder={t('manage.sessionForms.enterContentHere')}
         className={{
           editor: '!leading-3 h-14 overflow-x-auto',
           root: 'w-full',

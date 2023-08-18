@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import { EditTagDocument, Tag } from '@klicker-uzh/graphql/dist/ops'
-import { Button, ThemeContext } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { useContext } from 'react'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -12,13 +12,11 @@ interface TagEditFormProps {
 }
 
 function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
-  const theme = useContext(ThemeContext)
+  const t = useTranslations()
   const [editTag] = useMutation(EditTagDocument)
 
   const TagModifierSchema = Yup.object().shape({
-    tag: Yup.string().required(
-      'Geben Sie einen gültigen Namen für Ihren Tag ein.'
-    ),
+    tag: Yup.string().required(t('manage.tags.validName')),
   })
 
   return (
@@ -45,8 +43,7 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
                   name="tag"
                   type="tag"
                   className={twMerge(
-                    'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 py-1 px-1',
-                    theme.primaryBorderFocus,
+                    'w-full rounded bg-uzh-grey-20 bg-opacity-50 border border-uzh-grey-60 py-1 px-1 focus:border-primary-40',
                     errors.tag && touched.tag && 'border-red-400 bg-red-50'
                   )}
                   data-cy="tag-modifier-field"
@@ -58,14 +55,13 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
                   disabled={isSubmitting || !isValid}
                   className={{
                     root: twMerge(
-                      isValid && theme.primaryTextHover,
-                      isValid && theme.primaryBgHover,
                       'px-2 rounded border border-solid',
+                      isValid && 'sm:hover:text-primary hover:bg-primary-20',
                       !isValid && 'text-uzh-grey-60 cursor-not-allowed'
                     ),
                   }}
                 >
-                  OK
+                  {t('shared.generic.ok')}
                 </Button>
               </div>
 

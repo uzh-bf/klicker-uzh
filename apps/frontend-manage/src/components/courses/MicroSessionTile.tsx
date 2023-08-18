@@ -11,9 +11,10 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { MicroSession, MicroSessionStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, ThemeContext, Toast } from '@uzh-bf/design-system'
+import { Button, Toast } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import StatusTag from './StatusTag'
 import MicroSessionDeletionModal from './modals/MicroSessionDeletionModal'
@@ -24,7 +25,7 @@ interface MicroSessionProps {
 }
 
 function MicroSessionTile({ microSession }: MicroSessionProps) {
-  const theme = useContext(ThemeContext)
+  const t = useTranslations()
   const router = useRouter()
 
   const [publishModal, setPublishModal] = useState(false)
@@ -61,12 +62,16 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         </Ellipsis>
 
         {microSession.status === MicroSessionStatus.Draft && (
-          <StatusTag color="bg-gray-200" status="Draft" icon={faPencil} />
+          <StatusTag
+            color="bg-gray-200"
+            status={t('shared.generic.draft')}
+            icon={faPencil}
+          />
         )}
         {microSession.status === MicroSessionStatus.Published && (
           <StatusTag
             color="bg-green-300"
-            status="Published"
+            status={t('shared.generic.published')}
             icon={
               microSession.status === MicroSessionStatus.Published
                 ? faPlay
@@ -76,15 +81,19 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         )}
       </div>
       <div className="mb-1 italic">
-        {microSession.numOfInstances || '0'} Fragen
+        {t('manage.course.nQuestions', {
+          number: microSession.numOfInstances || '0',
+        })}
       </div>
       <div className="flex flex-row items-center gap-2">
         <FontAwesomeIcon icon={faHourglassStart} />
-        <div>Start: {scheduledStartAtString}</div>
+        <div>
+          {t('manage.course.startAt', { time: scheduledStartAtString })}
+        </div>
       </div>
       <div className="flex flex-row items-center gap-2">
         <FontAwesomeIcon icon={faHourglassEnd} />
-        <div>Ende: {scheduledEndAtString}</div>
+        <div>{t('manage.course.endAt', { time: scheduledEndAtString })}</div>
       </div>
       <Button
         basic
@@ -95,16 +104,16 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           setCopyToast(true)
         }}
         className={{
-          root: twMerge('flex flex-row items-center gap-1', theme.primaryText),
+          root: twMerge('flex flex-row items-center gap-1 text-primary'),
         }}
       >
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
-        <div>Zugriffslink kopieren</div>
+        <div>{t('manage.course.copyAccessLink')}</div>
       </Button>
       {microSession.status === MicroSessionStatus.Draft && (
         <Button
           basic
-          className={{ root: theme.primaryText }}
+          className={{ root: 'text-primary' }}
           onClick={() =>
             router.push({
               pathname: '/',
@@ -118,21 +127,21 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           <Button.Icon>
             <FontAwesomeIcon icon={faPencil} />
           </Button.Icon>
-          <Button.Label>Micro-Session bearbeiten</Button.Label>
+          <Button.Label>{t('manage.course.editMicroSession')}</Button.Label>
         </Button>
       )}
 
       {microSession.status === MicroSessionStatus.Draft && (
         <Button
           basic
-          className={{ root: theme.primaryText }}
+          className={{ root: 'text-primary' }}
           onClick={() => setPublishModal(true)}
           data={{ cy: 'publish-micro-session' }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
           </Button.Icon>
-          <Button.Label>Micro-Session veröffentlichen</Button.Label>
+          <Button.Label>{t('manage.course.publishMicroSession')}</Button.Label>
         </Button>
       )}
 
@@ -145,7 +154,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           <Button.Icon>
             <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
           </Button.Icon>
-          <Button.Label>Micro-Session löschen</Button.Label>
+          <Button.Label>{t('manage.course.deleteMicroSession')}</Button.Label>
         </Button>
       )}
 
@@ -155,8 +164,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         type="success"
         className={{ root: 'w-[24rem]' }}
       >
-        Der Link zur Micro-Session wurde erfolgreich in die Zwischenablage
-        kopiert.
+        {t('manage.course.linkMicroSessionCopied')}
       </Toast>
       <PublishConfirmationModal
         elementType="MICRO_SESSION"

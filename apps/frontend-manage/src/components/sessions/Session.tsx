@@ -1,5 +1,4 @@
 import { useMutation } from '@apollo/client'
-import LiveSessionDeletionModal from '@components/courses/modals/LiveSessionDeletionModal'
 import {
   faArrowUpRightFromSquare,
   faCalendarDays,
@@ -18,16 +17,17 @@ import {
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Collapsible, H3, ThemeContext } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
-import { useContext, useState } from 'react'
 import {
   QUESTION_TYPES_SHORT,
   SESSION_STATUS,
-} from 'shared-components/src/constants'
-import { twMerge } from 'tailwind-merge'
+} from '@klicker-uzh/shared-components/src/constants'
+import { Button, Collapsible, H3 } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
+import LiveSessionDeletionModal from '../courses/modals/LiveSessionDeletionModal'
 import EmbeddingModal from './EmbeddingModal'
 
 interface SessionProps {
@@ -35,7 +35,7 @@ interface SessionProps {
 }
 
 function Session({ session }: SessionProps) {
-  const theme = useContext(ThemeContext)
+  const t = useTranslations()
   const [startSession] = useMutation(StartSessionDocument, {
     variables: { id: session.id },
     refetchQueries: [
@@ -75,9 +75,9 @@ function Session({ session }: SessionProps) {
 
   return (
     <>
-      <div key={session.id} className="p-2 border rounded" data-cy="session">
+      <div key={session.id} className="p-1 border rounded" data-cy="session">
         <Collapsible
-          className={{ root: 'border-0' }}
+          className={{ root: 'border-0 !py-0.5' }}
           key={session.id}
           open={showDetails && session.id === selectedSession}
           onChange={() => {
@@ -101,16 +101,15 @@ function Session({ session }: SessionProps) {
                       basic
                       onClick={() => setEmbedModalOpen(true)}
                       className={{
-                        root: twMerge(
-                          'flex flex-row items-center gap-2 text-sm cursor-pointer',
-                          theme.primaryTextHover
-                        ),
+                        root: 'flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary',
                       }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={faCode} size="sm" />
                       </Button.Icon>
-                      <Button.Label>Einbettung Evaluation</Button.Label>
+                      <Button.Label>
+                        {t('manage.sessions.embeddingEvaluation')}
+                      </Button.Label>
                     </Button>
                     <EmbeddingModal
                       key={session.id}
@@ -127,14 +126,11 @@ function Session({ session }: SessionProps) {
                 {SESSION_STATUS.RUNNING === session.status && (
                   <Link href={`/sessions/${session.id}/cockpit`} legacyBehavior>
                     <div
-                      className={twMerge(
-                        'flex flex-row items-center gap-2 text-sm cursor-pointer',
-                        theme.primaryTextHover
-                      )}
+                      className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
                       data-cy="session-cockpit"
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      <div>Dozierenden Cockpit</div>
+                      <div>{t('manage.sessions.lecturerCockpit')}</div>
                     </div>
                   </Link>
                 )}
@@ -143,14 +139,9 @@ function Session({ session }: SessionProps) {
                     href={`/sessions/${session.id}/evaluation`}
                     legacyBehavior
                   >
-                    <div
-                      className={twMerge(
-                        'flex flex-row items-center gap-2 text-sm cursor-pointer',
-                        theme.primaryTextHover
-                      )}
-                    >
+                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      <div>Session Evaluation</div>
+                      <div>{t('manage.sessions.sessionEvaluation')}</div>
                     </div>
                   </Link>
                 )}
@@ -164,14 +155,9 @@ function Session({ session }: SessionProps) {
                     }}
                     data={{ cy: 'start-session' }}
                   >
-                    <div
-                      className={twMerge(
-                        'flex flex-row items-center gap-2 text-sm cursor-pointer',
-                        theme.primaryTextHover
-                      )}
-                    >
+                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
-                      <div>Start Session</div>
+                      <div>{t('manage.sessions.startSession')}</div>
                     </div>
                   </Button>
                 )}
@@ -184,17 +170,59 @@ function Session({ session }: SessionProps) {
           }
           closedContent={
             <div className="italic">
-              {session.numOfBlocks} Blöcke, {session.numOfQuestions} Fragen
+              {t('manage.sessions.nBlocksQuestions', {
+                blocks: session.numOfBlocks,
+                questions: session.numOfQuestions,
+              })}
             </div>
+          }
+          primary={
+            (SESSION_STATUS.PREPARED === session.status ||
+              SESSION_STATUS.SCHEDULED === session.status) && (
+              <div className="flex flex-row float-right gap-1">
+                <Button
+                  className={{ root: 'text-sm py-1 px-3' }}
+                  onClick={() =>
+                    router.push({
+                      pathname: '/',
+                      query: { sessionId: session.id, editMode: 'liveSession' },
+                    })
+                  }
+                >
+                  <Button.Icon className={{ root: 'text-slate-600' }}>
+                    <FontAwesomeIcon icon={faPencil} />
+                  </Button.Icon>
+                  <Button.Label>
+                    {t('manage.sessions.editSession')}
+                  </Button.Label>
+                </Button>
+                <Button
+                  className={{
+                    root: 'border-red-600 text-sm py-1 px-3',
+                  }}
+                  onClick={() => setDeletionModal(true)}
+                >
+                  <Button.Icon className={{ root: 'text-red-400' }}>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </Button.Icon>
+                  <Button.Label>
+                    {t('manage.sessions.deleteSession')}
+                  </Button.Label>
+                </Button>
+              </div>
+            )
           }
         >
           <div className="flex flex-row gap-2 my-2 overflow-y-scroll">
             {session.blocks?.map((block, index) => (
-              <div key={block.id} className="flex flex-col gap-2">
+              <div key={block.id} className="flex flex-col gap-1">
                 <div className="italic">
-                  Block {index + 1} ({block.instances.length} Fragen)
+                  {t('manage.sessions.blockXQuestions', {
+                    block: index + 1,
+                    questions: block.instances?.length,
+                  })}
                 </div>
-                {block.instances.map((instance) => (
+                {block.instances?.map((instance) => (
                   <div
                     key={instance.id}
                     className="text-sm border border-solid rounded-md w-60 border-uzh-grey-100"
@@ -211,7 +239,10 @@ function Session({ session }: SessionProps) {
                         ({QUESTION_TYPES_SHORT[instance.questionData.type]})
                       </div>
                     </div>
-                    <Ellipsis maxLength={50} className={{ markdown: 'px-1' }}>
+                    <Ellipsis
+                      maxLength={50}
+                      className={{ markdown: 'px-1 text-sm' }}
+                    >
                       {instance.questionData.content}
                     </Ellipsis>
                   </div>
@@ -220,36 +251,6 @@ function Session({ session }: SessionProps) {
             ))}
           </div>
         </Collapsible>
-        {(SESSION_STATUS.PREPARED === session.status ||
-          SESSION_STATUS.SCHEDULED === session.status) && (
-          <div className="flex flex-row float-right gap-1">
-            <Button
-              className={{ root: 'text-sm py-1 px-3' }}
-              onClick={() =>
-                router.push({
-                  pathname: '/',
-                  query: { sessionId: session.id, editMode: 'liveSession' },
-                })
-              }
-            >
-              <Button.Icon className={{ root: 'text-slate-600' }}>
-                <FontAwesomeIcon icon={faPencil} />
-              </Button.Icon>
-              <Button.Label>Session bearbeiten</Button.Label>
-            </Button>
-            <Button
-              className={{
-                root: 'border-red-600 text-sm py-1 px-3',
-              }}
-              onClick={() => setDeletionModal(true)}
-            >
-              <Button.Icon className={{ root: 'text-red-400' }}>
-                <FontAwesomeIcon icon={faTrash} />
-              </Button.Icon>
-              <Button.Label>Session löschen</Button.Label>
-            </Button>
-          </div>
-        )}
       </div>
       <LiveSessionDeletionModal
         deleteSession={deleteSession}

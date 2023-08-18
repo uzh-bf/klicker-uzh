@@ -1,20 +1,29 @@
 @import 'tailwindcss/src/css/preflight.css';
+
+@import 'tailwindcss/base';
 @import '@uzh-bf/design-system/dist/index.esm.css';
 
-@tailwind components;
+@import 'tailwindcss/components';
+/* @import '@klicker-uzh/markdown/dist/components.css'; */
+@import '@klicker-uzh/shared-components/dist/components.css';
 
-@layer components {
-  @import '@klicker-uzh/markdown/dist/components.css';
-  @import 'shared-components/dist/components.css';
-}
-
-@tailwind utilities;
-
-@layer utilities {
-  @import '@klicker-uzh/markdown/dist/utilities.css';
-  @import 'shared-components/dist/utilities.css';
-}
+@import 'tailwindcss/utilities';
+@import '@klicker-uzh/markdown/dist/utilities.css';
+@import '@klicker-uzh/shared-components/dist/utilities.css';
 
 html {
   font-size: 17px;
+}
+
+:root {
+  --theme-color-primary: #0028a5;
+  --theme-color-primary-80: #3353b7;
+  --theme-color-primary-60: #667ec9;
+  --theme-color-primary-40: #99a9db;
+  --theme-color-primary-20: #ccd4ed;
+  --theme-color-secondary: #dc6027;
+  --theme-color-secondary-80: #e38052;
+  --theme-color-secondary-60: #eaa07d;
+  --theme-color-secondary-40: #f1bfa9;
+  --theme-color-secondary-20: #f8dfd4;
 }
