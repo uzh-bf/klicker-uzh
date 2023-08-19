@@ -1,8 +1,5 @@
 {
-  "extends": [
-    "@tsconfig/recommended/tsconfig.json",
-    "@tsconfig/node18/tsconfig.json"
-  ],
+  "extends": "@tsconfig/node18/tsconfig.json",
   "include": ["src"],
   "compilerOptions": {
     "module": "ESNext",

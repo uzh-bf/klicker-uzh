@@ -677,6 +677,7 @@ const importV2Data = async () => {
     __dirname,
     '../../migration-v2-export/exported_json_files'
   )
+
   // const filePath = path.join(dirPath, 'exported_data_2023-07-06_17-10-52.json');
   // const filePath = path.join(dirPath, 'exported_data_2023-07-14_10-03-00.json');
   // const filePath = path.join(dirPath, "exported_data_no_questioninstances_results.json");
