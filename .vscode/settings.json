@@ -8,5 +8,9 @@
   "azureFunctions.preDeployTask": "npm prune (serverless)",
   "azureFunctions.projectSubpath": "apps/backend-responses",
   "githubPullRequests.ignoredPullRequestBranches": ["v3"],
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "sonarlint.connectedMode.project": {
+    "connectionId": "uzh-bf",
+    "projectKey": "uzh-bf_klicker-uzh"
+  }
 }
