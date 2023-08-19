@@ -81,7 +81,14 @@ export async function triggerMigration(
   ctx: ContextWithUser
 ) {
   try {
-    const token = JWT.verify(args.token, process.env.MIGRATION_SECRET as string)
+    const token = JWT.verify(
+      args.token,
+      process.env.MIGRATION_SECRET as string
+    ) as {
+      sub: string
+      originalEmail: string
+    }
+
     if (!token) return false
 
     // if the user generating the token is not the same as the user currently logged in, exit
