@@ -4,8 +4,8 @@
   "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
   "scripts": {
-    "dev": "NODE_ENV=development next dev --port 3001",
-    "dev:offline": "NODE_ENV=development next dev --port 3001",
+    "dev": "cross-env NODE_ENV=development next dev --port 3001",
+    "dev:offline": "cross-env NODE_ENV=development next dev --port 3001",
     "build": "next build",
     "build:test": "cross-env NODE_ENV=test next build",
     "format": "prettier --write .",

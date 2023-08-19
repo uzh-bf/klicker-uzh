@@ -1,4 +1,4 @@
-name: Build and deploy backend-responses to Azure Function App (Production)
+name: Build and deploy backend-responses to Function App (Production)
 
 on:
   push:
@@ -24,13 +24,15 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           version: 8.6.12
-          run_install: true
+          run_install: |
+            - recursive: true
+              args: [--frozen-lockfile, --strict-peer-dependencies]
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: pwsh
         run: |
+          pnpm run build --scope @klicker-uzh/backend-responses
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          pnpm run build
           pnpm prune --prod
           popd
 
