@@ -2,7 +2,7 @@
 name = "export-v2-data"
 version = "0.1.0"
 description = ""
-authors = ["BShaq <bulinshaqiri@hotmail.com>"]
+authors = ["Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"]
 readme = "README.md"
 packages = [{include = "export_v2_data"}]
 
