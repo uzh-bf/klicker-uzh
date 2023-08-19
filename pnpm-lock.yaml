@@ -244,9 +244,6 @@ importers:
       dotenv:
         specifier: 16.0.3
         version: 16.0.3
-      husky:
-        specifier: 8.0.3
-        version: 8.0.3
       ioredis-mock:
         specifier: 8.7.0
         version: 8.7.0(@types/ioredis-mock@8.2.1)(ioredis@5.3.2)
@@ -326,9 +323,6 @@ importers:
       dotenv:
         specifier: 16.0.3
         version: 16.0.3
-      husky:
-        specifier: 8.0.3
-        version: 8.0.3
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5
@@ -384,9 +378,6 @@ importers:
       dotenv:
         specifier: 16.0.3
         version: 16.0.3
-      husky:
-        specifier: 8.0.3
-        version: 8.0.3
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5
@@ -1338,9 +1329,6 @@ importers:
       graphql-codegen-persisted-query-ids:
         specifier: 0.1.2
         version: 0.1.2
-      husky:
-        specifier: 8.0.3
-        version: 8.0.3
       ioredis:
         specifier: 5.3.2
         version: 5.3.2
