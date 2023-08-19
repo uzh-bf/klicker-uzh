@@ -9,9 +9,9 @@ import {
 } from '@klicker-uzh/prisma'
 import axios from 'axios'
 import fs from 'fs'
-import path, { dirname } from 'path'
-import { fileURLToPath } from 'url'
-import { closeLegacyConnection, getLegacyResults } from './getLegacyResults.js'
+import assert from 'node:assert'
+import path from 'path'
+import { closeLegacyConnection, getLegacyResults } from './getLegacyResults'
 
 // TODOs:
 // - Test UI after import
@@ -668,9 +668,6 @@ const importSessions = async (
 }
 
 const importV2Data = async () => {
-  // Temporary code to retrieve exported data on local machine
-  const __filename = fileURLToPath(import.meta.url)
-  const __dirname = dirname(__filename)
   // construct relative path to desired json file
   // __dirname provides the current directory name of the current file
   const dirPath = path.join(
@@ -683,8 +680,8 @@ const importV2Data = async () => {
   // const filePath = path.join(dirPath, "exported_data_no_questioninstances_results.json");
 
   // ask the user for a file name on the command line
-  const fileName = process.argv[2] ? process.argv[2] : ''
-  const filePath = path.join(dirPath, fileName)
+  assert(typeof process.argv[2] === 'string')
+  const filePath = path.join(dirPath, process.argv[2])
 
   let importData
   if (fs.existsSync(dirPath)) {

@@ -1,2 +1,2 @@
 #!/bin/sh
-pnpm run import
+pnpm run import exported_data_latest.json

@@ -2,13 +2,9 @@
   "extends": "@tsconfig/node18/tsconfig.json",
   "include": ["src"],
   "compilerOptions": {
-    "module": "ESNext",
-    "target": "ESNext"
+    "baseUrl": "."
   },
   "ts-node": {
-    "transpileOnly": true,
-    "moduleTypes": {
-      "src/*": "esm"
-    }
+    "transpileOnly": true
   }
 }
