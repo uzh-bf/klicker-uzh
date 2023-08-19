@@ -1,2 +1,2 @@
 #!/bin/sh
-poetry run python -m export.main
+poetry run python -m src.main
