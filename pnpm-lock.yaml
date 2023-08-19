@@ -1636,9 +1636,6 @@ importers:
       '@types/ramda':
         specifier: ^0.29.3
         version: 0.29.3
-      axios:
-        specifier: 1.4.0
-        version: 1.4.0
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
