@@ -1,4 +1,4 @@
-name: Build and deploy backend-response-processor to Azure Function App (QA)
+name: Build and deploy backend-response-processor to Function App (QA)
 
 on:
   push:
