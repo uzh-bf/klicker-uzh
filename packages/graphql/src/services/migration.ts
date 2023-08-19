@@ -104,7 +104,7 @@ export async function triggerMigration(
       process.env.MIGRATION_SERVICE_BUS_QUEUE as string
     )
 
-    const response = await sbSender.sendMessages({
+    await sbSender.sendMessages({
       messageId: token.sub,
       subject: 'migration',
       body: {
@@ -112,8 +112,6 @@ export async function triggerMigration(
         originalEmail: token.originalEmail,
       },
     })
-
-    console.log(response)
 
     return true
   } catch (e) {
