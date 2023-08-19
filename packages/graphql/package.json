@@ -75,12 +75,14 @@
     "web-push": "3.6.1"
   },
   "dependencies": {
+    "@azure/service-bus": "7.9.0",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@pothos/core": "3.33.0",
     "@pothos/plugin-prisma": "3.56.0",
     "@pothos/plugin-scope-auth": "3.20.0",
     "@pothos/plugin-validation": "3.10.0",
+    "axios": "1.4.0",
     "bcryptjs": "2.4.3",
     "dayjs": "1.11.9",
     "generate-password": "1.7.0",

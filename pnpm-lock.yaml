@@ -1196,6 +1196,9 @@ importers:
 
   packages/graphql:
     dependencies:
+      '@azure/service-bus':
+        specifier: 7.9.0
+        version: 7.9.0
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../grading
@@ -1214,6 +1217,9 @@ importers:
       '@pothos/plugin-validation':
         specifier: 3.10.0
         version: 3.10.0(@pothos/core@3.33.0)(graphql@16.7.1)(zod@3.21.4)
+      axios:
+        specifier: 1.4.0
+        version: 1.4.0
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -9963,7 +9969,6 @@ packages:
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
-    dev: true
 
   /axobject-query@3.2.1:
     resolution: {integrity: sha512-jsyHu61e6N4Vbz/v18DHwWYKK0bSWLqn47eeDSKPB7m8tqMHF9YJ+mhIk2lVteyZrY8tnSj/jHOv4YiTCuCJgg==}

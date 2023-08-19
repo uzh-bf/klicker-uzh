@@ -61,16 +61,18 @@ services:
   listmonk:
     image: docker.io/listmonk/listmonk:latest
     ports:
-      - '9000:9000'
+      - 9000:9000
     environment:
       - TZ=Europe/Zurich
     depends_on:
+      - listmonk_init
       - listmonk_db
       - mailhog
     volumes:
       - ./util/listmonk-config.toml:/listmonk/config.toml
     networks:
       - klicker
+    command: [sh, -c, 'yes | ./listmonk --install && ./listmonk']
 
   listmonk_db:
     image: docker.io/library/postgres:13
@@ -82,6 +84,11 @@ services:
       - /var/lib/postgresql/data
     networks:
       - klicker
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U listmonk']
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
   mongodb:
     image: mongo:4.0
