@@ -1549,6 +1549,8 @@ importers:
         specifier: 5.0.4
         version: 5.0.4
 
+  packages/migration-v2-export: {}
+
   packages/migration-v3-import:
     dependencies:
       '@azure/storage-blob':
@@ -1609,9 +1611,6 @@ importers:
 
   packages/prisma:
     dependencies:
-      '@azure/storage-blob':
-        specifier: 12.15.0
-        version: 12.15.0
       '@prisma/client':
         specifier: 4.14.1
         version: 4.14.1(prisma@4.14.1)
@@ -1652,9 +1651,6 @@ importers:
       dotenv-cli:
         specifier: 7.2.1
         version: 7.2.1
-      mongoose:
-        specifier: 7.3.3
-        version: 7.3.3
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5

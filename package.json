@@ -51,9 +51,11 @@
     "start": "turbo run start",
     "start:test": "turbo run start:test",
     "prepare": "husky install",
-    "prisma:setup": "npm run -w packages/prisma prisma:setup",
-    "prisma:migrate": "npm run -w packages/prisma prisma:migrate",
-    "prisma:reset": "npm run -w packages/prisma prisma:reset"
+    "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
+    "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
+    "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
+    "export": "pnpm run --filter @klicker-uzh/migration-v2-export export",
+    "import": "pnpm run --filter @klicker-uzh/migration-v3-import import"
   },
   "devDependencies": {
     "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",

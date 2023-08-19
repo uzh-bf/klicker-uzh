@@ -13,7 +13,7 @@
     "build": "run-s generate build:ts",
     "build:ts": "cross-env NODE_ENV=production tsup --dts",
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
-    "dev:offline": "npm run dev",
+    "dev:offline": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development doppler run --config dev -- tsup --watch --dts",
     "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch 'src/**.graphql' --watch 'src/**.ts'",
     "format": "prettier --write .",

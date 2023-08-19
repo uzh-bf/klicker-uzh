@@ -9,7 +9,6 @@ import {
 } from '@klicker-uzh/prisma'
 import axios from 'axios'
 import fs from 'fs'
-import assert from 'node:assert'
 import path from 'path'
 import { closeLegacyConnection, getLegacyResults } from './getLegacyResults'
 
@@ -680,8 +679,10 @@ const importV2Data = async () => {
   // const filePath = path.join(dirPath, "exported_data_no_questioninstances_results.json");
 
   // ask the user for a file name on the command line
-  assert(typeof process.argv[2] === 'string')
-  const filePath = path.join(dirPath, process.argv[2])
+  const filePath = path.join(
+    dirPath,
+    process.argv[2] ?? 'exported_data_latest.json'
+  )
 
   let importData
   if (fs.existsSync(dirPath)) {

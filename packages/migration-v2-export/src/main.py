@@ -68,10 +68,11 @@ try:
 
     custom_encoder = MongoDBJSONEncoder()
     output_file_path = os.path.join(output_directory, f"exported_data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json")
-    output_file_path_latest = os.path.join(output_directory, f"exported_data_latest.json")
+    output_file_path_latest = os.path.join(output_directory, "exported_data_latest.json")
     with open(output_file_path, "w") as output_file:
         json.dump(export_data, output_file, indent=4, default=custom_encoder.encode)
-        json.dump(export_data, output_file_path_latest, indent=4, default=custom_encoder.encode)
+    with open(output_file_path_latest, "w") as output_file:
+        json.dump(export_data, output_file, indent=4, default=custom_encoder.encode)
 
         logging.info(f"Data exported successfully for user '{email}'")
 

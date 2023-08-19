@@ -11,7 +11,7 @@
     "analyze": "size-limit --why",
     "build": "cross-env NODE_ENV=production tsup",
     "dev": "cross-env NODE_ENV=development tsup --watch",
-    "dev:offline": "npm run dev",
+    "dev:offline": "pnpm run dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "size": "size-limit",
