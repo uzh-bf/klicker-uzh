@@ -7,6 +7,7 @@ import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
 import * as LearningElementService from '../services/learningElements'
 import * as MicroLearningService from '../services/microLearning'
+import * as MigrationService from '../services/migration'
 import * as NotificationService from '../services/notifications'
 import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
@@ -952,6 +953,14 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return AccountService.loginParticipantWithLti(args, ctx)
+        },
+      }),
+
+      requestMigrationToken: asUser.field({
+        nullable: true,
+        type: String,
+        resolve(_, __, ctx) {
+          return MigrationService.requestMigrationToken(ctx)
         },
       }),
     }
