@@ -36,9 +36,7 @@ jobs:
         shell: pwsh
         run: |
           pnpm run build --scope @klicker-uzh/backend-responses
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          pnpm prune --prod
-          popd
+          pnpm prune --prod --config.ignore-scripts=true
 
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
