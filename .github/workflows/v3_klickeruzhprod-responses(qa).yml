@@ -33,7 +33,7 @@ jobs:
       - name: 'Resolve Project Dependencies Using Npm'
         shell: pwsh
         run: |
-          pnpm run build
+          pnpm run build --scope @klicker-uzh/backend-responses
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           pnpm prune --prod
           popd
