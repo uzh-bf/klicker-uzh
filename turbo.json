@@ -39,6 +39,15 @@
         "@klicker-uzh/markdown#build"
       ]
     },
+    "dev:migration": {
+      "cache": false,
+      "outputs": ["dist/**", ".next/**"],
+      "dependsOn": [
+        "@klicker-uzh/prisma#build",
+        "@klicker-uzh/graphql#build",
+        "@klicker-uzh/markdown#build"
+      ]
+    },
     "publish": {
       "cache": false,
       "dependsOn": ["build"]
