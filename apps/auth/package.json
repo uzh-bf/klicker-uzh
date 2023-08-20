@@ -11,6 +11,7 @@
     "@uzh-bf/design-system": "2.0.12",
     "bcryptjs": "2.4.3",
     "jsonwebtoken": "9.0.1",
+    "localforage": "1.10.0",
     "next": "13.4.13",
     "next-auth": "4.22.3",
     "next-intl": "2.19.1",

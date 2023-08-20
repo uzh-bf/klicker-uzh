@@ -1,13 +1,17 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, Checkbox, H1 } from '@uzh-bf/design-system'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+
+import useStickyState from 'src/hooks/useStickyState'
 
 function SignInOutButton() {
   const router = useRouter()
 
   const { data: session } = useSession()
+
+  const [tosChecked, setTosChecked] = useStickyState('tos-agreement', false)
 
   if (session) {
     return (
@@ -20,9 +24,35 @@ function SignInOutButton() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Checkbox
+        label={
+          <div className="text-sm">
+            I consent to the{' '}
+            <a
+              className="underline text-blue-500 hover:text-red-500"
+              href="https://www.klicker.uzh.ch/terms_of_service"
+              target="_blank"
+            >
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a
+              className="underline text-blue-500 hover:text-red-500"
+              href="https://www.klicker.uzh.ch/privacy_policy"
+              target="_blank"
+            >
+              Privacy Policy
+            </a>
+          </div>
+        }
+        onCheck={() => setTosChecked(!tosChecked)}
+        checked={tosChecked}
+      />
+
       <Button
+        disabled={!tosChecked}
         data={{ cy: 'eduid-login-button' }}
-        className={{ root: 'p-4' }}
+        className={{ root: 'p-4 disabled:opacity-50' }}
         onClick={() =>
           signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
             callbackUrl:
@@ -41,6 +71,8 @@ function SignInOutButton() {
         />
       </Button>
       <Button
+        className={{ root: 'disabled:opacity-50' }}
+        disabled={!tosChecked}
         data={{ cy: 'delegated-login-button' }}
         onClick={() =>
           signIn('delegation', {
