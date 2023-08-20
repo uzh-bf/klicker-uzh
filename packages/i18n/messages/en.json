@@ -463,6 +463,7 @@
       "newBlock": "New block",
       "newBlockSelected": "Block with selection",
       "pasteSelection": "Paste selection",
+      "pasteSingleQuestions": "Paste single questions",
       "displayNameTooltip": "Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.",
       "microSessionTypes": "Micro-sessions can only contain single choice, multiple choice, kprim and numerical questions.",
       "microSessionCreated": "Your micro-session <b>{name}</b> has been created successfully.",

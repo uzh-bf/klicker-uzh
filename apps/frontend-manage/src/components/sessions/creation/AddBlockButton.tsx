@@ -10,12 +10,14 @@ interface AddBlockButtonProps {
   push: (value: any) => void
   selectionAvailable: boolean
   addSelected: () => void
+  addSelectedSingle: () => void
 }
 
 function AddBlockButton({
   push,
   selectionAvailable,
   addSelected,
+  addSelectedSingle,
 }: AddBlockButtonProps) {
   const t = useTranslations()
   const [{ isOver }, drop] = useDrop(
@@ -42,17 +44,30 @@ function AddBlockButton({
 
   if (selectionAvailable) {
     return (
-      <Button
-        className={{
-          root: 'flex flex-col gap-1 items-center justify-center rounded text-center border border-solid md:w-20 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40 w-full p-2',
-        }}
-        onClick={addSelected}
-        data={{ cy: 'add-block-with-selected' }}
-        ref={drop}
-      >
-        <FontAwesomeIcon icon={faPaste} size="lg" />
-        <div>{t('manage.sessionForms.newBlockSelected')}</div>
-      </Button>
+      <div className="flex flex-row gap-1.5">
+        <Button
+          className={{
+            root: 'flex flex-col gap-1 items-center justify-center rounded text-center border border-solid md:w-20 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40 w-full p-2',
+          }}
+          onClick={addSelected}
+          data={{ cy: 'add-block-with-selected' }}
+          ref={drop}
+        >
+          <FontAwesomeIcon icon={faPaste} size="lg" />
+          <div>{t('manage.sessionForms.newBlockSelected')}</div>
+        </Button>
+        <Button
+          className={{
+            root: 'flex flex-col gap-1 items-center justify-center rounded text-center border border-solid md:w-20 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40 w-full p-2',
+          }}
+          onClick={addSelectedSingle}
+          data={{ cy: 'add-block-with-selected' }}
+          ref={drop}
+        >
+          <FontAwesomeIcon icon={faPaste} size="lg" />
+          <div>{t('manage.sessionForms.pasteSingleQuestions')}</div>
+        </Button>
+      </div>
     )
   }
 

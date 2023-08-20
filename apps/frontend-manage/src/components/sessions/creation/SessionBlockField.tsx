@@ -87,6 +87,18 @@ function SessionBlockField({
                     resetSelection && resetSelection()
                   }
                 }}
+                addSelectedSingle={() => {
+                  if (selection) {
+                    selection.forEach((question) => {
+                      push({
+                        questionIds: [question.id],
+                        titles: [question.title],
+                        timeLimit: undefined,
+                      })
+                    })
+                    resetSelection && resetSelection()
+                  }
+                }}
               />
             </>
           )}
