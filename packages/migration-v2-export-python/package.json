@@ -2,14 +2,14 @@
   "name": "@klicker-uzh/migration-v2-export",
   "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
+  "dependencies": {},
+  "devDependencies": {},
   "scripts": {
     "export": "doppler run --config dev -- poetry run python -m src.main"
   },
   "engines": {
     "node": "=18"
   },
-  "devDependencies": {},
-  "dependencies": {},
   "volta": {
     "extends": "../../package.json"
   }

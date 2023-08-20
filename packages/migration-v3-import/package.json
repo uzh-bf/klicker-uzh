@@ -7,12 +7,9 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "tsup",
-    "import": "doppler run --config dev -- ts-node -r dotenv/config --esm src/index.ts"
-  },
-  "engines": {
-    "node": "=18"
+  "dependencies": {
+    "@azure/storage-blob": "12.15.0",
+    "@klicker-uzh/prisma": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/node18": "18.2.0",
@@ -30,9 +27,12 @@
     "tsup": "7.2.0",
     "typescript": "5.1.6"
   },
-  "dependencies": {
-    "@azure/storage-blob": "12.15.0",
-    "@klicker-uzh/prisma": "workspace:*"
+  "scripts": {
+    "build": "tsup",
+    "import": "doppler run --config dev -- ts-node -r dotenv/config --esm src/index.ts"
+  },
+  "engines": {
+    "node": "=18"
   },
   "volta": {
     "extends": "../../package.json"

@@ -7,17 +7,6 @@
   "files": [
     "dist/"
   ],
-  "scripts": {
-    "build": "cross-env NODE_ENV=production tsup",
-    "prestart": "pnpm run build",
-    "dev": "npm-run-all --parallel dev:ts dev:func",
-    "dev:ts": "tsup --watch",
-    "dev:func": "func start -p 7073 --verbose --javascript",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "start": "func start -p 7073",
-    "check": "tsc --noEmit"
-  },
   "dependencies": {
     "@azure/functions": "4.0.0-alpha.11",
     "@klicker-uzh/grading": "workspace:*",
@@ -44,10 +33,21 @@
     "tsup": "7.2.0",
     "typescript": "5.1.6"
   },
-  "volta": {
-    "extends": "../../package.json"
+  "scripts": {
+    "build": "cross-env NODE_ENV=production tsup",
+    "check": "tsc --noEmit",
+    "dev": "npm-run-all --parallel dev:ts dev:func",
+    "dev:func": "func start -p 7073 --verbose --javascript",
+    "dev:ts": "tsup --watch",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prestart": "pnpm run build",
+    "start": "func start -p 7073"
   },
   "engines": {
     "node": "=18"
+  },
+  "volta": {
+    "extends": "../../package.json"
   }
 }

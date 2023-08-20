@@ -3,48 +3,20 @@
   "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
-  "type": "module",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "scripts": {
-    "analyze": "size-limit --why",
-    "build": "run-s build:tw build:ts",
-    "build:tw": "run-p build:tw:*",
-    "build:tw:components": "tailwindcss -i src/components.css -o src/public/components.css",
-    "build:tw:utilities": "tailwindcss -i src/utilities.css -o src/public/utilities.css",
-    "build:ts": "cross-env NODE_ENV=production tsup",
-    "dev": "run-p dev:tw:* dev:ts",
-    "dev:offline": "pnpm run dev",
-    "dev:tw:components": "tailwindcss -w -i src/components.css -o src/public/components.css",
-    "dev:tw:utilities": "tailwindcss -w -i src/utilities.css -o src/public/utilities.css",
-    "dev:ts": "cross-env NODE_ENV=development tsup --watch",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "size": "size-limit",
-    "check": "tsc --noEmit"
-  },
-  "engines": {
-    "node": "=18"
-  },
-  "size-limit": [
-    {
-      "path": "dist/index.js",
-      "limit": "10 KB"
-    }
-  ],
-  "peerDependencies": {
-    "@fortawesome/fontawesome-svg-core": "6.4.2",
-    "@fortawesome/free-regular-svg-icons": "6.4.2",
-    "@fortawesome/free-solid-svg-icons": "6.4.2",
-    "@fortawesome/react-fontawesome": "0.2.0",
-    "@uzh-bf/design-system": "2.0.12",
-    "next": "13.4.13",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "tailwind-merge": "1.14.0",
-    "yup": "1.2.0"
+  "dependencies": {
+    "rehype-external-links": "2.1.0",
+    "rehype-katex": "6.0.3",
+    "rehype-prism-plus": "1.5.1",
+    "rehype-react": "7.2.0",
+    "rehype-sanitize": "5.0.1",
+    "remark-math": "5.1.1",
+    "remark-parse": "10.0.2",
+    "remark-rehype": "10.1.0",
+    "unified": "10.1.2"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
@@ -66,18 +38,46 @@
     "tsup": "6.7.0",
     "typescript": "5.0.4"
   },
-  "dependencies": {
-    "rehype-external-links": "2.1.0",
-    "rehype-katex": "6.0.3",
-    "rehype-prism-plus": "1.5.1",
-    "rehype-react": "7.2.0",
-    "rehype-sanitize": "5.0.1",
-    "remark-math": "5.1.1",
-    "remark-parse": "10.0.2",
-    "remark-rehype": "10.1.0",
-    "unified": "10.1.2"
+  "peerDependencies": {
+    "@fortawesome/fontawesome-svg-core": "6.4.2",
+    "@fortawesome/free-regular-svg-icons": "6.4.2",
+    "@fortawesome/free-solid-svg-icons": "6.4.2",
+    "@fortawesome/react-fontawesome": "0.2.0",
+    "@uzh-bf/design-system": "2.0.12",
+    "next": "13.4.13",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "tailwind-merge": "1.14.0",
+    "yup": "1.2.0"
+  },
+  "scripts": {
+    "analyze": "size-limit --why",
+    "build": "run-s build:tw build:ts",
+    "build:ts": "cross-env NODE_ENV=production tsup",
+    "build:tw": "run-p build:tw:*",
+    "build:tw:components": "tailwindcss -i src/components.css -o src/public/components.css",
+    "build:tw:utilities": "tailwindcss -i src/utilities.css -o src/public/utilities.css",
+    "check": "tsc --noEmit",
+    "dev": "run-p dev:tw:* dev:ts",
+    "dev:offline": "pnpm run dev",
+    "dev:ts": "cross-env NODE_ENV=development tsup --watch",
+    "dev:tw:components": "tailwindcss -w -i src/components.css -o src/public/components.css",
+    "dev:tw:utilities": "tailwindcss -w -i src/utilities.css -o src/public/utilities.css",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "size": "size-limit"
+  },
+  "engines": {
+    "node": "=18"
   },
   "volta": {
     "extends": "../../package.json"
-  }
+  },
+  "size-limit": [
+    {
+      "path": "dist/index.js",
+      "limit": "10 KB"
+    }
+  ],
+  "type": "module"
 }
