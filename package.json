@@ -61,6 +61,7 @@
     "syncpack:mismatches": "syncpack list-mismatches",
     "syncpack:mismatches:fix": "syncpack fix-mismatches",
     "syncpack:lint": "syncpack lint",
+    "syncpack:update": "syncpack update",
     "test": "turbo run test",
     "test:run": "turbo run test:run"
   },
