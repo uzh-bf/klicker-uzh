@@ -243,8 +243,10 @@ jobs:
       - name: Prepare .env and local.settings.json files
         run: |
           mv apps/backend-docker/.env.template apps/backend-docker/.env
-          echo "$FUNC_RESPONSES_SETTINGS" > apps/backend-responses/local.settings.json
-          echo "$FUNC_RESPONSE_PROCESSOR_SETTINGS" > apps/backend-response-processor/local.settings.json
+          echo "$FUNC_RESPONSES_SETTINGS" > apps/func-incoming-responses/local.settings.json
+          echo "$FUNC_RESPONSE_PROCESSOR_SETTINGS" > apps/func-response-processor/local.settings.json
+          cat apps/func-incoming-responses/local.settings.json
+          cat apps/func-response-processor/local.settings.json
         env:
           FUNC_RESPONSES_SETTINGS: ${{ secrets.FUNC_RESPONSES_SETTINGS }}
           FUNC_RESPONSE_PROCESSOR_SETTINGS: ${{ secrets.FUNC_RESPONSE_PROCESSOR_SETTINGS }}
