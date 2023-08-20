@@ -1,11 +1,8 @@
-# import pymongo
 import json
-import pandas
 import logging
 import os
 import sys
 from src.utils.mongo_json_encoder import MongoDBJSONEncoder
-from bson import ObjectId
 from pymongo import MongoClient
 from datetime import datetime
 

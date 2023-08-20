@@ -101,7 +101,7 @@ export async function triggerMigration(
     )
 
     const sbSender = sb.createSender(
-      process.env.MIGRATION_SERVICE_BUS_QUEUE as string
+      process.env.MIGRATION_SERVICE_BUS_QUEUE_NAME as string
     )
 
     await sbSender.sendMessages({
@@ -112,6 +112,8 @@ export async function triggerMigration(
         originalEmail: token.originalEmail,
       },
     })
+
+    console.log('migration message posted to service bus')
 
     return true
   } catch (e) {
