@@ -196,7 +196,8 @@
       "groupActivityScore": "Punkte durch Gruppenaktivitäten",
       "totalScore": "Total Punkte",
       "bookmarkedQuestionsTitle": "Bookmarks in {courseName}",
-      "bookmarkedQuestionsDesc": "Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie einem gewöhnlichen Lernelement dargestellt."
+      "bookmarkedQuestionsDesc": "Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie einem gewöhnlichen Lernelement dargestellt.",
+      "noBooksmarksSet": "Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage."
     },
     "joinCourse": {
       "title": "Kurs \"{name}\" beitreten",
@@ -543,7 +544,9 @@
       "deleteLiveSession": "Live-Session löschen",
       "confirmLiveSessionDeletion": "Sind Sie sich sicher, dass Sie die folgende Live-Session löschen möchten?",
       "liveSessionDeletionHint": "Das Löschen einer Live-Session ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live-Sessions können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.",
-      "evaluationLinksEmbedding": "Evaluations-Links für die Einbettung in PowerPoint"
+      "evaluationLinksEmbedding": "Evaluations-Links für die Einbettung in PowerPoint",
+      "noSessions": "Keine Sessionen gefunden",
+      "creationExplanation": "Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden."
     },
     "cockpit": {
       "firstBlock": "Ersten Block starten",
