@@ -1,22 +1,13 @@
 import { app, InvocationContext } from '@azure/functions'
 
-interface Message {
-  messageId: string
+const blobTrigger = async function (message: any, context: InvocationContext) {
+  context.log('MigrationV3Import function processing a message', message)
 }
 
-const serviceBusTrigger = async function (
-  message: any,
-  context: InvocationContext
-) {
-  context.log('ProcessResponse function processing a message', message)
+export default blobTrigger
 
-  const queueItem = message as Message
-}
-
-export default serviceBusTrigger
-
-app.serviceBusQueue('MigrationV2Export', {
-  connection: 'MIRATION_SERVICE_BUS_CONNECTION_STRING',
-  queueName: process.env.MIGRATION_SERVICE_BUS_QUEUE_NAME as string,
-  handler: serviceBusTrigger,
+app.storageBlob('MigrationV3Import', {
+  connection: 'MIRATION_BLOB_STORAGE_CONNECTION_STRING',
+  path: process.env.MIGRATION_BLOB_STORAGE_PATH as string,
+  handler: blobTrigger,
 })

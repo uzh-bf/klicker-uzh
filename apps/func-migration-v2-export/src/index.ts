@@ -8,7 +8,7 @@ const serviceBusTrigger = async function (
   message: any,
   context: InvocationContext
 ) {
-  context.log('ProcessResponse function processing a message', message)
+  context.log('MigrationV2Export function processing a message', message)
 
   const queueItem = message as Message
 }
