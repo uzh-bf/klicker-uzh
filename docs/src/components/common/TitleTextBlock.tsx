@@ -29,7 +29,7 @@ const TitleTextBlock = ({
         <a href={link} className="absolute bottom-4">
           <FontAwesomeIcon
             icon={faArrowRight}
-            className="h-5 align-text-bottom mr-2"
+            className="mr-2 h-5 align-text-bottom"
           />{' '}
           {linkText}
         </a>
