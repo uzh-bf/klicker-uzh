@@ -22,6 +22,8 @@ interface SessionCreationProps {
   closeWizard: () => void
   sessionId?: string
   editMode?: string
+  selection: { id: number; title: string }[]
+  resetSelection: () => void
 }
 
 function SessionCreation({
@@ -29,6 +31,8 @@ function SessionCreation({
   closeWizard,
   sessionId,
   editMode,
+  selection,
+  resetSelection,
 }: SessionCreationProps) {
   const t = useTranslations()
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
@@ -78,6 +82,8 @@ function SessionCreation({
               initialValues={
                 (dataLiveSession?.liveSession as Session) ?? undefined
               }
+              selection={selection}
+              resetSelection={resetSelection}
             />
           </>
         )}

@@ -1,3 +1,4 @@
+import { faPaste } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowDown,
   faArrowLeft,
@@ -23,6 +24,8 @@ interface SessionCreationBlockProps {
   remove: (index: number) => void
   move: (from: number, to: number) => void
   replace: (index: number, value: any) => void
+  selectionAvailable: boolean
+  addSelected: () => void
 }
 
 function SessionCreationBlock({
@@ -32,6 +35,8 @@ function SessionCreationBlock({
   remove,
   move,
   replace,
+  selectionAvailable,
+  addSelected,
 }: SessionCreationBlockProps): React.ReactElement {
   const t = useTranslations()
   const [openSettings, setOpenSettings] = useState(false)
@@ -216,6 +221,18 @@ function SessionCreationBlock({
           </div>
         ))}
       </div>
+      {selectionAvailable && (
+        <Button
+          className={{
+            root: 'w-full flex flex-row justify-center gap-2 mb-1 p-0.5 border border-solid rounded bg-uzh-red-20 hover:bg-uzh-red-40',
+          }}
+          onClick={addSelected}
+          data={{ cy: 'paste-selected-questions' }}
+        >
+          <FontAwesomeIcon icon={faPaste} />
+          <div>{t('manage.sessionForms.pasteSelection')}</div>
+        </Button>
+      )}
       <div
         ref={drop}
         className={twMerge(

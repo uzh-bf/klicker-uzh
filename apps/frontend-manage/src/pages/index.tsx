@@ -84,6 +84,19 @@ function Index() {
     return
   }, [dataQuestions?.userQuestions, filters, index, sort])
 
+  const questionTitles = useMemo<Record<string, string>>(() => {
+    if (processedQuestions) {
+      return processedQuestions.reduce<Record<string, string>>(
+        (acc, curr, ix) => {
+          acc[ix] = curr.name
+          return acc
+        },
+        {}
+      )
+    }
+    return {}
+  }, [processedQuestions])
+
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
 
@@ -154,6 +167,15 @@ function Index() {
             }}
             sessionId={router.query.sessionId as string}
             editMode={router.query.editMode as string}
+            selection={Object.entries(selectedQuestions)
+              .filter(([, value]) => value)
+              .map((entry) => {
+                return {
+                  id: parseInt(entry[0]),
+                  title: questionTitles[entry[0]] || '',
+                }
+              })}
+            resetSelection={() => setSelectedQuestions({})}
           />
         </div>
       )}

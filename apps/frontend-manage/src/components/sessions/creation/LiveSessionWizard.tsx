@@ -28,9 +28,16 @@ interface LiveSessionWizardProps {
     value: string
   }[]
   initialValues?: Partial<Session>
+  selection: { id: number; title: string }[]
+  resetSelection: () => void
 }
 
-function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
+function LiveSessionWizard({
+  courses,
+  initialValues,
+  selection,
+  resetSelection,
+}: LiveSessionWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
@@ -214,7 +221,11 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
-        <StepThree validationSchema={stepThreeValidationSchema} />
+        <StepThree
+          validationSchema={stepThreeValidationSchema}
+          selection={selection}
+          resetSelection={resetSelection}
+        />
       </MultistepWizard>
       <ElementCreationErrorToast
         open={errorToastOpen}
@@ -238,6 +249,8 @@ interface StepProps {
     label: string
     value: string
   }[]
+  selection?: { id: number; title: string }[]
+  resetSelection?: () => void
 }
 
 function StepOne(_: StepProps) {
@@ -357,6 +370,12 @@ function StepTwo(props: StepProps) {
   )
 }
 
-function StepThree(_: StepProps) {
-  return <SessionBlockField fieldName="blocks" />
+function StepThree(props: StepProps) {
+  return (
+    <SessionBlockField
+      fieldName="blocks"
+      selection={props.selection}
+      resetSelection={props.resetSelection}
+    />
+  )
 }

@@ -7,6 +7,8 @@ interface EditorFieldProps {
   label?: string
   fieldName: string
   tooltip?: string
+  selection?: { id: number; title: string }[]
+  resetSelection?: () => void
   className?: string
 }
 
@@ -14,6 +16,8 @@ function SessionBlockField({
   label,
   fieldName,
   tooltip,
+  selection,
+  resetSelection,
   className,
 }: EditorFieldProps) {
   const [field, meta, helpers] = useField(fieldName)
@@ -33,9 +37,57 @@ function SessionBlockField({
                   remove={remove}
                   move={move}
                   replace={replace}
+                  selectionAvailable={(selection?.length || 0) > 0}
+                  addSelected={() => {
+                    if (selection) {
+                      const { questionIds, titles } = selection.reduce<{
+                        questionIds: number[]
+                        titles: string[]
+                      }>(
+                        (acc, curr) => {
+                          acc.questionIds.push(curr.id)
+                          acc.titles.push(curr.title)
+                          return acc
+                        },
+                        { questionIds: [], titles: [] }
+                      )
+
+                      replace(index, {
+                        ...block,
+                        questionIds: [...block.questionIds, ...questionIds],
+                        titles: [...block.titles, ...titles],
+                      })
+                      resetSelection && resetSelection()
+                    }
+                  }}
                 />
               ))}
-              <AddBlockButton push={push} />
+              <AddBlockButton
+                push={push}
+                selectionAvailable={(selection?.length || 0) > 0}
+                addSelected={() => {
+                  if (selection) {
+                    const { questionIds, titles } = selection.reduce<{
+                      questionIds: number[]
+                      titles: string[]
+                    }>(
+                      (acc, curr) => {
+                        acc.questionIds.push(curr.id)
+                        acc.titles.push(curr.title)
+                        return acc
+                      },
+                      { questionIds: [], titles: [] }
+                    )
+
+                    push({
+                      questionIds: questionIds,
+                      titles: titles,
+                      timeLimit: undefined,
+                    })
+                    resetSelection && resetSelection()
+                  }
+                }}
+              />
             </>
           )}
         </FieldArray>
