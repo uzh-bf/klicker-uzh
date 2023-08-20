@@ -7,6 +7,7 @@ import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
 import * as LearningElementService from '../services/learningElements'
 import * as MicroLearningService from '../services/microLearning'
+import * as MigrationService from '../services/migration'
 import * as NotificationService from '../services/notifications'
 import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
@@ -211,7 +212,10 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
-          pin: t.arg.int({ required: true }),
+          pin: t.arg.int({
+            required: true,
+            validate: { min: 0, max: 999999999 },
+          }),
         },
         resolve(_, args, ctx) {
           return CourseService.joinCourseWithPin(args, ctx)
@@ -271,8 +275,11 @@ export const Mutation = builder.mutationType({
         type: Participant,
         args: {
           isProfilePublic: t.arg.boolean({ required: false }),
-          email: t.arg.string({ required: false }),
-          username: t.arg.string({ required: false }),
+          email: t.arg.string({ required: false, validate: { email: true } }),
+          username: t.arg.string({
+            required: false,
+            validate: { minLength: 5, maxLength: 10 },
+          }),
           avatar: t.arg.string({ required: false }),
           password: t.arg.string({ required: false }),
           avatarSettings: t.arg({
@@ -437,7 +444,7 @@ export const Mutation = builder.mutationType({
       loginUserToken: t.id({
         nullable: true,
         args: {
-          email: t.arg.string({ required: true }),
+          email: t.arg.string({ required: true, validate: { email: true } }),
           token: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -832,7 +839,10 @@ export const Mutation = builder.mutationType({
           startDate: t.arg({ type: 'Date', required: true }),
           endDate: t.arg({ type: 'Date', required: true }),
           groupDeadlineDate: t.arg({ type: 'Date', required: false }),
-          notificationEmail: t.arg.string({ required: false }),
+          notificationEmail: t.arg.string({
+            required: false,
+            validate: { email: true },
+          }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -933,9 +943,12 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: ParticipantTokenData,
         args: {
-          username: t.arg.string({ required: true }),
+          username: t.arg.string({
+            required: true,
+            validate: { minLength: 5, maxLength: 10 },
+          }),
           password: t.arg.string({ required: true }),
-          email: t.arg.string({ required: true }),
+          email: t.arg.string({ required: true, validate: { email: true } }),
           isProfilePublic: t.arg.boolean({ required: true }),
           signedLtiData: t.arg.string({ required: false }),
         },
@@ -952,6 +965,26 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return AccountService.loginParticipantWithLti(args, ctx)
+        },
+      }),
+
+      requestMigrationToken: asUser.boolean({
+        nullable: true,
+        args: {
+          email: t.arg.string({ required: true, validate: { email: true } }),
+        },
+        resolve(_, args, ctx) {
+          return MigrationService.requestMigrationToken(args, ctx)
+        },
+      }),
+
+      triggerMigration: asUser.boolean({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MigrationService.triggerMigration(args, ctx)
         },
       }),
     }

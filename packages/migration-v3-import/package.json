@@ -1,0 +1,40 @@
+{
+  "name": "@klicker-uzh/migration-v3-import",
+  "version": "3.0.0-beta.4",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@azure/storage-blob": "12.15.0",
+    "@klicker-uzh/prisma": "workspace:*"
+  },
+  "devDependencies": {
+    "@tsconfig/node18": "18.2.0",
+    "@tsconfig/recommended": "1.0.2",
+    "@types/node": "^18.17.4",
+    "axios": "1.4.0",
+    "dotenv": "16.0.3",
+    "dotenv-cli": "7.2.1",
+    "mongoose": "7.3.3",
+    "npm-run-all": "4.1.5",
+    "prettier": "2.8.8",
+    "prettier-plugin-organize-imports": "3.2.2",
+    "prisma": "4.14.1",
+    "ts-node": "10.9.1",
+    "tsup": "7.2.0",
+    "typescript": "5.1.6"
+  },
+  "scripts": {
+    "build": "tsup",
+    "import": "doppler run --config dev -- ts-node -r dotenv/config --esm src/index.ts"
+  },
+  "engines": {
+    "node": "=18"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}

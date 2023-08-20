@@ -88,6 +88,8 @@ enum Locale {
 model User {
   id String @id @default(uuid()) @db.Uuid
 
+  originalId String? @unique
+
   name          String?
   email         String    @unique
   emailVerified DateTime?
@@ -186,6 +188,8 @@ enum QuestionDisplayMode {
 model Question {
   id Int @id @default(autoincrement())
 
+  originalId String? @unique
+
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
 
@@ -215,6 +219,8 @@ model Tag {
   id   Int    @id @default(autoincrement())
   name String
 
+  originalId String? @unique
+
   questions Question[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -236,6 +242,8 @@ enum QuestionInstanceType {
 
 model QuestionInstance {
   id Int @id @default(autoincrement())
+
+  originalId String? @unique
 
   type  QuestionInstanceType?
   order Int?
@@ -440,6 +448,7 @@ enum AccessMode {
 model LiveSession {
   id String @id @default(uuid()) @db.Uuid
 
+  originalId                 String? @unique
   isLiveQAEnabled            Boolean @default(false)
   isConfusionFeedbackEnabled Boolean @default(true)
   isModerationEnabled        Boolean @default(true)

@@ -1614,7 +1614,6 @@ export async function getSessionEvaluation(
   })
 
   if (!session) return null
-
   // if the session is running and a block is active
   // fetch the current results from the execution cache
   let activeInstanceResults: any[] = []
@@ -1659,6 +1658,12 @@ export async function getSessionEvaluation(
     )
   }
 
+  // session.blocks.forEach((block) => {
+  //   block.instances.forEach((instance) => {
+  //     console.log("getSessionEvaluation - block id: ", block.id)
+  //     console.log("getSessionEvaluation - instance.results: ", instance.results)
+  //   })
+  // })
   let executedInstanceResults = session.blocks.flatMap((block) =>
     block.instances.map((instance) => ({
       id: `${instance.id}-eval`,

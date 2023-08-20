@@ -7,26 +7,9 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "analyze": "size-limit --why",
-    "build": "cross-env NODE_ENV=production tsup",
-    "dev": "cross-env NODE_ENV=development tsup --watch",
-    "dev:offline": "npm run dev",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "size": "size-limit",
-    "test": "jest",
-    "check": "tsc --noEmit"
+  "dependencies": {
+    "ramda": "0.29.0"
   },
-  "engines": {
-    "node": "=18"
-  },
-  "size-limit": [
-    {
-      "path": "dist/index.js",
-      "limit": "10 KB"
-    }
-  ],
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
     "@tsconfig/node18": "^2.0.0",
@@ -43,10 +26,27 @@
     "tsup": "6.7.0",
     "typescript": "5.0.4"
   },
-  "dependencies": {
-    "ramda": "0.29.0"
+  "scripts": {
+    "analyze": "size-limit --why",
+    "build": "cross-env NODE_ENV=production tsup",
+    "check": "tsc --noEmit",
+    "dev": "cross-env NODE_ENV=development tsup --watch",
+    "dev:offline": "pnpm run dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "size": "size-limit",
+    "test": "jest"
+  },
+  "engines": {
+    "node": "=18"
   },
   "volta": {
     "extends": "../../package.json"
-  }
+  },
+  "size-limit": [
+    {
+      "path": "dist/index.js",
+      "limit": "10 KB"
+    }
+  ]
 }

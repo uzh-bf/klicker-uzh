@@ -102,6 +102,7 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
           timeLimit: block.timeLimit,
         }
       })
+    console.log('onSubmit - blockQuestions: ', blockQuestions)
 
     try {
       let success = false
@@ -143,7 +144,7 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
         setIsWizardCompleted(true)
       }
     } catch (error) {
-      console.log(error)
+      console.log('error: ', error)
       setEditMode(!!initialValues)
       setErrorToastOpen(true)
     }

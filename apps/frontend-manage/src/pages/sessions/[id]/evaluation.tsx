@@ -84,6 +84,7 @@ function Evaluation() {
     pollInterval: 5000,
     skip: !router.query.id,
   })
+  console.log('Evaluation - data: ', data)
 
   const {
     blocks: blockData,
@@ -106,6 +107,7 @@ function Evaluation() {
       })) ?? []
     )
   }, [data])
+  console.log('Evaluation - instanceResults: ', instanceResults)
 
   const { blocks } = useMemo(() => {
     if (!blockData) return { blocks: [] }
@@ -131,6 +133,8 @@ function Evaluation() {
       }
     ) as { ix: number; blocks: EvaluationBlock[] }
   }, [blockData])
+
+  console.log('Evaluation - blocks: ', blocks)
 
   useEvaluationInitialization({
     selectedInstanceIndex,

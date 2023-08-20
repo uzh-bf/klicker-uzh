@@ -86,7 +86,8 @@ function SessionTimeline({
 
   // basic session timeline logic - identifying the currently active block as well as the state of the session
   useEffect(() => {
-    if (blocks) {
+    if (blocks && blocks.length > 0) {
+      console.log('SessionTimeline -> blocks', blocks)
       setActiveBlockId(
         blocks.find((block) => block.status === 'ACTIVE')?.id || -1
       )
@@ -180,6 +181,18 @@ function SessionTimeline({
               </Button>
             </Link>
           </div>
+          {isFeedbackSession && (
+            <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
+              <Button
+                className={{
+                  root: twMerge('bg-uzh-red-100 text-white h-10'),
+                }}
+                onClick={handleEndSession}
+              >
+                <Button.Label>{buttonNames['endSession']}</Button.Label>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
       {!isFeedbackSession && blocks && (

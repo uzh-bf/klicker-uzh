@@ -1,4 +1,4 @@
-name: Build and deploy backend-responses to Function App (Production)
+name: Build and deploy func-incoming-responses to Function App (Production)
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/backend-responses'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-incoming-responses'
   NODE_VERSION: '18.x'
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
       - name: 'Resolve Project Dependencies Using Npm'
         shell: pwsh
         run: |
-          pnpm run build --scope @klicker-uzh/backend-responses
+          pnpm run build --scope @klicker-uzh/func-incoming-responses
           pnpm prune --prod --config.ignore-scripts=true
 
       - name: 'Run Azure Functions Action'

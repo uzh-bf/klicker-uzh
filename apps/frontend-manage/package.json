@@ -3,18 +3,6 @@
   "name": "@klicker-uzh/frontend-manage",
   "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
-  "scripts": {
-    "dev": "cross-env NODE_ENV=development next dev --port 3002",
-    "dev:offline": "cross-env NODE_ENV=development next dev --port 3002",
-    "build": "next build",
-    "build:test": "cross-env NODE_ENV=test next build",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "start": "next start --port 3002",
-    "start:test": "cross-env NODE_ENV=test npm start",
-    "lint": "next lint",
-    "check": "tsc --noEmit"
-  },
   "dependencies": {
     "@apollo/client": "3.8.0",
     "@fortawesome/fontawesome-svg-core": "6.4.2",
@@ -87,10 +75,22 @@
     "tailwindcss-radix": "2.8.0",
     "typescript": "5.0.4"
   },
-  "volta": {
-    "extends": "../../package.json"
+  "scripts": {
+    "build": "next build",
+    "build:test": "cross-env NODE_ENV=test next build",
+    "check": "tsc --noEmit",
+    "dev": "cross-env NODE_ENV=development next dev --port 3002",
+    "dev:offline": "cross-env NODE_ENV=development next dev --port 3002",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "next lint",
+    "start": "next start --port 3002",
+    "start:test": "cross-env NODE_ENV=test npm start"
   },
   "engines": {
     "node": "=18"
+  },
+  "volta": {
+    "extends": "../../package.json"
   }
 }

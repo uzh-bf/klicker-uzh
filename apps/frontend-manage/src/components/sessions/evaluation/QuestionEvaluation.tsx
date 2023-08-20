@@ -44,6 +44,8 @@ function QuestionEvaluation({
     sd: false,
   })
 
+  console.log('QuestionEvaluation - currentInstance: ', currentInstance)
+
   return (
     <div className={twMerge('h-full flex flex-col', className)}>
       <div className="flex-none">

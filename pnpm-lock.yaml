@@ -247,9 +247,6 @@ importers:
       dotenv:
         specifier: 16.0.3
         version: 16.0.3
-      husky:
-        specifier: 8.0.3
-        version: 8.0.3
       ioredis-mock:
         specifier: 8.7.0
         version: 8.7.0(@types/ioredis-mock@8.2.1)(ioredis@5.3.2)
@@ -274,137 +271,6 @@ importers:
       typescript:
         specifier: 5.0.4
         version: 5.0.4
-
-  apps/backend-response-processor:
-    dependencies:
-      '@azure/functions':
-        specifier: 4.0.0-alpha.11
-        version: 4.0.0-alpha.11
-      '@klicker-uzh/grading':
-        specifier: workspace:*
-        version: link:../../packages/grading
-      '@sentry/node':
-        specifier: 7.52.1
-        version: 7.52.1
-      ioredis:
-        specifier: 5.3.2
-        version: 5.3.2
-      jsonwebtoken:
-        specifier: 9.0.1
-        version: 9.0.1
-      md5:
-        specifier: 2.3.0
-        version: 2.3.0
-      ramda:
-        specifier: 0.29.0
-        version: 0.29.0
-    devDependencies:
-      '@tsconfig/node18':
-        specifier: 18.2.0
-        version: 18.2.0
-      '@tsconfig/recommended':
-        specifier: 1.0.2
-        version: 1.0.2
-      '@types/jsonwebtoken':
-        specifier: ^9.0.1
-        version: 9.0.2
-      '@types/md5':
-        specifier: 2.3.2
-        version: 2.3.2
-      '@types/node':
-        specifier: ^18.11.9
-        version: 18.17.4
-      '@types/ramda':
-        specifier: ^0.29.0
-        version: 0.29.3
-      '@uzh-bf/design-system':
-        specifier: 2.0.12
-        version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
-      azure-functions-core-tools:
-        specifier: 4.0.5274
-        version: 4.0.5274
-      cross-env:
-        specifier: 7.0.3
-        version: 7.0.3
-      dotenv:
-        specifier: 16.0.3
-        version: 16.0.3
-      husky:
-        specifier: 8.0.3
-        version: 8.0.3
-      npm-run-all:
-        specifier: 4.1.5
-        version: 4.1.5
-      prettier:
-        specifier: 2.8.8
-        version: 2.8.8
-      prettier-plugin-organize-imports:
-        specifier: 3.2.2
-        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
-      tsup:
-        specifier: 7.2.0
-        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
-      typescript:
-        specifier: 5.1.6
-        version: 5.1.6
-
-  apps/backend-responses:
-    dependencies:
-      '@azure/functions':
-        specifier: 4.0.0-alpha.11
-        version: 4.0.0-alpha.11
-      '@azure/service-bus':
-        specifier: 7.9.0
-        version: 7.9.0
-      '@sentry/node':
-        specifier: 7.52.1
-        version: 7.52.1
-      jsonwebtoken:
-        specifier: 9.0.1
-        version: 9.0.1
-    devDependencies:
-      '@tsconfig/node18':
-        specifier: 18.2.0
-        version: 18.2.0
-      '@tsconfig/recommended':
-        specifier: 1.0.2
-        version: 1.0.2
-      '@types/jsonwebtoken':
-        specifier: ^9.0.1
-        version: 9.0.2
-      '@types/node':
-        specifier: ^18.11.9
-        version: 18.17.4
-      '@uzh-bf/design-system':
-        specifier: 2.0.12
-        version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
-      azure-functions-core-tools:
-        specifier: 4.0.5274
-        version: 4.0.5274
-      cross-env:
-        specifier: 7.0.3
-        version: 7.0.3
-      dotenv:
-        specifier: 16.0.3
-        version: 16.0.3
-      husky:
-        specifier: 8.0.3
-        version: 8.0.3
-      npm-run-all:
-        specifier: 4.1.5
-        version: 4.1.5
-      prettier:
-        specifier: 2.8.8
-        version: 2.8.8
-      prettier-plugin-organize-imports:
-        specifier: 3.2.2
-        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
-      tsup:
-        specifier: 7.2.0
-        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
-      typescript:
-        specifier: 5.1.6
-        version: 5.1.6
 
   apps/frontend-control:
     dependencies:
@@ -976,6 +842,226 @@ importers:
         specifier: 3.6.1
         version: 3.6.1
 
+  apps/func-incoming-responses:
+    dependencies:
+      '@azure/functions':
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
+      '@azure/service-bus':
+        specifier: 7.9.0
+        version: 7.9.0
+      '@sentry/node':
+        specifier: 7.52.1
+        version: 7.52.1
+      jsonwebtoken:
+        specifier: 9.0.1
+        version: 9.0.1
+    devDependencies:
+      '@tsconfig/node18':
+        specifier: 18.2.0
+        version: 18.2.0
+      '@tsconfig/recommended':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@types/jsonwebtoken':
+        specifier: ^9.0.1
+        version: 9.0.2
+      '@types/node':
+        specifier: ^18.11.9
+        version: 18.17.4
+      '@uzh-bf/design-system':
+        specifier: 2.0.12
+        version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+      azure-functions-core-tools:
+        specifier: 4.0.5274
+        version: 4.0.5274
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
+      dotenv:
+        specifier: 16.0.3
+        version: 16.0.3
+      npm-run-all:
+        specifier: 4.1.5
+        version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
+      tsup:
+        specifier: 7.2.0
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
+      typescript:
+        specifier: 5.1.6
+        version: 5.1.6
+
+  apps/func-migration-v2-export:
+    dependencies:
+      '@azure/functions':
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
+      '@azure/storage-blob':
+        specifier: 12.15.0
+        version: 12.15.0
+      jsonwebtoken:
+        specifier: 9.0.1
+        version: 9.0.1
+      mongodb:
+        specifier: 5.7.0
+        version: 5.7.0
+    devDependencies:
+      '@tsconfig/node18':
+        specifier: 18.2.0
+        version: 18.2.0
+      '@tsconfig/recommended':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@types/jsonwebtoken':
+        specifier: ^9.0.1
+        version: 9.0.2
+      '@types/node':
+        specifier: ^18.11.9
+        version: 18.17.4
+      azure-functions-core-tools:
+        specifier: 4.0.5274
+        version: 4.0.5274
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
+      npm-run-all:
+        specifier: 4.1.5
+        version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
+      tsup:
+        specifier: 7.2.0
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
+      typescript:
+        specifier: 5.1.6
+        version: 5.1.6
+
+  apps/func-migration-v3-import:
+    dependencies:
+      '@azure/functions':
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
+      '@azure/storage-blob':
+        specifier: 12.15.0
+        version: 12.15.0
+      jsonwebtoken:
+        specifier: 9.0.1
+        version: 9.0.1
+    devDependencies:
+      '@tsconfig/node18':
+        specifier: 18.2.0
+        version: 18.2.0
+      '@tsconfig/recommended':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@types/jsonwebtoken':
+        specifier: ^9.0.1
+        version: 9.0.2
+      '@types/node':
+        specifier: ^18.11.9
+        version: 18.17.4
+      azure-functions-core-tools:
+        specifier: 4.0.5274
+        version: 4.0.5274
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
+      npm-run-all:
+        specifier: 4.1.5
+        version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
+      tsup:
+        specifier: 7.2.0
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
+      typescript:
+        specifier: 5.1.6
+        version: 5.1.6
+
+  apps/func-response-processor:
+    dependencies:
+      '@azure/functions':
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
+      '@klicker-uzh/grading':
+        specifier: workspace:*
+        version: link:../../packages/grading
+      '@sentry/node':
+        specifier: 7.52.1
+        version: 7.52.1
+      ioredis:
+        specifier: 5.3.2
+        version: 5.3.2
+      jsonwebtoken:
+        specifier: 9.0.1
+        version: 9.0.1
+      md5:
+        specifier: 2.3.0
+        version: 2.3.0
+      ramda:
+        specifier: 0.29.0
+        version: 0.29.0
+    devDependencies:
+      '@tsconfig/node18':
+        specifier: 18.2.0
+        version: 18.2.0
+      '@tsconfig/recommended':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@types/jsonwebtoken':
+        specifier: ^9.0.1
+        version: 9.0.2
+      '@types/md5':
+        specifier: 2.3.2
+        version: 2.3.2
+      '@types/node':
+        specifier: ^18.11.9
+        version: 18.17.4
+      '@types/ramda':
+        specifier: ^0.29.0
+        version: 0.29.3
+      '@uzh-bf/design-system':
+        specifier: 2.0.12
+        version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+      azure-functions-core-tools:
+        specifier: 4.0.5274
+        version: 4.0.5274
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
+      dotenv:
+        specifier: 16.0.3
+        version: 16.0.3
+      npm-run-all:
+        specifier: 4.1.5
+        version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
+      tsup:
+        specifier: 7.2.0
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
+      typescript:
+        specifier: 5.1.6
+        version: 5.1.6
+
   apps/office-addin:
     dependencies:
       '@fluentui/react':
@@ -1199,6 +1285,9 @@ importers:
 
   packages/graphql:
     dependencies:
+      '@azure/service-bus':
+        specifier: 7.9.0
+        version: 7.9.0
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../grading
@@ -1217,6 +1306,9 @@ importers:
       '@pothos/plugin-validation':
         specifier: 3.10.0
         version: 3.10.0(@pothos/core@3.33.0)(graphql@16.7.1)(zod@3.21.4)
+      axios:
+        specifier: 1.4.0
+        version: 1.4.0
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -1335,9 +1427,6 @@ importers:
       graphql-codegen-persisted-query-ids:
         specifier: 0.1.2
         version: 0.1.2
-      husky:
-        specifier: 8.0.3
-        version: 8.0.3
       ioredis:
         specifier: 5.3.2
         version: 5.3.2
@@ -1551,6 +1640,60 @@ importers:
       typescript:
         specifier: 5.0.4
         version: 5.0.4
+
+  packages/migration-v2-export-python: {}
+
+  packages/migration-v3-import:
+    dependencies:
+      '@azure/storage-blob':
+        specifier: 12.15.0
+        version: 12.15.0
+      '@klicker-uzh/prisma':
+        specifier: workspace:*
+        version: link:../prisma
+    devDependencies:
+      '@tsconfig/node18':
+        specifier: 18.2.0
+        version: 18.2.0
+      '@tsconfig/recommended':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@types/node':
+        specifier: ^18.17.4
+        version: 18.17.4
+      axios:
+        specifier: 1.4.0
+        version: 1.4.0
+      dotenv:
+        specifier: 16.0.3
+        version: 16.0.3
+      dotenv-cli:
+        specifier: 7.2.1
+        version: 7.2.1
+      mongoose:
+        specifier: 7.3.3
+        version: 7.3.3
+      npm-run-all:
+        specifier: 4.1.5
+        version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
+      prisma:
+        specifier: 4.14.1
+        version: 4.14.1
+      ts-node:
+        specifier: 10.9.1
+        version: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
+      tsup:
+        specifier: 7.2.0
+        version: 7.2.0(ts-node@10.9.1)(typescript@5.1.6)
+      typescript:
+        specifier: 5.1.6
+        version: 5.1.6
 
   packages/next-config:
     dependencies:
@@ -2251,7 +2394,6 @@ packages:
       xml2js: 0.5.0
     transitivePeerDependencies:
       - encoding
-    dev: true
 
   /@azure/core-lro@2.5.4:
     resolution: {integrity: sha512-3GJiMVH7/10bulzOKGrrLeG/uCBH/9VtxqaMcB9lIqAeamI/xYQSHJL/KcsLDuH+yTjYpro/u6D/MuRe4dN70Q==}
@@ -2261,7 +2403,6 @@ packages:
       '@azure/core-util': 1.4.0
       '@azure/logger': 1.0.4
       tslib: 2.6.1
-    dev: true
 
   /@azure/core-paging@1.5.0:
     resolution: {integrity: sha512-zqWdVIt+2Z+3wqxEOGzR5hXFZ8MGKK52x4vFLw8n58pR6ZfKRx3EXYTxTaYxYHc/PexPUTyimcTWFJbji9Z6Iw==}
@@ -2291,7 +2432,6 @@ packages:
     dependencies:
       '@opentelemetry/api': 1.4.1
       tslib: 2.6.1
-    dev: true
 
   /@azure/core-tracing@1.0.1:
     resolution: {integrity: sha512-I5CGMoLtX+pI17ZdiFJZgxMJApsK6jjfm85hpgp3oazCdq5Wxgh4wMr7ge/TTWW1B5WBuvIOI1fMU/FrOAMKrw==}
@@ -2476,7 +2616,6 @@ packages:
       tslib: 2.6.1
     transitivePeerDependencies:
       - encoding
-    dev: true
 
   /@babel/code-frame@7.12.11:
     resolution: {integrity: sha512-Zt1yodBx1UcyiePMSkWnU4hPqhwq7hGi2nFL1LeA3EUl+q2LQx16MISgJ0+z7dnmgvP9QtIleuETGOiOH1RcIw==}
@@ -6291,7 +6430,6 @@ packages:
   /@opentelemetry/api@1.4.1:
     resolution: {integrity: sha512-O2yRJce1GOc6PAy3QxFM4NzFiWzvScDC1/5ihYBL6BUEVdq0XMWN01sppE+H6bBXbaFYipjwFLEWLg5PaSOThA==}
     engines: {node: '>=8.0.0'}
-    dev: true
 
   /@panva/hkdf@1.1.1:
     resolution: {integrity: sha512-dhPeilub1NuIG0X5Kvhh9lH4iW3ZsHlnzwgwbOlgwQ2wG1IqFzsgHqmKPk3WzsdWAeaxKJxgM0+W433RmN45GA==}
@@ -8707,7 +8845,6 @@ packages:
     resolution: {integrity: sha512-sOUTGn6h1SfQ+gbgqC364jLFBw2lnFqkgF3q0WovEHRLMrVD1sd5aufqi/aJObLekJO+Aq5z646U4Oxy6shXMA==}
     dependencies:
       '@types/node': 18.17.4
-    dev: true
 
   /@types/uglify-js@3.17.1:
     resolution: {integrity: sha512-GkewRA4i5oXacU/n4MA9+bLgt5/L3F1mKrYvFGm7r2ouLXhRKjuWwo9XHNnbx6WF3vlGW21S3fCvgqxvxXXc5g==}
@@ -8736,6 +8873,9 @@ packages:
     dependencies:
       '@types/node': 18.17.4
     dev: true
+
+  /@types/webidl-conversions@7.0.0:
+    resolution: {integrity: sha512-xTE1E+YF4aWPJJeUzaZI5DRntlkY3+BCVJi0axFptnjGmAoWxkyREIh/XMrfxVLejwQxMCfDXdICo0VLxThrog==}
 
   /@types/webpack-dev-middleware@5.3.0(webpack@5.83.1):
     resolution: {integrity: sha512-SklLlklFBfTyIXo1iWXxzeytjlysWfj5QfIcRJrCc7MgzuCjnZOHXviQwe81iFGq9ZkCUXAg2fpbZdHhj5lSWA==}
@@ -8794,6 +8934,12 @@ packages:
       - uglify-js
       - webpack-cli
     dev: true
+
+  /@types/whatwg-url@8.2.2:
+    resolution: {integrity: sha512-FtQu10RWgn3D9U4aazdwIE2yzphmTJREDqNdODHrbrZmmMqI0vMheC/6NE/J1Yveaj8H+ela+YwWTjq5PGmuhA==}
+    dependencies:
+      '@types/node': 18.17.4
+      '@types/webidl-conversions': 7.0.0
 
   /@types/ws@8.5.5:
     resolution: {integrity: sha512-lwhs8hktwxSjf9UaZ9tG5M03PGogvFaH8gUgLNbN9HKIg0dvv6q+gkSuJ8HN4/VbyxkuLzCjlN7GquQ0gUJfIg==}
@@ -9940,7 +10086,6 @@ packages:
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
-    dev: true
 
   /axobject-query@3.2.1:
     resolution: {integrity: sha512-jsyHu61e6N4Vbz/v18DHwWYKK0bSWLqn47eeDSKPB7m8tqMHF9YJ+mhIk2lVteyZrY8tnSj/jHOv4YiTCuCJgg==}
@@ -10321,6 +10466,10 @@ packages:
     dependencies:
       node-int64: 0.4.0
     dev: true
+
+  /bson@5.4.0:
+    resolution: {integrity: sha512-WRZ5SQI5GfUuKnPTNmAYPiKIof3ORXAF4IRU5UcgmivNIon01rWQlw5RUH954dpu8yGL8T59YShVddIPaU/gFA==}
+    engines: {node: '>=14.20.1'}
 
   /buffer-crc32@0.2.13:
     resolution: {integrity: sha512-VO9Ht/+p3SN7SKWqcrgEzjGbRSJYTx+Q1pTQC0wrWqHx0vpJraQ6GtHx8tvcg1rlK1byhU5gccxgOgj7B0TDkQ==}
@@ -14862,7 +15011,6 @@ packages:
 
   /ip@2.0.0:
     resolution: {integrity: sha512-WKa+XuLG1A1R0UWhl2+1XQSi+fZWMsYKffMZTTYsiZaUD8k2yDAj5atimTUD2TZkyCkNEeYE5NhFZmupOGtjYQ==}
-    dev: true
 
   /ipaddr.js@1.9.1:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
@@ -16020,6 +16168,11 @@ packages:
     resolution: {integrity: sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==}
     dev: true
 
+  /kareem@2.5.1:
+    resolution: {integrity: sha512-7jFxRVm+jD+rkq3kY0iZDJfsO2/t4BBPeEb2qKn2lR/9KhuksYk5hxzfRYWMPV8P/x2d0kHD306YyWLzjjH+uA==}
+    engines: {node: '>=12.0.0'}
+    dev: true
+
   /katex@0.16.8:
     resolution: {integrity: sha512-ftuDnJbcbOckGY11OO+zg3OofESlbR5DRl2cmN8HeWeeFIV7wTXvAOx8kEjZjobhA+9wh2fbKeO6cdcA9Mnovg==}
     hasBin: true
@@ -16592,6 +16745,11 @@ packages:
     resolution: {integrity: sha512-rkpe71W0N0c0Xz6QD0eJETuWAJGnJ9afsl1srmwPrI+yBCkge5EycXXbYRyvL29zZVUWQCY7InPRCv3GDXuZNw==}
     dev: false
 
+  /memory-pager@1.5.0:
+    resolution: {integrity: sha512-ZS4Bp4r/Zoeq6+NLJpP+0Zzm0pR8whtGPf1XExKLJBAczGMnSi3It14OiNCStjQjM6NU1okjQGSxgEZN8eBYKg==}
+    requiresBuild: true
+    optional: true
+
   /memorystream@0.3.1:
     resolution: {integrity: sha512-S3UwM3yj5mtUSEfP41UZmt/0SCoVYUcU1rkXv+BQ5Ig8ndL4sPoJNBUJERafdPb5jjHJGuMgytgKvKIf58XNBw==}
     engines: {node: '>= 0.10.0'}
@@ -17032,6 +17190,94 @@ packages:
   /modify-values@1.0.1:
     resolution: {integrity: sha512-xV2bxeN6F7oYjZWTe/YPAy6MN2M+sL4u/Rlm2AHCIVGfo2p1yGmBHQ6vHehl4bRTZBdHu3TSkWdYgkwpYzAGSw==}
     engines: {node: '>=0.10.0'}
+    dev: true
+
+  /mongodb-connection-string-url@2.6.0:
+    resolution: {integrity: sha512-WvTZlI9ab0QYtTYnuMLgobULWhokRjtC7db9LtcVfJ+Hsnyr5eo6ZtNAt3Ly24XZScGMelOcGtm7lSn0332tPQ==}
+    dependencies:
+      '@types/whatwg-url': 8.2.2
+      whatwg-url: 11.0.0
+
+  /mongodb@5.6.0:
+    resolution: {integrity: sha512-z8qVs9NfobHJm6uzK56XBZF8XwM9H294iRnB7wNjF0SnY93si5HPziIJn+qqvUR5QOff/4L0gCD6SShdR/GtVQ==}
+    engines: {node: '>=14.20.1'}
+    peerDependencies:
+      '@aws-sdk/credential-providers': ^3.201.0
+      mongodb-client-encryption: '>=2.3.0 <3'
+      snappy: ^7.2.2
+    peerDependenciesMeta:
+      '@aws-sdk/credential-providers':
+        optional: true
+      mongodb-client-encryption:
+        optional: true
+      snappy:
+        optional: true
+    dependencies:
+      bson: 5.4.0
+      mongodb-connection-string-url: 2.6.0
+      socks: 2.7.1
+    optionalDependencies:
+      saslprep: 1.0.3
+    dev: true
+
+  /mongodb@5.7.0:
+    resolution: {integrity: sha512-zm82Bq33QbqtxDf58fLWBwTjARK3NSvKYjyz997KSy6hpat0prjeX/kxjbPVyZY60XYPDNETaHkHJI2UCzSLuw==}
+    engines: {node: '>=14.20.1'}
+    peerDependencies:
+      '@aws-sdk/credential-providers': ^3.201.0
+      '@mongodb-js/zstd': ^1.1.0
+      kerberos: ^2.0.1
+      mongodb-client-encryption: '>=2.3.0 <3'
+      snappy: ^7.2.2
+    peerDependenciesMeta:
+      '@aws-sdk/credential-providers':
+        optional: true
+      '@mongodb-js/zstd':
+        optional: true
+      kerberos:
+        optional: true
+      mongodb-client-encryption:
+        optional: true
+      snappy:
+        optional: true
+    dependencies:
+      bson: 5.4.0
+      mongodb-connection-string-url: 2.6.0
+      socks: 2.7.1
+    optionalDependencies:
+      saslprep: 1.0.3
+    dev: false
+
+  /mongoose@7.3.3:
+    resolution: {integrity: sha512-g4NrRGIUEUYLeScaSChQR8i4Dlk9lR0UJzkK3r6TPJyqJ6ZWdRVP3oXfOG9Yn+hNeKcCJKfVEHo+jsU1rh3YTA==}
+    engines: {node: '>=14.20.1'}
+    dependencies:
+      bson: 5.4.0
+      kareem: 2.5.1
+      mongodb: 5.6.0
+      mpath: 0.9.0
+      mquery: 5.0.0
+      ms: 2.1.3
+      sift: 16.0.1
+    transitivePeerDependencies:
+      - '@aws-sdk/credential-providers'
+      - mongodb-client-encryption
+      - snappy
+      - supports-color
+    dev: true
+
+  /mpath@0.9.0:
+    resolution: {integrity: sha512-ikJRQTk8hw5DEoFVxHG1Gn9T/xcjtdnOKIU1JTmGjZZlg9LST2mBLmcX3/ICIbgJydT2GOc15RnNy5mHmzfSew==}
+    engines: {node: '>=4.0.0'}
+    dev: true
+
+  /mquery@5.0.0:
+    resolution: {integrity: sha512-iQMncpmEK8R8ncT8HJGsGc9Dsp8xcgYMVSbs5jgnm1lFHTZqMJTUWTDx1LBO8+mK3tPNZWFLBghQEIOULSTHZg==}
+    engines: {node: '>=14.0.0'}
+    dependencies:
+      debug: 4.3.4(supports-color@8.1.1)
+    transitivePeerDependencies:
+      - supports-color
     dev: true
 
   /mri@1.2.0:
@@ -20229,9 +20475,16 @@ packages:
   /safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
+  /saslprep@1.0.3:
+    resolution: {integrity: sha512-/MY/PEMbk2SuY5sScONwhUDsV2p77Znkb/q3nSVstq/yQzYJOH/Azh29p9oJLsl3LnQwSvZDKagDGBsBwSooag==}
+    engines: {node: '>=6'}
+    requiresBuild: true
+    dependencies:
+      sparse-bitfield: 3.0.3
+    optional: true
+
   /sax@1.2.4:
     resolution: {integrity: sha512-NqVDv9TpANUjFm0N8uM5GxL36UgKi9/atZw+x7YFnQ8ckwFGKrl4xX4yWtrey3UJm5nP1kUbnYgLopqWNSRhWw==}
-    dev: true
 
   /scheduler@0.23.0:
     resolution: {integrity: sha512-CtuThmgHNg7zIZWAXi3AsyIzA3n4xx7aNyjwC2VJldO2LMVDhFK+63xGqq6CsJH4rTAt6/M+N4GhZiDYPx9eUw==}
@@ -20472,6 +20725,10 @@ packages:
       get-intrinsic: 1.2.1
       object-inspect: 1.12.3
 
+  /sift@16.0.1:
+    resolution: {integrity: sha512-Wv6BjQ5zbhW7VFefWusVP33T/EM0vYikCaQ2qR8yULbsilAT8/wQaXvuQ3ptGLpoKx+lihJE3y2UTgKDyyNHZQ==}
+    dev: true
+
   /signal-exit@3.0.7:
     resolution: {integrity: sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==}
 
@@ -20587,7 +20844,6 @@ packages:
   /smart-buffer@4.2.0:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
-    dev: true
 
   /snake-case@3.0.4:
     resolution: {integrity: sha512-LAOh4z89bGQvl9pFfNF8V146i7o7/CqFPbqzYgP+yYzDIDeS9HaNFtXABamRW+AQzEVODcvE79ljJ+8a9YSdMg==}
@@ -20631,7 +20887,6 @@ packages:
     dependencies:
       ip: 2.0.0
       smart-buffer: 4.2.0
-    dev: true
 
   /sorted-array-functions@1.3.0:
     resolution: {integrity: sha512-2sqgzeFlid6N4Z2fUQ1cvFmTOLRi/sEDzSQ0OKYchqgoPmQBVyM3959qYx3fpS6Esef80KjmpgPeEr028dP3OA==}
@@ -20693,6 +20948,13 @@ packages:
   /space-separated-tokens@2.0.2:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
     dev: false
+
+  /sparse-bitfield@3.0.3:
+    resolution: {integrity: sha512-kvzhi7vqKTfkh0PZU+2D2PIllw2ymqJKujUcyPMd9Y75Nv4nPbGJZXNhxsgdQab2BmlDct1YnfQCguEvHr7VsQ==}
+    requiresBuild: true
+    dependencies:
+      memory-pager: 1.5.0
+    optional: true
 
   /spawn-wrap@2.0.0:
     resolution: {integrity: sha512-EeajNjfN9zMnULLwhZZQU3GWBoFNkbngTUPfaawT4RkMiviTxcX0qfhVbGey39mfctfDHkWtuecgQ8NJcyQWHg==}
@@ -21451,6 +21713,12 @@ packages:
     dependencies:
       punycode: 2.3.0
 
+  /tr46@3.0.0:
+    resolution: {integrity: sha512-l7FvfAHlcmulp8kr+flpQZmVwtu7nfRV7NZujtN0OqES8EL4O4e0qqzL0DC5gAvx/ZC/9lk6rhcUwYvkBnBnYA==}
+    engines: {node: '>=12'}
+    dependencies:
+      punycode: 2.3.0
+
   /traverse@0.3.9:
     resolution: {integrity: sha512-iawgk0hLP3SxGKDfnDJf8wTz4p2qImnyihM5Hh/sGvQ3K37dPi/w8sRhdNIxYA1TwFwc5mDhIJq+O0RsvXBKdQ==}
     dev: true
@@ -21821,7 +22089,6 @@ packages:
   /tunnel@0.0.6:
     resolution: {integrity: sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==}
     engines: {node: '>=0.6.11 <=0.7.0 || >=0.7.3'}
-    dev: true
 
   /turbo-darwin-64@1.10.12:
     resolution: {integrity: sha512-vmDfGVPl5/aFenAbOj3eOx3ePNcWVUyZwYr7taRl0ZBbmv2TzjRiFotO4vrKCiTVnbqjQqAFQWY2ugbqCI1kOQ==}
@@ -22559,6 +22826,10 @@ packages:
   /webidl-conversions@4.0.2:
     resolution: {integrity: sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg==}
 
+  /webidl-conversions@7.0.0:
+    resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
+    engines: {node: '>=12'}
+
   /webpack-cli@5.1.1(webpack-dev-server@4.15.0)(webpack@5.83.1):
     resolution: {integrity: sha512-OLJwVMoXnXYH2ncNGU8gxVpUtm3ybvdioiTvHgUyBuyMLKiVvWy+QObzBsMtp5pH7qQoEuWgeEUQ/sU3ZJFzAw==}
     engines: {node: '>=14.15.0'}
@@ -22749,6 +23020,13 @@ packages:
     requiresBuild: true
     dev: false
     optional: true
+
+  /whatwg-url@11.0.0:
+    resolution: {integrity: sha512-RKT8HExMpoYx4igMiVMY83lN6UeITKJlBQ+vR/8ZJ8OCdSiN3RwCq+9gH0+Xzj0+5IrM6i4j/6LuvzbZIQgEcQ==}
+    engines: {node: '>=12'}
+    dependencies:
+      tr46: 3.0.0
+      webidl-conversions: 7.0.0
 
   /whatwg-url@5.0.0:
     resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
@@ -23059,12 +23337,10 @@ packages:
     dependencies:
       sax: 1.2.4
       xmlbuilder: 11.0.1
-    dev: true
 
   /xmlbuilder@11.0.1:
     resolution: {integrity: sha512-fDlsI/kFEx7gLvbecc0/ohLG50fugQp8ryHzMTuW9vSa1GJ0XYWKnhsUx7oie3G98+r56aTQIUB4kht42R3JvA==}
     engines: {node: '>=4.0'}
-    dev: true
 
   /xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}

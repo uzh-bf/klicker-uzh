@@ -2,36 +2,6 @@
   "name": "@klicker-uzh/office-addin",
   "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
-  "config": {
-    "app_to_debug": "powerpoint",
-    "app_type_to_debug": "desktop",
-    "dev_server_port": 3000
-  },
-  "scripts": {
-    "package": "webpack --mode production",
-    "build:dev": "webpack --mode development",
-    "run-dev": "run-s clear dev-server",
-    "dev-server": "webpack serve --mode development",
-    "lint": "office-addin-lint check",
-    "lint:fix": "office-addin-lint fix",
-    "prettier": "office-addin-lint prettier",
-    "start:content": "office-addin-debugging start manifest-content.xml",
-    "start:taskpane": "office-addin-debugging start manifest-taskpane.xml",
-    "start:desktop": "office-addin-debugging start manifest-content.xml desktop",
-    "start:web": "office-addin-debugging start manifest-content.xml web",
-    "stop:content": "office-addin-debugging stop manifest-content.xml",
-    "stop:taskpane": "office-addin-debugging stop manifest-taskpane.xml",
-    "stop": "npm-run-all --parallel stop:content stop:taskpane",
-    "validate:content": "office-addin-manifest validate manifest-content.xml",
-    "validate:taskpane": "office-addin-manifest validate manifest-taskpane.xml",
-    "watch": "webpack --mode development --watch",
-    "clear": ".\\scripts\\clear.bat",
-    "dev:tailwind": "tailwindcss -i ./src/content/content.css -o ./src/content/output.css --watch",
-    "dev-addin": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "check": "tsc --noEmit"
-  },
   "dependencies": {
     "@fluentui/react": "8.109.5",
     "@uzh-bf/design-system": "2.0.12",
@@ -86,14 +56,44 @@
     "webpack-cli": "5.1.1",
     "webpack-dev-server": "4.15.0"
   },
-  "prettier": "office-addin-prettier-config",
-  "browserslist": [
-    "ie 11"
-  ],
-  "volta": {
-    "extends": "../../package.json"
+  "scripts": {
+    "build:dev": "webpack --mode development",
+    "check": "tsc --noEmit",
+    "clear": ".\\scripts\\clear.bat",
+    "dev-addin": "npm-run-all --parallel dev:tailwind start:content start:taskpane",
+    "dev-server": "webpack serve --mode development",
+    "dev:tailwind": "tailwindcss -i ./src/content/content.css -o ./src/content/output.css --watch",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "office-addin-lint check",
+    "lint:fix": "office-addin-lint fix",
+    "package": "webpack --mode production",
+    "prettier": "office-addin-lint prettier",
+    "run-dev": "run-s clear dev-server",
+    "start:content": "office-addin-debugging start manifest-content.xml",
+    "start:desktop": "office-addin-debugging start manifest-content.xml desktop",
+    "start:taskpane": "office-addin-debugging start manifest-taskpane.xml",
+    "start:web": "office-addin-debugging start manifest-content.xml web",
+    "stop": "npm-run-all --parallel stop:content stop:taskpane",
+    "stop:content": "office-addin-debugging stop manifest-content.xml",
+    "stop:taskpane": "office-addin-debugging stop manifest-taskpane.xml",
+    "validate:content": "office-addin-manifest validate manifest-content.xml",
+    "validate:taskpane": "office-addin-manifest validate manifest-taskpane.xml",
+    "watch": "webpack --mode development --watch"
   },
   "engines": {
     "node": ">=16"
-  }
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "browserslist": [
+    "ie 11"
+  ],
+  "config": {
+    "app_to_debug": "powerpoint",
+    "app_type_to_debug": "desktop",
+    "dev_server_port": 3000
+  },
+  "prettier": "office-addin-prettier-config"
 }
