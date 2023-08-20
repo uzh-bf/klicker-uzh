@@ -334,7 +334,7 @@
     "groupActivity": {
       "openGroupActivity": "Open Group Activity",
       "activityNotYetActive": "The group activity is not active or not yet unlocked.",
-      "baseline": "Baseline",
+      "initialSituation": "Situation",
       "yourHints": "Your hints",
       "coordinateHints": "Each group member receives one or more of the hints above.<br></br> Coordinate with each other to collect all the necessary hints for the tasks.",
       "yourGroup": "Your group",

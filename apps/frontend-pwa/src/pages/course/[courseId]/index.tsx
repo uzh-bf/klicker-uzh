@@ -14,8 +14,14 @@ import {
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Button, H3, H4 } from '@uzh-bf/design-system'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
+import {
+  Button,
+  FormikNumberField,
+  FormikTextField,
+  H3,
+  H4,
+} from '@uzh-bf/design-system'
+import { Form, Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -527,15 +533,9 @@ function CourseOverview({ courseId }: Props) {
               >
                 <Form>
                   <div className="flex flex-row gap-4">
-                    <Field
-                      type="text"
+                    <FormikTextField
                       name="groupName"
                       placeholder={t('pwa.courses.groupName')}
-                    />
-                    <ErrorMessage
-                      name="groupName"
-                      component="div"
-                      className="text-sm text-red-400"
                     />
                     <Button type="submit">{t('shared.generic.create')}</Button>
                   </div>
@@ -566,15 +566,9 @@ function CourseOverview({ courseId }: Props) {
               >
                 <Form>
                   <div className="flex flex-row gap-4">
-                    <Field
-                      type="text"
+                    <FormikNumberField
                       name="code"
                       placeholder={t('pwa.courses.code')}
-                    />
-                    <ErrorMessage
-                      name="code"
-                      component="div"
-                      className="text-sm text-red-400"
                     />
                     <Button type="submit">{t('shared.generic.join')}</Button>
                   </div>

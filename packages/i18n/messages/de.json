@@ -329,7 +329,7 @@
     "groupActivity": {
       "openGroupActivity": "Zur Gruppenaktivität",
       "activityNotYetActive": "Die Gruppenaktivität ist nicht aktiv oder noch nicht freigeschalten.",
-      "baseline": "Ausgangslage",
+      "initialSituation": "Ausgangslage",
       "yourHints": "Eure Hinweise",
       "coordinateHints": "Jedes Gruppenmitglied erhält ein/mehrere der obigen Hinweise.<br></br> Sprecht euch ab, um alle nötigen Hinweise für die Aufgaben zu sammeln.",
       "yourGroup": "Deine Gruppe",
