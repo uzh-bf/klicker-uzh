@@ -24,8 +24,8 @@ interface SessionCreationBlockProps {
   remove: (index: number) => void
   move: (from: number, to: number) => void
   replace: (index: number, value: any) => void
-  selectionAvailable: boolean
-  addSelected: () => void
+  selection?: { id: number; title: string }[]
+  resetSelection?: () => void
 }
 
 function SessionCreationBlock({
@@ -35,8 +35,8 @@ function SessionCreationBlock({
   remove,
   move,
   replace,
-  selectionAvailable,
-  addSelected,
+  selection,
+  resetSelection,
 }: SessionCreationBlockProps): React.ReactElement {
   const t = useTranslations()
   const [openSettings, setOpenSettings] = useState(false)
@@ -221,12 +221,31 @@ function SessionCreationBlock({
           </div>
         ))}
       </div>
-      {selectionAvailable && (
+      {selection && selection?.length > 0 && (
         <Button
           className={{
             root: 'w-full flex flex-row justify-center gap-2 mb-1 p-0.5 border border-solid rounded bg-uzh-red-20 hover:bg-uzh-red-40',
           }}
-          onClick={addSelected}
+          onClick={() => {
+            const { questionIds, titles } = selection.reduce<{
+              questionIds: number[]
+              titles: string[]
+            }>(
+              (acc, curr) => {
+                acc.questionIds.push(curr.id)
+                acc.titles.push(curr.title)
+                return acc
+              },
+              { questionIds: [], titles: [] }
+            )
+
+            replace(index, {
+              ...block,
+              questionIds: [...block.questionIds, ...questionIds],
+              titles: [...block.titles, ...titles],
+            })
+            resetSelection && resetSelection()
+          }}
           data={{ cy: 'paste-selected-questions' }}
         >
           <FontAwesomeIcon icon={faPaste} />

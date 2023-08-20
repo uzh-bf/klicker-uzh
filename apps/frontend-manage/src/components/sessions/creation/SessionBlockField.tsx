@@ -37,68 +37,15 @@ function SessionBlockField({
                   remove={remove}
                   move={move}
                   replace={replace}
-                  selectionAvailable={(selection?.length || 0) > 0}
-                  addSelected={() => {
-                    if (selection) {
-                      const { questionIds, titles } = selection.reduce<{
-                        questionIds: number[]
-                        titles: string[]
-                      }>(
-                        (acc, curr) => {
-                          acc.questionIds.push(curr.id)
-                          acc.titles.push(curr.title)
-                          return acc
-                        },
-                        { questionIds: [], titles: [] }
-                      )
-
-                      replace(index, {
-                        ...block,
-                        questionIds: [...block.questionIds, ...questionIds],
-                        titles: [...block.titles, ...titles],
-                      })
-                      resetSelection && resetSelection()
-                    }
-                  }}
+                  selection={selection}
+                  resetSelection={resetSelection}
                 />
               ))}
               <AddBlockButton
                 push={push}
                 selectionAvailable={(selection?.length || 0) > 0}
-                addSelected={() => {
-                  if (selection) {
-                    const { questionIds, titles } = selection.reduce<{
-                      questionIds: number[]
-                      titles: string[]
-                    }>(
-                      (acc, curr) => {
-                        acc.questionIds.push(curr.id)
-                        acc.titles.push(curr.title)
-                        return acc
-                      },
-                      { questionIds: [], titles: [] }
-                    )
-
-                    push({
-                      questionIds: questionIds,
-                      titles: titles,
-                      timeLimit: undefined,
-                    })
-                    resetSelection && resetSelection()
-                  }
-                }}
-                addSelectedSingle={() => {
-                  if (selection) {
-                    selection.forEach((question) => {
-                      push({
-                        questionIds: [question.id],
-                        titles: [question.title],
-                        timeLimit: undefined,
-                      })
-                    })
-                    resetSelection && resetSelection()
-                  }
-                }}
+                selection={selection}
+                resetSelection={resetSelection}
               />
             </>
           )}

@@ -38,6 +38,9 @@ function Index() {
   const [selectedQuestions, setSelectedQuestions] = useState<
     Record<number, boolean>
   >({})
+  const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
+    useState(false)
+  const [sortBy, setSortBy] = useState('')
 
   const {
     loading: loadingQuestions,
@@ -96,11 +99,6 @@ function Index() {
     }
     return {}
   }, [processedQuestions])
-
-  const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
-    useState(false)
-
-  const [sortBy, setSortBy] = useState('')
 
   const sortIcon = useMemo(() => {
     if (!sortBy) {

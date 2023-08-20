@@ -9,15 +9,15 @@ import { twMerge } from 'tailwind-merge'
 interface AddBlockButtonProps {
   push: (value: any) => void
   selectionAvailable: boolean
-  addSelected: () => void
-  addSelectedSingle: () => void
+  selection?: { id: number; title: string }[]
+  resetSelection?: () => void
 }
 
 function AddBlockButton({
   push,
   selectionAvailable,
-  addSelected,
-  addSelectedSingle,
+  selection,
+  resetSelection,
 }: AddBlockButtonProps) {
   const t = useTranslations()
   const [{ isOver }, drop] = useDrop(
@@ -42,14 +42,33 @@ function AddBlockButton({
     []
   )
 
-  if (selectionAvailable) {
+  if (selection && selection.length > 0) {
     return (
       <div className="flex flex-row gap-1.5">
         <Button
           className={{
             root: 'flex flex-col gap-1 items-center justify-center rounded text-center border border-solid md:w-20 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40 w-full p-2',
           }}
-          onClick={addSelected}
+          onClick={() => {
+            const { questionIds, titles } = selection.reduce<{
+              questionIds: number[]
+              titles: string[]
+            }>(
+              (acc, curr) => {
+                acc.questionIds.push(curr.id)
+                acc.titles.push(curr.title)
+                return acc
+              },
+              { questionIds: [], titles: [] }
+            )
+
+            push({
+              questionIds: questionIds,
+              titles: titles,
+              timeLimit: undefined,
+            })
+            resetSelection && resetSelection()
+          }}
           data={{ cy: 'add-block-with-selected' }}
           ref={drop}
         >
@@ -60,7 +79,16 @@ function AddBlockButton({
           className={{
             root: 'flex flex-col gap-1 items-center justify-center rounded text-center border border-solid md:w-20 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40 w-full p-2',
           }}
-          onClick={addSelectedSingle}
+          onClick={() => {
+            selection.forEach((question) => {
+              push({
+                questionIds: [question.id],
+                titles: [question.title],
+                timeLimit: undefined,
+              })
+            })
+            resetSelection && resetSelection()
+          }}
           data={{ cy: 'add-block-with-selected' }}
           ref={drop}
         >
