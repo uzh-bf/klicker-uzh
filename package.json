@@ -56,7 +56,7 @@
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
     "export": "pnpm run --filter @klicker-uzh/migration-v2-export export",
     "import": "pnpm run --filter @klicker-uzh/migration-v3-import import",
-    "syncpack": "syncpack format"
+    "syncpack:format": "syncpack format"
   },
   "devDependencies": {
     "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
