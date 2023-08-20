@@ -12,5 +12,6 @@
   "sonarlint.connectedMode.project": {
     "connectionId": "uzh-bf",
     "projectKey": "uzh-bf_klicker-uzh"
-  }
+  },
+  "azureFunctions.templateFilter": "Verified"
 }

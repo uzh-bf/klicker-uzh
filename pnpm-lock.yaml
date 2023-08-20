@@ -269,131 +269,6 @@ importers:
         specifier: 5.0.4
         version: 5.0.4
 
-  apps/backend-response-processor:
-    dependencies:
-      '@azure/functions':
-        specifier: 4.0.0-alpha.11
-        version: 4.0.0-alpha.11
-      '@klicker-uzh/grading':
-        specifier: workspace:*
-        version: link:../../packages/grading
-      '@sentry/node':
-        specifier: 7.52.1
-        version: 7.52.1
-      ioredis:
-        specifier: 5.3.2
-        version: 5.3.2
-      jsonwebtoken:
-        specifier: 9.0.1
-        version: 9.0.1
-      md5:
-        specifier: 2.3.0
-        version: 2.3.0
-      ramda:
-        specifier: 0.29.0
-        version: 0.29.0
-    devDependencies:
-      '@tsconfig/node18':
-        specifier: 18.2.0
-        version: 18.2.0
-      '@tsconfig/recommended':
-        specifier: 1.0.2
-        version: 1.0.2
-      '@types/jsonwebtoken':
-        specifier: ^9.0.1
-        version: 9.0.2
-      '@types/md5':
-        specifier: 2.3.2
-        version: 2.3.2
-      '@types/node':
-        specifier: ^18.11.9
-        version: 18.17.4
-      '@types/ramda':
-        specifier: ^0.29.0
-        version: 0.29.3
-      '@uzh-bf/design-system':
-        specifier: 2.0.12
-        version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
-      azure-functions-core-tools:
-        specifier: 4.0.5274
-        version: 4.0.5274
-      cross-env:
-        specifier: 7.0.3
-        version: 7.0.3
-      dotenv:
-        specifier: 16.0.3
-        version: 16.0.3
-      npm-run-all:
-        specifier: 4.1.5
-        version: 4.1.5
-      prettier:
-        specifier: 2.8.8
-        version: 2.8.8
-      prettier-plugin-organize-imports:
-        specifier: 3.2.2
-        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
-      tsup:
-        specifier: 7.2.0
-        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
-      typescript:
-        specifier: 5.1.6
-        version: 5.1.6
-
-  apps/backend-responses:
-    dependencies:
-      '@azure/functions':
-        specifier: 4.0.0-alpha.11
-        version: 4.0.0-alpha.11
-      '@azure/service-bus':
-        specifier: 7.9.0
-        version: 7.9.0
-      '@sentry/node':
-        specifier: 7.52.1
-        version: 7.52.1
-      jsonwebtoken:
-        specifier: 9.0.1
-        version: 9.0.1
-    devDependencies:
-      '@tsconfig/node18':
-        specifier: 18.2.0
-        version: 18.2.0
-      '@tsconfig/recommended':
-        specifier: 1.0.2
-        version: 1.0.2
-      '@types/jsonwebtoken':
-        specifier: ^9.0.1
-        version: 9.0.2
-      '@types/node':
-        specifier: ^18.11.9
-        version: 18.17.4
-      '@uzh-bf/design-system':
-        specifier: 2.0.12
-        version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
-      azure-functions-core-tools:
-        specifier: 4.0.5274
-        version: 4.0.5274
-      cross-env:
-        specifier: 7.0.3
-        version: 7.0.3
-      dotenv:
-        specifier: 16.0.3
-        version: 16.0.3
-      npm-run-all:
-        specifier: 4.1.5
-        version: 4.1.5
-      prettier:
-        specifier: 2.8.8
-        version: 2.8.8
-      prettier-plugin-organize-imports:
-        specifier: 3.2.2
-        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
-      tsup:
-        specifier: 7.2.0
-        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
-      typescript:
-        specifier: 5.1.6
-        version: 5.1.6
-
   apps/frontend-control:
     dependencies:
       '@apollo/client':
@@ -963,6 +838,217 @@ importers:
       web-push:
         specifier: 3.6.1
         version: 3.6.1
+
+  apps/func-incoming-responses:
+    dependencies:
+      '@azure/functions':
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
+      '@azure/service-bus':
+        specifier: 7.9.0
+        version: 7.9.0
+      '@sentry/node':
+        specifier: 7.52.1
+        version: 7.52.1
+      jsonwebtoken:
+        specifier: 9.0.1
+        version: 9.0.1
+    devDependencies:
+      '@tsconfig/node18':
+        specifier: 18.2.0
+        version: 18.2.0
+      '@tsconfig/recommended':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@types/jsonwebtoken':
+        specifier: ^9.0.1
+        version: 9.0.2
+      '@types/node':
+        specifier: ^18.11.9
+        version: 18.17.4
+      '@uzh-bf/design-system':
+        specifier: 2.0.12
+        version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+      azure-functions-core-tools:
+        specifier: 4.0.5274
+        version: 4.0.5274
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
+      dotenv:
+        specifier: 16.0.3
+        version: 16.0.3
+      npm-run-all:
+        specifier: 4.1.5
+        version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
+      tsup:
+        specifier: 7.2.0
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
+      typescript:
+        specifier: 5.1.6
+        version: 5.1.6
+
+  apps/func-migration-v2-export:
+    dependencies:
+      '@azure/functions':
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
+      jsonwebtoken:
+        specifier: 9.0.1
+        version: 9.0.1
+    devDependencies:
+      '@tsconfig/node18':
+        specifier: 18.2.0
+        version: 18.2.0
+      '@tsconfig/recommended':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@types/jsonwebtoken':
+        specifier: ^9.0.1
+        version: 9.0.2
+      '@types/node':
+        specifier: ^18.11.9
+        version: 18.17.4
+      azure-functions-core-tools:
+        specifier: 4.0.5274
+        version: 4.0.5274
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
+      npm-run-all:
+        specifier: 4.1.5
+        version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
+      tsup:
+        specifier: 7.2.0
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
+      typescript:
+        specifier: 5.1.6
+        version: 5.1.6
+
+  apps/func-migration-v3-import:
+    dependencies:
+      '@azure/functions':
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
+      jsonwebtoken:
+        specifier: 9.0.1
+        version: 9.0.1
+    devDependencies:
+      '@tsconfig/node18':
+        specifier: 18.2.0
+        version: 18.2.0
+      '@tsconfig/recommended':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@types/jsonwebtoken':
+        specifier: ^9.0.1
+        version: 9.0.2
+      '@types/node':
+        specifier: ^18.11.9
+        version: 18.17.4
+      azure-functions-core-tools:
+        specifier: 4.0.5274
+        version: 4.0.5274
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
+      npm-run-all:
+        specifier: 4.1.5
+        version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
+      tsup:
+        specifier: 7.2.0
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
+      typescript:
+        specifier: 5.1.6
+        version: 5.1.6
+
+  apps/func-response-processor:
+    dependencies:
+      '@azure/functions':
+        specifier: 4.0.0-alpha.11
+        version: 4.0.0-alpha.11
+      '@klicker-uzh/grading':
+        specifier: workspace:*
+        version: link:../../packages/grading
+      '@sentry/node':
+        specifier: 7.52.1
+        version: 7.52.1
+      ioredis:
+        specifier: 5.3.2
+        version: 5.3.2
+      jsonwebtoken:
+        specifier: 9.0.1
+        version: 9.0.1
+      md5:
+        specifier: 2.3.0
+        version: 2.3.0
+      ramda:
+        specifier: 0.29.0
+        version: 0.29.0
+    devDependencies:
+      '@tsconfig/node18':
+        specifier: 18.2.0
+        version: 18.2.0
+      '@tsconfig/recommended':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@types/jsonwebtoken':
+        specifier: ^9.0.1
+        version: 9.0.2
+      '@types/md5':
+        specifier: 2.3.2
+        version: 2.3.2
+      '@types/node':
+        specifier: ^18.11.9
+        version: 18.17.4
+      '@types/ramda':
+        specifier: ^0.29.0
+        version: 0.29.3
+      '@uzh-bf/design-system':
+        specifier: 2.0.12
+        version: 2.0.12(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+      azure-functions-core-tools:
+        specifier: 4.0.5274
+        version: 4.0.5274
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
+      dotenv:
+        specifier: 16.0.3
+        version: 16.0.3
+      npm-run-all:
+        specifier: 4.1.5
+        version: 4.1.5
+      prettier:
+        specifier: 2.8.8
+        version: 2.8.8
+      prettier-plugin-organize-imports:
+        specifier: 3.2.2
+        version: 3.2.2(prettier@2.8.8)(typescript@5.1.6)
+      tsup:
+        specifier: 7.2.0
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
+      typescript:
+        specifier: 5.1.6
+        version: 5.1.6
 
   apps/office-addin:
     dependencies:
@@ -1543,7 +1629,7 @@ importers:
         specifier: 5.0.4
         version: 5.0.4
 
-  packages/migration-v2-export: {}
+  packages/migration-v2-export-python: {}
 
   packages/migration-v3-import:
     dependencies:

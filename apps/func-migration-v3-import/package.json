@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "@klicker-uzh/backend-response-processor",
+  "name": "@klicker-uzh/func-migration-v3-import",
   "version": "3.0.0-beta.4",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
@@ -12,32 +12,23 @@
     "prestart": "pnpm run build",
     "dev": "npm-run-all --parallel dev:ts dev:func",
     "dev:ts": "tsup --watch",
-    "dev:func": "func start -p 7073 --verbose --javascript",
+    "dev:func": "func start -p 7075 --verbose --javascript",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "start": "func start -p 7073",
+    "start": "func start -p 7075",
     "check": "tsc --noEmit"
   },
   "dependencies": {
     "@azure/functions": "4.0.0-alpha.11",
-    "@klicker-uzh/grading": "workspace:*",
-    "@sentry/node": "7.52.1",
-    "ioredis": "5.3.2",
-    "jsonwebtoken": "9.0.1",
-    "md5": "2.3.0",
-    "ramda": "0.29.0"
+    "jsonwebtoken": "9.0.1"
   },
   "devDependencies": {
     "@tsconfig/node18": "18.2.0",
     "@tsconfig/recommended": "1.0.2",
     "@types/jsonwebtoken": "^9.0.1",
-    "@types/md5": "2.3.2",
     "@types/node": "^18.11.9",
-    "@types/ramda": "^0.29.0",
-    "@uzh-bf/design-system": "2.0.12",
     "azure-functions-core-tools": "4.0.5274",
     "cross-env": "7.0.3",
-    "dotenv": "16.0.3",
     "npm-run-all": "4.1.5",
     "prettier": "2.8.8",
     "prettier-plugin-organize-imports": "3.2.2",

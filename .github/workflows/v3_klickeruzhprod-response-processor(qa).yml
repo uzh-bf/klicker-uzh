@@ -1,16 +1,16 @@
-name: Build and deploy backend-response-processor to Function App (QA)
+name: Build and deploy func-response-processor to Function App (QA)
 
 on:
   push:
     branches:
       - 'v3'
     paths:
-      - 'apps/backend-response-processor/**'
+      - 'apps/func-response-processor/**'
       - '.github/workflows/v3_klickeruzhprod-response-processor**'
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/backend-response-processor'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-response-processor'
   NODE_VERSION: '18.x'
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
       - name: 'Resolve Project Dependencies Using Npm'
         shell: pwsh
         run: |
-          pnpm run build --scope @klicker-uzh/backend-response-processor
+          pnpm run build --scope @klicker-uzh/func-response-processor
           pnpm prune --prod --config.ignore-scripts=true
 
       - name: 'Run Azure Functions Action'
