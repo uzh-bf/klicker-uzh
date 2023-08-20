@@ -58,6 +58,8 @@
     "start": "turbo run start",
     "start:test": "turbo run start:test",
     "syncpack:format": "syncpack format",
+    "syncpack:mismatches": "syncpack list-mismatches",
+    "syncpack:mismatches:fix": "syncpack fix-mismatches",
     "test": "turbo run test",
     "test:run": "turbo run test:run"
   },
