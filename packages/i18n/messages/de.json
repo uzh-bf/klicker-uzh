@@ -339,7 +339,8 @@
       "yourTasks": "Eure Aufgaben",
       "sendAnswers": "Antworten absenden",
       "oneSolutionPerGroup": "Jede Gruppe kann nur einmal Lösungen einreichen. Sendet eure Lösungen erst ab, wenn ihr euch sicher seid.",
-      "alreadySubmittedAt": "Deine Gruppe hat ihre Lösungen bereits eingereicht (am {date}).<br></br> Die Bewertung wird später veröffentlicht und separat kommuniziert."
+      "alreadySubmittedAt": "Deine Gruppe hat ihre Lösungen bereits eingereicht (am {date}).<br></br> Die Bewertung wird später veröffentlicht und separat kommuniziert.",
+      "joinLeaderboard": "Damit im Rahmen der Gruppenaktivität Punkte gesammelt werden können, müssen Sie dem Kurs-Leaderboard beitreten. Wechseln Sie hierfür auf das andere Tab und bestätigen Sie die Teilnahme."
     }
   },
   "manage": {

@@ -20,6 +20,7 @@ import {
   FormikTextField,
   H3,
   H4,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
@@ -352,10 +353,17 @@ function CourseOverview({ courseId }: Props) {
 
                   <div className="flex flex-row flex-wrap gap-4">
                     <div className="flex flex-col flex-1">
+                      {!participation?.isActive && (
+                        <UserNotification
+                          type="warning"
+                          message={t('pwa.groupActivity.joinLeaderboard')}
+                        />
+                      )}
                       <Leaderboard
                         courseName={course.displayName}
                         leaderboard={group.participants}
                         participant={participant}
+                        activeParticipation={participation?.isActive}
                         onLeave={
                           course?.isGroupDeadlinePassed
                             ? undefined
