@@ -76,7 +76,7 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
       '@types/jsonwebtoken':
-        specifier: ^9.0.1
+        specifier: ^9.0.2
         version: 9.0.2
       '@types/node':
         specifier: ^18.17.4
@@ -215,16 +215,16 @@ importers:
         specifier: ^2.8.12
         version: 2.8.12
       '@types/express':
-        specifier: ^4.17.13
+        specifier: ^4.17.17
         version: 4.17.17
       '@types/ioredis-mock':
         specifier: ^8.2.1
         version: 8.2.1
       '@types/jest':
-        specifier: ^29.0.0
+        specifier: ^29.5.3
         version: 29.5.3
       '@types/jsonwebtoken':
-        specifier: ^9.0.1
+        specifier: ^9.0.2
         version: 9.0.2
       '@types/node':
         specifier: ^18.17.4
@@ -257,8 +257,8 @@ importers:
         specifier: 29.5.0
         version: 29.5.0(@types/node@18.17.4)(ts-node@10.9.1)
       nodemon:
-        specifier: 2.0.22
-        version: 2.0.22
+        specifier: 3.0.1
+        version: 3.0.1
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5
@@ -393,7 +393,7 @@ importers:
         specifier: ^9.0.2
         version: 9.0.2
       '@types/node':
-        specifier: ^18.17.3
+        specifier: ^18.17.4
         version: 18.17.4
       '@types/ramda':
         specifier: ^0.29.3
@@ -411,8 +411,8 @@ importers:
         specifier: 10.4.14
         version: 10.4.14(postcss@8.4.27)
       babel-loader:
-        specifier: 8.2.5
-        version: 8.2.5(@babel/core@7.21.8)(webpack@5.83.1)
+        specifier: 9.1.2
+        version: 9.1.2(@babel/core@7.21.8)(webpack@5.83.1)
       cssnano:
         specifier: 6.0.1
         version: 6.0.1(postcss@8.4.27)
@@ -604,7 +604,7 @@ importers:
         specifier: ^4.14.196
         version: 4.14.196
       '@types/node':
-        specifier: ^18.17.3
+        specifier: ^18.17.4
         version: 18.17.4
       '@types/ramda':
         specifier: ^0.29.3
@@ -622,8 +622,8 @@ importers:
         specifier: 10.4.14
         version: 10.4.14(postcss@8.4.27)
       babel-loader:
-        specifier: 8.2.5
-        version: 8.2.5(@babel/core@7.21.8)(webpack@5.83.1)
+        specifier: 9.1.2
+        version: 9.1.2(@babel/core@7.21.8)(webpack@5.83.1)
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -788,7 +788,7 @@ importers:
         specifier: ^9.0.2
         version: 9.0.2
       '@types/node':
-        specifier: ^18.17.3
+        specifier: ^18.17.4
         version: 18.17.4
       '@types/object-hash':
         specifier: ^3.0.2
@@ -809,8 +809,8 @@ importers:
         specifier: 10.4.14
         version: 10.4.14(postcss@8.4.27)
       babel-loader:
-        specifier: 8.2.5
-        version: 8.2.5(@babel/core@7.21.8)(webpack@5.83.1)
+        specifier: 9.1.2
+        version: 9.1.2(@babel/core@7.21.8)(webpack@5.83.1)
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -873,13 +873,13 @@ importers:
         specifier: 18.2.0
         version: 18.2.0
       '@tsconfig/recommended':
-        specifier: 1.0.2
+        specifier: ^1.0.2
         version: 1.0.2
       '@types/jsonwebtoken':
-        specifier: ^9.0.1
+        specifier: ^9.0.2
         version: 9.0.2
       '@types/node':
-        specifier: ^18.11.9
+        specifier: ^18.17.4
         version: 18.17.4
       '@uzh-bf/design-system':
         specifier: 2.0.12
@@ -931,13 +931,13 @@ importers:
         specifier: 18.2.0
         version: 18.2.0
       '@tsconfig/recommended':
-        specifier: 1.0.2
+        specifier: ^1.0.2
         version: 1.0.2
       '@types/jsonwebtoken':
-        specifier: ^9.0.1
+        specifier: ^9.0.2
         version: 9.0.2
       '@types/node':
-        specifier: ^18.11.9
+        specifier: ^18.17.4
         version: 18.17.4
       azure-functions-core-tools:
         specifier: 4.0.5274
@@ -980,13 +980,13 @@ importers:
         specifier: 18.2.0
         version: 18.2.0
       '@tsconfig/recommended':
-        specifier: 1.0.2
+        specifier: ^1.0.2
         version: 1.0.2
       '@types/jsonwebtoken':
-        specifier: ^9.0.1
+        specifier: ^9.0.2
         version: 9.0.2
       '@types/node':
-        specifier: ^18.11.9
+        specifier: ^18.17.4
         version: 18.17.4
       azure-functions-core-tools:
         specifier: 4.0.5274
@@ -1041,16 +1041,16 @@ importers:
         specifier: 18.2.0
         version: 18.2.0
       '@tsconfig/recommended':
-        specifier: 1.0.2
+        specifier: ^1.0.2
         version: 1.0.2
       '@types/jsonwebtoken':
-        specifier: ^9.0.1
+        specifier: ^9.0.2
         version: 9.0.2
       '@types/md5':
         specifier: 2.3.2
         version: 2.3.2
       '@types/node':
-        specifier: ^18.11.9
+        specifier: ^18.17.4
         version: 18.17.4
       '@types/ramda':
         specifier: ^0.29.3
@@ -1129,7 +1129,7 @@ importers:
         specifier: 0.5.9
         version: 0.5.9(tailwindcss@3.3.3)
       '@types/node':
-        specifier: ^18.11.18
+        specifier: ^18.17.4
         version: 18.17.4
       '@types/office-js':
         specifier: ^1.0.256
@@ -1274,10 +1274,10 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@types/jest':
-        specifier: ^29.0.2
+        specifier: ^29.5.3
         version: 29.5.3
       '@types/node':
-        specifier: ^18.17.3
+        specifier: ^18.17.4
         version: 18.17.4
       '@types/ramda':
         specifier: ^0.29.3
@@ -1428,7 +1428,7 @@ importers:
         specifier: ^9.0.2
         version: 9.0.2
       '@types/node':
-        specifier: ^18.17.3
+        specifier: ^18.17.4
         version: 18.17.4
       '@types/node-schedule':
         specifier: ^2.1.0
@@ -1501,7 +1501,7 @@ importers:
         specifier: 18.2.0
         version: 18.2.0
       '@tsconfig/recommended':
-        specifier: 1.0.2
+        specifier: ^1.0.2
         version: 1.0.2
       typescript:
         specifier: 5.0.4
@@ -1535,7 +1535,7 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@types/node':
-        specifier: ^18.17.3
+        specifier: ^18.17.4
         version: 18.17.4
       cross-env:
         specifier: 7.0.3
@@ -1629,7 +1629,7 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@types/node':
-        specifier: ^18.17.3
+        specifier: ^18.17.4
         version: 18.17.4
       '@types/react':
         specifier: ^18.2.18
@@ -1692,7 +1692,7 @@ importers:
         specifier: 18.2.0
         version: 18.2.0
       '@tsconfig/recommended':
-        specifier: 1.0.2
+        specifier: ^1.0.2
         version: 1.0.2
       '@types/node':
         specifier: ^18.17.4
@@ -1874,7 +1874,7 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@types/node':
-        specifier: ^18.17.3
+        specifier: ^18.17.4
         version: 18.17.4
       '@types/react':
         specifier: ^18.2.18
@@ -10141,6 +10141,7 @@ packages:
       make-dir: 3.1.0
       schema-utils: 2.7.1
       webpack: 5.83.1(webpack-cli@5.1.1)
+    dev: false
 
   /babel-loader@9.1.2(@babel/core@7.21.8)(webpack@5.83.1):
     resolution: {integrity: sha512-mN14niXW43tddohGl8HPu5yfQq70iUThvFL/4QzESA7GcZoC0eVOhvWdQ8+3UlSjaDE9MVtsW9mxDY07W7VpVA==}
@@ -17388,9 +17389,9 @@ packages:
     resolution: {integrity: sha512-o/qbHffN0uI2SYDxqc5vuMrWHZe7MV2XdCimsJz4hnbus/9yEw6OdshXqbmDFCpFKUzrKePb8zXPwWOGCPqTCw==}
     dev: true
 
-  /nodemon@2.0.22:
-    resolution: {integrity: sha512-B8YqaKMmyuCO7BowF1Z1/mkPqLk6cs/l63Ojtd6otKjMx47Dq1utxfRxcavH1I7VSaL8n5BUaoutadnsX3AAVQ==}
-    engines: {node: '>=8.10.0'}
+  /nodemon@3.0.1:
+    resolution: {integrity: sha512-g9AZ7HmkhQkqXkRc20w+ZfQ73cHLbE8hnPbtaFbFtCumZsjyMhKk9LajQ07U5Ux28lvFjZ5X7HvWR1xzU8jHVw==}
+    engines: {node: '>=10'}
     hasBin: true
     dependencies:
       chokidar: 3.5.3
@@ -17398,8 +17399,8 @@ packages:
       ignore-by-default: 1.0.1
       minimatch: 3.1.2
       pstree.remy: 1.1.8
-      semver: 5.7.2
-      simple-update-notifier: 1.1.0
+      semver: 7.5.4
+      simple-update-notifier: 2.0.0
       supports-color: 5.5.0
       touch: 3.1.0
       undefsafe: 2.0.5
@@ -20028,6 +20029,7 @@ packages:
       '@types/json-schema': 7.0.12
       ajv: 6.12.6
       ajv-keywords: 3.5.2(ajv@6.12.6)
+    dev: false
 
   /schema-utils@3.3.0:
     resolution: {integrity: sha512-pN/yOAvcC+5rQ5nERGuwrjLlYvLTbCibnZ1I7B1LaiAz9BRBlE9GMgE/eqV30P7aJQUf7Ddimy/RsbYO/GrVGg==}
@@ -20077,11 +20079,6 @@ packages:
   /semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
-
-  /semver@7.0.0:
-    resolution: {integrity: sha512-+GB6zVA9LWh6zovYQLALHwv5rb2PHGlJi3lfiqIHxR0uuwCgefcOJc59v9fv1w8GbStwxuuqqAjI9NMAOOgq1A==}
-    hasBin: true
-    dev: true
 
   /semver@7.3.8:
     resolution: {integrity: sha512-NB1ctGL5rlHrPJtFDVIVzTyQylMLu9N9VICA6HSFJo8MCGVTMW6gfpicwKmmK/dAjTOrqu5l63JJOpDSrAis3A==}
@@ -20282,11 +20279,11 @@ packages:
       is-arrayish: 0.3.2
     dev: false
 
-  /simple-update-notifier@1.1.0:
-    resolution: {integrity: sha512-VpsrsJSUcJEseSbMHkrsrAVSdvVS5I96Qo1QAQ4FxQ9wXFcB+pjj7FB7/us9+GcgfW4ziHtYMc1J0PLczb55mg==}
-    engines: {node: '>=8.10.0'}
+  /simple-update-notifier@2.0.0:
+    resolution: {integrity: sha512-a2B9Y0KlNXl9u/vsW6sTIu9vGEpfKu2wRV6l1H3XEas/0gUIzGzBoP/IouTcUQbm9JWZLH3COxyn03TYlFax6w==}
+    engines: {node: '>=10'}
     dependencies:
-      semver: 7.0.0
+      semver: 7.5.4
     dev: true
 
   /sisteransi@1.0.5:

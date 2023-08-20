@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@tsconfig/node18": "18.2.0",
-    "@tsconfig/recommended": "1.0.2",
+    "@tsconfig/recommended": "^1.0.2",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^18.17.4",
     "azure-functions-core-tools": "4.0.5274",
