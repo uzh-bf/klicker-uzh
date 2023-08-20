@@ -197,7 +197,9 @@
       "totalScore": "Total Punkte",
       "bookmarkedQuestionsTitle": "Bookmarks in {courseName}",
       "bookmarkedQuestionsDesc": "Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie einem gewöhnlichen Lernelement dargestellt.",
-      "noBooksmarksSet": "Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage."
+      "noBooksmarksSet": "Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage.",
+      "awards": "Auszeichnungen",
+      "open": "offen"
     },
     "joinCourse": {
       "title": "Kurs \"{name}\" beitreten",
