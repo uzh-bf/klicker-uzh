@@ -109,7 +109,8 @@ export async function triggerMigration(
       subject: 'migration',
       body: {
         sub: token.sub,
-        originalEmail: token.originalEmail,
+        // originalEmail: token.originalEmail,
+        originalEmail: 'roland.schlaefli@bf.uzh.ch',
       },
     })
 

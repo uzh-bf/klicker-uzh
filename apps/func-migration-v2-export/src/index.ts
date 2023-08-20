@@ -1,5 +1,6 @@
 import { app, InvocationContext } from '@azure/functions'
-import { MongoClient } from 'mongodb'
+import getBlobClient from './blob'
+import getMongoDB from './mongo'
 
 interface Message {
   messageId: string
@@ -15,25 +16,27 @@ const serviceBusTrigger = async function (
 
   const messageData = message as Message
 
-  const mongoURL = 'mongodb://klicker:klicker@localhost:27017'
+  const db = await getMongoDB(context)
 
-  const mongoClient = new MongoClient(mongoURL)
-  await mongoClient.connect()
-
-  const db = mongoClient.db('klicker-prod')
-
-  const matchingUser = await db
+  const matchingUsers = await db
     .collection('users')
     .find({ email: messageData.originalEmail })
     .toArray()
 
-  if (!matchingUser?.[0]) {
+  if (!matchingUsers?.[0]) {
     throw new Error('No matching user found')
   }
 
-  const exportData = {
-    user_id: matchingUser.id,
-    user_email: matchingUser.email as string,
+  const matchingUser = matchingUsers[0]
+
+  if (matchingUser.runningSession) {
+    // TODO: inform the user that the running session needs to be stopped before migration
+    throw new Error('User has a running session')
+  }
+
+  const exportData: Record<string, any> = {
+    user_id: matchingUser._id.toString(),
+    user_email: matchingUser.email,
     sessions: [],
     tags: [],
     questions: [],
@@ -41,7 +44,42 @@ const serviceBusTrigger = async function (
     files: [],
   }
 
-  context.log(exportData)
+  for (const collectionName of [
+    'sessions',
+    'tags',
+    'questions',
+    'questioninstances',
+    'files',
+  ]) {
+    const documents = await db
+      .collection(collectionName)
+      .find({ user: matchingUser._id })
+      .toArray()
+
+    exportData[collectionName] = documents
+
+    context.log(
+      `Fetched ${documents.length} documents from collection '${collectionName}' for user '${matchingUser.email}'.`
+    )
+  }
+
+  exportData.questions = exportData.questions.map((question: any) => {
+    if (question.versions) {
+      question.versions = question.versions[question.versions.length - 1]
+    }
+
+    return question
+  })
+
+  const blobClient = await getBlobClient(context)
+
+  const blockBlobClient = blobClient.getBlockBlobClient(
+    `migration_export_v2_${matchingUser._id}_${Date.now()}.json`
+  )
+
+  await blockBlobClient.uploadData(Buffer.from(JSON.stringify(exportData)), {
+    blockSize: 4 * 1024 * 1024, // 4MB block size
+  })
 
   return exportData
 }
