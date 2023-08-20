@@ -329,7 +329,6 @@ function QuestionEditModal({
       : {}
   }, [dataQuestion?.question, mode, questionType])
 
-  console.log('question', question)
   // TODO: styling of tooltips - some are too wide
   // TODO: show errors of form validation below fields as for the login form
 

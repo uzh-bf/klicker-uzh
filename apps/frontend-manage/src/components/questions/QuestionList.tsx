@@ -7,7 +7,7 @@ import Question from './Question'
 
 interface QuestionListProps {
   setSelectedQuestions: (questionIndex: number) => void
-  selectedQuestions: boolean[]
+  selectedQuestions: Record<number, boolean>
   questions?: QuestionType[]
   tagfilter?: string[]
 }

@@ -4,6 +4,7 @@
 import dayjs from 'dayjs'
 import _every from 'lodash/every'
 // import Fuse from 'fuse.js'
+import { Question } from '@klicker-uzh/graphql/dist/ops'
 import * as JsSearch from 'js-search'
 
 const indices = {}
@@ -184,7 +185,7 @@ export function sortQuestions(questions: any[], sort: any): any[] {
   return questions
 }
 
-export function processItems(items, filters, sort, index): any[] {
+export function processItems(items, filters, sort, index): Question[] {
   let processed = items
 
   if (filters) {

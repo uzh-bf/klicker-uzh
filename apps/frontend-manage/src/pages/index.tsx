@@ -17,7 +17,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Select, TextField } from '@uzh-bf/design-system'
+import { Button, Checkbox, Select, TextField } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
@@ -35,9 +35,9 @@ function Index() {
   const [creationMode, setCreationMode] = useState<
     undefined | 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
   >(undefined)
-  const [selectedQuestions, setSelectedQuestions] = useState(
-    new Array<boolean>()
-  )
+  const [selectedQuestions, setSelectedQuestions] = useState<
+    Record<number, boolean>
+  >({})
 
   const {
     loading: loadingQuestions,
@@ -200,8 +200,29 @@ function Index() {
             <Loader />
           ) : (
             <>
-              <div className="flex flex-row content-center justify-between flex-none pl-7">
+              <div className="flex flex-row content-center justify-between flex-none">
                 <div className="flex flex-row pb-3">
+                  <Checkbox
+                    checked={
+                      Object.values(selectedQuestions).filter((value) => value)
+                        .length > 0
+                    }
+                    onCheck={() => {
+                      if (Object.keys(selectedQuestions).length > 1) {
+                        setSelectedQuestions({})
+                      } else {
+                        setSelectedQuestions(
+                          dataQuestions.userQuestions?.reduce<
+                            Record<number, boolean>
+                          >((acc, curr) => {
+                            acc[curr.id] = true
+                            return acc
+                          }, {}) || {}
+                        )
+                      }
+                    }}
+                    className={{ root: 'mr-1' }}
+                  />
                   <TextField
                     placeholder={t('manage.general.searchPlaceholder')}
                     value={searchInput}
@@ -212,7 +233,7 @@ function Index() {
                     icon={faMagnifyingGlass}
                     className={{
                       input: 'h-10',
-                      field: 'w-30 pr-3',
+                      field: 'w-30 pr-3 rounded-md',
                     }}
                   />
                   <Button
@@ -221,7 +242,7 @@ function Index() {
                       handleSortOrderToggle()
                     }}
                     className={{
-                      root: 'h-10 mr-1',
+                      root: 'h-10 mr-1 shadow-sm rounded-md',
                     }}
                   >
                     <Button.Icon>
@@ -262,9 +283,9 @@ function Index() {
                   questions={processedQuestions}
                   selectedQuestions={selectedQuestions}
                   setSelectedQuestions={(index: number) => {
-                    const tempQuestions = [...selectedQuestions]
-                    tempQuestions[index] = !tempQuestions[index]
-                    setSelectedQuestions(tempQuestions)
+                    setSelectedQuestions((prev) => {
+                      return { ...prev, [index]: !prev[index] }
+                    })
                   }}
                   tagfilter={filters.tags}
                 />

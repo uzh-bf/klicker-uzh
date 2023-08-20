@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
   GetUserQuestionsDocument,
+  QuestionType,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
@@ -30,9 +31,9 @@ interface Props {
   isArchived?: boolean
   tags?: Tag[]
   title: string
-  type: string
+  type: QuestionType
   content: string
-  onCheck: any // TODO: typing
+  onCheck: () => void
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
   tagfilter?: string[]
@@ -58,8 +59,6 @@ function Question({
   const t = useTranslations()
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
-  // TODO: add preview modal with student view of question
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
   const [deleteQuestion] = useMutation(DeleteQuestionDocument)
 
