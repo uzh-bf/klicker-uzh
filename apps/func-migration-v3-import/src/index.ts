@@ -7,7 +7,7 @@ const blobTrigger = async function (message: any, context: InvocationContext) {
 export default blobTrigger
 
 app.storageBlob('MigrationV3Import', {
-  connection: 'MIRATION_BLOB_STORAGE_CONNECTION_STRING',
+  connection: 'MIRATION_BLOB_IMPORT_CONNECTION_STRING',
   path: process.env.MIGRATION_BLOB_STORAGE_PATH as string,
   handler: blobTrigger,
 })

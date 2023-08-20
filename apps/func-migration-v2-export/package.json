@@ -20,7 +20,9 @@
   },
   "dependencies": {
     "@azure/functions": "4.0.0-alpha.11",
-    "jsonwebtoken": "9.0.1"
+    "@azure/storage-blob": "12.15.0",
+    "jsonwebtoken": "9.0.1",
+    "mongodb": "5.7.0"
   },
   "devDependencies": {
     "@tsconfig/node18": "18.2.0",

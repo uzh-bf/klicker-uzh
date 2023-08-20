@@ -16,7 +16,7 @@ const serviceBusTrigger = async function (
 export default serviceBusTrigger
 
 app.serviceBusQueue('MigrationV2Export', {
-  connection: 'MIRATION_SERVICE_BUS_CONNECTION_STRING',
+  connection: 'MIGRATION_SERVICE_BUS_CONNECTION_STRING',
   queueName: process.env.MIGRATION_SERVICE_BUS_QUEUE_NAME as string,
   handler: serviceBusTrigger,
 })

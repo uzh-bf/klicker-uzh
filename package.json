@@ -55,12 +55,14 @@
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
     "export": "pnpm run --filter @klicker-uzh/migration-v2-export export",
-    "import": "pnpm run --filter @klicker-uzh/migration-v3-import import"
+    "import": "pnpm run --filter @klicker-uzh/migration-v3-import import",
+    "syncpack": "syncpack format"
   },
   "devDependencies": {
     "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
     "husky": "8.0.3",
     "standard-version": "9.5.0",
+    "syncpack": "11.2.1",
     "turbo": "1.10.12",
     "yaml": "2.3.0"
   },
