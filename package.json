@@ -53,12 +53,14 @@
     "prepare": "husky install",
     "prisma:setup": "npm run -w packages/prisma prisma:setup",
     "prisma:migrate": "npm run -w packages/prisma prisma:migrate",
-    "prisma:reset": "npm run -w packages/prisma prisma:reset"
+    "prisma:reset": "npm run -w packages/prisma prisma:reset",
+    "syncpack:format": "syncpack format"
   },
   "devDependencies": {
     "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
     "husky": "8.0.3",
     "standard-version": "9.5.0",
+    "syncpack": "11.2.1",
     "turbo": "1.10.12",
     "yaml": "2.3.0"
   },
