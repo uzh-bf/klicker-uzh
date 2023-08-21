@@ -87,7 +87,6 @@ function SessionTimeline({
   // basic session timeline logic - identifying the currently active block as well as the state of the session
   useEffect(() => {
     if (blocks && blocks.length > 0) {
-      console.log('SessionTimeline -> blocks', blocks)
       setActiveBlockId(
         blocks.find((block) => block.status === 'ACTIVE')?.id || -1
       )
