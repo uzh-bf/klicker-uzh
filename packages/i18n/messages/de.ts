@@ -188,8 +188,28 @@ export default {
       noSessionsActive: 'Keine Sessions aktiv.',
       activeSessionsBy: 'Aktive Sessions von <i>{name}</i>',
       joinLeaderboardNotice: `
-TBD DE
-      `,
+🎊 Herzlich willkommen, {username}, zum Kurs "{courseName}" 🎊
+
+Du nimmst derzeit **nicht** an der Kursrangliste teil. Das bedeutet, dass Du an allen Aktivitäten teilnehmen kannst, aber keine Punkte sammeln, nicht in der Rangliste aufgeführt werden und nicht für Erfolge und Auszeichnungen in Frage kommst. Wenn Du an den spielerischen Aktivitäten in diesem Kurs teilnehmen möchtest, **klicke auf die Schaltfläche** unten, um teilzunehmen. Du kannst die Kursrangliste jederzeit verlassen, wobei alle gesammelten Punkte **gelöscht** werden.
+
+Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einschließlich Deines Pseudonyms und der Gesamtpunktzahl/Erfolge in den Ranglisten. Du kannst Dein Profil vor anderen Teilnehmern verbergen, aber trotzdem an der Rangliste teilnehmen, wenn Du dies wünschst (siehe [hier](/editProfile)).
+`,
+    },
+    createAccount: {
+      dataCollectionNotice:
+        'Wir erfassen und speichern die Profilinformationen Deines erstellten Teilnehmerkontos (z. B. E-Mail, Pseudonym, Passwort) sowie die Daten, die bei Deinen Interaktionen mit Kursen (z. B. erstellte Gruppen) und abgeschlossenen Aktivitäten (z. B. Antworten auf gestellte Fragen) anfallen. Wenn Du Dich entscheidest, an der optionalen Rangliste als Teil eines Kurses teilzunehmen, erfassen und speichern wir zusätzlich die gesammelten Punktzahlen als Teil aller Aktivitäten.',
+      dataSharingNotice: `
+Wenn Du ein Konto erstellst und an Kursen und Aktivitäten mit KlickerUZH teilnimmst, können die Besitzer der KlickerUZH-Konten, die mit Deinen Kursen verbunden sind, Deine **E-Mail-Adresse** zusammen mit einigen Informationen über die KlickerUZH-Aktivitäten, an denen Du teilgenommen hast, sehen und diese Informationen möglicherweise für den Unterricht ihres Kurses mit KlickerUZH oder, in **anonymisierter** Form, für Forschungszwecke außerhalb von KlickerUZH verwenden. Sie sind verpflichtet, Dich über eine solche Verwendung Deiner Daten neben der Verwendung innerhalb von KlickerUZH zu informieren.
+
+Der **detaillierte Inhalt** Deiner Fragen (z.B. in Live Q&A) oder Antworten (z.B. in Quiz) wird nur in **aggregierter oder anonymisierter Form** an die Besitzer der KlickerUZH-Konten weitergegeben. Nur **nicht-sensitive** Informationen wie die Anzahl der Interaktionen mit und die gesammelten Punkte bei Aktivitäten, wenn Du Dich für die Teilnahme an der Bestenliste entscheidest, werden in identifizierbarer Form weitergegeben.
+
+Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für kommerzielle Zwecke (z. B. Marketing) verwendet.`,
+      dataUsageNotice:
+        'Deine Daten werden verwendet, um die von KlickerUZH zur Verfügung gestellten Funktionalitäten bereitzustellen. Eine weitere Auswertung der gesammelten Daten außerhalb der KlickerUZH-Plattform darf nur in anonymisierter Form und nur zu Zwecken der Lehre und Forschung erfolgen. Die Lehrenden sind verpflichtet, Dich in angemessener Weise über die Forschung zu informieren, die mit Deinen gesammelten Daten durchgeführt wird.',
+      dataStorageNotice:
+        'Deine Kontodaten, wie z.B. Profilinformationen, Erfolge und Erfahrungspunkte sowie Antworten, die du auf Fragen im KlickerUZH gibst, werden für die Lebenszeit Deines Kontos gespeichert. Deine Punkte und Platzierungen bei Kursaktivitäten und Bestenlisten werden so lange gespeichert, wie Du an der jeweiligen Kursrangliste teilnimmst. Du kannst jederzeit die Löschung Deiner Daten und Deines Kontos beantragen.',
+      confirmationMessage:
+        'Ich stimme den KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy) und [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) zu und erkläre mich mit der darin beschriebenen Verarbeitung meiner Daten einverstanden. Mir ist bewusst, dass ich anonym und ohne Konto an den Lernaktivitäten teilnehmen kann, wenn ich diesen Bedingungen nicht zustimme.',
     },
     login: {
       installAndroid:
