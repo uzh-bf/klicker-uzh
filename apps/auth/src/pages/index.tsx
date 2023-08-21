@@ -25,6 +25,7 @@ function SignInOutButton() {
   return (
     <div className="flex flex-col gap-4">
       <Checkbox
+        data={{ cy: 'tos-checkbox' }}
         label={
           <div className="text-sm">
             I consent to the{' '}
