@@ -228,7 +228,7 @@ function Index() {
                         .length > 0
                     }
                     onCheck={() => {
-                      if (Object.keys(selectedQuestions).length > 1) {
+                      if (Object.keys(selectedQuestions).length > 0) {
                         setSelectedQuestions({})
                       } else {
                         setSelectedQuestions(
