@@ -177,7 +177,7 @@ function MicroSessionWizard({
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)
             : '1',
-          courseId: initialValues?.course?.id || courses[0].value,
+          courseId: initialValues?.course?.id || courses?.[0]?.value,
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
