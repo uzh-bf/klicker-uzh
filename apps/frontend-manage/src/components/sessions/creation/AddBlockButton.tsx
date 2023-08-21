@@ -78,7 +78,7 @@ function AddBlockButton({
               <FontAwesomeIcon icon={faSquare} />
             </Button.Icon>
             <Button.Label>
-              {t('manage.sessionForms.pasteSingleQuestions', {
+              {t('manage.sessionForms.newBlockSelected', {
                 count: Object.keys(selection).length,
               })}
             </Button.Label>
@@ -107,7 +107,7 @@ function AddBlockButton({
               <FontAwesomeIcon icon={faSquare} />
             </div>
             <div>
-              {t('manage.sessionForms.newBlockSelected', {
+              {t('manage.sessionForms.pasteSingleQuestions', {
                 count: Object.keys(selection).length,
               })}
             </div>
