@@ -7,12 +7,12 @@ module.exports = {
   ],
   bumpFiles: [
     '',
-    'docs/',
+    'apps/docs/',
     'apps/backend-docker/',
-    'apps/backend-responses/',
-    'apps/backend-response-processor/',
-    'apps/backend-sls/',
-    'apps/frontend-learning/',
+    'apps/func-incoming-responses/',
+    'apps/func-response-processor/',
+    'apps/func-migration-v2-export/',
+    'apps/func-migration-v3-import/',
     'apps/frontend-manage/',
     'apps/frontend-pwa/',
     'apps/frontend-control/',
@@ -23,6 +23,8 @@ module.exports = {
     'packages/prisma/',
     'packages/markdown/',
     'packages/shared-components',
+    'packages/next-config',
+    'packages/i18n',
   ].reduce(
     (acc, path) => {
       return acc.concat({
