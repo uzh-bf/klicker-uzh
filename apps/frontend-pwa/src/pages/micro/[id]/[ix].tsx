@@ -190,7 +190,7 @@ function MicroSessionInstance() {
 export async function getStaticProps({ locale }: GetServerSidePropsContext) {
   return {
     props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`))
         .default,
     },
     revalidate: 600,

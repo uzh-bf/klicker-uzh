@@ -80,7 +80,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   return addApolloState(apolloClient, {
     props: {
       courseId: ctx.params.courseId,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },
   })

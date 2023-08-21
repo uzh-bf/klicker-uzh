@@ -1,4 +1,5 @@
 import { IntlErrorCode } from 'next-intl'
+import messages from './messages/en'
 
 export function onError(error: any) {
   console.error(error)
@@ -28,4 +29,4 @@ export function getMessageFallback({
 }
 
 // Use type safe message keys with `next-intl`
-export type Messages = typeof import('./messages/en.json')
+export type Messages = typeof messages

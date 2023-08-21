@@ -302,7 +302,7 @@ function CourseOverviewPage() {
 export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`))
         .default,
     },
     revalidate: 600,
