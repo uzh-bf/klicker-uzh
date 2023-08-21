@@ -91,7 +91,7 @@ function GroupActivityDetails() {
       <div className="flex flex-col lg:gap-12 p-4 mx-auto border rounded max-w-[1800px] lg:flex-row">
         <div className="lg:flex-1">
           <div className="">
-            <H1>{t('pwa.groupActivity.baseline')}</H1>
+            <H1>{t('pwa.groupActivity.initialSituation')}</H1>
 
             <Markdown
               withProse

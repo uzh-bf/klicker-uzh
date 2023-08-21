@@ -4,14 +4,16 @@ import Session from '../../components/sessions/Session'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
-import { H2 } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useMemo } from 'react'
 import Layout from '../../components/Layout'
 
 function SessionList() {
   const t = useTranslations()
+
   const {
     loading: loadingSessions,
     error: errorSessions,
@@ -93,6 +95,24 @@ function SessionList() {
             </div>
           </div>
         )}
+        {scheduledSessions?.length === 0 &&
+          preparedSessions?.length === 0 &&
+          runningSessions?.length === 0 &&
+          completedSessions?.length === 0 && (
+            <UserNotification
+              type="warning"
+              message={t('manage.sessions.noSessions')}
+              className={{ message: 'font-bold' }}
+            >
+              {t.rich('manage.sessions.creationExplanation', {
+                link: (text) => (
+                  <Link href="/" className="text-primary hover:underline">
+                    {text}
+                  </Link>
+                ),
+              })}
+            </UserNotification>
+          )}
       </div>
     </Layout>
   )

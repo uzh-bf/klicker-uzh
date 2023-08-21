@@ -196,7 +196,10 @@
       "groupActivityScore": "Points by group activities",
       "totalScore": "Total points",
       "bookmarkedQuestionsTitle": "Bookmarks for {courseName}",
-      "bookmarkedQuestionsDesc": "This page allows you to repeat all questions with bookmarks from the course {courseName}. They will be displayed as a regular learning element."
+      "bookmarkedQuestionsDesc": "This page allows you to repeat all questions with bookmarks from the course {courseName}. They will be displayed as a regular learning element.",
+      "noBooksmarksSet": "You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.",
+      "awards": "Awards",
+      "open": "open"
     },
     "joinCourse": {
       "title": "Join Course \"{name}\"",
@@ -333,7 +336,7 @@
     "groupActivity": {
       "openGroupActivity": "Open Group Activity",
       "activityNotYetActive": "The group activity is not active or not yet unlocked.",
-      "baseline": "Baseline",
+      "initialSituation": "Situation",
       "yourHints": "Your hints",
       "coordinateHints": "Each group member receives one or more of the hints above.<br></br> Coordinate with each other to collect all the necessary hints for the tasks.",
       "yourGroup": "Your group",
@@ -343,7 +346,8 @@
       "yourTasks": "Your tasks",
       "sendAnswers": "Submit answers",
       "oneSolutionPerGroup": "Each group can only submit one solution. Only submit your solutions when you are sure.",
-      "alreadySubmittedAt": "Your group has already submitted its solutions (on {date}).<br></br> The evaluation will be published later and communicated separately."
+      "alreadySubmittedAt": "Your group has already submitted its solutions (on {date}).<br></br> The evaluation will be published later and communicated separately.",
+      "joinLeaderboard": "In order to collect points within the scope of the group activity, you must join the course leaderboard. To do this, switch to the other tab and confirm your participation."
     }
   },
   "manage": {
@@ -551,7 +555,9 @@
       "deleteLiveSession": "Delete Live Session",
       "confirmLiveSessionDeletion": "Are you sure you want to delete the following live session?",
       "liveSessionDeletionHint": "Deleting a live session is only possible as long as it has not been started. Deleted live sessions cannot be restored at a later date.",
-      "evaluationLinksEmbedding": "Evaluation links for embedding in PowerPoint"
+      "evaluationLinksEmbedding": "Evaluation links for embedding in PowerPoint",
+      "noSessions": "No sessions available",
+      "creationExplanation": "To create your first session, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH elements and add questions from the question pool."
     },
     "cockpit": {
       "firstBlock": "Start first block",

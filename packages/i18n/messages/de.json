@@ -196,7 +196,10 @@
       "groupActivityScore": "Punkte durch Gruppenaktivitäten",
       "totalScore": "Total Punkte",
       "bookmarkedQuestionsTitle": "Bookmarks in {courseName}",
-      "bookmarkedQuestionsDesc": "Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie einem gewöhnlichen Lernelement dargestellt."
+      "bookmarkedQuestionsDesc": "Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie einem gewöhnlichen Lernelement dargestellt.",
+      "noBooksmarksSet": "Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage.",
+      "awards": "Auszeichnungen",
+      "open": "offen"
     },
     "joinCourse": {
       "title": "Kurs \"{name}\" beitreten",
@@ -328,7 +331,7 @@
     "groupActivity": {
       "openGroupActivity": "Zur Gruppenaktivität",
       "activityNotYetActive": "Die Gruppenaktivität ist nicht aktiv oder noch nicht freigeschalten.",
-      "baseline": "Ausgangslage",
+      "initialSituation": "Ausgangslage",
       "yourHints": "Eure Hinweise",
       "coordinateHints": "Jedes Gruppenmitglied erhält ein/mehrere der obigen Hinweise.<br></br> Sprecht euch ab, um alle nötigen Hinweise für die Aufgaben zu sammeln.",
       "yourGroup": "Deine Gruppe",
@@ -338,7 +341,8 @@
       "yourTasks": "Eure Aufgaben",
       "sendAnswers": "Antworten absenden",
       "oneSolutionPerGroup": "Jede Gruppe kann nur einmal Lösungen einreichen. Sendet eure Lösungen erst ab, wenn ihr euch sicher seid.",
-      "alreadySubmittedAt": "Deine Gruppe hat ihre Lösungen bereits eingereicht (am {date}).<br></br> Die Bewertung wird später veröffentlicht und separat kommuniziert."
+      "alreadySubmittedAt": "Deine Gruppe hat ihre Lösungen bereits eingereicht (am {date}).<br></br> Die Bewertung wird später veröffentlicht und separat kommuniziert.",
+      "joinLeaderboard": "Damit im Rahmen der Gruppenaktivität Punkte gesammelt werden können, müssen Sie dem Kurs-Leaderboard beitreten. Wechseln Sie hierfür auf das andere Tab und bestätigen Sie die Teilnahme."
     }
   },
   "manage": {
@@ -546,7 +550,9 @@
       "deleteLiveSession": "Live-Session löschen",
       "confirmLiveSessionDeletion": "Sind Sie sich sicher, dass Sie die folgende Live-Session löschen möchten?",
       "liveSessionDeletionHint": "Das Löschen einer Live-Session ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live-Sessions können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.",
-      "evaluationLinksEmbedding": "Evaluations-Links für die Einbettung in PowerPoint"
+      "evaluationLinksEmbedding": "Evaluations-Links für die Einbettung in PowerPoint",
+      "noSessions": "Keine Sessionen gefunden",
+      "creationExplanation": "Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden."
     },
     "cockpit": {
       "firstBlock": "Ersten Block starten",
