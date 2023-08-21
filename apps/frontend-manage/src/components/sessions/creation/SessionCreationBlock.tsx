@@ -1,9 +1,9 @@
-import { faPaste } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowDown,
   faArrowLeft,
   faArrowRight,
   faArrowUp,
+  faBars,
   faGears,
   faPlus,
   faTrash,
@@ -224,8 +224,9 @@ function SessionCreationBlock({
       </div>
       {selection && !R.isEmpty(selection) && (
         <Button
+          fluid
           className={{
-            root: 'w-full flex flex-row justify-center gap-2 mb-1 p-0.5 border border-solid rounded bg-uzh-red-20 hover:bg-uzh-red-40',
+            root: 'mb-2 text-sm gap-3 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
           }}
           onClick={() => {
             const { questionIds, titles } = Object.values(selection).reduce<{
@@ -249,8 +250,14 @@ function SessionCreationBlock({
           }}
           data={{ cy: 'paste-selected-questions' }}
         >
-          <FontAwesomeIcon icon={faPaste} />
-          <div>{t('manage.sessionForms.pasteSelection')}</div>
+          <Button.Icon>
+            <FontAwesomeIcon icon={faBars} />
+          </Button.Icon>
+          <Button.Label>
+            {t('manage.sessionForms.pasteSelection', {
+              count: Object.keys(selection).length,
+            })}
+          </Button.Label>
         </Button>
       )}
       <div
