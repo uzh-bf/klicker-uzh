@@ -1,5 +1,5 @@
 import { faPaste } from '@fortawesome/free-regular-svg-icons'
-import { faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faBars, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -44,10 +44,10 @@ function AddBlockButton({
 
   if (selection && selection.length > 0) {
     return (
-      <div className="flex flex-row gap-1.5">
+      <div className="flex flex-col gap-1.5">
         <Button
           className={{
-            root: 'flex flex-col gap-1 items-center justify-center rounded text-center border border-solid md:w-20 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40 w-full p-2',
+            root: 'flex flex-row gap-0 justify-center rounded text-center border h-1/2 border-solid md:w-36 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40',
           }}
           onClick={() => {
             const { questionIds, titles } = selection.reduce<{
@@ -77,7 +77,7 @@ function AddBlockButton({
         </Button>
         <Button
           className={{
-            root: 'flex flex-col gap-1 items-center justify-center rounded text-center border border-solid md:w-20 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40 w-full p-2',
+            root: 'flex flex-row gap-0 justify-center rounded text-center border h-1/2 border-solid md:w-36 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40',
           }}
           onClick={() => {
             selection.forEach((question) => {
@@ -92,7 +92,7 @@ function AddBlockButton({
           data={{ cy: 'add-block-with-selected' }}
           ref={drop}
         >
-          <FontAwesomeIcon icon={faPaste} size="lg" />
+          <FontAwesomeIcon icon={faBars} size="lg" />
           <div>{t('manage.sessionForms.pasteSingleQuestions')}</div>
         </Button>
       </div>
