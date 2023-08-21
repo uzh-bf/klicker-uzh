@@ -9,10 +9,11 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Question } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { move as RamdaMove } from 'ramda'
+import * as R from 'ramda'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
@@ -24,7 +25,7 @@ interface SessionCreationBlockProps {
   remove: (index: number) => void
   move: (from: number, to: number) => void
   replace: (index: number, value: any) => void
-  selection?: { id: number; title: string }[]
+  selection?: Record<number, Question>
   resetSelection?: () => void
 }
 
@@ -149,12 +150,12 @@ function SessionCreationBlock({
                   if (!(questionIdx === 0 || block.questionIds.length === 1)) {
                     replace(index, {
                       ...block,
-                      questionIds: RamdaMove(
+                      questionIds: R.move(
                         questionIdx,
                         questionIdx - 1,
                         block.questionIds
                       ),
-                      titles: RamdaMove(
+                      titles: R.move(
                         questionIdx,
                         questionIdx - 1,
                         block.titles
@@ -180,12 +181,12 @@ function SessionCreationBlock({
                   ) {
                     replace(index, {
                       ...block,
-                      questionIds: RamdaMove(
+                      questionIds: R.move(
                         questionIdx,
                         questionIdx + 1,
                         block.questionIds
                       ),
-                      titles: RamdaMove(
+                      titles: R.move(
                         questionIdx,
                         questionIdx + 1,
                         block.titles
@@ -221,19 +222,19 @@ function SessionCreationBlock({
           </div>
         ))}
       </div>
-      {selection && selection?.length > 0 && (
+      {selection && !R.isEmpty(selection) && (
         <Button
           className={{
             root: 'w-full flex flex-row justify-center gap-2 mb-1 p-0.5 border border-solid rounded bg-uzh-red-20 hover:bg-uzh-red-40',
           }}
           onClick={() => {
-            const { questionIds, titles } = selection.reduce<{
+            const { questionIds, titles } = Object.values(selection).reduce<{
               questionIds: number[]
               titles: string[]
             }>(
-              (acc, curr) => {
-                acc.questionIds.push(curr.id)
-                acc.titles.push(curr.title)
+              (acc, question) => {
+                acc.questionIds.push(question.id)
+                acc.titles.push(question.name)
                 return acc
               },
               { questionIds: [], titles: [] }
@@ -244,7 +245,7 @@ function SessionCreationBlock({
               questionIds: [...block.questionIds, ...questionIds],
               titles: [...block.titles, ...titles],
             })
-            resetSelection && resetSelection()
+            resetSelection?.()
           }}
           data={{ cy: 'paste-selected-questions' }}
         >

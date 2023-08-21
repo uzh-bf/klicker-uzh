@@ -63,6 +63,7 @@ export function buildIndex(
   return search
 }
 
+// TODO: optimize for one pass instead of stacked passes
 export function filterQuestions(
   questions: any[],
   filters: any,

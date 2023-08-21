@@ -1,6 +1,10 @@
 import { useQuery } from '@apollo/client'
-import { GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetUserQuestionsDocument,
+  Question,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
+import * as R from 'ramda'
 import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 import { buildIndex, processItems } from '../lib/utils/filters'
@@ -35,12 +39,18 @@ function Index() {
   const [creationMode, setCreationMode] = useState<
     undefined | 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
   >(undefined)
-  const [selectedQuestions, setSelectedQuestions] = useState<
-    Record<number, boolean>
-  >({})
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
   const [sortBy, setSortBy] = useState('')
+
+  const [selectedQuestions, setSelectedQuestions] = useState<
+    Record<number, Question | undefined>
+  >({})
+
+  const selectedQuestionData: Record<number, Question> = useMemo(
+    () => R.pickBy((value) => typeof value !== 'undefined', selectedQuestions),
+    [selectedQuestions]
+  )
 
   const {
     loading: loadingQuestions,
@@ -86,19 +96,6 @@ function Index() {
     }
     return
   }, [dataQuestions?.userQuestions, filters, index, sort])
-
-  const questionTitles = useMemo<Record<string, string>>(() => {
-    if (processedQuestions) {
-      return processedQuestions.reduce<Record<string, string>>(
-        (acc, curr, ix) => {
-          acc[ix] = curr.name
-          return acc
-        },
-        {}
-      )
-    }
-    return {}
-  }, [processedQuestions])
 
   const sortIcon = useMemo(() => {
     if (!sortBy) {
@@ -165,14 +162,7 @@ function Index() {
             }}
             sessionId={router.query.sessionId as string}
             editMode={router.query.editMode as string}
-            selection={Object.entries(selectedQuestions)
-              .filter(([, value]) => value)
-              .map((entry) => {
-                return {
-                  id: parseInt(entry[0]),
-                  title: questionTitles[entry[0]] || '',
-                }
-              })}
+            selection={selectedQuestionData}
             resetSelection={() => setSelectedQuestions({})}
           />
         </div>
@@ -228,18 +218,34 @@ function Index() {
                         .length > 0
                     }
                     onCheck={() => {
-                      if (Object.keys(selectedQuestions).length > 0) {
-                        setSelectedQuestions({})
-                      } else {
-                        setSelectedQuestions(
-                          dataQuestions.userQuestions?.reduce<
-                            Record<number, boolean>
-                          >((acc, curr) => {
-                            acc[curr.id] = true
-                            return acc
-                          }, {}) || {}
-                        )
-                      }
+                      setSelectedQuestions((prev) => {
+                        let allQuestions = {}
+
+                        if (processedQuestions) {
+                          if (!R.isEmpty(selectedQuestionData)) {
+                            // set questions after filtering to undefined
+                            // do not uncheck questions that are selected but not in the filtered set
+                            allQuestions = processedQuestions.reduce(
+                              (acc, curr) => ({
+                                ...acc,
+                                [curr.id]: undefined,
+                              }),
+                              {}
+                            )
+                          } else {
+                            // set all questions after filtering to their id and data
+                            allQuestions = processedQuestions.reduce(
+                              (acc, question) => ({
+                                ...acc,
+                                [question.id]: question,
+                              }),
+                              {}
+                            )
+                          }
+                        }
+
+                        return { ...prev, ...allQuestions }
+                      })
                     }}
                     className={{ root: 'mr-1' }}
                   />
@@ -301,10 +307,10 @@ function Index() {
               <div className="h-full overflow-y-auto">
                 <QuestionList
                   questions={processedQuestions}
-                  selectedQuestions={selectedQuestions}
-                  setSelectedQuestions={(index: number) => {
+                  selectedQuestions={selectedQuestionData}
+                  setSelectedQuestions={(id: number, data: Question) => {
                     setSelectedQuestions((prev) => {
-                      return { ...prev, [index]: !prev[index] }
+                      return { ...prev, [id]: prev[id] ? undefined : data }
                     })
                   }}
                   tagfilter={filters.tags}

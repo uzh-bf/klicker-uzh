@@ -1,15 +1,17 @@
 import { faPaste } from '@fortawesome/free-regular-svg-icons'
 import { faBars, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Question } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import * as R from 'ramda'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 
 interface AddBlockButtonProps {
   push: (value: any) => void
   selectionAvailable: boolean
-  selection?: { id: number; title: string }[]
+  selection?: Record<number, Question>
   resetSelection?: () => void
 }
 
@@ -42,7 +44,7 @@ function AddBlockButton({
     []
   )
 
-  if (selection && selection.length > 0) {
+  if (selection && !R.isEmpty(selection)) {
     return (
       <div className="flex flex-col gap-1.5">
         <Button
@@ -50,13 +52,13 @@ function AddBlockButton({
             root: 'flex flex-row gap-0 justify-center rounded text-center border h-1/2 border-solid md:w-36 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40',
           }}
           onClick={() => {
-            const { questionIds, titles } = selection.reduce<{
+            const { questionIds, titles } = Object.values(selection).reduce<{
               questionIds: number[]
               titles: string[]
             }>(
-              (acc, curr) => {
-                acc.questionIds.push(curr.id)
-                acc.titles.push(curr.title)
+              (acc, question) => {
+                acc.questionIds.push(question.id)
+                acc.titles.push(question.name)
                 return acc
               },
               { questionIds: [], titles: [] }
@@ -67,7 +69,7 @@ function AddBlockButton({
               titles: titles,
               timeLimit: undefined,
             })
-            resetSelection && resetSelection()
+            resetSelection?.()
           }}
           data={{ cy: 'add-block-with-selected' }}
           ref={drop}
@@ -80,14 +82,14 @@ function AddBlockButton({
             root: 'flex flex-row gap-0 justify-center rounded text-center border h-1/2 border-solid md:w-36 cursor-pointer bg-uzh-red-20 hover:bg-uzh-red-40',
           }}
           onClick={() => {
-            selection.forEach((question) => {
+            Object.values(selection).forEach((question) => {
               push({
                 questionIds: [question.id],
-                titles: [question.title],
+                titles: [question.name],
                 timeLimit: undefined,
               })
             })
-            resetSelection && resetSelection()
+            resetSelection?.()
           }}
           data={{ cy: 'add-block-with-selected' }}
           ref={drop}

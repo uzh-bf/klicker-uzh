@@ -7,6 +7,7 @@ import {
   GetUserCoursesDocument,
   LearningElement,
   MicroSession,
+  Question,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -22,7 +23,7 @@ interface SessionCreationProps {
   closeWizard: () => void
   sessionId?: string
   editMode?: string
-  selection: { id: number; title: string }[]
+  selection: Record<number, Question>
   resetSelection: () => void
 }
 

@@ -1,4 +1,6 @@
+import { Question } from '@klicker-uzh/graphql/dist/ops'
 import { FieldArray, FieldArrayRenderProps, useField } from 'formik'
+import * as R from 'ramda'
 import AddBlockButton from './AddBlockButton'
 import SessionCreationBlock from './SessionCreationBlock'
 import WizardErrorMessage from './WizardErrorMessage'
@@ -7,7 +9,7 @@ interface EditorFieldProps {
   label?: string
   fieldName: string
   tooltip?: string
-  selection?: { id: number; title: string }[]
+  selection?: Record<number, Question>
   resetSelection?: () => void
   className?: string
 }
@@ -43,7 +45,7 @@ function SessionBlockField({
               ))}
               <AddBlockButton
                 push={push}
-                selectionAvailable={(selection?.length || 0) > 0}
+                selectionAvailable={!!selection && !R.isEmpty(selection)}
                 selection={selection}
                 resetSelection={resetSelection}
               />

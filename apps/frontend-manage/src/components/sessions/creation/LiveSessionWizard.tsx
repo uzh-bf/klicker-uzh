@@ -3,6 +3,7 @@ import {
   CreateSessionDocument,
   EditSessionDocument,
   GetUserSessionsDocument,
+  Question,
   QuestionType,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -28,7 +29,7 @@ interface LiveSessionWizardProps {
     value: string
   }[]
   initialValues?: Partial<Session>
-  selection: { id: number; title: string }[]
+  selection: Record<number, Question>
   resetSelection: () => void
 }
 
@@ -249,7 +250,7 @@ interface StepProps {
     label: string
     value: string
   }[]
-  selection?: { id: number; title: string }[]
+  selection?: Record<number, Question>
   resetSelection?: () => void
 }
 
