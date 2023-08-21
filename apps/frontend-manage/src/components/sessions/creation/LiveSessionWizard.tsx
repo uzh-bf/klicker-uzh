@@ -3,6 +3,7 @@ import {
   CreateSessionDocument,
   EditSessionDocument,
   GetUserSessionsDocument,
+  Question,
   QuestionType,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -28,9 +29,16 @@ interface LiveSessionWizardProps {
     value: string
   }[]
   initialValues?: Partial<Session>
+  selection: Record<number, Question>
+  resetSelection: () => void
 }
 
-function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
+function LiveSessionWizard({
+  courses,
+  initialValues,
+  selection,
+  resetSelection,
+}: LiveSessionWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
@@ -102,7 +110,6 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
           timeLimit: block.timeLimit,
         }
       })
-    console.log('onSubmit - blockQuestions: ', blockQuestions)
 
     try {
       let success = false
@@ -215,7 +222,11 @@ function LiveSessionWizard({ courses, initialValues }: LiveSessionWizardProps) {
       >
         <StepOne validationSchema={stepOneValidationSchema} />
         <StepTwo validationSchema={stepTwoValidationSchema} courses={courses} />
-        <StepThree validationSchema={stepThreeValidationSchema} />
+        <StepThree
+          validationSchema={stepThreeValidationSchema}
+          selection={selection}
+          resetSelection={resetSelection}
+        />
       </MultistepWizard>
       <ElementCreationErrorToast
         open={errorToastOpen}
@@ -239,6 +250,8 @@ interface StepProps {
     label: string
     value: string
   }[]
+  selection?: Record<number, Question>
+  resetSelection?: () => void
 }
 
 function StepOne(_: StepProps) {
@@ -358,6 +371,12 @@ function StepTwo(props: StepProps) {
   )
 }
 
-function StepThree(_: StepProps) {
-  return <SessionBlockField fieldName="blocks" />
+function StepThree(props: StepProps) {
+  return (
+    <SessionBlockField
+      fieldName="blocks"
+      selection={props.selection}
+      resetSelection={props.resetSelection}
+    />
+  )
 }

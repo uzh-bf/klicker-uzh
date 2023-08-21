@@ -1,3 +1,4 @@
+import { Question } from '@klicker-uzh/graphql/dist/ops'
 import { FieldArray, FieldArrayRenderProps, useField } from 'formik'
 import AddBlockButton from './AddBlockButton'
 import SessionCreationBlock from './SessionCreationBlock'
@@ -7,6 +8,8 @@ interface EditorFieldProps {
   label?: string
   fieldName: string
   tooltip?: string
+  selection?: Record<number, Question>
+  resetSelection?: () => void
   className?: string
 }
 
@@ -14,6 +17,8 @@ function SessionBlockField({
   label,
   fieldName,
   tooltip,
+  selection,
+  resetSelection,
   className,
 }: EditorFieldProps) {
   const [field, meta, helpers] = useField(fieldName)
@@ -33,9 +38,15 @@ function SessionBlockField({
                   remove={remove}
                   move={move}
                   replace={replace}
+                  selection={selection}
+                  resetSelection={resetSelection}
                 />
               ))}
-              <AddBlockButton push={push} />
+              <AddBlockButton
+                push={push}
+                selection={selection}
+                resetSelection={resetSelection}
+              />
             </>
           )}
         </FieldArray>
