@@ -1,9 +1,7 @@
-import { performLecturerLogin } from './login-workflow.cy'
-
 describe('Test functionalities of frontend-control application', () => {
   it('Test the basic functionalities of the control application: login and session management', () => {
     // log into frontend-manage
-    performLecturerLogin(cy)
+    cy.loginLecturer()
 
     // create a new session with one question for testing
     const randomNumber = Math.round(Math.random() * 1000)

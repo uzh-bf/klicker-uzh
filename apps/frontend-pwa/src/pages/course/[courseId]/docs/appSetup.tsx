@@ -36,7 +36,7 @@ Weitere Details zur Installation und Nutzung der KlickerUZH-App finden Sie in fo
 export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`))
         .default,
     },
     revalidate: 600,

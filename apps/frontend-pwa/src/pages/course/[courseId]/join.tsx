@@ -322,9 +322,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         color: data?.basicCourseInformation?.color,
         description: data?.basicCourseInformation?.description,
         courseLoading: loading,
-        messages: (
-          await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`)
-        ).default,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   } catch {

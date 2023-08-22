@@ -7,7 +7,6 @@ import {
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
 import {
@@ -249,16 +248,6 @@ function EditProfile() {
                   </div>
 
                   <div className="flex-1 order-1 md:order-2 md:bg-slate-50 md:p-4 rounded justify-between flex flex-col space-y-4">
-                    {!data.self?.isActive && (
-                      <div className="flex-initial space-y-2">
-                        <H3 className={{ root: 'border-b mb-0' }}>Privacy</H3>
-                        <Markdown
-                          withProse
-                          withLinkButtons={false}
-                          content={t('pwa.profile.privacyNotice')}
-                        />
-                      </div>
-                    )}
                     <div className="flex-initial space-y-2">
                       <H3 className={{ root: 'border-b mb-0' }}>
                         {t('pwa.profile.deleteProfile')}
@@ -386,8 +375,7 @@ function EditProfile() {
 export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
-        .default,
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }
 }

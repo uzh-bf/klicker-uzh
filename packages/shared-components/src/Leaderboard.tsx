@@ -134,7 +134,10 @@ function Leaderboard({
             <Markdown
               withProse
               withLinkButtons={false}
-              content={t('pwa.general.joinLeaderboardNotice')}
+              content={t('pwa.general.joinLeaderboardNotice', {
+                username: participant.username,
+                courseName,
+              })}
             />
             <Button fluid className={{ root: 'bg-white' }} onClick={onJoin}>
               {t.rich('pwa.courses.joinLeaderboardCourse', {

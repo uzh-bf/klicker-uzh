@@ -1,9 +1,8 @@
-import * as messages from '../../../packages/i18n/messages/en.json'
-import { performLecturerLogin } from './login-workflow.cy'
+import messages from '../../../packages/i18n/messages/en'
 
 describe('Different learning element workflows', () => {
   beforeEach(() => {
-    performLecturerLogin(cy)
+    cy.loginLecturer()
   }),
     it('creates and publishes a learning element', () => {
       const randomNumber = Math.round(Math.random() * 1000)

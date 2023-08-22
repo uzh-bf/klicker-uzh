@@ -1,9 +1,9 @@
-import * as messages from '../../../packages/i18n/messages/en.json'
+import messages from '../../../packages/i18n/messages/en'
 import { performLecturerLogin } from './login-workflow.cy'
 
 describe('Different live-session workflows', () => {
   beforeEach(() => {
-    performLecturerLogin(cy)
+    cy.loginLecturer()
   }),
     it('adds and then deletes a second question block', () => {
       const randomNumber = Math.round(Math.random() * 1000)
