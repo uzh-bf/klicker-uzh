@@ -15,11 +15,10 @@ function SignInOutButton() {
 
   const { data: session } = useSession()
 
-  const {
-    value: tosChecked,
-    setValue: setTosChecked,
-    stickyValue,
-  } = useStickyState('tos-agreement', '')
+  const { value: tosChecked, setValue: setTosChecked } = useStickyState(
+    'tos-agreement',
+    ''
+  )
 
   if (session) {
     return (
@@ -33,37 +32,35 @@ function SignInOutButton() {
 
   return (
     <div className="flex flex-col gap-4">
-      {!stickyValue && (
-        <Checkbox
-          data={{ cy: 'tos-checkbox' }}
-          label={
-            <div className="text-sm">
-              {t.rich('auth.tosAgreement', {
-                privacy: () => (
-                  <a
-                    className="underline text-blue-500 hover:text-red-500"
-                    href={t('auth.privacyUrl')}
-                    target="_blank"
-                  >
-                    {t('auth.privacyPolicy')}
-                  </a>
-                ),
-                tos: () => (
-                  <a
-                    className="underline text-blue-500 hover:text-red-500"
-                    href={t('auth.tosUrl')}
-                    target="_blank"
-                  >
-                    {t('auth.termsOfService')}
-                  </a>
-                ),
-              })}
-            </div>
-          }
-          onCheck={() => setTosChecked(!tosChecked)}
-          checked={tosChecked}
-        />
-      )}
+      <Checkbox
+        data={{ cy: 'tos-checkbox' }}
+        label={
+          <div className="text-sm">
+            {t.rich('auth.tosAgreement', {
+              privacy: () => (
+                <a
+                  className="underline text-blue-500 hover:text-red-500"
+                  href={t('auth.privacyUrl')}
+                  target="_blank"
+                >
+                  {t('auth.privacyPolicy')}
+                </a>
+              ),
+              tos: () => (
+                <a
+                  className="underline text-blue-500 hover:text-red-500"
+                  href={t('auth.tosUrl')}
+                  target="_blank"
+                >
+                  {t('auth.termsOfService')}
+                </a>
+              ),
+            })}
+          </div>
+        }
+        onCheck={() => setTosChecked(!tosChecked)}
+        checked={tosChecked}
+      />
 
       <Button
         disabled={!tosChecked}
