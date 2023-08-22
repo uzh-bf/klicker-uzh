@@ -11,6 +11,7 @@ import useStickyState from 'src/hooks/useStickyState'
 
 function SignInOutButton() {
   const t = useTranslations()
+  const router = useRouter()
 
   const { data: session } = useSession()
 
