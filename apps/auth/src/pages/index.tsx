@@ -9,6 +9,36 @@ import { useRouter } from 'next/router'
 
 import useStickyState from 'src/hooks/useStickyState'
 
+function PrivacyLink() {
+  const t = useTranslations()
+
+  return (
+    <a
+      className="underline text-blue-500 hover:text-red-500"
+      href={t('auth.privacyUrl')}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {t('auth.privacyPolicy')}
+    </a>
+  )
+}
+
+function ToSLink() {
+  const t = useTranslations()
+
+  return (
+    <a
+      className="underline text-blue-500 hover:text-red-500"
+      href={t('auth.tosUrl')}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {t('auth.termsOfService')}
+    </a>
+  )
+}
+
 function SignInOutButton() {
   const t = useTranslations()
   const router = useRouter()
@@ -37,24 +67,8 @@ function SignInOutButton() {
         label={
           <div className="text-sm">
             {t.rich('auth.tosAgreement', {
-              privacy: () => (
-                <a
-                  className="underline text-blue-500 hover:text-red-500"
-                  href={t('auth.privacyUrl')}
-                  target="_blank"
-                >
-                  {t('auth.privacyPolicy')}
-                </a>
-              ),
-              tos: () => (
-                <a
-                  className="underline text-blue-500 hover:text-red-500"
-                  href={t('auth.tosUrl')}
-                  target="_blank"
-                >
-                  {t('auth.termsOfService')}
-                </a>
-              ),
+              privacy: PrivacyLink,
+              tos: ToSLink,
             })}
           </div>
         }
