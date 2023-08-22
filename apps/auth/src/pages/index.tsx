@@ -22,7 +22,7 @@ function SignInOutButton() {
       <>
         {t('auth.signedInAs', { username: session?.user?.email })}
         <br />{' '}
-        <Button onClick={() => signOut()}>{t('shared.general.logout')}</Button>
+        <Button onClick={() => signOut()}>{t('shared.generic.logout')}</Button>
       </>
     )
   }
