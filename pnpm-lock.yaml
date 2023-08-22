@@ -50,6 +50,9 @@ importers:
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
+      js-cookie:
+        specifier: 3.0.5
+        version: 3.0.5
       jsonwebtoken:
         specifier: 9.0.1
         version: 9.0.1
@@ -74,10 +77,16 @@ importers:
       react-dom:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
+      tailwind-merge:
+        specifier: 1.14.0
+        version: 1.14.0
     devDependencies:
       '@types/bcryptjs':
         specifier: ^2.4.2
         version: 2.4.2
+      '@types/js-cookie':
+        specifier: ^3.0.3
+        version: 3.0.3
       '@types/jsonwebtoken':
         specifier: ^9.0.2
         version: 9.0.2
@@ -10151,6 +10160,10 @@ packages:
       pretty-format: 29.6.2
     dev: true
 
+  /@types/js-cookie@3.0.3:
+    resolution: {integrity: sha512-Xe7IImK09HP1sv2M/aI+48a20VX+TdRJucfq4vfRVy6nWN8PYPOEnlMRSgxJAgYQIXJVL8dZ4/ilAM7dWNaOww==}
+    dev: true
+
   /@types/js-search@1.4.0:
     resolution: {integrity: sha512-OMDWvQP2AmxpQI9vFh7U/TzExNGB9Sj9WQCoxUR8VXZEv6jM4cyNzLODkh1gkBHJ9Er7kdasChzEpba4FxLGaA==}
     dev: true
@@ -18130,6 +18143,11 @@ packages:
   /js-base64@3.7.5:
     resolution: {integrity: sha512-3MEt5DTINKqfScXKfJFrRbxkrnk2AxPWGBL/ycjz4dK8iqiSJ06UxD8jh8xuh6p10TX4t2+7FsBYVxxQbMg+qA==}
     dev: true
+
+  /js-cookie@3.0.5:
+    resolution: {integrity: sha512-cEiJEAEoIbWfCZYKWhVwFuvPX1gETRYPw6LlaTKoxD3s2AkXzkCjnp6h0V77ozyqj0jakteJ4YqDJT830+lVGw==}
+    engines: {node: '>=14'}
+    dev: false
 
   /js-md4@0.3.2:
     resolution: {integrity: sha512-/GDnfQYsltsjRswQhN9fhv3EMw2sCpUdrdxyWDOUK7eyD++r3gRhzgiQgc/x4MAv2i1iuQ4lxO5mvqM3vj4bwA==}
