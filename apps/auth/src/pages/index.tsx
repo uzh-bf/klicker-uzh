@@ -92,7 +92,7 @@ function SignInOutButton() {
           })
         }
       >
-        Delegated Login
+        {t('auth.delegatedAccess')}
       </Button>
     </div>
   )
@@ -100,6 +100,7 @@ function SignInOutButton() {
 
 export function Index() {
   const router = useRouter()
+  const t = useTranslations()
 
   return (
     <div className="m-auto flex max-w-md flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
@@ -115,7 +116,7 @@ export function Index() {
           />
         </div>
         <div className="w-full flex flex-row justify-between">
-          <H1 className={{ root: 'mb-0' }}>Authentication</H1>
+          <H1 className={{ root: 'mb-0' }}>{t('auth.authentication')}</H1>
           <div>
             <LanguageChanger
               value={router.locale as string}

@@ -171,6 +171,8 @@ export default {
     },
   },
   auth: {
+    authentication: 'Authentication',
+    delegatedAccess: 'Delegated Access',
     signedInAs: 'Signed in as {username}',
     tosAgreement:
       'I consent to the KlickerUZH <tos></tos> and <privacy></privacy>.',

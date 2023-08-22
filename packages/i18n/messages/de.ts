@@ -171,6 +171,8 @@ export default {
     },
   },
   auth: {
+    authentication: 'Authentifizierung',
+    delegatedAccess: 'Delegierter Zugriff',
     tosAgreement:
       'Ich akzeptiere die KlickerUZH <tos></tos> und <privacy></privacy>.',
     termsOfService: 'Nutzungsbedingungen',
