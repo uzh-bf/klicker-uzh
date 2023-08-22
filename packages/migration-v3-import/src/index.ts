@@ -609,7 +609,6 @@ const importSessions = async (
                 create: session.blocks.map((sessionBlock, blockIx) => {
                   const instances = sessionBlock.instances.map(
                     (instanceId) => ({
-                      // TODO: fetch instance and set instanceIx here?
                       id: mappedQuestionInstanceIds[extractString(instanceId)],
                     })
                   )
@@ -648,12 +647,17 @@ const importSessions = async (
           })
           mappedSessionIds[extractString(session._id)] = newSession.id
 
-          // Update sessionBlockId of each QuestionInstance connected to the newly created SessionBlock
+          // Update sessionBlockId of each QuestionInstance connected to the newly created SessionBlock and restore ordering of QuestionInstances
           for (const block of newSession.blocks) {
             for (const instance of block.instances) {
+              const oldBlock = session.blocks.find((block) => block.instances.map((id) => extractString(id)).includes(instance.originalId.toString()))
+              const i = oldBlock ? oldBlock.instances.findIndex((id) => extractString(id) === instance.originalId.toString()) : null
               await prisma.questionInstance.update({
                 where: { id: instance.id },
-                data: { sessionBlockId: block.id },
+                data: { 
+                  sessionBlockId: block.id,
+                  order: i
+                },
               })
             }
           }
@@ -672,7 +676,7 @@ const importV2Data = async () => {
   // __dirname provides the current directory name of the current file
   const dirPath = path.join(
     __dirname,
-    '../../migration-v2-export/exported_json_files'
+    '../../migration-v2-export-python/exported_json_files'
   )
 
   // const filePath = path.join(dirPath, 'exported_data_2023-07-06_17-10-52.json');

@@ -285,7 +285,7 @@ type InstanceEvaluation {
 type InstanceResult {
   blockIx: Int
   id: String!
-  instanceIx: Int
+  instanceIx: Int!
   participants: Int!
   questionData: QuestionData!
   results: Json!
