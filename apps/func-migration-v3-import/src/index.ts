@@ -1,13 +1,6 @@
 import { app, InvocationContext, StorageBlobHandler } from '@azure/functions'
-import {
-  AccessMode,
-  PrismaClient,
-  QuestionInstanceType,
-  QuestionType,
-  SessionBlockStatus,
-  SessionStatus,
-} from '@klicker-uzh/prisma'
-import { closeLegacyConnection, getLegacyResults } from './getLegacyResults'
+import { QuestionType } from '@klicker-uzh/prisma'
+import getPrismaClient from './prisma'
 
 const extractString = (stringItem: string) => {
   const pattern = /"(.*)"/
@@ -33,12 +26,7 @@ function sliceIntoChunks(array: any[], chunkSize: number) {
   return result
 }
 
-const importTags = async (
-  prisma: PrismaClient,
-  tags: any,
-  user,
-  batchSize: number
-) => {
+const importTags = async (tags: any, user, batchSize: number) => {
   let mappedTags: Record<string, Record<string, string | number>> = {}
   const tagsInDb = await prisma.tag.findMany()
   const tagsDict: Record<string, any> = tagsInDb.reduce((acc, t) => {
@@ -113,8 +101,9 @@ const blobTrigger: StorageBlobHandler = async function (
 
     const email = 'lecturer@bf.uzh.ch'
 
-    context.log("__dirname: ", __dirname)
-    const prisma = new PrismaClient()
+    context.log('__dirname: ', __dirname)
+
+    const client = getPrismaClient(context)
 
     // const user = await prisma.user.findUnique({
     //   where: {
@@ -134,7 +123,6 @@ const blobTrigger: StorageBlobHandler = async function (
     // mappedTags = await importTags(prisma, tags, user, batchSize)
 
     // console.log("mappedTags: ", mappedTags)
-
   } catch (e) {
     context.error(e)
   }
