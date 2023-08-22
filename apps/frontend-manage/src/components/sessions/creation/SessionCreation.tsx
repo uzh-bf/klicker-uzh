@@ -7,6 +7,7 @@ import {
   GetUserCoursesDocument,
   LearningElement,
   MicroSession,
+  Question,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -22,6 +23,8 @@ interface SessionCreationProps {
   closeWizard: () => void
   sessionId?: string
   editMode?: string
+  selection: Record<number, Question>
+  resetSelection: () => void
 }
 
 function SessionCreation({
@@ -29,6 +32,8 @@ function SessionCreation({
   closeWizard,
   sessionId,
   editMode,
+  selection,
+  resetSelection,
 }: SessionCreationProps) {
   const t = useTranslations()
   const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
@@ -44,7 +49,6 @@ function SessionCreation({
     skip: !sessionId || editMode !== 'learningElement',
   })
 
-  console.log('SessionCreation - dataLiveSession', dataLiveSession)
   const {
     loading: loadingCourses,
     error: errorCourses,
@@ -79,6 +83,8 @@ function SessionCreation({
               initialValues={
                 (dataLiveSession?.liveSession as Session) ?? undefined
               }
+              selection={selection}
+              resetSelection={resetSelection}
             />
           </>
         )}

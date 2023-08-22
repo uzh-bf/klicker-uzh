@@ -29,7 +29,7 @@
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
     "check": "tsc --noEmit",
-    "dev": "npm-run-all --parallel dev:ts dev:func",
+    "dev:migration": "npm-run-all --parallel dev:ts dev:func",
     "dev:func": "func start -p 7075 --verbose --javascript",
     "dev:ts": "tsup --watch",
     "format": "prettier --write .",

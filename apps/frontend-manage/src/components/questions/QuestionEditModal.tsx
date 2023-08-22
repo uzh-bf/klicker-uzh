@@ -329,7 +329,6 @@ function QuestionEditModal({
       : {}
   }, [dataQuestion?.question, mode, questionType])
 
-  console.log('question', question)
   // TODO: styling of tooltips - some are too wide
   // TODO: show errors of form validation below fields as for the login form
 
@@ -485,7 +484,11 @@ function QuestionEditModal({
               <Button
                 disabled={isSubmitting || !isValid}
                 className={{
-                  root: 'mt-2 font-bold text-white border-uzh-grey-80 bg-primary-80',
+                  root: twMerge(
+                    'mt-2 font-bold text-white border-uzh-grey-80 bg-primary-80',
+                    (isSubmitting || !isValid) &&
+                      'opacity-50 cursor-not-allowed'
+                  ),
                 }}
                 type="submit"
                 form="question-manipulation-form"
