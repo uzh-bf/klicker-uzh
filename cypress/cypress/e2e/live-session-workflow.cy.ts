@@ -3,7 +3,7 @@ import { performLecturerLogin } from './login-workflow.cy'
 
 describe('Different live-session workflows', () => {
   beforeEach(() => {
-    performLecturerLogin(cy)
+    cy.loginLecturer()
   }),
     it('adds and then deletes a second question block', () => {
       const randomNumber = Math.round(Math.random() * 1000)

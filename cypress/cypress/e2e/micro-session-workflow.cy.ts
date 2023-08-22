@@ -1,9 +1,8 @@
 import messages from '../../../packages/i18n/messages/en'
-import { performLecturerLogin } from './login-workflow.cy'
 
 describe('Different micro-session workflows', () => {
   beforeEach(() => {
-    performLecturerLogin(cy)
+    cy.loginLecturer()
   }),
     it('creates and publishes a micro session that should be visible to students', () => {
       const randomNumber = Math.round(Math.random() * 1000)

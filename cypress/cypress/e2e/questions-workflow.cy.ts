@@ -1,9 +1,8 @@
 import messages from '../../../packages/i18n/messages/en'
-import { performLecturerLogin } from './login-workflow.cy'
 
 describe('Create questions', () => {
   beforeEach(() => {
-    performLecturerLogin(cy)
+    cy.loginLecturer()
   }),
     it('creates a single choice question', () => {
       const randomQuestionNumber = Math.round(Math.random() * 1000)
