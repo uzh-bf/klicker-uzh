@@ -1,14 +1,14 @@
 import { InvocationContext } from '@azure/functions'
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from './client'
 
 let prisma: PrismaClient
 
-async function getPrismaClient(context: InvocationContext) {
+function getPrismaClient(context?: InvocationContext) {
   if (!prisma) {
     try {
       prisma = new PrismaClient()
     } catch (e) {
-      context.error(e)
+      context?.error(e)
     }
   }
 
