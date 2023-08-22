@@ -972,6 +972,9 @@ importers:
       '@azure/storage-blob':
         specifier: 12.15.0
         version: 12.15.0
+      '@klicker-uzh/prisma':
+        specifier: workspace:*
+        version: link:../../packages/prisma
       jsonwebtoken:
         specifier: 9.0.1
         version: 9.0.1

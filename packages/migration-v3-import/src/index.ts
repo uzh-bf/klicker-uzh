@@ -609,6 +609,7 @@ const importSessions = async (
                 create: session.blocks.map((sessionBlock, blockIx) => {
                   const instances = sessionBlock.instances.map(
                     (instanceId) => ({
+                      // TODO: fetch instance and set instanceIx here?
                       id: mappedQuestionInstanceIds[extractString(instanceId)],
                     })
                   )

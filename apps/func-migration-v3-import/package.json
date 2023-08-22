@@ -10,6 +10,7 @@
   "dependencies": {
     "@azure/functions": "4.0.0-alpha.11",
     "@azure/storage-blob": "12.15.0",
+    "@klicker-uzh/prisma": "workspace:*",
     "jsonwebtoken": "9.0.1"
   },
   "devDependencies": {
