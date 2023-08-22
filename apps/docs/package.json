@@ -18,6 +18,7 @@
     "@gabrielcsapo/docusaurus-plugin-matomo": "0.1.2",
     "@headlessui/react": "1.5.0",
     "@heroicons/react": "1.0.6",
+    "@mdx-js/react": "2.3.0",
     "@tsconfig/docusaurus": "1.0.5",
     "@uzh-bf/design-system": "2.0.12",
     "autoprefixer": "10.4.14",
