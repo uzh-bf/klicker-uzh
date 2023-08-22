@@ -170,6 +170,15 @@ export default {
         'You seem to be offline at the moment. Connect your device to the Internet to use the KlickerUZH app.',
     },
   },
+  auth: {
+    signedInAs: 'Signed in as {username}',
+    tosAgreement:
+      'I consent to the KlickerUZH <tos></tos> and <privacy></privacy>.',
+    termsOfService: 'Terms of Service',
+    privacyPolicy: 'Privacy Policy',
+    tosUrl: 'https://www.klicker.uzh.ch/terms_of_service',
+    privacyUrl: 'https://www.klicker.uzh.ch/privacy_policy',
+  },
   pwa: {
     general: {
       myCourses: 'My Courses',

@@ -170,6 +170,14 @@ export default {
         'Sie scheinen im Moment offline zu sein. Verbinden Sie Ihr Gerät mit dem Internet, um die KlickerUZH App nutzen zu können.',
     },
   },
+  auth: {
+    tosAgreement:
+      'Ich akzeptiere die KlickerUZH <tos></tos> und <privacy></privacy>.',
+    termsOfService: 'Nutzungsbedingungen',
+    privacyPolicy: 'Datenschutzerklärung',
+    tosUrl: 'https://www.klicker.uzh.ch/terms_of_service',
+    privacyUrl: 'https://www.klicker.uzh.ch/datenschutz',
+  },
   pwa: {
     general: {
       myCourses: 'Meine Kurse',

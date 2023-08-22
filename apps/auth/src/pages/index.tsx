@@ -1,13 +1,16 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
+import LanguageChanger from '@klicker-uzh/shared-components/src/LanguageChanger'
 import { Button, Checkbox, H1 } from '@uzh-bf/design-system'
+import { GetStaticPropsContext } from 'next'
 import { signIn, signOut, useSession } from 'next-auth/react'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 
 import useStickyState from 'src/hooks/useStickyState'
 
 function SignInOutButton() {
-  const router = useRouter()
+  const t = useTranslations()
 
   const { data: session } = useSession()
 
@@ -16,8 +19,9 @@ function SignInOutButton() {
   if (session) {
     return (
       <>
-        Signed in as {session?.user?.email} <br />{' '}
-        <Button onClick={() => signOut()}>Sign out</Button>
+        {t('auth.signedInAs', { username: session?.user?.email })}
+        <br />{' '}
+        <Button onClick={() => signOut()}>{t('shared.general.logout')}</Button>
       </>
     )
   }
@@ -28,22 +32,26 @@ function SignInOutButton() {
         data={{ cy: 'tos-checkbox' }}
         label={
           <div className="text-sm">
-            I consent to the{' '}
-            <a
-              className="underline text-blue-500 hover:text-red-500"
-              href="https://www.klicker.uzh.ch/terms_of_service"
-              target="_blank"
-            >
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a
-              className="underline text-blue-500 hover:text-red-500"
-              href="https://www.klicker.uzh.ch/privacy_policy"
-              target="_blank"
-            >
-              Privacy Policy
-            </a>
+            {t.rich('auth.tosAgreement', {
+              privacy: () => (
+                <a
+                  className="underline text-blue-500 hover:text-red-500"
+                  href={t('auth.privacyUrl')}
+                  target="_blank"
+                >
+                  {t('auth.privacyPolicy')}
+                </a>
+              ),
+              tos: () => (
+                <a
+                  className="underline text-blue-500 hover:text-red-500"
+                  href={t('auth.tosUrl')}
+                  target="_blank"
+                >
+                  {t('auth.termsOfService')}
+                </a>
+              ),
+            })}
           </div>
         }
         onCheck={() => setTosChecked(!tosChecked)}
@@ -90,8 +98,10 @@ function SignInOutButton() {
 }
 
 export function Index() {
+  const router = useRouter()
+
   return (
-    <div className="m-auto flex max-w-2xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+    <div className="m-auto flex max-w-md flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center gap-8 md:p-8">
         <div className="w-full border-b pb-4 text-center">
           <Image
@@ -103,8 +113,19 @@ export function Index() {
             data-cy="login-logo"
           />
         </div>
-        <div>
-          <H1>Authentication</H1>
+        <div className="w-full flex flex-row justify-between">
+          <H1 className={{ root: 'mb-0' }}>Authentication</H1>
+          <div>
+            <LanguageChanger
+              value={router.locale as string}
+              onChange={(newValue) => {
+                const { pathname, asPath, query } = router
+                router.push({ pathname, query }, asPath, {
+                  locale: newValue,
+                })
+              }}
+            />
+          </div>
         </div>
         <div>
           <SignInOutButton />
@@ -115,6 +136,14 @@ export function Index() {
       </div>
     </div>
   )
+}
+
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
+  return {
+    props: {
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
+    },
+  }
 }
 
 export default Index
