@@ -1,4 +1,4 @@
-import * as messages from '../../../packages/i18n/messages/en'
+import messages from '../../../packages/i18n/messages/en'
 import { performLecturerLogin } from './login-workflow.cy'
 
 describe('Different live-session workflows', () => {
