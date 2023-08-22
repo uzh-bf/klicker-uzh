@@ -65,9 +65,10 @@ services:
     environment:
       - TZ=Europe/Zurich
     depends_on:
-      - listmonk_init
-      - listmonk_db
-      - mailhog
+      listmonk_db:
+        condition: service_healthy
+      mailhog:
+        condition: service_healthy
     volumes:
       - ./util/listmonk-config.toml:/listmonk/config.toml
     networks:
