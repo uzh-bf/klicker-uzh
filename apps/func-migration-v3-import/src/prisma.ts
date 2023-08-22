@@ -1,5 +1,5 @@
 import { InvocationContext } from '@azure/functions'
-import { PrismaClient } from './client'
+import { PrismaClient } from '@klicker-uzh/prisma'
 
 let prisma: PrismaClient
 

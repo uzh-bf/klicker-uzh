@@ -1,5 +1,12 @@
-import fs from 'fs-extra'
+import fs from 'fs'
 
-fs.copy('../../packages/prisma/dist', './dist/client')
-fs.copy('../../packages/prisma/dist', './src/client')
-fs.copy('../../packages/prisma/dist/schema.prisma', './dist/schema.prisma')
+try {
+  fs.rmdirSync('./dist', { recursive: true })
+} catch (e) {}
+
+fs.mkdirSync('./dist/')
+
+fs.copyFileSync(
+  '../../packages/prisma/dist/schema.prisma',
+  './dist/schema.prisma'
+)

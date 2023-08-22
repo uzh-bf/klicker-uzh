@@ -1,4 +1,4 @@
-import { PrismaClient, QuestionType } from './client'
+import { PrismaClient, QuestionType } from '@klicker-uzh/prisma'
 
 const extractString = (stringItem: string) => {
   const pattern = /"(.*)"/
