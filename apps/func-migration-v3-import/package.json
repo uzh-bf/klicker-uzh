@@ -31,10 +31,10 @@
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
     "check": "tsc --noEmit",
-    "dev:migration": "run-s dev:copy dev:function",
-    "dev:function": "run-p dev:func dev:ts",
     "dev:copy": "ts-node src/copy.ts",
     "dev:func": "func start -p 7075 --verbose --javascript",
+    "dev:function": "run-p dev:func dev:ts",
+    "dev:migration": "run-s dev:copy dev:function",
     "dev:ts": "tsup --watch",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
