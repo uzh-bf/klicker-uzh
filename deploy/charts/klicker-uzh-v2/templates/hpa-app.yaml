@@ -55,3 +55,32 @@ spec:
         targetAverageUtilization: {{ .Values.frontendManage.autoscaling.targetMemoryUtilizationPercentage }}
     {{- end }}
 {{- end }}
+---
+{{- if .Values.backendGraphql.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "chart.fullname" . }}-backend-graphql
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "chart.fullname" . }}-backend-graphql
+  minReplicas: {{ .Values.backendGraphql.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.backendGraphql.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.backendGraphql.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: {{ .Values.backendGraphql.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.backendGraphql.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        targetAverageUtilization: {{ .Values.backendGraphql.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

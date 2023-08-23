@@ -1,6 +1,83 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "chart.fullname" . }}-auth
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: auth
+spec:
+  {{- with .Values.auth.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.auth.autoscaling.enabled }}
+  replicas: {{ .Values.auth.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: auth
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-auth.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-auth.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.auth.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: auth
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.auth.priorityClassName }}
+      {{- with .Values.auth.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.auth.podSecurityContext | nindent 8 }}
+      containers:
+        - name: auth
+          securityContext:
+            {{- toYaml .Values.auth.securityContext | nindent 12 }}
+          image: "{{ .Values.auth.image.repository }}:{{ .Values.auth.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.auth.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-auth
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-auth
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.auth.resources | nindent 12 }}
+      {{- with .Values.auth.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.auth.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.auth.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: {{ include "chart.fullname" . }}-frontend-pwa
   labels:
     {{- include "chart.labels" . | nindent 4 }}
