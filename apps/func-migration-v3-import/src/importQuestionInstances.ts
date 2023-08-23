@@ -1,5 +1,5 @@
 import { PrismaClient, QuestionInstanceType } from "@klicker-uzh/prisma"
-import { QuestionTypeMap, extractString, sliceIntoChunks } from "./utils"
+import { QuestionTypeMap, sliceIntoChunks } from "./utils"
 import { getLegacyResults } from "./getLegacyResults"
 
 export const importQuestionInstances = async (
@@ -35,14 +35,14 @@ export const importQuestionInstances = async (
             // console.log("questionInstance to be imported: ", questionInstance)
   
             const questionInstanceExists =
-              questionInstancesDict[extractString(questionInstance._id)]
+              questionInstancesDict[questionInstance._id]
   
             if (questionInstanceExists) {
               console.log(
                 'questionInstance already exists: ',
                 questionInstanceExists
               )
-              mappedQuestionInstancesIds[extractString(questionInstance._id)] =
+              mappedQuestionInstancesIds[questionInstance._id] =
                 questionInstanceExists.id
               continue
             }
@@ -52,7 +52,7 @@ export const importQuestionInstances = async (
             const question = questions.find(
               (question) =>
                 question.id ===
-                mappedQuestionIds[extractString(questionInstance.question)]
+                mappedQuestionIds[questionInstance.question]
             )
             // console.log("importQuestionInstances question: ", question)
   
@@ -69,7 +69,7 @@ export const importQuestionInstances = async (
               // lostResults.push(questionInstance)
               // TODO: restore results from legacy db
               questionInstance.results = await getLegacyResults(
-                extractString(questionInstance._id)
+                questionInstance._id
               )
               console.log(
                 'Fetched questionInstanceResults: ',
@@ -111,7 +111,7 @@ export const importQuestionInstances = async (
                   let newResults = Object.keys(
                     questionInstance.results.FREE
                   ).reduce((acc, hash) => {
-                    acc[extractString(hash)] = questionInstance.results.FREE[hash]
+                    acc[hash] = questionInstance.results.FREE[hash]
                     return acc
                   }, {})
                   results = { ...results, ...newResults }
@@ -119,7 +119,7 @@ export const importQuestionInstances = async (
                   let newResults = Object.keys(
                     questionInstance.results.FREE_RANGE
                   ).reduce((acc, hash) => {
-                    acc[extractString(hash)] =
+                    acc[hash] =
                       questionInstance.results.FREE_RANGE[hash]
                     return acc
                   }, {})
@@ -131,7 +131,7 @@ export const importQuestionInstances = async (
   
             const result = {
               data: {
-                originalId: extractString(questionInstance._id),
+                originalId: questionInstance._id,
                 type: QuestionInstanceType.SESSION,
                 questionData: questionData,
                 participants: questionInstance.results?.totalParticipants,
@@ -158,7 +158,7 @@ export const importQuestionInstances = async (
               data: result.data,
             })
   
-            mappedQuestionInstancesIds[extractString(questionInstance._id)] =
+            mappedQuestionInstancesIds[questionInstance._id] =
               newQuestionInstance.id
             // console.log("new questionInstance created: ", newQuestionInstance)
   

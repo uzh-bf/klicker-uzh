@@ -1,6 +1,6 @@
 import { InvocationContext } from '@azure/functions'
 import { AccessMode, PrismaClient, SessionBlockStatus, SessionStatus } from '@klicker-uzh/prisma'
-import { extractString, sliceIntoChunks } from "./utils"
+import { sliceIntoChunks } from "./utils"
 
 const getSessionBlockStatus = (status: string) => {
     switch (status) {
@@ -48,17 +48,17 @@ export const importSessions = async (
             // console.log("session to be imported: ", session);
             // console.log("session isBeta: ", !!session.isBeta)
   
-            const sessionExists = sessionsDict[extractString(session._id)]
+            const sessionExists = sessionsDict[session._id]
   
             if (sessionExists) {
               context.log('session already exists: ', sessionExists)
-              mappedSessionIds[extractString(session._id)] = sessionExists.id
+              mappedSessionIds[session._id] = sessionExists.id
               continue
             }
   
             const newSession = await prisma.liveSession.create({
               data: {
-                originalId: extractString(session._id),
+                originalId: session._id,
                 namespace: session.namespace,
                 name: session.name,
                 displayName: session.name, // no displayName in v2
@@ -70,13 +70,13 @@ export const importSessions = async (
                 isLiveQAEnabled: session.settings.isFeedbackChannelActive,
                 isModerationEnabled: !session.settings.isFeedbackChannelPublic,
                 status: getSessionStatus(session.status), // imported sessions will either be prepared or completed (no active or paused sessions)
-                createdAt: new Date(extractString(session.createdAt)),
-                updatedAt: new Date(extractString(session.updatedAt)),
+                createdAt: new Date(session.createdAt),
+                updatedAt: new Date(session.updatedAt),
                 startedAt: session.startedAt
-                  ? new Date(extractString(session.startedAt))
+                  ? new Date(session.startedAt)
                   : null,
                 finishedAt: session.finishedAt
-                  ? new Date(extractString(session.finishedAt))
+                  ? new Date(session.finishedAt)
                   : null,
                 // activeBlock: difference 0 and -1? e.g., -1 == nicht gestartet and 0 is first element of list? -->!! null? da keine session "running" sein wird
                 // blocks: check SessionBlock -> activeInSession ?? --> NO active sessions will be imported!
@@ -94,7 +94,7 @@ export const importSessions = async (
                       create: session.feedbacks.map((feedback) => ({
                         content: feedback.content,
                         votes: feedback.votes,
-                        createdAt: new Date(extractString(feedback.createdAt)),
+                        createdAt: new Date(feedback.createdAt),
                       })),
                     }
                   : {
@@ -110,15 +110,15 @@ export const importSessions = async (
                             positiveReactions: response.positiveReactions,
                             negativeReactions: response.negativeReactions,
                             createdAt: new Date(
-                              extractString(response.createdAt)
+                              response.createdAt
                             ),
                             updatedAt: new Date(
-                              extractString(response.updatedAt)
+                              response.updatedAt
                             ),
                           })),
                         },
-                        createdAt: new Date(extractString(feedback.createdAt)),
-                        updatedAt: new Date(extractString(feedback.updatedAt)),
+                        createdAt: new Date(feedback.createdAt),
+                        updatedAt: new Date(feedback.updatedAt),
                       })),
                     },
                 confusionFeedbacks: {
@@ -126,7 +126,7 @@ export const importSessions = async (
                     difficulty: confusionFeedback.difficulty,
                     speed: confusionFeedback.speed,
                     createdAt: new Date(
-                      extractString(confusionFeedback.createdAt)
+                      confusionFeedback.createdAt
                     ),
                   })),
                 },
@@ -134,12 +134,12 @@ export const importSessions = async (
                   create: session.blocks.map((sessionBlock, blockIx) => {
                     const instances = sessionBlock.instances.map(
                       (instanceId) => ({
-                        id: mappedQuestionInstanceIds[extractString(instanceId)],
+                        id: mappedQuestionInstanceIds[instanceId],
                       })
                     )
   
                     return {
-                        originalId: extractString(sessionBlock._id),
+                        originalId: sessionBlock._id,
                         order: blockIx,
                         randomSelection:
                             sessionBlock.randomSelection !== -1
@@ -157,8 +157,8 @@ export const importSessions = async (
                         instances: {
                             connect: instances,
                         },
-                        createdAt: new Date(extractString(sessionBlock.createdAt)),
-                        updatedAt: new Date(extractString(sessionBlock.updatedAt)),
+                        createdAt: new Date(sessionBlock.createdAt),
+                        updatedAt: new Date(sessionBlock.updatedAt),
                     }
                   }),
                 },
@@ -171,7 +171,7 @@ export const importSessions = async (
                 },
               },
             })
-            mappedSessionIds[extractString(session._id)] = newSession.id
+            mappedSessionIds[session._id] = newSession.id
   
             // Update sessionBlockId of each QuestionInstance connected to the newly created SessionBlock and restore ordering of QuestionInstances
             for (const block of newSession.blocks) {  
@@ -180,13 +180,13 @@ export const importSessions = async (
                 }
     
                 const reducedOldBlocks = session.blocks.reduce((acc, block) => {
-                    acc[extractString(block._id)] = block
+                    acc[block._id] = block
                     return acc
                 }, {})
 
                 for (const instance of block.instances) {
                     const oldBlock = reducedOldBlocks[block.originalId]
-                    const i =  oldBlock?.instances?.findIndex((id) => extractString(id) === instance.originalId)
+                    const i =  oldBlock?.instances?.findIndex((id) => id === instance.originalId)
         
                     let updateData = {
                         sessionBlockId: block.id

@@ -1,13 +1,6 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
 import { sliceIntoChunks } from './utils'
 
-const extractString = (stringItem: string) => {
-  const pattern = /"(.*)"/
-  const match = stringItem.match(pattern)
-
-  return match ? match[1] : stringItem
-}
-
 export async function importTags(
   prisma: PrismaClient,
   tags: any,
@@ -27,11 +20,11 @@ export async function importTags(
     for (const batch of batches) {
       await prisma.$transaction(async (prisma) => {
         for (const tag of batch) {
-          const tagExists = tagsDict[extractString(tag._id)]
+          const tagExists = tagsDict[tag._id]
 
           if (tagExists) {
             console.log('tag already exists: ', tagExists)
-            mappedTags[extractString(tag._id)] = {
+            mappedTags[tag._id] = {
               id: tagExists.id,
               name: tagExists.name,
             }
@@ -48,7 +41,7 @@ export async function importTags(
             update: {},
             create: {
               name: tag.name,
-              originalId: extractString(tag._id),
+              originalId: tag._id,
               owner: {
                 connect: {
                   id: user.id,
@@ -57,7 +50,7 @@ export async function importTags(
             },
           })
           // console.log("new tag created: ", newTag)
-          const extractedId = extractString(tag._id)
+          const extractedId = tag._id
           // console.log("tag._id: ", extractedId)
           mappedTags[extractedId] = { id: newTag.id, name: newTag.name }
         }

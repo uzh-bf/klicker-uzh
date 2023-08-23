@@ -1,6 +1,5 @@
 import { BlobServiceClient } from '@azure/storage-blob'
 import axios from 'axios'
-import { extractString } from './utils'
 
 export const migrateFiles = async (files: any) => {
     let mappedFileURLs: Record<string, Record<string, string>> = {}
@@ -34,7 +33,7 @@ export const migrateFiles = async (files: any) => {
   
         const publicUrl = blockBlobClient.url.split('?')[0]
         console.log('publicUrl for file.name: ', file.name, ' is: ', publicUrl)
-        mappedFileURLs[extractString(file._id)] = {
+        mappedFileURLs[file._id] = {
           url: publicUrl,
           originalName: file.originalName,
         }

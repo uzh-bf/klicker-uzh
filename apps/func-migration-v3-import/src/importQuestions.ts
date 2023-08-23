@@ -1,5 +1,5 @@
 import { PrismaClient, QuestionType } from "@klicker-uzh/prisma"
-import { QuestionTypeMap, extractString, sliceIntoChunks } from "./utils"
+import { QuestionTypeMap, sliceIntoChunks } from "./utils"
 
 export const importQuestions = async (
     prisma: PrismaClient,
@@ -28,17 +28,17 @@ export const importQuestions = async (
         await prisma.$transaction(async (prisma) => {
           for (const question of batch) {
             // console.log("question to be imported: ", question)
-            const questionExists = questionsDict[extractString(question._id)]
+            const questionExists = questionsDict[question._id]
   
             if (questionExists) {
               console.log('question already exists: ', questionExists)
-              mappedQuestionIds[extractString(question._id)] = questionExists.id
+              mappedQuestionIds[question._id] = questionExists.id
               continue
             }
   
             const result = {
               data: {
-                originalId: extractString(question._id),
+                originalId: question._id,
                 name: question.title,
                 type: QuestionTypeMap[question.type],
                 content:
@@ -49,8 +49,8 @@ export const importQuestions = async (
                         .map(
                           (fileId: string) =>
                             `![${
-                              mappedFileURLs[extractString(fileId)].originalName
-                            }](${mappedFileURLs[extractString(fileId)].url})`
+                              mappedFileURLs[fileId].originalName
+                            }](${mappedFileURLs[fileId].url})`
                         )
                         .join('\n\n') +
                       '\n'
@@ -61,7 +61,7 @@ export const importQuestions = async (
                 isArchived: question.isArchived,
                 tags: {
                   connect: question.tags.map((oldTagId) => {
-                    const tagName = mappedTags[extractString(oldTagId)].name
+                    const tagName = mappedTags[oldTagId].name
                     return {
                       ownerId_name: {
                         ownerId: user.id,
@@ -130,7 +130,7 @@ export const importQuestions = async (
             const newQuestion = await prisma.question.create({
               data: result.data,
             })
-            mappedQuestionIds[extractString(question._id)] = newQuestion.id
+            mappedQuestionIds[question._id] = newQuestion.id
             // console.log("new question created: ", newQuestion)
           }
         })
