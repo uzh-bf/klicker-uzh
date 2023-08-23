@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 
-import { QUESTION_TYPES_SHORT } from 'shared-components/src/constants'
+import { QUESTION_TYPES_SHORT } from '@klicker-uzh/shared-components/src/constants'
 
 // TODO: readd modals and tags
 // import QuestionDetailsModal from './QuestionDetailsModal'
@@ -15,10 +15,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
   GetUserQuestionsDocument,
+  QuestionType,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import dayjs from 'dayjs'
+import { useTranslations } from 'next-intl'
 import QuestionEditModal from './QuestionEditModal'
 import QuestionTags from './QuestionTags'
 // import QuestionTags from './QuestionTags'
@@ -29,9 +31,9 @@ interface Props {
   isArchived?: boolean
   tags?: Tag[]
   title: string
-  type: string
+  type: QuestionType
   content: string
-  onCheck: any // TODO: typing
+  onCheck: () => void
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
   tagfilter?: string[]
@@ -54,10 +56,9 @@ function Question({
   createdAt,
   updatedAt,
 }: Props): React.ReactElement {
+  const t = useTranslations()
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
-  // TODO: add preview modal with student view of question
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
   const [deleteQuestion] = useMutation(DeleteQuestionDocument)
 
@@ -117,10 +118,14 @@ function Question({
 
             <div className="flex flex-col md:flex-row flex-none gap-1 md:gap-4 text-sm text-slate-600">
               <div>
-                Erstellt am {dayjs(createdAt).format('DD.MM.YYYY HH:mm')}
+                {t('shared.generic.createdAt', {
+                  date: dayjs(createdAt).format('DD.MM.YYYY HH:mm'),
+                })}
               </div>
               <div>
-                Editiert am {dayjs(updatedAt).format('DD.MM.YYYY HH:mm')}
+                {t('shared.generic.updatedAt', {
+                  date: dayjs(updatedAt).format('DD.MM.YYYY HH:mm'),
+                })}
               </div>
             </div>
           </div>
@@ -140,7 +145,7 @@ function Question({
             <Button.Icon>
               <FontAwesomeIcon icon={faPencil} />
             </Button.Icon>
-            <Button.Label>Bearbeiten</Button.Label>
+            <Button.Label>{t('shared.generic.edit')}</Button.Label>
           </Button>
           {isModificationModalOpen && (
             <QuestionEditModal
@@ -160,7 +165,7 @@ function Question({
             <Button.Icon>
               <FontAwesomeIcon icon={faCopy} />
             </Button.Icon>
-            <Button.Label>Duplizieren</Button.Label>
+            <Button.Label>{t('shared.generic.duplicate')}</Button.Label>
           </Button>
           {isDuplicationModalOpen && (
             <QuestionEditModal
@@ -180,7 +185,7 @@ function Question({
             <Button.Icon>
               <FontAwesomeIcon icon={faTrash} />
             </Button.Icon>
-            <Button.Label>Löschen</Button.Label>
+            <Button.Label>{t('shared.generic.delete')}</Button.Label>
           </Button>
           <Modal
             onPrimaryAction={
@@ -197,12 +202,12 @@ function Question({
                 className={{ root: 'bg-red-600 font-bold text-white' }}
                 data={{ cy: 'confirm-question-deletion' }}
               >
-                Löschen
+                {t('shared.generic.delete')}
               </Button>
             }
             onSecondaryAction={
               <Button onClick={(): void => setIsDeletionModalOpen(false)}>
-                Abbrechen
+                {t('shared.generic.cancel')}
               </Button>
             }
             onClose={(): void => setIsDeletionModalOpen(false)}
@@ -211,11 +216,8 @@ function Question({
             className={{ content: 'w-[40rem] h-max self-center pt-0' }}
           >
             <div>
-              <H2>Frage löschen</H2>
-              <div>
-                Sind Sie sich sicher, dass Sie die folgende(n) Frage(n) löschen
-                möchten?
-              </div>
+              <H2>{t('manage.questionPool.deleteQuestion')}</H2>
+              <div>{t('manage.questionPool.confirmDeletion')}</div>
               <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
                 <H3>
                   {title} ({QUESTION_TYPES_SHORT[type]})
@@ -223,8 +225,7 @@ function Question({
                 <div>{content}</div>
               </div>
               <div className="mt-6 mb-2 text-sm italic">
-                Gelöschte Fragen können nicht wiederhergestellt werden. Aus
-                bestehenden Sessionen werden gelöschte Fragen nicht entfernt.
+                {t('manage.questionPool.noQuestionRecovery')}
               </div>
             </div>
           </Modal>

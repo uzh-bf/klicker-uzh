@@ -3,19 +3,10 @@
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
   "version": "3.0.0-beta.4",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "license": "AGPL-3.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/uzh-bf/klicker-uzh.git"
-  },
-  "bugs": {
-    "url": "https://github.com/uzh-bf/klicker-uzh/issues"
-  },
+  "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
+  "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
+  "license": "AGPL-3.0",
   "maintainers": [
     "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
     "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>",
@@ -33,56 +24,54 @@
     "Florina Vogel <florina.vogel@bf.uzh.ch>",
     "Valentin Meyer <valentin.meyer@bf.uzh.ch>"
   ],
+  "devDependencies": {
+    "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
+    "husky": "8.0.3",
+    "standard-version": "9.5.0",
+    "syncpack": "11.2.1",
+    "turbo": "1.10.12",
+    "yaml": "2.3.0"
+  },
   "scripts": {
-    "dev": "doppler run --config dev -- turbo run dev",
-    "dev:offline": "doppler run --config dev -- turbo run dev:offline",
-    "build": "turbo run build",
-    "publish": "turbo run publish",
-    "format": "turbo run format --parallel --continue",
-    "format:check": "turbo run format:check --parallel --continue",
-    "lint": "turbo run lint --parallel --continue",
-    "check": "turbo run check --parallel --continue",
     "//release": "standard-version --dry-run",
     "//release:dry": "standard-version --dry-run",
+    "build": "turbo run build",
+    "check": "turbo run check --parallel --continue",
+    "dev": "doppler run --config dev -- turbo run dev",
+    "dev:docs": "doppler run --config dev -- turbo run dev:docs",
+    "dev:migration": "doppler run --config dev -- turbo run dev:migration",
+    "dev:offline": "doppler run --config dev -- turbo run dev:offline",
+    "export": "pnpm run --filter @klicker-uzh/migration-v2-export export",
+    "format": "turbo run format --parallel --continue",
+    "format:check": "turbo run format:check --parallel --continue",
+    "import": "pnpm run --filter @klicker-uzh/migration-v3-import import",
+    "lint": "turbo run lint --parallel --continue",
+    "prepare": "husky install",
+    "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
+    "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
+    "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
+    "prisma:studio": "npm run -w packages/prisma prisma:studio",
+    "publish": "turbo run publish",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
     "release:alpha:dry": "standard-version --dry-run --prerelease alpha",
     "release:beta": "standard-version --prerelease beta --no-verify",
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
-    "test": "cypress open",
-    "test:run": "cypress run",
     "start": "turbo run start",
     "start:test": "turbo run start:test",
-    "prepare": "husky install",
-    "prisma:setup": "npm run -w packages/prisma prisma:setup",
-    "prisma:migrate": "npm run -w packages/prisma prisma:migrate",
-    "prisma:reset": "npm run -w packages/prisma prisma:reset",
-    "prisma:studio": "npm run -w packages/prisma prisma:studio"
+    "syncpack:format": "syncpack format",
+    "syncpack:mismatches": "syncpack list-mismatches",
+    "syncpack:mismatches:fix": "syncpack fix-mismatches",
+    "test": "turbo run test",
+    "test:run": "turbo run test:run"
   },
-  "devDependencies": {
-    "@cypress/code-coverage": "3.10.6",
-    "@testing-library/cypress": "9.0.0",
-    "azure-functions-core-tools": "4.0.5198",
-    "cypress": "12.12.0",
-    "husky": "8.0.3",
-    "nyc": "15.1.0",
-    "prettier": "2.8.8",
-    "prettier-plugin-organize-imports": "3.2.2",
-    "standard-version": "9.5.0",
-    "turbo": "1.9.8",
-    "yaml": "2.3.0"
-  },
-  "dependencies": {
-    "@prisma/client": "4.14.1",
-    "code-review-gpt": "0.0.26",
-    "prisma": "4.14.1"
-  },
-  "volta": {
-    "node": "18.16.0"
-  },
-  "packageManager": "npm@8.19.3",
   "engines": {
     "node": "=18"
-  }
+  },
+  "volta": {
+    "node": "18.17.0",
+    "pnpm": "8.6.12"
+  },
+  "packageManager": "pnpm@8.6.12"
 }

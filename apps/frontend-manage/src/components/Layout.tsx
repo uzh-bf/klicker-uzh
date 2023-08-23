@@ -1,9 +1,12 @@
 import { useQuery } from '@apollo/client'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import Footer from '@klicker-uzh/shared-components/src/Footer'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
-import Footer from 'shared-components/src/Footer'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
 
@@ -23,6 +26,7 @@ function Layout({
   className,
   data,
 }: LayoutProps) {
+  const t = useTranslations()
   const router = useRouter()
 
   const {
@@ -34,8 +38,21 @@ function Layout({
   if (!dataUser && !loadingUser) {
     router.push('/login')
   }
-  if (!dataUser) {
-    return <div>Loading...</div>
+
+  if (loadingUser) {
+    return (
+      <div className="mx-auto my-auto">
+        <Loader />
+      </div>
+    )
+  }
+
+  if (!dataUser || (!loadingUser && errorUser)) {
+    return (
+      <UserNotification type="error">
+        {errorUser?.message || t('shared.generic.systemError')}
+      </UserNotification>
+    )
   }
 
   return (

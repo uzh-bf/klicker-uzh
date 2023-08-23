@@ -14,8 +14,8 @@ import React, { useEffect, useState } from 'react'
 import {
   QUESTION_GROUPS,
   QUESTION_TYPES,
-} from 'shared-components/src/constants'
-import StudentQuestion from 'shared-components/src/StudentQuestion'
+} from '@klicker-uzh/shared-components/src/constants'
+import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 
 // TODO: notifications
 
@@ -237,12 +237,10 @@ function QuestionArea({
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: any) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }
 }

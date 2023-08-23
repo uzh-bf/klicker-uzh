@@ -3,10 +3,11 @@ import {
   GetLearningElementDocument,
   LearningElement as LearningElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
 import { UserNotification } from '@uzh-bf/design-system'
-import { GetServerSideProps } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Layout from '../../../../components/Layout'
@@ -29,7 +30,12 @@ function LearningElementPage({ courseId, id }: Props) {
     variables: { id },
   })
 
-  if (loading) return <p>{t('shared.generic.loading')}</p>
+  if (loading)
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
 
   if (!data?.learningElement) {
     return (
@@ -41,7 +47,9 @@ function LearningElementPage({ courseId, id }: Props) {
       </Layout>
     )
   }
-  if (error) return <p>Oh no... {error.message}</p>
+  if (error) {
+    return <Layout>{t('shared.generic.systemError')}</Layout>
+  }
 
   const handleNextQuestion = () => {
     scrollTo(0, 0)
@@ -66,7 +74,7 @@ function LearningElementPage({ courseId, id }: Props) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (
     typeof ctx.params?.courseId !== 'string' ||
     typeof ctx.params?.id !== 'string'
@@ -86,24 +94,12 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     ctx,
   })
 
-  if (participant && !participant.avatar) {
-    return {
-      redirect: {
-        destination: `/editProfile?redirect_to=${encodeURIComponent(
-          `/course/${ctx.params.courseId}/element/${ctx.params.id}`
-        )}`,
-        statusCode: 302,
-      },
-    }
-  }
-
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
       courseId: ctx.params.courseId,
-      messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+        .default,
     },
   })
 }

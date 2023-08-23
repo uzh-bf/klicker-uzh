@@ -124,10 +124,6 @@
   display: block
 }
 
-.inline {
-  display: inline
-}
-
 .flex {
   display: flex
 }
@@ -267,6 +263,16 @@
 
 .flex-grow {
   flex-grow: 1
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg)
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite
 }
 
 .cursor-pointer {
@@ -585,6 +591,11 @@
   color: rgb(185 28 28 / var(--tw-text-opacity))
 }
 
+.text-slate-600 {
+  --tw-text-opacity: 1;
+  color: rgb(71 85 105 / var(--tw-text-opacity))
+}
+
 .text-slate-700 {
   --tw-text-opacity: 1;
   color: rgb(51 65 85 / var(--tw-text-opacity))
@@ -619,6 +630,17 @@
 
 .hover\:cursor-pointer:hover {
   cursor: pointer
+}
+
+.hover\:border-orange-200:hover {
+  --tw-border-opacity: 1;
+  border-color: rgb(254 215 170 / var(--tw-border-opacity))
+}
+
+.hover\:shadow:hover {
+  --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)
 }
 
 .focus\:border:focus {

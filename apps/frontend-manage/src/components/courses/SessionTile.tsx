@@ -22,6 +22,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -33,6 +34,7 @@ interface SessionTileProps {
 }
 
 function SessionTile({ session }: SessionTileProps) {
+  const t = useTranslations()
   const [startSession] = useMutation(StartSessionDocument)
   const [deleteSession] = useMutation(DeleteSessionDocument, {
     variables: { id: session.id || '' },
@@ -63,8 +65,10 @@ function SessionTile({ session }: SessionTileProps) {
           <div>{statusMap[session.status || SessionStatus.Prepared]}</div>
         </div>
         <div className="mb-1 italic">
-          {session.numOfBlocks || '0'} Blöcke, {session.numOfQuestions || '0'}{' '}
-          Fragen
+          {t('manage.sessions.nBlocksQuestions', {
+            blocks: session.numOfBlocks || '0',
+            questions: session.numOfQuestions || '0',
+          })}
         </div>
         {(session.status === SessionStatus.Scheduled ||
           session.status === SessionStatus.Prepared) && (
@@ -82,7 +86,7 @@ function SessionTile({ session }: SessionTileProps) {
               <Button.Icon>
                 <FontAwesomeIcon icon={faPencil} />
               </Button.Icon>
-              <Button.Label>Session editieren</Button.Label>
+              <Button.Label>{t('manage.sessions.editSession')}</Button.Label>
             </Button>
             <Button
               basic
@@ -101,7 +105,7 @@ function SessionTile({ session }: SessionTileProps) {
               <Button.Icon>
                 <FontAwesomeIcon icon={faPlay} />
               </Button.Icon>
-              <Button.Label>Session starten</Button.Label>
+              <Button.Label>{t('manage.sessions.startSession')}</Button.Label>
             </Button>
             <Button
               basic
@@ -111,7 +115,7 @@ function SessionTile({ session }: SessionTileProps) {
               <Button.Icon>
                 <FontAwesomeIcon icon={faTrashCan} />
               </Button.Icon>
-              <Button.Label>Session löschen</Button.Label>
+              <Button.Label>{t('manage.sessions.deleteSession')}</Button.Label>
             </Button>
           </div>
         )}
@@ -119,7 +123,7 @@ function SessionTile({ session }: SessionTileProps) {
           <div className="flex flex-row items-center gap-2 text-primary">
             <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-4" />
             <Link href={`/sessions/${session.id}/cockpit`}>
-              Laufende Session
+              {t('manage.course.runningSession')}
             </Link>
           </div>
         )}
@@ -132,7 +136,7 @@ function SessionTile({ session }: SessionTileProps) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Evaluation
+              {t('shared.generic.evaluation')}
             </Link>
           </div>
         )}
@@ -145,14 +149,14 @@ function SessionTile({ session }: SessionTileProps) {
         {session.accessMode === SessionAccessMode.Public && (
           <StatusTag
             color="bg-green-300"
-            status="Access Public"
+            status={t('manage.course.publicAccess')}
             icon={faUserGroup}
           />
         )}
         {session.accessMode === SessionAccessMode.Restricted && (
           <StatusTag
             color="bg-red-300"
-            status="Access Restricted"
+            status={t('manage.course.restrictedAccess')}
             icon={faLock}
           />
         )}

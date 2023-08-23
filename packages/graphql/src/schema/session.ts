@@ -27,7 +27,7 @@ export const BlockInput = builder.inputType('BlockInput', {
   }),
 })
 
-export interface ISession extends DB.Session {
+export interface ISession extends DB.LiveSession {
   numOfBlocks?: number
   numOfQuestions?: number
   activeBlock?: DB.SessionBlock | null
@@ -195,7 +195,7 @@ export interface IInstanceResult {
   id: string
 
   blockIx?: number
-  instanceIx: number
+  instanceIx?: number
   participants: number
   results: object
   status: DB.SessionBlockStatus
@@ -210,7 +210,7 @@ export const InstanceResult = InstanceResultRef.implement({
     id: t.exposeString('id'),
 
     blockIx: t.exposeInt('blockIx', { nullable: true }),
-    instanceIx: t.exposeInt('instanceIx'),
+    instanceIx: t.exposeInt('instanceIx', { nullable: true }),
     participants: t.exposeInt('participants'),
     results: t.expose('results', { type: 'Json' }),
     status: t.expose('status', { type: SessionBlockStatus }),

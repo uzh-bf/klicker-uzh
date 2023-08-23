@@ -11,16 +11,23 @@ import {
   LeaveCourseDocument,
   LeaveParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Button, H3, H4 } from '@uzh-bf/design-system'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { GetServerSideProps } from 'next'
+import {
+  Button,
+  FormikNumberField,
+  FormikTextField,
+  H3,
+  H4,
+  UserNotification,
+} from '@uzh-bf/design-system'
+import { Form, Formik } from 'formik'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import Leaderboard from 'shared-components/src/Leaderboard'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
@@ -28,6 +35,7 @@ import Tabs from '../../../components/common/Tabs'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import dayjs from 'dayjs'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
@@ -35,7 +43,11 @@ import Rank3Img from 'public/rank3.svg'
 
 // TODO: replace fields in this component through our own design system components
 
-function CourseOverview({ courseId }: any) {
+interface Props {
+  courseId: string
+}
+
+function CourseOverview({ courseId }: Props) {
   const t = useTranslations()
   const router = useRouter()
   const [selectedTab, setSelectedTab] = useState('global')
@@ -64,8 +76,16 @@ function CourseOverview({ courseId }: any) {
   const [joinParticipantGroup] = useMutation(JoinParticipantGroupDocument)
   const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
 
-  if (!data?.getCourseOverviewData || loading) return <div>Loading...</div>
-  if (error) return <p>Oh no... {error.message}</p>
+  if (!data?.getCourseOverviewData || loading)
+    return (
+      <Layout displayName={t('shared.generic.leaderboard')}>
+        <Loader />
+      </Layout>
+    )
+
+  if (error) {
+    return <Layout>{t('shared.generic.systemError')}</Layout>
+  }
 
   const {
     course,
@@ -178,6 +198,7 @@ function CourseOverview({ courseId }: any) {
                     </H3>
 
                     <Leaderboard
+                      courseName={course.displayName}
                       leaderboard={leaderboard || []}
                       activeParticipation={participation?.isActive}
                       onJoin={joinCourse}
@@ -266,7 +287,7 @@ function CourseOverview({ courseId }: any) {
               {course?.awards && course?.awards?.length != 0 && (
                 <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
                   <H3 className={{ root: 'mb-2 text-base' }}>
-                    BF-Champion Awards
+                    {t('pwa.courses.awards')}
                   </H3>
                   <div className="flex flex-col gap-1 text-sm text-gray-700 md:gap-6 md:flex-row md:flex-wrap">
                     <div className="flex-1 space-y-1">
@@ -285,7 +306,7 @@ function CourseOverview({ courseId }: any) {
                               <div>
                                 {award.participant
                                   ? `🥳  ${award.participant.username}  🥳`
-                                  : 'offen'}
+                                  : t('pwa.courses.open')}
                               </div>
                             </div>
                             <div>{award.description}</div>
@@ -308,7 +329,7 @@ function CourseOverview({ courseId }: any) {
                               <div>
                                 {award.participantGroup
                                   ? `🥳  ${award.participantGroup.name}  🥳`
-                                  : 'offen'}
+                                  : t('pwa.course.open')}
                               </div>
                             </div>
                             <div>{award.description}</div>
@@ -334,9 +355,17 @@ function CourseOverview({ courseId }: any) {
 
                   <div className="flex flex-row flex-wrap gap-4">
                     <div className="flex flex-col flex-1">
+                      {!participation?.isActive && (
+                        <UserNotification
+                          type="warning"
+                          message={t('pwa.groupActivity.joinLeaderboard')}
+                        />
+                      )}
                       <Leaderboard
+                        courseName={course.displayName}
                         leaderboard={group.participants}
                         participant={participant}
+                        activeParticipation={participation?.isActive}
                         onLeave={
                           course?.isGroupDeadlinePassed
                             ? undefined
@@ -514,15 +543,9 @@ function CourseOverview({ courseId }: any) {
               >
                 <Form>
                   <div className="flex flex-row gap-4">
-                    <Field
-                      type="text"
+                    <FormikTextField
                       name="groupName"
                       placeholder={t('pwa.courses.groupName')}
-                    />
-                    <ErrorMessage
-                      name="groupName"
-                      component="div"
-                      className="text-sm text-red-400"
                     />
                     <Button type="submit">{t('shared.generic.create')}</Button>
                   </div>
@@ -553,15 +576,9 @@ function CourseOverview({ courseId }: any) {
               >
                 <Form>
                   <div className="flex flex-row gap-4">
-                    <Field
-                      type="text"
+                    <FormikNumberField
                       name="code"
                       placeholder={t('pwa.courses.code')}
-                    />
-                    <ErrorMessage
-                      name="code"
-                      component="div"
-                      className="text-sm text-red-400"
                     />
                     <Button type="submit">{t('shared.generic.join')}</Button>
                   </div>
@@ -583,7 +600,7 @@ function CourseOverview({ courseId }: any) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
@@ -599,17 +616,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     apolloClient,
     ctx,
   })
-
-  if (participant && !participant.avatar) {
-    return {
-      redirect: {
-        destination: `/editProfile?redirect_to=${encodeURIComponent(
-          `/course/${ctx.params.courseId}`
-        )}`,
-        statusCode: 302,
-      },
-    }
-  }
 
   const result = await apolloClient.query({
     query: GetCourseOverviewDataDocument,
@@ -637,9 +643,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return addApolloState(apolloClient, {
     props: {
       courseId: ctx.params.courseId,
-      messages: {
-        ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+        .default,
     },
   })
 }

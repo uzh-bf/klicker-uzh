@@ -9,7 +9,9 @@ import {
   GetUserRunningSessionsDocument,
   SessionBlockStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
@@ -69,7 +71,7 @@ function RunningSession() {
   if (sessionLoading) {
     return (
       <Layout title={t('control.session.sessionControl')}>
-        {t('shared.generic.loading')}
+        <Loader />
       </Layout>
     )
   }
@@ -229,12 +231,10 @@ function RunningSession() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }
 }

@@ -1,12 +1,13 @@
 import { useQuery } from '@apollo/client'
-import { GetUserQuestionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetUserQuestionsDocument,
+  Question,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
+import * as R from 'ramda'
 import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 
-import TagList from '@components/questions/tags/TagList'
-import CreationButton from '@components/sessions/creation/CreationButton'
-import SessionCreation from '@components/sessions/creation/SessionCreation'
 import {
   faBoxArchive,
   faChalkboardUser,
@@ -19,11 +20,23 @@ import {
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, Select, TextField, Tooltip } from '@uzh-bf/design-system'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import {
+  Button,
+  Checkbox,
+  Select,
+  TextField,
+  Tooltip,
+} from '@uzh-bf/design-system'
+import { GetStaticPropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
+import TagList from '../components/questions/tags/TagList'
+import CreationButton from '../components/sessions/creation/CreationButton'
+import SessionCreation from '../components/sessions/creation/SessionCreation'
 
 function Index() {
   const dropdownItems = [
@@ -32,18 +45,24 @@ function Index() {
   ]
 
   const router = useRouter()
+  const t = useTranslations()
 
   const [searchInput, setSearchInput] = useState('')
   const [creationMode, setCreationMode] = useState<
     undefined | 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
   >(undefined)
-  const [selectedQuestions, setSelectedQuestions] = useState<
-    Record<number, boolean>
-  >({})
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
   const [sortBy, setSortBy] = useState('')
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState([])
+
+  const [selectedQuestions, setSelectedQuestions] = useState<
+    Record<number, Question | undefined>
+  >({})
+
+  const selectedQuestionData: Record<number, Question> = useMemo(
+    () => R.pickBy((value) => typeof value !== 'undefined', selectedQuestions),
+    [selectedQuestions]
+  )
 
   const {
     loading: loadingQuestions,
@@ -107,28 +126,6 @@ function Index() {
     return faSortDesc
   }, [sortBy, sort.asc])
 
-  useEffect(() => {
-    const ids = []
-    for (const [id, selected] of Object.entries(selectedQuestions)) {
-      if (!selected) continue
-      const parsedId = parseInt(id)
-      ids.push(parsedId)
-    }
-    setSelectedQuestionIds(ids)
-  }, [selectedQuestions])
-
-  const moveToArchived = () => {
-    const selectedQuestionsContent = processedQuestions.filter((question) =>
-      selectedQuestionIds.includes(question.id)
-    )
-    const nonSelectedQuestionsContent = processedQuestions.filter(
-      (question) => !selectedQuestionIds.includes(question.id)
-    )
-    setProcessedQuestions(nonSelectedQuestionsContent)
-    setSelectedQuestionIds([])
-    setSelectedQuestions({})
-  }
-
   // const selectedQuestionIds = useMemo(() => {
   //   const ids = []
   //   for (const [id, selected] of Object.entries(selectedQuestions)) {
@@ -165,7 +162,7 @@ function Index() {
 
   return (
     <Layout
-      displayName="Fragepool"
+      displayName={t('manage.general.questionPool')}
       data={{ cy: 'homepage' }}
       className={{ children: 'pb-2' }}
     >
@@ -173,7 +170,7 @@ function Index() {
         <div className="grid gap-1 mb-4 md:grid-cols-4 md:gap-2">
           <CreationButton
             icon={faUsersLine}
-            text="Live-Session erstellen"
+            text={t('manage.questionPool.createLiveSession')}
             onClick={() => {
               setCreationMode('liveSession')
             }}
@@ -181,7 +178,7 @@ function Index() {
           />
           <CreationButton
             icon={faChalkboardUser}
-            text="Micro-Session erstellen"
+            text={t('manage.questionPool.createMicroSession')}
             onClick={() => {
               setCreationMode('microSession')
             }}
@@ -189,7 +186,7 @@ function Index() {
           />
           <CreationButton
             icon={faGraduationCap}
-            text="Lernelement erstellen"
+            text={t('manage.questionPool.createLearningElement')}
             onClick={() => {
               setCreationMode('learningElement')
             }}
@@ -197,7 +194,7 @@ function Index() {
           />
           <CreationButton
             icon={faUserGroup}
-            text="Gruppentask erstellen"
+            text={t('manage.questionPool.createGroupTask')}
             onClick={() => {
               setCreationMode('groupTask')
             }}
@@ -216,6 +213,8 @@ function Index() {
             }}
             sessionId={router.query.sessionId as string}
             editMode={router.query.editMode as string}
+            selection={selectedQuestionData}
+            resetSelection={() => setSelectedQuestions({})}
           />
         </div>
       )}
@@ -259,14 +258,50 @@ function Index() {
         )}
         <div className="flex flex-col flex-1 w-full overflow-auto">
           {!dataQuestions || loadingQuestions ? (
-            // TODO: replace by nice loader
-            <div>Loading...</div>
+            <Loader />
           ) : (
             <>
-              <div className="flex flex-row content-center justify-between flex-none pl-7">
+              <div className="flex flex-row content-center justify-between flex-none">
                 <div className="flex flex-row pb-3">
+                  <Checkbox
+                    checked={
+                      Object.values(selectedQuestions).filter((value) => value)
+                        .length > 0
+                    }
+                    onCheck={() => {
+                      setSelectedQuestions((prev) => {
+                        let allQuestions = {}
+
+                        if (processedQuestions) {
+                          if (!R.isEmpty(selectedQuestionData)) {
+                            // set questions after filtering to undefined
+                            // do not uncheck questions that are selected but not in the filtered set
+                            allQuestions = processedQuestions.reduce(
+                              (acc, curr) => ({
+                                ...acc,
+                                [curr.id]: undefined,
+                              }),
+                              {}
+                            )
+                          } else {
+                            // set all questions after filtering to their id and data
+                            allQuestions = processedQuestions.reduce(
+                              (acc, question) => ({
+                                ...acc,
+                                [question.id]: question,
+                              }),
+                              {}
+                            )
+                          }
+                        }
+
+                        return { ...prev, ...allQuestions }
+                      })
+                    }}
+                    className={{ root: 'mr-1' }}
+                  />
                   <TextField
-                    placeholder="Suchen.."
+                    placeholder={t('manage.general.searchPlaceholder')}
                     value={searchInput}
                     onChange={(newValue: string) => {
                       setSearchInput(newValue)
@@ -275,7 +310,7 @@ function Index() {
                     icon={faMagnifyingGlass}
                     className={{
                       input: 'h-10',
-                      field: 'w-30 pr-3',
+                      field: 'w-30 pr-3 rounded-md',
                     }}
                   />
                   <Button
@@ -284,7 +319,7 @@ function Index() {
                       handleSortOrderToggle()
                     }}
                     className={{
-                      root: 'h-10 mr-1',
+                      root: 'h-10 mr-1 shadow-sm rounded-md',
                     }}
                   >
                     <Button.Icon>
@@ -296,21 +331,24 @@ function Index() {
                       root: 'min-w-30',
                       trigger: 'h-10',
                     }}
-                    placeholder="Sortieren nach.."
-                    items={dropdownItems}
+                    placeholder={t('manage.general.sortBy')}
+                    items={[
+                      { value: 'CREATED', label: t('manage.general.date') },
+                      { value: 'TITLE', label: t('manage.general.title') },
+                    ]}
                     onChange={(newSortBy: string) => {
                       setSortBy(newSortBy)
                       handleSortByChange(newSortBy)
                     }}
                   />
-                  {selectedQuestionIds.length > 0 && (
+                  {Object.keys(selectedQuestionData).length > 0 && (
                     <Tooltip tooltip="Archivieren">
                       <Button
                         className={{
                           root: 'h-10 ml-1',
                         }}
                         onClick={() => {
-                          moveToArchived()
+                          // moveToArchived()
                         }}
                       >
                         <Button.Icon>
@@ -329,20 +367,19 @@ function Index() {
                   }}
                   data={{ cy: 'create-question' }}
                 >
-                  FRAGE ERSTELLEN
+                  {t('manage.questionPool.createQuestionCaps')}
                 </Button>
               </div>
 
               <div className="h-full overflow-y-auto">
-                {selectedQuestionIds.length} items selected
+                {Object.keys(selectedQuestionData).length} items selected
                 <QuestionList
                   questions={processedQuestions}
-                  selectedQuestions={selectedQuestions}
-                  setSelectedQuestions={(questionId: number) => {
-                    setSelectedQuestions((prevState) => ({
-                      ...prevState,
-                      [questionId]: !prevState[questionId],
-                    }))
+                  selectedQuestions={selectedQuestionData}
+                  setSelectedQuestions={(id: number, data: Question) => {
+                    setSelectedQuestions((prev) => {
+                      return { ...prev, [id]: prev[id] ? undefined : data }
+                    })
                   }}
                   tagfilter={filters.tags}
                 />
@@ -363,12 +400,10 @@ function Index() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }
 }

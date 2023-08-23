@@ -10,12 +10,17 @@ import {
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
-import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { GetStaticPropsContext } from 'next'
+import { useTranslations } from 'next-intl'
 import Layout from '../../../components/Layout'
+import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import SessionTimeline from '../../../components/sessions/cockpit/SessionTimeline'
 
 function Cockpit() {
   const router = useRouter()
+  const t = useTranslations()
+
   const [isEvaluationPublic, setEvaluationPublic] = useState(false)
 
   const [activateSessionBlock] = useMutation(ActivateSessionBlockDocument)
@@ -27,9 +32,6 @@ function Cockpit() {
       },
     ],
   })
-
-  // TODO: add toast notifications - this react library react-toast-notifications is outdated and will not work with react 18
-  // const { addToast } = useToasts()
 
   // useEffect((): void => {
   //   router.prefetch('/sessions/evaluation')
@@ -53,16 +55,6 @@ function Cockpit() {
 
   // const shortname = _get(accountSummary, 'data.user.shortname')
 
-  // const isAnythingLoading = _some([
-  //   isUpdateSettingsLoading,
-  //   isEndSessionLoading,
-  //   isPauseSessionLoading,
-  //   isResetQuestionBlockLoading,
-  //   isCancelSessionLoading,
-  //   isActivateNextBlockLoading,
-  //   isActivateBlockByIdLoading,
-  // ])
-
   const {
     loading: cockpitLoading,
     error: cockpitError,
@@ -77,7 +69,12 @@ function Cockpit() {
   })
 
   // data has not been received yet
-  if (cockpitLoading) return <div>Loading...</div>
+  if (cockpitLoading)
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
 
   // loading is finished, but was not successful
   if (!cockpitData?.cockpitSession || cockpitError) {
@@ -148,6 +145,21 @@ function Cockpit() {
       />
     </Layout>
   )
+}
+
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
+  return {
+    props: {
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
+    },
+  }
+}
+
+export function getStaticPaths() {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  }
 }
 
 export default Cockpit

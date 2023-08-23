@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "name": "@klicker-uzh/cypress",
+  "devDependencies": {
+    "@cypress/code-coverage": "3.11.0",
+    "@testing-library/cypress": "9.0.0",
+    "@types/node": "^18.17.4",
+    "cypress": "12.17.4",
+    "typescript": "5.1.6"
+  },
+  "scripts": {
+    "test": "cypress open",
+    "test:run": "cypress run"
+  },
+  "engines": {
+    "node": "=18"
+  },
+  "volta": {
+    "extends": "../package.json"
+  }
+}

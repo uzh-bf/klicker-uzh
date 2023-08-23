@@ -1,4 +1,5 @@
 import { Markdown } from '@klicker-uzh/markdown'
+import { GetServerSidePropsContext } from 'next'
 import DocsLayout from '../../../../components/docs/DocsLayout'
 
 function Login() {
@@ -6,6 +7,7 @@ function Login() {
     <DocsLayout>
       {(courseInformation) => (
         <Markdown
+          withProse
           className={{ root: 'prose-headings:mt-0' }}
           content={`
 ### Erstmaliges Login und Profileinrichtung
@@ -42,12 +44,10 @@ Generell ist es bei allen Elementen im KlickerUZH auch möglich, anonym teilzune
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetServerSidePropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
     revalidate: 600,
   }

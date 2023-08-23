@@ -1,10 +1,14 @@
 import { LeaderboardEntry, Participant } from '@klicker-uzh/graphql/dist/ops'
+import { Markdown } from '@klicker-uzh/markdown'
+import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'
 import { Podium } from './Podium'
 
 interface LeaderboardProps {
+  courseName?: string
   leaderboard: any[]
   activeParticipation?: boolean
   onJoin?: () => void
@@ -28,6 +32,7 @@ interface LeaderboardProps {
 }
 
 function Leaderboard({
+  courseName,
   leaderboard,
   activeParticipation,
   onJoin,
@@ -39,6 +44,8 @@ function Leaderboard({
   className,
   podiumImgSrc,
 }: LeaderboardProps): React.ReactElement {
+  const t = useTranslations()
+
   const { top10, inTop10, selfEntry } = useMemo(
     () =>
       leaderboard.reduce(
@@ -81,59 +88,64 @@ function Leaderboard({
             />
           )}
         </div>
-        <div className={twMerge('space-y-1', className?.list)}>
-          {top10.map((entry: LeaderboardEntry) =>
-            entry.isSelf === true && onLeave ? (
-              <ParticipantSelf
-                key={entry.id}
-                isActive={activeParticipation ?? true}
-                pseudonym={entry.username}
-                avatar={entry.avatar ?? 'placeholder'}
-                withAvatar={!hideAvatars}
-                points={entry.score}
-                rank={entry.rank}
-                onJoinCourse={onJoin}
-                onLeaveCourse={onLeave}
-                onClick={
-                  onParticipantClick
-                    ? () => onParticipantClick(entry.participantId, true)
-                    : undefined
-                }
-              />
-            ) : (
-              <ParticipantOther
-                key={entry.id}
-                rank={entry.rank}
-                pseudonym={entry.username}
-                avatar={entry.avatar ?? 'placeholder'}
-                withAvatar={!hideAvatars}
-                points={entry.score}
-                onClick={
-                  onParticipantClick
-                    ? () => onParticipantClick(entry.participantId, false)
-                    : undefined
-                }
-                className={className?.listItem}
-              />
-            )
-          )}
-        </div>
+        {activeParticipation && (
+          <div className={twMerge('space-y-1', className?.list)}>
+            {top10.map((entry: LeaderboardEntry) =>
+              entry.isSelf === true && onLeave ? (
+                <ParticipantSelf
+                  key={entry.id}
+                  isActive={activeParticipation ?? true}
+                  pseudonym={entry.username}
+                  level={entry.level}
+                  avatar={entry.avatar}
+                  withAvatar={!hideAvatars}
+                  points={entry.score}
+                  rank={entry.rank}
+                  onJoinCourse={onJoin}
+                  onLeaveCourse={onLeave}
+                  onClick={
+                    onParticipantClick
+                      ? () => onParticipantClick(entry.participantId, true)
+                      : undefined
+                  }
+                />
+              ) : (
+                <ParticipantOther
+                  key={entry.id}
+                  rank={entry.rank}
+                  pseudonym={entry.username}
+                  level={entry.level}
+                  avatar={entry.avatar}
+                  withAvatar={!hideAvatars}
+                  points={entry.score}
+                  onClick={
+                    onParticipantClick
+                      ? () => onParticipantClick(entry.participantId, false)
+                      : undefined
+                  }
+                  className={className?.listItem}
+                />
+              )
+            )}
+          </div>
+        )}
         {participant?.id && onJoin && onLeave && !activeParticipation && (
-          <ParticipantSelf
-            isActive={activeParticipation ?? false}
-            pseudonym={participant.username}
-            avatar={participant.avatar ?? 'placeholder'}
-            withAvatar={!hideAvatars}
-            points={selfEntry?.score}
-            rank={selfEntry?.rank ?? '?'}
-            onJoinCourse={onJoin}
-            onLeaveCourse={onLeave}
-            onClick={
-              onParticipantClick
-                ? () => onParticipantClick(participant.id, true)
-                : undefined
-            }
-          />
+          <div className="max-w-none p-2 bg-slate-100 rounded border-slate-300 border text-slate-600 text-sm">
+            <Markdown
+              withProse
+              withLinkButtons={false}
+              content={t('pwa.general.joinLeaderboardNotice', {
+                username: participant.username,
+                courseName,
+              })}
+            />
+            <Button fluid className={{ root: 'bg-white' }} onClick={onJoin}>
+              {t.rich('pwa.courses.joinLeaderboardCourse', {
+                name: courseName,
+                b: (text) => <span className="font-bold">{text}</span>,
+              })}
+            </Button>
+          </div>
         )}
       </div>
     </div>

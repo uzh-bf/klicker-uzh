@@ -1,6 +1,7 @@
 import { LearningElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Workflow } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import CompletionStep from './CompletionStep'
 
@@ -72,6 +73,7 @@ function MultistepWizard({
   onRestartForm,
   workflowItems,
 }: MultistepWizardProps) {
+  const t = useTranslations()
   const [stepNumber, setStepNumber] = useState(0)
   const steps = React.Children.toArray(children)
   const step = steps[stepNumber] as React.ReactElement
@@ -113,6 +115,7 @@ function MultistepWizard({
               // TODO: choose optimal disabled logic - allow to jump between 3 and 1 if all valid
               disabledFrom={isValid ? stepNumber + 2 : stepNumber + 1}
               minimal
+              showTooltipSymbols
               className={{
                 item: 'first:rounded-tl-md last:rounded-tr-md',
               }}
@@ -139,9 +142,9 @@ function MultistepWizard({
                 >
                   {stepNumber === steps.length - 1
                     ? editMode
-                      ? 'Speichern'
-                      : 'Erstellen'
-                    : 'Weiter'}
+                      ? t('shared.generic.save')
+                      : t('shared.generic.create')
+                    : t('shared.generic.continue')}
                 </Button>
               )}
             </div>

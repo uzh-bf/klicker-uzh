@@ -108,12 +108,6 @@ function SingleQuestion({
           <div className="flex flex-row items-center justify-between mb-4 border-b">
             <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
             <div className="flex flex-row items-center gap-3">
-              <div className="text-sm md:text-base text-slate-500">
-                {t('pwa.learningElement.questionProgress', {
-                  current: currentStep,
-                  total: totalSteps,
-                })}
-              </div>
               {withParticipant && (
                 <FlagQuestionModal
                   open={modalOpen}

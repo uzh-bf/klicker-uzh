@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import { JoinCourseWithPinDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, PinField, UserNotification } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -80,12 +81,10 @@ function JoinPage() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }
 }

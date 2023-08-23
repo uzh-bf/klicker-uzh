@@ -6,8 +6,10 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import formatResponse from '@lib/formatResponse'
 import { H3, Progress } from '@uzh-bf/design-system'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -58,9 +60,17 @@ function MicroSessionInstance() {
     ResponseToQuestionInstanceDocument
   )
 
-  if (loading || !data?.microSession)
-    return <p>{t('shared.generic.loading')}</p>
-  if (error) return <p>Oh no... {error.message}</p>
+  if (loading || !data?.microSession) {
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
+  }
+
+  if (error) {
+    return <Layout>{t('shared.generic.systemError')}</Layout>
+  }
 
   const isEvaluation = !!currentInstance?.evaluation
 
@@ -177,12 +187,10 @@ function MicroSessionInstance() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetServerSidePropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
     revalidate: 600,
   }

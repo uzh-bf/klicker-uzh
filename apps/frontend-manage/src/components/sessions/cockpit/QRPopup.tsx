@@ -2,6 +2,7 @@ import { faQrcode } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import QR from '@pages/qr/[...args]'
 import { Button, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -33,6 +34,7 @@ function QRPopup({
   className,
   children,
 }: QRPopupPropsWithLink | QRPopupPropsWithChildren): React.ReactElement {
+  const t = useTranslations()
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
@@ -45,7 +47,7 @@ function QRPopup({
           <Button.Icon>
             <FontAwesomeIcon icon={faQrcode} />
           </Button.Icon>
-          {triggerText || 'QR Code'}
+          {triggerText || t('manage.cockpit.qrCode')}
         </Button>
       }
       open={modalOpen}
@@ -56,7 +58,7 @@ function QRPopup({
     >
       {children || (
         <div className="flex flex-row gap-1 font-bold">
-          <div>Link:</div>
+          <div>{t('shared.generic.link')}:</div>
           <Link href={link || ''} className="text-primary" target="_blank">
             {link}
           </Link>
@@ -77,7 +79,7 @@ function QRPopup({
             ),
           }}
         >
-          <Button.Label>QR-Code präsentieren</Button.Label>
+          <Button.Label>{t('manage.cockpit.presentQrCode')}</Button.Label>
         </Button>
       </Link>
     </Modal>

@@ -2,7 +2,7 @@ import { useSentry } from '@envelop/sentry'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
-import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
+// import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import persistedOperations from '@klicker-uzh/graphql/dist/server.json'
 import cookieParser from 'cookie-parser'
@@ -43,10 +43,26 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     new JWTStrategy(
       {
         jwtFromRequest(req: Request) {
-          if (req.headers?.['authorization'])
+          if (req.headers?.['authorization']) {
             return req.headers['authorization']?.replace('Bearer ', '')
-          if (req.cookies)
-            return req.cookies['user_token'] || req.cookies['participant_token']
+          }
+
+          // if (req.cookies?.['next-auth.session-token']) {
+          //   decode({
+          //     token: req.cookies['next-auth.session-token'],
+          //     secret: process.env.NEXTAUTH_SECRET as string,
+          //   }).then((decoded) => {
+          //     return decoded
+          //   })
+          // }
+
+          if (req.cookies) {
+            return (
+              req.cookies['next-auth.session-token'] ||
+              req.cookies['participant_token']
+            )
+          }
+
           return null
         },
         // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
@@ -74,25 +90,25 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const yogaApp = createYoga({
     schema,
     plugins: [
-      useResponseCache({
-        // set the TTL to 0 to disable response caching by default
-        ttl: 0,
-        // set caching for each type individually
-        // ttlPerType: {
-        //   Participant: 60000,
-        //   Course: 60000,
-        //   LearningElement: 60000,
-        //   MicroSession: 60000,
-        //   QuestionInstance: 60000,
-        //   Participation: 0,
-        //   LeaderboardEntry: 0,
-        // },
-        cache,
-        session(req) {
-          // extract user id from locals as stored in passport auth middleware
-          return req.body?.locals?.user?.sub ?? null
-        },
-      }),
+      // useResponseCache({
+      //   // set the TTL to 0 to disable response caching by default
+      //   ttl: 0,
+      //   // set caching for each type individually
+      //   // ttlPerType: {
+      //   //   Participant: 60000,
+      //   //   Course: 60000,
+      //   //   LearningElement: 60000,
+      //   //   MicroSession: 60000,
+      //   //   QuestionInstance: 60000,
+      //   //   Participation: 0,
+      //   //   LeaderboardEntry: 0,
+      //   // },
+      //   cache,
+      //   session(req) {
+      //     // extract user id from locals as stored in passport auth middleware
+      //     return req.body?.locals?.user?.sub ?? null
+      //   },
+      // }),
       useCSRFPrevention({
         requestHeaders: ['x-graphql-yoga-csrf'], // default
       }),

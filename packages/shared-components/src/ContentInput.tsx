@@ -25,6 +25,7 @@ import { HistoryEditor, withHistory } from 'slate-history'
 import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
 import { twMerge } from 'tailwind-merge'
 
+import { useTranslations } from 'next-intl'
 import { convertToMd, convertToSlate } from './utils/slateMdConversion'
 
 interface Props {
@@ -66,6 +67,7 @@ function ContentInput({
   key,
   data_cy,
 }: Props): React.ReactElement {
+  const t = useTranslations()
   const renderElement = useCallback((props: any) => <Element {...props} />, [])
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
@@ -127,7 +129,7 @@ function ContentInput({
             )}
           >
             <Tooltip
-              tooltip="Wählen Sie diese Einstellung für fetten Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+b erreicht werden."
+              tooltip={t('shared.contentInput.boldStyle')}
               className={{
                 tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
               }}
@@ -137,7 +139,7 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Wählen Sie diese Einstellung für kursiven Text. Das gleiche kann auch mit der Standard Tastenkombination cmd/ctrl+i erreicht werden."
+              tooltip={t('shared.contentInput.italicStyle')}
               className={{
                 tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
               }}
@@ -147,7 +149,7 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Wählen Sie diese Einstellung für Code-Styling."
+              tooltip={t('shared.contentInput.codeStyle')}
               className={{
                 tooltip: 'text-sm md:text-base max-w-full md:max-w-full',
               }}
@@ -157,7 +159,7 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Wählen Sie diese Option, um ein Zitat einzufügen. Beachten Sie hier, dass aktuell neue Paragraphen (durch einen Zeilenumbruch / Enter) als separate Zitate dargestellt werden."
+              tooltip={t('shared.contentInput.citationStyle')}
               className={{
                 tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[70%]',
               }}
@@ -167,7 +169,7 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Diese Option erzeugt eine nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
+              tooltip={t('shared.contentInput.numberedList')}
               className={{
                 tooltip: 'text-sm md:text-base max-w-[35%] md:max-w-[50%]',
               }}
@@ -177,7 +179,7 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Diese Option erzeugt eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut."
+              tooltip={t('shared.contentInput.unnumberedList')}
               className={{
                 tooltip: 'text-sm md:text-base max-w-[40%] md:max-w-[50%]',
               }}
@@ -187,7 +189,7 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Wählen Sie diese Einstellung, um ein Bild einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
+              tooltip={t('shared.contentInput.image')}
               className={{
                 tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
               }}
@@ -212,7 +214,7 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden."
+              tooltip={t('shared.contentInput.latex')}
               className={{
                 tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
               }}
@@ -234,7 +236,7 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
-              tooltip="Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden."
+              tooltip={t('shared.contentInput.latexCentered')}
               className={{
                 tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
               }}

@@ -4,6 +4,7 @@ import {
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 interface LearningElementDeletionModalProps {
@@ -19,6 +20,8 @@ function LearningElementDeletionModal({
   open,
   setOpen,
 }: LearningElementDeletionModalProps) {
+  const t = useTranslations()
+
   // TODO: implement more efficiently with working update instead of expensive refetch
   const [deleteLearningElement] = useMutation(DeleteLearningElementDocument, {
     variables: { id: elementId },
@@ -37,11 +40,13 @@ function LearningElementDeletionModal({
             root: twMerge('bg-red-600 font-bold text-white'),
           }}
         >
-          Bestätigen
+          {t('shared.generic.confirm')}
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={(): void => setOpen(false)}>Abbrechen</Button>
+        <Button onClick={(): void => setOpen(false)}>
+          {t('shared.generic.cancel')}
+        </Button>
       }
       onClose={(): void => setOpen(false)}
       open={open}
@@ -49,18 +54,13 @@ function LearningElementDeletionModal({
       className={{ content: 'w-[40rem] h-max self-center pt-0' }}
     >
       <div>
-        <H2>Lernelement löschen</H2>
-        <div>
-          Sind Sie sich sicher, dass Sie das folgende Lernelement löschen
-          möchten?
-        </div>
+        <H2>{t('manage.course.deleteLearningElement')}</H2>
+        <div>{t('manage.course.confirmDeletionLearningElement')}</div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{title}</H3>
         </div>
         <div className="mt-6 mb-2 text-sm italic">
-          Das Löschen eines Lernelements ist nur möglich, solange es nicht in
-          einem aktiven Kurs verwendet wird. Gelöschte Lernelemente können nicht
-          zu einem späteren Zeitpunkt wiederhergestellt werden.
+          {t('manage.course.hintDeletionLearningElement')}
         </div>
       </div>
     </Modal>

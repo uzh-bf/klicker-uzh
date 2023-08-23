@@ -2,7 +2,9 @@ import { useQuery } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetParticipantCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1 } from '@uzh-bf/design-system'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
+import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
@@ -10,7 +12,18 @@ import Layout from '../components/Layout'
 
 function Bookmarks() {
   const t = useTranslations()
-  const { data } = useQuery(GetParticipantCoursesDocument)
+  const { data, loading } = useQuery(GetParticipantCoursesDocument)
+
+  if (loading && !data) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.general.myBookmarks')}
+      >
+        <Loader />
+      </Layout>
+    )
+  }
 
   return (
     <Layout
@@ -19,6 +32,13 @@ function Bookmarks() {
     >
       <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className={{ root: 'text-xl' }}>{t('pwa.general.selectCourse')}</H1>
+        {data?.participantCourses?.length === 0 && (
+          <div className="flex flex-col gap-2">
+            <UserNotification type="info">
+              {t('pwa.courses.noBooksmarksSet')}
+            </UserNotification>
+          </div>
+        )}
         {data?.participantCourses?.map((course) => (
           <Link key={course.id} href={`/course/${course.id}/bookmarks`}>
             <Button
@@ -43,12 +63,10 @@ function Bookmarks() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }
 }

@@ -1,17 +1,17 @@
-name: Build and deploy backend-responses to Azure Function App (QA)
+name: Build and deploy func-incoming-responses to Function App (QA)
 
 on:
   push:
     branches:
-      - "v3"
+      - 'v3'
     paths:
-      - "apps/backend-responses/**"
-      - ".github/workflows/v3_klickeruzhprod-responses**"
+      - 'apps/func-incoming-responses/**'
+      - '.github/workflows/v3_klickeruzhprod-responses**'
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/backend-responses' # set this to the path to your web app project, defaults to the repository root
-  NODE_VERSION: '18.x' # set this to the node version to use (supports 8.x, 10.x, 12.x)
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-incoming-responses'
+  NODE_VERSION: '18.x'
 
 jobs:
   build-and-deploy:
@@ -25,16 +25,18 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8.6.12
+          run_install: |
+            - recursive: true
+              args: [--frozen-lockfile, --strict-peer-dependencies]
+
       - name: 'Resolve Project Dependencies Using Npm'
         shell: pwsh
         run: |
-          rm package.json
-          rm package-lock.json
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          npm install --package-lock=false
-          npm run build --if-present
-          npm prune --omit=dev
-          popd
+          pnpm run build --scope @klicker-uzh/func-incoming-responses
+          pnpm prune --prod --config.ignore-scripts=true
 
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1

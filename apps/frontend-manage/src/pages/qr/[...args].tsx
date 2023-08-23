@@ -1,4 +1,4 @@
-import { GetStaticPaths, GetStaticProps } from 'next'
+import { GetStaticPaths, GetStaticPropsContext } from 'next'
 import React from 'react'
 import { QRCode } from 'react-qrcode-logo'
 
@@ -19,13 +19,17 @@ export function QR({ path, width = 334 }: Props): React.ReactElement {
   )
 }
 
-export const getStaticProps: GetStaticProps = function ({ params }) {
+export async function getStaticProps({
+  params,
+  locale,
+}: GetStaticPropsContext) {
   // TODO: adapt this function (possibly to getServerSideProps in order to also forward the query parameters to the QR component)
   const args = params!.args as string[]
 
   return {
     props: {
       path: `/${args.join('/')}`,
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }
 }

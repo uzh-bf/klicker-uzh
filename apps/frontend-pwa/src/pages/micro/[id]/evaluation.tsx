@@ -3,7 +3,9 @@ import {
   GetMicroSessionDocument,
   MarkMicroSessionCompletedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3 } from '@uzh-bf/design-system'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
@@ -33,7 +35,11 @@ function Evaluation() {
   }, [data?.microSession])
 
   if (loading || !data?.microSession) {
-    return <div>{t('shared.generic.loading')}</div>
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
   }
 
   return (
@@ -96,12 +102,10 @@ function Evaluation() {
   )
 }
 
-export function getStaticProps({ locale }: any) {
+export async function getStaticProps({ locale }: GetServerSidePropsContext) {
   return {
     props: {
-      messages: {
-        ...require(`shared-components/src/intl-messages/${locale}.json`),
-      },
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
     revalidate: 600,
   }

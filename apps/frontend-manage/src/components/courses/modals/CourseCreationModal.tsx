@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client'
-import ElementCreationErrorToast from '@components/toasts/ElementCreationErrorToast'
 import { CreateCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import ContentInput from '@klicker-uzh/shared-components/src/ContentInput'
 import {
   Button,
   FormikColorPicker,
@@ -11,11 +11,12 @@ import {
   Modal,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import ContentInput from 'shared-components/src/ContentInput'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 
 interface CourseCreationModalProps {
   modalOpen: boolean
@@ -29,32 +30,24 @@ function CourseCreationModal({
   modalOpen,
   onModalClose,
 }: CourseCreationModalProps) {
+  const t = useTranslations()
   const router = useRouter()
   const [createCourse] = useMutation(CreateCourseDocument)
   const [showErrorToast, setShowErrorToast] = useState(false)
 
   const schema = yup.object().shape({
-    name: yup.string().required('Bitte geben Sie einen Namen für den Kurs an.'),
+    name: yup.string().required(t('manage.courseList.courseNameReq')),
     displayName: yup
       .string()
-      .required('Bitte geben Sie einen Anzeigenamen für den Kurs an.'),
+      .required(t('manage.courseList.courseDisplayNameReq')),
     description: yup.string(),
-    color: yup.string().required('Bitte wählen Sie eine Farbe für den Kurs.'),
-    startDate: yup
-      .date()
-      .required(
-        'Bitte geben Sie ein Startdatum für Ihren Kurs ein. Die Daten können auch nach Erstellen des Kurses noch verändert werden.'
-      ),
+    color: yup.string().required(t('manage.courseList.courseColorReq')),
+    startDate: yup.date().required(t('manage.courseList.courseStartReq')),
     endDate: yup
       .date()
-      .min(new Date(), 'Das Enddatum muss in der Zukunft liegen.')
-      .min(
-        yup.ref('startDate'),
-        'Das Enddatum muss nach dem Startdatum liegen.'
-      )
-      .required(
-        'Bitte geben Sie ein Enddatum für Ihren Kurs ein. Die Daten können auch nach dem Erstellen des Kurses noch verändert werden.'
-      ),
+      .min(new Date(), t('manage.courseList.endDateFuture'))
+      .min(yup.ref('startDate'), t('manage.courseList.endAfterStart'))
+      .required(t('manage.courseList.courseEndReq')),
     isGamificationEnabled: yup.boolean(),
   })
   const today = new Date()
@@ -62,7 +55,7 @@ function CourseCreationModal({
 
   return (
     <Modal
-      title="Neuen Kurs erstellen"
+      title={t('manage.courseList.createNewCourse')}
       open={modalOpen}
       onClose={onModalClose}
       className={{ content: 'h-max' }}
@@ -120,17 +113,17 @@ function CourseCreationModal({
               <div className="flex flex-col w-full gap-3 md:flex-row">
                 <FormikTextField
                   name="name"
-                  label="Kursname"
-                  placeholder="Kursname"
-                  tooltip="Der Kursname dient Ihnen zur Identifizierung des Kurses. Den Studierenden wird dieser Name nicht angezeigt."
+                  label={t('manage.courseList.courseName')}
+                  placeholder={t('manage.courseList.courseName')}
+                  tooltip={t('manage.courseList.courseNameTooltip')}
                   className={{ root: 'w-full md:w-1/2' }}
                   required
                 />
                 <FormikTextField
                   name="displayName"
-                  label="Anzeigename"
-                  placeholder="Kursanzeigename"
-                  tooltip="Der Anzeigename wird den Studierenden angezeigt. Er kann vom Kursnamen abweichen."
+                  label={t('manage.sessionForms.displayName')}
+                  placeholder={t('manage.courseList.courseDisplayName')}
+                  tooltip={t('manage.courseList.courseDisplayNameTooltip')}
                   className={{ root: 'w-full md:w-1/2' }}
                   required
                 />
@@ -138,14 +131,14 @@ function CourseCreationModal({
 
               <div>
                 <Label
-                  label="Beschreibung"
+                  label={t('shared.generic.description')}
                   className={{ root: 'font-bold', tooltip: 'text-sm' }}
-                  tooltip="Die Beschreibung wird den Studierenden angezeigt. Sie können hier z.B. die Ziele des Kurses beschreiben."
+                  tooltip={t('manage.courseList.courseDescriptionTooltip')}
                   showTooltipSymbol
                   required
                 />
                 <ContentInput
-                  placeholder="Beschreibung hinzufügen"
+                  placeholder={t('manage.courseList.addDescription')}
                   touched={touched.description}
                   content={values.description}
                   onChange={(newValue: string) =>
@@ -158,15 +151,15 @@ function CourseCreationModal({
               <div className="flex flex-col gap-2 mt-4 md:gap-8 md:flex-row">
                 <FormikDateChanger
                   name="startDate"
-                  label="Startdatum"
-                  tooltip="Ab dem Startdatum können die Studierenden auf die freigeschalteten Inhalte des Kurses zugreifen. Das Startdatum können Sie auch nach Erstellen des Kurses noch verändern."
+                  label={t('manage.courseList.startDate')}
+                  tooltip={t('manage.courseList.startDateTooltip')}
                   required
                   className={{ label: 'font-bold' }}
                 />
                 <FormikDateChanger
                   name="endDate"
-                  label="Enddatum"
-                  tooltip="Nach dem Enddatum wird der Kurs für die Studierenden als archiviert angezeigt, sie können aber weiterhin auf die Inhalte zugreifen. Das Enddatum können Sie auch nach Erstellen des Kurses noch verändern."
+                  label={t('manage.courseList.endDate')}
+                  tooltip={t('manage.courseList.endDateTooltip')}
                   required
                   className={{ label: 'font-bold' }}
                 />
@@ -174,15 +167,15 @@ function CourseCreationModal({
               <div className="flex flex-col gap-2 mt-4 md:gap-8 md:flex-row">
                 <FormikColorPicker
                   name="color"
-                  label="Kursfarbe"
+                  label={t('manage.courseList.courseColor')}
                   position="top"
-                  abortText="Abbrechen"
-                  submitText="Bestätigen"
+                  abortText={t('shared.generic.cancel')}
+                  submitText={t('shared.generic.confirm')}
                   required
                 />
                 <FormikSwitchField
                   name="isGamificationEnabled"
-                  label="Gamifizierung"
+                  label={t('shared.generic.gamification')}
                   className={{ label: 'font-bold' }}
                   standardLabel
                   required
@@ -204,7 +197,7 @@ function CourseCreationModal({
                 ),
               }}
             >
-              Erstellen
+              {t('shared.generic.create')}
             </Button>
           </Form>
         )}
@@ -212,7 +205,7 @@ function CourseCreationModal({
       <ElementCreationErrorToast
         open={showErrorToast}
         setOpen={setShowErrorToast}
-        error="Erstellen des Kurses fehlgeschlagen..."
+        error={t('manage.courseList.courseCreationFailed')}
       />
     </Modal>
   )

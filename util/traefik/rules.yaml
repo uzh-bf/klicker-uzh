@@ -30,6 +30,18 @@ http:
         - "web"
       service: "auth"
 
+    func-responses:
+      rule: "Host(`func-responses.klicker.local`)"
+      entrypoints:
+        - "web"
+      service: "func-responses"
+
+    func-response-processor:
+      rule: "Host(`func-response-processor.klicker.local`)"
+      entrypoints:
+        - "web"
+      service: "func-response-processor"
+
   services:
     api:
       loadBalancer:
@@ -59,4 +71,16 @@ http:
       loadBalancer:
         servers:
           - url: "http://host.containers.internal:3010"
+          # - url: "http://host.docker.internal:3010"
+
+    func-responses:
+      loadBalancer:
+        servers:
+          - url: "http://host.containers.internal:7072"
+          # - url: "http://host.docker.internal:3010"
+
+    func-response-processor:
+      loadBalancer:
+        servers:
+          - url: "http://host.containers.internal:7073"
           # - url: "http://host.docker.internal:3010"

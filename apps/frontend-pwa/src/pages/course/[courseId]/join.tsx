@@ -14,13 +14,14 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { ErrorMessage, Field, Form, Formik } from 'formik'
-import { GetServerSideProps } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import Layout from '../../../components/Layout'
 
 function JoinCourse({
@@ -96,7 +97,14 @@ function JoinCourse({
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 
   if (loadingParticipant || courseLoading) {
-    return <div>{t('shared.generic.loading')}</div>
+    return (
+      <Layout
+        displayName={t('pwa.general.joinCourse')}
+        course={{ displayName: displayName, color: color, id: courseId }}
+      >
+        <Loader />
+      </Layout>
+    )
   }
 
   return (
@@ -287,7 +295,7 @@ function JoinCourse({
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
@@ -314,9 +322,8 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
         color: data?.basicCourseInformation?.color,
         description: data?.basicCourseInformation?.description,
         courseLoading: loading,
-        messages: {
-          ...require(`shared-components/src/intl-messages/${ctx.locale}.json`),
-        },
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   } catch {

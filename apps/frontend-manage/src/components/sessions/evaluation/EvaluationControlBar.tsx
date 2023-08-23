@@ -18,6 +18,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { EvaluationBlock } from '@pages/sessions/[id]/evaluation'
 import { Button, Select } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationTabs from '../../hooks/useEvaluationTabs'
@@ -64,6 +65,7 @@ function EvaluationControlBar({
   confusionFeedbacks,
   isGamificationEnabled,
 }: EvaluationControlBarProps) {
+  const t = useTranslations()
   const width = 1
   const tabs = useEvaluationTabs({ blocks, selectedBlock, width })
 
@@ -121,7 +123,9 @@ function EvaluationControlBar({
               <FontAwesomeIcon icon={faArrowRight} />
             </Button>
 
-            <div className="ml-2 font-bold">Frage:</div>
+            <div className="ml-2 font-bold">
+              {t('shared.generic.question')}:
+            </div>
 
             <Select
               items={selectData || []}
@@ -242,7 +246,7 @@ function EvaluationControlBar({
               <div>
                 <FontAwesomeIcon icon={faGamepad} />
               </div>
-              <div>Leaderboard</div>
+              <div>{t('shared.generic.leaderboard')}</div>
             </div>
           </Button>
         )}
@@ -268,7 +272,7 @@ function EvaluationControlBar({
               <div>
                 <FontAwesomeIcon icon={faComment} />
               </div>
-              <div>Feedbacks</div>
+              <div>{t('shared.generic.feedbacks')}</div>
             </div>
           </Button>
         )}
@@ -293,7 +297,7 @@ function EvaluationControlBar({
               <div>
                 <FontAwesomeIcon icon={faFaceSmile} />
               </div>
-              <div>Confusion</div>
+              <div>{t('manage.evaluation.confusion')}</div>
             </div>
           </Button>
         )}

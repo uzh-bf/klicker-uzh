@@ -3,14 +3,17 @@ import {
   faArrowLeft,
   faArrowRight,
   faArrowUp,
+  faBars,
   faGears,
   faPlus,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Question } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, NumberField } from '@uzh-bf/design-system'
-import { move as RamdaMove } from 'ramda'
+import { useTranslations } from 'next-intl'
+import * as R from 'ramda'
 import { useState } from 'react'
 import { useDrop } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
@@ -22,6 +25,8 @@ interface SessionCreationBlockProps {
   remove: (index: number) => void
   move: (from: number, to: number) => void
   replace: (index: number, value: any) => void
+  selection?: Record<number, Question>
+  resetSelection?: () => void
 }
 
 function SessionCreationBlock({
@@ -31,7 +36,10 @@ function SessionCreationBlock({
   remove,
   move,
   replace,
+  selection,
+  resetSelection,
 }: SessionCreationBlockProps): React.ReactElement {
+  const t = useTranslations()
   const [openSettings, setOpenSettings] = useState(false)
 
   const [{ isOver }, drop] = useDrop(
@@ -60,8 +68,8 @@ function SessionCreationBlock({
   return (
     <div key={index} className="flex flex-col md:w-56">
       <div className="flex flex-row items-center justify-between bg-slate-200 rounded py-1 px-2 text-slate-700">
-        <div className="" data-cy="block-container-header">
-          Block {index + 1}
+        <div data-cy="block-container-header">
+          {t('control.session.blockN', { number: index + 1 })}
         </div>
         <div className="flex flex-row gap-1 text-xs">
           <Button
@@ -142,12 +150,12 @@ function SessionCreationBlock({
                   if (!(questionIdx === 0 || block.questionIds.length === 1)) {
                     replace(index, {
                       ...block,
-                      questionIds: RamdaMove(
+                      questionIds: R.move(
                         questionIdx,
                         questionIdx - 1,
                         block.questionIds
                       ),
-                      titles: RamdaMove(
+                      titles: R.move(
                         questionIdx,
                         questionIdx - 1,
                         block.titles
@@ -173,12 +181,12 @@ function SessionCreationBlock({
                   ) {
                     replace(index, {
                       ...block,
-                      questionIds: RamdaMove(
+                      questionIds: R.move(
                         questionIdx,
                         questionIdx + 1,
                         block.questionIds
                       ),
-                      titles: RamdaMove(
+                      titles: R.move(
                         questionIdx,
                         questionIdx + 1,
                         block.titles
@@ -214,6 +222,44 @@ function SessionCreationBlock({
           </div>
         ))}
       </div>
+      {selection && !R.isEmpty(selection) && (
+        <Button
+          fluid
+          className={{
+            root: 'mb-2 text-sm gap-3 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+          }}
+          onClick={() => {
+            const { questionIds, titles } = Object.values(selection).reduce<{
+              questionIds: number[]
+              titles: string[]
+            }>(
+              (acc, question) => {
+                acc.questionIds.push(question.id)
+                acc.titles.push(question.name)
+                return acc
+              },
+              { questionIds: [], titles: [] }
+            )
+
+            replace(index, {
+              ...block,
+              questionIds: [...block.questionIds, ...questionIds],
+              titles: [...block.titles, ...titles],
+            })
+            resetSelection?.()
+          }}
+          data={{ cy: 'paste-selected-questions' }}
+        >
+          <Button.Icon>
+            <FontAwesomeIcon icon={faBars} />
+          </Button.Icon>
+          <Button.Label>
+            {t('manage.sessionForms.pasteSelection', {
+              count: Object.keys(selection).length,
+            })}
+          </Button.Label>
+        </Button>
+      )}
       <div
         ref={drop}
         className={twMerge(
@@ -226,8 +272,10 @@ function SessionCreationBlock({
       </div>
       <Modal open={openSettings} onClose={() => setOpenSettings(false)}>
         <NumberField
-          label="Zeit-Limit"
-          tooltip={`Zeit-Limit für Block ${index + 1} in Sekunden`}
+          label={t('manage.sessionForms.timeLimit')}
+          tooltip={t('manage.sessionForms.timeLimitTooltip', {
+            blockIx: index + 1,
+          })}
           id={`timeLimits.${index}`}
           value={block.timeLimit || ''}
           onChange={(newValue: string) => {
@@ -236,7 +284,7 @@ function SessionCreationBlock({
               timeLimit: newValue === '' ? undefined : parseInt(newValue),
             })
           }}
-          placeholder={`optionales Zeit-Limit`}
+          placeholder={t('manage.sessionForms.optionalTimeLimit')}
         />
       </Modal>
     </div>

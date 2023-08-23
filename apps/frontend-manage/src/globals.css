@@ -4,12 +4,12 @@
 @import '@uzh-bf/design-system/dist/index.esm.css';
 
 @import 'tailwindcss/components';
-@import '@klicker-uzh/markdown/dist/components.css';
-@import 'shared-components/dist/components.css';
+/* @import '@klicker-uzh/markdown/dist/components.css'; */
+@import '@klicker-uzh/shared-components/dist/components.css';
 
 @import 'tailwindcss/utilities';
 @import '@klicker-uzh/markdown/dist/utilities.css';
-@import 'shared-components/dist/utilities.css';
+@import '@klicker-uzh/shared-components/dist/utilities.css';
 
 html {
   font-size: 16px;

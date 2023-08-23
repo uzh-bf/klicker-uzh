@@ -7,6 +7,7 @@ import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
 import * as LearningElementService from '../services/learningElements'
 import * as MicroLearningService from '../services/microLearning'
+import * as MigrationService from '../services/migration'
 import * as NotificationService from '../services/notifications'
 import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
@@ -30,6 +31,7 @@ import {
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
+  ParticipantTokenData,
   Participation,
   SubscriptionObjectInput,
 } from './participant'
@@ -51,7 +53,7 @@ import {
   FeedbackResponse,
   Session,
 } from './session'
-import { User } from './user'
+import { LocaleType, User } from './user'
 
 export const Mutation = builder.mutationType({
   fields(t) {
@@ -78,6 +80,28 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return AccountService.loginUser(args, ctx)
+        },
+      }),
+
+      changeUserLocale: asUser.field({
+        nullable: true,
+        type: User,
+        args: {
+          locale: t.arg({ type: LocaleType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeUserLocale(args, ctx) as any
+        },
+      }),
+
+      changeParticipantLocale: asParticipant.field({
+        nullable: true,
+        type: Participant,
+        args: {
+          locale: t.arg({ type: LocaleType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeParticipantLocale(args, ctx)
         },
       }),
 
@@ -123,7 +147,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.deleteTag(args, ctx)
+          return QuestionService.deleteTag(args, ctx) as any
         },
       }),
 
@@ -135,7 +159,7 @@ export const Mutation = builder.mutationType({
           content: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.createFeedback(args, ctx)
+          return FeedbackService.createFeedback(args, ctx) as any
         },
       }),
 
@@ -146,7 +170,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedback(args, ctx)
+          return FeedbackService.deleteFeedback(args, ctx) as any
         },
       }),
 
@@ -157,7 +181,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedbackResponse(args, ctx)
+          return FeedbackService.deleteFeedbackResponse(args, ctx) as any
         },
       }),
 
@@ -168,7 +192,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.deleteQuestion(args, ctx)
+          return QuestionService.deleteQuestion(args, ctx) as any
         },
       }),
 
@@ -180,7 +204,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.editTag(args, ctx)
+          return QuestionService.editTag(args, ctx) as any
         },
       }),
 
@@ -188,7 +212,10 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
-          pin: t.arg.int({ required: true }),
+          pin: t.arg.int({
+            required: true,
+            validate: { min: 0, max: 999999999 },
+          }),
         },
         resolve(_, args, ctx) {
           return CourseService.joinCourseWithPin(args, ctx)
@@ -227,7 +254,7 @@ export const Mutation = builder.mutationType({
           incrementDownvote: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.voteFeedbackResponse(args, ctx)
+          return FeedbackService.voteFeedbackResponse(args, ctx) as any
         },
       }),
 
@@ -239,7 +266,7 @@ export const Mutation = builder.mutationType({
           increment: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.upvoteFeedback(args, ctx)
+          return FeedbackService.upvoteFeedback(args, ctx) as any
         },
       }),
 
@@ -247,7 +274,12 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
-          username: t.arg.string({ required: false }),
+          isProfilePublic: t.arg.boolean({ required: false }),
+          email: t.arg.string({ required: false, validate: { email: true } }),
+          username: t.arg.string({
+            required: false,
+            validate: { minLength: 5, maxLength: 10 },
+          }),
           avatar: t.arg.string({ required: false }),
           password: t.arg.string({ required: false }),
           avatarSettings: t.arg({
@@ -332,7 +364,7 @@ export const Mutation = builder.mutationType({
           isPinned: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.pinFeedback(args, ctx)
+          return FeedbackService.pinFeedback(args, ctx) as any
         },
       }),
 
@@ -344,7 +376,7 @@ export const Mutation = builder.mutationType({
           isPublished: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.publishFeedback(args, ctx)
+          return FeedbackService.publishFeedback(args, ctx) as any
         },
       }),
 
@@ -356,7 +388,7 @@ export const Mutation = builder.mutationType({
           isResolved: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.resolveFeedback(args, ctx)
+          return FeedbackService.resolveFeedback(args, ctx) as any
         },
       }),
 
@@ -368,7 +400,7 @@ export const Mutation = builder.mutationType({
           responseContent: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.respondToFeedback(args, ctx)
+          return FeedbackService.respondToFeedback(args, ctx) as any
         },
       }),
 
@@ -412,7 +444,7 @@ export const Mutation = builder.mutationType({
       loginUserToken: t.id({
         nullable: true,
         args: {
-          email: t.arg.string({ required: true }),
+          email: t.arg.string({ required: true, validate: { email: true } }),
           token: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -435,7 +467,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: User,
         resolve(_, __, ctx) {
-          return AccountService.generateLoginToken(ctx)
+          return AccountService.generateLoginToken(ctx) as any
         },
       }),
 
@@ -463,19 +495,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createParticipantAndJoinCourse: t.field({
-        nullable: true,
-        type: Participant,
-        args: {
-          username: t.arg.string({ required: true }),
-          password: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true }),
-          pin: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.createParticipantAndJoinCourse(args, ctx)
-        },
-      }),
+      // createParticipantAndJoinCourse: t.field({
+      //   nullable: true,
+      //   type: Participant,
+      //   args: {
+      //     username: t.arg.string({ required: true }),
+      //     password: t.arg.string({ required: true }),
+      //     courseId: t.arg.string({ required: true }),
+      //     pin: t.arg.int({ required: true }),
+      //   },
+      //   resolve(_, args, ctx) {
+      //     return ParticipantService.createParticipantAndJoinCourse(args, ctx)
+      //   },
+      // }),
 
       changeSessionSettings: asUser.field({
         nullable: true,
@@ -501,7 +533,7 @@ export const Mutation = builder.mutationType({
           speed: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.addConfusionTimestep(args, ctx)
+          return FeedbackService.addConfusionTimestep(args, ctx) as any
         },
       }),
 
@@ -655,17 +687,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      registerParticipantFromLTI: t.field({
-        nullable: true,
-        type: ParticipantLearningData,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          participantId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.registerParticipantFromLTI(args, ctx)
-        },
-      }),
+      // registerParticipantFromLTI: t.field({
+      //   nullable: true,
+      //   type: ParticipantLearningData,
+      //   args: {
+      //     courseId: t.arg.string({ required: true }),
+      //     participantId: t.arg.string({ required: true }),
+      //     email: t.arg.string({ required: true }),
+      //   },
+      //   resolve(_, args, ctx) {
+      //     return ParticipantService.registerParticipantFromLTI(args, ctx)
+      //   },
+      // }),
 
       respondToQuestionInstance: t.field({
         nullable: true,
@@ -717,7 +750,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args as any, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx) as any
         },
       }),
 
@@ -742,7 +775,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args as any, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx) as any
         },
       }),
 
@@ -767,7 +800,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args as any, ctx)
+          return QuestionService.manipulateQuestion(args as any, ctx) as any
         },
       }),
 
@@ -806,7 +839,10 @@ export const Mutation = builder.mutationType({
           startDate: t.arg({ type: 'Date', required: true }),
           endDate: t.arg({ type: 'Date', required: true }),
           groupDeadlineDate: t.arg({ type: 'Date', required: false }),
-          notificationEmail: t.arg.string({ required: false }),
+          notificationEmail: t.arg.string({
+            required: false,
+            validate: { email: true },
+          }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -893,6 +929,62 @@ export const Mutation = builder.mutationType({
         resolve(_, __, ctx) {
           checkCronToken(ctx)
           return NotificationService.sendPushNotifications(ctx)
+        },
+      }),
+
+      deleteParticipantAccount: asParticipant.boolean({
+        nullable: true,
+        resolve(_, __, ctx) {
+          return AccountService.deleteParticipantAccount(ctx)
+        },
+      }),
+
+      createParticipantAccount: t.field({
+        nullable: true,
+        type: ParticipantTokenData,
+        args: {
+          username: t.arg.string({
+            required: true,
+            validate: { minLength: 5, maxLength: 10 },
+          }),
+          password: t.arg.string({ required: true }),
+          email: t.arg.string({ required: true, validate: { email: true } }),
+          isProfilePublic: t.arg.boolean({ required: true }),
+          signedLtiData: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.createParticipantAccount(args, ctx)
+        },
+      }),
+
+      loginParticipantWithLti: t.field({
+        nullable: true,
+        type: ParticipantTokenData,
+        args: {
+          signedLtiData: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.loginParticipantWithLti(args, ctx)
+        },
+      }),
+
+      requestMigrationToken: asUser.boolean({
+        nullable: true,
+        args: {
+          email: t.arg.string({ required: true, validate: { email: true } }),
+        },
+        resolve(_, args, ctx) {
+          return MigrationService.requestMigrationToken(args, ctx)
+        },
+      }),
+
+      triggerMigration: asUser.boolean({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MigrationService.triggerMigration(args, ctx)
         },
       }),
     }

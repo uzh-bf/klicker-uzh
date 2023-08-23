@@ -2,13 +2,14 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faPlayCircle, faUserCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ChangeUserLocaleDocument,
   GetUserRunningSessionsDocument,
   LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Navigation } from '@uzh-bf/design-system'
+import { Navigation, Select } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeaderProps {
@@ -17,30 +18,34 @@ interface HeaderProps {
 
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
+  const t = useTranslations()
+  const { pathname, asPath, query } = router
+
   const [logoutUser] = useMutation(LogoutUserDocument)
+  const [changeUserLocale] = useMutation(ChangeUserLocaleDocument)
 
   const { data } = useQuery(GetUserRunningSessionsDocument)
 
   return (
     <div
-      className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800"
+      className="flex flex-row items-center justify-between w-full h-full px-4 font-bold text-white bg-slate-800 print:!hidden"
       data-cy="navigation"
     >
       <Navigation className={{ root: 'bg-slate-800' }}>
         <Navigation.ButtonItem
           href="/"
-          label="Fragepool"
+          label={t('manage.general.questionPool')}
           className={{ label: 'font-bold text-white text-base' }}
         />
         <Navigation.ButtonItem
           href="/sessions"
-          label="Sessionen"
+          label={t('manage.general.sessions')}
           className={{ label: 'font-bold text-white text-base' }}
           data={{ cy: 'sessions' }}
         />
         <Navigation.ButtonItem
           href="/courses"
-          label="Kurse"
+          label={t('manage.general.courses')}
           className={{ label: 'font-bold text-white text-base' }}
         />
       </Navigation>
@@ -105,23 +110,39 @@ function Header({ user }: HeaderProps): React.ReactElement {
             className={{ title: 'text-base font-bold', root: 'p-2' }}
           /> */}
           <Navigation.DropdownItem
-            title="Login-Token generieren"
+            title={t('manage.general.generateToken')}
             href="/token"
             className={{ title: 'text-base font-bold', root: 'p-2' }}
             data={{ cy: 'token-generation-page' }}
           />
           <Navigation.DropdownItem
-            title="Logout"
+            title={t('shared.generic.logout')}
             onClick={async () => {
-              const userIdLogout = await logoutUser()
-              userIdLogout.data?.logoutUser
-                ? router.push('https://www.klicker.uzh.ch')
-                : console.log('Logout failed')
+              router.push(process.env.NEXT_PUBLIC_AUTH_URL + '/logout')
             }}
             className={{ title: 'text-base font-bold', root: 'p-2' }}
             data={{ cy: 'logout' }}
           />
         </Navigation.TriggerItem>
+        <Select
+          value={router.locale}
+          items={[
+            { value: 'de', label: 'DE' },
+            { value: 'en', label: 'EN' },
+          ]}
+          onChange={(newValue: string) => {
+            changeUserLocale({ variables: { locale: newValue } })
+            router.push({ pathname, query }, asPath, {
+              locale: newValue,
+            })
+          }}
+          className={{
+            root: 'my-auto',
+            trigger:
+              'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
+          }}
+          basic
+        />
       </Navigation>
     </div>
   )
