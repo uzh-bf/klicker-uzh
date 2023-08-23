@@ -1,15 +1,15 @@
+import { InvocationContext } from '@azure/functions'
 import { BlobServiceClient } from '@azure/storage-blob'
 import axios from 'axios'
 
-export const migrateFiles = async (files: any) => {
+export const migrateFiles = async (files: any, context: InvocationContext) => {
     let mappedFileURLs: Record<string, Record<string, string>> = {}
     try {
       // setup Azure Blob Storage client
       const account = process.env.NEXT_PUBLIC_AZURE_STORAGE_ACCOUNT_NAME
       const containerName = process.env.NEXT_PUBLIC_AZURE_CONTAINER_NAME
       const sasToken = process.env.AZURE_SAS_TOKEN
-      console.log('containerName: ', containerName)
-      console.log('sasToken.length: ', sasToken?.length)
+      
       const blobServiceClient = new BlobServiceClient(
         `https://${account}.blob.core.windows.net?${sasToken}`
       )
@@ -25,6 +25,7 @@ export const migrateFiles = async (files: any) => {
   
         // upload file to azure blob storage
         // TODO: discuss if we want to use the original file name or the uuid --> original file name overwrites if not unique
+        // TODO: how to handle newly added files (not via migration)?
         const blockBlobClient = containerClient.getBlockBlobClient(file.name)
   
         await blockBlobClient.uploadData(response.data, {
@@ -32,14 +33,13 @@ export const migrateFiles = async (files: any) => {
         })
   
         const publicUrl = blockBlobClient.url.split('?')[0]
-        console.log('publicUrl for file.name: ', file.name, ' is: ', publicUrl)
         mappedFileURLs[file._id] = {
           url: publicUrl,
           originalName: file.originalName,
         }
       }
     } catch (error) {
-      console.log('Something went wrong while importing files: ', error)
+      context.error('Something went wrong while importing files: ', error)
     }
   
     return mappedFileURLs

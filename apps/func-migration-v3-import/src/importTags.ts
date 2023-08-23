@@ -1,11 +1,13 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
 import { sliceIntoChunks } from './utils'
+import { InvocationContext } from '@azure/functions'
 
 export async function importTags(
   prisma: PrismaClient,
   tags: any,
   user,
-  batchSize: number
+  batchSize: number,
+  context: InvocationContext
 ) {
   let mappedTags: Record<string, Record<string, string | number>> = {}
   const tagsInDb = await prisma.tag.findMany()
@@ -23,7 +25,7 @@ export async function importTags(
           const tagExists = tagsDict[tag._id]
 
           if (tagExists) {
-            console.log('tag already exists: ', tagExists)
+            context.log('tag already exists: ', tagExists)
             mappedTags[tag._id] = {
               id: tagExists.id,
               name: tagExists.name,
@@ -49,16 +51,13 @@ export async function importTags(
               },
             },
           })
-          // console.log("new tag created: ", newTag)
           const extractedId = tag._id
-          // console.log("tag._id: ", extractedId)
           mappedTags[extractedId] = { id: newTag.id, name: newTag.name }
         }
-        // console.log("mappedTagIds: ", mappedTags)
       })
     }
   } catch (error) {
-    console.log('Something went wrong while importing tags: ', error)
+    context.error('Something went wrong while importing tags: ', error)
   }
   return mappedTags
 }

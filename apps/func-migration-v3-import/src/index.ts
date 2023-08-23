@@ -47,7 +47,7 @@ const blobTrigger: StorageBlobHandler = async function (
     let mappedQuestionInstancesIds: Record<string, number> = {}
     let mappedSessionIds: Record<string, string> = {}
 
-    mappedFileURLs = await migrateFiles(parsedContent.files)
+    mappedFileURLs = await migrateFiles(parsedContent.files, context)
     context.log('mappedFileURLs: ', mappedFileURLs)
 
     const batchSize = 50
@@ -57,7 +57,8 @@ const blobTrigger: StorageBlobHandler = async function (
       prisma, 
       tags, 
       user, 
-      batchSize
+      batchSize,
+      context
     )
     context.log("mappedTags: ", mappedTags)
 
@@ -68,7 +69,8 @@ const blobTrigger: StorageBlobHandler = async function (
       mappedTags, 
       user, 
       batchSize, 
-      mappedFileURLs
+      mappedFileURLs,
+      context
     ) 
     context.log("mappedQuestionIds: ", mappedQuestionIds)
 
@@ -78,7 +80,8 @@ const blobTrigger: StorageBlobHandler = async function (
       questionInstances,
       mappedQuestionIds,
       user,
-      batchSize
+      batchSize,
+      context
     )
     context.log("mappedQuestionInstancesIds: ", mappedQuestionInstancesIds)
 
@@ -88,7 +91,8 @@ const blobTrigger: StorageBlobHandler = async function (
       sessions,
       mappedQuestionInstancesIds,
       user,
-      batchSize
+      batchSize,
+      context
     )
     context.log("mappedSessionIds: ", mappedSessionIds)
 

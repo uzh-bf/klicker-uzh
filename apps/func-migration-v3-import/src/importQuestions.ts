@@ -1,5 +1,6 @@
 import { PrismaClient, QuestionType } from "@klicker-uzh/prisma"
 import { QuestionTypeMap, sliceIntoChunks } from "./utils"
+import { InvocationContext } from "@azure/functions"
 
 export const importQuestions = async (
     prisma: PrismaClient,
@@ -7,7 +8,8 @@ export const importQuestions = async (
     mappedTags: Record<string, Record<string, string | number>>,
     user,
     batchSize: number,
-    mappedFileURLs: Record<string, Record<string, string>>
+    mappedFileURLs: Record<string, Record<string, string>>,
+    context: InvocationContext
   ) => {
     let mappedQuestionIds: Record<string, number> = {}
     const questionsInDb = await prisma.question.findMany()
@@ -27,11 +29,10 @@ export const importQuestions = async (
       for (const batch of batches) {
         await prisma.$transaction(async (prisma) => {
           for (const question of batch) {
-            // console.log("question to be imported: ", question)
             const questionExists = questionsDict[question._id]
   
             if (questionExists) {
-              console.log('question already exists: ', questionExists)
+              context.log('question already exists: ', questionExists)
               mappedQuestionIds[question._id] = questionExists.id
               continue
             }
@@ -82,7 +83,6 @@ export const importQuestions = async (
               result.data.options = {
                 choices: question.versions.options[question.type].choices.map(
                   (choice, ix) => {
-                    // console.log("SC/MC choice: ", choice)
                     if (choice.correct) result.data.hasSampleSolution = true
                     return {
                       ix,
@@ -96,10 +96,8 @@ export const importQuestions = async (
               // return result
             } else if (question.type === 'FREE_RANGE') {
               // throw new Error('Unsupported question type NR')
-              // console.log("FREE_RANGE question.FREE_RANGE: ", question.versions.options.FREE_RANGE)
               const restrictions =
                 question.versions.options.FREE_RANGE?.restrictions
-              // console.log("restrictions: ", restrictions)
               if (!restrictions) {
                 result.data.options = {
                   restrictions: undefined,
@@ -131,13 +129,11 @@ export const importQuestions = async (
               data: result.data,
             })
             mappedQuestionIds[question._id] = newQuestion.id
-            // console.log("new question created: ", newQuestion)
           }
         })
       }
     } catch (error) {
-      console.log('Something went wrong while importing questions: ', error)
+      context.error('Something went wrong while importing questions: ', error)
     }
-    // console.log("mappedQuestionIds: ", mappedQuestionIds)
     return mappedQuestionIds
 }

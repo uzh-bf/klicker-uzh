@@ -27,26 +27,24 @@ export const importSessions = async (
     importedSessions: any,
     mappedQuestionInstanceIds: Record<string, number>,
     user,
-    batchSize: number
+    batchSize: number,
+    context: InvocationContext
   ) => {
     //new uuid is generated for each session -> string
     let mappedSessionIds: Record<string, string> = {}
     const sessionsInDb = await prisma.liveSession.findMany()
-    console.log('#sessionsInDb: ', sessionsInDb.length)
     const sessionsDict: Record<string, any> = sessionsInDb.reduce((acc, s) => {
       if (s.originalId != null) {
         acc[s.originalId] = s
       }
       return acc
     }, {})
-    const context = new InvocationContext()
+
     const batches = sliceIntoChunks(importedSessions, batchSize)
     try {
       for (const batch of batches) {
         await prisma.$transaction(async (prisma) => {
           for (const session of batch) {
-            // console.log("session to be imported: ", session);
-            // console.log("session isBeta: ", !!session.isBeta)
   
             const sessionExists = sessionsDict[session._id]
   

@@ -1,16 +1,17 @@
 import { PrismaClient, QuestionInstanceType } from "@klicker-uzh/prisma"
 import { QuestionTypeMap, sliceIntoChunks } from "./utils"
 import { getLegacyResults } from "./getLegacyResults"
+import { InvocationContext } from "@azure/functions"
 
 export const importQuestionInstances = async (
     prisma: PrismaClient,
     importedQuestionInstances: any,
     mappedQuestionIds: Record<string, number>,
     user,
-    batchSize: number
+    batchSize: number,
+    context: InvocationContext
   ) => {
     let mappedQuestionInstancesIds: Record<string, number> = {}
-    // console.log("questionId: ", Object.values(mappedQuestionIds))
     // TODO: check if it works in azure functions, had to extract it out of the transaction since the multiple read operations caused a deadlock
     const questions = await Promise.all(
       Object.values(mappedQuestionIds).map((questionId) =>
@@ -25,20 +26,19 @@ export const importQuestionInstances = async (
         }
         return acc
       }, {})
-    // console.log("questions: ", questions)
+
     const batches = sliceIntoChunks(importedQuestionInstances, batchSize)
     let lostResults: any[] = []
     try {
       for (const batch of batches) {
         await prisma.$transaction(async (prisma) => {
           for (const questionInstance of batch) {
-            // console.log("questionInstance to be imported: ", questionInstance)
   
             const questionInstanceExists =
               questionInstancesDict[questionInstance._id]
   
             if (questionInstanceExists) {
-              console.log(
+              context.log(
                 'questionInstance already exists: ',
                 questionInstanceExists
               )
@@ -54,7 +54,6 @@ export const importQuestionInstances = async (
                 question.id ===
                 mappedQuestionIds[questionInstance.question]
             )
-            // console.log("importQuestionInstances question: ", question)
   
             // TODO: move processQuestionData to shared-components and use it to create questionData
             // TODO: add 'attachments' to relevant questionData types
@@ -66,30 +65,19 @@ export const importQuestionInstances = async (
             }
   
             if (questionInstance.results == null) {
-              // lostResults.push(questionInstance)
               // TODO: restore results from legacy db
               questionInstance.results = await getLegacyResults(
                 questionInstance._id
               )
-              console.log(
-                'Fetched questionInstanceResults: ',
-                questionInstance.results
-              )
               if (questionInstance.results == null) {
                 lostResults.push(questionInstance)
               }
-              console.log(
-                'importQuestionInstances restored results: ',
-                questionInstance.results
-              )
             }
   
             let results = {}
   
             if (questionInstance.results) {
-              // console.log("importQuestionInstances questionData.type: ", questionData.type)
               if (questionData.type === 'SC' || questionData.type === 'MC') {
-                // console.log("SC/MC questionInstance.results: ", questionInstance.results)
                 if (questionInstance.results.CHOICES) {
                   results = questionInstance.results.CHOICES.reduce(
                     (acc, choice, idx) => {
@@ -106,7 +94,6 @@ export const importQuestionInstances = async (
                 questionData.type === QuestionTypeMap['FREE'] ||
                 questionData.type === QuestionTypeMap['FREE_RANGE']
               ) {
-                // console.log("FREE/FREE_RANGE questionInstance: ", questionInstance)
                 if (questionInstance.results.FREE) {
                   let newResults = Object.keys(
                     questionInstance.results.FREE
@@ -127,7 +114,6 @@ export const importQuestionInstances = async (
                 }
               }
             }
-            // console.log("importQuestionInstances transformed results: ", results)
   
             const result = {
               data: {
@@ -148,7 +134,6 @@ export const importQuestionInstances = async (
                       },
                     }
                   : undefined,
-                //TODO:
                 // responses: only import aggregated results
                 // blockedParticipants
                 // dropped: not relevant for now (für die wahlen wichtig)
@@ -160,7 +145,6 @@ export const importQuestionInstances = async (
   
             mappedQuestionInstancesIds[questionInstance._id] =
               newQuestionInstance.id
-            // console.log("new questionInstance created: ", newQuestionInstance)
   
             if (questionId) {
               await prisma.question.update({
@@ -180,13 +164,11 @@ export const importQuestionInstances = async (
         })
       }
     } catch (error) {
-      console.log(
+      context.error(
         'Something went wrong while importing question instances: ',
         error
       )
     }
-    // console.log("mappedQuestionInstancesIds: ", mappedQuestionInstancesIds)
-    console.log('lostResults: ', lostResults)
-    console.log('lostResults.length: ', lostResults.length)
+    context.log('lostResults.length: ', lostResults.length)
     return mappedQuestionInstancesIds
 }
