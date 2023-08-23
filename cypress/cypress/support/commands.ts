@@ -14,12 +14,14 @@
 // Cypress.Commands.add('login', (email, password) => { ... })
 Cypress.Commands.add('loginLecturer', () => {
   cy.viewport('macbook-16')
-  cy.visit(Cypress.env('URL_MANAGE'))
 
+  cy.visit(Cypress.env('URL_MANAGE'))
   cy.clearAllCookies()
   cy.clearAllLocalStorage()
 
   cy.wait(1000)
+
+  cy.reload()
 
   cy.get('button[data-cy="tos-checkbox"]').click()
 

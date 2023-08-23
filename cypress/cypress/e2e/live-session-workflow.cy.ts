@@ -1,5 +1,4 @@
 import messages from '../../../packages/i18n/messages/en'
-import { performLecturerLogin } from './login-workflow.cy'
 
 describe('Different live-session workflows', () => {
   beforeEach(() => {
@@ -186,7 +185,7 @@ describe('Different live-session workflows', () => {
       cy.get('[data-cy="student-submit-answer"]').click()
       cy.wait(500)
 
-      performLecturerLogin(cy)
+      cy.loginLecturer()
 
       cy.get('[data-cy="sessions"]').click()
       cy.findByText(sessionTitle)
@@ -226,7 +225,7 @@ describe('Different live-session workflows', () => {
       cy.get('[data-cy="student-submit-answer"]').click()
       cy.wait(500)
 
-      performLecturerLogin(cy)
+      cy.loginLecturer()
 
       cy.get('[data-cy="sessions"]').click()
       cy.findByText(sessionTitle)

@@ -60,8 +60,7 @@ export async function getServerSideProps({
   return {
     props: {
       query,
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`))
-        .default,
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }
 }
