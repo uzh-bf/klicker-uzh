@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.0...v3.0.0-rc.1) (2023-08-23)
+
+
+### Bug Fixes
+
+* use https:// for production urls in auth app ([36a4ee4](https://github.com/uzh-bf/klicker-uzh/commit/36a4ee4c03cef2571c1eff2fde40c4786c9a6e14))
+
 ## [3.0.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-beta.4...v3.0.0-rc.0) (2023-08-23)
 
 
