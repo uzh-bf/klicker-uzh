@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.2...v3.0.0-rc.3) (2023-08-23)
+
+
+### Bug Fixes
+
+* **apps/auth:** use COOKIE_DOMAIN for allowed callback URL checks ([98af5f2](https://github.com/uzh-bf/klicker-uzh/commit/98af5f260db0338a41b5b26df1290db298ae0f09))
+
+
+### Enhancements
+
+* **deploy:** add configurations for auth application and eduid ([0ee83d5](https://github.com/uzh-bf/klicker-uzh/commit/0ee83d545f7a00d9108214d9adf94ce990d44894))
+
 ## [3.0.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.1...v3.0.0-rc.2) (2023-08-23)
 
 
