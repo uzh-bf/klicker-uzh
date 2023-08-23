@@ -1,7 +1,8 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   GetUserQuestionsDocument,
   Question,
+  ToggleIsArchivedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
@@ -9,25 +10,20 @@ import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 
 import {
-  faBoxArchive,
   faChalkboardUser,
   faGraduationCap,
   faMagnifyingGlass,
   faSort,
   faSortAsc,
   faSortDesc,
+  faTrash,
+  faTrashRestore,
   faUserGroup,
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import {
-  Button,
-  Checkbox,
-  Select,
-  TextField,
-  Tooltip,
-} from '@uzh-bf/design-system'
+import { Button, Checkbox, Select, TextField } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
@@ -46,6 +42,8 @@ function Index() {
 
   const router = useRouter()
   const t = useTranslations()
+
+  const [toggleIsArchived] = useMutation(ToggleIsArchivedDocument)
 
   const [searchInput, setSearchInput] = useState('')
   const [creationMode, setCreationMode] = useState<
@@ -126,40 +124,6 @@ function Index() {
     return faSortDesc
   }, [sortBy, sort.asc])
 
-  // const selectedQuestionIds = useMemo(() => {
-  //   const ids = []
-  //   for (const [id, selected] of Object.entries(selectedQuestions)) {
-  //     if (!selected) continue;
-  //     const parsedId = parseInt(id);
-  //     ids.push(parsedId);
-  //   }
-  //   return ids;
-  // }, [selectedQuestions]);
-
-  // const [isArchiveActive, setIsArchiveActive] = useState(false)
-  // // state for archive ids --> update on button click
-  // const moveToArchived = () => {
-  //   const filteredQuestions = displayedQuestions.filter(question => selectedQuestionIds.includes(question.id));
-  //   setArchivedQuestions(filteredQuestions);
-  // }
-  // // useMemo for filtering
-  // const filteredQuestions = useMemo(() => {
-  //   if (isArchiveActive) {
-  //     return archivedQuestions
-  //   } else {
-  //     return processedQuestions
-  //   }
-  // }, [archivedQuestions, isArchiveActive, processedQuestions])
-
-  // const showArchiveView = () => {
-  //   setDisplayedQuestions(archivedQuestions)
-  //   setIsArchiveActive(true)
-  // }
-  // const showNormalView = () => {
-  //   setDisplayedQuestions(processedQuestions)
-  //   setIsArchiveActive(false)
-  // }
-
   return (
     <Layout
       displayName={t('manage.general.questionPool')}
@@ -234,8 +198,8 @@ function Index() {
                 handleTagClick={handleTagClick}
                 handleSampleSolutionClick={handleSampleSolutionClick}
                 handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
-                // handleToggleArchive={true}
-                // isArchiveActive={filters.archive}
+                handleToggleArchive={handleToggleArchive}
+                isArchiveActive={filters.archive}
               />
             </div>
             <div className="md:hidden">
@@ -250,8 +214,8 @@ function Index() {
                 handleTagClick={handleTagClick}
                 handleSampleSolutionClick={handleSampleSolutionClick}
                 handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
-                // handleToggleArchive={onToggleArchive}
-                // isArchiveActive={filters.archive}
+                handleToggleArchive={handleToggleArchive}
+                isArchiveActive={filters.archive}
               />
             </div>
           </div>
@@ -262,44 +226,51 @@ function Index() {
           ) : (
             <>
               <div className="flex flex-row content-center justify-between flex-none">
-                <div className="flex flex-row pb-3">
-                  <Checkbox
-                    checked={
-                      Object.values(selectedQuestions).filter((value) => value)
-                        .length > 0
-                    }
-                    onCheck={() => {
-                      setSelectedQuestions((prev) => {
-                        let allQuestions = {}
+                <div className="flex flex-row pb-3 gap-1">
+                  <div className="flex flex-col gap-1 text-sm pr-4">
+                    <Checkbox
+                      checked={
+                        Object.values(selectedQuestions).filter(
+                          (value) => value
+                        ).length > 0
+                      }
+                      onCheck={() => {
+                        setSelectedQuestions((prev) => {
+                          let allQuestions = {}
 
-                        if (processedQuestions) {
-                          if (!R.isEmpty(selectedQuestionData)) {
-                            // set questions after filtering to undefined
-                            // do not uncheck questions that are selected but not in the filtered set
-                            allQuestions = processedQuestions.reduce(
-                              (acc, curr) => ({
-                                ...acc,
-                                [curr.id]: undefined,
-                              }),
-                              {}
-                            )
-                          } else {
-                            // set all questions after filtering to their id and data
-                            allQuestions = processedQuestions.reduce(
-                              (acc, question) => ({
-                                ...acc,
-                                [question.id]: question,
-                              }),
-                              {}
-                            )
+                          if (processedQuestions) {
+                            if (!R.isEmpty(selectedQuestionData)) {
+                              // set questions after filtering to undefined
+                              // do not uncheck questions that are selected but not in the filtered set
+                              allQuestions = processedQuestions.reduce(
+                                (acc, curr) => ({
+                                  ...acc,
+                                  [curr.id]: undefined,
+                                }),
+                                {}
+                              )
+                            } else {
+                              // set all questions after filtering to their id and data
+                              allQuestions = processedQuestions.reduce(
+                                (acc, question) => ({
+                                  ...acc,
+                                  [question.id]: question,
+                                }),
+                                {}
+                              )
+                            }
                           }
-                        }
 
-                        return { ...prev, ...allQuestions }
-                      })
-                    }}
-                    className={{ root: 'mr-1' }}
-                  />
+                          return { ...prev, ...allQuestions }
+                        })
+                      }}
+                      className={{ root: 'mr-1' }}
+                    />
+                    {t('manage.questionPool.numSelected', {
+                      count: Object.keys(selectedQuestionData).length,
+                    })}
+                  </div>
+
                   <TextField
                     placeholder={t('manage.general.searchPlaceholder')}
                     value={searchInput}
@@ -313,49 +284,79 @@ function Index() {
                       field: 'w-30 pr-3 rounded-md',
                     }}
                   />
-                  <Button
-                    disabled={!sortBy}
-                    onClick={() => {
-                      handleSortOrderToggle()
-                    }}
-                    className={{
-                      root: 'h-10 mr-1 shadow-sm rounded-md',
-                    }}
-                  >
-                    <Button.Icon>
-                      <FontAwesomeIcon icon={sortIcon} />
-                    </Button.Icon>
-                  </Button>
-                  <Select
-                    className={{
-                      root: 'min-w-30',
-                      trigger: 'h-10',
-                    }}
-                    placeholder={t('manage.general.sortBy')}
-                    items={[
-                      { value: 'CREATED', label: t('manage.general.date') },
-                      { value: 'TITLE', label: t('manage.general.title') },
-                    ]}
-                    onChange={(newSortBy: string) => {
-                      setSortBy(newSortBy)
-                      handleSortByChange(newSortBy)
-                    }}
-                  />
+
+                  <div className="flex flex-row gap-1 pr-3">
+                    <Button
+                      disabled={!sortBy}
+                      onClick={() => {
+                        handleSortOrderToggle()
+                      }}
+                      className={{
+                        root: 'h-10 shadow-sm rounded-md',
+                      }}
+                    >
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={sortIcon} />
+                      </Button.Icon>
+                    </Button>
+                    <Select
+                      className={{
+                        root: 'min-w-30',
+                        trigger: 'h-10',
+                      }}
+                      placeholder={t('manage.general.sortBy')}
+                      items={[
+                        { value: 'CREATED', label: t('manage.general.date') },
+                        { value: 'TITLE', label: t('manage.general.title') },
+                      ]}
+                      onChange={(newSortBy: string) => {
+                        setSortBy(newSortBy)
+                        handleSortByChange(newSortBy)
+                      }}
+                    />
+                  </div>
+
                   {Object.keys(selectedQuestionData).length > 0 && (
-                    <Tooltip tooltip="Archivieren">
+                    <>
                       <Button
                         className={{
                           root: 'h-10 ml-1',
                         }}
-                        onClick={() => {
-                          // moveToArchived()
+                        onClick={async () => {
+                          await toggleIsArchived({
+                            variables: {
+                              questionIds:
+                                Object.keys(selectedQuestionData).map(Number),
+                              isArchived: true,
+                            },
+                          })
+                          setSelectedQuestions({})
                         }}
                       >
                         <Button.Icon>
-                          <FontAwesomeIcon icon={faBoxArchive} />
+                          <FontAwesomeIcon icon={faTrash} />
                         </Button.Icon>
                       </Button>
-                    </Tooltip>
+                      <Button
+                        className={{
+                          root: 'h-10 ml-1',
+                        }}
+                        onClick={async () => {
+                          await toggleIsArchived({
+                            variables: {
+                              questionIds:
+                                Object.keys(selectedQuestionData).map(Number),
+                              isArchived: false,
+                            },
+                          })
+                          setSelectedQuestions({})
+                        }}
+                      >
+                        <Button.Icon>
+                          <FontAwesomeIcon icon={faTrashRestore} />
+                        </Button.Icon>
+                      </Button>
+                    </>
                   )}
                 </div>
                 <Button
@@ -372,7 +373,6 @@ function Index() {
               </div>
 
               <div className="h-full overflow-y-auto">
-                {Object.keys(selectedQuestionData).length} items selected
                 <QuestionList
                   questions={processedQuestions}
                   selectedQuestions={selectedQuestionData}

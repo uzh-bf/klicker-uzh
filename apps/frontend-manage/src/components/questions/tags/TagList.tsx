@@ -5,6 +5,7 @@ import {
   faRectangleList as faListRegular,
 } from '@fortawesome/free-regular-svg-icons'
 import {
+  faArchive,
   faCommentDots,
   faRectangleList as faListSolid,
 } from '@fortawesome/free-solid-svg-icons'
@@ -25,6 +26,7 @@ import UserTag from './UserTag'
 
 interface Props {
   compact: boolean
+  isArchiveActive: boolean
   activeTags: string[]
   activeType: string
   sampleSolution: boolean
@@ -33,11 +35,12 @@ interface Props {
   handleTagClick: (questionType: string, selected?: boolean) => void
   handleSampleSolutionClick: (selected?: boolean) => void
   handleAnswerFeedbacksClick: (selected?: boolean) => void
+  handleToggleArchive: () => void
 }
 
-// TODO: re-add archive toggle
 function TagList({
   compact,
+  isArchiveActive,
   activeTags,
   activeType,
   sampleSolution,
@@ -46,6 +49,7 @@ function TagList({
   handleReset,
   handleSampleSolutionClick,
   handleAnswerFeedbacksClick,
+  handleToggleArchive,
 }: Props): React.ReactElement {
   const t = useTranslations()
   const {
@@ -92,19 +96,6 @@ function TagList({
         </Button.Icon>
         <Button.Label>{t('manage.questionPool.resetFilters')}</Button.Label>
       </Button>
-
-      {/* <Button
-          className={twMerge(
-            isArchiveActive && 'text-red-600',
-            'w-full text-base bg-white sm:hover:bg-grey-40 sm:hover:text-red-600 !py-[0.2rem] mb-2 flex flex-row justify-center'
-          )}
-          onClick={(): void => handleToggleArchive(true)}
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faBoxArchive} />
-          </Button.Icon>
-          <Button.Label>{t("manage.questionPool.showArchive")}</Button.Label>
-        </Button> */}
 
       <div>
         <TagHeader
@@ -194,6 +185,25 @@ function TagList({
             />
           </ul>
         )}
+      </div>
+
+      <div className="mt-4">
+        <Button
+          fluid
+          className={{
+            root: twMerge(isArchiveActive && 'text-red-600'),
+          }}
+          onClick={(): void => handleToggleArchive()}
+        >
+          <Button.Icon>
+            <FontAwesomeIcon icon={faArchive} />
+          </Button.Icon>
+          <Button.Label>
+            {isArchiveActive
+              ? t('manage.questionPool.hideArchived')
+              : t('manage.questionPool.showArchived')}
+          </Button.Label>
+        </Button>
       </div>
     </div>
   )

@@ -219,6 +219,8 @@ model Tag {
   id   Int    @id @default(autoincrement())
   name String
 
+  order Int @default(0)
+
   originalId String? @unique
 
   questions Question[]

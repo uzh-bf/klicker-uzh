@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { Question } from 'src/ops'
 import { ContextWithUser } from '../lib/context'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
@@ -14,7 +15,11 @@ export async function getUserQuestions(ctx: ContextWithUser) {
           },
         ],
         include: {
-          tags: true,
+          tags: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
     },
@@ -33,7 +38,11 @@ export async function getSingleQuestion(
       ownerId: ctx.user.sub,
     },
     include: {
-      tags: true,
+      tags: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
       attachments: true,
     },
   })
@@ -106,7 +115,11 @@ export async function manipulateQuestion(
             ownerId: ctx.user.sub,
           },
           include: {
-            tags: true,
+            tags: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
             attachments: true,
           },
         })
@@ -188,7 +201,11 @@ export async function manipulateQuestion(
       // TODO: create / connect / disconnect attachments
     },
     include: {
-      tags: true,
+      tags: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
       attachments: true,
     },
   })
@@ -230,7 +247,11 @@ export async function getUserTags(ctx: ContextWithUser) {
       id: ctx.user.sub,
     },
     include: {
-      tags: true,
+      tags: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
     },
   })
 
@@ -274,23 +295,24 @@ export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
   return tag
 }
 
-// TODO: new function that gets list of question ids and toggles isArchived
-// TODO: use ctx.prisma.question.updateMany
 export async function toggleIsArchived(
-  { ids }: { ids: number[] },
+  { questionIds, isArchived }: { questionIds: number[]; isArchived: boolean },
   ctx: ContextWithUser
-) {
-  const archivedQuestions = await ctx.prisma.question.updateMany({
+): Promise<Partial<Question>[]> {
+  await ctx.prisma.question.updateMany({
     where: {
-      id : {
-        in: ids,
+      id: {
+        in: questionIds,
       },
       ownerId: ctx.user.sub,
     },
     data: {
-      isArchived: true,
+      isArchived,
     },
   })
 
-  return archivedQuestions
+  return questionIds.map((id) => ({
+    id,
+    isArchived,
+  }))
 }
