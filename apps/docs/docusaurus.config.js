@@ -120,7 +120,7 @@ const config = {
           position: 'left',
         },
         {
-          to: 'use_cases/live_qa',
+          to: 'use_cases',
           label: 'Use Cases',
           position: 'left',
         },
