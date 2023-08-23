@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client'
 import {
   faCheckCircle,
   faCircleXmark,
@@ -10,19 +9,15 @@ import {
   faRectangleList as faListSolid,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetUserTagsDocument,
-  QuestionType,
-  Tag,
-} from '@klicker-uzh/graphql/dist/ops'
+import { QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SuspendedTags from './SuspendedTags'
 import TagHeader from './TagHeader'
 import TagItem from './TagItem'
-import UserTag from './UserTag'
 
 interface Props {
   compact: boolean
@@ -52,21 +47,12 @@ function TagList({
   handleToggleArchive,
 }: Props): React.ReactElement {
   const t = useTranslations()
-  const {
-    data: tagsData,
-    loading: tagsLoading,
-    error: tagsError,
-  } = useQuery(GetUserTagsDocument)
 
   const [questionTypesVisible, setQuestionTypesVisible] = useState(!compact)
   const [userTagsVisible, setUserTagsVisible] = useState(!compact)
   const [gamificationTagsVisible, setGamificationTagsVisible] = useState(
     !compact
   )
-
-  const tags = tagsData?.userTags?.map((tag) => {
-    return { name: tag.name, id: tag.id }
-  })
 
   return (
     <div className="p-4 md:w-[18rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-full text-[0.9rem] overflow-y-auto">
@@ -122,45 +108,15 @@ function TagList({
           state={userTagsVisible}
           setState={setUserTagsVisible}
         />
-        {userTagsVisible &&
-          ((): React.ReactElement => {
-            if (tagsLoading) {
-              return (
-                <div className="my-4">
-                  <Loader />
-                </div>
-              )
-            }
 
-            if (tagsError) {
-              return (
-                <UserNotification type="error" message={tagsError.message} />
-              )
-            }
-
-            if (tags?.length === 0) {
-              return (
-                <UserNotification type="info">
-                  {t('manage.questionPool.noTagsAvailable')}
-                </UserNotification>
-              )
-            }
-
-            return (
-              <ul className="list-none">
-                {tags?.map(
-                  (tag: Tag, index: number): React.ReactElement => (
-                    <UserTag
-                      key={index}
-                      tag={tag}
-                      handleTagClick={handleTagClick}
-                      active={activeTags.includes(tag.name)}
-                    />
-                  )
-                )}
-              </ul>
-            )
-          })()}
+        {userTagsVisible && (
+          <Suspense fallback={<Loader />}>
+            <SuspendedTags
+              activeTags={activeTags}
+              handleTagClick={handleTagClick}
+            />
+          </Suspense>
+        )}
 
         <TagHeader
           text={t('shared.generic.gamification')}

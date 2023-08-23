@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
-import { Question } from 'src/ops'
+import * as R from 'ramda'
+import { Question, Tag } from 'src/ops'
 import { ContextWithUser } from '../lib/context'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
@@ -293,6 +294,38 @@ export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
   })
 
   return tag
+}
+
+export async function updateTagOrdering(
+  { originIx, targetIx }: { originIx: number; targetIx: number },
+  ctx: ContextWithUser
+) {
+  const tags = await ctx.prisma.tag.findMany({
+    where: {
+      ownerId: ctx.user.sub,
+    },
+    orderBy: {
+      order: 'asc',
+    },
+  })
+
+  const sortedTags = R.sortWith<Tag>(
+    [R.ascend(R.prop('order')), R.ascend(R.prop('name'))],
+    tags
+  )
+
+  const reorderedTags = R.swap<Tag>(originIx, targetIx, sortedTags)
+
+  await ctx.prisma.$transaction(
+    reorderedTags.map((tag, ix) =>
+      ctx.prisma.tag.update({
+        where: { id: tag.id },
+        data: { order: ix },
+      })
+    )
+  )
+
+  return reorderedTags
 }
 
 export async function toggleIsArchived(

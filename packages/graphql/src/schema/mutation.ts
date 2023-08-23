@@ -999,6 +999,18 @@ export const Mutation = builder.mutationType({
           return QuestionService.toggleIsArchived(args, ctx)
         },
       }),
+
+      updateTagOrdering: asUser.field({
+        nullable: true,
+        type: [Tag],
+        args: {
+          originIx: t.arg.int({ required: true }),
+          targetIx: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.updateTagOrdering(args, ctx)
+        },
+      }),
     }
   },
 })
