@@ -8,6 +8,9 @@ export async function getUserQuestions(ctx: ContextWithUser) {
     },
     include: {
       questions: {
+        where: {
+          isDeleted: false,
+        },
         orderBy: [
           {
             createdAt: 'desc',
@@ -209,17 +212,29 @@ export async function deleteQuestion(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
-  const question = await ctx.prisma.question.delete({
+
+  const question = await ctx.prisma.question.update({
     where: {
       id: id,
       ownerId: ctx.user.sub,
     },
+    data: {
+      isDeleted: true,
+    },
   })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'Question',
-    id: question.id,
-  })
+  // TODO: Once migration deadline is over, rework approach and delete question for real
+  // const question = await ctx.prisma.question.delete({
+  //   where: {
+  //     id: id,
+  //     ownerId: ctx.user.sub,
+  //   },
+  // })
+
+  // ctx.emitter.emit('invalidate', {
+  //   typename: 'Question',
+  //   id: question.id,
+  // })
 
   return question
 }

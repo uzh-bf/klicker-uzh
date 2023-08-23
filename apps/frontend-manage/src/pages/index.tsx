@@ -58,6 +58,7 @@ function Index() {
     data: dataQuestions,
   } = useQuery(GetUserQuestionsDocument)
 
+  console.log('dataQuestions', dataQuestions)
   const {
     filters,
     sort,
@@ -116,7 +117,7 @@ function Index() {
       className={{ children: 'pb-2' }}
     >
       {typeof creationMode === 'undefined' && (
-        <div className="grid md:grid-cols-4 gap-1 md:gap-2 mb-4">
+        <div className="grid gap-1 mb-4 md:grid-cols-4 md:gap-2">
           <CreationButton
             icon={faUsersLine}
             text={t('manage.questionPool.createLiveSession')}
@@ -168,7 +169,7 @@ function Index() {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row flex-1 gap-4 overflow-y-auto">
+      <div className="flex flex-col flex-1 gap-4 overflow-y-auto md:flex-row">
         {dataQuestions && dataQuestions.userQuestions && (
           <div>
             <div className="hidden md:block">
