@@ -987,6 +987,30 @@ export const Mutation = builder.mutationType({
           return MigrationService.triggerMigration(args, ctx)
         },
       }),
+
+      toggleIsArchived: asUser.field({
+        nullable: true,
+        type: [Question],
+        args: {
+          questionIds: t.arg.intList({ required: true }),
+          isArchived: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.toggleIsArchived(args, ctx)
+        },
+      }),
+
+      updateTagOrdering: asUser.field({
+        nullable: true,
+        type: [Tag],
+        args: {
+          originIx: t.arg.int({ required: true }),
+          targetIx: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.updateTagOrdering(args, ctx)
+        },
+      }),
     }
   },
 })

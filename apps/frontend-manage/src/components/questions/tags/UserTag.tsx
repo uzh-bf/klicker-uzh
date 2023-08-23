@@ -7,13 +7,15 @@ import { twMerge } from 'tailwind-merge'
 import TagActions from './TagActions'
 import TagEditForm from './TagEditForm'
 
-interface UserTagProps {
+interface Props {
   tag: Tag
   handleTagClick: (tag: string) => void
   active: boolean
+  onMoveUp?: () => void
+  onMoveDown?: () => void
 }
 
-function UserTag({ tag, handleTagClick, active }: UserTagProps) {
+function UserTag({ tag, handleTagClick, active, onMoveDown, onMoveUp }: Props) {
   const [editMode, setEditMode] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
 
@@ -44,6 +46,8 @@ function UserTag({ tag, handleTagClick, active }: UserTagProps) {
               setEditMode={setEditMode}
               isDeletionModalOpen={isDeletionModalOpen}
               setIsDeletionModalOpen={setIsDeletionModalOpen}
+              onMoveUp={onMoveUp}
+              onMoveDown={onMoveDown}
             />
           </>
         )}

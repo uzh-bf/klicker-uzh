@@ -462,7 +462,8 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
       createGroupTask: 'Gruppenaufgabe erstellen',
       createQuestionCaps: 'FRAGE ERSTELLEN',
       resetFilters: 'Filter zurücksetzen',
-      showArchive: 'Archiv anzeigen',
+      showArchived: 'Archiv anzeigen',
+      hideArchived: 'Archiv verstecken',
       questionTypes: 'Fragetypen',
       tags: 'Tags',
       noTagsAvailable: 'Keine Tags verfügbar',
@@ -474,6 +475,9 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         'Sind Sie sich sicher, dass Sie die folgende(n) Frage(n) löschen möchten?',
       noQuestionRecovery:
         'Gelöschte Fragen können nicht wiederhergestellt werden. Aus bestehenden Sessionen werden gelöschte Fragen nicht entfernt.',
+      numSelected: '{count} ausgewählt',
+      moveToArchive: 'Ins Archiv verschieben',
+      restoreFromArchive: 'Aus dem Archiv wiederherstellen',
     },
     tags: {
       deleteTag: 'Tag löschen',
