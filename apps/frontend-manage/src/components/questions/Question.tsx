@@ -10,7 +10,7 @@ import { QUESTION_TYPES_SHORT } from '@klicker-uzh/shared-components/src/constan
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { useMutation } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
-import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faArchive, faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
@@ -91,9 +91,11 @@ function Question({
       >
         <div className="flex flex-row flex-1">
           <div className="flex flex-col flex-1 gap-1">
-            {isArchived && <div>ARCHIVED // TODO styling</div>}
+            <div className="flex flex-row flex-none items-center gap-2 text-lg">
+              {isArchived && (
+                <FontAwesomeIcon title="ARCHIVE" icon={faArchive} />
+              )}
 
-            <div className="flex flex-row flex-none">
               <a
                 className="flex-1 text-xl font-bold cursor-pointer text-primary-strong sm:hover:text-uzh-blue-100"
                 role="button"

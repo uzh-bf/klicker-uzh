@@ -10,20 +10,26 @@ import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 
 import {
+  faArchive,
   faChalkboardUser,
   faGraduationCap,
+  faInbox,
   faMagnifyingGlass,
   faSort,
   faSortAsc,
   faSortDesc,
-  faTrash,
-  faTrashRestore,
   faUserGroup,
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Checkbox, Select, TextField } from '@uzh-bf/design-system'
+import {
+  Button,
+  Checkbox,
+  Select,
+  TextField,
+  Tooltip,
+} from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
@@ -226,7 +232,7 @@ function Index() {
           ) : (
             <>
               <div className="flex flex-row content-center justify-between flex-none">
-                <div className="flex flex-row pb-3 gap-1">
+                <div className="flex flex-row pb-3 gap-1 items-center">
                   <div className="flex flex-col gap-1 text-sm pr-4">
                     <Checkbox
                       checked={
@@ -318,44 +324,46 @@ function Index() {
 
                   {Object.keys(selectedQuestionData).length > 0 && (
                     <>
-                      <Button
-                        className={{
-                          root: 'h-10 ml-1',
-                        }}
-                        onClick={async () => {
-                          await toggleIsArchived({
-                            variables: {
-                              questionIds:
-                                Object.keys(selectedQuestionData).map(Number),
-                              isArchived: true,
-                            },
-                          })
-                          setSelectedQuestions({})
-                        }}
+                      <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
+                        <Button
+                          className={{
+                            root: 'h-10 ml-1',
+                          }}
+                          onClick={async () => {
+                            await toggleIsArchived({
+                              variables: {
+                                questionIds:
+                                  Object.keys(selectedQuestionData).map(Number),
+                                isArchived: true,
+                              },
+                            })
+                            setSelectedQuestions({})
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faArchive} />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        tooltip={t('manage.questionPool.restoreFromArchive')}
                       >
-                        <Button.Icon>
-                          <FontAwesomeIcon icon={faTrash} />
-                        </Button.Icon>
-                      </Button>
-                      <Button
-                        className={{
-                          root: 'h-10 ml-1',
-                        }}
-                        onClick={async () => {
-                          await toggleIsArchived({
-                            variables: {
-                              questionIds:
-                                Object.keys(selectedQuestionData).map(Number),
-                              isArchived: false,
-                            },
-                          })
-                          setSelectedQuestions({})
-                        }}
-                      >
-                        <Button.Icon>
-                          <FontAwesomeIcon icon={faTrashRestore} />
-                        </Button.Icon>
-                      </Button>
+                        <Button
+                          className={{
+                            root: 'h-10 ml-1',
+                          }}
+                          onClick={async () => {
+                            await toggleIsArchived({
+                              variables: {
+                                questionIds:
+                                  Object.keys(selectedQuestionData).map(Number),
+                                isArchived: false,
+                              },
+                            })
+                            setSelectedQuestions({})
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faInbox} />
+                        </Button>
+                      </Tooltip>
                     </>
                   )}
                 </div>

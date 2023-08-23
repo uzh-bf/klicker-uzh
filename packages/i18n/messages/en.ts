@@ -481,6 +481,8 @@ Your data will never be shared with other parties beside the above and will neve
       noQuestionRecovery:
         'This action cannot be undone. The question(s) will be permanently deleted and cannot be restored. Questions will not be removed from existing sessions.',
       numSelected: '{count} selected',
+      moveToArchive: 'Move to archive',
+      restoreFromArchive: 'Restore from archive',
     },
     tags: {
       deleteTag: 'Delete tag',
