@@ -1,9 +1,8 @@
-import * as messages from '../../../packages/i18n/messages/en.json'
-import { performLecturerLogin } from './login-workflow.cy'
+import messages from '../../../packages/i18n/messages/en'
 
 describe('Create questions', () => {
   beforeEach(() => {
-    performLecturerLogin(cy)
+    cy.loginLecturer()
   }),
     it('creates a single choice question', () => {
       const randomQuestionNumber = Math.round(Math.random() * 1000)
@@ -186,11 +185,14 @@ describe('Create questions', () => {
     cy.get('[data-cy="add-new-answer"]').click({ force: true })
     cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(1000)
 
     // duplicate question and save
     cy.get(`[data-cy="duplicate-question-${questionTitle}"]`).click()
+    cy.wait(500)
     cy.findByText(messages.manage.questionForms.DUPLICATETitle).should('exist')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(1000)
 
     // check if duplicated question exists alongside original question
     cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist')

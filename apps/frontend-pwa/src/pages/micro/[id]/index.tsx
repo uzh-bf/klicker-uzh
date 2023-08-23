@@ -143,7 +143,7 @@ export async function getStaticProps(ctx: GetStaticPropsContext) {
   return addApolloState(apolloClient, {
     props: {
       id: ctx.params.id,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },
     revalidate: 60,

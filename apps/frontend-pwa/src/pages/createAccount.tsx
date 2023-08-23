@@ -1,5 +1,6 @@
 import {
   Button,
+  Checkbox,
   Collapsible,
   FormikSwitchField,
   FormikTextField,
@@ -17,14 +18,16 @@ import nookies from 'nookies'
 import * as yup from 'yup'
 
 import { useMutation } from '@apollo/client'
+import DynamicMarkdown from '@components/learningElements/DynamicMarkdown'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import bodyParser from 'body-parser'
+import { useState } from 'react'
 import Layout from 'src/components/Layout'
+import { twMerge } from 'tailwind-merge'
 
 interface CreateAccountProps {
   signedLtiData?: string
@@ -36,6 +39,9 @@ interface CreateAccountProps {
 function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
   const t = useTranslations()
   const router = useRouter()
+  const [tosChecked, setTosChecked] = useState<boolean>(false)
+
+  const [openCollapsibleIx, setOpenCollapsibleIx] = useState<number>(0)
 
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountDocument
@@ -108,22 +114,32 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
               <div className="flex flex-col md:grid md:grid-cols-2 md:w-full md:max-w-[1090px] md:mx-auto gap-2">
                 <div className="order-3 md:col-span-2 gap-2 md:gap-4 flex flex-col justify-between md:flex-row bg-slate-100 rounded p-4 md:px-4 py-2 items-center">
                   <div className="flex flex-row items-center gap-4">
-                    <div className="flex-none text-2xl text-slate-600">
-                      <FontAwesomeIcon icon={faWarning} />
-                    </div>
-                    <div className="flex-1 max-w-xl text-sm text-slate-600">
-                      I agree to the{' '}
-                      <a
-                        className="text-blue-500 hover:text-orange-500 hover:underline"
-                        href="https://www.klicker.uzh.ch/privacy"
-                        target="_blank"
-                      >
-                        privacy policy
-                      </a>{' '}
-                      and consent to the processing of my data as described
-                      therein. I am aware that I can participate in most
-                      activities anonymously if I do not agree to these
-                      conditions.
+                    <div className="flex-1 text-slate-600">
+                      {/* <FontAwesomeIcon icon={faWarning} /> */}
+                      <Checkbox
+                        className={{
+                          root: twMerge(
+                            'w-6 h-6',
+                            !tosChecked && 'bg-red-400 border-red-600'
+                          ),
+                        }}
+                        data={{ cy: 'tos-checkbox' }}
+                        label={
+                          <DynamicMarkdown
+                            withProse
+                            withLinkButtons={false}
+                            className={{
+                              root: twMerge(
+                                'prose-p:mb-0 prose-sm max-w-lg ml-4',
+                                !tosChecked && 'text-red-600'
+                              ),
+                            }}
+                            content={t('pwa.createAccount.confirmationMessage')}
+                          />
+                        }
+                        onCheck={() => setTosChecked(!tosChecked)}
+                        checked={tosChecked}
+                      />
                     </div>
                   </div>
                   <Button
@@ -131,7 +147,7 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
                       root: 'flex-none w-full md:w-max',
                     }}
                     type="submit"
-                    disabled={isSubmitting || !isValid}
+                    disabled={!tosChecked || isSubmitting || !isValid}
                   >
                     <Button.Icon>
                       <FontAwesomeIcon icon={faSave} />
@@ -206,16 +222,24 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
                     Data Processing and Privacy
                   </H3>
                   <Collapsible
-                    open
+                    open={openCollapsibleIx === 0}
+                    onChange={() =>
+                      setOpenCollapsibleIx(openCollapsibleIx === 0 ? -1 : 0)
+                    }
                     staticContent={<H4>What data do you collect about me?</H4>}
                   >
                     <Markdown
                       withProse
                       withLinkButtons={false}
-                      content={t('pwa.profile.privacyDataCollection')}
+                      className={{ root: 'prose-sm' }}
+                      content={t('pwa.createAccount.dataCollectionNotice')}
                     />
                   </Collapsible>
                   <Collapsible
+                    open={openCollapsibleIx === 1}
+                    onChange={() =>
+                      setOpenCollapsibleIx(openCollapsibleIx === 1 ? -1 : 1)
+                    }
                     staticContent={
                       <H4>How will my data be shared with others?</H4>
                     }
@@ -223,25 +247,36 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
                     <Markdown
                       withProse
                       withLinkButtons={false}
-                      content={t('pwa.profile.privacyDataSharing')}
+                      className={{ root: 'prose-sm' }}
+                      content={t('pwa.createAccount.dataSharingNotice')}
                     />
                   </Collapsible>
                   <Collapsible
+                    open={openCollapsibleIx === 2}
+                    onChange={() =>
+                      setOpenCollapsibleIx(openCollapsibleIx === 2 ? -1 : 2)
+                    }
                     staticContent={<H4>How is my data being used?</H4>}
                   >
                     <Markdown
                       withProse
                       withLinkButtons={false}
-                      content={t('pwa.profile.privacyDataUsage')}
+                      className={{ root: 'prose-sm' }}
+                      content={t('pwa.createAccount.dataUsageNotice')}
                     />
                   </Collapsible>
                   <Collapsible
+                    open={openCollapsibleIx === 3}
+                    onChange={() =>
+                      setOpenCollapsibleIx(openCollapsibleIx === 3 ? -1 : 3)
+                    }
                     staticContent={<H4>How long do you store my data?</H4>}
                   >
                     <Markdown
                       withProse
                       withLinkButtons={false}
-                      content={t('pwa.profile.privacyDataStorage')}
+                      className={{ root: 'prose-sm' }}
+                      content={t('pwa.createAccount.dataStorageNotice')}
                     />
                   </Collapsible>
                 </div>
@@ -312,9 +347,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
             symbols: false,
             numbers: true,
           }),
-          messages: (
-            await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`)
-          ).default,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
         },
       })
     }
@@ -328,7 +362,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         symbols: false,
         numbers: true,
       }),
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },
   }

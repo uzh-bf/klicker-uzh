@@ -38,6 +38,7 @@
     "build": "turbo run build",
     "check": "turbo run check --parallel --continue",
     "dev": "doppler run --config dev -- turbo run dev",
+    "dev:docs": "doppler run --config dev -- turbo run dev:docs",
     "dev:migration": "doppler run --config dev -- turbo run dev:migration",
     "dev:offline": "doppler run --config dev -- turbo run dev:offline",
     "export": "pnpm run --filter @klicker-uzh/migration-v2-export export",
