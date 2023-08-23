@@ -20,10 +20,10 @@ jobs:
           submodules: true
 
       - name: Prepare for NPM
+        shell: bash
         run: |
-          sed -i -e 's/workspace://g' **/package.json
-          cat apps/frontend-manage/package.json
-          npm install
+          sed -i -e 's/workspace://g' apps/**/package.json
+          sed -i -e 's/workspace://g' packages/**/package.json
 
       - name: Build And Deploy
         id: builddeploy
