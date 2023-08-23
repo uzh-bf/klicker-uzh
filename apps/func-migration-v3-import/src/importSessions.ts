@@ -1,0 +1,195 @@
+import { AccessMode, PrismaClient, SessionBlockStatus, SessionStatus } from '@klicker-uzh/prisma'
+import { extractString, sliceIntoChunks } from "./utils"
+
+const getSessionBlockStatus = (status: string) => {
+    switch (status) {
+      case 'PLANNED':
+        return SessionBlockStatus.SCHEDULED
+      case 'ACTIVE':
+        return SessionBlockStatus.ACTIVE
+      case 'EXECUTED':
+        return SessionBlockStatus.EXECUTED
+    }
+  }
+  
+  const getSessionStatus = (status: string) => {
+    switch (status) {
+      case 'CREATED':
+        return SessionStatus.PREPARED
+      case 'COMPLETED':
+        return SessionStatus.COMPLETED
+    }
+  }
+  
+export const importSessions = async (
+    prisma: PrismaClient,
+    importedSessions: any,
+    mappedQuestionInstanceIds: Record<string, number>,
+    user,
+    batchSize: number
+  ) => {
+    //new uuid is generated for each session -> string
+    let mappedSessionIds: Record<string, string> = {}
+    const sessionsInDb = await prisma.liveSession.findMany()
+    console.log('#sessionsInDb: ', sessionsInDb.length)
+    const sessionsDict: Record<string, any> = sessionsInDb.reduce((acc, s) => {
+      if (s.originalId != null) {
+        acc[s.originalId] = s
+      }
+      return acc
+    }, {})
+    const batches = sliceIntoChunks(importedSessions, batchSize)
+    try {
+      for (const batch of batches) {
+        await prisma.$transaction(async (prisma) => {
+          for (const session of batch) {
+            // console.log("session to be imported: ", session);
+            // console.log("session isBeta: ", !!session.isBeta)
+  
+            const sessionExists = sessionsDict[extractString(session._id)]
+  
+            if (sessionExists) {
+              console.log('session already exists: ', sessionExists)
+              mappedSessionIds[extractString(session._id)] = sessionExists.id
+              continue
+            }
+  
+            const newSession = await prisma.liveSession.create({
+              data: {
+                originalId: extractString(session._id),
+                namespace: session.namespace,
+                name: session.name,
+                displayName: session.name, // no displayName in v2
+                accessMode: session.settings.isParticipantAuthenticationEnabled
+                  ? AccessMode.RESTRICTED
+                  : AccessMode.PUBLIC,
+                isConfusionFeedbackEnabled:
+                  session.settings.isConfusionBarometerActive,
+                isLiveQAEnabled: session.settings.isFeedbackChannelActive,
+                isModerationEnabled: !session.settings.isFeedbackChannelPublic,
+                status: getSessionStatus(session.status), // imported sessions will either be prepared or completed (no active or paused sessions)
+                createdAt: new Date(extractString(session.createdAt)),
+                updatedAt: new Date(extractString(session.updatedAt)),
+                startedAt: session.startedAt
+                  ? new Date(extractString(session.startedAt))
+                  : null,
+                finishedAt: session.finishedAt
+                  ? new Date(extractString(session.finishedAt))
+                  : null,
+                // activeBlock: difference 0 and -1? e.g., -1 == nicht gestartet and 0 is first element of list? -->!! null? da keine session "running" sein wird
+                // blocks: check SessionBlock -> activeInSession ?? --> NO active sessions will be imported!
+                // no activeSteps in v3 -> sessions will either be prepared or completed
+                // no activeInstances: QuestionInstance[] in v3 kein link da nichts mehr aktiv sein wird: sessions will either be prepared or completed
+                // activeInstances? only one possible in v3? kein link da nichts mehr aktiv sein wird: sessions will either be prepared or completed
+                owner: {
+                  connect: {
+                    id: user.id,
+                  },
+                },
+                // nested writes for entities that have not circular dependencies
+                feedbacks: !!session.isBeta
+                  ? {
+                      create: session.feedbacks.map((feedback) => ({
+                        content: feedback.content,
+                        votes: feedback.votes,
+                        createdAt: new Date(extractString(feedback.createdAt)),
+                      })),
+                    }
+                  : {
+                      create: session.feedbacks.map((feedback) => ({
+                        isPublished: feedback.published,
+                        isPinned: feedback.pinned,
+                        isResolved: feedback.resolved,
+                        votes: feedback.votes,
+                        content: feedback.content,
+                        responses: {
+                          create: feedback.responses?.map((response) => ({
+                            content: response.content,
+                            positiveReactions: response.positiveReactions,
+                            negativeReactions: response.negativeReactions,
+                            createdAt: new Date(
+                              extractString(response.createdAt)
+                            ),
+                            updatedAt: new Date(
+                              extractString(response.updatedAt)
+                            ),
+                          })),
+                        },
+                        createdAt: new Date(extractString(feedback.createdAt)),
+                        updatedAt: new Date(extractString(feedback.updatedAt)),
+                      })),
+                    },
+                confusionFeedbacks: {
+                  create: session.confusionTS.map((confusionFeedback) => ({
+                    difficulty: confusionFeedback.difficulty,
+                    speed: confusionFeedback.speed,
+                    createdAt: new Date(
+                      extractString(confusionFeedback.createdAt)
+                    ),
+                  })),
+                },
+                blocks: {
+                  create: session.blocks.map((sessionBlock, blockIx) => {
+                    const instances = sessionBlock.instances.map(
+                      (instanceId) => ({
+                        id: mappedQuestionInstanceIds[extractString(instanceId)],
+                      })
+                    )
+  
+                    return {
+                      order: blockIx,
+                      randomSelection:
+                        sessionBlock.randomSelection !== -1
+                          ? sessionBlock.randomSelection
+                          : null,
+                      timeLimit:
+                        sessionBlock.timeLimit !== -1
+                          ? sessionBlock.timeLimit
+                          : null,
+                      execution:
+                        sessionBlock.execution !== -1
+                          ? sessionBlock.execution
+                          : 0,
+                      status: getSessionBlockStatus(sessionBlock.status),
+                      instances: {
+                        connect: instances,
+                      },
+                      createdAt: new Date(extractString(sessionBlock.createdAt)),
+                      updatedAt: new Date(extractString(sessionBlock.updatedAt)),
+                    }
+                  }),
+                },
+              },
+              include: {
+                blocks: {
+                  include: {
+                    instances: true,
+                  },
+                },
+              },
+            })
+            mappedSessionIds[extractString(session._id)] = newSession.id
+  
+            // Update sessionBlockId of each QuestionInstance connected to the newly created SessionBlock and restore ordering of QuestionInstances
+            for (const block of newSession.blocks) {
+              for (const instance of block.instances) {
+                const oldBlock = session.blocks.find((block) => block.instances.map((id) => extractString(id)).includes(instance.originalId.toString()))
+                const i = oldBlock ? oldBlock.instances.findIndex((id) => extractString(id) === instance.originalId.toString()) : null
+                await prisma.questionInstance.update({
+                  where: { id: instance.id },
+                  data: { 
+                    sessionBlockId: block.id,
+                    order: i
+                  },
+                })
+              }
+            }
+            // console.log("new session created: ", newSession);
+          }
+        })
+      }
+    } catch (error) {
+      console.log('Something went wrong while importing sessions: ', error)
+    }
+    return mappedSessionIds
+}

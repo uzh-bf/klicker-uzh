@@ -1,27 +1,11 @@
-import { PrismaClient, QuestionType } from '@klicker-uzh/prisma'
+import { PrismaClient } from '@klicker-uzh/prisma'
+import { sliceIntoChunks } from './utils'
 
 const extractString = (stringItem: string) => {
   const pattern = /"(.*)"/
   const match = stringItem.match(pattern)
 
   return match ? match[1] : stringItem
-}
-
-const QuestionTypeMap: Record<string, QuestionType> = {
-  SC: 'SC',
-  MC: 'MC',
-  FREE_RANGE: 'NUMERICAL',
-  FREE: 'FREE_TEXT',
-}
-
-function sliceIntoChunks(array: any[], chunkSize: number) {
-  const result = []
-  let index = 0
-  while (index < array.length) {
-    result.push(array.slice(index, index + chunkSize))
-    index += chunkSize
-  }
-  return result
 }
 
 export async function importTags(
