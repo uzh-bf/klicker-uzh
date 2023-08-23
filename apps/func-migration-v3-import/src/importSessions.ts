@@ -1,3 +1,4 @@
+import { InvocationContext } from '@azure/functions'
 import { AccessMode, PrismaClient, SessionBlockStatus, SessionStatus } from '@klicker-uzh/prisma'
 import { extractString, sliceIntoChunks } from "./utils"
 
@@ -38,6 +39,7 @@ export const importSessions = async (
       }
       return acc
     }, {})
+    const context = new InvocationContext()
     const batches = sliceIntoChunks(importedSessions, batchSize)
     try {
       for (const batch of batches) {
@@ -49,7 +51,7 @@ export const importSessions = async (
             const sessionExists = sessionsDict[extractString(session._id)]
   
             if (sessionExists) {
-              console.log('session already exists: ', sessionExists)
+              context.log('session already exists: ', sessionExists)
               mappedSessionIds[extractString(session._id)] = sessionExists.id
               continue
             }
@@ -137,25 +139,26 @@ export const importSessions = async (
                     )
   
                     return {
-                      order: blockIx,
-                      randomSelection:
-                        sessionBlock.randomSelection !== -1
-                          ? sessionBlock.randomSelection
-                          : null,
-                      timeLimit:
-                        sessionBlock.timeLimit !== -1
-                          ? sessionBlock.timeLimit
-                          : null,
-                      execution:
-                        sessionBlock.execution !== -1
-                          ? sessionBlock.execution
-                          : 0,
-                      status: getSessionBlockStatus(sessionBlock.status),
-                      instances: {
-                        connect: instances,
-                      },
-                      createdAt: new Date(extractString(sessionBlock.createdAt)),
-                      updatedAt: new Date(extractString(sessionBlock.updatedAt)),
+                        originalId: extractString(sessionBlock._id),
+                        order: blockIx,
+                        randomSelection:
+                            sessionBlock.randomSelection !== -1
+                            ? sessionBlock.randomSelection
+                            : null,
+                        timeLimit:
+                            sessionBlock.timeLimit !== -1
+                            ? sessionBlock.timeLimit
+                            : null,
+                        execution:
+                            sessionBlock.execution !== -1
+                            ? sessionBlock.execution
+                            : 0,
+                        status: getSessionBlockStatus(sessionBlock.status),
+                        instances: {
+                            connect: instances,
+                        },
+                        createdAt: new Date(extractString(sessionBlock.createdAt)),
+                        updatedAt: new Date(extractString(sessionBlock.updatedAt)),
                     }
                   }),
                 },
@@ -171,25 +174,39 @@ export const importSessions = async (
             mappedSessionIds[extractString(session._id)] = newSession.id
   
             // Update sessionBlockId of each QuestionInstance connected to the newly created SessionBlock and restore ordering of QuestionInstances
-            for (const block of newSession.blocks) {
-              for (const instance of block.instances) {
-                const oldBlock = session.blocks.find((block) => block.instances.map((id) => extractString(id)).includes(instance.originalId.toString()))
-                const i = oldBlock ? oldBlock.instances.findIndex((id) => extractString(id) === instance.originalId.toString()) : null
-                await prisma.questionInstance.update({
-                  where: { id: instance.id },
-                  data: { 
-                    sessionBlockId: block.id,
-                    order: i
-                  },
-                })
-              }
+            for (const block of newSession.blocks) {  
+                if (!block || !block.instances) {
+                    continue;  // skip to the next iteration if there are no instances
+                }
+    
+                const reducedOldBlocks = session.blocks.reduce((acc, block) => {
+                    acc[extractString(block._id)] = block
+                    return acc
+                }, {})
+
+                for (const instance of block.instances) {
+                    const oldBlock = reducedOldBlocks[block.originalId]
+                    const i =  oldBlock?.instances?.findIndex((id) => extractString(id) === instance.originalId)
+        
+                    let updateData = {
+                        sessionBlockId: block.id
+                    };
+
+                    if (i || i === 0) {
+                        updateData['order'] = i
+                    }
+                        
+                    await prisma.questionInstance.update({
+                        where: { id: instance.id },
+                        data: updateData
+                    })
+                }
             }
-            // console.log("new session created: ", newSession);
           }
         })
       }
     } catch (error) {
-      console.log('Something went wrong while importing sessions: ', error)
+      context.error('Something went wrong while importing sessions: ', error)
     }
     return mappedSessionIds
 }
