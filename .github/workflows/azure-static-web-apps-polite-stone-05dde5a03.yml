@@ -22,6 +22,8 @@ jobs:
       - name: Prepare for NPM
         run: |
           sed -i -e 's/workspace://g' **/package.json
+          cat package.json
+          npm install
 
       - name: Build And Deploy
         id: builddeploy
