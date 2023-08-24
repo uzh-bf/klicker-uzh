@@ -61,12 +61,12 @@ const EduIDProvider: Provider = {
   checks: ['pkce', 'state'],
 
   profile(profile) {
-    console.log('eduid profile', profile)
     return {
       id: profile.sub,
       email: profile.email,
       shortname: generateRandomString(8),
       lastLoginAt: new Date(),
+      affiliations: profile.swissEduIDLinkedAffiliation,
     }
   },
 }
@@ -155,13 +155,17 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token, user, account }) {
-      // if there are a user and account on the first invocation, we are logging in a user
-      // otherwise, the login is related to a participant
-      if (user && account) {
-        token.role = UserRole.USER
-        token.scope = (user as any).scope
+    // async signIn({ user, account, profile, email }) {
+    //   return true
+    // },
+    async jwt({ token, user, account, profile }) {
+      token.role = UserRole.USER
+      token.scope = (user as any).scope
+      if (profile?.affiliations) {
+        token.affiliations = profile?.affiliations
+        token.fullAccess = profile?.affiliations?.includes('uzh.ch') ?? false
       }
+
       return token
     },
     async redirect({ url, baseUrl }) {
