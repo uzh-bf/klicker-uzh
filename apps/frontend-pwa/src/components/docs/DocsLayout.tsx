@@ -52,8 +52,6 @@ function DocsLayout({
     }
   }
 
-  console.log(router.pathname)
-
   return (
     <Layout
       course={data.basicCourseInformation}
