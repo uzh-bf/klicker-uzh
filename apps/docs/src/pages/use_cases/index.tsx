@@ -11,7 +11,7 @@ import { useCollapse } from 'react-collapsed'
 export default function index() {
   return (
     <Layout>
-      <div className="w-full p-4 shadow bg-slate-100">
+      <div className="w-full p-4">
         <H1 className={{ root: 'mx-auto max-w-6xl lg:pl-4' }}>Use Cases</H1>
       </div>
 
@@ -21,6 +21,7 @@ export default function index() {
           image={
             'https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c'
           }
+          detailsRef={'/use_cases/live_quiz'}
         >
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
           expedita, corrupti odit animi ratione placeat est numquam distinctio
@@ -225,14 +226,14 @@ function Collapsible({ title, emoji, children }) {
   )
 }
 
-function Card({ title, image, children }) {
+function Card({ title, image, children, detailsRef }) {
   return (
     <div className="flex flex-row mt-4 max-h-80 bg-slate-100">
       <div className="flex flex-col justify-center flex-1 p-8 md:p-16">
         <H3 className={{ root: 'text-xl' }}>{title}</H3>
         <p className="font-sans text-lg">{children}</p>
         <div>
-          <Button>
+          <Button onClick={() => window.open(detailsRef, '_self')}>
             <>
               <FontAwesomeIcon icon={faArrowRight} />
               Read More
