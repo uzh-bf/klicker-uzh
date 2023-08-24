@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useSuspenseQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -38,48 +38,12 @@ import {
   FieldProps,
   Form,
   Formik,
-  useField,
 } from 'formik'
 import { useTranslations } from 'next-intl'
 import React, { Suspense, useMemo, useState } from 'react'
-import Creatable from 'react-select/creatable'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-
-function SuspendedTagInput() {
-  const [field, _, helpers] = useField('tags')
-
-  const { data } = useSuspenseQuery(GetUserTagsDocument)
-
-  const tags = useMemo(
-    () => field.value?.map((tag: string) => ({ label: tag, value: tag })),
-    [field.value]
-  )
-
-  const options = [
-    ...(tags ?? []),
-    ...(data.userTags ?? []).map((tag) => ({
-      label: tag.name,
-      value: tag.name,
-    })),
-  ]
-
-  return (
-    <Creatable
-      isClearable
-      isMulti
-      value={tags}
-      options={options}
-      classNames={{
-        container: () => 'w-full',
-      }}
-      onChange={(newValue) =>
-        helpers.setValue(newValue.map((tag) => tag.value))
-      }
-      onCreateOption={(newTag) => helpers.setValue([...field.value, newTag])}
-    />
-  )
-}
+import SuspendedTagInput from './tags/SuspendedTagInput'
 
 enum QuestionEditMode {
   DUPLICATE = 'DUPLICATE',
@@ -598,7 +562,7 @@ function QuestionEditModal({
                     />
                   </div>
 
-                  <div className="flex flex-row">
+                  <div className="flex flex-row mt-2">
                     <Label
                       label={t('manage.questionPool.tags')}
                       className={{
@@ -614,7 +578,7 @@ function QuestionEditModal({
                     </Suspense>
                   </div>
 
-                  <div className="z-0 flex flex-row">
+                  <div className="z-0 flex flex-row mt-2">
                     <Label
                       label={t('shared.generic.multiplier')}
                       className={{
