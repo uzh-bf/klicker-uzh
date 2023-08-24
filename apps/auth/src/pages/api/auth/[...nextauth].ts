@@ -61,6 +61,7 @@ const EduIDProvider: Provider = {
   checks: ['pkce', 'state'],
 
   profile(profile) {
+    console.log('PROFILE', profile)
     return {
       id: profile.sub,
       email: profile.email,
@@ -158,7 +159,10 @@ export const authOptions: NextAuthOptions = {
     // async signIn({ user, account, profile, email }) {
     //   return true
     // },
+
     async jwt({ token, user, account, profile }) {
+      console.log('JWT', token, user, account, profile)
+
       token.role = UserRole.USER
       token.scope = (user as any).scope
       if (profile?.affiliations) {
