@@ -71,6 +71,14 @@ export const Mutation = builder.mutationType({
       },
     })
 
+    const asFullAccessUser = t.withAuth({
+      $all: {
+        authenticated: true,
+        role: DB.UserRole.USER,
+        fullAccess: true,
+      },
+    })
+
     return {
       loginUser: t.string({
         nullable: true,
