@@ -187,7 +187,7 @@ function Index() {
       <div className="flex flex-col flex-1 gap-4 overflow-y-auto md:flex-row">
         {dataQuestions && dataQuestions.userQuestions && (
           <div>
-            <div className="hidden md:block">
+            <div className="hidden md:block h-full">
               <TagList
                 key={creationMode}
                 compact={!!creationMode}
