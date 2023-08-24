@@ -460,6 +460,9 @@ Your data will never be shared with other parties beside the above and will neve
       tokenExpired:
         'Unfortunately, your token has expired, please generate a new one.',
     },
+    migration: {
+      pageName: 'Migrate Data from KlickerV2',
+    },
     questionPool: {
       createLiveSession: 'Create live session',
       createMicroSession: 'Create micro session',

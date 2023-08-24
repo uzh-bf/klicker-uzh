@@ -455,6 +455,9 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
       tokenExpired:
         'Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen.',
     },
+    migration: {
+      pageName: 'Migration der Daten von KlickerV2',
+    },
     questionPool: {
       createLiveSession: 'Live-Session erstellen',
       createMicroSession: 'Micro-Session erstellen',
