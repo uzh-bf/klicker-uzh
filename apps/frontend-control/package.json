@@ -17,7 +17,7 @@
     "@klicker-uzh/shared-components": "workspace:*",
     "@sentry/nextjs": "7.61.1",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "2.0.12",
+    "@uzh-bf/design-system": "2.0.13",
     "body-parser": "1.20.2",
     "cross-env": "7.0.3",
     "dayjs": "1.11.9",

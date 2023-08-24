@@ -475,7 +475,7 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         'Sind Sie sich sicher, dass Sie die folgende(n) Frage(n) löschen möchten?',
       noQuestionRecovery:
         'Gelöschte Fragen können nicht wiederhergestellt werden. Aus bestehenden Sessionen werden gelöschte Fragen nicht entfernt.',
-      numSelected: '{count} ausgewählt',
+      numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Aus dem Archiv wiederherstellen',
     },
