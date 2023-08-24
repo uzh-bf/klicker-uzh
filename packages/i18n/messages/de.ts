@@ -783,7 +783,7 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
       noFeedbacksMatchFilter:
         'Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen überein...',
       resolvedDuringSession: 'Während der Session gelöst',
-      confusionTitle: 'Verständnis',
+      confusion: 'Verständnis',
       minStep60s: 'Die Schrittweite muss mindestens 60 Sekunden betragen.',
       validMinSteps: 'Bitte geben Sie eine gültige Mindestschrittweite ein.',
       minWindowLength: 'Die Fensterlänge muss mindestens 1 betragen.',

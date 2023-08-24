@@ -780,7 +780,7 @@ Your data will never be shared with other parties beside the above and will neve
       noFeedbacksMatchFilter:
         'No feedbacks match the current filter settings...',
       resolvedDuringSession: 'Resolved during session',
-      confusionTitle: 'Confusion',
+      confusion: 'Confusion',
       minStep60s: 'The step size must be at least 60 seconds.',
       validMinSteps: 'Please enter a valid minimum step size.',
       minWindowLength: 'The window length must be at least 1.',
