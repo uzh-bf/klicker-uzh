@@ -38,6 +38,7 @@
     "react-dnd-html5-backend": "16.0.1",
     "react-dom": "18.2.0",
     "react-qrcode-logo": "2.9.0",
+    "react-select": "5.7.4",
     "react-sizeme": "3.0.2",
     "react-tagcloud": "2.3.1",
     "recharts": "2.7.2",
