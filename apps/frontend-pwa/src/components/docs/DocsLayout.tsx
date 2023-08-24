@@ -4,6 +4,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Navigation } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { twMerge } from 'tailwind-merge'
 import Layout from '../Layout'
 
 interface BasicCourseData {
@@ -41,6 +42,18 @@ function DocsLayout({
     return <div>{t('shared.generic.systemError')}</div>
   }
 
+  const menuClassName = (active: boolean) => {
+    return {
+      label: twMerge(
+        'text-sm bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+        active && 'text-red underline underline-offset-[0.25rem] decoration-2'
+      ),
+      root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+    }
+  }
+
+  console.log(router.pathname)
+
   return (
     <Layout
       course={data.basicCourseInformation}
@@ -57,14 +70,19 @@ function DocsLayout({
         >
           <Navigation.ButtonItem
             label={t('pwa.courses.courseInformation')}
-            className={{ root: `text-white` }}
+            className={menuClassName(
+              router.pathname === '/course/[courseId]/docs'
+            )}
             onClick={() =>
               router.push(`/course/${data.basicCourseInformation!.id}/docs`)
             }
           />
           <Navigation.TriggerItem
             label={t('pwa.general.setup')}
-            className={{ root: `text-white` }}
+            className={menuClassName(
+              router.pathname === '/course/[courseId]/docs/login' ||
+                router.pathname === '/course/[courseId]/docs/appSetup'
+            )}
             dropdownWidth="w-[20rem]"
           >
             <Navigation.DropdownItem
@@ -86,7 +104,9 @@ function DocsLayout({
           </Navigation.TriggerItem>
           <Navigation.ButtonItem
             label={t('shared.generic.features')}
-            className={{ root: `text-white` }}
+            className={menuClassName(
+              router.pathname === '/course/[courseId]/docs/features'
+            )}
             onClick={() =>
               router.push(
                 `/course/${data.basicCourseInformation!.id}/docs/features`
