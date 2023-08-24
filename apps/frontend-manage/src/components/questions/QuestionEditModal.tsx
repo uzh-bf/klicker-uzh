@@ -1,4 +1,6 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation, useQuery, useSuspenseQuery } from '@apollo/client'
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
@@ -9,23 +11,9 @@ import {
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  FastField,
-  FastFieldProps,
-  FieldArray,
-  FieldArrayRenderProps,
-  FieldProps,
-  Form,
-  Formik,
-} from 'formik'
-import React, { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-import * as Yup from 'yup'
-
-import { faTrash } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
 import ContentInput from '@klicker-uzh/shared-components/src/ContentInput'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 import {
   QUESTION_GROUPS,
@@ -42,7 +30,56 @@ import {
   Switch,
   UserNotification,
 } from '@uzh-bf/design-system'
+import {
+  FastField,
+  FastFieldProps,
+  FieldArray,
+  FieldArrayRenderProps,
+  FieldProps,
+  Form,
+  Formik,
+  useField,
+} from 'formik'
 import { useTranslations } from 'next-intl'
+import React, { Suspense, useMemo, useState } from 'react'
+import Creatable from 'react-select/creatable'
+import { twMerge } from 'tailwind-merge'
+import * as Yup from 'yup'
+
+function SuspendedTagInput() {
+  const [field, _, helpers] = useField('tags')
+
+  const { data } = useSuspenseQuery(GetUserTagsDocument)
+
+  const tags = useMemo(
+    () => field.value?.map((tag: string) => ({ label: tag, value: tag })),
+    [field.value]
+  )
+
+  const options = [
+    ...(tags ?? []),
+    ...(data.userTags ?? []).map((tag) => ({
+      label: tag.name,
+      value: tag.name,
+    })),
+  ]
+
+  return (
+    <Creatable
+      isClearable
+      isMulti
+      value={tags}
+      options={options}
+      classNames={{
+        container: () => 'w-full',
+      }}
+      onChange={(newValue) =>
+        helpers.setValue(newValue.map((tag) => tag.value))
+      }
+      onCreateOption={(newTag) => helpers.setValue([...field.value, newTag])}
+    />
+  )
+}
 
 enum QuestionEditMode {
   DUPLICATE = 'DUPLICATE',
@@ -332,7 +369,7 @@ function QuestionEditModal({
   // TODO: styling of tooltips - some are too wide
   // TODO: show errors of form validation below fields as for the login form
 
-  if (!question && questionType !== question?.type) {
+  if (!question || questionType !== question?.type) {
     return <div></div>
   }
 
@@ -561,33 +598,20 @@ function QuestionEditModal({
                     />
                   </div>
 
-                  {/* {// TODO replace tag input by suitable component including tag suggestions} */}
-                  <div className="mt-2">
-                    <div className="flex flex-row">
-                      <Label
-                        label={t('manage.questionPool.tags')}
-                        className={{
-                          root: 'my-auto mr-2 text-lg font-bold w-36',
-                          tooltip:
-                            'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                        }}
-                        tooltip={t('manage.questionForms.tagsTooltip')}
-                        showTooltipSymbol={true}
-                      />
-                      <FastField
-                        name="tags"
-                        type="text"
-                        className="w-full bg-opacity-50 border rounded bg-uzh-grey-20 border-uzh-grey-60 h-9 focus:border-primary-40"
-                        value={values.tags?.join(', ')}
-                        onChange={(e: any) => {
-                          setFieldValue('tags', e.target.value.split(', '))
-                        }}
-                      />
-                    </div>
-                    <div className="italic text-red-600">
-                      {/* // TODO: remove this hint once a proper input field for tags has been introduced */}
-                      {t('manage.questionForms.tagFormatting')}
-                    </div>
+                  <div className="flex flex-row">
+                    <Label
+                      label={t('manage.questionPool.tags')}
+                      className={{
+                        root: 'my-auto mr-2 text-lg font-bold w-36',
+                        tooltip:
+                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                      }}
+                      tooltip={t('manage.questionForms.tagsTooltip')}
+                      showTooltipSymbol={true}
+                    />
+                    <Suspense fallback={<Loader />}>
+                      <SuspendedTagInput />
+                    </Suspense>
                   </div>
 
                   <div className="z-0 flex flex-row">
