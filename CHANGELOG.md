@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.5...v3.0.0-rc.6) (2023-08-24)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** use activeParticipation prop to display top 10 on session evaluation page ([7ec9d6e](https://github.com/uzh-bf/klicker-uzh/commit/7ec9d6e2ca4dbfdd75e0662fef55598371800bb1))
+
 ## [3.0.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.4...v3.0.0-rc.5) (2023-08-24)
 
 
