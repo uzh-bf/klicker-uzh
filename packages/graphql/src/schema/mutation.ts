@@ -598,7 +598,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createLearningElement: asUser.field({
+      createLearningElement: asFullAccessUser.field({
         nullable: true,
         type: LearningElement,
         args: {
@@ -622,7 +622,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      editLearningElement: asUser.field({
+      editLearningElement: asFullAccessUser.field({
         nullable: true,
         type: LearningElement,
         args: {
@@ -647,7 +647,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createMicroSession: asUser.field({
+      createMicroSession: asFullAccessUser.field({
         nullable: true,
         type: MicroSession,
         args: {
@@ -665,7 +665,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      editMicroSession: asUser.field({
+      editMicroSession: asFullAccessUser.field({
         nullable: true,
         type: MicroSession,
         args: {
@@ -871,7 +871,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      publishLearningElement: asUser.field({
+      publishLearningElement: asFullAccessUser.field({
         nullable: true,
         type: LearningElement,
         args: {
@@ -882,7 +882,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteLearningElement: asUser.field({
+      deleteLearningElement: asFullAccessUser.field({
         nullable: true,
         type: LearningElement,
         args: {
@@ -904,7 +904,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      publishMicroSession: asUser.field({
+      publishMicroSession: asFullAccessUser.field({
         nullable: true,
         type: MicroSession,
         args: {
@@ -915,7 +915,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteMicroSession: asUser.field({
+      deleteMicroSession: asFullAccessUser.field({
         nullable: true,
         type: MicroSession,
         args: {
