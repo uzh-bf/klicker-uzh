@@ -470,6 +470,8 @@ Your data will never be shared with other parties beside the above and will neve
       step3Title: 'Step 3: Start Migration',
       step3Description: 'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
       startMigration: 'Start Migration',
+      step4Title: 'Step 4: Migration Status Notification',
+      step4Description: 'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.'
     },
     questionPool: {
       createLiveSession: 'Create live session',

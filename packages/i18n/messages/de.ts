@@ -465,6 +465,8 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
       step3Title: 'Schritt 3: Migration starten',
       step3Description: 'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.',
       startMigration: 'Migration starten',
+      step4Title: 'Schritt 4: Benachrichtigung über den Migrationsstatus',
+      step4Description: 'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.'
     },
     questionPool: {
       createLiveSession: 'Live-Session erstellen',
