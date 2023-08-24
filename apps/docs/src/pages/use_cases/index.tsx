@@ -21,7 +21,7 @@ export default function index() {
           image={
             'https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c'
           }
-          detailsRef={'/use_cases/live_quiz'}
+          detailsRef={'live_quiz'}
         >
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
           expedita, corrupti odit animi ratione placeat est numquam distinctio
@@ -233,7 +233,9 @@ function Card({ title, image, children, detailsRef }) {
         <H3 className={{ root: 'text-xl' }}>{title}</H3>
         <p className="font-sans text-lg">{children}</p>
         <div>
-          <Button onClick={() => window.open(detailsRef, '_self')}>
+          <Button
+            onClick={() => window.open(`/use_cases/${detailsRef}`, '_self')}
+          >
             <>
               <FontAwesomeIcon icon={faArrowRight} />
               Read More
