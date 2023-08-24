@@ -10,6 +10,7 @@ export const migrateFiles = async (files: any, context: InvocationContext) => {
       const containerName = process.env.NEXT_PUBLIC_AZURE_CONTAINER_NAME
       const sasToken = process.env.AZURE_SAS_TOKEN
       
+      //TODO: create singleton file as in export migration function
       const blobServiceClient = new BlobServiceClient(
         `https://${account}.blob.core.windows.net?${sasToken}`
       )

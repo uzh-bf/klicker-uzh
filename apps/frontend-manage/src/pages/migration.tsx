@@ -56,7 +56,7 @@ function Migration({ query }) {
             onClick={() => toggleStep(setIsStep1Shown)}
           >
             <h2 className="text-xl font-bold">
-              Step 1: Request Migration Token
+              {t('manage.migration.step1Title')}
             </h2>
             {isStep1Completed && (
               <Button.Icon>
@@ -67,11 +67,7 @@ function Migration({ query }) {
           {isStep1Shown && (
             <div className="flex flex-col w-full pl-2 pr-2 border border-t border-slate-200">
               <p className="mt-4 mb-4">
-                To migrate your old Klicker account to KlickerV3, provide the
-                email linked to your old account. After submitting the email,
-                you will receive a migration token to proceed. Please ensure you
-                have access to this email. If not, consider resetting your
-                password.
+                {t('manage.migration.step1Description')}
               </p>
               <TextField
                 placeholder="E-Mail..."
@@ -106,7 +102,7 @@ function Migration({ query }) {
                 }
                 disabled={email === ''}
               >
-                Request Migration Token
+                {t('manage.migration.requestMigrationToken')}
               </Button>
             </div>
           )}
@@ -119,7 +115,9 @@ function Migration({ query }) {
             }}
             onClick={() => toggleStep(setIsStep2Shown)}
           >
-            <h2 className="text-xl font-bold">Step 2: Insert Migration Link</h2>
+            <h2 className="text-xl font-bold">
+              {t('manage.migration.step2Title')}
+            </h2>
             {isStep2Completed && (
               <Button.Icon>
                 <FontAwesomeIcon icon={faCheck} />
@@ -129,9 +127,7 @@ function Migration({ query }) {
           {isStep2Shown && (
             <div className="flex flex-col w-full pl-2 pr-2 border border-t border-slate-200">
               <p className="mt-4 mb-4">
-                You should have received an email containing a migration link.
-                If it's not in your inbox, check the spam folder. Copy the link
-                and paste it into your browser's address bar to proceed.
+                {t('manage.migration.step2Description')}
               </p>
             </div>
           )}
@@ -142,14 +138,14 @@ function Migration({ query }) {
             className={{ root: twMerge('w-full shadow-sm h-16 bg-gray-50') }}
             onClick={() => toggleStep(setIsStep3Shown)}
           >
-            <h2 className="text-xl font-bold">Step 3: Start Migration</h2>
+            <h2 className="text-xl font-bold">
+              {t('manage.migration.step3Title')}
+            </h2>
           </Button>
           {isStep3Shown && (
             <div className="flex flex-col w-full pl-2 pr-2 border border-t border-slate-200">
               <p className="mt-4 mb-4">
-                You're almost done! Having verified your email, you're all set
-                to initiate the migration. Click the button below to complete
-                the process.
+                {t('manage.migration.step3Description')}
               </p>
               <Button
                 className={{
@@ -164,7 +160,7 @@ function Migration({ query }) {
                 }
                 disabled={!isStep1Completed || !isStep2Completed}
               >
-                Start Migration
+                {t('manage.migration.startMigration')}
               </Button>
             </div>
           )}

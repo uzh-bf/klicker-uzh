@@ -457,6 +457,14 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
     },
     migration: {
       pageName: 'Migration der Daten von KlickerV2',
+      step1Title: 'Schritt 1: Migrations-Token anfordern',
+      step1Description: 'Um Ihr altes Klicker-Konto auf KlickerV3 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist. Danach erhalten Sie einen Token, um mit der Migration fortzufahren. Stellen Sie sicher, dass Sie Zugriff auf diese E-Mail haben. Andernfalls müssen Sie Ihr Passwort zurückzusetzen.',
+      requestMigrationToken: 'Migrations-Token anfordern',
+      step2Title: 'Schritt 2: Migrations-Link einfügen',
+      step2Description: 'Sie sollten eine E-Mail mit einem Migrations-Link erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner. Kopieren Sie den Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren.',
+      step3Title: 'Schritt 3: Migration starten',
+      step3Description: 'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.',
+      startMigration: 'Migration starten',
     },
     questionPool: {
       createLiveSession: 'Live-Session erstellen',

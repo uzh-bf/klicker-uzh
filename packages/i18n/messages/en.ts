@@ -462,6 +462,14 @@ Your data will never be shared with other parties beside the above and will neve
     },
     migration: {
       pageName: 'Migrate Data from KlickerV2',
+      step1Title: 'Step 1: Request Migration Token',
+      step1Description: 'To migrate your old Klicker account to KlickerV3, provide the email linked to your old account. After submitting the email, you will receive a migration token to proceed. Please ensure you have access to this email. If not, consider resetting your password.',
+      requestMigrationToken: 'Request Migration Token',
+      step2Title: 'Step 2: Insert Migration Link',
+      step2Description: 'You should have received an email containing a migration link. If it is not in your inbox, check the spam folder. Copy the link and paste it into the address bar of your browser to proceed.',
+      step3Title: 'Step 3: Start Migration',
+      step3Description: 'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
+      startMigration: 'Start Migration',
     },
     questionPool: {
       createLiveSession: 'Create live session',
