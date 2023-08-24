@@ -49,7 +49,7 @@ export async function joinCourseWithPin(
               participantId: ctx.user.sub,
             },
           },
-          create: { course: { connect: { id: course.id } }, isActive: true },
+          create: { course: { connect: { id: course.id } } },
         },
       },
     },
@@ -587,8 +587,8 @@ export async function getCourseData(
         activeLBEntries: [
           ...acc.activeLBEntries,
           {
-            id: entry?.id,
-            score: entry?.score,
+            id: entry.id,
+            score: entry.score,
             rank: acc.activeCount + 1,
             email: entry.participation?.participant.email,
             username: entry.participation?.participant.username,
@@ -603,6 +603,7 @@ export async function getCourseData(
     {
       activeLBEntries: [] as typeof course.leaderboard,
       activeSum: 0,
+      activeCount: 0,
     }
   )
 

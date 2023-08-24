@@ -475,9 +475,6 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                 courseId: session.courseId!,
                 participantId,
               },
-              participant: {
-                isActive: true,
-              },
               participation: {
                 isActive: true,
               },
@@ -539,7 +536,6 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
             ctx.prisma.participant.update({
               where: {
                 id: participantId,
-                isActive: true,
               },
               data: {
                 xp: {
