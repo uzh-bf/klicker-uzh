@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.10...v3.0.0-rc.11) (2023-08-24)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** multi-select tag input with dynamic options ([#3809](https://github.com/uzh-bf/klicker-uzh/issues/3809)) ([1d7f69a](https://github.com/uzh-bf/klicker-uzh/commit/1d7f69a61a0ae9b1595ff3e05da2d1b65ef84dcf))
+
 ## [3.0.0-rc.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.9...v3.0.0-rc.10) (2023-08-24)
 
 ## [3.0.0-rc.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.8...v3.0.0-rc.9) (2023-08-24)
