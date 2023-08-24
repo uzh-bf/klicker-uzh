@@ -51,6 +51,7 @@ const EduIDProvider: Provider = {
           sub: { essential: true },
           email: { essential: true },
           swissEduPersonUniqueID: { essential: true },
+          swissEduIDLinkedAffiliation: { essential: false },
         },
       },
       scope: 'openid email https://login.eduid.ch/authz/User.Read',
@@ -60,6 +61,7 @@ const EduIDProvider: Provider = {
   checks: ['pkce', 'state'],
 
   profile(profile) {
+    console.log('eduid profile', profile)
     return {
       id: profile.sub,
       email: profile.email,
