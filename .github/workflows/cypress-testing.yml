@@ -148,7 +148,7 @@ jobs:
         env:
           POSTGRES_USER: klicker
           POSTGRES_PASSWORD: klicker
-          POSTGRES_DB: main
+          POSTGRES_DB: klicker
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -256,7 +256,7 @@ jobs:
           pnpm run prisma:reset:raw -f
           pnpm run seed:test
         env:
-          DATABASE_URL: postgres://klicker:klicker@localhost:5432/main
+          DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker
 
       - name: Start services in the background
         run: pnpm run start:test &
@@ -274,6 +274,6 @@ jobs:
         env:
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
-          DATABASE_URL: postgres://klicker:klicker@localhost:5432/main
+          DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
