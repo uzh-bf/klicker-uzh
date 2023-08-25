@@ -188,7 +188,7 @@ function Index() {
       <div className="flex flex-col flex-1 gap-4 overflow-y-auto md:flex-row">
         {dataQuestions && dataQuestions.userQuestions && (
           <div>
-            <div className="hidden md:block h-full">
+            <div className="hidden h-full md:block">
               <TagList
                 key={creationMode}
                 compact={!!creationMode}
@@ -228,7 +228,7 @@ function Index() {
           ) : (
             <>
               <div className="flex flex-row content-center justify-between flex-none">
-                <div className="flex flex-row pb-3 gap-1 items-center">
+                <div className="flex flex-row items-center gap-1 pb-3">
                   <div className="flex flex-col text-sm pr-0.5">
                     <Checkbox
                       checked={

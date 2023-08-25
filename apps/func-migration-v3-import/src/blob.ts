@@ -7,7 +7,7 @@ async function getBlobClient(context: InvocationContext) {
   if (!blobClient) {
     try {
       const blobServiceClient = new BlobServiceClient(
-        process.env.DUPLICATED_MIGRATION_BLOB_IMPORT_CONNECTION_STRING as string
+        process.env.MIGRATION_BLOB_IMPORT_IMAGES_CONNECTION_STRING as string
       )
 
       blobClient = blobServiceClient.getContainerClient(

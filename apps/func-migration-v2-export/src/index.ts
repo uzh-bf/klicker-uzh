@@ -4,7 +4,7 @@ import getMongoDB from './mongo'
 
 interface Message {
   messageId: string
-  sub: string
+  newUserId: string
   originalEmail: string
 }
 
@@ -74,7 +74,7 @@ const serviceBusTrigger = async function (
   const blobClient = await getBlobClient(context)
 
   const blockBlobClient = blobClient.getBlockBlobClient(
-    `migration_export_v2_${matchingUser._id}_${Date.now()}.json`
+    `${messageData.newUserId}_${Date.now()}.json`
   )
 
   await blockBlobClient.uploadData(Buffer.from(JSON.stringify(exportData)), {

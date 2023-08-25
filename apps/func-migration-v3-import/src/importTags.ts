@@ -58,6 +58,7 @@ export async function importTags(
     }
   } catch (error) {
     context.error('Something went wrong while importing tags: ', error)
+    //TODO: sent message in teams (webhook) and throw error
   }
   return mappedTags
 }

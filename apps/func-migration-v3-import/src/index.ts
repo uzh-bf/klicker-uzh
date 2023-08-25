@@ -18,21 +18,19 @@ const blobTrigger: StorageBlobHandler = async function (
 
     const content = data.toString()
 
+    const newUserId = context.triggerMetadata?.blobTrigger
+      ?.split('/')[2]
+      .split('_')[0]
+
     const parsedContent = JSON.parse(content)
 
     context.log(
-      'MigrationV3Import function processing a new exported blob',
-      parsedContent['user_email']
+      `MigrationV3Import function processing a new exported blob with originalEmail: ${parsedContent['user_email']} and new user id: ${newUserId}`
     )
-
-    // const email = 'lecturer@bf.uzh.ch'
-    const email = parsedContent['user_email']
-
-    context.log('__dirname: ', __dirname)
 
     const user = await prisma.user.findUnique({
       where: {
-        email,
+        id: newUserId,
       },
     })
 
