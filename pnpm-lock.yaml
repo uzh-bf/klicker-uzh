@@ -77,6 +77,9 @@ importers:
       react-dom:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
+      sharp:
+        specifier: 0.32.4
+        version: 0.32.4
       tailwind-merge:
         specifier: 1.14.0
         version: 1.14.0

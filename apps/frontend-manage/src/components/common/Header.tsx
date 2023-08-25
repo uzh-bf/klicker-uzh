@@ -29,16 +29,19 @@ function Header({ user }: HeaderProps): React.ReactElement {
       href: '/',
       label: t('manage.general.questionPool'),
       active: router.pathname == '/',
+      cy: 'questions',
     },
     {
       href: '/sessions',
       label: t('manage.general.sessions'),
       active: router.pathname == '/sessions',
+      cy: 'sessions',
     },
     {
       href: '/courses',
       label: t('manage.general.courses'),
       active: router.pathname == '/courses',
+      cy: 'courses',
     },
   ]
 
@@ -50,8 +53,8 @@ function Header({ user }: HeaderProps): React.ReactElement {
       <Navigation className={{ root: 'bg-slate-800' }}>
         {navigationItems.map((item) => (
           <Navigation.ButtonItem
+            data={{ cy: item.cy }}
             key={item.href}
-            href={item.href}
             label={item.label}
             className={{
               label: twMerge(
@@ -60,6 +63,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
                   'text-red underline underline-offset-[0.3rem] decoration-2'
               ),
               root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+            }}
+            onClick={() => {
+              router.push(item.href)
             }}
           />
         ))}
