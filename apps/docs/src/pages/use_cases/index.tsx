@@ -2,10 +2,9 @@ import {
   faArrowRight,
   faChevronDown,
   faChevronRight,
+  faExpand,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import TreeItem from '@mui/lab/TreeItem'
 import TreeView from '@mui/lab/TreeView'
 import Layout from '@theme/Layout'
@@ -23,12 +22,12 @@ export default function index() {
 
   return (
     <Layout>
-      <div className="grid items-start grid-cols-5 gap-4 p-4 pt-8 m-auto max-w-7xl">
-        <div className="hidden col-span-1 border shadow rounded-xl md:grid">
+      <div className="m-auto grid max-w-7xl grid-cols-5 items-start gap-4 p-4 pt-8">
+        <div className="col-span-1 hidden rounded-xl border shadow md:grid">
           <TreeView
             aria-label="file system navigator"
-            defaultCollapseIcon={<ExpandMoreIcon />}
-            defaultExpandIcon={<ChevronRightIcon />}
+            defaultCollapseIcon={<FontAwesomeIcon icon={faChevronRight} />}
+            defaultExpandIcon={<FontAwesomeIcon icon={faExpand} />}
             multiSelect
           >
             <TreeItem
@@ -157,7 +156,7 @@ export default function index() {
 function Collapsible({ title, emoji, children }) {
   const { getCollapseProps, getToggleProps, isExpanded } = useCollapse()
   return (
-    <div className="w-full max-w-6xl p-4 m-auto ">
+    <div className="m-auto w-full max-w-6xl p-4 ">
       <div {...getToggleProps()} className="flex flex-row items-center gap-2 ">
         {isExpanded ? (
           <FontAwesomeIcon icon={faChevronDown} />
@@ -167,7 +166,7 @@ function Collapsible({ title, emoji, children }) {
         <H2>{title}</H2>
         {emoji}
       </div>
-      <hr className="h-1 m-0 bg-black rounded" />
+      <hr className="m-0 h-1 rounded bg-black" />
       <section {...getCollapseProps()}>{children}</section>
     </div>
   )
@@ -175,8 +174,8 @@ function Collapsible({ title, emoji, children }) {
 
 function Card({ title, image, children, detailsRef }) {
   return (
-    <div className="flex flex-row mt-4 max-h-80 rounded-xl bg-slate-100">
-      <div className="flex flex-col justify-center flex-1 p-8 md:p-16">
+    <div className="mt-4 flex max-h-80 flex-row rounded-xl bg-slate-100">
+      <div className="flex flex-1 flex-col justify-center p-8 md:p-16">
         <H3 className={{ root: 'text-xl' }}>{title}</H3>
         <p className="font-sans text-lg">{children}</p>
         <div>
@@ -190,8 +189,8 @@ function Card({ title, image, children, detailsRef }) {
           </Button>
         </div>
       </div>
-      <div className="relative items-center flex-1 hidden justify-items-center md:flex">
-        <img className="object-cover w-full h-full rounded-r-xl" src={image} />
+      <div className="relative hidden flex-1 items-center justify-items-center md:flex">
+        <img className="h-full w-full rounded-r-xl object-cover" src={image} />
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import { faChevronRight, faExpand } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import TreeItem from '@mui/lab/TreeItem'
 import TreeView from '@mui/lab/TreeView'
 import Layout from '@theme/Layout'
@@ -17,13 +17,13 @@ export default function live_quiz() {
         className={'max-h-20 w-full object-cover md:max-h-80'}
         src={useCase.imageSrc}
       />
-      <div className="p-4 m-auto max-w-7xl md:pt-8">
-        <div className="grid items-start gap-4 grid-row md:grid-cols-11 md:flex-row md:gap-8">
-          <div className="hidden col-span-2 border shadow rounded-xl md:grid">
+      <div className="m-auto max-w-7xl p-4 md:pt-8">
+        <div className="grid-row grid items-start gap-4 md:grid-cols-11 md:flex-row md:gap-8">
+          <div className="col-span-2 hidden rounded-xl border shadow md:grid">
             <TreeView
               aria-label="file system navigator"
-              defaultCollapseIcon={<ExpandMoreIcon />}
-              defaultExpandIcon={<ChevronRightIcon />}
+              defaultCollapseIcon={<FontAwesomeIcon icon={faExpand} />}
+              defaultExpandIcon={<FontAwesomeIcon icon={faChevronRight} />}
               defaultExpanded={['1']}
               multiSelect
             >
@@ -69,7 +69,7 @@ export default function live_quiz() {
               </TreeItem>
             </TreeView>
           </div>
-          <div className="order-2 col-span-6 p-4 prose max-w-none md:order-1">
+          <div className="prose order-2 col-span-6 max-w-none p-4 md:order-1">
             <H1>{useCase.title}</H1>
             <div className="flex flex-row flex-wrap">
               {useCase.tags?.map((tag) => (
@@ -280,7 +280,7 @@ export default function live_quiz() {
             </section>
           </div>
 
-          <div className="order-1 col-span-6 p-4 prose rounded shadow md:order-2 md:col-span-3">
+          <div className="prose order-1 col-span-6 rounded p-4 shadow md:order-2 md:col-span-3">
             <H2>🎯 Goals</H2>
             <ul>
               <li>
