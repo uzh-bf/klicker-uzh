@@ -55,7 +55,6 @@ function Header({ user }: HeaderProps): React.ReactElement {
           <Navigation.ButtonItem
             data={{ cy: item.cy }}
             key={item.href}
-            href={item.href}
             label={item.label}
             className={{
               label: twMerge(
@@ -64,6 +63,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
                   'text-red underline underline-offset-[0.3rem] decoration-2'
               ),
               root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+            }}
+            onClick={() => {
+              router.push(item.href)
             }}
           />
         ))}
