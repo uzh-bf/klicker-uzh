@@ -69,7 +69,6 @@ function Index() {
     data: dataQuestions,
   } = useQuery(GetUserQuestionsDocument)
 
-  console.log('dataQuestions', dataQuestions)
   const {
     filters,
     sort,
