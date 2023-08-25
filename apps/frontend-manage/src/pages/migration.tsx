@@ -8,6 +8,7 @@ import {
 import { Button, TextField } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
 import Layout from 'src/components/Layout'
@@ -18,6 +19,7 @@ type SetBooleanState = React.Dispatch<React.SetStateAction<boolean>>
 function Migration({ query }) {
   //TODO: refactor code and simplify state handling
   const t = useTranslations()
+  const router = useRouter()
   const [isStep1Shown, setIsStep1Shown] = useState(true)
   const [isStep2Shown, setIsStep2Shown] = useState(false)
   const [isStep3Shown, setIsStep3Shown] = useState(false)
@@ -40,7 +42,16 @@ function Migration({ query }) {
   }
 
   useEffect(() => {
-    if (query?.token && !isStep1Completed && !isStep2Completed) {
+    if (query?.step) {
+      setIsStep1Completed(true)
+      setIsStep2Completed(true)
+      setIsStep3Completed(true)
+      setIsStep1Shown(false)
+      setIsStep2Shown(false)
+      setIsStep3Shown(false)
+      setIsStep4Shown(true)
+      setCurrentStep(4)
+    } else if (query?.token && !isStep1Completed && !isStep2Completed) {
       setIsStep1Completed(true)
       setIsStep2Completed(true)
       setIsStep1Shown(false)
@@ -181,6 +192,15 @@ function Migration({ query }) {
                     toggleStep(setIsStep3Shown)
                     toggleStep(setIsStep4Shown)
                     proceedToNextStep()
+
+                    router.push(
+                      {
+                        pathname: router.pathname,
+                        query: { ...router.query, step: 4 },
+                      },
+                      undefined,
+                      { shallow: true }
+                    )
                   } catch (error) {
                     console.log(
                       'An error occured while triggering the migration: ',
