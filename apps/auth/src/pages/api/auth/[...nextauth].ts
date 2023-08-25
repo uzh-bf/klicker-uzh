@@ -61,12 +61,12 @@ const EduIDProvider: Provider = {
   checks: ['pkce', 'state'],
 
   profile(profile) {
+    console.log('PROFILE', profile)
     return {
       id: profile.sub,
       email: profile.email,
       shortname: generateRandomString(8),
       lastLoginAt: new Date(),
-      affiliations: profile.swissEduIDLinkedAffiliation,
     }
   },
 }
@@ -158,22 +158,26 @@ export const authOptions: NextAuthOptions = {
     // async signIn({ user, account, profile, email }) {
     //   return true
     // },
+
     async jwt({ token, user, account, profile }) {
       token.role = UserRole.USER
       token.scope = (user as any).scope
-      if (profile?.affiliations) {
-        token.affiliations = profile?.affiliations
-        token.fullAccess = profile?.affiliations?.reduce((acc, affiliation) => {
-          try {
-            if (affiliation.split('@')[1].includes('uzh.ch')) {
-              return true
-            }
+      if (typeof profile?.swissEduIDLinkedAffiliation === 'object') {
+        token.affiliations = profile.swissEduIDLinkedAffiliation
+        token.fullAccess = profile.swissEduIDLinkedAffiliation.reduce(
+          (acc, affiliation) => {
+            try {
+              if (affiliation.split('@')[1].includes('uzh.ch')) {
+                return true
+              }
 
-            return acc || false
-          } catch (e) {
-            return false
-          }
-        }, false)
+              return acc || false
+            } catch (e) {
+              return false
+            }
+          },
+          false
+        )
       }
 
       return token

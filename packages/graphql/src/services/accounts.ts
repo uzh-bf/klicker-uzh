@@ -259,16 +259,18 @@ interface ChangeParticipantLocaleArgs {
 
 export async function changeParticipantLocale(
   { locale }: ChangeParticipantLocaleArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
+  ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
+
+  if (!ctx.user) return null
+
   const participant = await ctx.prisma.participant.update({
     where: { id: ctx.user.sub },
     data: { locale },
   })
 
   if (!participant) return null
-
-  ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
 
   return participant
 }

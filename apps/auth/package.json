@@ -8,7 +8,7 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@next-auth/prisma-adapter": "1.0.7",
-    "@uzh-bf/design-system": "2.0.12",
+    "@uzh-bf/design-system": "2.0.13",
     "bcryptjs": "2.4.3",
     "js-cookie": "3.0.5",
     "jsonwebtoken": "9.0.1",
@@ -19,6 +19,7 @@
     "nookies": "2.5.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "sharp": "0.32.4",
     "tailwind-merge": "1.14.0"
   },
   "devDependencies": {

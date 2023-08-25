@@ -55,7 +55,7 @@ function TagList({
   )
 
   return (
-    <div className="p-4 md:w-[18rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-full text-[0.9rem] overflow-y-auto">
+    <div className="flex flex-col flex-1 h-max max-h-full p-4 md:w-[18rem] border border-uzh-grey-60 border-solid rounded-md text-[0.9rem]">
       <Button
         className={{
           root: twMerge(
@@ -83,65 +83,63 @@ function TagList({
         <Button.Label>{t('manage.questionPool.resetFilters')}</Button.Label>
       </Button>
 
-      <div>
-        <TagHeader
-          text={t('manage.questionPool.questionTypes')}
-          state={questionTypesVisible}
-          setState={setQuestionTypesVisible}
-        />
-        {questionTypesVisible && (
-          <ul className="list-none">
-            {Object.values(QuestionType).map((type) => (
-              <TagItem
-                key={type}
-                text={t(`shared.${type}.typeLabel`)}
-                icon={activeType === type ? faListSolid : faListRegular}
-                active={activeType === type}
-                onClick={(): void => handleTagClick(type, true)}
-              />
-            ))}
-          </ul>
-        )}
-
-        <TagHeader
-          text={t('manage.questionPool.tags')}
-          state={userTagsVisible}
-          setState={setUserTagsVisible}
-        />
-
-        {userTagsVisible && (
-          <Suspense fallback={<Loader />}>
-            <SuspendedTags
-              activeTags={activeTags}
-              handleTagClick={handleTagClick}
-            />
-          </Suspense>
-        )}
-
-        <TagHeader
-          text={t('shared.generic.gamification')}
-          state={gamificationTagsVisible}
-          setState={setGamificationTagsVisible}
-        />
-        {gamificationTagsVisible && (
-          <ul className="list-none">
+      <TagHeader
+        text={t('manage.questionPool.questionTypes')}
+        state={questionTypesVisible}
+        setState={setQuestionTypesVisible}
+      />
+      {questionTypesVisible && (
+        <ul className="list-none">
+          {Object.values(QuestionType).map((type) => (
             <TagItem
-              text={t('shared.generic.sampleSolution')}
-              icon={faCheckCircle}
-              active={sampleSolution}
-              onClick={(): void => handleSampleSolutionClick(!sampleSolution)}
+              key={type}
+              text={t(`shared.${type}.typeLabel`)}
+              icon={activeType === type ? faListSolid : faListRegular}
+              active={activeType === type}
+              onClick={(): void => handleTagClick(type, true)}
             />
-            <TagItem
-              text={t('manage.questionPool.answerFeedbacks')}
-              icon={faCommentDots}
-              active={answerFeedbacks}
-              onClick={(): void => {
-                handleAnswerFeedbacksClick(!answerFeedbacks)
-              }}
-            />
-          </ul>
-        )}
-      </div>
+          ))}
+        </ul>
+      )}
+
+      <TagHeader
+        text={t('manage.questionPool.tags')}
+        state={userTagsVisible}
+        setState={setUserTagsVisible}
+      />
+
+      {userTagsVisible && (
+        <Suspense fallback={<Loader />}>
+          <SuspendedTags
+            activeTags={activeTags}
+            handleTagClick={handleTagClick}
+          />
+        </Suspense>
+      )}
+
+      <TagHeader
+        text={t('shared.generic.gamification')}
+        state={gamificationTagsVisible}
+        setState={setGamificationTagsVisible}
+      />
+      {gamificationTagsVisible && (
+        <ul className="list-none">
+          <TagItem
+            text={t('shared.generic.sampleSolution')}
+            icon={faCheckCircle}
+            active={sampleSolution}
+            onClick={(): void => handleSampleSolutionClick(!sampleSolution)}
+          />
+          <TagItem
+            text={t('manage.questionPool.answerFeedbacks')}
+            icon={faCommentDots}
+            active={answerFeedbacks}
+            onClick={(): void => {
+              handleAnswerFeedbacksClick(!answerFeedbacks)
+            }}
+          />
+        </ul>
+      )}
 
       <div className="mt-4">
         <Button
