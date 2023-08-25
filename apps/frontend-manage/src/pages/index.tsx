@@ -1,17 +1,19 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   GetUserQuestionsDocument,
   Question,
+  ToggleIsArchivedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
 import { useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
-import { buildIndex, processItems } from '../lib/utils/filters'
 
 import {
+  faArchive,
   faChalkboardUser,
   faGraduationCap,
+  faInbox,
   faMagnifyingGlass,
   faSort,
   faSortAsc,
@@ -21,9 +23,16 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Checkbox, Select, TextField } from '@uzh-bf/design-system'
+import {
+  Button,
+  Checkbox,
+  Select,
+  TextField,
+  Tooltip,
+} from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { buildIndex, processItems } from 'src/lib/utils/filters'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
@@ -32,8 +41,15 @@ import CreationButton from '../components/sessions/creation/CreationButton'
 import SessionCreation from '../components/sessions/creation/SessionCreation'
 
 function Index() {
+  const dropdownItems = [
+    { value: 'CREATED', label: 'Datum' },
+    { value: 'TITLE', label: 'Titel' },
+  ]
+
   const router = useRouter()
   const t = useTranslations()
+
+  const [toggleIsArchived] = useMutation(ToggleIsArchivedDocument)
 
   const [searchInput, setSearchInput] = useState('')
   const [creationMode, setCreationMode] = useState<
@@ -89,13 +105,18 @@ function Index() {
       ])
     }
     return null
-  }, [dataQuestions])
+  }, [dataQuestions?.userQuestions])
 
   const processedQuestions = useMemo(() => {
     if (dataQuestions?.userQuestions) {
-      return processItems(dataQuestions?.userQuestions, filters, sort, index)
+      const items = processItems(
+        dataQuestions?.userQuestions,
+        filters,
+        sort,
+        index
+      )
+      return items
     }
-    return
   }, [dataQuestions?.userQuestions, filters, index, sort])
 
   const sortIcon = useMemo(() => {
@@ -184,8 +205,8 @@ function Index() {
                 handleTagClick={handleTagClick}
                 handleSampleSolutionClick={handleSampleSolutionClick}
                 handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
-                // handleToggleArchive={onToggleArchive}
-                // isArchiveActive={filters.archive}
+                handleToggleArchive={handleToggleArchive}
+                isArchiveActive={filters.archive}
               />
             </div>
             <div className="md:hidden">
@@ -200,8 +221,8 @@ function Index() {
                 handleTagClick={handleTagClick}
                 handleSampleSolutionClick={handleSampleSolutionClick}
                 handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
-                // handleToggleArchive={onToggleArchive}
-                // isArchiveActive={filters.archive}
+                handleToggleArchive={handleToggleArchive}
+                isArchiveActive={filters.archive}
               />
             </div>
           </div>
@@ -212,44 +233,51 @@ function Index() {
           ) : (
             <>
               <div className="flex flex-row content-center justify-between flex-none">
-                <div className="flex flex-row pb-3">
-                  <Checkbox
-                    checked={
-                      Object.values(selectedQuestions).filter((value) => value)
-                        .length > 0
-                    }
-                    onCheck={() => {
-                      setSelectedQuestions((prev) => {
-                        let allQuestions = {}
+                <div className="flex flex-row pb-3 gap-1 items-center">
+                  <div className="flex flex-col gap-1 text-sm pr-4">
+                    <Checkbox
+                      checked={
+                        Object.values(selectedQuestions).filter(
+                          (value) => value
+                        ).length > 0
+                      }
+                      onCheck={() => {
+                        setSelectedQuestions((prev) => {
+                          let allQuestions = {}
 
-                        if (processedQuestions) {
-                          if (!R.isEmpty(selectedQuestionData)) {
-                            // set questions after filtering to undefined
-                            // do not uncheck questions that are selected but not in the filtered set
-                            allQuestions = processedQuestions.reduce(
-                              (acc, curr) => ({
-                                ...acc,
-                                [curr.id]: undefined,
-                              }),
-                              {}
-                            )
-                          } else {
-                            // set all questions after filtering to their id and data
-                            allQuestions = processedQuestions.reduce(
-                              (acc, question) => ({
-                                ...acc,
-                                [question.id]: question,
-                              }),
-                              {}
-                            )
+                          if (processedQuestions) {
+                            if (!R.isEmpty(selectedQuestionData)) {
+                              // set questions after filtering to undefined
+                              // do not uncheck questions that are selected but not in the filtered set
+                              allQuestions = processedQuestions.reduce(
+                                (acc, curr) => ({
+                                  ...acc,
+                                  [curr.id]: undefined,
+                                }),
+                                {}
+                              )
+                            } else {
+                              // set all questions after filtering to their id and data
+                              allQuestions = processedQuestions.reduce(
+                                (acc, question) => ({
+                                  ...acc,
+                                  [question.id]: question,
+                                }),
+                                {}
+                              )
+                            }
                           }
-                        }
 
-                        return { ...prev, ...allQuestions }
-                      })
-                    }}
-                    className={{ root: 'mr-1' }}
-                  />
+                          return { ...prev, ...allQuestions }
+                        })
+                      }}
+                      className={{ root: 'mr-1' }}
+                    />
+                    {t('manage.questionPool.numSelected', {
+                      count: Object.keys(selectedQuestionData).length,
+                    })}
+                  </div>
+
                   <TextField
                     placeholder={t('manage.general.searchPlaceholder')}
                     value={searchInput}
@@ -263,34 +291,82 @@ function Index() {
                       field: 'w-30 pr-3 rounded-md',
                     }}
                   />
-                  <Button
-                    disabled={!sortBy}
-                    onClick={() => {
-                      handleSortOrderToggle()
-                    }}
-                    className={{
-                      root: 'h-10 mr-1 shadow-sm rounded-md',
-                    }}
-                  >
-                    <Button.Icon>
-                      <FontAwesomeIcon icon={sortIcon} />
-                    </Button.Icon>
-                  </Button>
-                  <Select
-                    className={{
-                      root: 'min-w-30',
-                      trigger: 'h-10',
-                    }}
-                    placeholder={t('manage.general.sortBy')}
-                    items={[
-                      { value: 'CREATED', label: t('manage.general.date') },
-                      { value: 'TITLE', label: t('manage.general.title') },
-                    ]}
-                    onChange={(newSortBy: string) => {
-                      setSortBy(newSortBy)
-                      handleSortByChange(newSortBy)
-                    }}
-                  />
+
+                  <div className="flex flex-row gap-1 pr-3">
+                    <Button
+                      disabled={!sortBy}
+                      onClick={() => {
+                        handleSortOrderToggle()
+                      }}
+                      className={{
+                        root: 'h-10 shadow-sm rounded-md',
+                      }}
+                    >
+                      <Button.Icon>
+                        <FontAwesomeIcon icon={sortIcon} />
+                      </Button.Icon>
+                    </Button>
+                    <Select
+                      className={{
+                        root: 'min-w-30',
+                        trigger: 'h-10',
+                      }}
+                      placeholder={t('manage.general.sortBy')}
+                      items={[
+                        { value: 'CREATED', label: t('manage.general.date') },
+                        { value: 'TITLE', label: t('manage.general.title') },
+                      ]}
+                      onChange={(newSortBy: string) => {
+                        setSortBy(newSortBy)
+                        handleSortByChange(newSortBy)
+                      }}
+                    />
+                  </div>
+
+                  {Object.keys(selectedQuestionData).length > 0 && (
+                    <>
+                      <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
+                        <Button
+                          className={{
+                            root: 'h-10 ml-1',
+                          }}
+                          onClick={async () => {
+                            await toggleIsArchived({
+                              variables: {
+                                questionIds:
+                                  Object.keys(selectedQuestionData).map(Number),
+                                isArchived: true,
+                              },
+                            })
+                            setSelectedQuestions({})
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faArchive} />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        tooltip={t('manage.questionPool.restoreFromArchive')}
+                      >
+                        <Button
+                          className={{
+                            root: 'h-10 ml-1',
+                          }}
+                          onClick={async () => {
+                            await toggleIsArchived({
+                              variables: {
+                                questionIds:
+                                  Object.keys(selectedQuestionData).map(Number),
+                                isArchived: false,
+                              },
+                            })
+                            setSelectedQuestions({})
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faInbox} />
+                        </Button>
+                      </Tooltip>
+                    </>
+                  )}
                 </div>
                 <Button
                   onClick={() =>

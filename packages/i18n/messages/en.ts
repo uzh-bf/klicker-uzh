@@ -480,7 +480,8 @@ Your data will never be shared with other parties beside the above and will neve
       createGroupTask: 'Create group task',
       createQuestionCaps: 'CREATE QUESTION',
       resetFilters: 'Reset filters',
-      showArchive: 'Show archive',
+      showArchived: 'Show archived',
+      hideArchived: 'Hide archived',
       questionTypes: 'Question types',
       tags: 'Tags',
       noTagsAvailable: 'No tags available',
@@ -492,6 +493,9 @@ Your data will never be shared with other parties beside the above and will neve
         'Are you sure you want to delete the following question(s)?',
       noQuestionRecovery:
         'This action cannot be undone. The question(s) will be permanently deleted and cannot be restored. Questions will not be removed from existing sessions.',
+      numSelected: '{count} selected',
+      moveToArchive: 'Move to archive',
+      restoreFromArchive: 'Restore from archive',
     },
     tags: {
       deleteTag: 'Delete tag',
@@ -789,7 +793,7 @@ Your data will never be shared with other parties beside the above and will neve
       noFeedbacksMatchFilter:
         'No feedbacks match the current filter settings...',
       resolvedDuringSession: 'Resolved during session',
-      confusionTitle: 'Confusion',
+      confusion: 'Confusion',
       minStep60s: 'The step size must be at least 60 seconds.',
       validMinSteps: 'Please enter a valid minimum step size.',
       minWindowLength: 'The window length must be at least 1.',

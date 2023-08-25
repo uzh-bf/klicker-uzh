@@ -51,6 +51,7 @@ const EduIDProvider: Provider = {
           sub: { essential: true },
           email: { essential: true },
           swissEduPersonUniqueID: { essential: true },
+          swissEduIDLinkedAffiliation: { essential: false },
         },
       },
       scope: 'openid email https://login.eduid.ch/authz/User.Read',
@@ -60,11 +61,13 @@ const EduIDProvider: Provider = {
   checks: ['pkce', 'state'],
 
   profile(profile) {
+    console.log('PROFILE', profile)
     return {
       id: profile.sub,
       email: profile.email,
       shortname: generateRandomString(8),
       lastLoginAt: new Date(),
+      affiliations: profile.swissEduIDLinkedAffiliation,
     }
   },
 }
@@ -153,20 +156,40 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token, user, account }) {
-      // if there are a user and account on the first invocation, we are logging in a user
-      // otherwise, the login is related to a participant
-      if (user && account) {
-        token.role = UserRole.USER
-        token.scope = (user as any).scope
+    // async signIn({ user, account, profile, email }) {
+    //   return true
+    // },
+
+    async jwt({ token, user, account, profile }) {
+      console.log('JWT', token, user, account, profile)
+
+      token.role = UserRole.USER
+      token.scope = (user as any).scope
+      if (profile?.affiliations) {
+        token.affiliations = profile?.affiliations
+        token.fullAccess = profile?.affiliations?.reduce((acc, affiliation) => {
+          try {
+            if (affiliation.split('@')[1].includes('uzh.ch')) {
+              return true
+            }
+
+            return acc || false
+          } catch (e) {
+            return false
+          }
+        }, false)
       }
+
       return token
     },
     async redirect({ url, baseUrl }) {
       // allows relative callback URLs
       if (url.startsWith('/')) return `${baseUrl}${url}`
       // allows callback URLs that end with valid klicker domains
-      else if (url.includes('klicker.local') || url.includes('127.0.0.1'))
+      else if (
+        url.includes(process.env.COOKIE_DOMAIN as string) ||
+        url.includes('127.0.0.1')
+      )
         return url
       // return the homepage for all other URLs
       return baseUrl

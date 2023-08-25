@@ -475,7 +475,8 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
       createGroupTask: 'Gruppenaufgabe erstellen',
       createQuestionCaps: 'FRAGE ERSTELLEN',
       resetFilters: 'Filter zurücksetzen',
-      showArchive: 'Archiv anzeigen',
+      showArchived: 'Archiv anzeigen',
+      hideArchived: 'Archiv verstecken',
       questionTypes: 'Fragetypen',
       tags: 'Tags',
       noTagsAvailable: 'Keine Tags verfügbar',
@@ -487,6 +488,9 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         'Sind Sie sich sicher, dass Sie die folgende(n) Frage(n) löschen möchten?',
       noQuestionRecovery:
         'Gelöschte Fragen können nicht wiederhergestellt werden. Aus bestehenden Sessionen werden gelöschte Fragen nicht entfernt.',
+      numSelected: '{count} ausgewählt',
+      moveToArchive: 'Ins Archiv verschieben',
+      restoreFromArchive: 'Aus dem Archiv wiederherstellen',
     },
     tags: {
       deleteTag: 'Tag löschen',
@@ -792,7 +796,7 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
       noFeedbacksMatchFilter:
         'Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen überein...',
       resolvedDuringSession: 'Während der Session gelöst',
-      confusionTitle: 'Verständnis',
+      confusion: 'Verständnis',
       minStep60s: 'Die Schrittweite muss mindestens 60 Sekunden betragen.',
       validMinSteps: 'Bitte geben Sie eine gültige Mindestschrittweite ein.',
       minWindowLength: 'Die Fensterlänge muss mindestens 1 betragen.',

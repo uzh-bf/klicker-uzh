@@ -1,0 +1,6 @@
+mutation UpdateTagOrdering($originIx: Int!, $targetIx: Int!) {
+  updateTagOrdering(originIx: $originIx, targetIx: $targetIx) {
+    id
+    order
+  }
+}

@@ -1,30 +1,27 @@
-import { useQuery } from '@apollo/client'
 import {
   faCheckCircle,
   faCircleXmark,
   faRectangleList as faListRegular,
 } from '@fortawesome/free-regular-svg-icons'
 import {
+  faArchive,
   faCommentDots,
   faRectangleList as faListSolid,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetUserTagsDocument,
-  QuestionType,
-  Tag,
-} from '@klicker-uzh/graphql/dist/ops'
+import { QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SuspendedTags from './SuspendedTags'
 import TagHeader from './TagHeader'
 import TagItem from './TagItem'
-import UserTag from './UserTag'
 
 interface Props {
   compact: boolean
+  isArchiveActive: boolean
   activeTags: string[]
   activeType: string
   sampleSolution: boolean
@@ -33,11 +30,12 @@ interface Props {
   handleTagClick: (questionType: string, selected?: boolean) => void
   handleSampleSolutionClick: (selected?: boolean) => void
   handleAnswerFeedbacksClick: (selected?: boolean) => void
+  handleToggleArchive: () => void
 }
 
-// TODO: re-add archive toggle
 function TagList({
   compact,
+  isArchiveActive,
   activeTags,
   activeType,
   sampleSolution,
@@ -46,23 +44,15 @@ function TagList({
   handleReset,
   handleSampleSolutionClick,
   handleAnswerFeedbacksClick,
+  handleToggleArchive,
 }: Props): React.ReactElement {
   const t = useTranslations()
-  const {
-    data: tagsData,
-    loading: tagsLoading,
-    error: tagsError,
-  } = useQuery(GetUserTagsDocument)
 
   const [questionTypesVisible, setQuestionTypesVisible] = useState(!compact)
   const [userTagsVisible, setUserTagsVisible] = useState(!compact)
   const [gamificationTagsVisible, setGamificationTagsVisible] = useState(
     !compact
   )
-
-  const tags = tagsData?.userTags?.map((tag) => {
-    return { name: tag.name, id: tag.id }
-  })
 
   return (
     <div className="p-4 md:w-[18rem] border border-uzh-grey-60 border-solid md:max-h-full rounded-md h-full text-[0.9rem] overflow-y-auto">
@@ -93,19 +83,6 @@ function TagList({
         <Button.Label>{t('manage.questionPool.resetFilters')}</Button.Label>
       </Button>
 
-      {/* <Button
-          className={twMerge(
-            isArchiveActive && 'text-red-600',
-            'w-full text-base bg-white sm:hover:bg-grey-40 sm:hover:text-red-600 !py-[0.2rem] mb-2 flex flex-row justify-center'
-          )}
-          onClick={(): void => handleToggleArchive(true)}
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faBoxArchive} />
-          </Button.Icon>
-          <Button.Label>{t("manage.questionPool.showArchive")}</Button.Label>
-        </Button> */}
-
       <div>
         <TagHeader
           text={t('manage.questionPool.questionTypes')}
@@ -131,45 +108,15 @@ function TagList({
           state={userTagsVisible}
           setState={setUserTagsVisible}
         />
-        {userTagsVisible &&
-          ((): React.ReactElement => {
-            if (tagsLoading) {
-              return (
-                <div className="my-4">
-                  <Loader />
-                </div>
-              )
-            }
 
-            if (tagsError) {
-              return (
-                <UserNotification type="error" message={tagsError.message} />
-              )
-            }
-
-            if (tags?.length === 0) {
-              return (
-                <UserNotification type="info">
-                  {t('manage.questionPool.noTagsAvailable')}
-                </UserNotification>
-              )
-            }
-
-            return (
-              <ul className="list-none">
-                {tags?.map(
-                  (tag: Tag, index: number): React.ReactElement => (
-                    <UserTag
-                      key={index}
-                      tag={tag}
-                      handleTagClick={handleTagClick}
-                      active={activeTags.includes(tag.name)}
-                    />
-                  )
-                )}
-              </ul>
-            )
-          })()}
+        {userTagsVisible && (
+          <Suspense fallback={<Loader />}>
+            <SuspendedTags
+              activeTags={activeTags}
+              handleTagClick={handleTagClick}
+            />
+          </Suspense>
+        )}
 
         <TagHeader
           text={t('shared.generic.gamification')}
@@ -194,6 +141,25 @@ function TagList({
             />
           </ul>
         )}
+      </div>
+
+      <div className="mt-4">
+        <Button
+          fluid
+          className={{
+            root: twMerge(isArchiveActive && 'text-red-600'),
+          }}
+          onClick={(): void => handleToggleArchive()}
+        >
+          <Button.Icon>
+            <FontAwesomeIcon icon={faArchive} />
+          </Button.Icon>
+          <Button.Label>
+            {isArchiveActive
+              ? t('manage.questionPool.hideArchived')
+              : t('manage.questionPool.showArchived')}
+          </Button.Label>
+        </Button>
       </div>
     </div>
   )
