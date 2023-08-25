@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.0.0-beta.4",
+  "version": "3.0.0-rc.14",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.8.0",
@@ -16,7 +16,7 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "2.0.12",
+    "@uzh-bf/design-system": "2.0.13",
     "d3": "7.8.4",
     "dayjs": "1.11.9",
     "deepmerge": "4.3.1",
@@ -38,6 +38,7 @@
     "react-dnd-html5-backend": "16.0.1",
     "react-dom": "18.2.0",
     "react-qrcode-logo": "2.9.0",
+    "react-select": "5.7.4",
     "react-sizeme": "3.0.2",
     "react-tagcloud": "2.3.1",
     "recharts": "2.7.2",

@@ -1,4 +1,9 @@
-import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowDown,
+  faArrowUp,
+  faPencil,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
@@ -10,6 +15,8 @@ interface TagActionsProps {
   setEditMode: (editMode: boolean) => void
   isDeletionModalOpen: boolean
   setIsDeletionModalOpen: (isDeletionModalOpen: boolean) => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
 }
 
 function TagActions({
@@ -18,9 +25,31 @@ function TagActions({
   setEditMode,
   isDeletionModalOpen,
   setIsDeletionModalOpen,
+  onMoveUp,
+  onMoveDown,
 }: TagActionsProps) {
   return (
     <div className="flex-row hidden text-black group-hover:flex">
+      <Button
+        basic
+        disabled={!onMoveUp}
+        onClick={() => onMoveUp?.()}
+        className={{
+          root: 'disabled:text-uzh-grey-60 sm:hover:text-primary',
+        }}
+      >
+        <FontAwesomeIcon icon={faArrowUp} className="mr-2" />
+      </Button>
+      <Button
+        basic
+        disabled={!onMoveDown}
+        onClick={() => onMoveDown?.()}
+        className={{
+          root: 'disabled:text-uzh-grey-60 sm:hover:text-primary',
+        }}
+      >
+        <FontAwesomeIcon icon={faArrowDown} className="mr-2" />
+      </Button>
       <Button
         basic
         disabled={active}

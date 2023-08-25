@@ -42,7 +42,6 @@ export async function updateParticipantProfile(
       return ctx.prisma.participant.update({
         where: { id: ctx.user.sub },
         data: {
-          isActive: true,
           isProfilePublic:
             typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
           password: hashedPassword,
@@ -59,7 +58,6 @@ export async function updateParticipantProfile(
   const participant = await ctx.prisma.participant.update({
     where: { id: ctx.user.sub },
     data: {
-      isActive: true,
       isProfilePublic:
         typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
       email: email ?? undefined,

@@ -259,16 +259,18 @@ interface ChangeParticipantLocaleArgs {
 
 export async function changeParticipantLocale(
   { locale }: ChangeParticipantLocaleArgs,
-  ctx: ContextWithUser
+  ctx: Context
 ) {
+  ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
+
+  if (!ctx.user) return null
+
   const participant = await ctx.prisma.participant.update({
     where: { id: ctx.user.sub },
     data: { locale },
   })
 
   if (!participant) return null
-
-  ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
 
   return participant
 }
@@ -321,7 +323,6 @@ export async function createParticipantAccount(
               username,
               password: await bcrypt.hash(password, 10),
               isEmailValid: true,
-              isActive: true,
               isProfilePublic,
               isSSOAccount: true,
               lastLoginAt: new Date(),
@@ -356,7 +357,6 @@ export async function createParticipantAccount(
         username,
         password: await bcrypt.hash(password, 10),
         isEmailValid: false,
-        isActive: true,
         isProfilePublic,
         isSSOAccount: false,
         lastLoginAt: new Date(),

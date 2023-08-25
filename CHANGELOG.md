@@ -2,6 +2,154 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.13...v3.0.0-rc.14) (2023-08-25)
+
+
+### Bug Fixes
+
+* **apps/auth:** affiliations in token ([4b33a0c](https://github.com/uzh-bf/klicker-uzh/commit/4b33a0c8f37c0b17cd0b549414554723215009b8))
+
+## [3.0.0-rc.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.12...v3.0.0-rc.13) (2023-08-25)
+
+
+### Bug Fixes
+
+* **apps/auth:** install sharp for image optimization in production ([39a996a](https://github.com/uzh-bf/klicker-uzh/commit/39a996a7662ccd70e9065476979e6cfe3e1fbd6b))
+* **apps/auth:** update affiliation extraction logic ([deff7d7](https://github.com/uzh-bf/klicker-uzh/commit/deff7d72ac169e87c3ab17aaed288033853fa891))
+* **apps/frontend-manage:** re-add cypress data tags to navbar items ([cbf1633](https://github.com/uzh-bf/klicker-uzh/commit/cbf1633cc1cbfa3a015a4cd8af14982c8f8d4876))
+* **apps/frontend-manage:** use onClick insteaf of href to prevent a full page reload on navigation ([d3c7bc6](https://github.com/uzh-bf/klicker-uzh/commit/d3c7bc60509d6be3708fecfc7b418b8e2c2c9b7b))
+* **packages/graphql:** ensure that language can be switched anonymously without error ([304143d](https://github.com/uzh-bf/klicker-uzh/commit/304143d2a300765efcef5e8a17d8d84d85cac7b0))
+* **packages/i18n:** update invalid translation for answerFeedbacks ([8888eeb](https://github.com/uzh-bf/klicker-uzh/commit/8888eeb0b50964c4bbc89434e0a6468d6e015563))
+
+## [3.0.0-rc.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.11...v3.0.0-rc.12) (2023-08-25)
+
+
+### Enhancements
+
+* **apps/frontend-*:** modernize navbar and translate student docs ([#3812](https://github.com/uzh-bf/klicker-uzh/issues/3812)) ([75f05d0](https://github.com/uzh-bf/klicker-uzh/commit/75f05d001f834db28fa589fa1fa200345d8adbca))
+* **apps/frontend-manage:** introduce partial checkbox state and fix layout issues on question pool ([#3811](https://github.com/uzh-bf/klicker-uzh/issues/3811)) ([d125e59](https://github.com/uzh-bf/klicker-uzh/commit/d125e5915aa9aa402f50ae004cf007a8af664211))
+
+## [3.0.0-rc.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.10...v3.0.0-rc.11) (2023-08-24)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** multi-select tag input with dynamic options ([#3809](https://github.com/uzh-bf/klicker-uzh/issues/3809)) ([1d7f69a](https://github.com/uzh-bf/klicker-uzh/commit/1d7f69a61a0ae9b1595ff3e05da2d1b65ef84dcf))
+
+## [3.0.0-rc.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.9...v3.0.0-rc.10) (2023-08-24)
+
+## [3.0.0-rc.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.8...v3.0.0-rc.9) (2023-08-24)
+
+## [3.0.0-rc.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.7...v3.0.0-rc.8) (2023-08-24)
+
+## [3.0.0-rc.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.6...v3.0.0-rc.7) (2023-08-24)
+
+## [3.0.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.5...v3.0.0-rc.6) (2023-08-24)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** use activeParticipation prop to display top 10 on session evaluation page ([7ec9d6e](https://github.com/uzh-bf/klicker-uzh/commit/7ec9d6e2ca4dbfdd75e0662fef55598371800bb1))
+
+## [3.0.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.4...v3.0.0-rc.5) (2023-08-24)
+
+
+### Bug Fixes
+
+* **packages/i18n:** manage.evaluation.confusion stored as wrong key ([a989b00](https://github.com/uzh-bf/klicker-uzh/commit/a989b00a1d9362f3f99c826a8630a0d15321ae44))
+
+## [3.0.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.3...v3.0.0-rc.4) (2023-08-24)
+
+
+### Bug Fixes
+
+* isActive and activeCount ([50313ba](https://github.com/uzh-bf/klicker-uzh/commit/50313ba36c521a42bb5681e887dc1b3b31d4ec7c))
+
+## [3.0.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.2...v3.0.0-rc.3) (2023-08-23)
+
+
+### Bug Fixes
+
+* **apps/auth:** use COOKIE_DOMAIN for allowed callback URL checks ([98af5f2](https://github.com/uzh-bf/klicker-uzh/commit/98af5f260db0338a41b5b26df1290db298ae0f09))
+
+
+### Enhancements
+
+* **deploy:** add configurations for auth application and eduid ([0ee83d5](https://github.com/uzh-bf/klicker-uzh/commit/0ee83d545f7a00d9108214d9adf94ce990d44894))
+
+## [3.0.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.1...v3.0.0-rc.2) (2023-08-23)
+
+
+### Bug Fixes
+
+* use https:// for production urls in manage app ([8efb1f8](https://github.com/uzh-bf/klicker-uzh/commit/8efb1f885cab3fee8e05ddb6d403b7f575cc4cd2))
+
+## [3.0.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.0...v3.0.0-rc.1) (2023-08-23)
+
+
+### Bug Fixes
+
+* use https:// for production urls in auth app ([36a4ee4](https://github.com/uzh-bf/klicker-uzh/commit/36a4ee4c03cef2571c1eff2fde40c4786c9a6e14))
+
+## [3.0.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-beta.4...v3.0.0-rc.0) (2023-08-23)
+
+
+### Features
+
+* add archive and tag ordering for questionpool ([#3756](https://github.com/uzh-bf/klicker-uzh/issues/3756)) ([2f93cce](https://github.com/uzh-bf/klicker-uzh/commit/2f93cce1a59fcaaac232a80b22308e3ea35af74a))
+* **apps/frontend-manage:** add batch operations for live session creation ([#3805](https://github.com/uzh-bf/klicker-uzh/issues/3805)) ([bd93f86](https://github.com/uzh-bf/klicker-uzh/commit/bd93f86160495375cb7b64af9930e4826f9349f5))
+* **apps/frontend-manage:** add multi-language support for frontend-manage ([#3794](https://github.com/uzh-bf/klicker-uzh/issues/3794)) ([25d76ba](https://github.com/uzh-bf/klicker-uzh/commit/25d76ba4a821059fc65073891d19a106f37ab7cb))
+* authentication with next-auth and Switch EduID, migration to pnpm with improved monorepo workspace ([#3790](https://github.com/uzh-bf/klicker-uzh/issues/3790)) ([acc39a4](https://github.com/uzh-bf/klicker-uzh/commit/acc39a455cdb4d412dd529bc338933b90259dd5f))
+* foundations for migration from v2 to v3 ([#3680](https://github.com/uzh-bf/klicker-uzh/issues/3680)) ([8dd21f3](https://github.com/uzh-bf/klicker-uzh/commit/8dd21f35e7aa5a59d28d74fbf2ae03016bfedf45))
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** issues with build due to formik ([712155a](https://github.com/uzh-bf/klicker-uzh/commit/712155a57bec36ea5fa00327d736998a87f8ee11))
+* **apps/frontend-*:** use correct import of shared-components for pwa and control frontends ([2513fd1](https://github.com/uzh-bf/klicker-uzh/commit/2513fd137d015ffb4971aab03b96a9c3cbc1bd3e))
+* change ordering of privacy and profile form on create account page ([5a69404](https://github.com/uzh-bf/klicker-uzh/commit/5a69404bdb06080733ae2705e45c2e3433a044f2))
+* **ci:** build only the specific scope for backend-response* ([242dc61](https://github.com/uzh-bf/klicker-uzh/commit/242dc617ef2154b1365406b0b6b0df2bf22eb646))
+* **ci:** ignore scripts when pruning in functions actions ([c280d32](https://github.com/uzh-bf/klicker-uzh/commit/c280d32f9473ba1cdf698fc7b3a34f8198a3b586))
+* **ci:** prune on the top-level in function actions ([87a484c](https://github.com/uzh-bf/klicker-uzh/commit/87a484ce77ed603821b3ea1138118b0957cf0e42))
+* **ci:** reverse pnpm build and directory change for function app builds ([9ddc40d](https://github.com/uzh-bf/klicker-uzh/commit/9ddc40dc887d905d1b25c0091877a9fccd8242a0))
+* **ci:** update install commands for pnpm ([2edc2fd](https://github.com/uzh-bf/klicker-uzh/commit/2edc2fdf1e58e1f6670c70a3b3662cf6736008ee))
+* **ci:** use pnpm instead of pn alias ([7827fe6](https://github.com/uzh-bf/klicker-uzh/commit/7827fe60dac1daf340f1b34293eff58df7047602))
+* **docs:** disable dark mode toggle ([46bb249](https://github.com/uzh-bf/klicker-uzh/commit/46bb2499b47f50491cfa90f415c7ee71a1aecb86))
+* **packages/lti:** add cross-env to enable build on windows ([e594f67](https://github.com/uzh-bf/klicker-uzh/commit/e594f67b58226189743591c764d5645dd5a96ecb))
+* port 8081 and pfctl ([426e5d2](https://github.com/uzh-bf/klicker-uzh/commit/426e5d2aa3e0012e7bd57f0a9184821c806bfeac))
+* simplify .gitattributes ([9f18215](https://github.com/uzh-bf/klicker-uzh/commit/9f18215540ea6ff3240f176d713d0b3e7d21a9a0))
+* **test:** reload after cookie reset on login page ([#3806](https://github.com/uzh-bf/klicker-uzh/issues/3806)) ([efdd802](https://github.com/uzh-bf/klicker-uzh/commit/efdd8021154fd58a8d3ac70149cc84e047514c68))
+
+
+### Other
+
+* **apps/frontend-manage:** add tests for question duplication and deletion ([#3776](https://github.com/uzh-bf/klicker-uzh/issues/3776)) ([2f06c4f](https://github.com/uzh-bf/klicker-uzh/commit/2f06c4f1821caa789f5462465653bd2090e455cf))
+
+
+### Dependencies
+
+* add cross-env everyhwere ([f88bc24](https://github.com/uzh-bf/klicker-uzh/commit/f88bc24d490a7cae1629a6a88e908bb974b1fa9e))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add tooltip symbols to workflow items on session creation wizards ([#3793](https://github.com/uzh-bf/klicker-uzh/issues/3793)) ([3647e53](https://github.com/uzh-bf/klicker-uzh/commit/3647e53acc63427e0dd0b91c6c5ea40d4bbc6086))
+* **frontend-*:** add loader and replace written loading states ([#3799](https://github.com/uzh-bf/klicker-uzh/issues/3799)) ([ba04f12](https://github.com/uzh-bf/klicker-uzh/commit/ba04f123bde82abb1de0bac3fe29f5aaa4b20a36))
+* logout using auth endpoint ([d53e683](https://github.com/uzh-bf/klicker-uzh/commit/d53e6835aa12e1791e522b386e695b712bc7eb4c))
+* migrate azure functions to v4 ([#3653](https://github.com/uzh-bf/klicker-uzh/issues/3653)) ([0583be3](https://github.com/uzh-bf/klicker-uzh/commit/0583be316426466c89d9a513a9a4e41ffcfe1924))
+* new privacy policy and terms of service, updates in application for conformity ([#3803](https://github.com/uzh-bf/klicker-uzh/issues/3803)) ([b9f2051](https://github.com/uzh-bf/klicker-uzh/commit/b9f205118a873d87e58670eba0e1f8a96f416be1))
+* setup *.klicker.local routing with traefik ([#3791](https://github.com/uzh-bf/klicker-uzh/issues/3791)) ([c6c15c6](https://github.com/uzh-bf/klicker-uzh/commit/c6c15c61fc0d2bb94c4f8471c534e940215b3d69))
+* welcome page and optional participation ([#3797](https://github.com/uzh-bf/klicker-uzh/issues/3797)) ([9d61f0c](https://github.com/uzh-bf/klicker-uzh/commit/9d61f0c9b906b6230e6d3a76f8266f8f43ab99c7))
+
+
+### Build and CI
+
+* add Azure Static Web Apps workflow file ([3c97e1f](https://github.com/uzh-bf/klicker-uzh/commit/3c97e1f1d8c5fe548bbcccc4b1c70e8c66c50a11))
+* add Azure Static Web Apps workflow file ([aecff51](https://github.com/uzh-bf/klicker-uzh/commit/aecff51f882ced2c6c7e1b857de5124396ea7705))
+* run code-review-gpt on v3 ([6bf2746](https://github.com/uzh-bf/klicker-uzh/commit/6bf27460000fdf0de4f7e673d4ca19a522904761))
+* setup code-review-gpt ([570f707](https://github.com/uzh-bf/klicker-uzh/commit/570f707e4cf233d804ec063a94b22f96963ce5df))
+* use gpt-3.5-turbo ([add9865](https://github.com/uzh-bf/klicker-uzh/commit/add98653488d984d07323c74adc1b0698e587dc0))
+
 ## [3.0.0-beta.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-beta.3...v3.0.0-beta.4) (2023-07-18)
 
 
