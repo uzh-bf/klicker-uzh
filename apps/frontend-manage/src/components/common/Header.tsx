@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeUserLocaleDocument,
   GetUserRunningSessionsDocument,
-  LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Navigation, Select } from '@uzh-bf/design-system'
@@ -21,10 +20,27 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const t = useTranslations()
   const { pathname, asPath, query } = router
 
-  const [logoutUser] = useMutation(LogoutUserDocument)
   const [changeUserLocale] = useMutation(ChangeUserLocaleDocument)
 
   const { data } = useQuery(GetUserRunningSessionsDocument)
+
+  const navigationItems = [
+    {
+      href: '/',
+      label: t('manage.general.questionPool'),
+      active: router.pathname == '/',
+    },
+    {
+      href: '/sessions',
+      label: t('manage.general.sessions'),
+      active: router.pathname == '/sessions',
+    },
+    {
+      href: '/courses',
+      label: t('manage.general.courses'),
+      active: router.pathname == '/courses',
+    },
+  ]
 
   return (
     <div
@@ -32,22 +48,21 @@ function Header({ user }: HeaderProps): React.ReactElement {
       data-cy="navigation"
     >
       <Navigation className={{ root: 'bg-slate-800' }}>
-        <Navigation.ButtonItem
-          href="/"
-          label={t('manage.general.questionPool')}
-          className={{ label: 'font-bold text-white text-base' }}
-        />
-        <Navigation.ButtonItem
-          href="/sessions"
-          label={t('manage.general.sessions')}
-          className={{ label: 'font-bold text-white text-base' }}
-          data={{ cy: 'sessions' }}
-        />
-        <Navigation.ButtonItem
-          href="/courses"
-          label={t('manage.general.courses')}
-          className={{ label: 'font-bold text-white text-base' }}
-        />
+        {navigationItems.map((item) => (
+          <Navigation.ButtonItem
+            key={item.href}
+            href={item.href}
+            label={item.label}
+            className={{
+              label: twMerge(
+                'font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+                item.active &&
+                  'text-red underline underline-offset-[0.3rem] decoration-2'
+              ),
+              root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+            }}
+          />
+        ))}
       </Navigation>
       <Navigation className={{ root: '!p-0 bg-slate-800' }}>
         <div className="hidden md:block">
@@ -92,9 +107,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
           label={user?.shortname}
           dropdownWidth="w-[12rem]"
           className={{
-            label: 'font-bold text-white text-base my-auto',
-            icon: 'text-white',
-            root: 'flex flex-row items-center gap-1',
+            label:
+              'my-auto font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+            root: 'group flex flex-row items-center gap-1 text-white hover:bg-inherit transition-all duration-300 ease-in-out',
             dropdown: 'p-1.5 gap-0',
           }}
           data={{ cy: 'user-menu' }}
@@ -139,7 +154,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
           className={{
             root: 'my-auto',
             trigger:
-              'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
+              'text-white underline underline-offset-[0.3rem] decoration-2 rounded-none sm:hover:bg-transparent sm:hover:text-white',
           }}
           basic
         />
