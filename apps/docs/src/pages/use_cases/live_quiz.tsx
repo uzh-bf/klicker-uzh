@@ -18,9 +18,9 @@ export default function live_quiz() {
         className={'max-h-20 w-full object-cover md:max-h-80'}
         src="https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c"
       />
-      <div className="m-auto max-w-7xl p-4 md:pt-8">
+      <div className="p-4 m-auto max-w-7xl md:pt-8">
         <div className="flex flex-col items-start gap-4 md:flex-row md:gap-8">
-          <div className="prose max-w-none p-4 md:w-2/3">
+          <div className="order-2 p-4 prose max-w-none md:order-1 md:w-2/3">
             <H1>(Gamified) Live Quizzes</H1>
             <div className="flex flex-row flex-wrap">
               {tags.map((tag) => (
@@ -219,7 +219,7 @@ export default function live_quiz() {
             </ul>
           </div>
 
-          <div className="prose max-w-none rounded p-4 shadow md:w-1/3">
+          <div className="order-1 p-4 prose rounded shadow max-w-none md:order-2 md:w-1/3">
             <H2>🎯 Goals</H2>
             <ul>
               <li>
