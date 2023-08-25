@@ -457,3 +457,20 @@ export async function createUserLogin(
 
   return login
 }
+
+export async function deleteUserLogin(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const login = await ctx.prisma.userLogin.findUnique({
+    where: { id },
+  })
+
+  if (!login) return null
+
+  const deletedItem = await ctx.prisma.userLogin.delete({
+    where: { id },
+  })
+
+  return deletedItem
+}

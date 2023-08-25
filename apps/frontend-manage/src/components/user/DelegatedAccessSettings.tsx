@@ -1,7 +1,9 @@
-import { useSuspenseQuery } from '@apollo/client'
+import { useMutation, useSuspenseQuery } from '@apollo/client'
 import { faArrowsRotate, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  CreateUserLoginDocument,
+  DeleteUserLoginDocument,
   GetUserLoginsDocument,
   UserLoginScope,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -26,6 +28,12 @@ interface DelegatedAccessSettingsProps {
 function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
   const t = useTranslations()
   const { data: userLogins } = useSuspenseQuery(GetUserLoginsDocument)
+  const [createUserLogin] = useMutation(CreateUserLoginDocument, {
+    refetchQueries: [GetUserLoginsDocument],
+  })
+  const [deleteUserLogin] = useMutation(DeleteUserLoginDocument, {
+    refetchQueries: [GetUserLoginsDocument],
+  })
 
   const loginSchema = Yup.object().shape({
     password: Yup.string().required(),
@@ -33,48 +41,50 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
     scope: Yup.string().required(t('manage.settings.scopeRequired')),
   })
 
-  // TODO: implement deletion functionality
-  // TODO: implement creation with type selection, password generated with regeneration
-
   return (
     <div className="mb-5">
-      {userLogins.userLogins?.map((login) => (
-        <div
-          key={login.id}
-          className={twMerge(
-            'w-full border border-solid rounded flex flex-row justify-between bg-neutral-200 p-1'
-          )}
-        >
-          <div className="flex flex-row items-center gap-3">
-            <div>{login.name}</div>
-            <div
-              className={twMerge(
-                'w-max rounded py-0.5 px-1 text-sm font-bold',
-                login.scope === UserLoginScope.FullAccess && 'bg-green-300',
-                login.scope === UserLoginScope.SessionExec && 'bg-yellow-200',
-                login.scope === UserLoginScope.ReadOnly && 'bg-orange-300'
-              )}
-            >
-              {t(`manage.settings.${login.scope}`)}
+      <div className="flex flex-col gap-1">
+        {userLogins.userLogins?.map((login) => (
+          <div
+            key={login.id}
+            className={twMerge(
+              'w-full border border-solid rounded flex flex-row justify-between bg-neutral-200 p-1'
+            )}
+          >
+            <div className="flex flex-row items-center gap-5 ml-1">
+              <div>{login.name}</div>
+              <div
+                className={twMerge(
+                  'w-max rounded py-0.5 px-1 text-sm font-bold',
+                  login.scope === UserLoginScope.FullAccess && 'bg-green-300',
+                  login.scope === UserLoginScope.SessionExec && 'bg-yellow-200',
+                  login.scope === UserLoginScope.ReadOnly && 'bg-orange-300'
+                )}
+              >
+                {t(`manage.settings.${login.scope}`)}
+              </div>
+            </div>
+            <div className="flex flex-row gap-0.5">
+              <div className="text-neutral-500 text-sm mr-2 mt-auto">
+                {login.lastLoginAt
+                  ? t('manage.settings.lastUsed', {
+                      date: dayjs(login.lastLoginAt).format('DD.MM.YYYY'),
+                    })
+                  : t('manage.settings.lastUsedNever')}
+              </div>
+              <Button
+                className={{ root: 'group' }}
+                onClick={() => deleteUserLogin({ variables: { id: login.id } })}
+              >
+                <FontAwesomeIcon
+                  icon={faTrash}
+                  className="group-hover:text-red-600"
+                />
+              </Button>
             </div>
           </div>
-          <div className="flex flex-row gap-0.5">
-            <div className="text-neutral-500 text-sm mr-2 mt-auto">
-              {login.lastLoginAt
-                ? t('manage.settings.lastUsed', {
-                    date: dayjs(login.lastLoginAt).format('DD.MM.YYYY'),
-                  })
-                : t('manage.settings.lastUsedNever')}
-            </div>
-            <Button className={{ root: 'group' }}>
-              <FontAwesomeIcon
-                icon={faTrash}
-                className="group-hover:text-red-600"
-              />
-            </Button>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       <div className="mt-5">
         <H4>{t('manage.settings.createDelegatedLogin')}</H4>
@@ -89,12 +99,21 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
               numbers: true,
             }),
             name: '',
-            scope: undefined,
+            scope: UserLoginScope.FullAccess,
           }}
           validationSchema={loginSchema}
-          // TODO
-          onSubmit={async (values) => {
-            console.log(values)
+          onSubmit={async (values, { resetForm }) => {
+            const result = await createUserLogin({
+              variables: {
+                name: values.name,
+                password: values.password,
+                scope: values.scope,
+              },
+            })
+
+            if (result.data?.createUserLogin) {
+              resetForm()
+            }
           }}
         >
           {({ values, setFieldValue, isValid, isSubmitting }) => {

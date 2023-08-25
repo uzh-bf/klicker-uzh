@@ -1021,7 +1021,18 @@ export const Mutation = builder.mutationType({
           scope: t.arg({ type: UserLoginScope, required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.createUserLogin(args, ctx)
+          return AccountService.createUserLogin(args, ctx) as any
+        },
+      }),
+
+      deleteUserLogin: asUser.field({
+        nullable: true,
+        type: UserLogin,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.deleteUserLogin(args, ctx) as any
         },
       }),
     }
