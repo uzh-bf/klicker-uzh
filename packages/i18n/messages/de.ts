@@ -128,6 +128,8 @@ export default {
       respond: 'Antworten',
       responses: 'Antworten',
       ok: 'OK',
+      english: 'Englisch',
+      german: 'Deutsch',
     },
     contentInput: {
       boldStyle:
@@ -547,6 +549,8 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
     settings: {
       userSettings: 'Benutzereinstellungen',
       languageSettings: 'Spracheinstellungen',
+      languageTooltip:
+        'Ändern Sie hier die Programmsprache der KlickerUZH Manage App. Beachten Sie, dass dies keinerlei Einfluss auf Ihre Kursinhalte oder die Spracheinstellungen bei anderen Nutzern oder Studierenden in Ihren Kursen hat.',
       FULL_ACCESS: 'Voller Zugriff',
       SESSION_EXEC: 'Durchführung von Sessionen',
       READ_ONLY: 'Nur Lesen',

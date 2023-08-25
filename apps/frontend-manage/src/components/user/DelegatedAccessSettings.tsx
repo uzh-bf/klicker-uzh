@@ -185,7 +185,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                   type="submit"
                   className={{
                     root: twMerge(
-                      'float-right mt-2 bg-primary-80 text-white',
+                      'float-right mt-2 mb-2 bg-primary-80 text-white',
                       (!isValid || isSubmitting) &&
                         'bg-primary-20 cursor-not-allowed'
                     ),

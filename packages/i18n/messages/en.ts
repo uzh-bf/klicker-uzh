@@ -128,6 +128,8 @@ export default {
       respond: 'Respond',
       responses: 'Responses',
       ok: 'OK',
+      english: 'English',
+      german: 'German',
     },
     contentInput: {
       boldStyle:
@@ -550,6 +552,8 @@ If multipliers are activated on the activities, these multipliers are applied to
     settings: {
       userSettings: 'User Settings',
       languageSettings: 'Language Settings',
+      languageTooltip:
+        'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
       FULL_ACCESS: 'Full Access',
       SESSION_EXEC: 'Session Execution',
       READ_ONLY: 'Read Only',
