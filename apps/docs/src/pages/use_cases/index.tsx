@@ -89,7 +89,11 @@ export default function index() {
             defaultExpandIcon={<ChevronRightIcon />}
             multiSelect
           >
-            <TreeItem nodeId="1" label="📚 Use Cases">
+            <TreeItem
+              nodeId="1"
+              label="📚 Use Cases"
+              onClick={() => setFilteredUseCases(useCases)}
+            >
               <TreeItem nodeId="2" label="📣 Strengthen Interaction">
                 <TreeItem
                   nodeId="3"
@@ -190,7 +194,9 @@ export default function index() {
           </TreeView>
         </div>
         <div className="col-span-5 md:col-span-4">
-          <H1>Use Cases</H1>
+          <div onClick={() => setFilteredUseCases(useCases)}>
+            <H1>Use Cases</H1>
+          </div>
           {filteredUseCases.map((useCase) => (
             <Card
               title={useCase.title}
