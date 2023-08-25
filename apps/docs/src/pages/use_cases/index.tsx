@@ -13,15 +13,65 @@ import { Button, H1, H2, H3 } from '@uzh-bf/design-system'
 import { useCollapse } from 'react-collapsed'
 
 export default function index() {
-  const allContent = {
+  const useCases = {
     live_quiz: {
       title: '(Gamified) Live Quizzes',
-      image:
+      imageSrc:
         'https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c',
       description:
         'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+      detailsRef: 'live_quiz',
+    },
+    flipped_classroom: {
+      title: 'Flipped Classroom',
+      imageSrc:
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8ZmxpcHBlZCUyMGNsYXNzcm9vbXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60',
+      description:
+        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+      detailsRef: 'flipped_classroom',
+    },
+    microlearning: {
+      title: 'Microlearning',
+      imageSrc:
+        'https://images.unsplash.com/photo-1494059980473-813e73ee784b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGxlYXJuaW5nfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60',
+      description:
+        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+      detailsRef: 'microlearning',
+    },
+    flashcards: {
+      title: 'Practice Quizzes and Flashcards',
+      imageSrc:
+        'https://images.unsplash.com/photo-1517429481096-5bc77134f77c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHF1aXp6fGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60',
+      description:
+        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+      detailsRef: 'flashcards',
+    },
+    group_activities: {
+      title: 'Group Activities',
+      imageSrc:
+        'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z3JvdXB8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60',
+      description:
+        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+      detailsRef: 'group_activities',
+    },
+    live_qa: {
+      title: 'Live Q&A and Real-Time Feedback',
+      imageSrc:
+        'https://images.unsplash.com/photo-1657987974860-a2b837df5fc0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fFElMjZBfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60',
+      description:
+        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+      detailsRef: 'live_qa',
+    },
+    gamification: {
+      title: 'Gamification',
+      imageSrc:
+        'https://images.unsplash.com/photo-1553481187-be93c21490a9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z2FtZXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60',
+      description:
+        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+      detailsRef: 'gamification',
     },
   }
+
   return (
     <Layout>
       <div className="grid items-start grid-cols-5 gap-4 p-4 pt-8">
@@ -62,186 +112,15 @@ export default function index() {
         </div>
         <div className="col-span-5 md:col-span-4">
           <H1 className={{ root: 'max-w-6xl ' }}>Use Cases</H1>
-          <Card
-            title={'(Gamified) Live Quizzes'}
-            image={
-              'https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c'
-            }
-            detailsRef={'live_quiz'}
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Live Q&A and Real-Time Feedback'}
-            image={
-              'https://images.unsplash.com/photo-1657987974860-a2b837df5fc0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fFElMjZBfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Group Activities'}
-            image={
-              'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z3JvdXB8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Flipped Classroom'}
-            image={
-              'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8ZmxpcHBlZCUyMGNsYXNzcm9vbXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-
-          <Card
-            title={'Gamification'}
-            image={
-              'https://images.unsplash.com/photo-1553481187-be93c21490a9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z2FtZXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'(Gamified) Live Quizzes'}
-            image={
-              'https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Practice Quizzes And Flashcards'}
-            image={
-              'https://images.unsplash.com/photo-1517429481096-5bc77134f77c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHF1aXp6fGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Microlearning'}
-            image={
-              'https://images.unsplash.com/photo-1494059980473-813e73ee784b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGxlYXJuaW5nfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Group Activities'}
-            image={
-              'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z3JvdXB8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-
-          <Card
-            title={'(Gamified) Live Quizzes'}
-            image={
-              'https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Practice Quizzes And Flashcards'}
-            image={
-              'https://images.unsplash.com/photo-1517429481096-5bc77134f77c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHF1aXp6fGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Microlearning'}
-            image={
-              'https://images.unsplash.com/photo-1494059980473-813e73ee784b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGxlYXJuaW5nfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Flipped Classroom'}
-            image={
-              'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8ZmxpcHBlZCUyMGNsYXNzcm9vbXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-
-          <Card
-            title={'Practice Quizzes And Flashcards'}
-            image={
-              'https://images.unsplash.com/photo-1517429481096-5bc77134f77c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHF1aXp6fGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Microlearning'}
-            image={
-              'https://images.unsplash.com/photo-1494059980473-813e73ee784b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGxlYXJuaW5nfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
-          <Card
-            title={'Group Activities'}
-            image={
-              'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z3JvdXB8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60'
-            }
-          >
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia
-            expedita, corrupti odit animi ratione placeat est numquam distinctio
-            cum illo! Qui animi possimus vitae architecto consequuntur sit
-            neque. Qui, ipsa!
-          </Card>
+          {Object.keys(useCases).map((keyName, i) => (
+            <Card
+              title={useCases[keyName].title}
+              image={useCases[keyName].imageSrc}
+              detailsRef={useCases[keyName].detailsRef}
+            >
+              {useCases[keyName].description}
+            </Card>
+          ))}
         </div>
       </div>
     </Layout>
