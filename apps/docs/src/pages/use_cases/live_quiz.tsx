@@ -14,7 +14,7 @@ export default function live_quiz() {
         src="https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c"
       />
       <div className="p-4 m-auto max-w-7xl md:pt-8">
-        <div className="grid items-start grid-cols-11 gap-4 md:flex-row md:gap-8">
+        <div className="grid items-start gap-4 grid-row md:grid-cols-11 md:flex-row md:gap-8">
           <div className="hidden col-span-2 border shadow rounded-xl md:grid">
             <TreeView
               aria-label="file system navigator"
@@ -278,7 +278,7 @@ export default function live_quiz() {
             </section>
           </div>
 
-          <div className="order-1 col-span-3 p-4 prose rounded shadow max-w-none md:order-2">
+          <div className="order-1 col-span-6 p-4 prose rounded shadow md:order-2 md:col-span-3">
             <H2>🎯 Goals</H2>
             <ul>
               <li>
