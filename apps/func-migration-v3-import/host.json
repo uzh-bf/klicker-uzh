@@ -24,7 +24,7 @@
   },
   "extensions": {
     "queues": {
-        "maxDequeueCount": 1
+      "maxDequeueCount": 1
     }
-}
+  }
 }
