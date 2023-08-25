@@ -2,6 +2,16 @@ import Layout from '@theme/Layout'
 import { H1, H2, H3, Tag } from '@uzh-bf/design-system'
 
 export default function live_quiz() {
+  const tags = [
+    'Interactive lecture',
+    'Student Engagement',
+    'Interaction in teaching',
+    'Immediate feedback',
+    'Surveys and opinions',
+    'Estimation questions',
+    'Knowledge evaluation',
+    'Gamification',
+  ]
   return (
     <Layout>
       <img
@@ -13,35 +23,9 @@ export default function live_quiz() {
           <div className="p-4 md:w-2/3">
             <H1>(Gamified) Live Quizzes</H1>
             <div className="flex flex-row flex-wrap">
-              <Tag
-                label="Interactive lecture"
-                className={{ root: 'mr-1 mt-1' }}
-              />
-              <Tag
-                label="Student Engagement"
-                className={{ root: 'mr-1 mt-1' }}
-              />
-              <Tag
-                label="Interaction in teaching "
-                className={{ root: 'mr-1 mt-1' }}
-              />
-              <Tag
-                label="Immediate feedback"
-                className={{ root: 'mr-1 mt-1' }}
-              />
-              <Tag
-                label="Surveys and opinions"
-                className={{ root: 'mr-1 mt-1' }}
-              />
-              <Tag
-                label="Estimation questions"
-                className={{ root: 'mr-1 mt-1' }}
-              />
-              <Tag
-                label="Knowledge evaluation"
-                className={{ root: 'mr-1 mt-1' }}
-              />
-              <Tag label="Gamification" className={{ root: 'mr-1 mt-1' }} />
+              {tags.map((tag) => (
+                <Tag label={tag} className={{ root: 'mr-1 mt-1 ' }} />
+              ))}
             </div>
             <H3 className={{ root: 'pt-4' }}>Introduction</H3>
             <p>
@@ -60,6 +44,8 @@ export default function live_quiz() {
               points for answering. Anonymity is a key feature that facilitates
               active contributions, as students have the option to participate
               anonymously, reducing potential barriers or fear of judgment.
+              <br />
+              <br />
               Teachers can create an environment that encourages active
               engagement and fosters student participation, ultimately enhancing
               the learning experience for all students.
@@ -235,7 +221,7 @@ export default function live_quiz() {
           </div>
 
           <div className="rounded p-4 shadow md:w-1/3">
-            <H2>Goals</H2>
+            <H2>🎯 Goals</H2>
             <ul>
               <li>
                 Activate and encourage student engagement by incorporating
