@@ -412,6 +412,8 @@ enum SessionBlockStatus {
 model SessionBlock {
   id Int @id @default(autoincrement())
 
+  originalId String? @unique
+
   order  Int?
   status SessionBlockStatus @default(SCHEDULED)
 
