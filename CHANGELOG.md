@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.13...v3.0.0-rc.14) (2023-08-25)
+
+
+### Bug Fixes
+
+* **apps/auth:** affiliations in token ([4b33a0c](https://github.com/uzh-bf/klicker-uzh/commit/4b33a0c8f37c0b17cd0b549414554723215009b8))
+
 ## [3.0.0-rc.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.12...v3.0.0-rc.13) (2023-08-25)
 
 
