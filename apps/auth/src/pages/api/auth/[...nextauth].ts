@@ -165,19 +165,22 @@ export const authOptions: NextAuthOptions = {
 
       token.role = UserRole.USER
       token.scope = (user as any).scope
-      if (profile?.affiliations) {
-        token.affiliations = profile?.affiliations
-        token.fullAccess = profile?.affiliations?.reduce((acc, affiliation) => {
-          try {
-            if (affiliation.split('@')[1].includes('uzh.ch')) {
-              return true
-            }
+      if (profile?.swissEduIDLinkedAffiliation) {
+        token.affiliations = profile?.swissEduIDLinkedAffiliation
+        token.fullAccess = profile?.swissEduIDLinkedAffiliation?.reduce(
+          (acc, affiliation) => {
+            try {
+              if (affiliation.split('@')[1].includes('uzh.ch')) {
+                return true
+              }
 
-            return acc || false
-          } catch (e) {
-            return false
-          }
-        }, false)
+              return acc || false
+            } catch (e) {
+              return false
+            }
+          },
+          false
+        )
       }
 
       return token
