@@ -7,11 +7,15 @@ import { H1, H2, Tag } from '@uzh-bf/design-system'
 import { useCases } from './constants'
 
 export default function live_quiz() {
+  const useCase = useCases.find(
+    (useCase) => useCase.detailsRef === live_quiz.name
+  )
+
   return (
     <Layout>
       <img
         className={'max-h-20 w-full object-cover md:max-h-80'}
-        src="https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c"
+        src={useCase.imageSrc}
       />
       <div className="p-4 m-auto max-w-7xl md:pt-8">
         <div className="grid items-start gap-4 grid-row md:grid-cols-11 md:flex-row md:gap-8">
@@ -66,13 +70,11 @@ export default function live_quiz() {
             </TreeView>
           </div>
           <div className="order-2 col-span-6 p-4 prose max-w-none md:order-1">
-            <H1>(Gamified) Live Quizzes</H1>
+            <H1>{useCase.title}</H1>
             <div className="flex flex-row flex-wrap">
-              {useCases.map((useCase) =>
-                useCase.tags?.map((tag) => (
-                  <Tag label={tag} className={{ root: 'mr-1 mt-1 ' }} />
-                ))
-              )}
+              {useCase.tags?.map((tag) => (
+                <Tag label={tag} className={{ root: 'mr-1 mt-1 ' }} />
+              ))}
             </div>
 
             <section id={'Introduction'}>
