@@ -16,7 +16,7 @@ import { twMerge } from 'tailwind-merge'
 type SetBooleanState = React.Dispatch<React.SetStateAction<boolean>>
 
 function Migration({ query }) {
-  //TODO: refactor code and simplify state handling --> sth. also not working when switching languages
+  //TODO: refactor code and simplify state handling
   const t = useTranslations()
   const [isStep1Shown, setIsStep1Shown] = useState(true)
   const [isStep2Shown, setIsStep2Shown] = useState(false)
@@ -40,7 +40,7 @@ function Migration({ query }) {
   }
 
   useEffect(() => {
-    if (query?.token) {
+    if (query?.token && !isStep1Completed && !isStep2Completed) {
       setIsStep1Completed(true)
       setIsStep2Completed(true)
       setIsStep1Shown(false)
