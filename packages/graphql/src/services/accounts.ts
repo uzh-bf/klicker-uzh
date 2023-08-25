@@ -1,4 +1,4 @@
-import { Locale, UserRole } from '@klicker-uzh/prisma'
+import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
@@ -426,4 +426,34 @@ export async function getUserLogins(ctx: ContextWithUser) {
   })
 
   return logins
+}
+
+interface UserLoginProps {
+  password: string
+  name: string
+  scope: UserLoginScope
+}
+
+export async function createUserLogin(
+  { password, name, scope }: UserLoginProps,
+  ctx: ContextWithUser
+) {
+  const hashedPassword = await bcrypt.hash(password, 12)
+  const login = await ctx.prisma.userLogin.create({
+    data: {
+      password: hashedPassword,
+      name,
+      scope,
+      user: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      user: true,
+    },
+  })
+
+  return login
 }

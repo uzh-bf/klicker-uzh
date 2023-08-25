@@ -28,7 +28,6 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
   const { data: userLogins } = useSuspenseQuery(GetUserLoginsDocument)
 
   const loginSchema = Yup.object().shape({
-    shortname: Yup.string().required(),
     password: Yup.string().required(),
     name: Yup.string().required(t('manage.settings.nameRequired')),
     scope: Yup.string().required(t('manage.settings.scopeRequired')),
@@ -83,7 +82,6 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
         <Formik
           isInitialValid={false}
           initialValues={{
-            shortname: shortname,
             password: generatePassword.generate({
               length: 16,
               uppercase: true,

@@ -53,7 +53,7 @@ import {
   FeedbackResponse,
   Session,
 } from './session'
-import { LocaleType, User } from './user'
+import { LocaleType, User, UserLogin, UserLoginScope } from './user'
 
 export const Mutation = builder.mutationType({
   fields(t) {
@@ -1009,6 +1009,19 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return QuestionService.updateTagOrdering(args, ctx)
+        },
+      }),
+
+      createUserLogin: asUser.field({
+        nullable: true,
+        type: UserLogin,
+        args: {
+          password: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+          scope: t.arg({ type: UserLoginScope, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.createUserLogin(args, ctx)
         },
       }),
     }

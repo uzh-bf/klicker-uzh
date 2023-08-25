@@ -404,6 +404,7 @@ type Mutation {
   createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
+  createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
