@@ -434,6 +434,7 @@ Your data will never be shared with other parties beside the above and will neve
       questionPool: 'Question Pool',
       sessions: 'Sessions',
       courses: 'Courses',
+      migration: 'Migration',
       generateToken: 'Generate login token',
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',

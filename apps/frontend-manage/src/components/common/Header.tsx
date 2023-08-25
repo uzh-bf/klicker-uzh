@@ -50,6 +50,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
         />
       </Navigation>
       <Navigation className={{ root: '!p-0 bg-slate-800' }}>
+        <Navigation.ButtonItem
+          href="/migration"
+          label={t('manage.general.migration')}
+          className={{ label: 'font-bold text-white text-base' }}
+        />
         <div className="hidden md:block">
           <Navigation.TriggerItem
             icon={

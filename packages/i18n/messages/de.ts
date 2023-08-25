@@ -429,6 +429,7 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
       questionPool: 'Fragepool',
       sessions: 'Sessionen',
       courses: 'Kurse',
+      migration: 'Migration',
       generateToken: 'Login-Token generieren',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
