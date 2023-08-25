@@ -1,10 +1,15 @@
 import { InvocationContext } from '@azure/functions'
 import axios from 'axios'
 import getBlobClient from './blob'
+import { sendTeamsNotifications } from './utils'
 
-export const migrateFiles = async (files: any, context: InvocationContext) => {
-  let mappedFileURLs: Record<string, Record<string, string>> = {}
+export const migrateFiles = async (
+  files: any,
+  context: InvocationContext,
+  user
+) => {
   try {
+    let mappedFileURLs: Record<string, Record<string, string>> = {}
     const blobClient = await getBlobClient(context)
 
     for (const file of files) {
@@ -29,9 +34,14 @@ export const migrateFiles = async (files: any, context: InvocationContext) => {
         originalName: file.originalName,
       }
     }
-  } catch (error) {
-    context.error('Something went wrong while importing files: ', error)
-  }
 
-  return mappedFileURLs
+    return mappedFileURLs
+  } catch (error) {
+    context.error('Something went wrong while migrating files: ', error)
+    sendTeamsNotifications(
+      'func/migration-v3-import',
+      `Failed migration of images for user '${user.email}'`
+    )
+    throw new Error('Something went wrong while migrating files')
+  }
 }

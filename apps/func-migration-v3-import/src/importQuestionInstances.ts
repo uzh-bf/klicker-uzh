@@ -1,7 +1,11 @@
 import { InvocationContext } from '@azure/functions'
 import { PrismaClient, QuestionInstanceType } from '@klicker-uzh/prisma'
 import { getLegacyResults } from './getLegacyResults'
-import { QuestionTypeMap, sliceIntoChunks } from './utils'
+import {
+  QuestionTypeMap,
+  sendTeamsNotifications,
+  sliceIntoChunks,
+} from './utils'
 
 export const importQuestionInstances = async (
   prisma: PrismaClient,
@@ -11,25 +15,26 @@ export const importQuestionInstances = async (
   batchSize: number,
   context: InvocationContext
 ) => {
-  let mappedQuestionInstancesIds: Record<string, number> = {}
-  // TODO: check if it works in azure functions, had to extract it out of the transaction since the multiple read operations caused a deadlock
-  const questions = await Promise.all(
-    Object.values(mappedQuestionIds).map((questionId) =>
-      prisma.question.findUnique({ where: { id: questionId } })
-    )
-  )
-  const questionInstancesInDb = await prisma.questionInstance.findMany()
-  const questionInstancesDict: Record<string, any> =
-    questionInstancesInDb.reduce((acc, qi) => {
-      if (qi.originalId != null) {
-        acc[qi.originalId] = qi
-      }
-      return acc
-    }, {})
-
-  const batches = sliceIntoChunks(importedQuestionInstances, batchSize)
-  let lostResults: any[] = []
   try {
+    //TODO: what if mappedQuestionIds is empty?
+    let mappedQuestionInstancesIds: Record<string, number> = {}
+    const questions = await Promise.all(
+      Object.values(mappedQuestionIds).map((questionId) =>
+        prisma.question.findUnique({ where: { id: questionId } })
+      )
+    )
+    const questionInstancesInDb = await prisma.questionInstance.findMany()
+    const questionInstancesDict: Record<string, any> =
+      questionInstancesInDb.reduce((acc, qi) => {
+        if (qi.originalId != null) {
+          acc[qi.originalId] = qi
+        }
+        return acc
+      }, {})
+
+    const batches = sliceIntoChunks(importedQuestionInstances, batchSize)
+    let lostResults: any[] = []
+
     for (const batch of batches) {
       await prisma.$transaction(async (prisma) => {
         for (const questionInstance of batch) {
@@ -160,12 +165,18 @@ export const importQuestionInstances = async (
         }
       })
     }
+
+    context.log('lostResults.length: ', lostResults.length)
+    return mappedQuestionInstancesIds
   } catch (error) {
     context.error(
       'Something went wrong while importing question instances: ',
       error
     )
+    sendTeamsNotifications(
+      'func/migration-v3-import',
+      `Failed migration of question instances for user '${user.email}'`
+    )
+    throw new Error('Something went wrong while importing question instances')
   }
-  context.log('lostResults.length: ', lostResults.length)
-  return mappedQuestionInstancesIds
 }

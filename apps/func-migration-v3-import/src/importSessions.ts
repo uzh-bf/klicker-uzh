@@ -5,7 +5,7 @@ import {
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { sliceIntoChunks } from './utils'
+import { sendTeamsNotifications, sliceIntoChunks } from './utils'
 
 const getSessionBlockStatus = (status: string) => {
   switch (status) {
@@ -35,18 +35,19 @@ export const importSessions = async (
   batchSize: number,
   context: InvocationContext
 ) => {
-  //new uuid is generated for each session -> string
-  let mappedSessionIds: Record<string, string> = {}
-  const sessionsInDb = await prisma.liveSession.findMany()
-  const sessionsDict: Record<string, any> = sessionsInDb.reduce((acc, s) => {
-    if (s.originalId != null) {
-      acc[s.originalId] = s
-    }
-    return acc
-  }, {})
-
-  const batches = sliceIntoChunks(importedSessions, batchSize)
   try {
+    //new uuid is generated for each session -> string
+    let mappedSessionIds: Record<string, string> = {}
+    const sessionsInDb = await prisma.liveSession.findMany()
+    const sessionsDict: Record<string, any> = sessionsInDb.reduce((acc, s) => {
+      if (s.originalId != null) {
+        acc[s.originalId] = s
+      }
+      return acc
+    }, {})
+
+    const batches = sliceIntoChunks(importedSessions, batchSize)
+
     for (const batch of batches) {
       await prisma.$transaction(async (prisma) => {
         for (const session of batch) {
@@ -201,8 +202,14 @@ export const importSessions = async (
         }
       })
     }
+
+    return mappedSessionIds
   } catch (error) {
     context.error('Something went wrong while importing sessions: ', error)
+    sendTeamsNotifications(
+      'func/migration-v3-import',
+      `Failed migration of sessions for user '${user.email}'`
+    )
+    throw new Error('Something went wrong while importing sessions')
   }
-  return mappedSessionIds
 }

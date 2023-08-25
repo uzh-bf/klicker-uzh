@@ -1,6 +1,6 @@
 import { InvocationContext } from '@azure/functions'
 import { PrismaClient } from '@klicker-uzh/prisma'
-import { sliceIntoChunks } from './utils'
+import { sendTeamsNotifications, sliceIntoChunks } from './utils'
 
 export async function importTags(
   prisma: PrismaClient,
@@ -9,16 +9,18 @@ export async function importTags(
   batchSize: number,
   context: InvocationContext
 ) {
-  let mappedTags: Record<string, Record<string, string | number>> = {}
-  const tagsInDb = await prisma.tag.findMany()
-  const tagsDict: Record<string, any> = tagsInDb.reduce((acc, t) => {
-    if (t.originalId != null) {
-      acc[t.originalId] = t
-    }
-    return acc
-  }, {})
-  const batches = sliceIntoChunks(tags, batchSize)
   try {
+    let mappedTags: Record<string, Record<string, string | number>> = {}
+    const tagsInDb = await prisma.tag.findMany()
+    const tagsDict: Record<string, any> = tagsInDb.reduce((acc, t) => {
+      if (t.originalId != null) {
+        acc[t.originalId] = t
+      }
+      return acc
+    }, {})
+
+    const batches = sliceIntoChunks(tags, batchSize)
+
     for (const batch of batches) {
       await prisma.$transaction(async (prisma) => {
         for (const tag of batch) {
@@ -56,9 +58,14 @@ export async function importTags(
         }
       })
     }
+
+    return mappedTags
   } catch (error) {
     context.error('Something went wrong while importing tags: ', error)
-    //TODO: sent message in teams (webhook) and throw error
+    sendTeamsNotifications(
+      'func/migration-v3-import',
+      `Failed migration of tags for user '${user.email}'`
+    )
+    throw new Error('Something went wrong while importing tags')
   }
-  return mappedTags
 }

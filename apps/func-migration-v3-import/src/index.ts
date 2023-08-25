@@ -6,6 +6,7 @@ import { importSessions } from './importSessions'
 import { importTags } from './importTags'
 import { migrateFiles } from './migrateFiles'
 import getPrismaClient from './prisma'
+import { sendTeamsNotifications } from './utils'
 
 const prisma = getPrismaClient()
 
@@ -38,6 +39,11 @@ const blobTrigger: StorageBlobHandler = async function (
       throw new Error('User not found')
     }
 
+    // sendTeamsNotifications(
+    //   'func/migration-v3-import',
+    //   `Started import of KlickerV2 data for user '${user.email}'`
+    // )
+
     // keep information in memory for more efficient lookup
     let mappedTags: Record<string, Record<string, string | number>> = {}
     let mappedFileURLs: Record<string, Record<string, string>> = {}
@@ -45,7 +51,7 @@ const blobTrigger: StorageBlobHandler = async function (
     let mappedQuestionInstancesIds: Record<string, number> = {}
     let mappedSessionIds: Record<string, string> = {}
 
-    mappedFileURLs = await migrateFiles(parsedContent.files, context)
+    mappedFileURLs = await migrateFiles(parsedContent.files, context, user)
     context.log('mappedFileURLs: ', mappedFileURLs)
 
     const batchSize = 50
@@ -88,9 +94,20 @@ const blobTrigger: StorageBlobHandler = async function (
     )
     context.log('mappedSessionIds: ', mappedSessionIds)
 
-    closeLegacyConnection()
+    sendTeamsNotifications(
+      'func/migration-v3-import',
+      `Successful migration for user '${user.email}'`
+    )
   } catch (e) {
     context.error('Something went wrong while importing data: ', e)
+    sendTeamsNotifications(
+      'func/migration-v3-import',
+      `Migration of KlickerV2 data failed`
+    )
+    throw new Error('Something went wrong while importing data')
+  } finally {
+    await closeLegacyConnection()
+    await prisma.$disconnect()
   }
 }
 

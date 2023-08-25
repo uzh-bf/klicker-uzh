@@ -1,6 +1,10 @@
 import { InvocationContext } from '@azure/functions'
 import { PrismaClient } from '@klicker-uzh/prisma'
-import { QuestionTypeMap, sliceIntoChunks } from './utils'
+import {
+  QuestionTypeMap,
+  sendTeamsNotifications,
+  sliceIntoChunks,
+} from './utils'
 
 export const importQuestions = async (
   prisma: PrismaClient,
@@ -11,21 +15,23 @@ export const importQuestions = async (
   mappedFileURLs: Record<string, Record<string, string>>,
   context: InvocationContext
 ) => {
-  let mappedQuestionIds: Record<string, number> = {}
-  const questionsInDb = await prisma.question.findMany()
-
-  const questionsDict: Record<string, any> = questionsInDb.reduce(
-    (acc, cur) => {
-      if (cur.originalId != null) {
-        acc[cur.originalId] = cur
-      }
-      return acc
-    },
-    {}
-  )
-
-  const batches = sliceIntoChunks(importedQuestions, batchSize)
   try {
+    mappedFileURLs = {}
+    let mappedQuestionIds: Record<string, number> = {}
+    const questionsInDb = await prisma.question.findMany()
+
+    const questionsDict: Record<string, any> = questionsInDb.reduce(
+      (acc, cur) => {
+        if (cur.originalId != null) {
+          acc[cur.originalId] = cur
+        }
+        return acc
+      },
+      {}
+    )
+
+    const batches = sliceIntoChunks(importedQuestions, batchSize)
+
     for (const batch of batches) {
       await prisma.$transaction(async (prisma) => {
         for (const question of batch) {
@@ -130,8 +136,14 @@ export const importQuestions = async (
         }
       })
     }
+
+    return mappedQuestionIds
   } catch (error) {
     context.error('Something went wrong while importing questions: ', error)
+    sendTeamsNotifications(
+      'func/migration-v3-import',
+      `Failed migration of questions for user '${user.email}'`
+    )
+    throw new Error('Something went wrong while importing questions')
   }
-  return mappedQuestionIds
 }
