@@ -68,7 +68,14 @@ function Header({ user }: HeaderProps): React.ReactElement {
         <Navigation.ButtonItem
           href="/migration"
           label={t('manage.general.migration')}
-          className={{ label: 'font-bold text-white text-base' }}
+          className={{
+            label: twMerge(
+              'font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+              router.pathname === '/migration' &&
+                'text-red underline underline-offset-[0.3rem] decoration-2'
+            ),
+            root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+          }}
         />
         <div className="hidden md:block">
           <Navigation.TriggerItem
