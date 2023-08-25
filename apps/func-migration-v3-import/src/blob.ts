@@ -14,7 +14,7 @@ async function getBlobClient(context: InvocationContext) {
         process.env.MIGRATION_BLOB_IMPORT_STORAGE_PATH as string
       )
     } catch (e) {
-      context.error("Something went wrong while creating a blob client: ", e)
+      context.error('Something went wrong while creating a blob client: ', e)
     }
   }
 

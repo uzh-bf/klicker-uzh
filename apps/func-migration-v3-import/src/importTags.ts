@@ -1,6 +1,6 @@
+import { InvocationContext } from '@azure/functions'
 import { PrismaClient } from '@klicker-uzh/prisma'
 import { sliceIntoChunks } from './utils'
-import { InvocationContext } from '@azure/functions'
 
 export async function importTags(
   prisma: PrismaClient,

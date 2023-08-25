@@ -230,7 +230,6 @@ export async function deleteQuestion(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
-
   const question = await ctx.prisma.question.update({
     where: {
       id: id,

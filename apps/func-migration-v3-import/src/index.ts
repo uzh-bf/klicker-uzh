@@ -1,11 +1,11 @@
 import { app, InvocationContext, StorageBlobHandler } from '@azure/functions'
-import getPrismaClient from './prisma'
+import { closeLegacyConnection } from './getLegacyResults'
+import { importQuestionInstances } from './importQuestionInstances'
+import { importQuestions } from './importQuestions'
+import { importSessions } from './importSessions'
 import { importTags } from './importTags'
 import { migrateFiles } from './migrateFiles'
-import { importQuestions } from './importQuestions'
-import { importQuestionInstances } from './importQuestionInstances'
-import { importSessions } from './importSessions'
-import { closeLegacyConnection } from './getLegacyResults'
+import getPrismaClient from './prisma'
 
 const prisma = getPrismaClient()
 
@@ -53,26 +53,20 @@ const blobTrigger: StorageBlobHandler = async function (
     const batchSize = 50
 
     const tags = parsedContent.tags
-    mappedTags = await importTags(
-      prisma, 
-      tags, 
-      user, 
-      batchSize,
-      context
-    )
-    context.log("mappedTags: ", mappedTags)
+    mappedTags = await importTags(prisma, tags, user, batchSize, context)
+    context.log('mappedTags: ', mappedTags)
 
     const questions = parsedContent.questions
     mappedQuestionIds = await importQuestions(
-      prisma, 
-      questions, 
-      mappedTags, 
-      user, 
-      batchSize, 
+      prisma,
+      questions,
+      mappedTags,
+      user,
+      batchSize,
       mappedFileURLs,
       context
-    ) 
-    context.log("mappedQuestionIds: ", mappedQuestionIds)
+    )
+    context.log('mappedQuestionIds: ', mappedQuestionIds)
 
     const questionInstances = parsedContent.questioninstances
     mappedQuestionInstancesIds = await importQuestionInstances(
@@ -83,7 +77,7 @@ const blobTrigger: StorageBlobHandler = async function (
       batchSize,
       context
     )
-    context.log("mappedQuestionInstancesIds: ", mappedQuestionInstancesIds)
+    context.log('mappedQuestionInstancesIds: ', mappedQuestionInstancesIds)
 
     const sessions = parsedContent.sessions
     mappedSessionIds = await importSessions(
@@ -94,7 +88,7 @@ const blobTrigger: StorageBlobHandler = async function (
       batchSize,
       context
     )
-    context.log("mappedSessionIds: ", mappedSessionIds)
+    context.log('mappedSessionIds: ', mappedSessionIds)
 
     closeLegacyConnection()
   } catch (e) {
