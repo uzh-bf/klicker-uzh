@@ -39,10 +39,10 @@ const blobTrigger: StorageBlobHandler = async function (
       throw new Error('User not found')
     }
 
-    // sendTeamsNotifications(
-    //   'func/migration-v3-import',
-    //   `Started import of KlickerV2 data for user '${user.email}'`
-    // )
+    sendTeamsNotifications(
+      'func/migration-v3-import',
+      `Started import of KlickerV2 data for user '${user.email}'`
+    )
 
     // keep information in memory for more efficient lookup
     let mappedTags: Record<string, Record<string, string | number>> = {}
