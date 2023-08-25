@@ -480,7 +480,7 @@ Your data will never be shared with other parties beside the above and will neve
         'Are you sure you want to delete the following question(s)?',
       noQuestionRecovery:
         'This action cannot be undone. The question(s) will be permanently deleted and cannot be restored. Questions will not be removed from existing sessions.',
-      numSelected: '{count} selected',
+      numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',
     },
