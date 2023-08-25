@@ -21,7 +21,7 @@ services:
     environment:
       POSTGRES_USER: klicker
       POSTGRES_PASSWORD: klicker
-      POSTGRES_DB: main
+      POSTGRES_DB: klicker
     ports:
       - 5432:5432
     networks:
