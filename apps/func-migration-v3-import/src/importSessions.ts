@@ -54,7 +54,6 @@ export const importSessions = async (
           const sessionExists = sessionsDict[session._id]
 
           if (sessionExists) {
-            context.log('session already exists: ', sessionExists)
             mappedSessionIds[session._id] = sessionExists.id
             continue
           }
@@ -210,6 +209,6 @@ export const importSessions = async (
       'func/migration-v3-import',
       `Failed migration of sessions for user '${user.email}'`
     )
-    throw new Error('Something went wrong while importing sessions')
+    throw new (error as any)()
   }
 }

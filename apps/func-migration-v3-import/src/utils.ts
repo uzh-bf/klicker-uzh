@@ -19,7 +19,6 @@ export const QuestionTypeMap: Record<string, QuestionType> = {
 }
 
 export async function sendTeamsNotifications(scope: string, text: string) {
-  // if (process.env.TEAMS_WEBHOOK_URL && process.env.NODE_ENV === 'production') {
   if (process.env.TEAMS_WEBHOOK_URL) {
     return axios.post(process.env.TEAMS_WEBHOOK_URL, {
       '@context': 'https://schema.org/extensions',
@@ -43,16 +42,30 @@ export async function sendEmailMigrationNotification(
   }
 
   try {
-    return axios.post(
-      `${process.env.LISTMONK_URL}/api/tx`,
+    // add the user as a subscriber to enable sending emails via listmonk
+    await axios.post(
+      `${process.env.LISTMONK_URL}/api/subscribers`,
       {
-        subscriber_emails: [email],
-        template_id: success ? 4 : 5,
+        email: email,
+        name: email,
+        status: 'enabled',
+        preconfirm_subscriptions: true,
       },
       { auth: LISTMONK_AUTH }
     )
-  } catch (e) {
-    console.error(e)
-    return false
+  } catch (e: any) {
+    if (e.response.status !== 409) {
+      console.error(e)
+    }
   }
+
+  //TODO: remove hardcoded template ids
+  return axios.post(
+    `${process.env.LISTMONK_URL}/api/tx`,
+    {
+      subscriber_emails: [email],
+      template_id: success ? 6 : 7,
+    },
+    { auth: LISTMONK_AUTH }
+  )
 }

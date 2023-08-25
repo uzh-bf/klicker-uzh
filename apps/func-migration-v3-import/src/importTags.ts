@@ -27,7 +27,6 @@ export async function importTags(
           const tagExists = tagsDict[tag._id]
 
           if (tagExists) {
-            context.log('tag already exists: ', tagExists)
             mappedTags[tag._id] = {
               id: tagExists.id,
               name: tagExists.name,
@@ -66,6 +65,6 @@ export async function importTags(
       'func/migration-v3-import',
       `Failed migration of tags for user '${user.email}'`
     )
-    throw new Error('Something went wrong while importing tags')
+    throw new (error as any)()
   }
 }

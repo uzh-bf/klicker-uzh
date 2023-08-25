@@ -21,5 +21,10 @@
   "concurrency": {
     "dynamicConcurrencyEnabled": true,
     "snapshotPersistenceEnabled": true
-  }
+  },
+  "extensions": {
+    "queues": {
+        "maxDequeueCount": 1
+    }
+}
 }

@@ -42,6 +42,6 @@ export const migrateFiles = async (
       'func/migration-v3-import',
       `Failed migration of images for user '${user.email}'`
     )
-    throw new Error('Something went wrong while migrating files')
+    throw new (error as any)()
   }
 }

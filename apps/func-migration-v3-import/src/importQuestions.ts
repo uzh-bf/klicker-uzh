@@ -16,7 +16,6 @@ export const importQuestions = async (
   context: InvocationContext
 ) => {
   try {
-    mappedFileURLs = {}
     let mappedQuestionIds: Record<string, number> = {}
     const questionsInDb = await prisma.question.findMany()
 
@@ -38,7 +37,6 @@ export const importQuestions = async (
           const questionExists = questionsDict[question._id]
 
           if (questionExists) {
-            context.log('question already exists: ', questionExists)
             mappedQuestionIds[question._id] = questionExists.id
             continue
           }
@@ -144,6 +142,6 @@ export const importQuestions = async (
       'func/migration-v3-import',
       `Failed migration of questions for user '${user.email}'`
     )
-    throw new Error('Something went wrong while importing questions')
+    throw new (error as any)()
   }
 }

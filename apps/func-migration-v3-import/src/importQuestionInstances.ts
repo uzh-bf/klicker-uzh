@@ -16,7 +16,6 @@ export const importQuestionInstances = async (
   context: InvocationContext
 ) => {
   try {
-    //TODO: what if mappedQuestionIds is empty?
     let mappedQuestionInstancesIds: Record<string, number> = {}
     const questions = await Promise.all(
       Object.values(mappedQuestionIds).map((questionId) =>
@@ -42,10 +41,6 @@ export const importQuestionInstances = async (
             questionInstancesDict[questionInstance._id]
 
           if (questionInstanceExists) {
-            context.log(
-              'questionInstance already exists: ',
-              questionInstanceExists
-            )
             mappedQuestionInstancesIds[questionInstance._id] =
               questionInstanceExists.id
             continue
@@ -58,17 +53,19 @@ export const importQuestionInstances = async (
               question.id === mappedQuestionIds[questionInstance.question]
           )
 
-          // TODO: move processQuestionData to shared-components and use it to create questionData
-          // TODO: add 'attachments' to relevant questionData types
           if (question) {
             questionData = {
               ...question,
+              attachments: null,
             }
             questionId = question?.id
           }
 
-          if (questionInstance.results == null) {
-            // TODO: restore results from legacy db
+          if (
+            questionInstance.results &&
+            !questionInstance.results.CHOICES &&
+            !questionInstance.results.FREE
+          ) {
             questionInstance.results = await getLegacyResults(
               questionInstance._id
             )
@@ -177,6 +174,6 @@ export const importQuestionInstances = async (
       'func/migration-v3-import',
       `Failed migration of question instances for user '${user.email}'`
     )
-    throw new Error('Something went wrong while importing question instances')
+    throw new (error as any)()
   }
 }

@@ -6,7 +6,7 @@ let mongo: Db
 async function getMongoDB(context: InvocationContext) {
   if (!mongo) {
     try {
-      const mongoURL = 'mongodb://klicker:klicker@localhost:27017'
+      const mongoURL = process.env.MIGRATION_MONGO_CONNECTION_STRING as string
 
       const mongoClient = new MongoClient(mongoURL)
       await mongoClient.connect()
