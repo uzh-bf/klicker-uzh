@@ -856,6 +856,7 @@ type Title {
 
 type User {
   email: String!
+  fullAccess: Boolean
   id: ID!
   locale: LocaleType!
   loginToken: String

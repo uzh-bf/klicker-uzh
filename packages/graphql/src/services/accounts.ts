@@ -141,7 +141,12 @@ export async function getUserProfile(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
   })
 
-  return user
+  if (!user) return null
+
+  return {
+    ...user,
+    fullAccess: ctx.user.fullAccess,
+  }
 }
 
 export function createParticipantToken(participantId: string) {

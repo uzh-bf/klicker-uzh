@@ -98,11 +98,11 @@ export const Query = builder.queryType({
         },
       }),
 
-      getLoginToken: asUser.prismaField({
+      getLoginToken: asUser.field({
         nullable: true,
         type: User,
-        resolve(_, __, ___, ctx) {
-          return AccountService.getLoginToken(ctx) as any
+        resolve(_, ___, ctx) {
+          return AccountService.getLoginToken(ctx)
         },
       }),
 
@@ -125,11 +125,11 @@ export const Query = builder.queryType({
         },
       }),
 
-      userProfile: asUser.prismaField({
+      userProfile: asUser.field({
         nullable: true,
         type: User,
-        resolve(_, __, ___, ctx) {
-          return AccountService.getUserProfile(ctx) as any
+        resolve(_, __, ctx) {
+          return AccountService.getUserProfile(ctx)
         },
       }),
 

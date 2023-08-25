@@ -24,6 +24,8 @@ export interface ContextWithUser extends Context {
   user: {
     sub: string
     role: UserRole
+    fullAccess: boolean
+    affiliations: string[]
   }
 }
 

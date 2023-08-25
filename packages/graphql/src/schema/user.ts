@@ -5,7 +5,11 @@ export const LocaleType = builder.enumType('LocaleType', {
   values: Object.values(DB.Locale),
 })
 
-export const User = builder.prismaObject('User', {
+export interface IUser extends DB.User {
+  fullAccess?: boolean
+}
+export const UserRef = builder.objectRef<IUser>('User')
+export const User = UserRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     email: t.exposeString('email'),
@@ -16,6 +20,11 @@ export const User = builder.prismaObject('User', {
     loginTokenExpiresAt: t.expose('loginTokenExpiresAt', {
       type: 'Date',
       nullable: true,
+    }),
+
+    fullAccess: t.boolean({
+      nullable: true,
+      resolve: (user) => user.fullAccess,
     }),
   }),
 })
