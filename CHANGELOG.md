@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.12...v3.0.0-rc.13) (2023-08-25)
+
+
+### Bug Fixes
+
+* **apps/auth:** install sharp for image optimization in production ([39a996a](https://github.com/uzh-bf/klicker-uzh/commit/39a996a7662ccd70e9065476979e6cfe3e1fbd6b))
+* **apps/auth:** update affiliation extraction logic ([deff7d7](https://github.com/uzh-bf/klicker-uzh/commit/deff7d72ac169e87c3ab17aaed288033853fa891))
+* **apps/frontend-manage:** re-add cypress data tags to navbar items ([cbf1633](https://github.com/uzh-bf/klicker-uzh/commit/cbf1633cc1cbfa3a015a4cd8af14982c8f8d4876))
+* **apps/frontend-manage:** use onClick insteaf of href to prevent a full page reload on navigation ([d3c7bc6](https://github.com/uzh-bf/klicker-uzh/commit/d3c7bc60509d6be3708fecfc7b418b8e2c2c9b7b))
+* **packages/graphql:** ensure that language can be switched anonymously without error ([304143d](https://github.com/uzh-bf/klicker-uzh/commit/304143d2a300765efcef5e8a17d8d84d85cac7b0))
+* **packages/i18n:** update invalid translation for answerFeedbacks ([8888eeb](https://github.com/uzh-bf/klicker-uzh/commit/8888eeb0b50964c4bbc89434e0a6468d6e015563))
+
 ## [3.0.0-rc.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.11...v3.0.0-rc.12) (2023-08-25)
 
 
