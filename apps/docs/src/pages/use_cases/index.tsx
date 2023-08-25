@@ -10,67 +10,74 @@ import TreeItem from '@mui/lab/TreeItem'
 import TreeView from '@mui/lab/TreeView'
 import Layout from '@theme/Layout'
 import { Button, H1, H2, H3 } from '@uzh-bf/design-system'
+import { useState } from 'react'
 import { useCollapse } from 'react-collapsed'
 
+const useCases = [
+  {
+    title: '(Gamified) Live Quizzes',
+    imageSrc:
+      'https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c',
+    description:
+      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+    detailsRef: 'live_quiz',
+  },
+  {
+    title: 'Flipped Classroom',
+    imageSrc:
+      'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8ZmxpcHBlZCUyMGNsYXNzcm9vbXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60',
+    description:
+      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+    detailsRef: 'flipped_classroom',
+  },
+  {
+    title: 'Microlearning',
+    imageSrc:
+      'https://images.unsplash.com/photo-1494059980473-813e73ee784b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGxlYXJuaW5nfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60',
+    description:
+      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+    detailsRef: 'microlearning',
+  },
+  {
+    title: 'Practice Quizzes and Flashcards',
+    imageSrc:
+      'https://images.unsplash.com/photo-1517429481096-5bc77134f77c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHF1aXp6fGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60',
+    description:
+      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+    detailsRef: 'flashcards',
+  },
+  {
+    title: 'Group Activities',
+    imageSrc:
+      'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z3JvdXB8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60',
+    description:
+      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+    detailsRef: 'group_activities',
+  },
+  {
+    title: 'Live Q&A and Real-Time Feedback',
+    imageSrc:
+      'https://images.unsplash.com/photo-1657987974860-a2b837df5fc0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fFElMjZBfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60',
+    description:
+      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+    detailsRef: 'live_qa',
+  },
+  {
+    title: 'Gamification',
+    imageSrc:
+      'https://images.unsplash.com/photo-1553481187-be93c21490a9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z2FtZXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60',
+    description:
+      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
+    detailsRef: 'gamification',
+  },
+]
+
 export default function index() {
-  const useCases = [
-    {
-      title: '(Gamified) Live Quizzes',
-      imageSrc:
-        'https://img.freepik.com/free-vector/web-help-support-page-template-design_1017-26772.jpg?w=996&t=st=1692859143~exp=1692859743~hmac=7f1540098197c20df60c26ceb08933f99857304b4aa230c0a795cd77d910323c',
-      description:
-        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
-      detailsRef: 'live_quiz',
-    },
-    {
-      title: 'Flipped Classroom',
-      imageSrc:
-        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8ZmxpcHBlZCUyMGNsYXNzcm9vbXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60',
-      description:
-        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
-      detailsRef: 'flipped_classroom',
-    },
-    {
-      title: 'Microlearning',
-      imageSrc:
-        'https://images.unsplash.com/photo-1494059980473-813e73ee784b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fGxlYXJuaW5nfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60',
-      description:
-        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
-      detailsRef: 'microlearning',
-    },
-    {
-      title: 'Practice Quizzes and Flashcards',
-      imageSrc:
-        'https://images.unsplash.com/photo-1517429481096-5bc77134f77c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHF1aXp6fGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60',
-      description:
-        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
-      detailsRef: 'flashcards',
-    },
-    {
-      title: 'Group Activities',
-      imageSrc:
-        'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Z3JvdXB8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=800&q=60',
-      description:
-        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
-      detailsRef: 'group_activities',
-    },
-    {
-      title: 'Live Q&A and Real-Time Feedback',
-      imageSrc:
-        'https://images.unsplash.com/photo-1657987974860-a2b837df5fc0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fFElMjZBfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60',
-      description:
-        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
-      detailsRef: 'live_qa',
-    },
-    {
-      title: 'Gamification',
-      imageSrc:
-        'https://images.unsplash.com/photo-1553481187-be93c21490a9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z2FtZXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=60',
-      description:
-        'Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia expedita, corrupti odit animi ratione placeat est numquam distinctio cum illo! Qui animi possimus vitae architecto consequuntur sit neque. Qui, ipsa!',
-      detailsRef: 'gamification',
-    },
-  ]
+  const [filteredUseCases, setFilteredUseCases] = useState(useCases)
+
+  const filteredByTitle = (title) => {
+    setFilteredUseCases(useCases.filter((useCase) => useCase.title === title))
+  }
 
   return (
     <Layout>
@@ -84,35 +91,107 @@ export default function index() {
           >
             <TreeItem nodeId="1" label="📚 Use Cases">
               <TreeItem nodeId="2" label="📣 Strengthen Interaction">
-                <TreeItem nodeId="3" label="(Gamified) Live Quizzes" />
-                <TreeItem nodeId="4" label="Live Q&A and Real-Time Feedback" />
-                <TreeItem nodeId="5" label="Group Activities" />
-                <TreeItem nodeId="6" label="Flipped Classroom" />
+                <TreeItem
+                  nodeId="3"
+                  label="(Gamified) Live Quizzes"
+                  onClick={() => filteredByTitle('(Gamified) Live Quizzes')}
+                />
+                <TreeItem
+                  nodeId="4"
+                  label="Live Q&A and Real-Time Feedback"
+                  onClick={() =>
+                    filteredByTitle('Live Q&A and Real-Time Feedback')
+                  }
+                />
+                <TreeItem
+                  nodeId="5"
+                  label="Group Activities"
+                  onClick={() => filteredByTitle('Group Activities')}
+                />
+                <TreeItem
+                  nodeId="6"
+                  label="Flipped Classroom"
+                  onClick={() => filteredByTitle('Flipped Classroom')}
+                />
               </TreeItem>
               <TreeItem nodeId="7" label="🕹️ Implement Gamification Elements">
-                <TreeItem nodeId="8" label="Gamification" />
-                <TreeItem nodeId="9" label="(Gamified) Live Quizzes" />
-                <TreeItem nodeId="10" label="Practice Quizzes and Flashcards" />
-                <TreeItem nodeId="11" label="Microlearning" />
-                <TreeItem nodeId="12" label="Group Activities" />
+                <TreeItem
+                  nodeId="8"
+                  label="Gamification"
+                  onClick={() => filteredByTitle('Gamification')}
+                />
+                <TreeItem
+                  nodeId="9"
+                  label="(Gamified) Live Quizzes"
+                  onClick={() => filteredByTitle('(Gamified) Live Quizzes')}
+                />
+                <TreeItem
+                  nodeId="10"
+                  label="Practice Quizzes and Flashcards"
+                  onClick={() =>
+                    filteredByTitle('Practice Quizzes and Flashcards')
+                  }
+                />
+                <TreeItem
+                  nodeId="11"
+                  label="Microlearning"
+                  onClick={() => filteredByTitle('Microlearning')}
+                />
+                <TreeItem
+                  nodeId="12"
+                  label="Group Activities"
+                  onClick={() => filteredByTitle('Group Activities')}
+                />
               </TreeItem>
               <TreeItem nodeId="13" label="📝 Receive Knowledge Feedback">
-                <TreeItem nodeId="14" label="(Gamified) Live Quizzes" />
-                <TreeItem nodeId="15" label="Practice Quizzes and Flashcards" />
-                <TreeItem nodeId="16" label="Microlearning" />
-                <TreeItem nodeId="17" label="Flipped Classroom" />
+                <TreeItem
+                  nodeId="14"
+                  label="(Gamified) Live Quizzes"
+                  onClick={() => filteredByTitle('(Gamified) Live Quizzes')}
+                />
+                <TreeItem
+                  nodeId="15"
+                  label="Practice Quizzes and Flashcards"
+                  onClick={() =>
+                    filteredByTitle('Practice Quizzes and Flashcards')
+                  }
+                />
+                <TreeItem
+                  nodeId="16"
+                  label="Microlearning"
+                  onClick={() => filteredByTitle('Microlearning')}
+                />
+                <TreeItem
+                  nodeId="17"
+                  label="Flipped Classroom"
+                  onClick={() => filteredByTitle('Flipped Classroom')}
+                />
               </TreeItem>
               <TreeItem nodeId="18" label="🌍 Learning Beyond Classroom">
-                <TreeItem nodeId="19" label="Practice Quizzes and Flashcards" />
-                <TreeItem nodeId="20" label="Microlearning" />
-                <TreeItem nodeId="21" label="Group Activities" />
+                <TreeItem
+                  nodeId="19"
+                  label="Practice Quizzes and Flashcards"
+                  onClick={() =>
+                    filteredByTitle('Practice Quizzes and Flashcards')
+                  }
+                />
+                <TreeItem
+                  nodeId="20"
+                  label="Microlearning"
+                  onClick={() => filteredByTitle('Microlearning')}
+                />
+                <TreeItem
+                  nodeId="21"
+                  label="Group Activities"
+                  onClick={() => filteredByTitle('Group Activities')}
+                />
               </TreeItem>
             </TreeItem>
           </TreeView>
         </div>
         <div className="col-span-5 md:col-span-4">
           <H1>Use Cases</H1>
-          {useCases.map((useCase) => (
+          {filteredUseCases.map((useCase) => (
             <Card
               title={useCase.title}
               image={useCase.imageSrc}
