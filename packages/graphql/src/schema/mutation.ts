@@ -94,7 +94,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeParticipantLocale: asParticipant.field({
+      changeParticipantLocale: t.field({
         nullable: true,
         type: Participant,
         args: {
