@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.11...v3.0.0-rc.12) (2023-08-25)
+
+
+### Enhancements
+
+* **apps/frontend-*:** modernize navbar and translate student docs ([#3812](https://github.com/uzh-bf/klicker-uzh/issues/3812)) ([75f05d0](https://github.com/uzh-bf/klicker-uzh/commit/75f05d001f834db28fa589fa1fa200345d8adbca))
+* **apps/frontend-manage:** introduce partial checkbox state and fix layout issues on question pool ([#3811](https://github.com/uzh-bf/klicker-uzh/issues/3811)) ([d125e59](https://github.com/uzh-bf/klicker-uzh/commit/d125e5915aa9aa402f50ae004cf007a8af664211))
+
 ## [3.0.0-rc.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.10...v3.0.0-rc.11) (2023-08-24)
 
 

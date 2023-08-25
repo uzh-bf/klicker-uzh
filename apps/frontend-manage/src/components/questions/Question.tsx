@@ -79,7 +79,7 @@ function Question({
   })
 
   return (
-    <div className="flex gap-1 items-center" data-cy="question-block">
+    <div className="flex gap-1.5 items-center" data-cy="question-block">
       <Checkbox checked={checked} onCheck={onCheck} />
 
       <div

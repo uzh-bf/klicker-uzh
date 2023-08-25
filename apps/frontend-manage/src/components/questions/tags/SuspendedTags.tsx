@@ -33,7 +33,7 @@ function SuspendedTags({ activeTags, handleTagClick }: Props) {
     )
 
   return (
-    <ul className="list-none">
+    <ul className="flex flex-col overflow-y-auto list-none">
       {data.userTags.map(
         (tag: Tag, ix): React.ReactElement => (
           <UserTag

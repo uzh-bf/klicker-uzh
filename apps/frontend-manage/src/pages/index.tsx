@@ -41,11 +41,6 @@ import CreationButton from '../components/sessions/creation/CreationButton'
 import SessionCreation from '../components/sessions/creation/SessionCreation'
 
 function Index() {
-  const dropdownItems = [
-    { value: 'CREATED', label: 'Datum' },
-    { value: 'TITLE', label: 'Titel' },
-  ]
-
   const router = useRouter()
   const t = useTranslations()
 
@@ -193,7 +188,7 @@ function Index() {
       <div className="flex flex-col flex-1 gap-4 overflow-y-auto md:flex-row">
         {dataQuestions && dataQuestions.userQuestions && (
           <div>
-            <div className="hidden md:block">
+            <div className="hidden md:block h-full">
               <TagList
                 key={creationMode}
                 compact={!!creationMode}
@@ -234,9 +229,14 @@ function Index() {
             <>
               <div className="flex flex-row content-center justify-between flex-none">
                 <div className="flex flex-row pb-3 gap-1 items-center">
-                  <div className="flex flex-col gap-1 text-sm pr-4">
+                  <div className="flex flex-col text-sm pr-0.5">
                     <Checkbox
                       checked={
+                        Object.values(selectedQuestions).filter(
+                          (value) => value
+                        ).length == processedQuestions?.length
+                      }
+                      partial={
                         Object.values(selectedQuestions).filter(
                           (value) => value
                         ).length > 0
@@ -271,10 +271,10 @@ function Index() {
                           return { ...prev, ...allQuestions }
                         })
                       }}
-                      className={{ root: 'mr-1' }}
                     />
                     {t('manage.questionPool.numSelected', {
                       count: Object.keys(selectedQuestionData).length,
+                      total: processedQuestions?.length,
                     })}
                   </div>
 
@@ -287,7 +287,8 @@ function Index() {
                     }}
                     icon={faMagnifyingGlass}
                     className={{
-                      input: 'h-10',
+                      input: 'h-10 pl-9',
+
                       field: 'w-30 pr-3 rounded-md',
                     }}
                   />
