@@ -4566,6 +4566,35 @@
             "deprecationReason": null
           },
           {
+            "name": "changeShortname",
+            "description": null,
+            "args": [
+              {
+                "name": "shortname",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "changeUserLocale",
             "description": null,
             "args": [

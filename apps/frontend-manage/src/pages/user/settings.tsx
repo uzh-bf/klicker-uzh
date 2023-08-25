@@ -3,6 +3,7 @@ import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ChangeShortnameDocument,
   ChangeUserLocaleDocument,
   LocaleType,
   UserProfileDocument,
@@ -27,6 +28,7 @@ function Settings() {
 
   const { data: user } = useQuery(UserProfileDocument)
   const [changeUserLocale] = useMutation(ChangeUserLocaleDocument)
+  const [changeShortname] = useMutation(ChangeShortnameDocument)
 
   const [editShortname, setEditShortname] = useState(false)
 
@@ -44,10 +46,14 @@ function Settings() {
           {editShortname ? (
             <Formik
               initialValues={{ shortname: user?.userProfile?.shortname || '' }}
-              onSubmit={(values, { setSubmitting }) => {
-                // TODO: create submission method
-                console.log(values)
-                setEditShortname(false)
+              onSubmit={async (values, { setSubmitting }) => {
+                const result = await changeShortname({
+                  variables: { shortname: values.shortname },
+                })
+
+                if (result.data?.changeShortname?.id) {
+                  setEditShortname(false)
+                }
               }}
               validationSchema={Yup.object().shape({
                 // TODO: show error messages in a proper place without causing significant layout shifts

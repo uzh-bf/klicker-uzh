@@ -1035,6 +1035,17 @@ export const Mutation = builder.mutationType({
           return AccountService.deleteUserLogin(args, ctx) as any
         },
       }),
+
+      changeShortname: asUser.field({
+        nullable: true,
+        type: User,
+        args: {
+          shortname: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeShortname(args, ctx) as any
+        },
+      }),
     }
   },
 })

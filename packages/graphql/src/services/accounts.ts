@@ -474,3 +474,15 @@ export async function deleteUserLogin(
 
   return deletedItem
 }
+
+export async function changeShortname(
+  { shortname }: { shortname: string },
+  ctx: ContextWithUser
+) {
+  const user = await ctx.prisma.user.update({
+    where: { id: ctx.user.sub },
+    data: { shortname },
+  })
+
+  return user
+}
