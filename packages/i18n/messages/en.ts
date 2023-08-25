@@ -36,6 +36,7 @@ export default {
     },
     generic: {
       profile: 'Profile',
+      shortname: 'Shortname',
       yes: 'Yes',
       no: 'No',
       draft: 'Draft',
@@ -544,6 +545,26 @@ If multipliers are activated on the activities, these multipliers are applied to
         'Install the KlickerUZH Manage app on your phone to use certain functions for lecturers at any time.',
       installIOS:
         "Open the Share dialog and click 'Add to Home Screen' to install the KlickerUZH Manage app on your phone.",
+    },
+    settings: {
+      userSettings: 'User Settings',
+      languageSettings: 'Language Settings',
+      FULL_ACCESS: 'Full Access',
+      SESSION_EXEC: 'Session Execution',
+      READ_ONLY: 'Read Only',
+      lastUsed: 'last used: {date}',
+      lastUsedNever: 'last used: never',
+      createDelegatedLogin: 'Create delegated login',
+      loginName: 'Login name',
+      scope: 'Scope',
+      selectScope: 'Select scope',
+      createLogin: 'Create login',
+      nameRequired: 'Please enter a name for your login.',
+      scopeRequired: 'Please select the scope for your login.',
+      shortnameTooltip:
+        'The shortname is bound to the main account and can be changed via a separate setting above.',
+      passwordTooltip:
+        'The password is automatically generated. If you want to change it, you can generate a new one using the button on the right.',
     },
     token: {
       pageName: 'Token Generation',

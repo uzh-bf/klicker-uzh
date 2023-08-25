@@ -409,3 +409,21 @@ export async function loginParticipantWithLti(
     participantToken: jwt,
   }
 }
+
+export async function getUserLogins(ctx: ContextWithUser) {
+  const logins = await ctx.prisma.userLogin.findMany({
+    where: {
+      user: {
+        id: ctx.user.sub,
+      },
+    },
+    include: {
+      user: true,
+    },
+    orderBy: {
+      scope: 'asc',
+    },
+  })
+
+  return logins
+}

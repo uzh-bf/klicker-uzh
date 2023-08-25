@@ -72,6 +72,7 @@ enum UserLoginScope {
 model UserLogin {
   id String @id @default(uuid()) @db.Uuid
 
+  name        String
   password    String
   scope       UserLoginScope @default(READ_ONLY)
   lastLoginAt DateTime?

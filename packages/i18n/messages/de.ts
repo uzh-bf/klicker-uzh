@@ -36,6 +36,7 @@ export default {
     },
     generic: {
       profile: 'Profil',
+      shortname: 'Kurzname',
       yes: 'Ja',
       no: 'Nein',
       draft: 'Entwurf',
@@ -541,6 +542,26 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Installieren Sie die KlickerUZH Manage-App auf Ihrem Handy, um gewisse Funktionen für Dozierenden jederzeit nutzen zu können.',
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Manage-App auf Ihrem Handy zu installieren.",
+    },
+    settings: {
+      userSettings: 'Benutzereinstellungen',
+      languageSettings: 'Spracheinstellungen',
+      FULL_ACCESS: 'Voller Zugriff',
+      SESSION_EXEC: 'Durchführung von Sessionen',
+      READ_ONLY: 'Nur Lesen',
+      lastUsed: 'zuletzt genutzt: {date}',
+      lastUsedNever: 'zuletzt genutzt: Nie',
+      createDelegatedLogin: 'Delegierten Login erstellen',
+      loginName: 'Login-Name',
+      scope: 'Berechtigungen',
+      selectScope: 'Jetzt wählen',
+      createLogin: 'Login erstellen',
+      nameRequired: 'Geben Sie einen Namen für Ihr Login ein',
+      scopeRequired: 'Wählen Sie die Berechtigungen für Ihr Login',
+      shortnameTooltip:
+        'Der Shortname ist an den Hauptaccount gebunden und kann oben über eine separate Einstellung geändert werden.',
+      passwordTooltip:
+        'Das Passwort wird automatisch generiert. Sollten Sie ein anderes Passwort wünschen, können Sie dieses über den Knopf rechts rechts neu generieren lassen.',
     },
     token: {
       pageName: 'Token Generation',

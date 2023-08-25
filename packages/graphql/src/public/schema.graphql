@@ -624,6 +624,7 @@ type Query {
   singleMicroSession(id: String!): MicroSession
   unassignedSessions: [Session!]
   userCourses: [Course!]
+  userLogins: [UserLogin!]
   userProfile: User
   userQuestions: [Question!]
   userRunningSessions: [Session!]
@@ -861,4 +862,18 @@ type User {
   loginToken: String
   loginTokenExpiresAt: Date
   shortname: String!
+}
+
+type UserLogin {
+  id: ID!
+  lastLoginAt: Date
+  name: String!
+  scope: UserLoginScope!
+  user: User!
+}
+
+enum UserLoginScope {
+  FULL_ACCESS
+  READ_ONLY
+  SESSION_EXEC
 }

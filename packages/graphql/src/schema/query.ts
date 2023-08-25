@@ -22,7 +22,7 @@ import {
 } from './participant'
 import { Question, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
-import { User } from './user'
+import { User, UserLogin } from './user'
 
 export const Query = builder.queryType({
   fields(t) {
@@ -418,6 +418,14 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return LearningElementService.getQuestionStack(args, ctx)
+        },
+      }),
+
+      userLogins: asUser.field({
+        nullable: true,
+        type: [UserLogin],
+        resolve(_, __, ctx) {
+          return AccountService.getUserLogins(ctx)
         },
       }),
     }
