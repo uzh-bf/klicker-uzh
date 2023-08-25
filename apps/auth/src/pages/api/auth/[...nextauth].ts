@@ -67,7 +67,6 @@ const EduIDProvider: Provider = {
       email: profile.email,
       shortname: generateRandomString(8),
       lastLoginAt: new Date(),
-      affiliations: profile.swissEduIDLinkedAffiliation,
     }
   },
 }
@@ -161,13 +160,11 @@ export const authOptions: NextAuthOptions = {
     // },
 
     async jwt({ token, user, account, profile }) {
-      console.log('JWT', token, user, account, profile)
-
       token.role = UserRole.USER
       token.scope = (user as any).scope
-      if (profile?.swissEduIDLinkedAffiliation) {
-        token.affiliations = profile?.swissEduIDLinkedAffiliation
-        token.fullAccess = profile?.swissEduIDLinkedAffiliation?.reduce(
+      if (typeof profile?.swissEduIDLinkedAffiliation === 'object') {
+        token.affiliations = profile.swissEduIDLinkedAffiliation
+        token.fullAccess = profile.swissEduIDLinkedAffiliation.reduce(
           (acc, affiliation) => {
             try {
               if (affiliation.split('@')[1].includes('uzh.ch')) {
