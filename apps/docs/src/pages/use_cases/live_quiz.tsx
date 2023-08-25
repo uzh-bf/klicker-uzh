@@ -1,5 +1,5 @@
 import Layout from '@theme/Layout'
-import { H1, H2, H3, Tag } from '@uzh-bf/design-system'
+import { H1, H2, Tag } from '@uzh-bf/design-system'
 
 export default function live_quiz() {
   const tags = [
@@ -20,14 +20,15 @@ export default function live_quiz() {
       />
       <div className="m-auto max-w-7xl p-4 md:pt-8">
         <div className="flex flex-col items-start gap-4 md:flex-row md:gap-8">
-          <div className="p-4 md:w-2/3">
+          <div className="prose max-w-none p-4 md:w-2/3">
             <H1>(Gamified) Live Quizzes</H1>
             <div className="flex flex-row flex-wrap">
               {tags.map((tag) => (
                 <Tag label={tag} className={{ root: 'mr-1 mt-1 ' }} />
               ))}
             </div>
-            <H3 className={{ root: 'pt-4' }}>Introduction</H3>
+            <H2>Introduction</H2>
+
             <p>
               Teachers often face the challenge of engaging all students,
               especially in courses with large numbers of participants. Many
@@ -44,13 +45,13 @@ export default function live_quiz() {
               points for answering. Anonymity is a key feature that facilitates
               active contributions, as students have the option to participate
               anonymously, reducing potential barriers or fear of judgment.
-              <br />
-              <br />
+            </p>
+            <p>
               Teachers can create an environment that encourages active
               engagement and fosters student participation, ultimately enhancing
               the learning experience for all students.
             </p>
-            <H3 className={{ root: 'pt-4' }}>Background</H3>
+            <H2>Background</H2>
             <p>
               Interactivity and gamification elements in the context of teaching
               are widely researched areas and show positive effects on student
@@ -89,9 +90,7 @@ export default function live_quiz() {
               </a>
               .
             </p>
-            <H3 className={{ root: 'pt-4' }}>
-              Scenario Description with KlickerUZH
-            </H3>
+            <H2>Scenario Description with KlickerUZH</H2>
             <p>
               You are a lecturer and want to increase the interaction between
               you and your students in a lecture or seminar in-person or online
@@ -100,127 +99,127 @@ export default function live_quiz() {
               your students during the session. It also makes sense to consider
               in advance what you can do with the results afterwards in order to
               optimally exploit them. You can discuss them in a plenary session,
-              for example. <br />
-              <br /> You can implement questions with the following purposes:
-              <ul>
-                <li>
-                  Knowledge evaluation: To check whether the students have
-                  understood the previously learned knowledge, single-choice
-                  questions with a clear answer are suitable. (Example: What is
-                  the definition of the Sharpe ratio?){' '}
-                </li>
-                <li>
-                  Surveys: To obtain students' opinions on the topic being
-                  covered lecturers can ask questions without right or wrong
-                  answers. (Example: Which factors influence stock prices the
-                  most?). As the results are promptly available to you as
-                  lecturer, you may choose to share the findings with the class
-                  to facilitate further discourse and interaction.
-                </li>
-                <li>
-                  Estimation questions: To activate students’ engagement,
-                  questions can be asked without a clear answer. This makes
-                  students think about the discussed topic and gets them
-                  directly involved. (Example: Where will the SMI be at the end
-                  of 2023?) Depending on your goals, you can add gamification
-                  elements to your quizzes. Gamified live quizzes increase
-                  student motivation and add a fun and competitive component to
-                  lectures which can enhance students’ ambition and motivation.
-                  Several questions can be asked directly after each other (with
-                  a timer) to best create a quiz situation. Participants can
-                  gather points while responding to questions. Points are
-                  awarded based on the correctness of the answer, as well as the
-                  speed/delay between the first correct answer and one’s own
-                  answer (if correct). A leaderboard shows the current ranking
-                  of participants within the quiz and gathered points are
-                  transferred to the course leaderboard after the conclusion of
-                  the quiz (if enabled on a course level). For more information
-                  on gamification elements in lectures, please consult
-                  Gamification.
-                </li>
-              </ul>
+              for example.
             </p>
-            <H3 className={{ root: 'pt-4' }}>Our Learnings</H3>
+            <p>You can implement questions with the following purposes:</p>
+            <ul>
+              <li>
+                Knowledge evaluation: To check whether the students have
+                understood the previously learned knowledge, single-choice
+                questions with a clear answer are suitable. (Example: What is
+                the definition of the Sharpe ratio?)
+              </li>
+              <li>
+                Surveys: To obtain students' opinions on the topic being covered
+                lecturers can ask questions without right or wrong answers.
+                (Example: Which factors influence stock prices the most?). As
+                the results are promptly available to you as lecturer, you may
+                choose to share the findings with the class to facilitate
+                further discourse and interaction.
+              </li>
+              <li>
+                Estimation questions: To activate students’ engagement,
+                questions can be asked without a clear answer. This makes
+                students think about the discussed topic and gets them directly
+                involved. (Example: Where will the SMI be at the end of 2023?)
+                Depending on your goals, you can add gamification elements to
+                your quizzes. Gamified live quizzes increase student motivation
+                and add a fun and competitive component to lectures which can
+                enhance students’ ambition and motivation. Several questions can
+                be asked directly after each other (with a timer) to best create
+                a quiz situation. Participants can gather points while
+                responding to questions. Points are awarded based on the
+                correctness of the answer, as well as the speed/delay between
+                the first correct answer and one’s own answer (if correct). A
+                leaderboard shows the current ranking of participants within the
+                quiz and gathered points are transferred to the course
+                leaderboard after the conclusion of the quiz (if enabled on a
+                course level). For more information on gamification elements in
+                lectures, please consult Gamification.
+              </li>
+            </ul>
+            <H2>Our Learnings</H2>
             <p>
               Since the KlickerUZH’s initial release and first implementation in
               2011, the increasing number of user registrations confirms the
-              need for such a tool in teaching. <br />
+              need for such a tool in teaching.
+            </p>
+            <p>
               At the University of Zurich, the KlickerUZH has been used in
               small, large (200-400 students), and very large (800-1500
               students) lectures since its inception. Here are our combined
               learnings:
-              <ul>
-                <li>
-                  Lecture time consumption: Including a KlickerUZH question in a
-                  lecture typically takes approximately 2 to 5 minutes,
-                  considering the time required for answering and discussion.
-                </li>
-                <li>
-                  Pre-lecture time consumption: The lecturer also needs time to
-                  create and implement the questions in KlickerUZH before the
-                  lecture.
-                </li>
-                <li>
-                  Reaction to voting results: As a teacher, you have to react
-                  quickly to the voting results. This can be challenging,
-                  especially when the results are not as expected. It is
-                  advisable to consider the reaction to the results in advance
-                  of the lecture.
-                </li>
-                <li>
-                  Submitted responses: The participation rate varies depending
-                  on the course but can be estimated at an average of 50% of the
-                  attending students. It should be noted that when lectures are
-                  recorded, students who watch the recordings may not have the
-                  opportunity to actively participate, thus missing out on the
-                  interactive benefits offered by KlickerUZH.
-                </li>
-                <li>
-                  Participation level: The participation level in gamified live
-                  quizzes tended to be higher in smaller lectures, likely due to
-                  the sense of belonging within a smaller group.
-                </li>
-                <li>
-                  Student feedback: From the students' perspective, the use of
-                  KlickerUZH is generally regarded as beneficial (average grade
-                  across several years in different DBF lectures: 5.0/6.0). Some
-                  critical voices express concerns about time loss and question
-                  the effective benefits.
-                </li>
-                <li>
-                  Question type: So far, single-choice questions have been
-                  predominantly used.
-                </li>
-                <li>
-                  Devices: According to an internal survey in spring semester
-                  2023 in one of the KlickerUZH 3.0 pilot lectures, most
-                  students (35 / 82) participated in the live quiz through the
-                  Learning Management System (LMS). Another significant portion
-                  (33 / 82) joined the quiz by scanning the QR code shared by
-                  the lecturer. Only a small number of students (6 / 82) joined
-                  through a bookmark, and (4 / 82) opted to participate using
-                  the KlickerUZH App.
-                </li>
-                <li>
-                  Number of uses per session: In the events organized by the
-                  Department of Banking and Finance, KlickerUZH is mainly
-                  utilized in bachelor-level lectures with a large number of
-                  students (150-800 students). In a single semester (14 weeks),
-                  KlickerUZH was used between three to seven times in these
-                  sessions, with an average of three questions asked per
-                  session.
-                </li>
-                <li>
-                  Gamification: Incorporating gamification worked effectively by
-                  creating a quiz-like atmosphere in the lecture hall and
-                  considering incentives or rewards, such as small gifts, to
-                  enhance participation and engagement.
-                </li>
-              </ul>
             </p>
+            <ul>
+              <li>
+                Lecture time consumption: Including a KlickerUZH question in a
+                lecture typically takes approximately 2 to 5 minutes,
+                considering the time required for answering and discussion.
+              </li>
+              <li>
+                Pre-lecture time consumption: The lecturer also needs time to
+                create and implement the questions in KlickerUZH before the
+                lecture.
+              </li>
+              <li>
+                Reaction to voting results: As a teacher, you have to react
+                quickly to the voting results. This can be challenging,
+                especially when the results are not as expected. It is advisable
+                to consider the reaction to the results in advance of the
+                lecture.
+              </li>
+              <li>
+                Submitted responses: The participation rate varies depending on
+                the course but can be estimated at an average of 50% of the
+                attending students. It should be noted that when lectures are
+                recorded, students who watch the recordings may not have the
+                opportunity to actively participate, thus missing out on the
+                interactive benefits offered by KlickerUZH.
+              </li>
+              <li>
+                Participation level: The participation level in gamified live
+                quizzes tended to be higher in smaller lectures, likely due to
+                the sense of belonging within a smaller group.
+              </li>
+              <li>
+                Student feedback: From the students' perspective, the use of
+                KlickerUZH is generally regarded as beneficial (average grade
+                across several years in different DBF lectures: 5.0/6.0). Some
+                critical voices express concerns about time loss and question
+                the effective benefits.
+              </li>
+              <li>
+                Question type: So far, single-choice questions have been
+                predominantly used.
+              </li>
+              <li>
+                Devices: According to an internal survey in spring semester 2023
+                in one of the KlickerUZH 3.0 pilot lectures, most students (35 /
+                82) participated in the live quiz through the Learning
+                Management System (LMS). Another significant portion (33 / 82)
+                joined the quiz by scanning the QR code shared by the lecturer.
+                Only a small number of students (6 / 82) joined through a
+                bookmark, and (4 / 82) opted to participate using the KlickerUZH
+                App.
+              </li>
+              <li>
+                Number of uses per session: In the events organized by the
+                Department of Banking and Finance, KlickerUZH is mainly utilized
+                in bachelor-level lectures with a large number of students
+                (150-800 students). In a single semester (14 weeks), KlickerUZH
+                was used between three to seven times in these sessions, with an
+                average of three questions asked per session.
+              </li>
+              <li>
+                Gamification: Incorporating gamification worked effectively by
+                creating a quiz-like atmosphere in the lecture hall and
+                considering incentives or rewards, such as small gifts, to
+                enhance participation and engagement.
+              </li>
+            </ul>
           </div>
 
-          <div className="rounded p-4 shadow md:w-1/3">
+          <div className="prose max-w-none rounded p-4 shadow md:w-1/3">
             <H2>🎯 Goals</H2>
             <ul>
               <li>
