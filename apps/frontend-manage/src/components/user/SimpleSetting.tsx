@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface SimpleSettingProps {
   label: string
-  tooltip?: string
+  tooltip?: string | React.ReactNode
   children: React.ReactNode
 }
 

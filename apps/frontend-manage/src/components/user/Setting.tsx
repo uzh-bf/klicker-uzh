@@ -6,11 +6,16 @@ import { twMerge } from 'tailwind-merge'
 
 interface SettingHeaderProps {
   title: string
+  defaultOpen?: boolean
   children?: React.ReactNode
 }
 
-function SettingHeader({ title, children }: SettingHeaderProps) {
-  const [settingVisible, setSettingVisible] = useState(false)
+function SettingHeader({
+  title,
+  defaultOpen = true,
+  children,
+}: SettingHeaderProps) {
+  const [settingVisible, setSettingVisible] = useState(defaultOpen)
   return (
     <div className="border-b border-solid border-gray-300">
       <Button
