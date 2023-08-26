@@ -6,7 +6,7 @@ import {
   GetUserRunningSessionsDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Navigation, Select } from '@uzh-bf/design-system'
+import { Navigation } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
@@ -123,7 +123,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
         <Navigation.TriggerItem
           icon={<FontAwesomeIcon icon={faUserCircle} className="h-5" />}
           label={user?.shortname}
-          dropdownWidth="w-[12rem]"
+          dropdownWidth="w-[16rem]"
           className={{
             label:
               'my-auto font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
@@ -133,15 +133,16 @@ function Header({ user }: HeaderProps): React.ReactElement {
           data={{ cy: 'user-menu' }}
         >
           {/* <Navigation.DropdownItem
-            title="Settings"
-            href="/settings"
-            className={{ title: 'text-base font-bold', root: 'p-2' }}
-          />
-          <Navigation.DropdownItem
             title="Support"
             href="/support"
             className={{ title: 'text-base font-bold', root: 'p-2' }}
           /> */}
+          <Navigation.DropdownItem
+            title={t('shared.generic.settings')}
+            href="/user/settings"
+            className={{ title: 'text-base font-bold', root: 'p-2' }}
+            data={{ cy: 'menu-user-settings' }}
+          />
           <Navigation.DropdownItem
             title={t('manage.general.generateToken')}
             href="/token"
@@ -157,25 +158,6 @@ function Header({ user }: HeaderProps): React.ReactElement {
             data={{ cy: 'logout' }}
           />
         </Navigation.TriggerItem>
-        <Select
-          value={router.locale}
-          items={[
-            { value: 'de', label: 'DE' },
-            { value: 'en', label: 'EN' },
-          ]}
-          onChange={(newValue: string) => {
-            changeUserLocale({ variables: { locale: newValue } })
-            router.push({ pathname, query }, asPath, {
-              locale: newValue,
-            })
-          }}
-          className={{
-            root: 'my-auto',
-            trigger:
-              'text-white underline underline-offset-[0.3rem] decoration-2 rounded-none sm:hover:bg-transparent sm:hover:text-white',
-          }}
-          basic
-        />
       </Navigation>
     </div>
   )
