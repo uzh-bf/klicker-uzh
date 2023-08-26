@@ -268,13 +268,13 @@ function CourseOverviewPage() {
             ) : (
               <UserNotification className={{ root: 'mr-3' }}>
                 {t.rich('manage.general.catalystRequired', {
-                  link: (site) => (
+                  link: () => (
                     <a
                       target="_blank"
-                      href={`https://${site}}`}
+                      href={`https://www.klicker.uzh.ch/catalyst}`}
                       className="underline"
                     >
-                      {site}
+                      www.klicker.uzh.ch/catalyst
                     </a>
                   ),
                 })}
@@ -302,13 +302,13 @@ function CourseOverviewPage() {
             ) : (
               <UserNotification className={{ root: 'mr-3' }}>
                 {t.rich('manage.general.catalystRequired', {
-                  link: (site) => (
+                  link: () => (
                     <a
                       target="_blank"
-                      href={`https://${site}}`}
+                      href={`https://www.klicker.uzh.ch/catalyst}`}
                       className="underline"
                     >
-                      {site}
+                      www.klicker.uzh.ch/catalyst
                     </a>
                   ),
                 })}
