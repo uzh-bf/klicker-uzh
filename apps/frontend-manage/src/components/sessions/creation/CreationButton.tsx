@@ -1,5 +1,5 @@
 import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
-import { faFlask } from '@fortawesome/free-solid-svg-icons'
+import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -45,7 +45,7 @@ function CreationButton({
       <div>
         {isCatalystRequired && (
           <Button.Icon className={{ root: 'text-orange-400' }}>
-            <FontAwesomeIcon icon={faFlask} />
+            <FontAwesomeIcon icon={faCrown} />
           </Button.Icon>
         )}
       </div>
