@@ -1,4 +1,5 @@
 import {
+  AccessMode,
   Attachment,
   ConfusionTimestep,
   Question,
@@ -408,7 +409,7 @@ export async function startSession(
         console.error(e)
       }
 
-      // generate a unique pin code
+      // generate a random pin code
       const pinCode = 100000 + Math.floor(Math.random() * 900000)
 
       // TODO: if the session is paused, reinitialize and restart
@@ -420,7 +421,8 @@ export async function startSession(
         data: {
           status: SessionStatus.RUNNING,
           startedAt: new Date(),
-          pinCode,
+          pinCode:
+            session.accessMode === AccessMode.RESTRICTED ? pinCode : null,
         },
       })
     }
@@ -560,6 +562,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     data: {
       status: SessionStatus.COMPLETED,
       finishedAt: new Date(),
+      pinCode: null,
     },
   })
 }
