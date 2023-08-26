@@ -31,17 +31,13 @@ export const Query = builder.queryType({
     })
 
     const asParticipant = t.withAuth({
-      $all: {
-        authenticated: true,
-        role: DB.UserRole.PARTICIPANT,
-      },
+      authenticated: true,
+      role: DB.UserRole.PARTICIPANT,
     })
 
     const asUser = t.withAuth({
-      $all: {
-        authenticated: true,
-        role: DB.UserRole.USER,
-      },
+      authenticated: true,
+      role: DB.UserRole.USER,
     })
 
     return {

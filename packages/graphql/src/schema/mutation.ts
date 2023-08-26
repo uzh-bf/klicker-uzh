@@ -55,45 +55,17 @@ import {
 } from './session'
 import { LocaleType, User, UserLogin, UserLoginScope } from './user'
 
-function getAuthConfig({
-  catalyst,
-  scope,
-  role,
-  ...rest
-}: {
-  catalyst?: boolean
-  scope?: DB.UserLoginScope
-  role?: DB.UserRole
-}) {
-  return {
-    ...rest,
-    authenticated: true,
-    role,
-    scope,
-    catalyst,
-  }
-}
-
 export const Mutation = builder.mutationType({
   fields(t) {
-    const asParticipant = getAuthConfig({ role: DB.UserRole.PARTICIPANT })
-    const asUser = getAuthConfig({ role: DB.UserRole.USER })
-    const asUserWithCatalyst = getAuthConfig({
-      ...asUser,
-      catalyst: true,
-    })
-    const asUserSessionExec = getAuthConfig({
+    const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
+    const asUser = { authenticated: true, role: DB.UserRole.USER }
+    const asUserWithCatalyst = { ...asUser, catalyst: true }
+    const asUserSessionExec = {
       ...asUser,
       scope: DB.UserLoginScope.SESSION_EXEC,
-    })
-    const asUserFullAccess = getAuthConfig({
-      ...asUser,
-      scope: DB.UserLoginScope.FULL_ACCESS,
-    })
-    const asUserOwner = getAuthConfig({
-      ...asUser,
-      scope: DB.UserLoginScope.ACCOUNT_OWNER,
-    })
+    }
+    const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
+    const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
 
     return {
       // ----- ANONYMOUS OPERATIONS -----

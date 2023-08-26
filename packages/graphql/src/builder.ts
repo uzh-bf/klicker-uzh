@@ -13,14 +13,12 @@ const prisma = new PrismaClient({})
 const builder = new SchemaBuilder<{
   Context: Context
   AuthContexts: {
-    anonymous: Context
     authenticated: ContextWithUser
     role: ContextWithUser
     scope: ContextWithUser
     catalyst: ContextWithUser
   }
   AuthScopes: {
-    anonymous: boolean
     authenticated: boolean
     role?: UserRole
     scope?: UserLoginScope
@@ -39,7 +37,6 @@ const builder = new SchemaBuilder<{
   }
 }>({
   authScopes: async (ctx) => ({
-    anonymous: !ctx.user?.sub,
     authenticated: !!ctx.user?.sub,
     role: (role) => ctx.user?.role === role,
     scope: (requiredScope) => {
@@ -74,11 +71,7 @@ const builder = new SchemaBuilder<{
 
       return false
     },
-    catalyst: (catalystRequired) =>
-      (!catalystRequired ||
-        ctx.user?.catalystInstitutional ||
-        ctx.user?.catalystIndividual) ??
-      false,
+    catalyst: ctx.user?.catalystInstitutional || ctx.user?.catalystIndividual,
   }),
   plugins: [ScopeAuthPlugin, PrismaPlugin, ValidationPlugin],
   prisma: {
