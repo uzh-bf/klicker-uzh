@@ -143,10 +143,7 @@ export async function getUserProfile(ctx: ContextWithUser) {
 
   if (!user) return null
 
-  return {
-    ...user,
-    fullAccess: ctx.user.fullAccess,
-  }
+  return user
 }
 
 export function createParticipantToken(participantId: string) {
