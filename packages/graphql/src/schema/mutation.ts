@@ -459,7 +459,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      cancelSession: asUserExec.field({
+      cancelSession: asUser.field({
         nullable: true,
         type: Session,
         args: {
