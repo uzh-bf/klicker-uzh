@@ -172,7 +172,12 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                   <FormikSelectField
                     name="scope"
                     placeholder={t('manage.settings.selectScope')}
-                    items={Object.values(UserLoginScope).map((scope) => ({
+                    // items={Object.values(UserLoginScope).map((scope) => ({
+                    //   value: scope,
+                    //   label: t(`manage.settings.${scope}`),
+                    // }))}
+                    // TODO: allow selection of other scopes once auth is ready on granular level
+                    items={['FULL_ACCESS'].map((scope) => ({
                       value: scope,
                       label: t(`manage.settings.${scope}`),
                     }))}

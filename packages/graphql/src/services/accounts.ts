@@ -443,7 +443,9 @@ export async function createUserLogin(
     data: {
       password: hashedPassword,
       name,
-      scope,
+      // scope,
+      // TODO: allow creation of other access levels once auth is handled granularly
+      scope: UserLoginScope.FULL_ACCESS,
       user: {
         connect: {
           id: ctx.user.sub,
