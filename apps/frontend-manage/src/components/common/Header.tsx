@@ -1,8 +1,7 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { faPlayCircle, faUserCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChangeUserLocaleDocument,
   GetUserRunningSessionsDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -18,9 +17,6 @@ interface HeaderProps {
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
-  const { pathname, asPath, query } = router
-
-  const [changeUserLocale] = useMutation(ChangeUserLocaleDocument)
 
   const { data } = useQuery(GetUserRunningSessionsDocument)
 
@@ -72,7 +68,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
       </Navigation>
       <Navigation className={{ root: '!p-0 bg-slate-800' }}>
         <Navigation.ButtonItem
-          href="/migration"
+          onClick={() => router.push('/migration')}
           label={t('manage.general.migration')}
           className={{
             label: twMerge(
@@ -110,7 +106,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
                   <Navigation.DropdownItem
                     key={session.id}
                     title={session.name}
-                    href={`/sessions/${session.id}/cockpit`}
+                    onClick={() =>
+                      router.push(`/sessions/${session.id}/cockpit`)
+                    }
                     className={{ title: 'text-base font-bold', root: 'p-2' }}
                   />
                 )
@@ -134,18 +132,18 @@ function Header({ user }: HeaderProps): React.ReactElement {
         >
           {/* <Navigation.DropdownItem
             title="Support"
-            href="/support"
+            onClick={() => router.push("/support")}
             className={{ title: 'text-base font-bold', root: 'p-2' }}
           /> */}
           <Navigation.DropdownItem
             title={t('shared.generic.settings')}
-            href="/user/settings"
+            onClick={() => router.push('/user/settings')}
             className={{ title: 'text-base font-bold', root: 'p-2' }}
             data={{ cy: 'menu-user-settings' }}
           />
           <Navigation.DropdownItem
             title={t('manage.general.generateToken')}
-            href="/token"
+            onClick={() => router.push('/token')}
             className={{ title: 'text-base font-bold', root: 'p-2' }}
             data={{ cy: 'token-generation-page' }}
           />
