@@ -178,14 +178,24 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account, profile, email }) {
-      if (profile) {
+      if (profile?.sub && account?.provider) {
+        const userAccount = await prisma.account.findUnique({
+          where: {
+            provider_providerAccountId: {
+              provider: account.provider,
+              providerAccountId: profile.sub,
+            },
+          },
+        })
+        if (!userAccount) return false
+
         await prisma.user.update({
-          where: { id: user.id },
+          where: { id: userAccount.userId },
           data: {
             email: profile.email,
             lastLoginAt: new Date(),
             catalystInstitutional:
-              typeof profile.swissEduIDLinkedAffiliation?.reduce(
+              profile.swissEduIDLinkedAffiliation?.reduce<boolean>(
                 reduceCatalyst,
                 false
               ) ?? false,
