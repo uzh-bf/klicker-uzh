@@ -178,6 +178,8 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account, profile, email }) {
+      console.log('sign in', user, account, profile, email)
+
       if (profile?.sub && account?.provider) {
         const userAccount = await prisma.account.findUnique({
           where: {
@@ -187,20 +189,21 @@ export const authOptions: NextAuthOptions = {
             },
           },
         })
-        if (!userAccount) return false
 
-        await prisma.user.update({
-          where: { id: userAccount.userId },
-          data: {
-            email: profile.email,
-            lastLoginAt: new Date(),
-            catalystInstitutional:
-              profile.swissEduIDLinkedAffiliation?.reduce<boolean>(
-                reduceCatalyst,
-                false
-              ) ?? false,
-          },
-        })
+        if (userAccount) {
+          await prisma.user.update({
+            where: { id: userAccount.userId },
+            data: {
+              email: profile.email,
+              lastLoginAt: new Date(),
+              catalystInstitutional:
+                profile.swissEduIDLinkedAffiliation?.reduce<boolean>(
+                  reduceCatalyst,
+                  false
+                ) ?? false,
+            },
+          })
+        }
       }
 
       return true
