@@ -1,8 +1,8 @@
 const {
   TailwindColorsUZH,
   TailwindAnimations,
-  TailwindFonts,
 } = require('@uzh-bf/design-system/dist/constants')
+const { fontFamily } = require('tailwindcss/defaultTheme')
 
 module.exports = {
   darkMode: ['class', '[data-theme="dark"]'],
@@ -14,7 +14,7 @@ module.exports = {
         ...TailwindColorsUZH,
       },
       fontFamily: {
-        ...TailwindFonts,
+        sans: ['Source Sans Pro', fontFamily.sans],
       },
     },
   },
@@ -23,5 +23,4 @@ module.exports = {
     aspectRatio: false,
   },
   plugins: [],
-
 }

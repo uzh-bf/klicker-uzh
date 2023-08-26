@@ -11,7 +11,7 @@ const config = {
   projectName: 'klicker-uzh',
   scripts: [],
   stylesheets: [
-    'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;700&display=swap',
+    'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap',
   ],
   favicon: '/favicon.ico',
   customFields: {
@@ -51,7 +51,6 @@ const config = {
         name: 'docusaurus-tailwindcss',
         configurePostCss(postcssOptions) {
           // ref: https://dev.to/sajclarke_62/using-tailwindcss-v3-in-docusaurus-in-5-steps-5c26
-          postcssOptions.plugins.push(require('postcss-import'))
           postcssOptions.plugins.push(require('tailwindcss'))
           postcssOptions.plugins.push(require('autoprefixer'))
           return postcssOptions
