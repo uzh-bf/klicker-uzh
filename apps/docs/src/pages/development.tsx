@@ -71,9 +71,7 @@ const Development = () => {
   ]
 
   return (
-    <Layout title="Development">
-      <AnnouncementBanner />
-
+    <Layout>
       <div className="m-auto max-w-6xl p-8">
         <div className="mb-4 flex h-12 flex-row items-start justify-between">
           <div className="mb-8 text-3xl font-bold md:mb-0">
