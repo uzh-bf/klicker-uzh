@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.16...v3.0.0-rc.17) (2023-08-26)
+
+
+### Features
+
+* restricted user accounts (catalyst) ([#3810](https://github.com/uzh-bf/klicker-uzh/issues/3810)) ([6f277e2](https://github.com/uzh-bf/klicker-uzh/commit/6f277e2dba029c69433e5745c5a770a3c037d2fb))
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** ensure that links keep the currently selected intl locale ([7f9b115](https://github.com/uzh-bf/klicker-uzh/commit/7f9b11543aa88ec2cec85924edf28bab6e58a7a5))
+* types of i18n ([6e9dd90](https://github.com/uzh-bf/klicker-uzh/commit/6e9dd902aa6f514b343f43575f8a475d99fca32b))
+
+
+### Documentation
+
+* basic layout for use case overview and details page ([#3807](https://github.com/uzh-bf/klicker-uzh/issues/3807)) ([860e61c](https://github.com/uzh-bf/klicker-uzh/commit/860e61cc33b981ed77f9211b446c7638a003e052))
+
 ## [3.0.0-rc.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.15...v3.0.0-rc.16) (2023-08-26)
 
 
