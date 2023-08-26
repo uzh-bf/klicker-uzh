@@ -282,7 +282,7 @@ Der KlickerUZH bietet Ihnen als Kursteilnehmenden eine Vielzahl Funktionen. Dies
 
 #### Umfragen und Live Quizzes
 
-Während der Lehrveranstaltung haben Sie die Möglichkeit, die von den Dozierenden gestellten Fragen auf [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})  oder in der KlickerUZH-App (oder, falls vorhanden, im OLAT unter dem Baustein "Live Session") zu beantworten. Die Resultate werden ohne Zeitverzug grafisch aufbereitet angezeigt und können so nach Abschluss der Beantwortungszeit von den Dozierenden präsentiert und kommentiert werden.
+Während der Lehrveranstaltung haben Sie die Möglichkeit, die von den Dozierenden gestellten Fragen auf [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})  oder in der KlickerUZH-App (oder, falls vorhanden, im OLAT unter dem Baustein "Live Quiz") zu beantworten. Die Resultate werden ohne Zeitverzug grafisch aufbereitet angezeigt und können so nach Abschluss der Beantwortungszeit von den Dozierenden präsentiert und kommentiert werden.
 
 Zum Beantworten der Fragen ist kein Login notwendig. Mit einem Login können Sie an der Challenge Ihres Kurses teilnehmen und Punkte sammeln.
 
