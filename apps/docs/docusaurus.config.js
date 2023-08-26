@@ -9,7 +9,7 @@ const config = {
   baseUrl: '/',
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
-  scripts: [],
+  // scripts: ['https://identity.netlify.com/v1/netlify-identity-widget.js'],
   stylesheets: [
     'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap',
   ],
@@ -179,7 +179,7 @@ const config = {
           items: [
             {
               label: 'Home',
-              to: '/home',
+              to: '/',
             },
             {
               label: 'Privacy Policy',
