@@ -2,11 +2,8 @@ import {
   faArrowRight,
   faChevronDown,
   faChevronRight,
-  faExpand,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import TreeItem from '@mui/lab/TreeItem'
-import TreeView from '@mui/lab/TreeView'
 import Layout from '@theme/Layout'
 import { Button, H1, H2, H3 } from '@uzh-bf/design-system'
 import { useState } from 'react'
@@ -24,115 +21,7 @@ export default function index() {
     <Layout>
       <div className="m-auto grid max-w-7xl grid-cols-5 items-start gap-4 p-4 pt-8">
         <div className="col-span-1 hidden rounded-xl border shadow md:grid">
-          <TreeView
-            aria-label="file system navigator"
-            defaultCollapseIcon={<FontAwesomeIcon icon={faChevronRight} />}
-            defaultExpandIcon={<FontAwesomeIcon icon={faExpand} />}
-            multiSelect
-          >
-            <TreeItem
-              nodeId="1"
-              label="📚 Use Cases"
-              onClick={() => setFilteredUseCases(useCases)}
-            >
-              <TreeItem nodeId="2" label="📣 Strengthen Interaction">
-                <TreeItem
-                  nodeId="3"
-                  label="(Gamified) Live Quizzes"
-                  onClick={() => filteredByTitle('(Gamified) Live Quizzes')}
-                />
-                <TreeItem
-                  nodeId="4"
-                  label="Live Q&A and Real-Time Feedback"
-                  onClick={() =>
-                    filteredByTitle('Live Q&A and Real-Time Feedback')
-                  }
-                />
-                <TreeItem
-                  nodeId="5"
-                  label="Group Activities"
-                  onClick={() => filteredByTitle('Group Activities')}
-                />
-                <TreeItem
-                  nodeId="6"
-                  label="Flipped Classroom"
-                  onClick={() => filteredByTitle('Flipped Classroom')}
-                />
-              </TreeItem>
-              <TreeItem nodeId="7" label="🕹️ Implement Gamification Elements">
-                <TreeItem
-                  nodeId="8"
-                  label="Gamification"
-                  onClick={() => filteredByTitle('Gamification')}
-                />
-                <TreeItem
-                  nodeId="9"
-                  label="(Gamified) Live Quizzes"
-                  onClick={() => filteredByTitle('(Gamified) Live Quizzes')}
-                />
-                <TreeItem
-                  nodeId="10"
-                  label="Practice Quizzes and Flashcards"
-                  onClick={() =>
-                    filteredByTitle('Practice Quizzes and Flashcards')
-                  }
-                />
-                <TreeItem
-                  nodeId="11"
-                  label="Microlearning"
-                  onClick={() => filteredByTitle('Microlearning')}
-                />
-                <TreeItem
-                  nodeId="12"
-                  label="Group Activities"
-                  onClick={() => filteredByTitle('Group Activities')}
-                />
-              </TreeItem>
-              <TreeItem nodeId="13" label="📝 Receive Knowledge Feedback">
-                <TreeItem
-                  nodeId="14"
-                  label="(Gamified) Live Quizzes"
-                  onClick={() => filteredByTitle('(Gamified) Live Quizzes')}
-                />
-                <TreeItem
-                  nodeId="15"
-                  label="Practice Quizzes and Flashcards"
-                  onClick={() =>
-                    filteredByTitle('Practice Quizzes and Flashcards')
-                  }
-                />
-                <TreeItem
-                  nodeId="16"
-                  label="Microlearning"
-                  onClick={() => filteredByTitle('Microlearning')}
-                />
-                <TreeItem
-                  nodeId="17"
-                  label="Flipped Classroom"
-                  onClick={() => filteredByTitle('Flipped Classroom')}
-                />
-              </TreeItem>
-              <TreeItem nodeId="18" label="🌍 Learning Beyond Classroom">
-                <TreeItem
-                  nodeId="19"
-                  label="Practice Quizzes and Flashcards"
-                  onClick={() =>
-                    filteredByTitle('Practice Quizzes and Flashcards')
-                  }
-                />
-                <TreeItem
-                  nodeId="20"
-                  label="Microlearning"
-                  onClick={() => filteredByTitle('Microlearning')}
-                />
-                <TreeItem
-                  nodeId="21"
-                  label="Group Activities"
-                  onClick={() => filteredByTitle('Group Activities')}
-                />
-              </TreeItem>
-            </TreeItem>
-          </TreeView>
+          SIDEBAR
         </div>
         <div className="col-span-5 md:col-span-4">
           <div onClick={() => setFilteredUseCases(useCases)}>

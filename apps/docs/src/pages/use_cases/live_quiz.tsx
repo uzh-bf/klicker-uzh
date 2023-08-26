@@ -1,7 +1,3 @@
-import { faChevronRight, faExpand } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import TreeItem from '@mui/lab/TreeItem'
-import TreeView from '@mui/lab/TreeView'
 import Layout from '@theme/Layout'
 import { H1, H2, Tag } from '@uzh-bf/design-system'
 import { useCases } from './constants'
@@ -20,54 +16,7 @@ export default function live_quiz() {
       <div className="m-auto max-w-7xl p-4 md:pt-8">
         <div className="grid-row grid items-start gap-4 md:grid-cols-11 md:flex-row md:gap-8">
           <div className="col-span-2 hidden rounded-xl border shadow md:grid">
-            <TreeView
-              aria-label="file system navigator"
-              defaultCollapseIcon={<FontAwesomeIcon icon={faExpand} />}
-              defaultExpandIcon={<FontAwesomeIcon icon={faChevronRight} />}
-              defaultExpanded={['1']}
-              multiSelect
-            >
-              <TreeItem nodeId="1" label="📖 Content">
-                <a
-                  href="#Introduction"
-                  className="text-inherit hover:text-inherit hover:no-underline"
-                >
-                  <TreeItem nodeId="2" label="Introduction" />
-                </a>
-                <a
-                  href="#Background"
-                  className="text-inherit hover:text-inherit hover:no-underline"
-                >
-                  <TreeItem nodeId="3" label="Background" />
-                </a>
-                <a
-                  href="#Scenario"
-                  className="text-inherit hover:text-inherit hover:no-underline"
-                >
-                  <TreeItem
-                    nodeId="4"
-                    label="Scenario Description with KlickerUZH"
-                  />
-                </a>
-                <a
-                  href="#Learnings"
-                  className="text-inherit hover:text-inherit hover:no-underline"
-                >
-                  <TreeItem nodeId="5" label="Our Learnings" />
-                </a>
-              </TreeItem>
-              <TreeItem nodeId="6" label="📚 Other Use Cases">
-                {useCases.map((useCase) => (
-                  <TreeItem
-                    nodeId={useCase.title}
-                    label={useCase.title}
-                    onClick={() =>
-                      window.open(`/use_cases/${useCase.detailsRef}`, '_self')
-                    }
-                  />
-                ))}
-              </TreeItem>
-            </TreeView>
+            SIDEBAR
           </div>
           <div className="prose order-2 col-span-6 max-w-none p-4 md:order-1">
             <H1>{useCase.title}</H1>
