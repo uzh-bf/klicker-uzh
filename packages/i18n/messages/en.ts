@@ -36,6 +36,7 @@ export default {
     },
     generic: {
       profile: 'Profile',
+      shortname: 'Shortname',
       yes: 'Yes',
       no: 'No',
       draft: 'Draft',
@@ -127,6 +128,8 @@ export default {
       respond: 'Respond',
       responses: 'Responses',
       ok: 'OK',
+      english: 'English',
+      german: 'German',
     },
     contentInput: {
       boldStyle:
@@ -546,6 +549,35 @@ If multipliers are activated on the activities, these multipliers are applied to
       installIOS:
         "Open the Share dialog and click 'Add to Home Screen' to install the KlickerUZH Manage app on your phone.",
     },
+    settings: {
+      userSettings: 'User Settings',
+      languageSettings: 'Language Settings',
+      languageTooltip:
+        'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
+      FULL_ACCESS: 'Full Access',
+      SESSION_EXEC: 'Session Execution',
+      READ_ONLY: 'Read Only',
+      lastUsed: 'last used: {date}',
+      lastUsedNever: 'last used: never',
+      createDelegatedLogin: 'Create delegated login',
+      loginName: 'Login name',
+      scope: 'Scope',
+      selectScope: 'Select scope',
+      createLogin: 'Create login',
+      nameRequired: 'Please enter a name for your login.',
+      scopeRequired: 'Please select the scope for your login.',
+      shortnameTooltip:
+        'The shortname is bound to the main account and can be changed via a separate setting above.',
+      passwordTooltip:
+        'The password is automatically generated. Please write it down before creating the login, it will not be visible anymore afterwards. If you want to change it, you can generate a new one using the button on the right.',
+      shortnameRequirements:
+        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other learning elements in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
+      shortnameRequired: 'Please enter a shortname.',
+      shortnameMin: 'The shortname must be at least 5 characters long.',
+      shortnameMax: 'The shortname must be at most 8 characters long.',
+      shortnameAlphanumeric:
+        'The shortname may only consist of letters and numbers.',
+    },
     token: {
       pageName: 'Token Generation',
       tokenGenerationTitle: 'Generation of a Login Token',
@@ -560,15 +592,19 @@ If multipliers are activated on the activities, these multipliers are applied to
     migration: {
       pageName: 'Migrate Data from KlickerV2',
       step1Title: 'Step 1: Request Migration Token',
-      step1Description: 'To migrate your old Klicker account to KlickerV3, provide the email linked to your old account. After submitting the email, you will receive a migration token to proceed. Please ensure you have access to this email. If not, consider resetting your password.',
+      step1Description:
+        'To migrate your old Klicker account to KlickerV3, provide the email linked to your old account. After submitting the email, you will receive a migration token to proceed. Please ensure you have access to this email. If not, consider resetting your password.',
       requestMigrationToken: 'Request Migration Token',
       step2Title: 'Step 2: Insert Migration Link',
-      step2Description: 'You should have received an email containing a migration link. If it is not in your inbox, check the spam folder. Copy the link and paste it into the address bar of your browser to proceed.',
+      step2Description:
+        'You should have received an email containing a migration link. If it is not in your inbox, check the spam folder. Copy the link and paste it into the address bar of your browser to proceed.',
       step3Title: 'Step 3: Start Migration',
-      step3Description: 'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
+      step3Description:
+        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
       startMigration: 'Start Migration',
       step4Title: 'Step 4: Migration Status Notification',
-      step4Description: 'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.'
+      step4Description:
+        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
     },
     questionPool: {
       createLiveSession: 'Create live session',

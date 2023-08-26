@@ -64,6 +64,7 @@ model VerificationToken {
 }
 
 enum UserLoginScope {
+  ACCOUNT_OWNER
   FULL_ACCESS
   SESSION_EXEC
   READ_ONLY
@@ -72,6 +73,7 @@ enum UserLoginScope {
 model UserLogin {
   id String @id @default(uuid()) @db.Uuid
 
+  name        String
   password    String
   scope       UserLoginScope @default(READ_ONLY)
   lastLoginAt DateTime?

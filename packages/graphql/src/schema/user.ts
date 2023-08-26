@@ -5,6 +5,10 @@ export const LocaleType = builder.enumType('LocaleType', {
   values: Object.values(DB.Locale),
 })
 
+export const UserLoginScope = builder.enumType('UserLoginScope', {
+  values: Object.values(DB.UserLoginScope),
+})
+
 export const User = builder.prismaObject('User', {
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -17,5 +21,15 @@ export const User = builder.prismaObject('User', {
       type: 'Date',
       nullable: true,
     }),
+  }),
+})
+
+export const UserLogin = builder.prismaObject('UserLogin', {
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name'),
+    user: t.expose('user', { type: User }),
+    scope: t.expose('scope', { type: UserLoginScope }),
+    lastLoginAt: t.expose('lastLoginAt', { type: 'Date', nullable: true }),
   }),
 })

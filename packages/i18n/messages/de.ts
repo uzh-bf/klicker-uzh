@@ -36,6 +36,7 @@ export default {
     },
     generic: {
       profile: 'Profil',
+      shortname: 'Kurzname',
       yes: 'Ja',
       no: 'Nein',
       draft: 'Entwurf',
@@ -127,6 +128,8 @@ export default {
       respond: 'Antworten',
       responses: 'Antworten',
       ok: 'OK',
+      english: 'Englisch',
+      german: 'Deutsch',
     },
     contentInput: {
       boldStyle:
@@ -543,6 +546,35 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Manage-App auf Ihrem Handy zu installieren.",
     },
+    settings: {
+      userSettings: 'Benutzereinstellungen',
+      languageSettings: 'Spracheinstellungen',
+      languageTooltip:
+        'Ändern Sie hier die Programmsprache der KlickerUZH Manage App. Beachten Sie, dass dies keinerlei Einfluss auf Ihre Kursinhalte oder die Spracheinstellungen bei anderen Nutzern oder Studierenden in Ihren Kursen hat.',
+      FULL_ACCESS: 'Voller Zugriff',
+      SESSION_EXEC: 'Durchführung von Sessionen',
+      READ_ONLY: 'Nur Lesen',
+      lastUsed: 'zuletzt genutzt: {date}',
+      lastUsedNever: 'zuletzt genutzt: Nie',
+      createDelegatedLogin: 'Delegierten Login erstellen',
+      loginName: 'Login-Name',
+      scope: 'Berechtigungen',
+      selectScope: 'Jetzt wählen',
+      createLogin: 'Login erstellen',
+      nameRequired: 'Geben Sie einen Namen für Ihr Login ein',
+      scopeRequired: 'Wählen Sie die Berechtigungen für Ihr Login',
+      shortnameTooltip:
+        'Der Shortname ist an den Hauptaccount gebunden und kann oben über eine separate Einstellung geändert werden.',
+      passwordTooltip:
+        'Das Passwort wird automatisch generiert. Notieren Sie es sich vor dem Erstellen des Logins, es ist später nicht mehr sichtbar. Sollten Sie ein anderes Passwort wünschen, können Sie dieses über den Knopf rechts rechts neu generieren lassen.',
+      shortnameRequirements:
+        'Der Kurzname hat im KlickerUZH eine wichtige Bedeutung, da er an vielen Stellen einen einfachen Zugriff auf Kurse und Lernelemente ermöglicht. Bitte beachten Sie daher folgende Regeln bei der Wahl des Kurznamens: <ul><li>Der Kurzname muss mindestens 5 und maximal 8 Zeichen lang sein.</li><li>Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.</li></ul>',
+      shortnameRequired: 'Geben Sie einen Kurznamen ein.',
+      shortnameMin: 'Der Kurzname muss mindestens 5 Zeichen lang sein.',
+      shortnameMax: 'Der Kurzname darf maximal 8 Zeichen lang sein.',
+      shortnameAlphanumeric:
+        'Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.',
+    },
     token: {
       pageName: 'Token Generation',
       tokenGenerationTitle: 'Generation eines Login-Token',
@@ -557,15 +589,19 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
     migration: {
       pageName: 'Migration der Daten von KlickerV2',
       step1Title: 'Schritt 1: Migrations-Token anfordern',
-      step1Description: 'Um Ihr altes Klicker-Konto auf KlickerV3 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist. Danach erhalten Sie einen Token, um mit der Migration fortzufahren. Stellen Sie sicher, dass Sie Zugriff auf diese E-Mail haben. Andernfalls müssen Sie Ihr Passwort zurückzusetzen.',
+      step1Description:
+        'Um Ihr altes Klicker-Konto auf KlickerV3 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist. Danach erhalten Sie einen Token, um mit der Migration fortzufahren. Stellen Sie sicher, dass Sie Zugriff auf diese E-Mail haben. Andernfalls müssen Sie Ihr Passwort zurückzusetzen.',
       requestMigrationToken: 'Migrations-Token anfordern',
       step2Title: 'Schritt 2: Migrations-Link einfügen',
-      step2Description: 'Sie sollten eine E-Mail mit einem Migrations-Link erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner. Kopieren Sie den Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren.',
+      step2Description:
+        'Sie sollten eine E-Mail mit einem Migrations-Link erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner. Kopieren Sie den Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren.',
       step3Title: 'Schritt 3: Migration starten',
-      step3Description: 'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.',
+      step3Description:
+        'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.',
       startMigration: 'Migration starten',
       step4Title: 'Schritt 4: Benachrichtigung über den Migrationsstatus',
-      step4Description: 'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.'
+      step4Description:
+        'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.',
     },
     questionPool: {
       createLiveSession: 'Live-Session erstellen',
