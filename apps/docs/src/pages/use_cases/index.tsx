@@ -15,10 +15,8 @@ function Card({ title, image, children, detailsRef }) {
         <div>
           <Link href={`/use_cases/${detailsRef}`}>
             <Button>
-              <>
-                <FontAwesomeIcon icon={faArrowRight} />
-                Read More
-              </>
+              <FontAwesomeIcon icon={faArrowRight} />
+              Read More
             </Button>
           </Link>
         </div>
