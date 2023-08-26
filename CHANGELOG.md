@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.15...v3.0.0-rc.16) (2023-08-26)
+
+
+### Bug Fixes
+
+* **packages/prisma:** add default - for name on user login ([2970699](https://github.com/uzh-bf/klicker-uzh/commit/2970699d91726a1757e7956caea2c0a517674a20))
+
 ## [3.0.0-rc.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.14...v3.0.0-rc.15) (2023-08-26)
 
 
