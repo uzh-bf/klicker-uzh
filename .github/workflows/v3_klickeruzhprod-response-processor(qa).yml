@@ -15,7 +15,7 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v2
@@ -33,7 +33,7 @@ jobs:
               args: [--frozen-lockfile, --strict-peer-dependencies]
 
       - name: 'Resolve Project Dependencies Using Npm'
-        shell: pwsh
+        shell: bash
         run: |
           pnpm run build --scope @klicker-uzh/func-response-processor
           pnpm prune --prod --config.ignore-scripts=true

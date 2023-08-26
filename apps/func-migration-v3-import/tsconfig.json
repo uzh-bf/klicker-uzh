@@ -1,7 +1,5 @@
 {
-  "extends": [
-    "@tsconfig/node18/tsconfig.json",
-    "@tsconfig/recommended/tsconfig.json"
-  ],
-  "include": ["src/**/*"]
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "include": ["src/**/*", "src/client"],
+  "compilerOptions": {}
 }

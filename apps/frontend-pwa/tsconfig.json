@@ -24,7 +24,7 @@
   },
   "include": [
     "next-env.d.ts",
-    "types/app.d.ts",
+    "src/types/app.d.ts",
     "**/*.ts",
     "**/*.tsx",
     "src/utils/generateAvatars.js"

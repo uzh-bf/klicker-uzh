@@ -8,11 +8,13 @@ import {
 } from '../client'
 
 export async function prepareUser({
+  name,
   password,
   ...args
 }: {
   id: string
   email: string
+  name: string
   password: string
   shortname: string
 }) {
@@ -22,6 +24,7 @@ export async function prepareUser({
     ...args,
     logins: {
       create: {
+        name: name,
         password: hashedPassword,
         scope: UserLoginScope.FULL_ACCESS,
       },

@@ -15,6 +15,7 @@ import durationPlugin from 'dayjs/plugin/duration'
 import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
 import { SessionBlock as ISessionBlock } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import CancelSessionModal from './CancelSessionModal'
 import QRPopup from './QRPopup'
@@ -62,6 +63,7 @@ function SessionTimeline({
 }: Props): React.ReactElement {
   const t = useTranslations()
   const isFeedbackSession = blocks?.length === 0
+  const { locale } = useRouter()
 
   const [cancelSessionModal, setCancelSessionModal] = useState(false)
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
@@ -146,7 +148,7 @@ function SessionTimeline({
             />
             <a
               className="flex-1"
-              href={`${process.env.NEXT_PUBLIC_PWA_URL}/session/${sessionId}`}
+              href={`${process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${sessionId}`}
               rel="noopener noreferrer"
               target="_blank"
             >

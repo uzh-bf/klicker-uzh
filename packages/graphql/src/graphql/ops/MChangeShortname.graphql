@@ -1,0 +1,6 @@
+mutation ChangeShortname($shortname: String!) {
+  changeShortname(shortname: $shortname) {
+    id
+    shortname
+  }
+}

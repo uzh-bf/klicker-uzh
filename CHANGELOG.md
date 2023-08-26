@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.15...v3.0.0-rc.16) (2023-08-26)
+
+
+### Bug Fixes
+
+* **packages/prisma:** add default - for name on user login ([2970699](https://github.com/uzh-bf/klicker-uzh/commit/2970699d91726a1757e7956caea2c0a517674a20))
+
+## [3.0.0-rc.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.14...v3.0.0-rc.15) (2023-08-26)
+
+
+### Features
+
+* full migration procedure ([#3802](https://github.com/uzh-bf/klicker-uzh/issues/3802)) ([3ec2db7](https://github.com/uzh-bf/klicker-uzh/commit/3ec2db7d8fec48d0c8d1e2bf8c1bcf36dca642f2))
+* introduce delegated logins and their management ([#3814](https://github.com/uzh-bf/klicker-uzh/issues/3814)) ([c0fb33b](https://github.com/uzh-bf/klicker-uzh/commit/c0fb33b753796d828e8c6ee8ca48226cc2c1c2db))
+
+
+### Bug Fixes
+
+* **ci:** update GH actions workflows for migration functions ([54c6ea1](https://github.com/uzh-bf/klicker-uzh/commit/54c6ea1f0e18c207d4d1c18dfad704b77b8024ec))
+
 ## [3.0.0-rc.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.13...v3.0.0-rc.14) (2023-08-25)
 
 
