@@ -1,5 +1,5 @@
 declare module '@klicker-uzh/lti'
 declare module 'next-ims-lti'
 
-import { Messages } from '@klicker-uzh/i18n'
+type Messages = typeof import('@klicker-uzh/i18n/messages/en').default
 declare interface IntlMessages extends Messages {}
