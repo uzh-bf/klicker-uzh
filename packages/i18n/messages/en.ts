@@ -17,7 +17,7 @@ export default {
       richtext: 'Please select <b>one or more</b> options.',
     },
     KPRIM: {
-      typeLabel: 'KPRIM (KP)',
+      typeLabel: 'Kprim (KP)',
       text: 'Evaluate the statements for correctness.',
       richtext: 'Evaluate the statements for <b>correctness</b>.',
     },
@@ -75,12 +75,12 @@ export default {
       leaderboard: 'Leaderboard',
       repetition: 'Repetition',
       evaluation: 'Evaluation',
-      liveSession: 'Live Session',
-      learningElement: 'Learning Element',
-      learningElements: 'Learning Elements',
-      microSessions: 'Micro Sessions',
+      liveSession: 'Live Quiz',
+      learningElement: 'Practice Quiz',
+      learningElements: 'Practice Quizzes',
+      microSessions: 'Microlearning',
       microlearning: 'Microlearning',
-      activeSessions: 'Active Sessions',
+      activeSessions: 'Active Quizzes',
       characters: 'characters',
       precision: 'Precision',
       unit: 'Unit',
@@ -148,7 +148,7 @@ export default {
         'Select this setting to include a LaTeX formula centered on a separate line.',
     },
     leaderboard: {
-      sessionTitle: 'Session Leaderboard',
+      sessionTitle: 'Quiz Leaderboard',
       ranks: 'Ranks',
       points: 'Points',
       computed: 'Computed',
@@ -158,7 +158,7 @@ export default {
       groupCount: 'Number of groups: {number}',
       averagePoints: 'Average points: {number}',
       noPointsCollected:
-        'No points have been collected in this session so far. As soon as this changes, podium and leaderboard will be displayed here.',
+        'No points have been collected in this quiz so far. As soon as this changes, podium and leaderboard will be displayed here.',
     },
     error: {
       404: '404 Page not found',
@@ -196,8 +196,8 @@ export default {
       liveQA: 'Live-Q&A',
       userNotLoggedIn:
         'You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress.',
-      noSessionsActive: 'No sessions active.',
-      activeSessionsBy: 'Active sessions by <i>{name}</i>',
+      noSessionsActive: 'No quizzes active.',
+      activeSessionsBy: 'Active quizzes by <i>{name}</i>',
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 
@@ -255,8 +255,8 @@ If you are participating in a course with KlickerUZH for the first time, open th
 
 #### Anonymous participation
 
-In general, it is also possible to participate anonymously in all elements of KlickerUZH. For live sessions, you can find these for your course under: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
-Learning elements and micro-sessions are available via direct links that you can receive from your lecturers. When accessing KlickerUZH via the OLAT integration, an account will be created for you automatically.
+In general, it is also possible to participate anonymously in all elements of KlickerUZH. For live quizzes, you can find these for your course under: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
+Practice quizzes and microlearning are available via direct links that you can receive from your lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically.
       `,
       appSetup: `
 ### Installation of the KlickerUZH App
@@ -281,7 +281,7 @@ KlickerUZH offers you as a course participant a significant amount of functional
 
 #### Polls and Live Quizzes
 
-During the lecture, you have the possibility to answer the questions asked by the lecturers on [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) or in the KlickerUZH app (or, if available, in OLAT under the "Live Session" module). The results are displayed graphically without delay and can thus be presented and commented on by the lecturers after the answering time has expired.
+During the lecture, you have the possibility to answer the questions asked by the lecturers on [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) or in the KlickerUZH app (or, if available, in OLAT under the "Live Quiz" module). The results are displayed graphically without delay and can thus be presented and commented on by the lecturers after the answering time has expired.
 
 No login is required to answer the questions. With a login you can participate in the challenge of your course and collect points.
 
@@ -291,9 +291,9 @@ Do you have a question or would you like to give direct feedback on the lecture?
 
 Participation is possible at [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) (also anonymously) or via the KlickerUZH app.
 
-#### Learning elements and micro-sessions
+#### Practice quizzes and micro-sessions
 
-Learning elements and micro-sessions allow you to repeat the course content outside of the lecture time and receive direct feedback on your solution. Learning elements are always and arbitrarily often available, micro-sessions on the other hand only once and in a limited time frame (e.g., once per week). All elements are directly accessible via the KlickerUZH app, or via the link provided by your lecturers (also anonymously).
+Practice quizzes and micro-sessions allow you to repeat the course content outside of the lecture time and receive direct feedback on your solution. Practice quizzes are always and arbitrarily often available, micro-sessions on the other hand only once and in a limited time frame (e.g., once per week). All elements are directly accessible via the KlickerUZH app, or via the link provided by your lecturers (also anonymously).
 
 While answering the questions, you can, if you are logged in, set personal bookmarks on important questions, and create your own question pool through that. You can send feedback on unclear questions to your lecturers using the report function.
 
@@ -310,8 +310,8 @@ All activities in the KlickerUZH are, if activated by the lecturers, summarized 
 The following activities are included in the challenge:
 
 - Polls and Live Quizzes: 10 points per participation in an open vote (without solution), up to 70 bonus points for a fast and correct answer to content questions. The fastest correct answer receives the most points.
-- Learning elements: 10 points if the first answer to a question is correct. 5 points for each additional correct repetition of a question (after the specified lock time has expired). In KPRIM, an error results in a halving of the score.
-- Micro-sessions: 10 points per correctly answered question in a micro-session. In KPRIM, an error results in a halving of the score.
+- Practice quizzes: 10 points if the first answer to a question is correct. 5 points for each additional correct repetition of a question (after the specified lock time has expired). In KPRIM, an error results in a halving of the score.
+- Micro-sessions: 10 points per correctly answered question in a microlearning. In KPRIM, an error results in a halving of the score.
 - Group activities: 1000 points on the individual leaderboard for each group member when passing a group activity.
 - Achievements: Collected achievements (e.g., reaching first place in a live quiz) result in bonus points, as noted on the corresponding achievements.
 
@@ -345,7 +345,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       totalScore: 'Total points',
       bookmarkedQuestionsTitle: 'Bookmarks for {courseName}',
       bookmarkedQuestionsDesc:
-        'This page allows you to repeat all questions with bookmarks from the course {courseName}. They will be displayed as a regular learning element.',
+        'This page allows you to repeat all questions with bookmarks from the course {courseName}. They will be displayed as a regular practice quiz.',
       noBooksmarksSet:
         'You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.',
       awards: 'Awards',
@@ -365,10 +365,10 @@ If multipliers are activated on the activities, these multipliers are applied to
     },
     learningElement: {
       notFound:
-        'The corresponding learning element is either not available or not yet published.',
-      repetitionTitle: 'Repetition learning elements',
+        'The corresponding practice quiz is either not available or not yet published.',
+      repetitionTitle: 'Repetition practice quizzes',
       noRepetition:
-        'There are currently no learning elements available for repetition.',
+        'There are currently no practice quizzes available for repetition.',
       numOfQuestions: 'Number of questions: {number}',
       orderLAST_RESPONSE: 'Order: last answered questions at the end',
       orderSHUFFLED: 'Order: random order',
@@ -379,18 +379,18 @@ If multipliers are activated on the activities, these multipliers are applied to
       multiplicatorPoints: 'Multiplicator: {mult}x points',
       multiplicatorEval: '<b>Multiplicator</b> {mult}x',
       solvedLearningElement:
-        'You have successfully completed the learning element <it>{name}</it>.',
+        'You have successfully completed the practice quiz <it>{name}</it>.',
       pointsCollectedPossible: 'Points (collected/computed/available)',
       notAttempted: 'Not attempted',
       totalPoints: 'Total points (collected): {points}',
       totalXp: '{xp} XP collected',
       questionTypeNotSupported:
-        'This question type is currently not available for learning elements',
+        'This question type is currently not available for practice quizzes',
       newPointsFrom: 'New points/XP from:',
       othersAnswered: 'Others answered as follows',
       flagQuestion: 'Report question',
       flagQuestionText:
-        'This feedback form is intended to allow you to make a direct comment on the individual questions of a learning element / micro-session, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
+        'This feedback form is intended to allow you to make a direct comment on the individual questions of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
       addFeedback: 'Add feedback',
       feedbackRequired: 'Please add a text to your feedback.',
       submitFeedback: 'Submit feedback',
@@ -399,7 +399,7 @@ If multipliers are activated on the activities, these multipliers are applied to
     },
     microSession: {
       notFound:
-        'The corresponding micro session is either not available or not yet active.',
+        'The corresponding microlearning is either not available or not yet active.',
       solvedMicrolearning:
         'You have successfully completed the microlearning <it>{name}</it>.',
     },
@@ -528,7 +528,7 @@ If multipliers are activated on the activities, these multipliers are applied to
   manage: {
     general: {
       questionPool: 'Question Pool',
-      sessions: 'Sessions',
+      sessions: 'Quizzes',
       courses: 'Courses',
       migration: 'Migration',
       generateToken: 'Generate login token',
@@ -560,21 +560,25 @@ If multipliers are activated on the activities, these multipliers are applied to
     migration: {
       pageName: 'Migrate Data from KlickerV2',
       step1Title: 'Step 1: Request Migration Token',
-      step1Description: 'To migrate your old Klicker account to KlickerV3, provide the email linked to your old account. After submitting the email, you will receive a migration token to proceed. Please ensure you have access to this email. If not, consider resetting your password.',
+      step1Description:
+        'To migrate your old Klicker account to KlickerV3, provide the email linked to your old account. After submitting the email, you will receive a migration token to proceed. Please ensure you have access to this email. If not, consider resetting your password.',
       requestMigrationToken: 'Request Migration Token',
       step2Title: 'Step 2: Insert Migration Link',
-      step2Description: 'You should have received an email containing a migration link. If it is not in your inbox, check the spam folder. Copy the link and paste it into the address bar of your browser to proceed.',
+      step2Description:
+        'You should have received an email containing a migration link. If it is not in your inbox, check the spam folder. Copy the link and paste it into the address bar of your browser to proceed.',
       step3Title: 'Step 3: Start Migration',
-      step3Description: 'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
+      step3Description:
+        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
       startMigration: 'Start Migration',
       step4Title: 'Step 4: Migration Status Notification',
-      step4Description: 'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.'
+      step4Description:
+        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
     },
     questionPool: {
-      createLiveSession: 'Create live session',
-      createMicroSession: 'Create micro session',
-      createLearningElement: 'Create learning element',
-      createGroupTask: 'Create group task',
+      createLiveSession: 'Create live quiz',
+      createMicroSession: 'Create microlearning',
+      createLearningElement: 'Create practice quiz',
+      createGroupTask: 'Create group activity',
       createQuestionCaps: 'CREATE QUESTION',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
@@ -589,7 +593,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       confirmDeletion:
         'Are you sure you want to delete the following question(s)?',
       noQuestionRecovery:
-        'This action cannot be undone. The question(s) will be permanently deleted and cannot be restored. Questions will not be removed from existing sessions.',
+        'This action cannot be undone. The question(s) will be permanently deleted and cannot be restored. Questions will not be removed from existing activities.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',
@@ -620,7 +624,7 @@ If multipliers are activated on the activities, these multipliers are applied to
         'Enter the question you want to ask the participants. The rich text editor allows you to use the following (block) formatting: bold text, italic text, code, quotes, numbered lists, unordered lists and LaTeX formulas. Hover over the individual buttons for more information.',
       questionPlaceholder: 'Enter your question here...',
       explanationTooltip:
-        'Enter a generic explanation of your question here, which will be displayed to students in learning elements and micro-sessions regardless of their answer as an explanation of the correct solution.',
+        'Enter a generic explanation of your question here, which will be displayed to students in practice quizzes and microlearning regardless of their answer as an explanation of the correct solution.',
       explanationPlaceholder: 'Enter your explanation here...',
       attachments: 'Attachments',
       answerOptions: 'Answer options',
@@ -650,11 +654,11 @@ If multipliers are activated on the activities, these multipliers are applied to
       cancelEditing: 'Cancel editing',
     },
     sessionForms: {
-      sessionName: 'Please enter a name for your session.',
-      sessionDisplayName: 'Please enter a valid display name for your session.',
+      sessionName: 'Please enter a name for your quiz.',
+      sessionDisplayName: 'Please enter a valid display name for your quiz.',
       considerFormErrors: 'Please check the form for error messages.',
-      startDate: 'Please enter a start date for your session.',
-      endDate: 'Please enter an end date for your session.',
+      startDate: 'Please enter a start date for your quiz.',
+      endDate: 'Please enter an end date for your quiz.',
       endAfterStart: 'The end date has to be later than the start date.',
       validMultiplicator: 'Please enter a valid multiplicator.',
       checkValues:
@@ -683,86 +687,87 @@ If multipliers are activated on the activities, these multipliers are applied to
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
       microSessionTypes:
-        'Micro-sessions can only contain single choice, multiple choice, kprim and numerical questions.',
+        'A microlearning can only contain single choice, multiple choice, kprim and numerical questions.',
       microSessionCreated:
-        'Your micro-session <b>{name}</b> has been created successfully.',
+        'Your microlearning <b>{name}</b> has been created successfully.',
       microSessionEdited:
-        'Your micro-session <b>{name}</b> has been edited successfully.',
+        'Your microlearning <b>{name}</b> has been edited successfully.',
       microSessionDescription:
-        'In this step, enter the name and description of the micro-session.',
+        'In this step, enter the name and description of the microlearning.',
       microSessionSettings:
         'In this step, select the start and end date and make further settings.',
       microSessionQuestions:
-        'In this step, select the questions for the micro-session.',
-      microSessionEditingFailed: 'Editing the Micro session failed...',
-      microSessionCreationFailed: 'Creating the Micro session failed...',
+        'In this step, select the questions for the microlearning.',
+      microSessionEditingFailed: 'Editing the Microlearning failed...',
+      microSessionCreationFailed: 'Creating the Microlearning failed...',
       microSessionName:
-        'This name should allow you to distinguish this micro session from others. It will not be shown to the participants, please use the display name (next field) for this.',
+        'This name should allow you to distinguish this microlearning from others. It will not be shown to the participants, please use the display name (next field) for this.',
       microSessionDescField:
-        'Add a description to your micro-session that will be displayed to participants at the beginning.',
+        'Add a description to your microlearning that will be displayed to participants at the beginning.',
       microSessionCourse:
-        'For the creation of a micro session, the selection of the corresponding course is required.',
+        'For the creation of a microlearning, the selection of the corresponding course is required.',
       microSessionStartDate:
-        'Please choose the start date of the micro session. The session will be displayed to the participants from this point in time.',
+        'Please choose the start date of the microlearning. The microlearning will be displayed to the participants from this point in time.',
       microSessionEndDate:
-        'Please choose the end date of the micro session. The session will no longer be displayed to the participants after this point in time.',
+        'Please choose the end date of the microlearning. The microlearning will no longer be displayed to the participants after this point in time.',
       microSessionMultiplier:
-        'The multiplier is a factor with which the points of the participants are multiplied in a gamified micro session.',
-      liveSessionGamified: 'Please specify, if the session should be gamified',
+        'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
+      liveSessionGamified:
+        'Please specify, if the live quiz should be gamified',
       liveSessionTypes:
-        'Live sessions can only contain single choice, multiple choice, numerical and free text questions.',
+        'Live quizzes can only contain single choice, multiple choice, numerical and free text questions.',
       liveSessionTimeRestriction: 'Please enter a valid time restriction.',
-      liveSessionCreated: 'Live session <b>{name}</b> successfully created.',
-      liveSessionUpdated: 'Live session <b>{name}</b> successfully updated.',
+      liveSessionCreated: 'Live quiz <b>{name}</b> successfully created.',
+      liveSessionUpdated: 'Live quiz <b>{name}</b> successfully updated.',
       liveSessionDescription:
-        'In this step, enter the name and description of the live session.',
+        'In this step, enter the name and description of the live quiz.',
       liveSessionSettings:
-        'In this step, you can make settings for the session.',
+        'In this step, you can make settings for the live quiz.',
       liveSessionBlocks: 'Questions & Blocks',
       liveSessionDragDrop:
         'Use drag&drop on the plus icon to add questions to your blocks. New blocks can be created either by drag&drop on the corresponding field or by clicking on the button.',
-      liveSessionCreationFailed: 'Creating the live session failed...',
-      liveSessionEditingFailed: 'Editing the live session failed...',
+      liveSessionCreationFailed: 'Creating the live quiz failed...',
+      liveSessionEditingFailed: 'Editing the live quiz failed...',
       liveSessionName:
-        'The name should allow you to distinguish this session from others. It will not be shown to the participants, please use the display name (next field) for this.',
+        'The name should allow you to distinguish this live quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
       liveSessionDescField:
-        'Here you can enter an optional description of the live session. This will be displayed to the students at the beginning of the session.',
-      liveSessionCourse: 'You can assign your session to a course.',
+        'Here you can enter an optional description of the live quiz. This will be displayed to the students at the beginning of the quiz.',
+      liveSessionCourse: 'You can assign your live quiz to a course.',
       liveSessionSelectCourse: 'Select course',
       liveSessionNoCourse: 'No course',
       liveSessionMultiplier:
         'The multiplier is a factor with which the points are multiplied when a question is answered. The factor is only used if gamification is activated.',
       liveSessionGamification:
-        'Specify whether gamification should be enabled for this session. Gamified sessions should only be used for gamified courses.',
+        'Specify whether gamification should be enabled for this live quiz.',
       learningElementResetDays:
-        'Please enter a number of days after which the learning element can be repeated.',
+        'Please enter a number of days after which the practice quiz can be repeated.',
       learningElementValidResetDays:
-        'Please enter a valid number of days after which the learning element can be repeated.',
+        'Please enter a valid number of days after which the practice quiz can be repeated.',
       learningElementTypes:
-        'Learning elements can only contain single choice, multiple choice, Kprim and numerical questions.',
+        'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions.',
       learningElementSolutionReq: 'Please only add questions with solution.',
       learningElementCreated:
         'Learning element <b>{name}</b> successfully created.',
       learningElementUpdated:
         'Learning element <b>{name}</b> successfully modified.',
       learningElementDescription:
-        'In this step, enter the name and description of the learning element.',
+        'In this step, enter the name and description of the practice quiz.',
       learningElementSettings:
-        'In this step, make settings for your learning element.',
+        'In this step, make settings for your practice quiz.',
       learningElementContent:
-        'In this step, add questions and text elements to your learning element.',
-      learningElementCreationFailed: 'Creating the learning element failed...',
-      learningElementEditingFailed: 'Editing the learning element failed...',
+        'In this step, add questions and text elements to your practice quiz.',
+      learningElementCreationFailed: 'Creating the practice quiz failed...',
+      learningElementEditingFailed: 'Editing the practice quiz failed...',
       learningElementName:
-        'The name should allow you to distinguish this learning element from others. It will not be shown to the participants, please use the display name (next field) for this.',
+        'The name should allow you to distinguish this practice quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
       learningElementDescField:
-        'Add a description to your learning element that will be displayed to participants at the beginning.',
+        'Add a description to your practice quiz that will be displayed to participants at the beginning.',
       learningElementSelectCourse:
-        'For the creation of a learning element, the selection of the corresponding course is required.',
+        'For the creation of a practice quiz, the selection of the corresponding course is required.',
       learningElementMultiplier:
-        'Select a multiplier. All points that students collect in this learning element will be multiplied by the multiplier.',
+        'Select a multiplier. All points that students collect in this practice quiz will be multiplied by the multiplier.',
       learningElementRepetition:
-        'Select a period after which students can repeat the learning element.',
+        'Select a period after which students can repeat the practice quiz.',
       learningElementOrder:
         'Select an order in which the questions are to be solved by the students.',
       learningElemenSelectOrder: 'Select order',
@@ -792,44 +797,44 @@ If multipliers are activated on the activities, these multipliers are applied to
       solutionRangeRequired: 'Please enter at least one valid solution range.',
     },
     sessions: {
-      runningSessions: 'Running Sessions',
-      plannedSessions: 'Planned Sessions',
-      preparedSessions: 'Prepared Sessions',
-      completedSessions: 'Completed Sessions',
+      runningSessions: 'Running Live Quizzes',
+      plannedSessions: 'Planned Live Quizzes',
+      preparedSessions: 'Prepared Live Quizzes',
+      completedSessions: 'Completed Live Quizzes',
       embeddingEvaluation: 'Embed Evaluation',
       lecturerCockpit: 'Lecturer Cockpit',
-      sessionEvaluation: 'Session Evaluation',
-      startSession: 'Start Session',
-      editSession: 'Edit Session',
-      deleteSession: 'Delete Session',
+      sessionEvaluation: 'Quiz Evaluation',
+      startSession: 'Start Quiz',
+      editSession: 'Edit Quiz',
+      deleteSession: 'Delete Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
-      deleteLiveSession: 'Delete Live Session',
+      deleteLiveSession: 'Delete Quiz',
       confirmLiveSessionDeletion:
-        'Are you sure you want to delete the following live session?',
+        'Are you sure you want to delete the following live quiz?',
       liveSessionDeletionHint:
-        'Deleting a live session is only possible as long as it has not been started. Deleted live sessions cannot be restored at a later date.',
+        'Deleting a live quiz is only possible as long as it has not been started. Deleted live quizzes cannot be restored at a later date.',
       evaluationLinksEmbedding: 'Evaluation links for embedding in PowerPoint',
-      noSessions: 'No sessions available',
+      noSessions: 'No live quizzes available',
       creationExplanation:
-        'To create your first session, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH elements and add questions from the question pool.',
+        'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
     },
     cockpit: {
       firstBlock: 'Start first block',
       blockActive: 'Close block',
       nextBlock: 'Start next block',
-      endSession: 'End session',
+      endSession: 'End quiz',
       audienceView: 'Audience view',
       evaluationResults: 'Evaluation (results)',
-      abortSession: 'Abort session',
+      abortSession: 'Abort quiz',
       confirmAbortSession:
-        'Are you sure you want to abort the following session?',
+        'Are you sure you want to abort the following live quiz?',
       abortSessionHint:
-        'When aborting a session, the session is reset so that it can be started again from the beginning at a later date. Please note that all previous answers, feedbacks, etc. will be lost.',
+        'When aborting a live quiz, the quiz is reset so that it can be started again from the beginning at a later date. Please note that all previous answers, feedbacks, etc. will be lost.',
       blockN: 'Block {number}',
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',
-      printTitle: 'Session "{name}" - Feedback Channel',
+      printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',
       activateQA: 'Activate Live Q&A',
@@ -870,10 +875,10 @@ If multipliers are activated on the activities, these multipliers are applied to
       evaluationNotYetAvailable:
         'The evaluation for this question cannot be displayed yet. If you want to embed this page somewhere, e.g. via the PowerPoint plugin, the evaluation will be displayed automatically after starting the question.',
       noSignedInStudents:
-        'So far, no participants were signed in during this session and collected points.',
-      noFeedbacksYet: 'This session does not contain any feedbacks yet.',
+        'So far, no participants were signed in during this live quiz and collected points.',
+      noFeedbacksYet: 'This live quiz does not contain any feedbacks yet.',
       noConfusionFeedbacksYet:
-        'This session does not contain any confusion feedbacks yet.',
+        'This live quiz does not contain any confusion feedbacks yet.',
       totalParticipants: 'Total participants: {number}',
       showSolution: 'Show solution',
       fontSize: 'Font size',
@@ -896,7 +901,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       minWindowLength: 'The window length must be at least 1.',
       validWindowLength: 'Please enter a valid window length.',
       confusionDiagramsTooltip:
-        'The diagrams below show all confusion feedbacks of the participants from the beginning to the end of the Klicker session. The values are normalized to the interval [-1,1] and set to 0 if no values are available in a time interval. The exact number of feedbacks can be read out by hovering the mouse over a data point.',
+        'The diagrams below show all confusion feedbacks of the participants from the beginning to the end of the live quiz. The values are normalized to the interval [-1,1] and set to 0 if no values are available in a time interval. The exact number of feedbacks can be read out by hovering the mouse over a data point.',
       avgDifficulty: 'Avg. Difficulty',
       avgSpeed: 'Avg. Speed',
       graphSettings: 'Graph settings',
@@ -962,13 +967,13 @@ If multipliers are activated on the activities, these multipliers are applied to
       changedDate: 'Date has been successfully adjusted.',
       dateChangeFailed:
         'An error occurred while adjusting the date. Please check the input.',
-      noSessions: 'No sessions available',
-      noLearningElements: 'No learning elements available',
-      noMicroSessions: 'No micro-sessions available',
+      noSessions: 'No live quizzes available',
+      noLearningElements: 'No practice quizzes available',
+      noMicroSessions: 'No microlearning available',
       courseLeaderboard: 'Course Leaderboard',
       participantsLeaderboard: 'Participants Leaderboard: {number}',
       avgPoints: 'Average points: {points}',
-      runningSession: 'Running session',
+      runningSession: 'Running live quiz',
       publicAccess: 'Public access',
       restrictedAccess: 'Restricted access',
       startAt: 'Start: {time}',
@@ -976,39 +981,39 @@ If multipliers are activated on the activities, these multipliers are applied to
       nQuestions: '{number} questions',
       copyAccessLink: 'Copy access link',
       linkMicroSessionCopied:
-        'The link to the micro-session has been successfully copied to the clipboard.',
+        'The link to the microlearning has been successfully copied to the clipboard.',
       linkLearningElementCopied:
-        'The link to the learning element has been successfully copied to the clipboard.',
-      editMicroSession: 'Edit micro-session',
-      publishMicroSession: 'Publish micro-session',
-      deleteMicroSession: 'Delete micro-session',
+        'The link to the practice quiz has been successfully copied to the clipboard.',
+      editMicroSession: 'Edit microlearning',
+      publishMicroSession: 'Publish microlearning',
+      deleteMicroSession: 'Delete microlearning',
       publishItem: 'Publish {name}',
       confirmPublishing: 'Are you sure you want to publish the following item?',
       publishingHint:
-        'Publishing a learning element or micro-session makes the item visible to all participants. This process cannot be undone. Changes to the content of an item cannot be made after publishing.',
+        'Publishing a practice quiz or microlearning makes the item visible to all participants. This process cannot be undone. Changes to the content of an item cannot be made after publishing.',
       microPublishingHint:
-        'Micro-sessions are additionally only visible within the specified date range.',
+        'Microlearning are additionally only visible within the specified date range.',
       confirmDeletionMicroSession:
-        'Are you sure you want to delete the following micro-session?',
+        'Are you sure you want to delete the following microlearing?',
       hintDeletionMicroSession:
-        'Deleting a micro-session is only possible as long as it is not running and is used in a course. Deleted micro-sessions cannot be restored at a later date.',
-      editLearningElement: 'Edit learning element',
-      publishLearningElement: 'Publish learning element',
-      deleteLearningElement: 'Delete learning element',
+        'Deleting a microlearning is only possible as long as it is not running and is not used in a course. A deleted microlearning cannot be restored at a later date.',
+      editLearningElement: 'Edit practice quiz',
+      publishLearningElement: 'Publish practice quiz',
+      deleteLearningElement: 'Delete practice quiz',
       confirmDeletionLearningElement:
-        'Are you sure you want to delete the following learning element?',
+        'Are you sure you want to delete the following practice quiz?',
       hintDeletionLearningElement:
-        'Deleting a learning element is only possible as long as it is not used in an active course. Deleted learning elements cannot be restored at a later date.',
+        'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
     },
     toasts: {
-      learningElementEdit: 'Learning element successfully edited!',
-      learningElementCreate: 'Learning element successfully created!',
+      learningElementEdit: 'Practice quiz successfully edited!',
+      learningElementCreate: 'Practice quiz successfully created!',
       toCourseOverview: 'To <link>course overview</link>',
-      liveSessionEdit: 'Session successfully edited!',
-      liveSessionCreate: 'Session successfully created!',
-      toSessionList: 'To <link>session list</link>',
-      microSessionEdit: 'Micro-session successfully edited!',
-      microSessionCreate: 'Micro-session successfully created!',
+      liveSessionEdit: 'Live quiz successfully edited!',
+      liveSessionCreate: 'Live quiz successfully created!',
+      toSessionList: 'To <link>quiz overview</link>',
+      microSessionEdit: 'Microlearning successfully edited!',
+      microSessionCreate: 'Microlearning successfully created!',
     },
   },
   control: {
@@ -1039,30 +1044,30 @@ If multipliers are activated on the activities, these multipliers are applied to
       plannedSessions: 'Planned Sessions',
       noPlannedSessions: 'No planned sessions',
       sessionStartFailed:
-        'Unfortunately, your session could not be started due to an error. Please try again later.',
+        'Unfortunately, your live quiz could not be started due to an error. Please try again later.',
       pptEmbedding: 'PPT-Embedding Evaluation',
-      startSession: 'Start session',
+      startSession: 'Start live quiz',
       confirmStartSession:
-        'Are you sure you want to start the following session?',
+        'Are you sure you want to start the following live quiz?',
       explanationStartSession:
-        'Please note that a started live session is generally publicly accessible. Running sessions can be canceled or stopped using the KlickerUZH management app.',
+        'Please note that a started live quiz is generally publicly accessible. Running sessions can be canceled or stopped using the KlickerUZH management app.',
     },
     session: {
-      sessionControl: 'Session Control',
+      sessionControl: 'Live Quiz Control',
       errorLoadingSession:
-        'Unfortunately, an error occurred while loading the session. Please make sure that the session is still running or try again later.',
+        'Unfortunately, an error occurred while loading the live quiz. Please make sure that the quiz is still running or try again later.',
       containsNoQuestions:
-        'This session does not contain any questions and therefore cannot be controlled via the controller app at the moment. Please use the management app with all functionalities.',
-      sessionWithName: 'Session: {name}',
+        'This live quiz does not contain any questions and therefore cannot be controlled via the controller app at the moment. Please use the management app with all functionalities.',
+      sessionWithName: 'Live Quiz: {name}',
       activeBlock: 'Active Block:',
       closeBlock: 'Close Block',
       nextBlock: 'Next Block:',
       activateBlockN: 'Activate Block {number}',
       hintAllBlocksClosed:
-        'All blocks of this session have already been executed and closed. The feedback channel will be closed when the session is ended.',
-      endSession: 'End Session',
+        'All blocks of this live quiz have already been executed and closed. The feedback channel will be closed when the quiz is ended.',
+      endSession: 'End Quiz',
       hintLastBlock:
-        'The currently running block is the last of this session. After closing it, the session can be ended.',
+        'The currently running block is the last of this live quiz. After closing it, the quiz can be ended.',
       blockN: 'Block {number}',
     },
   },
