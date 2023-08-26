@@ -29,7 +29,6 @@ export const User = UserRef.implement({
     }),
 
     catalyst: t.boolean({
-      nullable: true,
       resolve: (user) => user.catalystInstitutional || user.catalystIndividual,
     }),
     catalystTier: t.exposeString('catalystTier', { nullable: true }),
