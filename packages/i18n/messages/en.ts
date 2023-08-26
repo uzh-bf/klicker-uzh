@@ -1055,6 +1055,11 @@ If multipliers are activated on the activities, these multipliers are applied to
         'Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.',
       installIOS:
         "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live sessions directly.",
+      emailRequired: 'Please enter a valid email address',
+      tokenRequired:
+        'Enter a valid token. Please note the validity displayed during token generation.',
+      checkToken:
+        'Login failed. Please check your email address and token. Note the time-limited validity of the token.',
     },
     home: {
       courseSelection: 'Course Selection',
