@@ -115,7 +115,7 @@ const config = {
       },
       items: [
         {
-          to: '/home',
+          to: '/',
           label: 'Home',
           position: 'left',
         },
