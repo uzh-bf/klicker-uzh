@@ -36,6 +36,7 @@ export default {
     },
     generic: {
       profile: 'Profile',
+      shortname: 'Shortname',
       yes: 'Yes',
       no: 'No',
       draft: 'Draft',
@@ -127,6 +128,8 @@ export default {
       respond: 'Respond',
       responses: 'Responses',
       ok: 'OK',
+      english: 'English',
+      german: 'German',
     },
     contentInput: {
       boldStyle:
@@ -545,6 +548,35 @@ If multipliers are activated on the activities, these multipliers are applied to
         'Install the KlickerUZH Manage app on your phone to use certain functions for lecturers at any time.',
       installIOS:
         "Open the Share dialog and click 'Add to Home Screen' to install the KlickerUZH Manage app on your phone.",
+    },
+    settings: {
+      userSettings: 'User Settings',
+      languageSettings: 'Language Settings',
+      languageTooltip:
+        'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
+      FULL_ACCESS: 'Full Access',
+      SESSION_EXEC: 'Session Execution',
+      READ_ONLY: 'Read Only',
+      lastUsed: 'last used: {date}',
+      lastUsedNever: 'last used: never',
+      createDelegatedLogin: 'Create delegated login',
+      loginName: 'Login name',
+      scope: 'Scope',
+      selectScope: 'Select scope',
+      createLogin: 'Create login',
+      nameRequired: 'Please enter a name for your login.',
+      scopeRequired: 'Please select the scope for your login.',
+      shortnameTooltip:
+        'The shortname is bound to the main account and can be changed via a separate setting above.',
+      passwordTooltip:
+        'The password is automatically generated. Please write it down before creating the login, it will not be visible anymore afterwards. If you want to change it, you can generate a new one using the button on the right.',
+      shortnameRequirements:
+        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other learning elements in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
+      shortnameRequired: 'Please enter a shortname.',
+      shortnameMin: 'The shortname must be at least 5 characters long.',
+      shortnameMax: 'The shortname must be at most 8 characters long.',
+      shortnameAlphanumeric:
+        'The shortname may only consist of letters and numbers.',
     },
     token: {
       pageName: 'Token Generation',

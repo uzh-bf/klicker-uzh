@@ -36,6 +36,7 @@ export default {
     },
     generic: {
       profile: 'Profil',
+      shortname: 'Kurzname',
       yes: 'Ja',
       no: 'Nein',
       draft: 'Entwurf',
@@ -127,6 +128,8 @@ export default {
       respond: 'Antworten',
       responses: 'Antworten',
       ok: 'OK',
+      english: 'Englisch',
+      german: 'Deutsch',
     },
     contentInput: {
       boldStyle:
@@ -542,6 +545,35 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Installieren Sie die KlickerUZH Manage-App auf Ihrem Handy, um gewisse Funktionen für Dozierenden jederzeit nutzen zu können.',
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Manage-App auf Ihrem Handy zu installieren.",
+    },
+    settings: {
+      userSettings: 'Benutzereinstellungen',
+      languageSettings: 'Spracheinstellungen',
+      languageTooltip:
+        'Ändern Sie hier die Programmsprache der KlickerUZH Manage App. Beachten Sie, dass dies keinerlei Einfluss auf Ihre Kursinhalte oder die Spracheinstellungen bei anderen Nutzern oder Studierenden in Ihren Kursen hat.',
+      FULL_ACCESS: 'Voller Zugriff',
+      SESSION_EXEC: 'Durchführung von Sessionen',
+      READ_ONLY: 'Nur Lesen',
+      lastUsed: 'zuletzt genutzt: {date}',
+      lastUsedNever: 'zuletzt genutzt: Nie',
+      createDelegatedLogin: 'Delegierten Login erstellen',
+      loginName: 'Login-Name',
+      scope: 'Berechtigungen',
+      selectScope: 'Jetzt wählen',
+      createLogin: 'Login erstellen',
+      nameRequired: 'Geben Sie einen Namen für Ihr Login ein',
+      scopeRequired: 'Wählen Sie die Berechtigungen für Ihr Login',
+      shortnameTooltip:
+        'Der Shortname ist an den Hauptaccount gebunden und kann oben über eine separate Einstellung geändert werden.',
+      passwordTooltip:
+        'Das Passwort wird automatisch generiert. Notieren Sie es sich vor dem Erstellen des Logins, es ist später nicht mehr sichtbar. Sollten Sie ein anderes Passwort wünschen, können Sie dieses über den Knopf rechts rechts neu generieren lassen.',
+      shortnameRequirements:
+        'Der Kurzname hat im KlickerUZH eine wichtige Bedeutung, da er an vielen Stellen einen einfachen Zugriff auf Kurse und Lernelemente ermöglicht. Bitte beachten Sie daher folgende Regeln bei der Wahl des Kurznamens: <ul><li>Der Kurzname muss mindestens 5 und maximal 8 Zeichen lang sein.</li><li>Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.</li></ul>',
+      shortnameRequired: 'Geben Sie einen Kurznamen ein.',
+      shortnameMin: 'Der Kurzname muss mindestens 5 Zeichen lang sein.',
+      shortnameMax: 'Der Kurzname darf maximal 8 Zeichen lang sein.',
+      shortnameAlphanumeric:
+        'Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.',
     },
     token: {
       pageName: 'Token Generation',

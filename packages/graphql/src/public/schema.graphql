@@ -396,6 +396,7 @@ type Mutation {
   changeCourseDescription(courseId: String!, input: String!): Course
   changeParticipantLocale(locale: LocaleType!): Participant
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
+  changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date, isGamificationEnabled: Boolean!, name: String!, notificationEmail: String, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
@@ -404,6 +405,7 @@ type Mutation {
   createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
+  createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
@@ -413,6 +415,7 @@ type Mutation {
   deleteQuestion(id: Int!): Question
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
+  deleteUserLogin(id: String!): UserLogin
   editLearningElement(courseId: String, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
@@ -624,6 +627,7 @@ type Query {
   singleMicroSession(id: String!): MicroSession
   unassignedSessions: [Session!]
   userCourses: [Course!]
+  userLogins: [UserLogin!]
   userProfile: User
   userQuestions: [Question!]
   userRunningSessions: [Session!]
@@ -861,4 +865,19 @@ type User {
   loginToken: String
   loginTokenExpiresAt: Date
   shortname: String!
+}
+
+type UserLogin {
+  id: ID!
+  lastLoginAt: Date
+  name: String!
+  scope: UserLoginScope!
+  user: User!
+}
+
+enum UserLoginScope {
+  ACCOUNT_OWNER
+  FULL_ACCESS
+  READ_ONLY
+  SESSION_EXEC
 }
