@@ -10,7 +10,8 @@ import {
 export async function prepareUser({
   name,
   password,
-  catalyst = true,
+  catalystIndividual = false,
+  catalystInstitutional = false,
   ...args
 }: {
   id: string
@@ -18,13 +19,15 @@ export async function prepareUser({
   name: string
   password: string
   shortname: string
-  catalyst?: boolean
+  catalystIndividual?: boolean
+  catalystInstitutional?: boolean
 }) {
   const hashedPassword = await bcrypt.hash(password, 12)
 
   const data = {
     ...args,
-    catalystIndividual: catalyst,
+    catalystIndividual,
+    catalystInstitutional,
     logins: {
       create: {
         name: name,

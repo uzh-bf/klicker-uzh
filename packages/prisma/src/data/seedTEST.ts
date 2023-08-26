@@ -1,5 +1,11 @@
 import Prisma, { Question } from '../../dist'
-import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
+import {
+  COURSE_ID_TEST,
+  USER_ID_TEST,
+  USER_ID_TEST2,
+  USER_ID_TEST3,
+  USER_ID_TEST4,
+} from './constants.js'
 import * as DATA_TEST from './data/TEST'
 import {
   prepareCourse,
@@ -31,14 +37,47 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   await seedLevels(prisma)
 
-  const userTest = await prisma.user.upsert(
+  const standardUser = await prisma.user.upsert(
     await prepareUser({
       id: USER_ID_TEST,
       name: 'Lecturer',
       email: 'lecturer@bf.uzh.ch',
       shortname: 'lecturer',
       password: 'abcd',
-      catalyst: true,
+      catalystIndividual: true,
+      catalystInstitutional: true,
+    })
+  )
+
+  const freeUser = await prisma.user.upsert(
+    await prepareUser({
+      id: USER_ID_TEST2,
+      name: 'Free Tier User',
+      email: 'free@bf.uzh.ch',
+      shortname: 'free',
+      password: 'abcd',
+    })
+  )
+
+  const individualProUser = await prisma.user.upsert(
+    await prepareUser({
+      id: USER_ID_TEST3,
+      name: 'Individual Pro User',
+      email: 'pro1@bf.uzh.ch',
+      shortname: 'pro1',
+      password: 'abcd',
+      catalystIndividual: true,
+    })
+  )
+
+  const institutionalProUser = await prisma.user.upsert(
+    await prepareUser({
+      id: USER_ID_TEST4,
+      name: 'Institutional Pro User',
+      email: 'pro2@bf.uzh.ch',
+      shortname: 'pro2',
+      password: 'abcd',
+      catalystInstitutional: true,
     })
   )
 
