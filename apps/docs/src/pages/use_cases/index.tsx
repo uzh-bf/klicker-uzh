@@ -39,7 +39,7 @@ function Index() {
 
   return (
     <Layout>
-      <div className={DocPageStyles.docPage}>
+      <div className={twMerge(DocPageStyles.docPage, 'flex flex-row')}>
         <aside
           className={twMerge(
             ThemeClassNames.docs.docSidebarContainer,
