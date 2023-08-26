@@ -74,7 +74,11 @@ const builder = new SchemaBuilder<{
 
       return false
     },
-    catalyst: ctx.user?.catalystInstitutional || ctx.user?.catalystIndividual,
+    catalyst: (catalystRequired) =>
+      (!catalystRequired ||
+        ctx.user?.catalystInstitutional ||
+        ctx.user?.catalystIndividual) ??
+      false,
   }),
   plugins: [ScopeAuthPlugin, PrismaPlugin, ValidationPlugin],
   prisma: {
