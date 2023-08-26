@@ -876,6 +876,7 @@ type UserLogin {
 }
 
 enum UserLoginScope {
+  ACCOUNT_OWNER
   FULL_ACCESS
   READ_ONLY
   SESSION_EXEC

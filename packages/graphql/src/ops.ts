@@ -1561,6 +1561,7 @@ export type UserLogin = {
 };
 
 export enum UserLoginScope {
+  AccountOwner = 'ACCOUNT_OWNER',
   FullAccess = 'FULL_ACCESS',
   ReadOnly = 'READ_ONLY',
   SessionExec = 'SESSION_EXEC'
