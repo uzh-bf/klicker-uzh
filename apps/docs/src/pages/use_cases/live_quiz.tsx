@@ -1,6 +1,6 @@
 import Layout from '@theme/Layout'
 import { H1, H2, Tag } from '@uzh-bf/design-system'
-import { useCases } from './constants'
+import { useCases } from '../../constants'
 
 export default function live_quiz() {
   const useCase = useCases.find(

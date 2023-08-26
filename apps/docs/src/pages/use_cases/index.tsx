@@ -3,9 +3,33 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Layout from '@theme/Layout'
 import { Button, H1, H3 } from '@uzh-bf/design-system'
 import { useState } from 'react'
-import { useCases } from './constants'
+import { useCases } from '../../constants'
 
-export default function index() {
+function Card({ title, image, children, detailsRef }) {
+  return (
+    <div className="mt-4 flex max-h-80 flex-row rounded-xl bg-slate-100">
+      <div className="flex flex-1 flex-col justify-center p-8 md:p-16">
+        <H3 className={{ root: 'text-xl' }}>{title}</H3>
+        <p className="font-sans text-lg">{children}</p>
+        <div>
+          <Button
+            onClick={() => window.open(`/use_cases/${detailsRef}`, '_self')}
+          >
+            <>
+              <FontAwesomeIcon icon={faArrowRight} />
+              Read More
+            </>
+          </Button>
+        </div>
+      </div>
+      <div className="relative hidden flex-1 items-center justify-items-center md:flex">
+        <img className="h-full w-full rounded-r-xl object-cover" src={image} />
+      </div>
+    </div>
+  )
+}
+
+function Index() {
   const [filteredUseCases, setFilteredUseCases] = useState(useCases)
 
   return (
@@ -33,26 +57,4 @@ export default function index() {
   )
 }
 
-function Card({ title, image, children, detailsRef }) {
-  return (
-    <div className="mt-4 flex max-h-80 flex-row rounded-xl bg-slate-100">
-      <div className="flex flex-1 flex-col justify-center p-8 md:p-16">
-        <H3 className={{ root: 'text-xl' }}>{title}</H3>
-        <p className="font-sans text-lg">{children}</p>
-        <div>
-          <Button
-            onClick={() => window.open(`/use_cases/${detailsRef}`, '_self')}
-          >
-            <>
-              <FontAwesomeIcon icon={faArrowRight} />
-              Read More
-            </>
-          </Button>
-        </div>
-      </div>
-      <div className="relative hidden flex-1 items-center justify-items-center md:flex">
-        <img className="h-full w-full rounded-r-xl object-cover" src={image} />
-      </div>
-    </div>
-  )
-}
+export default Index
