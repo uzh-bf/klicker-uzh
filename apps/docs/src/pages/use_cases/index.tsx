@@ -1,21 +1,12 @@
-import {
-  faArrowRight,
-  faChevronDown,
-  faChevronRight,
-} from '@fortawesome/free-solid-svg-icons'
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Layout from '@theme/Layout'
-import { Button, H1, H2, H3 } from '@uzh-bf/design-system'
+import { Button, H1, H3 } from '@uzh-bf/design-system'
 import { useState } from 'react'
-import { useCollapse } from 'react-collapsed'
 import { useCases } from './constants'
 
 export default function index() {
   const [filteredUseCases, setFilteredUseCases] = useState(useCases)
-
-  const filteredByTitle = (title) => {
-    setFilteredUseCases(useCases.filter((useCase) => useCase.title === title))
-  }
 
   return (
     <Layout>
@@ -39,25 +30,6 @@ export default function index() {
         </div>
       </div>
     </Layout>
-  )
-}
-
-function Collapsible({ title, emoji, children }) {
-  const { getCollapseProps, getToggleProps, isExpanded } = useCollapse()
-  return (
-    <div className="m-auto w-full max-w-6xl p-4 ">
-      <div {...getToggleProps()} className="flex flex-row items-center gap-2 ">
-        {isExpanded ? (
-          <FontAwesomeIcon icon={faChevronDown} />
-        ) : (
-          <FontAwesomeIcon icon={faChevronRight} />
-        )}
-        <H2>{title}</H2>
-        {emoji}
-      </div>
-      <hr className="m-0 h-1 rounded bg-black" />
-      <section {...getCollapseProps()}>{children}</section>
-    </div>
   )
 }
 
