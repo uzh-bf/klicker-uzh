@@ -4,5 +4,7 @@ query UserProfile {
     email
     shortname
     locale
+    catalyst
+    catalystTier
   }
 }

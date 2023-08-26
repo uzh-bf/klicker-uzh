@@ -541,6 +541,8 @@ If multipliers are activated on the activities, these multipliers are applied to
       title: 'Title',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
+      catalystRequired:
+        'Requires catalyst access. For more information, see <link></link>.',
     },
     login: {
       lecturerLogin: 'Login Lecturers',
