@@ -859,8 +859,9 @@ type Title {
 }
 
 type User {
+  catalyst: Boolean
+  catalystTier: String
   email: String!
-  fullAccess: Boolean
   id: ID!
   locale: LocaleType!
   loginToken: String

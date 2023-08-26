@@ -3,7 +3,8 @@ query UserProfile {
     id
     email
     shortname
-    fullAccess
     locale
+    catalyst
+    catalystTier
   }
 }

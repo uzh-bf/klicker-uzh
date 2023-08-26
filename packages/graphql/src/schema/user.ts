@@ -10,7 +10,9 @@ export const UserLoginScope = builder.enumType('UserLoginScope', {
 })
 
 export interface IUser extends DB.User {
-  fullAccess?: boolean
+  catalystInstitutional: boolean
+  catalystIndividual: boolean
+  catalystTier: string | null
 }
 export const UserRef = builder.objectRef<IUser>('User')
 export const User = UserRef.implement({
@@ -26,18 +28,23 @@ export const User = UserRef.implement({
       nullable: true,
     }),
 
-    fullAccess: t.boolean({
+    catalyst: t.boolean({
       nullable: true,
-      resolve: (user) => user.fullAccess,
+      resolve: (user) => user.catalystInstitutional || user.catalystIndividual,
     }),
+    catalystTier: t.exposeString('catalystTier', { nullable: true }),
   }),
 })
 
-export const UserLogin = builder.prismaObject('UserLogin', {
+export interface IUserLogin extends DB.UserLogin {
+  user: IUser
+}
+export const UserLoginRef = builder.objectRef<IUserLogin>('UserLogin')
+export const UserLogin = UserLoginRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
-    user: t.expose('user', { type: User }),
+    user: t.expose('user', { type: UserRef }),
     scope: t.expose('scope', { type: UserLoginScope }),
     lastLoginAt: t.expose('lastLoginAt', { type: 'Date', nullable: true }),
   }),

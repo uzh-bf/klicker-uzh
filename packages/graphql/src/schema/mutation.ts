@@ -45,7 +45,6 @@ import {
   ResponseInput,
   Tag,
 } from './question'
-import { QuestionDisplayMode, QuestionType } from './questionData'
 import {
   BlockInput,
   ConfusionTimestep,
@@ -55,41 +54,62 @@ import {
 } from './session'
 import { LocaleType, User, UserLogin, UserLoginScope } from './user'
 
+function getAuthConfig({
+  catalyst,
+  scope,
+  role,
+  ...rest
+}: {
+  catalyst?: boolean
+  scope?: DB.UserLoginScope
+  role?: DB.UserRole
+}) {
+  return {
+    ...rest,
+    authenticated: true,
+    role,
+    scope,
+    catalyst,
+  }
+}
+
 export const Mutation = builder.mutationType({
   fields(t) {
-    const asParticipant = t.withAuth({
-      $all: {
-        authenticated: true,
-        role: DB.UserRole.PARTICIPANT,
-      },
+    const asParticipant = getAuthConfig({ role: DB.UserRole.PARTICIPANT })
+    const asUser = getAuthConfig({ role: DB.UserRole.USER })
+    const asUserWithCatalyst = getAuthConfig({
+      ...asUser,
+      catalyst: true,
     })
-
-    // TODO: differentiate the different levels of login scope
-    const asUser = t.withAuth({
-      $all: {
-        authenticated: true,
-        role: DB.UserRole.USER,
-      },
+    const asUserSessionExec = getAuthConfig({
+      ...asUser,
+      scope: DB.UserLoginScope.SESSION_EXEC,
     })
-
-    const asFullAccessUser = t.withAuth({
-      $all: {
-        authenticated: true,
-        role: DB.UserRole.USER,
-        fullAccess: true,
-      },
+    const asUserFullAccess = getAuthConfig({
+      ...asUser,
+      scope: DB.UserLoginScope.FULL_ACCESS,
     })
-
-    const asUserOwner = t.withAuth({
-      $all: {
-        authenticated: true,
-        role: DB.UserRole.USER,
-        scope: DB.UserLoginScope.ACCOUNT_OWNER,
-      },
+    const asUserOwner = getAuthConfig({
+      ...asUser,
+      scope: DB.UserLoginScope.ACCOUNT_OWNER,
     })
 
     return {
       // ----- ANONYMOUS OPERATIONS -----
+      // #region
+      addConfusionTimestep: t.field({
+        nullable: true,
+        type: ConfusionTimestep,
+        args: {
+          sessionId: t.arg.string({ required: true }),
+          difficulty: t.arg.int({ required: true }),
+          speed: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return FeedbackService.addConfusionTimestep(args, ctx) as any
+        },
+      }),
+
       loginUser: t.string({
         nullable: true,
         args: {
@@ -256,9 +276,11 @@ export const Mutation = builder.mutationType({
           return AccountService.loginParticipantWithLti(args, ctx)
         },
       }),
+      // #endregion
 
       // ----- PARTICIPANT OPERATIONS
-      joinCourse: asParticipant.field({
+      // #region
+      joinCourse: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,
         args: {
@@ -269,7 +291,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      startGroupActivity: asParticipant.field({
+      startGroupActivity: t.withAuth(asParticipant).field({
         nullable: true,
         type: GroupActivityDetails,
         args: {
@@ -281,7 +303,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      joinCourseWithPin: asParticipant.field({
+      joinCourseWithPin: t.withAuth(asParticipant).field({
         nullable: true,
         type: Participant,
         args: {
@@ -295,7 +317,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      joinParticipantGroup: asParticipant.field({
+      joinParticipantGroup: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantGroup,
         args: {
@@ -307,7 +329,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      updateParticipantProfile: asParticipant.field({
+      updateParticipantProfile: t.withAuth(asParticipant).field({
         nullable: true,
         type: Participant,
         args: {
@@ -329,7 +351,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      leaveParticipantGroup: asParticipant.field({
+      leaveParticipantGroup: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantGroup,
         args: {
@@ -341,7 +363,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      subscribeToPush: asParticipant.field({
+      subscribeToPush: t.withAuth(asParticipant).field({
         nullable: true,
         type: Participation,
         args: {
@@ -356,7 +378,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      unsubscribeFromPush: asParticipant.boolean({
+      unsubscribeFromPush: t.withAuth(asParticipant).boolean({
         nullable: true,
         args: {
           courseId: t.arg.string({ required: true }),
@@ -367,7 +389,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      submitGroupActivityDecisions: asParticipant.field({
+      submitGroupActivityDecisions: t.withAuth(asParticipant).field({
         nullable: true,
         type: GroupActivityInstance,
         args: {
@@ -382,14 +404,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      logoutParticipant: asParticipant.id({
+      logoutParticipant: t.withAuth(asParticipant).id({
         nullable: true,
         resolve(_, args, ctx) {
           return AccountService.logoutParticipant(args, ctx)
         },
       }),
 
-      leaveCourse: asParticipant.field({
+      leaveCourse: t.withAuth(asParticipant).field({
         nullable: true,
         type: LeaveCourseParticipation,
         args: {
@@ -400,7 +422,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      markMicroSessionCompleted: asParticipant.field({
+      markMicroSessionCompleted: t.withAuth(asParticipant).field({
         nullable: true,
         type: Participation,
         args: {
@@ -412,7 +434,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createParticipantGroup: asParticipant.field({
+      createParticipantGroup: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantGroup,
         args: {
@@ -424,7 +446,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      bookmarkQuestion: asParticipant.field({
+      bookmarkQuestion: t.withAuth(asParticipant).field({
         nullable: true,
         type: [QuestionStack],
         args: {
@@ -437,7 +459,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      flagQuestion: asParticipant.string({
+      flagQuestion: t.withAuth(asParticipant).string({
         nullable: true,
         args: {
           questionInstanceId: t.arg.int({ required: true }),
@@ -448,15 +470,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteParticipantAccount: asParticipant.boolean({
+      deleteParticipantAccount: t.withAuth(asParticipant).boolean({
         nullable: true,
         resolve(_, __, ctx) {
           return AccountService.deleteParticipantAccount(ctx)
         },
       }),
+      // #endregion
 
       // ----- USER OPERATIONS -----
-      changeUserLocale: asUser.field({
+      // #region
+      changeUserLocale: t.withAuth(asUser).field({
         nullable: true,
         type: User,
         args: {
@@ -467,7 +491,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      cancelSession: asUser.field({
+      cancelSession: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Session,
         args: {
@@ -478,7 +502,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCourseColor: asUser.field({
+      changeCourseColor: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
         args: {
@@ -490,7 +514,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCourseDescription: asUser.field({
+      changeCourseDescription: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
         args: {
@@ -502,7 +526,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteTag: asUser.field({
+      deleteTag: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Tag,
         args: {
@@ -513,7 +537,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteFeedback: asUser.field({
+      deleteFeedback: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Feedback,
         args: {
@@ -524,7 +548,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteFeedbackResponse: asUser.field({
+      deleteFeedbackResponse: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Feedback,
         args: {
@@ -535,7 +559,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteQuestion: asUser.field({
+      deleteQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Question,
         args: {
@@ -546,7 +570,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      editTag: asUser.field({
+      editTag: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Tag,
         args: {
@@ -558,7 +582,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      endSession: asUser.field({
+      endSession: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Session,
         args: {
@@ -569,7 +593,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      startSession: asUser.field({
+      startSession: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Session,
         args: {
@@ -580,7 +604,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      pinFeedback: asUser.field({
+      pinFeedback: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Feedback,
         args: {
@@ -592,7 +616,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      publishFeedback: asUser.field({
+      publishFeedback: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Feedback,
         args: {
@@ -604,7 +628,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      resolveFeedback: asUser.field({
+      resolveFeedback: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Feedback,
         args: {
@@ -616,7 +640,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      respondToFeedback: asUser.field({
+      respondToFeedback: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Feedback,
         args: {
@@ -628,14 +652,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      logoutUser: asUser.id({
+      logoutUser: t.withAuth(asUser).id({
         nullable: true,
         resolve(_, args, ctx) {
           return AccountService.logoutUser(args, ctx)
         },
       }),
 
-      generateLoginToken: asUser.field({
+      generateLoginToken: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
         resolve(_, __, ctx) {
@@ -643,7 +667,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deactivateSessionBlock: asUser.field({
+      deactivateSessionBlock: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Session,
         args: {
@@ -655,7 +679,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeSessionSettings: asUser.field({
+      changeSessionSettings: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Session,
         args: {
@@ -670,20 +694,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      addConfusionTimestep: t.field({
-        nullable: true,
-        type: ConfusionTimestep,
-        args: {
-          sessionId: t.arg.string({ required: true }),
-          difficulty: t.arg.int({ required: true }),
-          speed: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return FeedbackService.addConfusionTimestep(args, ctx) as any
-        },
-      }),
-
-      activateSessionBlock: asUser.field({
+      activateSessionBlock: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Session,
         args: {
@@ -695,7 +706,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createSession: asUser.field({
+      createSession: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Session,
         args: {
@@ -715,7 +726,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      editSession: asUser.field({
+      editSession: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Session,
         args: {
@@ -736,102 +747,16 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createLearningElement: asFullAccessUser.field({
-        nullable: true,
-        type: LearningElement,
-        args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          stacks: t.arg({
-            type: [StackInput],
-            required: true,
-          }),
-          courseId: t.arg.string({ required: false }),
-          multiplier: t.arg.int({ required: true }),
-          order: t.arg({
-            type: LearningElementOrderType,
-            required: true,
-          }),
-          resetTimeDays: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.manipulateLearningElement(args, ctx)
-        },
-      }),
-
-      editLearningElement: asFullAccessUser.field({
-        nullable: true,
-        type: LearningElement,
-        args: {
-          id: t.arg.string({ required: true }),
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          stacks: t.arg({
-            type: [StackInput],
-            required: true,
-          }),
-          courseId: t.arg.string({ required: false }),
-          multiplier: t.arg.int({ required: true }),
-          order: t.arg({
-            type: LearningElementOrderType,
-            required: true,
-          }),
-          resetTimeDays: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.manipulateLearningElement(args, ctx)
-        },
-      }),
-
-      createMicroSession: asFullAccessUser.field({
-        nullable: true,
-        type: MicroSession,
-        args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          questions: t.arg.intList({ required: true }),
-          courseId: t.arg.string({ required: false }),
-          multiplier: t.arg.int({ required: true }),
-          startDate: t.arg({ type: 'Date', required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MicroLearningService.createMicroSession(args, ctx)
-        },
-      }),
-
-      editMicroSession: asFullAccessUser.field({
-        nullable: true,
-        type: MicroSession,
-        args: {
-          id: t.arg.string({ required: true }),
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          questions: t.arg.intList({ required: true }),
-          courseId: t.arg.string({ required: false }),
-          multiplier: t.arg.int({ required: true }),
-          startDate: t.arg({ type: 'Date', required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MicroLearningService.editMicroSession(args, ctx)
-        },
-      }),
-
-      manipulateChoicesQuestion: asUser.prismaField({
+      manipulateChoicesQuestion: t.withAuth(asUserFullAccess).prismaField({
         nullable: true,
         type: Question,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: DB.QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
-          displayMode: t.arg({ required: false, type: QuestionDisplayMode }),
+          displayMode: t.arg({ required: false, type: DB.QuestionDisplayMode }),
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
@@ -848,12 +773,12 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      manipulateNumericalQuestion: asUser.prismaField({
+      manipulateNumericalQuestion: t.withAuth(asUserFullAccess).prismaField({
         nullable: true,
         type: Question,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: DB.QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -873,12 +798,12 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      manipulateFreeTextQuestion: asUser.prismaField({
+      manipulateFreeTextQuestion: t.withAuth(asUserFullAccess).prismaField({
         nullable: true,
         type: Question,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: DB.QuestionType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -898,7 +823,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createCourse: asUser.field({
+      createCourse: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
         args: {
@@ -920,7 +845,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCourseDates: asUser.field({
+      changeCourseDates: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
         args: {
@@ -933,49 +858,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      publishLearningElement: asFullAccessUser.field({
-        nullable: true,
-        type: LearningElement,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.publishLearningElement(args, ctx)
-        },
-      }),
-
-      publishMicroSession: asFullAccessUser.field({
-        nullable: true,
-        type: MicroSession,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MicroLearningService.publishMicroSession(args, ctx)
-        },
-      }),
-
-      requestMigrationToken: asUserOwner.boolean({
-        nullable: true,
-        args: {
-          email: t.arg.string({ required: true, validate: { email: true } }),
-        },
-        resolve(_, args, ctx) {
-          return MigrationService.requestMigrationToken(args, ctx)
-        },
-      }),
-
-      triggerMigration: asUserOwner.boolean({
-        nullable: true,
-        args: {
-          token: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MigrationService.triggerMigration(args, ctx)
-        },
-      }),
-
-      toggleIsArchived: asUser.field({
+      toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [Question],
         args: {
@@ -987,7 +870,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      updateTagOrdering: asUser.field({
+      updateTagOrdering: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [Tag],
         args: {
@@ -999,19 +882,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: delete operations only as owner?
-      deleteLearningElement: asFullAccessUser.field({
-        nullable: true,
-        type: LearningElement,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.deleteLearningElement(args, ctx)
-        },
-      }),
-
-      deleteSession: asUser.field({
+      deleteSession: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Session,
         args: {
@@ -1021,20 +892,180 @@ export const Mutation = builder.mutationType({
           return SessionService.deleteSession(args, ctx)
         },
       }),
+      // #endregion
 
-      deleteMicroSession: asFullAccessUser.field({
+      // ----- USER WITH CATALYST -----
+      // #region
+      createLearningElement: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: LearningElement,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({
+              type: [StackInput],
+              required: true,
+            }),
+            courseId: t.arg.string({ required: false }),
+            multiplier: t.arg.int({ required: true }),
+            order: t.arg({
+              type: LearningElementOrderType,
+              required: true,
+            }),
+            resetTimeDays: t.arg.int({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return LearningElementService.manipulateLearningElement(args, ctx)
+          },
+        }),
+
+      editLearningElement: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: LearningElement,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({
+              type: [StackInput],
+              required: true,
+            }),
+            courseId: t.arg.string({ required: false }),
+            multiplier: t.arg.int({ required: true }),
+            order: t.arg({
+              type: LearningElementOrderType,
+              required: true,
+            }),
+            resetTimeDays: t.arg.int({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return LearningElementService.manipulateLearningElement(args, ctx)
+          },
+        }),
+
+      createMicroSession: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroSession,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            questions: t.arg.intList({ required: true }),
+            courseId: t.arg.string({ required: false }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.createMicroSession(args, ctx)
+          },
+        }),
+
+      editMicroSession: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroSession,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            questions: t.arg.intList({ required: true }),
+            courseId: t.arg.string({ required: false }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.editMicroSession(args, ctx)
+          },
+        }),
+
+      publishLearningElement: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: LearningElement,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return LearningElementService.publishLearningElement(args, ctx)
+          },
+        }),
+
+      publishMicroSession: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroSession,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.publishMicroSession(args, ctx)
+          },
+        }),
+
+      // TODO: delete operations only as owner?
+      deleteLearningElement: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: LearningElement,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return LearningElementService.deleteLearningElement(args, ctx)
+          },
+        }),
+      deleteMicroSession: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroSession,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.deleteMicroSession(args, ctx)
+          },
+        }),
+      // #endregion
+
+      // ----- USER OWNER OPERATIONS -----
+      // #region
+      requestMigrationToken: t.withAuth(asUserOwner).boolean({
         nullable: true,
-        type: MicroSession,
         args: {
-          id: t.arg.string({ required: true }),
+          email: t.arg.string({ required: true, validate: { email: true } }),
         },
         resolve(_, args, ctx) {
-          return MicroLearningService.deleteMicroSession(args, ctx)
+          return MigrationService.requestMigrationToken(args, ctx)
         },
       }),
 
-      // ----- ACCOUNT OWNER OPERATIONS -----
-      createUserLogin: asUserOwner.field({
+      triggerMigration: t.withAuth(asUserOwner).boolean({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MigrationService.triggerMigration(args, ctx)
+        },
+      }),
+
+      createUserLogin: t.withAuth(asUserOwner).field({
         nullable: true,
         type: UserLogin,
         args: {
@@ -1047,7 +1078,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteUserLogin: asUserOwner.field({
+      deleteUserLogin: t.withAuth(asUserOwner).field({
         nullable: true,
         type: UserLogin,
         args: {
@@ -1058,7 +1089,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeShortname: asUserOwner.field({
+      changeShortname: t.withAuth(asUserOwner).field({
         nullable: true,
         type: User,
         args: {
@@ -1068,6 +1099,7 @@ export const Mutation = builder.mutationType({
           return AccountService.changeShortname(args, ctx) as any
         },
       }),
+      // #endregion
     }
   },
 })
