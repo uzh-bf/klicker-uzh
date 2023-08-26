@@ -1,6 +1,9 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { faPencil } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCircleExclamation,
+  faPencil,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeShortnameDocument,
@@ -9,7 +12,13 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, FormikTextField, H1, Select } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikTextField,
+  H1,
+  Select,
+  Tooltip,
+} from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -46,7 +55,7 @@ function Settings() {
           {editShortname ? (
             <Formik
               initialValues={{ shortname: user?.userProfile?.shortname || '' }}
-              onSubmit={async (values, { setSubmitting }) => {
+              onSubmit={async (values) => {
                 const result = await changeShortname({
                   variables: { shortname: values.shortname },
                 })
@@ -56,7 +65,6 @@ function Settings() {
                 }
               }}
               validationSchema={Yup.object().shape({
-                // TODO: show error messages in a proper place without causing significant layout shifts
                 shortname: Yup.string()
                   .required(t('manage.settings.shortnameRequired'))
                   .min(5, t('manage.settings.shortnameMin'))
@@ -67,14 +75,27 @@ function Settings() {
                   ),
               })}
             >
-              {({ isSubmitting, isValid }) => (
+              {({ isSubmitting, isValid, errors }) => (
                 <Form className="flex flex-row items-center gap-1 text-black font-normal">
+                  {Object.keys(errors).length > 0 && (
+                    <Tooltip
+                      tooltip={Object.values(errors)[0]}
+                      delay={0}
+                      className={{ tooltip: 'text-sm' }}
+                    >
+                      <FontAwesomeIcon
+                        icon={faCircleExclamation}
+                        className="text-red-600 mr-1"
+                      />
+                    </Tooltip>
+                  )}
                   <FormikTextField
                     name="shortname"
                     className={{
                       field: 'w-36',
                       input: 'bg-white h-8',
                     }}
+                    hideError
                   />
                   <Button
                     disabled={isSubmitting || !isValid}
