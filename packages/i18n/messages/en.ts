@@ -261,7 +261,7 @@ Practice quizzes and microlearning are available via direct links that you can r
       appSetup: `
 ### Installation of the KlickerUZH App
 
-In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can (on Android) activate the push notifications for micro-sessions in your courses.
+In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can (on Android) activate the push notifications for microlearning in your courses.
 
 You can set up the KlickerUZH app as follows:
 
@@ -291,9 +291,9 @@ Do you have a question or would you like to give direct feedback on the lecture?
 
 Participation is possible at [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) (also anonymously) or via the KlickerUZH app.
 
-#### Practice quizzes and micro-sessions
+#### Practice quizzes and microlearning
 
-Practice quizzes and micro-sessions allow you to repeat the course content outside of the lecture time and receive direct feedback on your solution. Practice quizzes are always and arbitrarily often available, micro-sessions on the other hand only once and in a limited time frame (e.g., once per week). All elements are directly accessible via the KlickerUZH app, or via the link provided by your lecturers (also anonymously).
+Practice quizzes and microlearning allow you to repeat the course content outside of the lecture time and receive direct feedback on your solution. Practice quizzes are always and arbitrarily often available, microlearning on the other hand only once and in a limited time frame (e.g., once per week). All elements are directly accessible via the KlickerUZH app, or via the link provided by your lecturers (also anonymously).
 
 While answering the questions, you can, if you are logged in, set personal bookmarks on important questions, and create your own question pool through that. You can send feedback on unclear questions to your lecturers using the report function.
 
@@ -311,7 +311,7 @@ The following activities are included in the challenge:
 
 - Polls and Live Quizzes: 10 points per participation in an open vote (without solution), up to 70 bonus points for a fast and correct answer to content questions. The fastest correct answer receives the most points.
 - Practice quizzes: 10 points if the first answer to a question is correct. 5 points for each additional correct repetition of a question (after the specified lock time has expired). In KPRIM, an error results in a halving of the score.
-- Micro-sessions: 10 points per correctly answered question in a microlearning. In KPRIM, an error results in a halving of the score.
+- Microlearning: 10 points per correctly answered question in a microlearning. In KPRIM, an error results in a halving of the score.
 - Group activities: 1000 points on the individual leaderboard for each group member when passing a group activity.
 - Achievements: Collected achievements (e.g., reaching first place in a live quiz) result in bonus points, as noted on the corresponding achievements.
 
