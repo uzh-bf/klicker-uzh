@@ -140,6 +140,8 @@ const CredentialProvider: Provider = CredentialsProvider({
           email: user.email,
           role: user.role,
           scope: login.scope,
+          catalystInstitutional: user.catalystInstitutional,
+          catalystIndividual: user.catalystIndividual,
         }
       }
     }

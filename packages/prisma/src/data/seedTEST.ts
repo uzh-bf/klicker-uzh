@@ -38,6 +38,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       email: 'lecturer@bf.uzh.ch',
       shortname: 'lecturer',
       password: 'abcd',
+      catalyst: true,
     })
   )
 
