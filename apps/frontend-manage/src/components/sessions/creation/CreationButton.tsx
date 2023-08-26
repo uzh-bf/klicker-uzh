@@ -66,6 +66,7 @@ function CreationButton({
             })}
           </div>
         }
+        className={{ tooltip: 'z-20' }}
       >
         {button}
       </Tooltip>
