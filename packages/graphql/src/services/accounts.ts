@@ -22,54 +22,6 @@ const COOKIE_SETTINGS: CookieOptions = {
       : 'none',
 }
 
-interface LoginUserArgs {
-  email: string
-  password: string
-}
-
-export async function loginUser(
-  { email, password }: LoginUserArgs,
-  ctx: Context
-) {
-  if (!isEmail(email)) return null
-
-  const normalizedEmail = normalizeEmail(email) as string
-
-  const user = await ctx.prisma.user.findUnique({
-    where: { email: normalizedEmail },
-  })
-
-  if (!user?.password) return null
-
-  const isLoginValid = await bcrypt.compare(password, user.password)
-
-  if (!isLoginValid) return null
-
-  ctx.prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  })
-
-  const jwt = JWT.sign(
-    {
-      sub: user.id,
-      role: user.role,
-    },
-    // TODO: use structured configuration approach
-    process.env.APP_SECRET as string,
-    {
-      algorithm: 'HS256',
-      expiresIn: '2w',
-    }
-  )
-
-  ctx.res.cookie('next-auth.session-token', jwt, COOKIE_SETTINGS)
-
-  ctx.res.cookie('NEXT_LOCALE', user.locale, COOKIE_SETTINGS)
-
-  return user.id
-}
-
 interface LoginUserTokenArgs {
   email: string
   token: string
@@ -87,15 +39,11 @@ export async function loginUserToken(
     where: { email: normalizedEmail },
   })
 
-  console.log(user)
-
   if (!user) return null
 
   const isLoginValid =
     token === user.loginToken &&
     dayjs(user.loginTokenExpiresAt).isAfter(dayjs())
-
-  console.log(token, user.loginToken, isLoginValid)
 
   if (!isLoginValid) return null
 
@@ -108,6 +56,7 @@ export async function loginUserToken(
     {
       sub: user.id,
       role: user.role,
+      scope: UserLoginScope.SESSION_EXEC,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,

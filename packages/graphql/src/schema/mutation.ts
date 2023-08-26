@@ -83,17 +83,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      loginUser: t.string({
-        nullable: true,
-        args: {
-          email: t.arg.string({ required: true, validate: { email: true } }),
-          password: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return AccountService.loginUser(args, ctx)
-        },
-      }),
-
       changeParticipantLocale: t.field({
         nullable: true,
         type: Participant,

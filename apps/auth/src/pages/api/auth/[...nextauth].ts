@@ -178,8 +178,6 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account, profile, email }) {
-      console.log('sign in', user, account, profile, email)
-
       if (profile?.sub && account?.provider) {
         const userAccount = await prisma.account.findUnique({
           where: {
