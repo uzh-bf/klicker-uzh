@@ -98,8 +98,6 @@ model User {
   image         String?
 
   shortname           String    @unique
-  password            String?
-  description         String?
   lastLoginAt         DateTime?
   deletionToken       String?
   deletionRequestedAt DateTime?
