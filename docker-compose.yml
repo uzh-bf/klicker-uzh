@@ -21,7 +21,7 @@ services:
     environment:
       POSTGRES_USER: klicker
       POSTGRES_PASSWORD: klicker
-      POSTGRES_DB: main
+      POSTGRES_DB: klicker
     ports:
       - 5432:5432
     networks:
@@ -65,9 +65,10 @@ services:
     environment:
       - TZ=Europe/Zurich
     depends_on:
-      - listmonk_init
-      - listmonk_db
-      - mailhog
+      listmonk_db:
+        condition: service_healthy
+      mailhog:
+        condition: service_healthy
     volumes:
       - ./util/listmonk-config.toml:/listmonk/config.toml
     networks:

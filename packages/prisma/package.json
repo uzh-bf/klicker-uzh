@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.0.0-rc.14",
+  "version": "3.0.0-rc.16",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -50,9 +50,9 @@
     "prisma:deploy:prod": "doppler run --config prd -- pnpm run prisma:deploy:raw",
     "prisma:deploy:qa": "doppler run --config stg -- pnpm run prisma:deploy:raw",
     "prisma:deploy:raw": "prisma migrate deploy --schema=src/prisma/schema.prisma",
+    "prisma:diff": "doppler run --config dev --command 'prisma migrate diff --from-url \"$PROD_DATABASE_URL\" --to-migrations src/prisma/migrations --shadow-database-url \"postgres://klicker:klicker@localhost:5432/shadow\"'",
     "prisma:migrate": "doppler run --config dev -- prisma migrate dev --schema=src/prisma/schema.prisma",
     "prisma:migrate:create": "doppler run --config dev -- prisma migrate dev --schema=src/prisma/schema.prisma --create-only",
-    "prisma:diff": "doppler run --config dev --command 'prisma migrate diff --from-url \"$PROD_DATABASE_URL\" --to-migrations src/prisma/migrations --shadow-database-url \"postgres://klicker:klicker@localhost:5432/shadow\"'",
     "prisma:push": "doppler run --config dev -- pnpm run prisma:push:raw",
     "prisma:push:qa": "doppler run --config stg -- pnpm run prisma:push:raw",
     "prisma:push:raw": "prisma db push --schema=src/prisma/schema.prisma",

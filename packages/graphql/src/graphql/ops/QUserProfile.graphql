@@ -4,5 +4,6 @@ query UserProfile {
     email
     shortname
     fullAccess
+    locale
   }
 }
