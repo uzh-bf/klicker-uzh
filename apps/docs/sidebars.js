@@ -5,7 +5,7 @@ module.exports = {
       'getting_started/core_concepts',
       'getting_started/migration',
     ],
-    Tutorials: [
+    'Tutorials for Lecturers': [
       'tutorials/question_management',
       'tutorials/course_management',
       'tutorials/live_quiz',
@@ -14,6 +14,10 @@ module.exports = {
       'tutorials/practice_quiz',
       'tutorials/group_activity',
     ],
+    'Tutorials for Participants': [
+      'tutorials/klickeruzh_app',
+      'tutorials/push_notifications',
+    ],
     Gamification: [
       'gamification/overview',
       'gamification/experience',
@@ -21,7 +25,11 @@ module.exports = {
       'gamification/achievements',
       'gamification/awards',
     ],
-    'Advanced Topics': ['advanced/control_app', 'advanced/delegated_access'],
+    'Advanced Topics': [
+      'advanced/control_app',
+      'advanced/delegated_access',
+      'advanced/lti_integration',
+    ],
     About: ['about/project', 'about/whats_new', 'about/roadmap'],
   },
 }
