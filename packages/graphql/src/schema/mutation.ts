@@ -69,7 +69,6 @@ export const Mutation = builder.mutationType({
       $all: {
         authenticated: true,
         role: DB.UserRole.USER,
-        scope: DB.UserLoginScope.FULL_ACCESS,
       },
     })
 
