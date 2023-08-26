@@ -83,10 +83,6 @@ const config = {
       {
         redirects: [
           {
-            from: '/',
-            to: '/home',
-          },
-          {
             from: '/tos',
             to: '/terms_of_service',
           },
