@@ -23,7 +23,6 @@
     },
     "dev": {
       "cache": false,
-      "outputs": ["dist/**", ".next/**"],
       "dependsOn": [
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
@@ -32,12 +31,22 @@
     },
     "dev:offline": {
       "cache": false,
-      "outputs": ["dist/**", ".next/**"],
       "dependsOn": [
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build"
       ]
+    },
+    "dev:migration": {
+      "cache": false,
+      "dependsOn": [
+        "@klicker-uzh/prisma#build",
+        "@klicker-uzh/graphql#build",
+        "@klicker-uzh/markdown#build"
+      ]
+    },
+    "dev:docs": {
+      "cache": false
     },
     "publish": {
       "cache": false,

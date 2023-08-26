@@ -1,9 +1,8 @@
-import * as messages from '../../../packages/i18n/messages/en.json'
-import { performLecturerLogin } from './login-workflow.cy'
+import messages from '../../../packages/i18n/messages/en'
 
 describe('Different live-session workflows', () => {
   beforeEach(() => {
-    performLecturerLogin(cy)
+    cy.loginLecturer()
   }),
     it('adds and then deletes a second question block', () => {
       const randomNumber = Math.round(Math.random() * 1000)
@@ -186,7 +185,7 @@ describe('Different live-session workflows', () => {
       cy.get('[data-cy="student-submit-answer"]').click()
       cy.wait(500)
 
-      performLecturerLogin(cy)
+      cy.loginLecturer()
 
       cy.get('[data-cy="sessions"]').click()
       cy.findByText(sessionTitle)
@@ -226,7 +225,7 @@ describe('Different live-session workflows', () => {
       cy.get('[data-cy="student-submit-answer"]').click()
       cy.wait(500)
 
-      performLecturerLogin(cy)
+      cy.loginLecturer()
 
       cy.get('[data-cy="sessions"]').click()
       cy.findByText(sessionTitle)

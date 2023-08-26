@@ -1,0 +1,12 @@
+query GetUserLogins {
+  userLogins {
+    id
+    name
+    scope
+    lastLoginAt
+    user {
+      id
+      shortname
+    }
+  }
+}

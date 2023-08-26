@@ -1,4 +1,4 @@
-import { Question as QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import type { Question as QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import React from 'react'
 
@@ -6,8 +6,8 @@ import { useTranslations } from 'next-intl'
 import Question from './Question'
 
 interface QuestionListProps {
-  setSelectedQuestions: (questionIndex: number) => void
-  selectedQuestions: boolean[]
+  setSelectedQuestions: (questionId: number, questionData: QuestionType) => void
+  selectedQuestions: Record<number, QuestionType>
   questions?: QuestionType[]
   tagfilter?: string[]
 }
@@ -35,9 +35,9 @@ function QuestionList({
 
   return (
     <div className="space-y-1 md:space-y-2">
-      {questions.map((question, index): any => (
+      {questions.map((question): any => (
         <Question
-          checked={selectedQuestions[index]}
+          checked={!!selectedQuestions[question.id]}
           id={question.id}
           isArchived={question.isArchived}
           key={question.id}
@@ -47,7 +47,7 @@ function QuestionList({
           content={question.content}
           hasAnswerFeedbacks={question.hasAnswerFeedbacks}
           hasSampleSolution={question.hasSampleSolution}
-          onCheck={() => setSelectedQuestions(index)}
+          onCheck={() => setSelectedQuestions(question.id, question)}
           tagfilter={tagfilter}
           createdAt={question.createdAt}
           updatedAt={question.updatedAt}

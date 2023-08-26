@@ -1,4 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
+import * as R from 'ramda'
+import { Question, Tag } from 'src/ops'
 import { ContextWithUser } from '../lib/context'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
@@ -8,13 +10,20 @@ export async function getUserQuestions(ctx: ContextWithUser) {
     },
     include: {
       questions: {
+        where: {
+          isDeleted: false,
+        },
         orderBy: [
           {
             createdAt: 'desc',
           },
         ],
         include: {
-          tags: true,
+          tags: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
     },
@@ -33,7 +42,11 @@ export async function getSingleQuestion(
       ownerId: ctx.user.sub,
     },
     include: {
-      tags: true,
+      tags: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
       attachments: true,
     },
   })
@@ -106,7 +119,11 @@ export async function manipulateQuestion(
             ownerId: ctx.user.sub,
           },
           include: {
-            tags: true,
+            tags: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
             attachments: true,
           },
         })
@@ -188,7 +205,11 @@ export async function manipulateQuestion(
       // TODO: create / connect / disconnect attachments
     },
     include: {
-      tags: true,
+      tags: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
       attachments: true,
     },
   })
@@ -209,17 +230,28 @@ export async function deleteQuestion(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
-  const question = await ctx.prisma.question.delete({
+  const question = await ctx.prisma.question.update({
     where: {
       id: id,
       ownerId: ctx.user.sub,
     },
+    data: {
+      isDeleted: true,
+    },
   })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'Question',
-    id: question.id,
-  })
+  // TODO: Once migration deadline is over, rework approach and delete question for real
+  // const question = await ctx.prisma.question.delete({
+  //   where: {
+  //     id: id,
+  //     ownerId: ctx.user.sub,
+  //   },
+  // })
+
+  // ctx.emitter.emit('invalidate', {
+  //   typename: 'Question',
+  //   id: question.id,
+  // })
 
   return question
 }
@@ -230,7 +262,11 @@ export async function getUserTags(ctx: ContextWithUser) {
       id: ctx.user.sub,
     },
     include: {
-      tags: true,
+      tags: {
+        orderBy: {
+          order: 'asc',
+        },
+      },
     },
   })
 
@@ -272,4 +308,58 @@ export async function deleteTag({ id }: { id: number }, ctx: ContextWithUser) {
   })
 
   return tag
+}
+
+export async function updateTagOrdering(
+  { originIx, targetIx }: { originIx: number; targetIx: number },
+  ctx: ContextWithUser
+) {
+  const tags = await ctx.prisma.tag.findMany({
+    where: {
+      ownerId: ctx.user.sub,
+    },
+    orderBy: {
+      order: 'asc',
+    },
+  })
+
+  const sortedTags = R.sortWith<Tag>(
+    [R.ascend(R.prop('order')), R.ascend(R.prop('name'))],
+    tags
+  )
+
+  const reorderedTags = R.swap<Tag>(originIx, targetIx, sortedTags)
+
+  await ctx.prisma.$transaction(
+    reorderedTags.map((tag, ix) =>
+      ctx.prisma.tag.update({
+        where: { id: tag.id },
+        data: { order: ix },
+      })
+    )
+  )
+
+  return reorderedTags
+}
+
+export async function toggleIsArchived(
+  { questionIds, isArchived }: { questionIds: number[]; isArchived: boolean },
+  ctx: ContextWithUser
+): Promise<Partial<Question>[]> {
+  await ctx.prisma.question.updateMany({
+    where: {
+      id: {
+        in: questionIds,
+      },
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      isArchived,
+    },
+  })
+
+  return questionIds.map((id) => ({
+    id,
+    isArchived,
+  }))
 }

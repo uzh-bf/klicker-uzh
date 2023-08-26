@@ -16,8 +16,16 @@ releases:
         cron:
           token: '{{ requiredEnv "CRON_TOKEN" }}'
 
+        eduId:
+          clientSecret: '{{ requiredEnv "EDUID_CLIENT_SECRET" }}'
+
+        auth:
+          replicaCount: 1
+          image:
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
         frontendPWA:
-          replicaCount: 3
+          replicaCount: 1
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
@@ -42,7 +50,7 @@ releases:
 
 
         backendGraphql:
-          replicaCount: 2
+          replicaCount: 1
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 

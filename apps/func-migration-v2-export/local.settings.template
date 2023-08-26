@@ -1,0 +1,16 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "NODE_ENV": "development",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "FUNCTIONS_EXTENSION_VERSION": "~4",
+    "FUNCTIONS_WORKER_PROCESS_COUNT": 10,
+    "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
+    "MIGRATION_SERVICE_BUS_CONNECTION_STRING": "",
+    "MIGRATION_SERVICE_BUS_QUEUE_NAME": "",
+    "MIGRATION_BLOB_EXPORT_CONNECTION_STRING": "",
+    "MIGRATION_BLOB_STORAGE_PATH": "",
+    "MIGRATION_MONGO_CONNECTION_STRING": ""
+  }
+}

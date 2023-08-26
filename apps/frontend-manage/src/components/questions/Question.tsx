@@ -10,11 +10,12 @@ import { QUESTION_TYPES_SHORT } from '@klicker-uzh/shared-components/src/constan
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { useMutation } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
-import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faArchive, faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
   GetUserQuestionsDocument,
+  QuestionType,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
@@ -30,9 +31,9 @@ interface Props {
   isArchived?: boolean
   tags?: Tag[]
   title: string
-  type: string
+  type: QuestionType
   content: string
-  onCheck: any // TODO: typing
+  onCheck: () => void
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
   tagfilter?: string[]
@@ -58,8 +59,6 @@ function Question({
   const t = useTranslations()
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
-  // TODO: add preview modal with student view of question
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
   const [deleteQuestion] = useMutation(DeleteQuestionDocument)
 
@@ -80,7 +79,7 @@ function Question({
   })
 
   return (
-    <div className="flex gap-1 items-center" data-cy="question-block">
+    <div className="flex gap-1.5 items-center" data-cy="question-block">
       <Checkbox checked={checked} onCheck={onCheck} />
 
       <div
@@ -92,9 +91,11 @@ function Question({
       >
         <div className="flex flex-row flex-1">
           <div className="flex flex-col flex-1 gap-1">
-            {isArchived && <div>ARCHIVED // TODO styling</div>}
+            <div className="flex flex-row flex-none items-center gap-2 text-lg">
+              {isArchived && (
+                <FontAwesomeIcon title="ARCHIVE" icon={faArchive} />
+              )}
 
-            <div className="flex flex-row flex-none">
               <a
                 className="flex-1 text-xl font-bold cursor-pointer text-primary-strong sm:hover:text-uzh-blue-100"
                 role="button"

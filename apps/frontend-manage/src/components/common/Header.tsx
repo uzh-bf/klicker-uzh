@@ -1,13 +1,11 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { faPlayCircle, faUserCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChangeUserLocaleDocument,
   GetUserRunningSessionsDocument,
-  LogoutUserDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Navigation, Select } from '@uzh-bf/design-system'
+import { Navigation } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
@@ -19,12 +17,35 @@ interface HeaderProps {
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
-  const { pathname, asPath, query } = router
-
-  const [logoutUser] = useMutation(LogoutUserDocument)
-  const [changeUserLocale] = useMutation(ChangeUserLocaleDocument)
 
   const { data } = useQuery(GetUserRunningSessionsDocument)
+
+  const navigationItems = [
+    {
+      href: '/',
+      label: t('manage.general.questionPool'),
+      active: router.pathname == '/',
+      cy: 'questions',
+    },
+    {
+      href: '/sessions',
+      label: t('manage.general.sessions'),
+      active: router.pathname == '/sessions',
+      cy: 'sessions',
+    },
+    {
+      href: '/courses',
+      label: t('manage.general.courses'),
+      active: router.pathname == '/courses',
+      cy: 'courses',
+    },
+    {
+      href: '/flashcards',
+      label: t('shared.generic.flashcards'),
+      active: router.pathname == '/flashcards',
+      cy: 'flashcards',
+    },
+  ]
 
   return (
     <div
@@ -32,29 +53,38 @@ function Header({ user }: HeaderProps): React.ReactElement {
       data-cy="navigation"
     >
       <Navigation className={{ root: 'bg-slate-800' }}>
-        <Navigation.ButtonItem
-          href="/"
-          label={t('manage.general.questionPool')}
-          className={{ label: 'font-bold text-white text-base' }}
-        />
-        <Navigation.ButtonItem
-          href="/sessions"
-          label={t('manage.general.sessions')}
-          className={{ label: 'font-bold text-white text-base' }}
-          data={{ cy: 'sessions' }}
-        />
-        <Navigation.ButtonItem
-          href="/courses"
-          label={t('manage.general.courses')}
-          className={{ label: 'font-bold text-white text-base' }}
-        />
-        <Navigation.ButtonItem
-          href="/flashcards"
-          label="Flashcards"
-          className={{ label: 'font-bold text-white text-base' }}
-        />
+        {navigationItems.map((item) => (
+          <Navigation.ButtonItem
+            data={{ cy: item.cy }}
+            key={item.href}
+            label={item.label}
+            className={{
+              label: twMerge(
+                'font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+                item.active &&
+                  'text-red underline underline-offset-[0.3rem] decoration-2'
+              ),
+              root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+            }}
+            onClick={() => {
+              router.push(item.href)
+            }}
+          />
+        ))}
       </Navigation>
       <Navigation className={{ root: '!p-0 bg-slate-800' }}>
+        <Navigation.ButtonItem
+          onClick={() => router.push('/migration')}
+          label={t('manage.general.migration')}
+          className={{
+            label: twMerge(
+              'font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+              router.pathname === '/migration' &&
+                'text-red underline underline-offset-[0.3rem] decoration-2'
+            ),
+            root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
+          }}
+        />
         <div className="hidden md:block">
           <Navigation.TriggerItem
             icon={
@@ -82,7 +112,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
                   <Navigation.DropdownItem
                     key={session.id}
                     title={session.name}
-                    href={`/sessions/${session.id}/cockpit`}
+                    onClick={() =>
+                      router.push(`/sessions/${session.id}/cockpit`)
+                    }
                     className={{ title: 'text-base font-bold', root: 'p-2' }}
                   />
                 )
@@ -95,28 +127,29 @@ function Header({ user }: HeaderProps): React.ReactElement {
         <Navigation.TriggerItem
           icon={<FontAwesomeIcon icon={faUserCircle} className="h-5" />}
           label={user?.shortname}
-          dropdownWidth="w-[12rem]"
+          dropdownWidth="w-[16rem]"
           className={{
-            label: 'font-bold text-white text-base my-auto',
-            icon: 'text-white',
-            root: 'flex flex-row items-center gap-1',
+            label:
+              'my-auto font-bold text-base bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
+            root: 'group flex flex-row items-center gap-1 text-white hover:bg-inherit transition-all duration-300 ease-in-out',
             dropdown: 'p-1.5 gap-0',
           }}
           data={{ cy: 'user-menu' }}
         >
           {/* <Navigation.DropdownItem
-            title="Settings"
-            href="/settings"
-            className={{ title: 'text-base font-bold', root: 'p-2' }}
-          />
-          <Navigation.DropdownItem
             title="Support"
-            href="/support"
+            onClick={() => router.push("/support")}
             className={{ title: 'text-base font-bold', root: 'p-2' }}
           /> */}
           <Navigation.DropdownItem
+            title={t('shared.generic.settings')}
+            onClick={() => router.push('/user/settings')}
+            className={{ title: 'text-base font-bold', root: 'p-2' }}
+            data={{ cy: 'menu-user-settings' }}
+          />
+          <Navigation.DropdownItem
             title={t('manage.general.generateToken')}
-            href="/token"
+            onClick={() => router.push('/token')}
             className={{ title: 'text-base font-bold', root: 'p-2' }}
             data={{ cy: 'token-generation-page' }}
           />
@@ -129,25 +162,6 @@ function Header({ user }: HeaderProps): React.ReactElement {
             data={{ cy: 'logout' }}
           />
         </Navigation.TriggerItem>
-        <Select
-          value={router.locale}
-          items={[
-            { value: 'de', label: 'DE' },
-            { value: 'en', label: 'EN' },
-          ]}
-          onChange={(newValue: string) => {
-            changeUserLocale({ variables: { locale: newValue } })
-            router.push({ pathname, query }, asPath, {
-              locale: newValue,
-            })
-          }}
-          className={{
-            root: 'my-auto',
-            trigger:
-              'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
-          }}
-          basic
-        />
       </Navigation>
     </div>
   )

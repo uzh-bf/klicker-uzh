@@ -4,6 +4,40 @@ heartbeats:
 cron:
   dailyGroupScores: "5 6,20 * * *"
 
+auth:
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: auth.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      - host: auth.klicker-prod.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-frontend-auth-tls-uzh
+        hosts:
+          - auth.klicker.uzh.ch
+      - secretName: klicker-prod-frontend-auth-tls
+        hosts:
+          - auth.klicker-prod.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+    # type: Recreate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 300m
+      memory: 300Mi
+
 frontendPWA:
   autoscaling:
     enabled: false
@@ -27,8 +61,8 @@ frontendPWA:
           - pwa.klicker-prod.bf-app.ch
 
   strategy:
-    # type: RollingUpdate
-    type: Recreate
+    type: RollingUpdate
+    # type: Recreate
 
   resources:
     requests:
@@ -61,8 +95,8 @@ frontendManage:
           - manage.klicker-prod.bf-app.ch
 
   strategy:
-    # type: RollingUpdate
-    type: Recreate
+    type: RollingUpdate
+    # type: Recreate
 
   resources:
     requests:
@@ -95,8 +129,8 @@ frontendControl:
           - control.klicker-prod.bf-app.ch
 
   strategy:
-    # type: RollingUpdate
-    type: Recreate
+    type: RollingUpdate
+    # type: Recreate
 
   resources:
     requests:
@@ -129,8 +163,8 @@ backendGraphql:
           - backend-sls.klicker-prod.bf-app.ch
 
   strategy:
-    # type: RollingUpdate
-    type: Recreate
+    type: RollingUpdate
+    # type: Recreate
 
   resources:
     requests:

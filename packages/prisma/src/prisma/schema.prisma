@@ -64,6 +64,7 @@ model VerificationToken {
 }
 
 enum UserLoginScope {
+  ACCOUNT_OWNER
   FULL_ACCESS
   SESSION_EXEC
   READ_ONLY
@@ -72,6 +73,7 @@ enum UserLoginScope {
 model UserLogin {
   id String @id @default(uuid()) @db.Uuid
 
+  name        String         @default("-")
   password    String
   scope       UserLoginScope @default(READ_ONLY)
   lastLoginAt DateTime?
@@ -87,6 +89,8 @@ enum Locale {
 
 model User {
   id String @id @default(uuid()) @db.Uuid
+
+  originalId String? @unique
 
   name          String?
   email         String    @unique
@@ -187,6 +191,8 @@ enum QuestionDisplayMode {
 model Question {
   id Int @id @default(autoincrement())
 
+  originalId String? @unique
+
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
 
@@ -216,6 +222,10 @@ model Tag {
   id   Int    @id @default(autoincrement())
   name String
 
+  order Int @default(0)
+
+  originalId String? @unique
+
   questions Question[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -237,6 +247,8 @@ enum QuestionInstanceType {
 
 model QuestionInstance {
   id Int @id @default(autoincrement())
+
+  originalId String? @unique
 
   type  QuestionInstanceType?
   order Int?
@@ -404,6 +416,8 @@ enum SessionBlockStatus {
 model SessionBlock {
   id Int @id @default(autoincrement())
 
+  originalId String? @unique
+
   order  Int?
   status SessionBlockStatus @default(SCHEDULED)
 
@@ -442,6 +456,7 @@ enum AccessMode {
 model LiveSession {
   id String @id @default(uuid()) @db.Uuid
 
+  originalId                 String? @unique
   isLiveQAEnabled            Boolean @default(false)
   isConfusionFeedbackEnabled Boolean @default(true)
   isModerationEnabled        Boolean @default(true)
@@ -745,7 +760,7 @@ model Participant {
   avatarSettings Json?
   xp             Int     @default(0)
 
-  isActive        Boolean @default(false)
+  isActive        Boolean @default(true)
   isProfilePublic Boolean @default(true)
   isSSOAccount    Boolean @default(false)
 

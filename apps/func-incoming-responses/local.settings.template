@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "NODE_ENV": "development",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "FUNCTIONS_EXTENSION_VERSION": "~4",
+    "FUNCTIONS_WORKER_PROCESS_COUNT": 10,
+    "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
+    "SERVICE_BUS_CONNECTION_STRING": "",
+    "SERVICE_BUS_QUEUE_NAME": ""
+  },
+  "Host": {
+    "CORS": "http://pwa.klicker.local",
+    "CORSCredentials": true
+  }
+}

@@ -5,4 +5,5 @@ export default defineConfig({
   clean: false,
   dts: true,
   publicDir: 'src/public',
+  target: 'node18',
 })

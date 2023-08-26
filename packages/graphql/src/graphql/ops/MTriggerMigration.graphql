@@ -1,0 +1,3 @@
+mutation TriggerMigration($token: String!) {
+  triggerMigration(token: $token)
+}

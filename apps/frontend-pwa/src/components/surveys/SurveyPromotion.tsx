@@ -1,4 +1,4 @@
-function SurveyPromotion({ courseId }) {
+function SurveyPromotion({ courseId }: { courseId: string }) {
   if (courseId === '2b302436-4fc3-4d5d-bbfb-1e13b4ee11b2') {
     return (
       <div className="px-4 py-3 mt-4 text-sm bg-orange-100 border border-orange-200 rounded shadow md:mt-6">

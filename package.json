@@ -2,21 +2,11 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.0.0-beta.4",
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "cypress"
-  ],
-  "license": "AGPL-3.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/uzh-bf/klicker-uzh.git"
-  },
-  "bugs": {
-    "url": "https://github.com/uzh-bf/klicker-uzh/issues"
-  },
+  "version": "3.0.0-rc.16",
+  "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
+  "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
+  "license": "AGPL-3.0",
   "maintainers": [
     "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
     "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>",
@@ -34,45 +24,54 @@
     "Florina Vogel <florina.vogel@bf.uzh.ch>",
     "Valentin Meyer <valentin.meyer@bf.uzh.ch>"
   ],
+  "devDependencies": {
+    "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
+    "husky": "8.0.3",
+    "standard-version": "9.5.0",
+    "syncpack": "11.2.1",
+    "turbo": "1.10.12",
+    "yaml": "2.3.0"
+  },
   "scripts": {
-    "dev": "doppler run --config dev -- turbo run dev",
-    "dev:offline": "doppler run --config dev -- turbo run dev:offline",
+    "//release": "standard-version --dry-run",
+    "//release:dry": "standard-version --dry-run",
     "build": "turbo run build",
-    "publish": "turbo run publish",
+    "check": "turbo run check --parallel --continue",
+    "dev": "doppler run --config dev -- turbo run dev",
+    "dev:docs": "doppler run --config dev -- turbo run dev:docs",
+    "dev:migration": "doppler run --config dev -- turbo run dev:migration",
+    "dev:offline": "doppler run --config dev -- turbo run dev:offline",
     "format": "turbo run format --parallel --continue",
     "format:check": "turbo run format:check --parallel --continue",
     "lint": "turbo run lint --parallel --continue",
-    "check": "turbo run check --parallel --continue",
-    "//release": "standard-version --dry-run",
-    "//release:dry": "standard-version --dry-run",
+    "prepare": "husky install",
+    "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
+    "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
+    "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
+    "prisma:studio": "pnpm run --filter @klicker-uzh/prisma prisma:studio",
+    "publish": "turbo run publish",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
     "release:alpha:dry": "standard-version --dry-run --prerelease alpha",
     "release:beta": "standard-version --prerelease beta --no-verify",
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
-    "test": "turbo run test",
-    "test:run": "turbo run test:run",
     "start": "turbo run start",
     "start:test": "turbo run start:test",
-    "prepare": "husky install",
-    "prisma:setup": "npm run -w packages/prisma prisma:setup",
-    "prisma:migrate": "npm run -w packages/prisma prisma:migrate",
-    "prisma:reset": "npm run -w packages/prisma prisma:reset"
+    "syncpack:format": "syncpack format",
+    "syncpack:lint": "syncpack lint",
+    "syncpack:mismatches": "syncpack list-mismatches",
+    "syncpack:mismatches:fix": "syncpack fix-mismatches",
+    "syncpack:update": "syncpack update",
+    "test": "turbo run test",
+    "test:run": "turbo run test:run"
   },
-  "devDependencies": {
-    "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
-    "husky": "8.0.3",
-    "standard-version": "9.5.0",
-    "turbo": "1.10.12",
-    "yaml": "2.3.0"
+  "engines": {
+    "node": "=18"
   },
   "volta": {
     "node": "18.17.0",
     "pnpm": "8.6.12"
   },
-  "packageManager": "pnpm@8.6.12",
-  "engines": {
-    "node": "=18"
-  }
+  "packageManager": "pnpm@8.6.12"
 }

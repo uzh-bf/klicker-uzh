@@ -1,0 +1,6 @@
+mutation ToggleIsArchived($questionIds: [Int!]!, $isArchived: Boolean!) {
+  toggleIsArchived(questionIds: $questionIds, isArchived: $isArchived) {
+    id
+    isArchived
+  }
+}

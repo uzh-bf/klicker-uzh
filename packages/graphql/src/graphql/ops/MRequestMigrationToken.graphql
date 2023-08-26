@@ -1,0 +1,3 @@
+mutation RequestMigrationToken($email: String!) {
+  requestMigrationToken(email: $email)
+}

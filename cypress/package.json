@@ -1,21 +1,21 @@
 {
   "private": true,
   "name": "@klicker-uzh/cypress",
+  "devDependencies": {
+    "@cypress/code-coverage": "3.11.0",
+    "@testing-library/cypress": "9.0.0",
+    "@types/node": "^18.17.4",
+    "cypress": "12.17.4",
+    "typescript": "5.1.6"
+  },
   "scripts": {
     "test": "cypress open",
     "test:run": "cypress run"
   },
-  "devDependencies": {
-    "@cypress/code-coverage": "3.10.6",
-    "@testing-library/cypress": "9.0.0",
-    "@types/node": "^18.0.0",
-    "cypress": "12.12.0",
-    "typescript": "5.0.4"
+  "engines": {
+    "node": "=18"
   },
   "volta": {
     "extends": "../package.json"
-  },
-  "engines": {
-    "node": "=18"
   }
 }

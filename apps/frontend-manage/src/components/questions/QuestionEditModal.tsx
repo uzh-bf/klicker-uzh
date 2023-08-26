@@ -1,4 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
@@ -9,23 +11,9 @@ import {
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  FastField,
-  FastFieldProps,
-  FieldArray,
-  FieldArrayRenderProps,
-  FieldProps,
-  Form,
-  Formik,
-} from 'formik'
-import React, { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-import * as Yup from 'yup'
-
-import { faTrash } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
 import ContentInput from '@klicker-uzh/shared-components/src/ContentInput'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 import {
   QUESTION_GROUPS,
@@ -42,7 +30,20 @@ import {
   Switch,
   UserNotification,
 } from '@uzh-bf/design-system'
+import {
+  FastField,
+  FastFieldProps,
+  FieldArray,
+  FieldArrayRenderProps,
+  FieldProps,
+  Form,
+  Formik,
+} from 'formik'
 import { useTranslations } from 'next-intl'
+import React, { Suspense, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import * as Yup from 'yup'
+import SuspendedTagInput from './tags/SuspendedTagInput'
 
 enum QuestionEditMode {
   DUPLICATE = 'DUPLICATE',
@@ -332,7 +333,7 @@ function QuestionEditModal({
   // TODO: styling of tooltips - some are too wide
   // TODO: show errors of form validation below fields as for the login form
 
-  if (!question && questionType !== question?.type) {
+  if (!question || questionType !== question?.type) {
     return <div></div>
   }
 
@@ -484,7 +485,11 @@ function QuestionEditModal({
               <Button
                 disabled={isSubmitting || !isValid}
                 className={{
-                  root: 'mt-2 font-bold text-white border-uzh-grey-80 bg-primary-80',
+                  root: twMerge(
+                    'mt-2 font-bold text-white border-uzh-grey-80 bg-primary-80',
+                    (isSubmitting || !isValid) &&
+                      'opacity-50 cursor-not-allowed'
+                  ),
                 }}
                 type="submit"
                 form="question-manipulation-form"
@@ -557,36 +562,23 @@ function QuestionEditModal({
                     />
                   </div>
 
-                  {/* {// TODO replace tag input by suitable component including tag suggestions} */}
-                  <div className="mt-2">
-                    <div className="flex flex-row">
-                      <Label
-                        label={t('manage.questionPool.tags')}
-                        className={{
-                          root: 'my-auto mr-2 text-lg font-bold w-36',
-                          tooltip:
-                            'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                        }}
-                        tooltip={t('manage.questionForms.tagsTooltip')}
-                        showTooltipSymbol={true}
-                      />
-                      <FastField
-                        name="tags"
-                        type="text"
-                        className="w-full bg-opacity-50 border rounded bg-uzh-grey-20 border-uzh-grey-60 h-9 focus:border-primary-40"
-                        value={values.tags?.join(', ')}
-                        onChange={(e: any) => {
-                          setFieldValue('tags', e.target.value.split(', '))
-                        }}
-                      />
-                    </div>
-                    <div className="italic text-red-600">
-                      {/* // TODO: remove this hint once a proper input field for tags has been introduced */}
-                      {t('manage.questionForms.tagFormatting')}
-                    </div>
+                  <div className="flex flex-row mt-2">
+                    <Label
+                      label={t('manage.questionPool.tags')}
+                      className={{
+                        root: 'my-auto mr-2 text-lg font-bold w-36',
+                        tooltip:
+                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                      }}
+                      tooltip={t('manage.questionForms.tagsTooltip')}
+                      showTooltipSymbol={true}
+                    />
+                    <Suspense fallback={<Loader />}>
+                      <SuspendedTagInput />
+                    </Suspense>
                   </div>
 
-                  <div className="z-0 flex flex-row">
+                  <div className="z-0 flex flex-row mt-2">
                     <Label
                       label={t('shared.generic.multiplier')}
                       className={{
@@ -1200,7 +1192,7 @@ function QuestionEditModal({
                     type="error"
                   >
                     <div>{t('manage.formErrors.resolveErrors')}</div>
-                    <ul className="list-disc ml-4">
+                    <ul className="ml-4 list-disc">
                       {errors.name && (
                         <li>{`${t('manage.questionForms.questionTitle')}: ${
                           errors.name

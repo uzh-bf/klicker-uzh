@@ -15,6 +15,7 @@ import durationPlugin from 'dayjs/plugin/duration'
 import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
 import { SessionBlock as ISessionBlock } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import CancelSessionModal from './CancelSessionModal'
 import QRPopup from './QRPopup'
@@ -62,6 +63,7 @@ function SessionTimeline({
 }: Props): React.ReactElement {
   const t = useTranslations()
   const isFeedbackSession = blocks?.length === 0
+  const { locale } = useRouter()
 
   const [cancelSessionModal, setCancelSessionModal] = useState(false)
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
@@ -86,7 +88,7 @@ function SessionTimeline({
 
   // basic session timeline logic - identifying the currently active block as well as the state of the session
   useEffect(() => {
-    if (blocks) {
+    if (blocks && blocks.length > 0) {
       setActiveBlockId(
         blocks.find((block) => block.status === 'ACTIVE')?.id || -1
       )
@@ -146,7 +148,7 @@ function SessionTimeline({
             />
             <a
               className="flex-1"
-              href={`${process.env.NEXT_PUBLIC_PWA_URL}/session/${sessionId}`}
+              href={`${process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${sessionId}`}
               rel="noopener noreferrer"
               target="_blank"
             >
@@ -180,6 +182,18 @@ function SessionTimeline({
               </Button>
             </Link>
           </div>
+          {isFeedbackSession && (
+            <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max sm:mt-0">
+              <Button
+                className={{
+                  root: twMerge('bg-uzh-red-100 text-white h-10'),
+                }}
+                onClick={handleEndSession}
+              >
+                <Button.Label>{buttonNames['endSession']}</Button.Label>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
       {!isFeedbackSession && blocks && (

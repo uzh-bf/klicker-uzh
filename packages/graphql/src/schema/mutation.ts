@@ -8,6 +8,7 @@ import * as FlashcardService from '../services/flashcards'
 import * as ParticipantGroupService from '../services/groups'
 import * as LearningElementService from '../services/learningElements'
 import * as MicroLearningService from '../services/microLearning'
+import * as MigrationService from '../services/migration'
 import * as NotificationService from '../services/notifications'
 import * as ParticipantService from '../services/participants'
 import * as QuestionService from '../services/questions'
@@ -54,7 +55,7 @@ import {
   FeedbackResponse,
   Session,
 } from './session'
-import { LocaleType, User } from './user'
+import { LocaleType, User, UserLogin, UserLoginScope } from './user'
 
 export const Mutation = builder.mutationType({
   fields(t) {
@@ -65,6 +66,7 @@ export const Mutation = builder.mutationType({
       },
     })
 
+    // TODO: differentiate the different levels of login scope
     const asUser = t.withAuth({
       $all: {
         authenticated: true,
@@ -72,7 +74,16 @@ export const Mutation = builder.mutationType({
       },
     })
 
+    const asUserOwner = t.withAuth({
+      $all: {
+        authenticated: true,
+        role: DB.UserRole.USER,
+        scope: DB.UserLoginScope.ACCOUNT_OWNER,
+      },
+    })
+
     return {
+      // ----- ANONYMOUS OPERATIONS -----
       loginUser: t.string({
         nullable: true,
         args: {
@@ -84,18 +95,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeUserLocale: asUser.field({
-        nullable: true,
-        type: User,
-        args: {
-          locale: t.arg({ type: LocaleType, required: true }),
-        },
-        resolve(_, args, ctx) {
-          return AccountService.changeUserLocale(args, ctx) as any
-        },
-      }),
-
-      changeParticipantLocale: asParticipant.field({
+      changeParticipantLocale: t.field({
         nullable: true,
         type: Participant,
         args: {
@@ -103,52 +103,6 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return AccountService.changeParticipantLocale(args, ctx)
-        },
-      }),
-
-      cancelSession: asUser.field({
-        nullable: true,
-        type: Session,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SessionService.cancelSession(args, ctx)
-        },
-      }),
-
-      changeCourseColor: asUser.field({
-        nullable: true,
-        type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          color: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.changeCourseColor(args, ctx)
-        },
-      }),
-
-      changeCourseDescription: asUser.field({
-        nullable: true,
-        type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          input: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.changeCourseDescription(args, ctx)
-        },
-      }),
-
-      deleteTag: asUser.field({
-        nullable: true,
-        type: Tag,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return QuestionService.deleteTag(args, ctx) as any
         },
       }),
 
@@ -161,85 +115,6 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return FeedbackService.createFeedback(args, ctx) as any
-        },
-      }),
-
-      deleteFeedback: asUser.field({
-        nullable: true,
-        type: Feedback,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedback(args, ctx) as any
-        },
-      }),
-
-      deleteFeedbackResponse: asUser.field({
-        nullable: true,
-        type: Feedback,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedbackResponse(args, ctx) as any
-        },
-      }),
-
-      deleteQuestion: asUser.field({
-        nullable: true,
-        type: Question,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return QuestionService.deleteQuestion(args, ctx) as any
-        },
-      }),
-
-      editTag: asUser.field({
-        nullable: true,
-        type: Tag,
-        args: {
-          id: t.arg.int({ required: true }),
-          name: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return QuestionService.editTag(args, ctx) as any
-        },
-      }),
-
-      joinCourseWithPin: asParticipant.field({
-        nullable: true,
-        type: Participant,
-        args: {
-          pin: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.joinCourseWithPin(args, ctx)
-        },
-      }),
-
-      endSession: asUser.field({
-        nullable: true,
-        type: Session,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SessionService.endSession(args, ctx)
-        },
-      }),
-
-      joinParticipantGroup: asParticipant.field({
-        nullable: true,
-        type: ParticipantGroup,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          code: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantGroupService.joinParticipantGroup(args, ctx)
         },
       }),
 
@@ -268,13 +143,174 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      loginUserToken: t.id({
+        nullable: true,
+        args: {
+          email: t.arg.string({ required: true, validate: { email: true } }),
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.loginUserToken(args, ctx)
+        },
+      }),
+
+      loginParticipant: t.id({
+        nullable: true,
+        args: {
+          username: t.arg.string({ required: true }),
+          password: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.loginParticipant(args, ctx)
+        },
+      }),
+
+      // createParticipantAndJoinCourse: t.field({
+      //   nullable: true,
+      //   type: Participant,
+      //   args: {
+      //     username: t.arg.string({ required: true }),
+      //     password: t.arg.string({ required: true }),
+      //     courseId: t.arg.string({ required: true }),
+      //     pin: t.arg.int({ required: true }),
+      //   },
+      //   resolve(_, args, ctx) {
+      //     return ParticipantService.createParticipantAndJoinCourse(args, ctx)
+      //   },
+      // }),
+
+      // registerParticipantFromLTI: t.field({
+      //   nullable: true,
+      //   type: ParticipantLearningData,
+      //   args: {
+      //     courseId: t.arg.string({ required: true }),
+      //     participantId: t.arg.string({ required: true }),
+      //     email: t.arg.string({ required: true }),
+      //   },
+      //   resolve(_, args, ctx) {
+      //     return ParticipantService.registerParticipantFromLTI(args, ctx)
+      //   },
+      // }),
+
+      respondToQuestionInstance: t.field({
+        nullable: true,
+        type: QuestionInstance,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          id: t.arg.int({ required: true }),
+          response: t.arg({
+            type: ResponseInput,
+            required: true,
+          }),
+        },
+        resolve: (_, args, ctx) => {
+          return LearningElementService.respondToQuestionInstance(args, ctx)
+        },
+      }),
+
+      updateGroupAverageScores: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return ParticipantGroupService.updateGroupAverageScores(ctx)
+        },
+      }),
+
+      sendPushNotifications: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return NotificationService.sendPushNotifications(ctx)
+        },
+      }),
+
+      createParticipantAccount: t.field({
+        nullable: true,
+        type: ParticipantTokenData,
+        args: {
+          username: t.arg.string({
+            required: true,
+            validate: { minLength: 5, maxLength: 10 },
+          }),
+          password: t.arg.string({ required: true }),
+          email: t.arg.string({ required: true, validate: { email: true } }),
+          isProfilePublic: t.arg.boolean({ required: true }),
+          signedLtiData: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.createParticipantAccount(args, ctx)
+        },
+      }),
+
+      loginParticipantWithLti: t.field({
+        nullable: true,
+        type: ParticipantTokenData,
+        args: {
+          signedLtiData: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.loginParticipantWithLti(args, ctx)
+        },
+      }),
+
+      // ----- PARTICIPANT OPERATIONS
+      joinCourse: asParticipant.field({
+        nullable: true,
+        type: ParticipantLearningData,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.joinCourse(args, ctx)
+        },
+      }),
+
+      startGroupActivity: asParticipant.field({
+        nullable: true,
+        type: GroupActivityDetails,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          groupId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantGroupService.startGroupActivity(args, ctx)
+        },
+      }),
+
+      joinCourseWithPin: asParticipant.field({
+        nullable: true,
+        type: Participant,
+        args: {
+          pin: t.arg.int({
+            required: true,
+            validate: { min: 0, max: 999999999 },
+          }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.joinCourseWithPin(args, ctx)
+        },
+      }),
+
+      joinParticipantGroup: asParticipant.field({
+        nullable: true,
+        type: ParticipantGroup,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          code: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantGroupService.joinParticipantGroup(args, ctx)
+        },
+      }),
+
       updateParticipantProfile: asParticipant.field({
         nullable: true,
         type: Participant,
         args: {
           isProfilePublic: t.arg.boolean({ required: false }),
-          email: t.arg.string({ required: false }),
-          username: t.arg.string({ required: false }),
+          email: t.arg.string({ required: false, validate: { email: true } }),
+          username: t.arg.string({
+            required: false,
+            validate: { minLength: 5, maxLength: 10 },
+          }),
           avatar: t.arg.string({ required: false }),
           password: t.arg.string({ required: false }),
           avatarSettings: t.arg({
@@ -337,6 +373,193 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ParticipantGroupService.submitGroupActivityDecisions(args, ctx)
+        },
+      }),
+
+      logoutParticipant: asParticipant.id({
+        nullable: true,
+        resolve(_, args, ctx) {
+          return AccountService.logoutParticipant(args, ctx)
+        },
+      }),
+
+      leaveCourse: asParticipant.field({
+        nullable: true,
+        type: LeaveCourseParticipation,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.leaveCourse(args, ctx)
+        },
+      }),
+
+      markMicroSessionCompleted: asParticipant.field({
+        nullable: true,
+        type: Participation,
+        args: {
+          id: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.markMicroSessionCompleted(args, ctx)
+        },
+      }),
+
+      createParticipantGroup: asParticipant.field({
+        nullable: true,
+        type: ParticipantGroup,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantGroupService.createParticipantGroup(args, ctx)
+        },
+      }),
+
+      bookmarkQuestion: asParticipant.field({
+        nullable: true,
+        type: [QuestionStack],
+        args: {
+          courseId: t.arg.string({ required: true }),
+          stackId: t.arg.int({ required: true }),
+          bookmarked: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.bookmarkQuestion(args, ctx)
+        },
+      }),
+
+      flagQuestion: asParticipant.string({
+        nullable: true,
+        args: {
+          questionInstanceId: t.arg.int({ required: true }),
+          content: t.arg.string({ required: true }),
+        },
+        async resolve(_, args, ctx) {
+          return ParticipantService.flagQuestion(args, ctx)
+        },
+      }),
+
+      deleteParticipantAccount: asParticipant.boolean({
+        nullable: true,
+        resolve(_, __, ctx) {
+          return AccountService.deleteParticipantAccount(ctx)
+        },
+      }),
+
+      // ----- USER OPERATIONS -----
+      changeUserLocale: asUser.field({
+        nullable: true,
+        type: User,
+        args: {
+          locale: t.arg({ type: LocaleType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeUserLocale(args, ctx) as any
+        },
+      }),
+
+      cancelSession: asUser.field({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.cancelSession(args, ctx)
+        },
+      }),
+
+      changeCourseColor: asUser.field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          color: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.changeCourseColor(args, ctx)
+        },
+      }),
+
+      changeCourseDescription: asUser.field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          input: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.changeCourseDescription(args, ctx)
+        },
+      }),
+
+      deleteTag: asUser.field({
+        nullable: true,
+        type: Tag,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.deleteTag(args, ctx) as any
+        },
+      }),
+
+      deleteFeedback: asUser.field({
+        nullable: true,
+        type: Feedback,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return FeedbackService.deleteFeedback(args, ctx) as any
+        },
+      }),
+
+      deleteFeedbackResponse: asUser.field({
+        nullable: true,
+        type: Feedback,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return FeedbackService.deleteFeedbackResponse(args, ctx) as any
+        },
+      }),
+
+      deleteQuestion: asUser.field({
+        nullable: true,
+        type: Question,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.deleteQuestion(args, ctx) as any
+        },
+      }),
+
+      editTag: asUser.field({
+        nullable: true,
+        type: Tag,
+        args: {
+          id: t.arg.int({ required: true }),
+          name: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.editTag(args, ctx) as any
+        },
+      }),
+
+      endSession: asUser.field({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.endSession(args, ctx)
         },
       }),
 
@@ -406,58 +629,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      logoutParticipant: asParticipant.id({
-        nullable: true,
-        resolve(_, args, ctx) {
-          return AccountService.logoutParticipant(args, ctx)
-        },
-      }),
-
-      leaveCourse: asParticipant.field({
-        nullable: true,
-        type: LeaveCourseParticipation,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.leaveCourse(args, ctx)
-        },
-      }),
-
-      markMicroSessionCompleted: asParticipant.field({
-        nullable: true,
-        type: Participation,
-        args: {
-          id: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MicroLearningService.markMicroSessionCompleted(args, ctx)
-        },
-      }),
-
-      loginUserToken: t.id({
-        nullable: true,
-        args: {
-          email: t.arg.string({ required: true }),
-          token: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return AccountService.loginUserToken(args, ctx)
-        },
-      }),
-
-      loginParticipant: t.id({
-        nullable: true,
-        args: {
-          username: t.arg.string({ required: true }),
-          password: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return AccountService.loginParticipant(args, ctx)
-        },
-      }),
-
       generateLoginToken: asUser.field({
         nullable: true,
         type: User,
@@ -477,32 +648,6 @@ export const Mutation = builder.mutationType({
           return SessionService.deactivateSessionBlock(args, ctx)
         },
       }),
-
-      createParticipantGroup: asParticipant.field({
-        nullable: true,
-        type: ParticipantGroup,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          name: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantGroupService.createParticipantGroup(args, ctx)
-        },
-      }),
-
-      // createParticipantAndJoinCourse: t.field({
-      //   nullable: true,
-      //   type: Participant,
-      //   args: {
-      //     username: t.arg.string({ required: true }),
-      //     password: t.arg.string({ required: true }),
-      //     courseId: t.arg.string({ required: true }),
-      //     pin: t.arg.int({ required: true }),
-      //   },
-      //   resolve(_, args, ctx) {
-      //     return ParticipantService.createParticipantAndJoinCourse(args, ctx)
-      //   },
-      // }),
 
       changeSessionSettings: asUser.field({
         nullable: true,
@@ -671,58 +816,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      joinCourse: asParticipant.field({
-        nullable: true,
-        type: ParticipantLearningData,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return CourseService.joinCourse(args, ctx)
-        },
-      }),
-
-      // registerParticipantFromLTI: t.field({
-      //   nullable: true,
-      //   type: ParticipantLearningData,
-      //   args: {
-      //     courseId: t.arg.string({ required: true }),
-      //     participantId: t.arg.string({ required: true }),
-      //     email: t.arg.string({ required: true }),
-      //   },
-      //   resolve(_, args, ctx) {
-      //     return ParticipantService.registerParticipantFromLTI(args, ctx)
-      //   },
-      // }),
-
-      respondToQuestionInstance: t.field({
-        nullable: true,
-        type: QuestionInstance,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          id: t.arg.int({ required: true }),
-          response: t.arg({
-            type: ResponseInput,
-            required: true,
-          }),
-        },
-        resolve: (_, args, ctx) => {
-          return LearningElementService.respondToQuestionInstance(args, ctx)
-        },
-      }),
-
-      startGroupActivity: asParticipant.field({
-        nullable: true,
-        type: GroupActivityDetails,
-        args: {
-          activityId: t.arg.string({ required: true }),
-          groupId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantGroupService.startGroupActivity(args, ctx)
-        },
-      }),
-
       manipulateChoicesQuestion: asUser.prismaField({
         nullable: true,
         type: Question,
@@ -799,30 +892,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      bookmarkQuestion: asParticipant.field({
-        nullable: true,
-        type: [QuestionStack],
-        args: {
-          courseId: t.arg.string({ required: true }),
-          stackId: t.arg.int({ required: true }),
-          bookmarked: t.arg.boolean({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.bookmarkQuestion(args, ctx)
-        },
-      }),
-
-      flagQuestion: asParticipant.string({
-        nullable: true,
-        args: {
-          questionInstanceId: t.arg.int({ required: true }),
-          content: t.arg.string({ required: true }),
-        },
-        async resolve(_, args, ctx) {
-          return ParticipantService.flagQuestion(args, ctx)
-        },
-      }),
-
       createCourse: asUser.field({
         nullable: true,
         type: Course,
@@ -834,7 +903,10 @@ export const Mutation = builder.mutationType({
           startDate: t.arg({ type: 'Date', required: true }),
           endDate: t.arg({ type: 'Date', required: true }),
           groupDeadlineDate: t.arg({ type: 'Date', required: false }),
-          notificationEmail: t.arg.string({ required: false }),
+          notificationEmail: t.arg.string({
+            required: false,
+            validate: { email: true },
+          }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -866,6 +938,62 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      publishMicroSession: asUser.field({
+        nullable: true,
+        type: MicroSession,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.publishMicroSession(args, ctx)
+        },
+      }),
+
+      requestMigrationToken: asUserOwner.boolean({
+        nullable: true,
+        args: {
+          email: t.arg.string({ required: true, validate: { email: true } }),
+        },
+        resolve(_, args, ctx) {
+          return MigrationService.requestMigrationToken(args, ctx)
+        },
+      }),
+
+      triggerMigration: asUserOwner.boolean({
+        nullable: true,
+        args: {
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MigrationService.triggerMigration(args, ctx)
+        },
+      }),
+
+      toggleIsArchived: asUser.field({
+        nullable: true,
+        type: [Question],
+        args: {
+          questionIds: t.arg.intList({ required: true }),
+          isArchived: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.toggleIsArchived(args, ctx)
+        },
+      }),
+
+      updateTagOrdering: asUser.field({
+        nullable: true,
+        type: [Tag],
+        args: {
+          originIx: t.arg.int({ required: true }),
+          targetIx: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.updateTagOrdering(args, ctx)
+        },
+      }),
+
+      // TODO: delete operations only as owner?
       deleteLearningElement: asUser.field({
         nullable: true,
         type: LearningElement,
@@ -888,17 +1016,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      publishMicroSession: asUser.field({
-        nullable: true,
-        type: MicroSession,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MicroLearningService.publishMicroSession(args, ctx)
-        },
-      }),
-
       deleteMicroSession: asUser.field({
         nullable: true,
         type: MicroSession,
@@ -907,20 +1024,6 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return MicroLearningService.deleteMicroSession(args, ctx)
-        },
-      }),
-
-      updateGroupAverageScores: t.boolean({
-        resolve(_, __, ctx) {
-          checkCronToken(ctx)
-          return ParticipantGroupService.updateGroupAverageScores(ctx)
-        },
-      }),
-
-      sendPushNotifications: t.boolean({
-        resolve(_, __, ctx) {
-          checkCronToken(ctx)
-          return NotificationService.sendPushNotifications(ctx)
         },
       }),
 
@@ -952,36 +1055,39 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteParticipantAccount: asParticipant.boolean({
+      // ----- ACCOUNT OWNER OPERATIONS -----
+      createUserLogin: asUserOwner.field({
         nullable: true,
-        resolve(_, __, ctx) {
-          return AccountService.deleteParticipantAccount(ctx)
-        },
-      }),
-
-      createParticipantAccount: t.field({
-        nullable: true,
-        type: ParticipantTokenData,
+        type: UserLogin,
         args: {
-          username: t.arg.string({ required: true }),
           password: t.arg.string({ required: true }),
-          email: t.arg.string({ required: true }),
-          isProfilePublic: t.arg.boolean({ required: true }),
-          signedLtiData: t.arg.string({ required: false }),
+          name: t.arg.string({ required: true }),
+          scope: t.arg({ type: UserLoginScope, required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.createParticipantAccount(args, ctx)
+          return AccountService.createUserLogin(args, ctx) as any
         },
       }),
 
-      loginParticipantWithLti: t.field({
+      deleteUserLogin: asUserOwner.field({
         nullable: true,
-        type: ParticipantTokenData,
+        type: UserLogin,
         args: {
-          signedLtiData: t.arg.string({ required: true }),
+          id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.loginParticipantWithLti(args, ctx)
+          return AccountService.deleteUserLogin(args, ctx) as any
+        },
+      }),
+
+      changeShortname: asUserOwner.field({
+        nullable: true,
+        type: User,
+        args: {
+          shortname: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeShortname(args, ctx) as any
         },
       }),
     }

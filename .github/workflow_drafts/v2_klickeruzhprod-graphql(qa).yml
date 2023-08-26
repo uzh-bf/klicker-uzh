@@ -1,4 +1,4 @@
-name: Build and deploy backend-sls to Azure Function App (QA)
+name: Build and deploy backend-sls to Function App (QA)
 
 on:
   push:

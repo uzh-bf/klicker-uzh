@@ -1,17 +1,17 @@
-name: Build and deploy backend-response-processor to Azure Function App (Production)
+name: Build and deploy func-response-processor to Function App (Production)
 
 on:
   push:
-    tags: [ 'v*.*.*' ]
+    tags: ['v*.*.*']
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/backend-response-processor' # set this to the path to your web app project, defaults to the repository root
-  NODE_VERSION: '18.x' # set this to the node version to use (supports 8.x, 10.x, 12.x)
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-response-processor'
+  NODE_VERSION: '18.x'
 
 jobs:
   build-and-deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v2
@@ -21,16 +21,18 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8.6.12
+          run_install: |
+            - recursive: true
+              args: [--frozen-lockfile, --strict-peer-dependencies]
+
       - name: 'Resolve Project Dependencies Using Npm'
-        shell: pwsh
+        shell: bash
         run: |
-          rm package.json
-          rm package-lock.json
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          npm install --package-lock=false
-          npm run build --if-present
-          npm prune --omit=dev
-          popd
+          pnpm run build --scope @klicker-uzh/func-response-processor
+          pnpm prune --prod --config.ignore-scripts=true
 
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1

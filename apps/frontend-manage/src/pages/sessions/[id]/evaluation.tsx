@@ -232,6 +232,7 @@ function Evaluation() {
                 data.sessionLeaderboard.length > 0 ? (
                   <div className="mt-6">
                     <Leaderboard
+                      activeParticipation
                       leaderboard={data.sessionLeaderboard}
                       className={{
                         podiumSingle: 'text-lg',
@@ -347,8 +348,7 @@ function Evaluation() {
 export async function getStaticProps({ locale }: any) {
   return {
     props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
-        .default,
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
     revalidate: 600,
   }

@@ -428,6 +428,7 @@ type Mutation {
   changeCourseDescription(courseId: String!, input: String!): Course
   changeParticipantLocale(locale: LocaleType!): Participant
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
+  changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date, isGamificationEnabled: Boolean!, name: String!, notificationEmail: String, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
@@ -436,6 +437,7 @@ type Mutation {
   createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
+  createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
@@ -445,6 +447,7 @@ type Mutation {
   deleteQuestion(id: Int!): Question
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
+  deleteUserLogin(id: String!): UserLogin
   editLearningElement(courseId: String, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
@@ -472,6 +475,7 @@ type Mutation {
   publishFlashcardSet(id: Int!): FlashcardSet
   publishLearningElement(id: String!): LearningElement
   publishMicroSession(id: String!): MicroSession
+  requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
@@ -480,10 +484,13 @@ type Mutation {
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
+  toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Question!]
+  triggerMigration(token: String!): Boolean
   unpublishFlashcardSet(id: Int!): FlashcardSet
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, email: String, isProfilePublic: Boolean, password: String, username: String): Participant
+  updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
@@ -655,6 +662,7 @@ type Query {
   unassignedSessions: [Session!]
   userCourses: [Course!]
   userFlashcardSets: [FlashcardSet!]
+  userLogins: [UserLogin!]
   userProfile: User
   userQuestions: [Question!]
   userRunningSessions: [Session!]
@@ -878,6 +886,7 @@ type TabData {
 type Tag {
   id: Int!
   name: String!
+  order: Int!
 }
 
 type Title {
@@ -891,4 +900,19 @@ type User {
   loginToken: String
   loginTokenExpiresAt: Date
   shortname: String!
+}
+
+type UserLogin {
+  id: ID!
+  lastLoginAt: Date
+  name: String!
+  scope: UserLoginScope!
+  user: User!
+}
+
+enum UserLoginScope {
+  ACCOUNT_OWNER
+  FULL_ACCESS
+  READ_ONLY
+  SESSION_EXEC
 }

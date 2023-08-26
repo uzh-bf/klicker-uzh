@@ -9,18 +9,16 @@ import Router from 'next/router'
 import { useState } from 'react'
 import * as Yup from 'yup'
 
-const loginSchema = Yup.object().shape({
-  email: Yup.string().required('Geben Sie eine gültige E-Mail Adresse ein'),
-  token: Yup.string().required(
-    'Geben Sie einen gültigen Token ein. Bitte beachten Sie die bei der Token Generierung angezeigte Gültigkeit.'
-  ),
-})
-
 function Login() {
   const t = useTranslations()
   const [error, setError] = useState('')
   const [showError, setShowError] = useState(false)
   const [loginUserToken] = useMutation(LoginUserTokenDocument)
+
+  const loginSchema = Yup.object().shape({
+    email: Yup.string().required(t('control.login.emailRequired')),
+    token: Yup.string().required(t('control.login.tokenRequired')),
+  })
 
   return (
     <div className="flex flex-col items-center h-full md:justify-center">
@@ -36,9 +34,7 @@ function Login() {
             },
           })
           if (id.data?.loginUserToken === null) {
-            setError(
-              'Login fehlgeschlagen. Bitte überprüfen Sie Ihre E-Mail Adresse und den Token. Beachten Sie die zeitlich begrenzte Gültigkeit des Tokens.'
-            )
+            setError(t('control.login.checkToken'))
             setShowError(true)
             return
           }
@@ -79,8 +75,7 @@ function Login() {
 export async function getStaticProps({ locale }: GetStaticPropsContext) {
   return {
     props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}.json`))
-        .default,
+      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }
 }

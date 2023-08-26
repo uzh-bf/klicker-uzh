@@ -21,7 +21,7 @@ services:
     environment:
       POSTGRES_USER: klicker
       POSTGRES_PASSWORD: klicker
-      POSTGRES_DB: main
+      POSTGRES_DB: klicker
     ports:
       - 5432:5432
     networks:
@@ -47,86 +47,134 @@ services:
     networks:
       - klicker
 
-  sendria:
-    image: msztolcman/sendria:v2.2.2.0
+  # fake smtp server for catching email during development
+  mailhog:
+    image: docker.io/mailhog/mailhog:latest
     ports:
       - 1025:1025
-      - 1080:1080
+      - 8025:8025
     networks:
       - klicker
 
-  frontend_pwa:
-    profiles:
-      - full
-    build:
-      context: .
-      dockerfile: apps/frontend-pwa/Dockerfile
-      args:
-        NODE_ENV: development
-        COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://127.0.0.1:7072/api/AddResponse'
-        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
-        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+  # service for transactional emails and newsletter campaigns
+  # uses mailhog to send transactional emails during development
+  listmonk:
+    image: docker.io/listmonk/listmonk:latest
+    ports:
+      - 9000:9000
     environment:
-      APP_SECRET: abcd
-    ports:
-      - 3001:3000
+      - TZ=Europe/Zurich
+    depends_on:
+      listmonk_db:
+        condition: service_healthy
+      mailhog:
+        condition: service_healthy
+    volumes:
+      - ./util/listmonk-config.toml:/listmonk/config.toml
     networks:
       - klicker
+    command: [sh, -c, 'yes | ./listmonk --install && ./listmonk']
 
-  frontend_manage:
-    profiles:
-      - full
-    build:
-      context: .
-      dockerfile: apps/frontend-manage/Dockerfile
-      args:
-        NODE_ENV: development
-        COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
-        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-    ports:
-      - 3002:3000
-    networks:
-      - klicker
-
-  frontend_control:
-    profiles:
-      - full
-    build:
-      context: .
-      dockerfile: apps/frontend-control/Dockerfile
-      args:
-        NODE_ENV: development
-        COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
-        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-    ports:
-      - 3003:3000
-    networks:
-      - klicker
-
-  backend:
-    profiles:
-      - full
-    build:
-      context: .
-      dockerfile: apps/backend-docker/Dockerfile
-      args:
-        NODE_ENV: 'development'
+  listmonk_db:
+    image: docker.io/library/postgres:13
     environment:
-      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
-      APP_SECRET: 'abcd'
-      REDIS_HOST: 'redis_exec'
-      REDIS_PORT: 6379
-      REDIS_CACHE_HOST: 'redis_cache'
-      REDIS_CACHE_PORT: 6379
-      API_DOMAIN: '127.0.0.1'
-      COOKIE_DOMAIN: '127.0.0.1'
-    ports:
-      - 3000:3000
+      - POSTGRES_PASSWORD=listmonk
+      - POSTGRES_USER=listmonk
+      - POSTGRES_DB=listmonk
+    volumes:
+      - /var/lib/postgresql/data
     networks:
       - klicker
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U listmonk']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  mongodb:
+    image: mongo:4.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: klicker
+      MONGO_INITDB_ROOT_PASSWORD: klicker
+    ports:
+      - 27017:27017
+    networks:
+      - klicker
+    volumes:
+      - /data/db
+
+  # frontend_pwa:
+  #   profiles:
+  #     - full
+  #   build:
+  #     context: .
+  #     dockerfile: apps/frontend-pwa/Dockerfile
+  #     args:
+  #       NODE_ENV: development
+  #       COOKIE_DOMAIN: 127.0.0.1
+  #       NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://127.0.0.1:7072/api/AddResponse'
+  #       NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+  #       NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+  #   environment:
+  #     APP_SECRET: abcd
+  #   ports:
+  #     - 3001:3000
+  #   networks:
+  #     - klicker
+
+  # frontend_manage:
+  #   profiles:
+  #     - full
+  #   build:
+  #     context: .
+  #     dockerfile: apps/frontend-manage/Dockerfile
+  #     args:
+  #       NODE_ENV: development
+  #       COOKIE_DOMAIN: 127.0.0.1
+  #       NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+  #       NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+  #   ports:
+  #     - 3002:3000
+  #   networks:
+  #     - klicker
+
+  # frontend_control:
+  #   profiles:
+  #     - full
+  #   build:
+  #     context: .
+  #     dockerfile: apps/frontend-control/Dockerfile
+  #     args:
+  #       NODE_ENV: development
+  #       COOKIE_DOMAIN: 127.0.0.1
+  #       NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+  #       NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+  #   ports:
+  #     - 3003:3000
+  #   networks:
+  #     - klicker
+
+  # backend:
+  #   profiles:
+  #     - full
+  #   build:
+  #     context: .
+  #     dockerfile: apps/backend-docker/Dockerfile
+  #     args:
+  #       NODE_ENV: 'development'
+  #   environment:
+  #     DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
+  #     APP_SECRET: 'abcd'
+  #     REDIS_HOST: 'redis_exec'
+  #     REDIS_PORT: 6379
+  #     REDIS_CACHE_HOST: 'redis_cache'
+  #     REDIS_CACHE_PORT: 6379
+  #     API_DOMAIN: '127.0.0.1'
+  #     COOKIE_DOMAIN: '127.0.0.1'
+  #   ports:
+  #     - 3000:3000
+  #   networks:
+  #     - klicker
 
 networks:
   klicker:

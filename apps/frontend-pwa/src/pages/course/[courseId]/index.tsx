@@ -14,8 +14,15 @@ import {
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
-import { Button, H3, H4 } from '@uzh-bf/design-system'
-import { ErrorMessage, Field, Form, Formik } from 'formik'
+import {
+  Button,
+  FormikNumberField,
+  FormikTextField,
+  H3,
+  H4,
+  UserNotification,
+} from '@uzh-bf/design-system'
+import { Form, Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -279,7 +286,9 @@ function CourseOverview({ courseId }: Props) {
               {/* // TODO: update the translation strings as well, once this hard-coded content has been updated with a flexible implementation */}
               {course?.awards && course?.awards?.length != 0 && (
                 <div className="px-4 py-3 mt-4 bg-orange-100 border border-orange-200 rounded shadow md:mt-6">
-                  <H3 className={{ root: 'mb-2 text-base' }}>Awards</H3>
+                  <H3 className={{ root: 'mb-2 text-base' }}>
+                    {t('pwa.courses.awards')}
+                  </H3>
                   <div className="flex flex-col gap-1 text-sm text-gray-700 md:gap-6 md:flex-row md:flex-wrap">
                     <div className="flex-1 space-y-1">
                       {course.awards
@@ -297,7 +306,7 @@ function CourseOverview({ courseId }: Props) {
                               <div>
                                 {award.participant
                                   ? `🥳  ${award.participant.username}  🥳`
-                                  : 'offen'}
+                                  : t('pwa.courses.open')}
                               </div>
                             </div>
                             <div>{award.description}</div>
@@ -320,7 +329,7 @@ function CourseOverview({ courseId }: Props) {
                               <div>
                                 {award.participantGroup
                                   ? `🥳  ${award.participantGroup.name}  🥳`
-                                  : 'offen'}
+                                  : t('pwa.course.open')}
                               </div>
                             </div>
                             <div>{award.description}</div>
@@ -346,10 +355,17 @@ function CourseOverview({ courseId }: Props) {
 
                   <div className="flex flex-row flex-wrap gap-4">
                     <div className="flex flex-col flex-1">
+                      {!participation?.isActive && (
+                        <UserNotification
+                          type="warning"
+                          message={t('pwa.groupActivity.joinLeaderboard')}
+                        />
+                      )}
                       <Leaderboard
                         courseName={course.displayName}
                         leaderboard={group.participants}
                         participant={participant}
+                        activeParticipation={participation?.isActive}
                         onLeave={
                           course?.isGroupDeadlinePassed
                             ? undefined
@@ -527,15 +543,9 @@ function CourseOverview({ courseId }: Props) {
               >
                 <Form>
                   <div className="flex flex-row gap-4">
-                    <Field
-                      type="text"
+                    <FormikTextField
                       name="groupName"
                       placeholder={t('pwa.courses.groupName')}
-                    />
-                    <ErrorMessage
-                      name="groupName"
-                      component="div"
-                      className="text-sm text-red-400"
                     />
                     <Button type="submit">{t('shared.generic.create')}</Button>
                   </div>
@@ -566,15 +576,9 @@ function CourseOverview({ courseId }: Props) {
               >
                 <Form>
                   <div className="flex flex-row gap-4">
-                    <Field
-                      type="text"
+                    <FormikNumberField
                       name="code"
                       placeholder={t('pwa.courses.code')}
-                    />
-                    <ErrorMessage
-                      name="code"
-                      component="div"
-                      className="text-sm text-red-400"
                     />
                     <Button type="submit">{t('shared.generic.join')}</Button>
                   </div>
@@ -639,7 +643,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   return addApolloState(apolloClient, {
     props: {
       courseId: ctx.params.courseId,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}.json`))
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },
   })

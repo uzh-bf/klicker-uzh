@@ -3,5 +3,6 @@ query UserProfile {
     id
     email
     shortname
+    locale
   }
 }

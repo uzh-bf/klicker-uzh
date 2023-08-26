@@ -185,9 +185,6 @@ export async function respondToQuestionInstance(
             courseId,
             participantId: ctx.user.sub,
           },
-          participant: {
-            isActive: true,
-          },
         },
         include: {
           participant: true,
