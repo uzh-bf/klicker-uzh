@@ -1061,6 +1061,11 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Installieren Sie die KlickerUZH Controller-App auf Ihrem Handy, um Ihre Sessionen während der Vorlesungen direkt vom Handy aus zu steuern.',
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Controller-App auf Ihrem Handy zu installieren und Live-Sessionen direkt zu bedienen.",
+      emailRequired: 'Geben Sie eine gültige E-Mail Adresse ein',
+      tokenRequired:
+        'Geben Sie einen gültigen Token ein. Bitte beachten Sie die bei der Token Generierung angezeigte Gültigkeit.',
+      checkToken:
+        'Login fehlgeschlagen. Bitte überprüfen Sie Ihre E-Mail Adresse und den Token. Beachten Sie die zeitlich begrenzte Gültigkeit des Tokens.',
     },
     home: {
       courseSelection: 'Kursauswahl',
