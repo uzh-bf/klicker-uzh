@@ -542,7 +542,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
       catalystRequired:
-        'Requires catalyst access. For more information, see <link></link>.',
+        'Requires catalyst access. For more information, see <link>www.klicker.uzh.ch/catalyst</link>.',
     },
     login: {
       lecturerLogin: 'Login Lecturers',

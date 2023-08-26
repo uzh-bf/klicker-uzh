@@ -58,13 +58,13 @@ function CreationButton({
         tooltip={
           <div className="max-w-[300px]">
             {t.rich('manage.general.catalystRequired', {
-              link: () => (
+              link: (site) => (
                 <a
                   target="_blank"
-                  href="https://www.klicker.uzh.ch/catalyst"
+                  href={`https://${site}}`}
                   className="underline"
                 >
-                  www.klicker.uzh.ch/catalyst
+                  {site}
                 </a>
               ),
             })}
