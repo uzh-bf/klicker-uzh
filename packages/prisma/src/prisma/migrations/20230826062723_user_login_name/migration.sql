@@ -5,4 +5,4 @@
 
 */
 -- AlterTable
-ALTER TABLE "UserLogin" ADD COLUMN     "name" TEXT NOT NULL;
+ALTER TABLE "UserLogin" ADD COLUMN     "name" TEXT NOT NULL DEFAULT '-';
