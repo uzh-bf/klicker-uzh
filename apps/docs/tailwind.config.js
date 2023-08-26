@@ -1,21 +1,27 @@
-const { TailwindColorsUZH } = require('@uzh-bf/design-system/dist/constants')
-const { fontFamily } = require('tailwindcss/defaultTheme')
+const {
+  TailwindColorsUZH,
+  TailwindAnimations,
+  TailwindFonts,
+} = require('@uzh-bf/design-system/dist/constants')
 
 module.exports = {
+  darkMode: ['class', '[data-theme="dark"]'],
   content: ['./src/**/*.tsx', './docs/**/*.mdx'],
   theme: {
     extend: {
+      ...TailwindAnimations,
       colors: {
         ...TailwindColorsUZH,
-        primary: '#dc6027',
       },
       fontFamily: {
-        sans: ['Source Sans Pro', ...fontFamily.sans],
+        ...TailwindFonts,
       },
     },
   },
-  plugins: [],
   corePlugins: {
     preflight: false,
+    aspectRatio: false,
   },
+  plugins: [],
+
 }

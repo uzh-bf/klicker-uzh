@@ -1,9 +1,17 @@
 import Link from '@docusaurus/Link'
+import SidebarStyles from '@docusaurus/theme-classic/lib/theme/DocRoot/Layout/Sidebar/styles.module.css'
+import {
+  default as DocPageStyles,
+  default as MainStyles,
+} from '@docusaurus/theme-classic/lib/theme/DocRoot/Layout/styles.module.css'
+import { ThemeClassNames } from '@docusaurus/theme-common'
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import DocSidebar from '@theme/DocSidebar'
 import Layout from '@theme/Layout'
 import { Button, H1, H3 } from '@uzh-bf/design-system'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { useCases } from '../../constants'
 
 function Card({ title, image, children, detailsRef }) {
@@ -33,24 +41,47 @@ function Index() {
 
   return (
     <Layout>
-      <div className="m-auto grid max-w-7xl grid-cols-5 items-start gap-4 p-4 pt-8">
-        <div className="col-span-1 hidden rounded-xl border shadow md:grid">
-          SIDEBAR
-        </div>
-        <div className="col-span-5 md:col-span-4">
-          <div onClick={() => setFilteredUseCases(useCases)}>
-            <H1>Use Cases</H1>
+      <div className={DocPageStyles.docPage}>
+        <aside
+          className={twMerge(
+            ThemeClassNames.docs.docSidebarContainer,
+            SidebarStyles.docSidebarContainer
+          )}
+        >
+          <DocSidebar
+            sidebar={[
+              { type: 'link', href: '/myCustomPage', label: 'My Custom Page' },
+              {
+                type: 'link',
+                href: '/anotherCustomPage',
+                label: 'Another Custom Page',
+              },
+            ]}
+            path="/myCustomPage"
+          />
+        </aside>
+        <main className={twMerge(MainStyles.docMainContainer)}>
+          <div
+            className={twMerge(
+              'container',
+              'padding-top--md',
+              'padding-bottom--lg'
+            )}
+          >
+            <div onClick={() => setFilteredUseCases(useCases)}>
+              <H1>Use Cases</H1>
+            </div>
+            {filteredUseCases.map((useCase) => (
+              <Card
+                title={useCase.title}
+                image={useCase.imageSrc}
+                detailsRef={useCase.detailsRef}
+              >
+                {useCase.description}
+              </Card>
+            ))}
           </div>
-          {filteredUseCases.map((useCase) => (
-            <Card
-              title={useCase.title}
-              image={useCase.imageSrc}
-              detailsRef={useCase.detailsRef}
-            >
-              {useCase.description}
-            </Card>
-          ))}
-        </div>
+        </main>
       </div>
     </Layout>
   )
