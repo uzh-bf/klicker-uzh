@@ -859,7 +859,7 @@ type Title {
 }
 
 type User {
-  catalyst: Boolean
+  catalyst: Boolean!
   catalystTier: String
   email: String!
   id: ID!

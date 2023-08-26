@@ -1543,7 +1543,7 @@ export type Title = {
 
 export type User = {
   __typename?: 'User';
-  catalyst?: Maybe<Scalars['Boolean']['output']>;
+  catalyst: Scalars['Boolean']['output'];
   catalystTier?: Maybe<Scalars['String']['output']>;
   email: Scalars['String']['output'];
   id: Scalars['ID']['output'];
@@ -2435,7 +2435,7 @@ export type SelfWithAchievementsQuery = { __typename?: 'Query', selfWithAchievem
 export type UserProfileQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserProfileQuery = { __typename?: 'Query', userProfile?: { __typename?: 'User', id: string, email: string, shortname: string, locale: LocaleType, catalyst?: boolean | null, catalystTier?: string | null } | null };
+export type UserProfileQuery = { __typename?: 'Query', userProfile?: { __typename?: 'User', id: string, email: string, shortname: string, locale: LocaleType, catalyst: boolean, catalystTier?: string | null } | null };
 
 export type FeedbackAddedSubscriptionVariables = Exact<{
   sessionId: Scalars['String']['input'];
