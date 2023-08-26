@@ -1,4 +1,4 @@
-import { Locale, UserRole } from '@klicker-uzh/prisma'
+import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
@@ -22,54 +22,6 @@ const COOKIE_SETTINGS: CookieOptions = {
       : 'none',
 }
 
-interface LoginUserArgs {
-  email: string
-  password: string
-}
-
-export async function loginUser(
-  { email, password }: LoginUserArgs,
-  ctx: Context
-) {
-  if (!isEmail(email)) return null
-
-  const normalizedEmail = normalizeEmail(email) as string
-
-  const user = await ctx.prisma.user.findUnique({
-    where: { email: normalizedEmail },
-  })
-
-  if (!user?.password) return null
-
-  const isLoginValid = await bcrypt.compare(password, user.password)
-
-  if (!isLoginValid) return null
-
-  ctx.prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  })
-
-  const jwt = JWT.sign(
-    {
-      sub: user.id,
-      role: user.role,
-    },
-    // TODO: use structured configuration approach
-    process.env.APP_SECRET as string,
-    {
-      algorithm: 'HS256',
-      expiresIn: '2w',
-    }
-  )
-
-  ctx.res.cookie('next-auth.session-token', jwt, COOKIE_SETTINGS)
-
-  ctx.res.cookie('NEXT_LOCALE', user.locale, COOKIE_SETTINGS)
-
-  return user.id
-}
-
 interface LoginUserTokenArgs {
   email: string
   token: string
@@ -87,15 +39,11 @@ export async function loginUserToken(
     where: { email: normalizedEmail },
   })
 
-  console.log(user)
-
   if (!user) return null
 
   const isLoginValid =
     token === user.loginToken &&
     dayjs(user.loginTokenExpiresAt).isAfter(dayjs())
-
-  console.log(token, user.loginToken, isLoginValid)
 
   if (!isLoginValid) return null
 
@@ -108,6 +56,7 @@ export async function loginUserToken(
     {
       sub: user.id,
       role: user.role,
+      scope: UserLoginScope.SESSION_EXEC,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,
@@ -140,6 +89,8 @@ export async function getUserProfile(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
   })
+
+  if (!user) return null
 
   return user
 }
@@ -408,4 +359,83 @@ export async function loginParticipantWithLti(
     participant: account.participant,
     participantToken: jwt,
   }
+}
+
+export async function getUserLogins(ctx: ContextWithUser) {
+  const logins = await ctx.prisma.userLogin.findMany({
+    where: {
+      user: {
+        id: ctx.user.sub,
+      },
+    },
+    include: {
+      user: true,
+    },
+    orderBy: {
+      scope: 'asc',
+    },
+  })
+
+  return logins
+}
+
+interface UserLoginProps {
+  password: string
+  name: string
+  scope: UserLoginScope
+}
+
+export async function createUserLogin(
+  { password, name, scope }: UserLoginProps,
+  ctx: ContextWithUser
+) {
+  const hashedPassword = await bcrypt.hash(password, 12)
+  const login = await ctx.prisma.userLogin.create({
+    data: {
+      password: hashedPassword,
+      name,
+      // scope,
+      // TODO: allow creation of other access levels once auth is handled granularly
+      scope: UserLoginScope.FULL_ACCESS,
+      user: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      user: true,
+    },
+  })
+
+  return login
+}
+
+export async function deleteUserLogin(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const login = await ctx.prisma.userLogin.findUnique({
+    where: { id },
+  })
+
+  if (!login) return null
+
+  const deletedItem = await ctx.prisma.userLogin.delete({
+    where: { id },
+  })
+
+  return deletedItem
+}
+
+export async function changeShortname(
+  { shortname }: { shortname: string },
+  ctx: ContextWithUser
+) {
+  const user = await ctx.prisma.user.update({
+    where: { id: ctx.user.sub },
+    data: { shortname },
+  })
+
+  return user
 }

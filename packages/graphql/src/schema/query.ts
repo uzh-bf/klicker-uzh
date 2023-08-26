@@ -22,7 +22,7 @@ import {
 } from './participant'
 import { Question, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
-import { User } from './user'
+import { User, UserLogin } from './user'
 
 export const Query = builder.queryType({
   fields(t) {
@@ -31,17 +31,13 @@ export const Query = builder.queryType({
     })
 
     const asParticipant = t.withAuth({
-      $all: {
-        authenticated: true,
-        role: DB.UserRole.PARTICIPANT,
-      },
+      authenticated: true,
+      role: DB.UserRole.PARTICIPANT,
     })
 
     const asUser = t.withAuth({
-      $all: {
-        authenticated: true,
-        role: DB.UserRole.USER,
-      },
+      authenticated: true,
+      role: DB.UserRole.USER,
     })
 
     return {
@@ -98,11 +94,11 @@ export const Query = builder.queryType({
         },
       }),
 
-      getLoginToken: asUser.prismaField({
+      getLoginToken: asUser.field({
         nullable: true,
         type: User,
-        resolve(_, __, ___, ctx) {
-          return AccountService.getLoginToken(ctx) as any
+        resolve(_, ___, ctx) {
+          return AccountService.getLoginToken(ctx)
         },
       }),
 
@@ -125,11 +121,11 @@ export const Query = builder.queryType({
         },
       }),
 
-      userProfile: asUser.prismaField({
+      userProfile: asUser.field({
         nullable: true,
         type: User,
-        resolve(_, __, ___, ctx) {
-          return AccountService.getUserProfile(ctx) as any
+        resolve(_, __, ctx) {
+          return AccountService.getUserProfile(ctx)
         },
       }),
 
@@ -418,6 +414,14 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return LearningElementService.getQuestionStack(args, ctx)
+        },
+      }),
+
+      userLogins: asUser.field({
+        nullable: true,
+        type: [UserLogin],
+        resolve(_, __, ctx) {
+          return AccountService.getUserLogins(ctx)
         },
       }),
     }

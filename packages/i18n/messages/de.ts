@@ -17,7 +17,7 @@ export default {
       richtext: 'Bitte <b>eine oder mehrere</b> Optionen auswählen.',
     },
     KPRIM: {
-      typeLabel: 'KPRIM (KP)',
+      typeLabel: 'Kprim (KP)',
       text: 'Beurteile die Aussagen auf ihre Richtigkeit.',
       richtext: 'Beurteile die Aussagen auf ihre <b>Richtigkeit</b>.',
     },
@@ -36,6 +36,7 @@ export default {
     },
     generic: {
       profile: 'Profil',
+      shortname: 'Kurzname',
       yes: 'Ja',
       no: 'Nein',
       draft: 'Entwurf',
@@ -127,6 +128,8 @@ export default {
       respond: 'Antworten',
       responses: 'Antworten',
       ok: 'OK',
+      english: 'Englisch',
+      german: 'Deutsch',
     },
     contentInput: {
       boldStyle:
@@ -282,7 +285,7 @@ Der KlickerUZH bietet Ihnen als Kursteilnehmenden eine Vielzahl Funktionen. Dies
 
 #### Umfragen und Live Quizzes
 
-Während der Lehrveranstaltung haben Sie die Möglichkeit, die von den Dozierenden gestellten Fragen auf [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})  oder in der KlickerUZH-App (oder, falls vorhanden, im OLAT unter dem Baustein "Live Session") zu beantworten. Die Resultate werden ohne Zeitverzug grafisch aufbereitet angezeigt und können so nach Abschluss der Beantwortungszeit von den Dozierenden präsentiert und kommentiert werden.
+Während der Lehrveranstaltung haben Sie die Möglichkeit, die von den Dozierenden gestellten Fragen auf [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})  oder in der KlickerUZH-App (oder, falls vorhanden, im OLAT unter dem Baustein "Live Quiz") zu beantworten. Die Resultate werden ohne Zeitverzug grafisch aufbereitet angezeigt und können so nach Abschluss der Beantwortungszeit von den Dozierenden präsentiert und kommentiert werden.
 
 Zum Beantworten der Fragen ist kein Login notwendig. Mit einem Login können Sie an der Challenge Ihres Kurses teilnehmen und Punkte sammeln.
 
@@ -527,6 +530,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       questionPool: 'Fragepool',
       sessions: 'Sessionen',
       courses: 'Kurse',
+      migration: 'Migration',
       generateToken: 'Login-Token generieren',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
@@ -534,6 +538,8 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       title: 'Titel',
       searchPlaceholder: 'Suchen...',
       sortBy: 'Sortieren nach..',
+      catalystRequired:
+        'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
     },
     login: {
       lecturerLogin: 'Login Dozierende',
@@ -541,6 +547,35 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Installieren Sie die KlickerUZH Manage-App auf Ihrem Handy, um gewisse Funktionen für Dozierenden jederzeit nutzen zu können.',
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Manage-App auf Ihrem Handy zu installieren.",
+    },
+    settings: {
+      userSettings: 'Benutzereinstellungen',
+      languageSettings: 'Spracheinstellungen',
+      languageTooltip:
+        'Ändern Sie hier die Programmsprache der KlickerUZH Manage App. Beachten Sie, dass dies keinerlei Einfluss auf Ihre Kursinhalte oder die Spracheinstellungen bei anderen Nutzern oder Studierenden in Ihren Kursen hat.',
+      FULL_ACCESS: 'Voller Zugriff',
+      SESSION_EXEC: 'Durchführung von Sessionen',
+      READ_ONLY: 'Nur Lesen',
+      lastUsed: 'zuletzt genutzt: {date}',
+      lastUsedNever: 'zuletzt genutzt: Nie',
+      createDelegatedLogin: 'Delegierten Login erstellen',
+      loginName: 'Login-Name',
+      scope: 'Berechtigungen',
+      selectScope: 'Jetzt wählen',
+      createLogin: 'Login erstellen',
+      nameRequired: 'Geben Sie einen Namen für Ihr Login ein',
+      scopeRequired: 'Wählen Sie die Berechtigungen für Ihr Login',
+      shortnameTooltip:
+        'Der Shortname ist an den Hauptaccount gebunden und kann oben über eine separate Einstellung geändert werden.',
+      passwordTooltip:
+        'Das Passwort wird automatisch generiert. Notieren Sie es sich vor dem Erstellen des Logins, es ist später nicht mehr sichtbar. Sollten Sie ein anderes Passwort wünschen, können Sie dieses über den Knopf rechts rechts neu generieren lassen.',
+      shortnameRequirements:
+        'Der Kurzname hat im KlickerUZH eine wichtige Bedeutung, da er an vielen Stellen einen einfachen Zugriff auf Kurse und Lernelemente ermöglicht. Bitte beachten Sie daher folgende Regeln bei der Wahl des Kurznamens: <ul><li>Der Kurzname muss mindestens 5 und maximal 8 Zeichen lang sein.</li><li>Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.</li></ul>',
+      shortnameRequired: 'Geben Sie einen Kurznamen ein.',
+      shortnameMin: 'Der Kurzname muss mindestens 5 Zeichen lang sein.',
+      shortnameMax: 'Der Kurzname darf maximal 8 Zeichen lang sein.',
+      shortnameAlphanumeric:
+        'Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.',
     },
     token: {
       pageName: 'Token Generation',
@@ -552,6 +587,23 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       remainingValidity: 'Verbleibende Gültigkeit:',
       tokenExpired:
         'Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen.',
+    },
+    migration: {
+      pageName: 'Migration der Daten von KlickerV2',
+      step1Title: 'Schritt 1: Migrations-Token anfordern',
+      step1Description:
+        'Um Ihr altes Klicker-Konto auf KlickerV3 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist. Danach erhalten Sie einen Token, um mit der Migration fortzufahren. Stellen Sie sicher, dass Sie Zugriff auf diese E-Mail haben. Andernfalls müssen Sie Ihr Passwort zurückzusetzen.',
+      requestMigrationToken: 'Migrations-Token anfordern',
+      step2Title: 'Schritt 2: Migrations-Link einfügen',
+      step2Description:
+        'Sie sollten eine E-Mail mit einem Migrations-Link erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner. Kopieren Sie den Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren.',
+      step3Title: 'Schritt 3: Migration starten',
+      step3Description:
+        'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.',
+      startMigration: 'Migration starten',
+      step4Title: 'Schritt 4: Benachrichtigung über den Migrationsstatus',
+      step4Description:
+        'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.',
     },
     questionPool: {
       createLiveSession: 'Live-Session erstellen',
@@ -1011,6 +1063,11 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Installieren Sie die KlickerUZH Controller-App auf Ihrem Handy, um Ihre Sessionen während der Vorlesungen direkt vom Handy aus zu steuern.',
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Controller-App auf Ihrem Handy zu installieren und Live-Sessionen direkt zu bedienen.",
+      emailRequired: 'Geben Sie eine gültige E-Mail Adresse ein',
+      tokenRequired:
+        'Geben Sie einen gültigen Token ein. Bitte beachten Sie die bei der Token Generierung angezeigte Gültigkeit.',
+      checkToken:
+        'Login fehlgeschlagen. Bitte überprüfen Sie Ihre E-Mail Adresse und den Token. Beachten Sie die zeitlich begrenzte Gültigkeit des Tokens.',
     },
     home: {
       courseSelection: 'Kursauswahl',

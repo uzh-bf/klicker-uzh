@@ -64,6 +64,7 @@ model VerificationToken {
 }
 
 enum UserLoginScope {
+  ACCOUNT_OWNER
   FULL_ACCESS
   SESSION_EXEC
   READ_ONLY
@@ -72,6 +73,7 @@ enum UserLoginScope {
 model UserLogin {
   id String @id @default(uuid()) @db.Uuid
 
+  name        String         @default("-")
   password    String
   scope       UserLoginScope @default(READ_ONLY)
   lastLoginAt DateTime?
@@ -107,6 +109,10 @@ model User {
   locale Locale @default(en)
 
   role UserRole @default(USER)
+
+  catalystInstitutional Boolean @default(false)
+  catalystIndividual    Boolean @default(false)
+  catalystTier          String?
 
   logins            UserLogin[]
   session           Session[]
@@ -411,6 +417,8 @@ enum SessionBlockStatus {
 
 model SessionBlock {
   id Int @id @default(autoincrement())
+
+  originalId String? @unique
 
   order  Int?
   status SessionBlockStatus @default(SCHEDULED)

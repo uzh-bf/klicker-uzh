@@ -617,6 +617,9 @@ importers:
       formik:
         specifier: 2.4.3
         version: 2.4.3(react@18.2.0)
+      generate-password:
+        specifier: 1.7.0
+        version: 1.7.0
       graphql:
         specifier: 16.7.1
         version: 16.7.1
@@ -1089,16 +1092,22 @@ importers:
       '@azure/storage-blob':
         specifier: 12.15.0
         version: 12.15.0
+      '@klicker-uzh/prisma':
+        specifier: workspace:*
+        version: link:../../packages/prisma
+      axios:
+        specifier: 1.4.0
+        version: 1.4.0
       jsonwebtoken:
         specifier: 9.0.1
         version: 9.0.1
+      mongoose:
+        specifier: 7.3.3
+        version: 7.3.3
     devDependencies:
       '@tsconfig/node18':
         specifier: 18.2.0
         version: 18.2.0
-      '@tsconfig/recommended':
-        specifier: ^1.0.2
-        version: 1.0.2
       '@types/jsonwebtoken':
         specifier: ^9.0.2
         version: 9.0.2
@@ -1123,9 +1132,15 @@ importers:
       prettier-plugin-organize-imports:
         specifier: 3.2.3
         version: 3.2.3(prettier@2.8.8)(typescript@5.1.6)
+      prisma:
+        specifier: 4.14.1
+        version: 4.14.1
+      ts-node:
+        specifier: 10.9.1
+        version: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
       tsup:
         specifier: 7.2.0
-        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
+        version: 7.2.0(ts-node@10.9.1)(typescript@5.1.6)
       typescript:
         specifier: 5.1.6
         version: 5.1.6
@@ -1793,63 +1808,6 @@ importers:
       typescript:
         specifier: 5.0.4
         version: 5.0.4
-
-  packages/migration-v2-export-python: {}
-
-  packages/migration-v3-import:
-    dependencies:
-      '@azure/storage-blob':
-        specifier: 12.15.0
-        version: 12.15.0
-      '@klicker-uzh/prisma':
-        specifier: workspace:*
-        version: link:../prisma
-    devDependencies:
-      '@tsconfig/node18':
-        specifier: 18.2.0
-        version: 18.2.0
-      '@tsconfig/recommended':
-        specifier: ^1.0.2
-        version: 1.0.2
-      '@types/node':
-        specifier: ^18.17.4
-        version: 18.17.4
-      axios:
-        specifier: 1.4.0
-        version: 1.4.0
-      dotenv:
-        specifier: 16.0.3
-        version: 16.0.3
-      dotenv-cli:
-        specifier: 7.2.1
-        version: 7.2.1
-      eslint:
-        specifier: 8.45.0
-        version: 8.45.0
-      mongoose:
-        specifier: 7.3.3
-        version: 7.3.3
-      npm-run-all:
-        specifier: 4.1.5
-        version: 4.1.5
-      prettier:
-        specifier: 2.8.8
-        version: 2.8.8
-      prettier-plugin-organize-imports:
-        specifier: 3.2.3
-        version: 3.2.3(prettier@2.8.8)(typescript@5.1.6)
-      prisma:
-        specifier: 4.14.1
-        version: 4.14.1
-      ts-node:
-        specifier: 10.9.1
-        version: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
-      tsup:
-        specifier: 7.2.0
-        version: 7.2.0(ts-node@10.9.1)(typescript@5.1.6)
-      typescript:
-        specifier: 5.1.6
-        version: 5.1.6
 
   packages/next-config:
     dependencies:
@@ -10600,6 +10558,7 @@ packages:
 
   /@types/webidl-conversions@7.0.0:
     resolution: {integrity: sha512-xTE1E+YF4aWPJJeUzaZI5DRntlkY3+BCVJi0axFptnjGmAoWxkyREIh/XMrfxVLejwQxMCfDXdICo0VLxThrog==}
+    dev: false
 
   /@types/webpack-dev-middleware@5.3.0(webpack@5.83.1):
     resolution: {integrity: sha512-SklLlklFBfTyIXo1iWXxzeytjlysWfj5QfIcRJrCc7MgzuCjnZOHXviQwe81iFGq9ZkCUXAg2fpbZdHhj5lSWA==}
@@ -10664,6 +10623,7 @@ packages:
     dependencies:
       '@types/node': 18.17.4
       '@types/webidl-conversions': 7.0.0
+    dev: false
 
   /@types/ws@8.5.5:
     resolution: {integrity: sha512-lwhs8hktwxSjf9UaZ9tG5M03PGogvFaH8gUgLNbN9HKIg0dvv6q+gkSuJ8HN4/VbyxkuLzCjlN7GquQ0gUJfIg==}
@@ -12282,6 +12242,7 @@ packages:
   /bson@5.4.0:
     resolution: {integrity: sha512-WRZ5SQI5GfUuKnPTNmAYPiKIof3ORXAF4IRU5UcgmivNIon01rWQlw5RUH954dpu8yGL8T59YShVddIPaU/gFA==}
     engines: {node: '>=14.20.1'}
+    dev: false
 
   /buffer-crc32@0.2.13:
     resolution: {integrity: sha512-VO9Ht/+p3SN7SKWqcrgEzjGbRSJYTx+Q1pTQC0wrWqHx0vpJraQ6GtHx8tvcg1rlK1byhU5gccxgOgj7B0TDkQ==}
@@ -18479,7 +18440,7 @@ packages:
   /kareem@2.5.1:
     resolution: {integrity: sha512-7jFxRVm+jD+rkq3kY0iZDJfsO2/t4BBPeEb2qKn2lR/9KhuksYk5hxzfRYWMPV8P/x2d0kHD306YyWLzjjH+uA==}
     engines: {node: '>=12.0.0'}
-    dev: true
+    dev: false
 
   /katex@0.16.8:
     resolution: {integrity: sha512-ftuDnJbcbOckGY11OO+zg3OofESlbR5DRl2cmN8HeWeeFIV7wTXvAOx8kEjZjobhA+9wh2fbKeO6cdcA9Mnovg==}
@@ -19220,6 +19181,7 @@ packages:
   /memory-pager@1.5.0:
     resolution: {integrity: sha512-ZS4Bp4r/Zoeq6+NLJpP+0Zzm0pR8whtGPf1XExKLJBAczGMnSi3It14OiNCStjQjM6NU1okjQGSxgEZN8eBYKg==}
     requiresBuild: true
+    dev: false
     optional: true
 
   /memorystream@0.3.1:
@@ -19866,6 +19828,7 @@ packages:
     dependencies:
       '@types/whatwg-url': 8.2.2
       whatwg-url: 11.0.0
+    dev: false
 
   /mongodb@5.6.0:
     resolution: {integrity: sha512-z8qVs9NfobHJm6uzK56XBZF8XwM9H294iRnB7wNjF0SnY93si5HPziIJn+qqvUR5QOff/4L0gCD6SShdR/GtVQ==}
@@ -19887,7 +19850,7 @@ packages:
       socks: 2.7.1
     optionalDependencies:
       saslprep: 1.0.3
-    dev: true
+    dev: false
 
   /mongodb@5.7.0:
     resolution: {integrity: sha512-zm82Bq33QbqtxDf58fLWBwTjARK3NSvKYjyz997KSy6hpat0prjeX/kxjbPVyZY60XYPDNETaHkHJI2UCzSLuw==}
@@ -19933,12 +19896,12 @@ packages:
       - mongodb-client-encryption
       - snappy
       - supports-color
-    dev: true
+    dev: false
 
   /mpath@0.9.0:
     resolution: {integrity: sha512-ikJRQTk8hw5DEoFVxHG1Gn9T/xcjtdnOKIU1JTmGjZZlg9LST2mBLmcX3/ICIbgJydT2GOc15RnNy5mHmzfSew==}
     engines: {node: '>=4.0.0'}
-    dev: true
+    dev: false
 
   /mquery@5.0.0:
     resolution: {integrity: sha512-iQMncpmEK8R8ncT8HJGsGc9Dsp8xcgYMVSbs5jgnm1lFHTZqMJTUWTDx1LBO8+mK3tPNZWFLBghQEIOULSTHZg==}
@@ -19947,7 +19910,7 @@ packages:
       debug: 4.3.4(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
-    dev: true
+    dev: false
 
   /mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -23653,6 +23616,7 @@ packages:
     requiresBuild: true
     dependencies:
       sparse-bitfield: 3.0.3
+    dev: false
     optional: true
 
   /sax@1.2.4:
@@ -23958,7 +23922,7 @@ packages:
 
   /sift@16.0.1:
     resolution: {integrity: sha512-Wv6BjQ5zbhW7VFefWusVP33T/EM0vYikCaQ2qR8yULbsilAT8/wQaXvuQ3ptGLpoKx+lihJE3y2UTgKDyyNHZQ==}
-    dev: true
+    dev: false
 
   /signal-exit@3.0.7:
     resolution: {integrity: sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==}
@@ -24211,6 +24175,7 @@ packages:
     requiresBuild: true
     dependencies:
       memory-pager: 1.5.0
+    dev: false
     optional: true
 
   /spawn-wrap@2.0.0:
@@ -25033,6 +24998,7 @@ packages:
     engines: {node: '>=12'}
     dependencies:
       punycode: 2.3.0
+    dev: false
 
   /traverse@0.3.9:
     resolution: {integrity: sha512-iawgk0hLP3SxGKDfnDJf8wTz4p2qImnyihM5Hh/sGvQ3K37dPi/w8sRhdNIxYA1TwFwc5mDhIJq+O0RsvXBKdQ==}
@@ -26278,6 +26244,7 @@ packages:
   /webidl-conversions@7.0.0:
     resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
     engines: {node: '>=12'}
+    dev: false
 
   /webpack-bundle-analyzer@4.9.0:
     resolution: {integrity: sha512-+bXGmO1LyiNx0i9enBu3H8mv42sj/BJWhZNFwjz92tVnBa9J3JMGo2an2IXlEleoDOPn/Hofl5hr/xCpObUDtw==}
@@ -26509,6 +26476,7 @@ packages:
     dependencies:
       tr46: 3.0.0
       webidl-conversions: 7.0.0
+    dev: false
 
   /whatwg-url@5.0.0:
     resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}

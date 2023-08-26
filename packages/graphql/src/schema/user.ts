@@ -5,7 +5,17 @@ export const LocaleType = builder.enumType('LocaleType', {
   values: Object.values(DB.Locale),
 })
 
-export const User = builder.prismaObject('User', {
+export const UserLoginScope = builder.enumType('UserLoginScope', {
+  values: Object.values(DB.UserLoginScope),
+})
+
+export interface IUser extends DB.User {
+  catalystInstitutional: boolean
+  catalystIndividual: boolean
+  catalystTier: string | null
+}
+export const UserRef = builder.objectRef<IUser>('User')
+export const User = UserRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     email: t.exposeString('email'),
@@ -17,5 +27,24 @@ export const User = builder.prismaObject('User', {
       type: 'Date',
       nullable: true,
     }),
+
+    catalyst: t.boolean({
+      resolve: (user) => user.catalystInstitutional || user.catalystIndividual,
+    }),
+    catalystTier: t.exposeString('catalystTier', { nullable: true }),
+  }),
+})
+
+export interface IUserLogin extends DB.UserLogin {
+  user: IUser
+}
+export const UserLoginRef = builder.objectRef<IUserLogin>('UserLogin')
+export const UserLogin = UserLoginRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name'),
+    user: t.expose('user', { type: UserRef }),
+    scope: t.expose('scope', { type: UserLoginScope }),
+    lastLoginAt: t.expose('lastLoginAt', { type: 'Date', nullable: true }),
   }),
 })

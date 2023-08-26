@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faPencil } from '@fortawesome/free-solid-svg-icons'
+import { faCrown, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeCourseColorDocument,
   ChangeCourseDatesDocument,
   GetSingleCourseDocument,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
@@ -18,6 +19,7 @@ import {
   H2,
   H3,
   Toast,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -47,6 +49,7 @@ function CourseOverviewPage() {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
   })
+  const { data: user } = useQuery(UserProfileDocument)
 
   const [changeCourseColor] = useMutation(ChangeCourseColorDocument)
   const [changeCourseDates] = useMutation(ChangeCourseDatesDocument)
@@ -244,7 +247,12 @@ function CourseOverviewPage() {
             )}
           </div>
           <div className="mb-4">
-            <H3>{t('shared.generic.learningElements')}</H3>
+            <H3 className={{ root: 'flex flex-row gap-3' }}>
+              <div>{t('shared.generic.learningElements')}</div>
+              <Button.Icon className={{ root: 'text-orange-400' }}>
+                <FontAwesomeIcon icon={faCrown} size="sm" />
+              </Button.Icon>
+            </H3>
             {course.learningElements && course.learningElements.length > 0 ? (
               <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
                 {course.learningElements.map((learningElement) => (
@@ -255,12 +263,31 @@ function CourseOverviewPage() {
                   />
                 ))}
               </div>
-            ) : (
+            ) : user?.userProfile?.catalyst ? (
               <div>{t('manage.course.noLearningElements')}</div>
+            ) : (
+              <UserNotification className={{ root: 'mr-3' }}>
+                {t.rich('manage.general.catalystRequired', {
+                  link: () => (
+                    <a
+                      target="_blank"
+                      href={`https://www.klicker.uzh.ch/catalyst}`}
+                      className="underline"
+                    >
+                      www.klicker.uzh.ch/catalyst
+                    </a>
+                  ),
+                })}
+              </UserNotification>
             )}
           </div>
           <div className="mb-4">
-            <H3>{t('shared.generic.microSessions')}</H3>
+            <H3 className={{ root: 'flex flex-row gap-3' }}>
+              <div>{t('shared.generic.microSessions')}</div>
+              <Button.Icon className={{ root: 'text-orange-400' }}>
+                <FontAwesomeIcon icon={faCrown} size="sm" />
+              </Button.Icon>
+            </H3>
             {course.microSessions && course.microSessions.length > 0 ? (
               <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
                 {course.microSessions.map((microSession) => (
@@ -270,8 +297,22 @@ function CourseOverviewPage() {
                   />
                 ))}
               </div>
-            ) : (
+            ) : user?.userProfile?.catalyst ? (
               <div>{t('manage.course.noMicroSessions')}</div>
+            ) : (
+              <UserNotification className={{ root: 'mr-3' }}>
+                {t.rich('manage.general.catalystRequired', {
+                  link: () => (
+                    <a
+                      target="_blank"
+                      href={`https://www.klicker.uzh.ch/catalyst}`}
+                      className="underline"
+                    >
+                      www.klicker.uzh.ch/catalyst
+                    </a>
+                  ),
+                })}
+              </UserNotification>
             )}
           </div>
         </div>

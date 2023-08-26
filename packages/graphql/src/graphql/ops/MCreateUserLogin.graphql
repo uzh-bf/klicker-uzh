@@ -1,0 +1,15 @@
+mutation CreateUserLogin(
+  $password: String!
+  $name: String!
+  $scope: UserLoginScope!
+) {
+  createUserLogin(password: $password, name: $name, scope: $scope) {
+    id
+    name
+    scope
+    user {
+      id
+      shortname
+    }
+  }
+}

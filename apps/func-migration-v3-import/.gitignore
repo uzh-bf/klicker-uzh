@@ -99,3 +99,4 @@ __queuestorage__
 __azurite_db*__.json
 
 src/**.js
+src/client/

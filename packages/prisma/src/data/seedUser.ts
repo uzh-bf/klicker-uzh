@@ -6,6 +6,7 @@ async function seedUser(prisma: Prisma.PrismaClient) {
     await prepareUser({
       id: '',
       email: '',
+      name: '',
       shortname: '',
       password: '',
     })

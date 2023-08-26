@@ -8,20 +8,29 @@ import {
 } from '../client'
 
 export async function prepareUser({
+  name,
   password,
+  catalystIndividual = false,
+  catalystInstitutional = false,
   ...args
 }: {
   id: string
   email: string
+  name: string
   password: string
   shortname: string
+  catalystIndividual?: boolean
+  catalystInstitutional?: boolean
 }) {
   const hashedPassword = await bcrypt.hash(password, 12)
 
   const data = {
     ...args,
+    catalystIndividual,
+    catalystInstitutional,
     logins: {
       create: {
+        name: name,
         password: hashedPassword,
         scope: UserLoginScope.FULL_ACCESS,
       },

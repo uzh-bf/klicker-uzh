@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole } from '@klicker-uzh/prisma'
+import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type Redis from 'ioredis'
@@ -17,6 +17,10 @@ export interface Context extends BaseContext {
   user?: {
     sub: string
     role: UserRole
+    scope: UserLoginScope
+    catalystInstitutional: boolean
+    catalystIndividual: boolean
+    // affiliations?: string[]
   }
 }
 
@@ -24,6 +28,10 @@ export interface ContextWithUser extends Context {
   user: {
     sub: string
     role: UserRole
+    scope: UserLoginScope
+    catalystInstitutional: boolean
+    catalystIndividual: boolean
+    // affiliations?: string[]
   }
 }
 

@@ -1,14 +1,31 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import { UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
-import type { NextAuthOptions } from 'next-auth'
+import type { NextAuthOptions, Profile } from 'next-auth'
 import NextAuth from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
 
 import prisma from 'src/lib/prisma'
+
+interface ExtendedProfile extends Profile {
+  swissEduPersonUniqueID: string
+  swissEduIDLinkedAffiliation?: string[]
+}
+
+function reduceCatalyst(acc: boolean, affiliation: string) {
+  try {
+    if (affiliation.split('@')[1].includes('uzh.ch')) {
+      return true
+    }
+
+    return acc || false
+  } catch (e) {
+    return false
+  }
+}
 
 export async function decode({ token, secret }: JWTDecodeParams) {
   if (!token) return null
@@ -61,12 +78,15 @@ const EduIDProvider: Provider = {
   checks: ['pkce', 'state'],
 
   profile(profile) {
-    console.log('PROFILE', profile)
     return {
       id: profile.sub,
       email: profile.email,
       shortname: generateRandomString(8),
       lastLoginAt: new Date(),
+      catalystInstitutional: profile.swissEduIDLinkedAffiliation?.reduce(
+        reduceCatalyst,
+        false
+      ),
     }
   },
 }
@@ -120,6 +140,8 @@ const CredentialProvider: Provider = CredentialsProvider({
           email: user.email,
           role: user.role,
           scope: login.scope,
+          catalystInstitutional: user.catalystInstitutional,
+          catalystIndividual: user.catalystIndividual,
         }
       }
     }
@@ -155,30 +177,47 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    // async signIn({ user, account, profile, email }) {
-    //   return true
-    // },
+    async signIn({ user, account, profile, email }) {
+      if (profile?.sub && account?.provider) {
+        const userAccount = await prisma.account.findUnique({
+          where: {
+            provider_providerAccountId: {
+              provider: account.provider,
+              providerAccountId: profile.sub,
+            },
+          },
+        })
+
+        if (userAccount) {
+          await prisma.user.update({
+            where: { id: userAccount.userId },
+            data: {
+              email: profile.email,
+              lastLoginAt: new Date(),
+              catalystInstitutional:
+                profile.swissEduIDLinkedAffiliation?.reduce<boolean>(
+                  reduceCatalyst,
+                  false
+                ) ?? false,
+            },
+          })
+        }
+      }
+
+      return true
+    },
 
     async jwt({ token, user, account, profile }) {
       token.role = UserRole.USER
-      token.scope = (user as any).scope
-      if (typeof profile?.swissEduIDLinkedAffiliation === 'object') {
-        token.affiliations = profile.swissEduIDLinkedAffiliation
-        token.fullAccess = profile.swissEduIDLinkedAffiliation.reduce(
-          (acc, affiliation) => {
-            try {
-              if (affiliation.split('@')[1].includes('uzh.ch')) {
-                return true
-              }
 
-              return acc || false
-            } catch (e) {
-              return false
-            }
-          },
-          false
-        )
+      if (typeof profile?.swissEduPersonUniqueID === 'string') {
+        token.scope = UserLoginScope.ACCOUNT_OWNER
+      } else {
+        token.scope = (user as any).scope as UserLoginScope
       }
+
+      token.catalystInstitutional = user.catalystInstitutional
+      token.catalystIndividual = user.catalystIndividual
 
       return token
     },
