@@ -10,7 +10,7 @@ import type { IParticipant, IParticipantGroup } from './participant'
 import { Participant, ParticipantGroup, Participation } from './participant'
 import type { ISession } from './session'
 import { SessionRef } from './session'
-import { User } from './user'
+import { UserRef } from './user'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -104,7 +104,7 @@ export const Course = builder.objectType(CourseRef, {
       nullable: true,
     }),
     owner: t.expose('owner', {
-      type: User,
+      type: UserRef,
       nullable: true,
     }),
   }),

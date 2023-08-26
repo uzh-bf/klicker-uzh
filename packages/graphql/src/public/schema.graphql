@@ -462,7 +462,6 @@ type Mutation {
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
   loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
-  loginUser(email: String!, password: String!): String
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
@@ -894,6 +893,8 @@ type Title {
 }
 
 type User {
+  catalyst: Boolean!
+  catalystTier: String
   email: String!
   id: ID!
   locale: LocaleType!

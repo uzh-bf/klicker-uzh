@@ -1,12 +1,13 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation, useQuery, useSuspenseQuery } from '@apollo/client'
 import {
   GetUserQuestionsDocument,
   Question,
   ToggleIsArchivedDocument,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 
 import {
@@ -39,6 +40,61 @@ import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
 import CreationButton from '../components/sessions/creation/CreationButton'
 import SessionCreation from '../components/sessions/creation/SessionCreation'
+
+interface Props {
+  setCreationMode: (
+    mode: 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
+  ) => void
+}
+
+function SuspendedCreationButtons({ setCreationMode }: Props) {
+  const t = useTranslations()
+
+  const { data } = useSuspenseQuery(UserProfileDocument)
+
+  return (
+    <div className="grid gap-1 mb-4 md:grid-cols-4 md:gap-2">
+      <CreationButton
+        icon={faUsersLine}
+        text={t('manage.questionPool.createLiveSession')}
+        onClick={() => {
+          setCreationMode('liveSession')
+        }}
+        data={{ cy: 'create-live-session' }}
+      />
+      <CreationButton
+        isCatalystRequired
+        disabled={!data?.userProfile?.catalyst}
+        icon={faChalkboardUser}
+        text={t('manage.questionPool.createMicroSession')}
+        onClick={() => {
+          setCreationMode('microSession')
+        }}
+        data={{ cy: 'create-micro-session' }}
+      />
+      <CreationButton
+        isCatalystRequired
+        disabled={!data?.userProfile?.catalyst}
+        icon={faGraduationCap}
+        text={t('manage.questionPool.createLearningElement')}
+        onClick={() => {
+          setCreationMode('learningElement')
+        }}
+        data={{ cy: 'create-learning-element' }}
+      />
+      <CreationButton
+        isCatalystRequired
+        disabled={true || !data?.userProfile?.catalyst}
+        icon={faUserGroup}
+        text={t('manage.questionPool.createGroupTask')}
+        onClick={() => {
+          setCreationMode('groupTask')
+        }}
+        data={{ cy: 'create-group-task' }}
+      />
+    </div>
+  )
+}
 
 function Index() {
   const router = useRouter()
@@ -132,41 +188,9 @@ function Index() {
       className={{ children: 'pb-2' }}
     >
       {typeof creationMode === 'undefined' && (
-        <div className="grid gap-1 mb-4 md:grid-cols-4 md:gap-2">
-          <CreationButton
-            icon={faUsersLine}
-            text={t('manage.questionPool.createLiveSession')}
-            onClick={() => {
-              setCreationMode('liveSession')
-            }}
-            data={{ cy: 'create-live-session' }}
-          />
-          <CreationButton
-            icon={faChalkboardUser}
-            text={t('manage.questionPool.createMicroSession')}
-            onClick={() => {
-              setCreationMode('microSession')
-            }}
-            data={{ cy: 'create-micro-session' }}
-          />
-          <CreationButton
-            icon={faGraduationCap}
-            text={t('manage.questionPool.createLearningElement')}
-            onClick={() => {
-              setCreationMode('learningElement')
-            }}
-            data={{ cy: 'create-learning-element' }}
-          />
-          <CreationButton
-            icon={faUserGroup}
-            text={t('manage.questionPool.createGroupTask')}
-            onClick={() => {
-              setCreationMode('groupTask')
-            }}
-            data={{ cy: 'create-group-task' }}
-            disabled
-          />
-        </div>
+        <Suspense fallback={<div />}>
+          <SuspendedCreationButtons setCreationMode={setCreationMode} />
+        </Suspense>
       )}
       {creationMode && (
         <div className="flex-none mb-4">

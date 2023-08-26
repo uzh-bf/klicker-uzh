@@ -539,6 +539,8 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       title: 'Titel',
       searchPlaceholder: 'Suchen...',
       sortBy: 'Sortieren nach..',
+      catalystRequired:
+        'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
     },
     login: {
       lecturerLogin: 'Login Dozierende',

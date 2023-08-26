@@ -110,6 +110,10 @@ model User {
 
   role UserRole @default(USER)
 
+  catalystInstitutional Boolean @default(false)
+  catalystIndividual    Boolean @default(false)
+  catalystTier          String?
+
   logins            UserLogin[]
   session           Session[]
   accounts          Account[]
