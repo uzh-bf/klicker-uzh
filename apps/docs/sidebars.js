@@ -1,6 +1,6 @@
 module.exports = {
   docs: {
-    GettingStarted: [
+    'Getting Started': [
       'getting_started/welcome',
       'getting_started/core_concepts',
     ],
