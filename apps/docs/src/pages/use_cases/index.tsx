@@ -1,3 +1,4 @@
+import Link from '@docusaurus/Link'
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Layout from '@theme/Layout'
@@ -12,14 +13,14 @@ function Card({ title, image, children, detailsRef }) {
         <H3 className={{ root: 'text-xl' }}>{title}</H3>
         <p className="font-sans text-lg">{children}</p>
         <div>
-          <Button
-            onClick={() => window.open(`/use_cases/${detailsRef}`, '_self')}
-          >
-            <>
-              <FontAwesomeIcon icon={faArrowRight} />
-              Read More
-            </>
-          </Button>
+          <Link href={`/use_cases/${detailsRef}`}>
+            <Button>
+              <>
+                <FontAwesomeIcon icon={faArrowRight} />
+                Read More
+              </>
+            </Button>
+          </Link>
         </div>
       </div>
       <div className="relative hidden flex-1 items-center justify-items-center md:flex">
