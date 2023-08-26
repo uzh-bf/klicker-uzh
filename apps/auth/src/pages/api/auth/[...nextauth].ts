@@ -1,4 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import { UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
@@ -61,7 +61,6 @@ const EduIDProvider: Provider = {
   checks: ['pkce', 'state'],
 
   profile(profile) {
-    console.log('PROFILE', profile)
     return {
       id: profile.sub,
       email: profile.email,
@@ -161,7 +160,13 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user, account, profile }) {
       token.role = UserRole.USER
-      token.scope = (user as any).scope
+
+      if (typeof profile?.swissEduPersonUniqueID === 'string') {
+        token.scope = UserLoginScope.ACCOUNT_OWNER
+      } else {
+        token.scope = (user as any).scope as UserLoginScope
+      }
+
       if (typeof profile?.swissEduIDLinkedAffiliation === 'object') {
         token.affiliations = profile.swissEduIDLinkedAffiliation
         token.fullAccess = profile.swissEduIDLinkedAffiliation.reduce(
