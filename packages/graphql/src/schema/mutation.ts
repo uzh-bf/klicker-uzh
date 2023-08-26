@@ -679,7 +679,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createSession: t.withAuth(asUserSessionExec).field({
+      createSession: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Session,
         args: {
@@ -699,7 +699,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      editSession: t.withAuth(asUserSessionExec).field({
+      editSession: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Session,
         args: {
