@@ -3,6 +3,7 @@ module.exports = {
     'Getting Started': [
       'getting_started/welcome',
       'getting_started/core_concepts',
+      'getting_started/migration',
     ],
     Tutorials: [
       'tutorials/question_management',
@@ -11,12 +12,16 @@ module.exports = {
       'tutorials/live_qa',
       'tutorials/microlearning',
       'tutorials/practice_quiz',
+      'tutorials/group_activity',
     ],
-    Migration: [
-      'migration/overview',
-      'migration/migration',
-      'migration/whats_new',
+    Gamification: [
+      'gamification/overview',
+      'gamification/experience',
+      'gamification/points',
+      'gamification/achievements',
+      'gamification/awards',
     ],
-    About: ['about/project', 'about/team', 'about/roadmap'],
+    'Advanced Topics': ['advanced/control_app', 'advanced/delegated_access'],
+    About: ['about/project', 'about/whats_new', 'about/roadmap'],
   },
 }
