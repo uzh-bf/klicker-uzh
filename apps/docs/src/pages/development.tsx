@@ -1,5 +1,4 @@
 import Layout from '@theme/Layout'
-import AnnouncementBanner from '../components/AnnouncementBanner'
 import RoadmapTile from '../components/development/RoadmapTile'
 
 const Development = () => {
