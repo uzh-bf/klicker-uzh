@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole } from '@klicker-uzh/prisma'
+import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import type PrismaTypes from '@klicker-uzh/prisma/dist/pothos'
 import SchemaBuilder from '@pothos/core'
 import PrismaPlugin from '@pothos/plugin-prisma'
@@ -13,14 +13,16 @@ const prisma = new PrismaClient({})
 const builder = new SchemaBuilder<{
   Context: Context
   AuthContexts: {
-    anonymous: Context
     authenticated: ContextWithUser
     role: ContextWithUser
+    scope: ContextWithUser
+    catalyst: ContextWithUser
   }
   AuthScopes: {
-    anonymous: boolean
     authenticated: boolean
     role?: UserRole
+    scope?: UserLoginScope
+    catalyst?: boolean
   }
   PrismaTypes: PrismaTypes
   Scalars: {
@@ -35,9 +37,41 @@ const builder = new SchemaBuilder<{
   }
 }>({
   authScopes: async (ctx) => ({
-    anonymous: !ctx.user?.sub,
     authenticated: !!ctx.user?.sub,
     role: (role) => ctx.user?.role === role,
+    scope: (requiredScope) => {
+      switch (requiredScope) {
+        case UserLoginScope.ACCOUNT_OWNER:
+          return ctx?.user?.scope === UserLoginScope.ACCOUNT_OWNER
+
+        case UserLoginScope.FULL_ACCESS:
+          return (
+            typeof ctx?.user?.scope === 'string' &&
+            (ctx.user.scope === UserLoginScope.ACCOUNT_OWNER ||
+              ctx.user.scope === UserLoginScope.FULL_ACCESS)
+          )
+
+        case UserLoginScope.SESSION_EXEC:
+          return (
+            typeof ctx?.user?.scope === 'string' &&
+            (ctx.user.scope === UserLoginScope.ACCOUNT_OWNER ||
+              ctx.user.scope === UserLoginScope.FULL_ACCESS ||
+              ctx.user.scope === UserLoginScope.SESSION_EXEC)
+          )
+
+        case UserLoginScope.READ_ONLY:
+          return (
+            typeof ctx?.user?.scope === 'string' &&
+            (ctx.user.scope === UserLoginScope.ACCOUNT_OWNER ||
+              ctx.user.scope === UserLoginScope.FULL_ACCESS ||
+              ctx.user.scope === UserLoginScope.SESSION_EXEC ||
+              ctx.user.scope === UserLoginScope.READ_ONLY)
+          )
+      }
+
+      return false
+    },
+    catalyst: ctx.user?.catalystInstitutional || ctx.user?.catalystIndividual,
   }),
   plugins: [ScopeAuthPlugin, PrismaPlugin, ValidationPlugin],
   prisma: {
@@ -45,6 +79,7 @@ const builder = new SchemaBuilder<{
     filterConnectionTotalCount: true,
   },
   scopeAuthOptions: {
+    defaultStrategy: 'all',
     authorizeOnSubscribe: true,
     unauthorizedError: () => new GraphQLError('Unauthorized'),
   },
