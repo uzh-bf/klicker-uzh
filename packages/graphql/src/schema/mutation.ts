@@ -632,7 +632,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      generateLoginToken: t.withAuth(asUserFullAccess).field({
+      generateLoginToken: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: User,
         resolve(_, __, ctx) {
