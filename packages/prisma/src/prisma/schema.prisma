@@ -64,6 +64,7 @@ model VerificationToken {
 }
 
 enum UserLoginScope {
+  ACCOUNT_OWNER
   FULL_ACCESS
   SESSION_EXEC
   READ_ONLY
