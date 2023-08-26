@@ -3,17 +3,16 @@ import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import UseCaseLayout from '@site/src/components/usecases/UseCaseLayout'
 import { Button, H1, H3 } from '@uzh-bf/design-system'
-import { useState } from 'react'
-import { useCases } from '../../constants'
+import USE_CASES from '../../constants'
 
-function Card({ title, image, children, detailsRef }) {
+function Card({ slug, title, image, abstract }) {
   return (
     <div className="mt-4 flex max-h-80 flex-row rounded-xl bg-slate-100">
       <div className="flex flex-1 flex-col justify-center p-8 md:p-16">
         <H3 className={{ root: 'text-xl' }}>{title}</H3>
-        <p className="font-sans text-lg">{children}</p>
+        <p className="font-sans text-lg">{abstract}</p>
         <div>
-          <Link href={`/use_cases/${detailsRef}`}>
+          <Link href={`/use_cases/${slug}`}>
             <Button>
               <FontAwesomeIcon icon={faArrowRight} />
               Read More
@@ -29,21 +28,17 @@ function Card({ title, image, children, detailsRef }) {
 }
 
 function Index() {
-  const [filteredUseCases, setFilteredUseCases] = useState(useCases)
-
   return (
     <UseCaseLayout path="/use_cases">
-      <div onClick={() => setFilteredUseCases(useCases)}>
-        <H1>Use Cases</H1>
-      </div>
-      {filteredUseCases.map((useCase) => (
+      <H1>Use Cases</H1>
+      {Object.entries(USE_CASES).map(([slug, useCase]) => (
         <Card
+          key={useCase.title}
+          slug={slug}
           title={useCase.title}
-          image={useCase.imageSrc}
-          detailsRef={useCase.detailsRef}
-        >
-          {useCase.description}
-        </Card>
+          image={useCase.headerImgSrc}
+          abstract={useCase.abstract}
+        />
       ))}
     </UseCaseLayout>
   )

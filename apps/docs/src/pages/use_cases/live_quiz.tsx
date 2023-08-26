@@ -1,22 +1,7 @@
-import UseCaseLayout from '@site/src/components/usecases/UseCaseLayout'
-import USE_CASES from '../../constants'
-
-const useCase = USE_CASES['live_quiz']
+import UseCase from '@site/src/components/usecases/UseCase'
 
 function LiveQuiz() {
-  return (
-    <UseCaseLayout
-      path="/use_cases/live_quiz"
-      headerImgSrc={useCase.headerImgSrc}
-      title={useCase.title}
-      tags={useCase.tags}
-      introduction={useCase.introduction}
-      background={useCase.background}
-      scenario={useCase.scenario}
-      learnings={useCase.learnings}
-      goals={useCase.goals}
-    />
-  )
+  return <UseCase slug="live_quiz" />
 }
 
 export default LiveQuiz
