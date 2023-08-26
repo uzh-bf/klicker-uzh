@@ -2,13 +2,30 @@ import { UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
-import type { NextAuthOptions } from 'next-auth'
+import type { NextAuthOptions, Profile } from 'next-auth'
 import NextAuth from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
 
 import prisma from 'src/lib/prisma'
+
+interface ExtendedProfile extends Profile {
+  swissEduPersonUniqueID: string
+  swissEduIDLinkedAffiliation?: string[]
+}
+
+function reduceCatalyst(acc: boolean, affiliation: string) {
+  try {
+    if (affiliation.split('@')[1].includes('uzh.ch')) {
+      return true
+    }
+
+    return acc || false
+  } catch (e) {
+    return false
+  }
+}
 
 export async function decode({ token, secret }: JWTDecodeParams) {
   if (!token) return null
@@ -66,6 +83,10 @@ const EduIDProvider: Provider = {
       email: profile.email,
       shortname: generateRandomString(8),
       lastLoginAt: new Date(),
+      catalystInstitutional: profile.swissEduIDLinkedAffiliation?.reduce(
+        reduceCatalyst,
+        false
+      ),
     }
   },
 }
@@ -154,9 +175,24 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    // async signIn({ user, account, profile, email }) {
-    //   return true
-    // },
+    async signIn({ user, account, profile, email }) {
+      if (profile) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            email: profile.email,
+            lastLoginAt: new Date(),
+            catalystInstitutional:
+              typeof profile.swissEduIDLinkedAffiliation?.reduce(
+                reduceCatalyst,
+                false
+              ) ?? false,
+          },
+        })
+      }
+
+      return true
+    },
 
     async jwt({ token, user, account, profile }) {
       token.role = UserRole.USER
@@ -167,23 +203,8 @@ export const authOptions: NextAuthOptions = {
         token.scope = (user as any).scope as UserLoginScope
       }
 
-      if (typeof profile?.swissEduIDLinkedAffiliation === 'object') {
-        token.affiliations = profile.swissEduIDLinkedAffiliation
-        token.fullAccess = profile.swissEduIDLinkedAffiliation.reduce(
-          (acc, affiliation) => {
-            try {
-              if (affiliation.split('@')[1].includes('uzh.ch')) {
-                return true
-              }
-
-              return acc || false
-            } catch (e) {
-              return false
-            }
-          },
-          false
-        )
-      }
+      token.catalystInstitutional = user.catalystInstitutional
+      token.catalystIndividual = user.catalystIndividual
 
       return token
     },
