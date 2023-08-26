@@ -1,11 +1,11 @@
 import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
-import { faCrown } from '@fortawesome/free-solid-svg-icons'
+import { faFlask } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface CreationButtonProps {
-  isFullAccessRequired?: boolean
+  isCatalystRequired?: boolean
   icon: IconDefinition
   text: string
   onClick?: () => void
@@ -17,7 +17,7 @@ interface CreationButtonProps {
 }
 
 function CreationButton({
-  isFullAccessRequired,
+  isCatalystRequired,
   icon,
   text,
   onClick,
@@ -43,27 +43,24 @@ function CreationButton({
         <Button.Label>{text}</Button.Label>
       </div>
       <div>
-        {isFullAccessRequired && (
+        {isCatalystRequired && (
           <Button.Icon className={{ root: 'text-orange-400' }}>
-            <FontAwesomeIcon icon={faCrown} />
+            <FontAwesomeIcon icon={faFlask} />
           </Button.Icon>
         )}
       </div>
     </Button>
   )
 
-  if (isFullAccessRequired && disabled) {
+  if (isCatalystRequired && disabled) {
     return (
       <Tooltip
         tooltip={
           <div className="max-w-[300px]">
-            {t.rich('manage.general.fullAccessRequired', {
+            {t.rich('manage.general.catalystRequired', {
               link: () => (
-                <a
-                  target="_blank"
-                  href="https://www.klicker.uzh.ch/full_access"
-                >
-                  www.klicker.uzh.ch/full_access
+                <a target="_blank" href="https://www.klicker.uzh.ch/catalyst">
+                  www.klicker.uzh.ch/catalyst
                 </a>
               ),
             })}

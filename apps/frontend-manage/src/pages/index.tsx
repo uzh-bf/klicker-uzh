@@ -63,8 +63,8 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         data={{ cy: 'create-live-session' }}
       />
       <CreationButton
-        isFullAccessRequired
-        disabled={!data?.userProfile?.fullAccess}
+        isCatalystRequired
+        disabled={!data?.userProfile?.catalyst}
         icon={faChalkboardUser}
         text={t('manage.questionPool.createMicroSession')}
         onClick={() => {
@@ -73,8 +73,8 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         data={{ cy: 'create-micro-session' }}
       />
       <CreationButton
-        isFullAccessRequired
-        disabled={!data?.userProfile?.fullAccess}
+        isCatalystRequired
+        disabled={!data?.userProfile?.catalyst}
         icon={faGraduationCap}
         text={t('manage.questionPool.createLearningElement')}
         onClick={() => {
@@ -83,8 +83,8 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         data={{ cy: 'create-learning-element' }}
       />
       <CreationButton
-        isFullAccessRequired
-        disabled={true || !data?.userProfile?.fullAccess}
+        isCatalystRequired
+        disabled={true || !data?.userProfile?.catalyst}
         icon={faUserGroup}
         text={t('manage.questionPool.createGroupTask')}
         onClick={() => {
