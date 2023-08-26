@@ -1,9 +1,7 @@
 import Link from '@docusaurus/Link'
+import MainStyles from '@docusaurus/theme-classic/lib/theme/DocRoot/Layout/Main/styles.module.css'
 import SidebarStyles from '@docusaurus/theme-classic/lib/theme/DocRoot/Layout/Sidebar/styles.module.css'
-import {
-  default as DocPageStyles,
-  default as MainStyles,
-} from '@docusaurus/theme-classic/lib/theme/DocRoot/Layout/styles.module.css'
+import DocPageStyles from '@docusaurus/theme-classic/lib/theme/DocRoot/Layout/styles.module.css'
 import { ThemeClassNames } from '@docusaurus/theme-common'
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
