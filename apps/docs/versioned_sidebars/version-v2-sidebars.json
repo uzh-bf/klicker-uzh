@@ -1,13 +1,7 @@
 {
-  "usecases": [
-    "use_cases/live_qa",
-    "use_cases/real_time_feedback"
-  ],
+  "usecases": ["use_cases/live_qa", "use_cases/real_time_feedback"],
   "docs": {
-    "Introduction": [
-      "introduction/getting_started",
-      "introduction/concepts"
-    ],
+    "GettingStarted": ["getting_started/welcome", "getting_started/concepts"],
     "Tutorial": [
       "basics/question_pool",
       "basics/question_create",
@@ -42,8 +36,6 @@
       "contributing/contributing_guidelines",
       "contributing/contributing_setup"
     ],
-    "FAQ": [
-      "faq/faq"
-    ]
+    "FAQ": ["faq/faq"]
   }
 }

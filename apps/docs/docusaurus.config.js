@@ -15,9 +15,6 @@ const config = {
   ],
   favicon: '/favicon.ico',
   customFields: {
-    title_index: 'Klicker',
-    subtitle_index: 'UZH',
-    users: [],
     repoUrl: 'https://github.com/uzh-bf/klicker-uzh',
   },
   onBrokenLinks: 'log',
@@ -30,8 +27,15 @@ const config = {
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/dev/apps/docs',
+          editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/v3/apps/docs',
           routeBasePath: '/',
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: 'v3',
+              path: '',
+            },
+          },
         },
         pages: {},
         sitemap: {},
@@ -120,12 +124,12 @@ const config = {
           position: 'left',
         },
         {
-          to: 'use_cases/live_qa',
+          to: 'use_cases',
           label: 'Use Cases',
           position: 'left',
         },
         {
-          to: 'introduction/getting_started',
+          to: 'getting_started/welcome',
           label: 'Getting Started',
           position: 'left',
         },
