@@ -9,7 +9,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import Dropzone from 'react-dropzone'
 
 interface Props {
@@ -47,11 +47,15 @@ function MediaLibrary({ onImageClick }: Props) {
 
   const t = useTranslations()
 
+  const [isUploading, setIsUploading] = useState(false)
+
   const [getFileUploadSAS] = useMutation(GetFileUploadSasDocument)
 
   const handleFileFieldChange = async (files: File[]) => {
     const file = files?.[0]
     if (!file) return
+
+    setIsUploading(true)
 
     const { data } = await getFileUploadSAS({
       variables: {
@@ -80,6 +84,8 @@ function MediaLibrary({ onImageClick }: Props) {
     })
 
     onImageClick(data.getFileUploadSas.uploadHref, file.name)
+
+    setIsUploading(false)
   }
 
   return (
@@ -103,7 +109,13 @@ function MediaLibrary({ onImageClick }: Props) {
             <div className="font-bold">
               {t('manage.questionForms.uploadImageHeader')}
             </div>
-            <p>{t('manage.questionForms.uploadImageDescription')}</p>
+            <div className="mt-2">
+              {isUploading ? (
+                <Loader />
+              ) : (
+                <p>{t('manage.questionForms.uploadImageDescription')}</p>
+              )}
+            </div>
             <input type="file" {...getInputProps()} />
           </div>
         </>
