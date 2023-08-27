@@ -53,13 +53,5 @@ query GetSingleQuestion($id: Int!) {
       id
       name
     }
-    attachments {
-      id
-      href
-      name
-      originalName
-      description
-      type
-    }
   }
 }

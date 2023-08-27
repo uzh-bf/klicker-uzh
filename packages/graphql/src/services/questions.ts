@@ -1,4 +1,12 @@
+import {
+  BlobSASPermissions,
+  BlobServiceClient,
+  StorageSharedKeyCredential,
+  generateBlobSASQueryParameters,
+} from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
+import { randomUUID } from 'crypto'
+import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { Question, Tag } from 'src/ops'
 import { ContextWithUser } from '../lib/context'
@@ -47,7 +55,6 @@ export async function getSingleQuestion(
           order: 'asc',
         },
       },
-      attachments: true,
     },
   })
 
@@ -70,7 +77,6 @@ export async function manipulateQuestion(
     hasSampleSolution,
     hasAnswerFeedbacks,
     pointsMultiplier,
-    attachments,
     tags,
     displayMode,
   }: {
@@ -103,7 +109,6 @@ export async function manipulateQuestion(
     hasSampleSolution?: boolean | null
     hasAnswerFeedbacks?: boolean | null
     pointsMultiplier?: number | null
-    attachments?: { id: string }[] | null
     tags?: string[] | null
     displayMode?: DB.QuestionDisplayMode | null
   },
@@ -124,7 +129,6 @@ export async function manipulateQuestion(
                 order: 'asc',
               },
             },
-            attachments: true,
           },
         })
       : undefined
@@ -168,7 +172,6 @@ export async function manipulateQuestion(
           }
         }),
       },
-      // TODO: create / connect attachments
     },
     update: {
       name: name ?? undefined,
@@ -202,7 +205,6 @@ export async function manipulateQuestion(
           }
         }),
       },
-      // TODO: create / connect / disconnect attachments
     },
     include: {
       tags: {
@@ -210,7 +212,6 @@ export async function manipulateQuestion(
           order: 'asc',
         },
       },
-      attachments: true,
     },
   })
 
@@ -254,27 +255,6 @@ export async function deleteQuestion(
   // })
 
   return question
-}
-
-export async function getUserTags(ctx: ContextWithUser) {
-  const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
-    include: {
-      tags: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
-    },
-  })
-
-  if (!user) {
-    return []
-  }
-
-  return user.tags
 }
 
 export async function editTag(
@@ -362,4 +342,76 @@ export async function toggleIsArchived(
     id,
     isArchived,
   }))
+}
+
+// map mime types of images to file extensions
+const FILE_EXTENSIONS: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/svg+xml': 'svg',
+  'image/webp': 'webp',
+  'image/tiff': 'tiff',
+  'image/bmp': 'bmp',
+}
+
+export async function getFileUploadSas(
+  { fileName, contentType }: { fileName: string; contentType: string },
+  ctx: ContextWithUser
+) {
+  const sharedKeyCredential = new StorageSharedKeyCredential(
+    process.env.BLOB_STORAGE_ACCOUNT_NAME as string,
+    process.env.BLOB_STORAGE_ACCESS_KEY as string
+  )
+
+  const storageAccount = `https://${
+    process.env.BLOB_STORAGE_ACCOUNT_NAME as string
+  }.blob.core.windows.net`
+
+  // if nonexistent, create a container for the user on blob storage
+  const client = new BlobServiceClient(storageAccount, sharedKeyCredential)
+  const containerClient = client.getContainerClient(ctx.user.sub)
+  if (!(await containerClient.exists())) {
+    client.createContainer(ctx.user.sub, {
+      access: 'blob',
+    })
+  }
+
+  const fileExtension = FILE_EXTENSIONS[contentType]
+
+  const id = randomUUID()
+  const blobName = `${id}.${fileExtension}`
+  const fileHref = `${storageAccount}/${ctx.user.sub}/${blobName}`
+
+  // generate file upload SAS with blob storage service
+  const permissions = BlobSASPermissions.parse('w')
+  const startDate = dayjs()
+  const expiryDate = startDate.add(15, 'minutes')
+  const queryParams = generateBlobSASQueryParameters(
+    {
+      containerName: ctx.user.sub,
+      permissions: permissions,
+      expiresOn: expiryDate.toDate(),
+      blobName,
+      contentType,
+    },
+    sharedKeyCredential
+  )
+
+  await ctx.prisma.mediaFile.create({
+    data: {
+      id,
+      ownerId: ctx.user.sub,
+      type: contentType,
+      name: fileName,
+      href: fileHref,
+    },
+  })
+
+  return {
+    uploadSasURL: `${storageAccount}?${queryParams}`,
+    uploadHref: fileHref,
+    containerName: ctx.user.sub,
+    fileName: blobName,
+  }
 }

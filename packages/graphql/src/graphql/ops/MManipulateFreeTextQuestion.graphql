@@ -7,7 +7,6 @@ mutation ManipulateFreeTextQuestion(
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
   $pointsMultiplier: Int
-  $attachments: [AttachmentInput!]
   $tags: [String!]
 ) {
   manipulateFreeTextQuestion(
@@ -20,7 +19,6 @@ mutation ManipulateFreeTextQuestion(
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
     pointsMultiplier: $pointsMultiplier
-    attachments: $attachments
     tags: $tags
   ) {
     id
@@ -70,14 +68,6 @@ mutation ManipulateFreeTextQuestion(
     tags {
       id
       name
-    }
-    attachments {
-      id
-      href
-      name
-      originalName
-      description
-      type
     }
   }
 }

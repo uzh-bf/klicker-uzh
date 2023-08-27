@@ -168,15 +168,12 @@ export const Question = builder.prismaObject('Question', {
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
 
-    attachments: t.relation('attachments'),
-
     tags: t.relation('tags'),
   }),
 })
 
 export interface IQuestionInstance extends DB.QuestionInstance {
   evaluation?: IInstanceEvaluation
-  attachments?: DB.Attachment[]
 }
 export const QuestionInstanceRef =
   builder.objectRef<IQuestionInstance>('QuestionInstance')
@@ -195,11 +192,6 @@ export const QuestionInstance = QuestionInstanceRef.implement({
       // FIXME: can we get rid of casting here?
       resolve: (q) => q.questionData as object as AllQuestionTypeData,
     }),
-
-    attachments: t.expose('attachments', {
-      type: [Attachment],
-      nullable: true,
-    }),
   }),
 })
 
@@ -208,41 +200,5 @@ export const Tag = builder.prismaObject('Tag', {
     id: t.exposeInt('id'),
     name: t.exposeString('name'),
     order: t.exposeInt('order'),
-  }),
-})
-
-export const AttachmentType = builder.enumType('AttachmentType', {
-  values: Object.values(DB.AttachmentType),
-})
-
-export const Attachment = builder.prismaObject('Attachment', {
-  fields: (t) => ({
-    id: t.exposeID('id'),
-
-    href: t.exposeString('href'),
-    name: t.exposeString('name'),
-    originalName: t.exposeString('originalName', { nullable: true }),
-    type: t.expose('type', {
-      type: AttachmentType,
-    }),
-    description: t.exposeString('description', { nullable: true }),
-  }),
-})
-
-export const AttachmentInstance = builder.prismaObject('AttachmentInstance', {
-  fields: (t) => ({
-    id: t.exposeID('id'),
-
-    href: t.exposeString('href'),
-    name: t.exposeString('name'),
-    originalName: t.exposeString('originalName', { nullable: true }),
-    type: t.exposeString('type'),
-    description: t.exposeString('description', { nullable: true }),
-  }),
-})
-
-export const AttachmentInput = builder.inputType('AttachmentInput', {
-  fields: (t) => ({
-    id: t.string({ required: true }),
   }),
 })

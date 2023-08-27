@@ -1,0 +1,8 @@
+query GetUserMediaFiles {
+  userMediaFiles {
+    id
+    name
+    type
+    href
+  }
+}

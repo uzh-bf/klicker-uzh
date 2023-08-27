@@ -22,7 +22,7 @@ import {
 } from './participant'
 import { Question, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
-import { User, UserLogin } from './user'
+import { MediaFile, User, UserLogin } from './user'
 
 export const Query = builder.queryType({
   fields(t) {
@@ -105,8 +105,30 @@ export const Query = builder.queryType({
       userTags: asUser.prismaField({
         nullable: true,
         type: [Tag],
-        resolve(_, __, ___, ctx) {
-          return QuestionService.getUserTags(ctx)
+        async resolve(_, __, ___, ctx) {
+          const user = await ctx.prisma.user.findUnique({
+            where: { id: ctx.user.sub },
+            include: { tags: { orderBy: { order: 'asc' } } },
+          })
+
+          if (!user) return []
+
+          return user.tags
+        },
+      }),
+
+      userMediaFiles: asUser.field({
+        nullable: true,
+        type: [MediaFile],
+        async resolve(_, __, ctx) {
+          const user = await ctx.prisma.user.findUnique({
+            where: { id: ctx.user.sub },
+            include: { mediaFiles: { orderBy: { createdAt: 'desc' } } },
+          })
+
+          if (!user) return []
+
+          return user.mediaFiles
         },
       }),
 
@@ -124,8 +146,14 @@ export const Query = builder.queryType({
       userProfile: asUser.field({
         nullable: true,
         type: User,
-        resolve(_, __, ctx) {
-          return AccountService.getUserProfile(ctx)
+        async resolve(_, __, ctx) {
+          const user = await ctx.prisma.user.findUnique({
+            where: { id: ctx.user.sub },
+          })
+
+          if (!user) return null
+
+          return user
         },
       }),
 
