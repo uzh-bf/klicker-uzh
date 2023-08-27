@@ -66,14 +66,6 @@ export const QUESTION_GROUPS: Record<string, string[]> = {
   WITH_STATISTICS: [QUESTION_TYPES.NUMERICAL],
 }
 
-export const QUESTION_TYPES_SHORT: Record<QuestionType, string> = {
-  SC: 'SC',
-  MC: 'MC',
-  FREE_TEXT: 'FT',
-  NUMERICAL: 'NR',
-  KPRIM: 'KP',
-}
-
 export const AVATAR_OPTIONS: Record<string, string[]> = {
   hair: ['long', 'bun', 'short', 'buzz', 'afro'],
   hairColor: ['blonde', 'black', 'brown'],

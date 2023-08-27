@@ -17,10 +17,7 @@ import {
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import {
-  QUESTION_TYPES_SHORT,
-  SESSION_STATUS,
-} from '@klicker-uzh/shared-components/src/constants'
+import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import { Button, Collapsible, H3 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -236,7 +233,7 @@ function Session({ session }: SessionProps) {
                       </Ellipsis>
 
                       <div className="italic">
-                        ({QUESTION_TYPES_SHORT[instance.questionData.type]})
+                        ({t(`shared.${instance.questionData.type}.short`)})
                       </div>
                     </div>
                     <Ellipsis
