@@ -38,32 +38,24 @@ export const CHART_SOLUTION_COLORS = {
   incorrect: '#ff0000',
 }
 
-export const QUESTION_TYPES: Record<QuestionType, string> = {
-  FREE_TEXT: 'FREE_TEXT',
-  NUMERICAL: 'NUMERICAL',
-  MC: 'MC',
-  SC: 'SC',
-  KPRIM: 'KPRIM',
-}
-
 export const QUESTION_GROUPS: Record<string, string[]> = {
-  CHOICES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC, QUESTION_TYPES.KPRIM],
-  FREE_TEXT: [QUESTION_TYPES.FREE_TEXT],
-  NUMERICAL: [QUESTION_TYPES.NUMERICAL],
-  FREE: [QUESTION_TYPES.FREE_TEXT, QUESTION_TYPES.NUMERICAL],
+  CHOICES: [QuestionType.Sc, QuestionType.Mc, QuestionType.Kprim],
+  FREE_TEXT: [QuestionType.FreeText],
+  NUMERICAL: [QuestionType.Numerical],
+  FREE: [QuestionType.FreeText, QuestionType.Numerical],
   WITH_PERCENTAGES: [
-    QUESTION_TYPES.SC,
-    QUESTION_TYPES.MC,
-    QUESTION_TYPES.KPRIM,
-    QUESTION_TYPES.FREE_TEXT,
+    QuestionType.Sc,
+    QuestionType.Mc,
+    QuestionType.Kprim,
+    QuestionType.FreeText,
   ],
   WITH_POSSIBILITIES: [
-    QUESTION_TYPES.SC,
-    QUESTION_TYPES.MC,
-    QUESTION_TYPES.KPRIM,
-    QUESTION_TYPES.NUMERICAL,
+    QuestionType.Sc,
+    QuestionType.Mc,
+    QuestionType.Kprim,
+    QuestionType.Numerical,
   ],
-  WITH_STATISTICS: [QUESTION_TYPES.NUMERICAL],
+  WITH_STATISTICS: [QuestionType.Numerical],
 }
 
 export const AVATAR_OPTIONS: Record<string, string[]> = {
