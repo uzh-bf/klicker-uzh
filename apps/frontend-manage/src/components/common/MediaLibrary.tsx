@@ -49,10 +49,9 @@ function MediaLibrary({ onImageClick }: Props) {
 
   const [getFileUploadSAS] = useMutation(GetFileUploadSasDocument)
 
-  const handleFileFieldChange = async (files) => {
+  const handleFileFieldChange = async (files: File[]) => {
     const file = files?.[0]
     if (!file) return
-    console.log(file)
 
     const { data } = await getFileUploadSAS({
       variables: {
@@ -63,7 +62,7 @@ function MediaLibrary({ onImageClick }: Props) {
     if (!data?.getFileUploadSas) return
 
     const blobServiceClient = new BlobServiceClient(
-      data.getFileUploadSas.uploadURL
+      data.getFileUploadSas.uploadSasURL
     )
     const containerClient = blobServiceClient.getContainerClient(
       data.getFileUploadSas.containerName
@@ -79,6 +78,8 @@ function MediaLibrary({ onImageClick }: Props) {
     client.refetchQueries({
       include: ['GetUserMediaFiles'],
     })
+
+    onImageClick(data.getFileUploadSas.uploadHref, file.name)
   }
 
   return (

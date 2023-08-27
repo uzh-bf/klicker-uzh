@@ -371,7 +371,7 @@ export async function getFileUploadSas(
   // if nonexistent, create a container for the user on blob storage
   const client = new BlobServiceClient(storageAccount, sharedKeyCredential)
   const containerClient = client.getContainerClient(ctx.user.sub)
-  if (!containerClient.exists()) {
+  if (!(await containerClient.exists())) {
     client.createContainer(ctx.user.sub, {
       access: 'blob',
     })
@@ -409,7 +409,8 @@ export async function getFileUploadSas(
   })
 
   return {
-    uploadURL: `${storageAccount}?${queryParams}`,
+    uploadSasURL: `${storageAccount}?${queryParams}`,
+    uploadHref: fileHref,
     containerName: ctx.user.sub,
     fileName: blobName,
   }

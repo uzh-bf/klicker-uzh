@@ -68,7 +68,8 @@ export const MediaFile = MediaFileRef.implement({
 })
 
 export interface IFileUploadSAS {
-  uploadURL: string
+  uploadSasURL: string
+  uploadHref: string
   containerName: string
   fileName: string
 }
@@ -76,7 +77,8 @@ export const FileUploadSASRef =
   builder.objectRef<IFileUploadSAS>('FileUploadSAS')
 export const FileUploadSAS = FileUploadSASRef.implement({
   fields: (t) => ({
-    uploadURL: t.exposeString('uploadURL'),
+    uploadSasURL: t.exposeString('uploadSasURL'),
+    uploadHref: t.exposeString('uploadHref'),
     containerName: t.exposeString('containerName'),
     fileName: t.exposeString('fileName'),
   }),

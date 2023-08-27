@@ -215,11 +215,6 @@ function ContentInput({
                 format="paragraph"
                 onClick={(e: any) => {
                   setIsImageDropzoneOpen((prev) => !prev)
-                  // e.preventDefault()
-                  // Transforms.insertText(
-                  //   editor,
-                  //   '![University of Zurich](https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Lichthof_Uzh.jpg/1920px-Lichthof_Uzh.jpg)'
-                  // )
                 }}
               >
                 <div className="ml-1 mt-0.5">

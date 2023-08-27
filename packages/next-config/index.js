@@ -29,6 +29,7 @@ function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
       domains: [
         '127.0.0.1',
         'tc-klicker-prod.s3.amazonaws.com',
+        'klickeruzhdevimages.blob.core.windows.net',
         'klickeruzhprodimages.blob.core.windows.net',
         S3_HOSTNAME,
       ],
@@ -38,6 +39,12 @@ function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
           hostname: 'tc-klicker-prod.s3.amazonaws.com',
           port: '443',
           pathname: '/images/**',
+        },
+        {
+          protocol: 'https',
+          hostname: 'klickeruzhdevimages.blob.core.windows.net',
+          port: '443',
+          pathname: '/**',
         },
         {
           protocol: 'https',
