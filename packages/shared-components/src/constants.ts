@@ -67,37 +67,29 @@ export const AVATAR_OPTIONS: Record<string, string[]> = {
   // body: ['breasts', 'chest'],
 }
 
-export const TYPES_SHORT: Record<QuestionType, string> = {
-  NUMERICAL: 'NR',
-  FREE_TEXT: 'FT',
-  MC: 'MC',
-  SC: 'SC',
-  KPRIM: 'KP',
-}
-
 export const ACTIVE_CHART_TYPES: Record<
-  string,
+  QuestionType,
   { label: string; value: string }[]
 > = {
-  FREE_TEXT: [
+  [QuestionType.FreeText]: [
     { label: 'manage.evaluation.table', value: 'table' },
     { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
   ],
-  NUMERICAL: [
+  [QuestionType.Numerical]: [
     { label: 'manage.evaluation.histogram', value: 'histogram' },
     { label: 'manage.evaluation.table', value: 'table' },
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
   ],
-  SC: [
+  [QuestionType.Sc]: [
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],
-  MC: [
+  [QuestionType.Mc]: [
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],
-  KPRIM: [
+  [QuestionType.Kprim]: [
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],
@@ -112,12 +104,6 @@ export const STATISTICS_ORDER: string[] = [
   'q3',
   'sd',
 ]
-
-export const LEARNING_ELEMENT_ORDERS: Record<string, string> = {
-  SEQUENTIAL: 'Sequenziell',
-  SHUFFLED: 'Zufällig',
-  LAST_RESPONSE: 'Letzte Antwort zuletzt',
-}
 
 export const PRESET_COURSE_COLORS = [
   '#262FAD',
