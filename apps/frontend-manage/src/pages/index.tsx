@@ -36,6 +36,7 @@ import {
   Select,
   TextField,
   Tooltip,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
@@ -105,6 +106,8 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
 
 function SuspensedFirstLoginModal() {
   const [firstLogin, setFirstLogin] = useState(false)
+  const [showGenericError, setShowGenericError] = useState(false)
+
   const { data } = useSuspenseQuery(UserProfileDocument)
   const [changeInitialSettings] = useMutation(ChangeInitialSettingsDocument)
   const t = useTranslations()
@@ -145,6 +148,7 @@ function SuspensedFirstLoginModal() {
             locale: data.userProfile.locale,
           }}
           onSubmit={async (values, { setSubmitting, setErrors }) => {
+            setShowGenericError(false)
             setSubmitting(true)
 
             const result = await changeInitialSettings({
@@ -155,7 +159,7 @@ function SuspensedFirstLoginModal() {
             })
 
             if (!result) {
-              // TODO show system error - retry later or again
+              setShowGenericError(true)
             } else if (
               result.data?.changeInitialSettings?.shortname !== values.shortname
             ) {
@@ -171,23 +175,30 @@ function SuspensedFirstLoginModal() {
         >
           {({ isValid, isSubmitting }) => (
             <Form>
-              <div className="flex flex-col md:flex-row gap-2 md:mb-6">
-                <FormikTextField
-                  label={t('shared.generic.shortname')}
-                  name="shortname"
-                  className={{ root: 'w-full md:w-1/2' }}
-                  required
-                />
-                <FormikSelectField
-                  label={t('shared.generic.language')}
-                  name="locale"
-                  items={[
-                    { label: t('shared.generic.english'), value: 'en' },
-                    { label: t('shared.generic.german'), value: 'de' },
-                  ]}
-                  className={{ root: 'w-full md:w-1/2' }}
-                  required
-                />
+              <div className="md:mb-5 mb-1">
+                <div className="flex flex-col md:flex-row gap-2 mb-2">
+                  <FormikTextField
+                    label={t('shared.generic.shortname')}
+                    name="shortname"
+                    className={{ root: 'w-full md:w-1/2' }}
+                    required
+                  />
+                  <FormikSelectField
+                    label={t('shared.generic.language')}
+                    name="locale"
+                    items={[
+                      { label: t('shared.generic.english'), value: 'en' },
+                      { label: t('shared.generic.german'), value: 'de' },
+                    ]}
+                    className={{ root: 'w-full md:w-1/2' }}
+                    required
+                  />
+                </div>
+                {showGenericError && (
+                  <UserNotification type="error">
+                    {t('shared.generic.systemError')}
+                  </UserNotification>
+                )}
               </div>
               <div className="mb-2">{t('manage.firstLogin.watchVideo')}</div>
               <iframe
