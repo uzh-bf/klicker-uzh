@@ -14,6 +14,9 @@ data:
   REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
   REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
   BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
+  LISTMONK_URL: {{ .Values.listmonk.url | quote }}
+  LISTMONK_USER: {{ .Values.listmonk.username | quote }}
+  MIGRATION_SERVICE_BUS_QUEUE_NAME: {{ .Values.migration.serviceBus.queueName | quote }}
   {{- if .Values.backendGraphql.redisCache.tls }}
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
   {{ end }}
