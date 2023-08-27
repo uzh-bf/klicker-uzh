@@ -30,7 +30,7 @@ jobs:
           version: 8.6.12
           run_install: |
             - recursive: true
-              args: [--frozen-lockfile, --strict-peer-dependencies, --shamefully-hoist, --filter, @klicker-uzh/func-response-processor]
+              args: [--frozen-lockfile, --strict-peer-dependencies, --shamefully-hoist, '--filter @klicker-uzh/func-response-processor']
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
