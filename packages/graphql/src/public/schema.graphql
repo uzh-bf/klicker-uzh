@@ -845,6 +845,7 @@ type User {
   catalyst: Boolean!
   catalystTier: String
   email: String!
+  firstLogin: Boolean!
   id: ID!
   locale: LocaleType!
   loginToken: String

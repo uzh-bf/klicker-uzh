@@ -8,6 +8,7 @@ import {
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
 import { Suspense, useEffect, useMemo, useState } from 'react'
+import * as Yup from 'yup'
 import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
 
 import {
@@ -27,10 +28,15 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   Checkbox,
+  FormikSelectField,
+  FormikTextField,
+  H1,
+  Modal,
   Select,
   TextField,
   Tooltip,
 } from '@uzh-bf/design-system'
+import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
@@ -93,6 +99,97 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         data={{ cy: 'create-group-task' }}
       />
     </div>
+  )
+}
+
+function SuspensedFirstLoginModal() {
+  const [firstLogin, setFirstLogin] = useState(false)
+  const { data } = useSuspenseQuery(UserProfileDocument)
+  const t = useTranslations()
+
+  useEffect(() => {
+    if (data?.userProfile?.firstLogin) {
+      setFirstLogin(true)
+    }
+  }, [data.userProfile])
+
+  if (!firstLogin) {
+    return null
+  }
+
+  return (
+    <Modal
+      open={firstLogin}
+      onClose={() => null}
+      hideCloseButton
+      className={{ content: 'w-full sm:w-3/4 md:w-2/3' }}
+    >
+      <H1 className={{ root: 'text-4xl' }}>{t('manage.firstLogin.welcome')}</H1>
+      <div className="mb-2">{t('manage.firstLogin.makeFirstSettings')}</div>
+      <Formik
+        validationSchema={Yup.object().shape({
+          shortname: Yup.string()
+            .required(t('manage.settings.shortnameRequired'))
+            .min(5, t('manage.settings.shortnameMin'))
+            .max(8, t('manage.settings.shortnameMax'))
+            .matches(
+              /^[a-zA-Z0-9]*$/,
+              t('manage.settings.shortnameAlphanumeric')
+            ),
+        })}
+        initialValues={{
+          shortname: data.userProfile?.shortname,
+          locale: data.userProfile?.locale,
+        }}
+        onSubmit={(values, { setSubmitting, setErrors }) => {
+          setSubmitting(true)
+          console.log(values)
+          setSubmitting(false)
+        }}
+      >
+        {({ isSubmitting }) => (
+          <Form>
+            <div className="flex flex-col md:flex-row gap-2 md:mb-6">
+              <FormikTextField
+                label={t('shared.generic.shortname')}
+                name="shortname"
+                className={{ root: 'w-full md:w-1/2' }}
+                required
+              />
+              <FormikSelectField
+                label={t('shared.generic.language')}
+                name="locale"
+                items={[
+                  { label: t('shared.generic.english'), value: 'en' },
+                  { label: t('shared.generic.german'), value: 'de' },
+                ]}
+                className={{ root: 'w-full md:w-1/2' }}
+                required
+              />
+            </div>
+            <div className="mb-2">{t('manage.firstLogin.watchVideo')}</div>
+            <iframe
+              id="kmsembed-0_q6tfn51u"
+              src="https://uzh.mediaspace.cast.switch.ch/embed/secure/iframe/entryId/0_q6tfn51u/uiConfId/23448425/st/0"
+              className="kmsembed mx-auto rounded-xl w-[90%] h-[25rem]"
+              allowFullScreen
+              allow="autoplay *; fullscreen *; encrypted-media *"
+              referrerPolicy="no-referrer-when-downgrade"
+              sandbox="allow-downloads allow-forms allow-same-origin allow-scripts allow-top-navigation allow-pointer-lock allow-popups allow-modals allow-orientation-lock allow-popups-to-escape-sandbox allow-presentation allow-top-navigation-by-user-activation"
+              title="KlickerUZH - Core Concepts"
+            />
+            <Button
+              className={{
+                root: 'mt-4 w-32 justify-center float-right bg-primary-80 text-white',
+              }}
+              type="submit"
+            >
+              {isSubmitting ? <Loader /> : t('shared.generic.save')}
+            </Button>
+          </Form>
+        )}
+      </Formik>
+    </Modal>
   )
 }
 
@@ -429,6 +526,9 @@ function Index() {
           mode={QuestionEditModal.Mode.CREATE}
         />
       )}
+      <Suspense fallback={<div />}>
+        <SuspensedFirstLoginModal />
+      </Suspense>
     </Layout>
   )
 }

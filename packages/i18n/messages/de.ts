@@ -133,6 +133,7 @@ export default {
       respond: 'Antworten',
       responses: 'Antworten',
       ok: 'OK',
+      language: 'Sprache',
       english: 'Englisch',
       german: 'Deutsch',
     },
@@ -552,6 +553,13 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Installieren Sie die KlickerUZH Manage-App auf Ihrem Handy, um gewisse Funktionen für Dozierenden jederzeit nutzen zu können.',
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Manage-App auf Ihrem Handy zu installieren.",
+    },
+    firstLogin: {
+      welcome: 'Willkommen beim KlickerUZH!',
+      makeFirstSettings:
+        'Da Sie KlickerUZH v3.0 zum ersten Mal nutzen, möchten wir Ihnen gerne helfen, einige wichtige Einstellungen gleich zu Beginn vorzunehmen, damit Sie so effizient wie möglich starten können. Dazu gehören Ihre bevorzugte Sprache sowie der Kurzname, der mit diesem Konto verknüpft ist. Beides kann jederzeit in den Benutzereinstellungen erneut geändert werden.',
+      watchVideo:
+        'Bitte nehmen Sie sich die Zeit, sich das folgende Einführungsvideo anzusehen, welches alle Kernkonzepte von KlickerUZH v3.0 und seine wichtigsten Funktionen abdeckt. Möchten Sie diesen Schritt überspringen, speichern Sie Ihre Einstellungen einfach mit dem Button unterhalb des Videos.',
     },
     settings: {
       userSettings: 'Benutzereinstellungen',
