@@ -1,4 +1,4 @@
-import { InstanceResult } from '@klicker-uzh/graphql/dist/ops'
+import { InstanceResult, QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import { ACTIVE_CHART_TYPES } from '@klicker-uzh/shared-components/src/constants'
 import { useEffect } from 'react'
 
@@ -43,12 +43,14 @@ function useEvaluationInitialization({
       if (currInstance) setCurrentInstance(currInstance)
 
       const possibleChartTypes = ACTIVE_CHART_TYPES[
-        currInstance?.questionData?.type || 0
+        currInstance?.questionData?.type || QuestionType.Sc
       ].map((type) => type.value)
 
       if (!possibleChartTypes.includes(chartType)) {
         setChartType(
-          ACTIVE_CHART_TYPES[currInstance?.questionData?.type || 0][0].value
+          ACTIVE_CHART_TYPES[
+            currInstance?.questionData?.type || QuestionType.Sc
+          ][0].value
         )
       }
     } else if (
