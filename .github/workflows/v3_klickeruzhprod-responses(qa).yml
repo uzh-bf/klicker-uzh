@@ -15,7 +15,7 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v2
@@ -30,15 +30,14 @@ jobs:
           version: 8.6.12
           run_install: |
             - recursive: true
-              args: [--frozen-lockfile, --strict-peer-dependencies]
+              args: [--frozen-lockfile, --strict-peer-dependencies, --shamefully-hoist, --filter, @klicker-uzh/func-incoming-responses]
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          echo 'config node-linker=hoisted' > .npmrc
           pnpm run build --scope @klicker-uzh/func-incoming-responses
           pnpm prune --prod --config.ignore-scripts=true
-          xcopy node_modules ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/node_modules /s /e /y /i
+          cp -Rf node_modules ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/node_modules
 
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
