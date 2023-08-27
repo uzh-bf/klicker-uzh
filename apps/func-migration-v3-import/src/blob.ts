@@ -1,24 +1,18 @@
 import { InvocationContext } from '@azure/functions'
-import { BlobServiceClient, ContainerClient } from '@azure/storage-blob'
+import { BlobServiceClient } from '@azure/storage-blob'
 
-let blobClient: ContainerClient
+async function getBlobClient(context: InvocationContext, userId: string) {
+  const blobServiceClient = new BlobServiceClient(
+    process.env.MIGRATION_BLOB_IMPORT_IMAGES_CONNECTION_STRING as string
+  )
 
-async function getBlobClient(context: InvocationContext) {
-  if (!blobClient) {
-    try {
-      const blobServiceClient = new BlobServiceClient(
-        process.env.MIGRATION_BLOB_IMPORT_IMAGES_CONNECTION_STRING as string
-      )
+  const containerClient = blobServiceClient.getContainerClient(userId)
 
-      blobClient = blobServiceClient.getContainerClient(
-        process.env.MIGRATION_BLOB_IMPORT_STORAGE_PATH as string
-      )
-    } catch (e) {
-      context.error('Something went wrong while creating a blob client: ', e)
-    }
+  if (!(await containerClient.exists())) {
+    await containerClient.create()
   }
 
-  return blobClient
+  return containerClient
 }
 
 export default getBlobClient

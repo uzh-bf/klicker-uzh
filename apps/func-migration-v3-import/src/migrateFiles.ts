@@ -1,16 +1,19 @@
 import { InvocationContext } from '@azure/functions'
+import { PrismaClient, User } from '@klicker-uzh/prisma'
 import axios from 'axios'
+import { randomUUID } from 'crypto'
 import getBlobClient from './blob'
 import { sendTeamsNotifications } from './utils'
 
 export const migrateFiles = async (
+  prisma: PrismaClient,
   files: any,
   context: InvocationContext,
-  user
+  user: User
 ) => {
   try {
     let mappedFileURLs: Record<string, Record<string, string>> = {}
-    const blobClient = await getBlobClient(context)
+    const blobClient = await getBlobClient(context, user.id)
 
     for (const file of files) {
       // download file with public link
@@ -20,16 +23,23 @@ export const migrateFiles = async (
       )
 
       // upload file to azure blob storage
-      // TODO: discuss if we want to use the original file name or the uuid --> original file name overwrites if not unique
-      // TODO: how to handle newly added files (not via migration)?
-      const blockBlobClient = blobClient.getBlockBlobClient(file.name)
+      const id = randomUUID()
+      const extension = file.originalName.split('.').pop()
+      const blockBlobClient = blobClient.getBlockBlobClient(
+        `${id}.${extension}`
+      )
 
       await blockBlobClient.uploadData(response.data, {
         blockSize: 4 * 1024 * 1024, // 4MB block size
       })
 
+      // TODO: add files to media library
+      // TODO: think about more efficient promise.allSettled or transaction
+      // await prisma.
+
       const publicUrl = blockBlobClient.url.split('?')[0]
       mappedFileURLs[file._id] = {
+        id,
         url: publicUrl,
         originalName: file.originalName,
       }

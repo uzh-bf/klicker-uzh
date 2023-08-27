@@ -54,7 +54,13 @@ const blobTrigger: StorageBlobHandler = async function (
     let mappedQuestionInstancesIds: Record<string, number> = {}
     let mappedSessionIds: Record<string, string> = {}
 
-    mappedFileURLs = await migrateFiles(parsedContent.files, context, user)
+    mappedFileURLs = await migrateFiles(
+      prisma,
+      parsedContent.files,
+      context,
+      user
+    )
+
     // context.log('mappedFileURLs: ', mappedFileURLs)
 
     const batchSize = 50
