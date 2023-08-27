@@ -1,12 +1,12 @@
 {
-  "azureFunctions.deploySubpath": "apps/backend-responses",
+  "azureFunctions.deploySubpath": "apps/func-migration-v2-export",
   "azureFunctions.postDeployTask": "npm install (serverless)",
   "azureFunctions.projectLanguage": "TypeScript",
   "azureFunctions.projectLanguageModel": 4,
   "azureFunctions.projectRuntime": "~4",
   "debug.internalConsoleOptions": "neverOpen",
   "azureFunctions.preDeployTask": "npm prune (serverless)",
-  "azureFunctions.projectSubpath": "apps/backend-responses",
+  "azureFunctions.projectSubpath": "apps/func-migration-v2-export",
   "githubPullRequests.ignoredPullRequestBranches": ["v3"],
   "editor.formatOnSave": true,
   "sonarlint.connectedMode.project": {

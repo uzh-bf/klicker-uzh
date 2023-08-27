@@ -39,6 +39,5 @@ jobs:
         id: fa
         with:
           app-name: 'klickeruzhprod-responses'
-          slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0119F976602A404FB7A34036973BB491 }}

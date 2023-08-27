@@ -13,6 +13,24 @@ releases:
     values:
       - values.yaml
       - appSecret: '{{ requiredEnv "APP_SECRET" }}'
+
+        blobStorage:
+          accountName: '{{ requiredEnv "BLOB_STORAGE_ACCOUNT_NAME" }}'
+          accessKey: '{{ requiredEnv "BLOB_STORAGE_ACCESS_KEY" }}'
+
+        migration:
+          secret: '{{ requiredEnv "MIGRATION_SECRET" }}'
+          serviceBus:
+            connectionString: '{{ requiredEnv "MIGRATION_SERVICE_BUS_CONNECTION_STRING" }}'
+            queueName: '{{ requiredEnv "MIGRATION_SERVICE_BUS_QUEUE_NAME" }}'
+
+        listmonk:
+          url: '{{ requiredEnv "LISTMONK_URL" }}'
+          username: '{{ requiredEnv "LISTMONK_USER" }}'
+          password: '{{ requiredEnv "LISTMONK_PASS" }}'
+          templates:
+            migrationRequest: '{{ requiredEnv "LISTMONK_TEMPLATE_MIGRATION_REQUEST" }}'
+
         cron:
           token: '{{ requiredEnv "CRON_TOKEN" }}'
 
@@ -25,7 +43,6 @@ releases:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
         frontendPWA:
-          replicaCount: 1
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
@@ -33,7 +50,6 @@ releases:
           sentryDSN: '{{ env "SENTRY_DSN_PWA" }}'
 
         frontendManage:
-          replicaCount: 1
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
@@ -41,7 +57,6 @@ releases:
           sentryDSN: '{{ env "SENTRY_DSN_MANAGE" }}'
 
         frontendControl:
-          replicaCount: 1
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
@@ -50,7 +65,6 @@ releases:
 
 
         backendGraphql:
-          replicaCount: 1
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 

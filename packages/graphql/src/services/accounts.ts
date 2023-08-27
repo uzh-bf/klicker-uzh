@@ -85,16 +85,6 @@ export async function logoutUser(_: any, ctx: ContextWithUser) {
   return ctx.user.sub
 }
 
-export async function getUserProfile(ctx: ContextWithUser) {
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.sub },
-  })
-
-  if (!user) return null
-
-  return user
-}
-
 export function createParticipantToken(participantId: string) {
   return JWT.sign(
     {

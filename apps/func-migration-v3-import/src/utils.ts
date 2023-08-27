@@ -59,12 +59,13 @@ export async function sendEmailMigrationNotification(
     }
   }
 
-  //TODO: remove hardcoded template ids
   return axios.post(
     `${process.env.LISTMONK_URL}/api/tx`,
     {
       subscriber_emails: [email],
-      template_id: success ? 6 : 7,
+      template_id: success
+        ? Number(process.env.LISTMONK_TEMPLATE_MIGRATION_SUCCESS)
+        : Number(process.env.LISTMONK_TEMPLATE_MIGRATION_FAILED),
     },
     { auth: LISTMONK_AUTH }
   )

@@ -39,6 +39,5 @@ jobs:
         id: fa
         with:
           app-name: 'klickeruzhprod-migration-export'
-          slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_1286111D936B447EA24EDB53EE84C138 }}

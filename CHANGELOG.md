@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.19...v3.0.0-rc.20) (2023-08-27)
+
+## [3.0.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.18...v3.0.0-rc.19) (2023-08-27)
+
+
+### Bug Fixes
+
+* **deploy:** add missing LISTMONK_TEMPLATE_MIGRATION_REQUEST ([2950db2](https://github.com/uzh-bf/klicker-uzh/commit/2950db2d260ac19c8eb6282b2e6e85de75a77940))
+* **deploy:** update listmonk environment variable naming ([a72edd4](https://github.com/uzh-bf/klicker-uzh/commit/a72edd40d9055eeef2c2420da60a3dfdb08a1f4d))
+
+## [3.0.0-rc.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.17...v3.0.0-rc.18) (2023-08-27)
+
+
+### Features
+
+* image uploads and media library ([#3818](https://github.com/uzh-bf/klicker-uzh/issues/3818)) ([017cbe9](https://github.com/uzh-bf/klicker-uzh/commit/017cbe9656c761977510c7fdafd59aca7daeeb94))
+
+
+### Bug Fixes
+
+* **packages/prisma:** remove the unused password column on the User model (moved to UserLogin) ([250823e](https://github.com/uzh-bf/klicker-uzh/commit/250823e7f8635a7bb9e800d537624febf135fe09))
+
+
+### Enhancements
+
+* **migration:** add files migration to media library ([#3819](https://github.com/uzh-bf/klicker-uzh/issues/3819)) ([e0e0b1c](https://github.com/uzh-bf/klicker-uzh/commit/e0e0b1c0c8b265b9985abadd83c605c3b86d797a))
+
 ## [3.0.0-rc.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.16...v3.0.0-rc.17) (2023-08-26)
 
 
