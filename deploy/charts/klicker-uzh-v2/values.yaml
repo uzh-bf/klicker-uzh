@@ -30,6 +30,8 @@ listmonk:
   url: ''
   username: ''
   password: ''
+  templates:
+    migrationRequest: -1
 
 vapid:
   publicKey: ''

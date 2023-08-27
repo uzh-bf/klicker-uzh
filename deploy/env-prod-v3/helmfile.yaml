@@ -28,6 +28,8 @@ releases:
           url: '{{ requiredEnv "LISTMONK_URL" }}'
           username: '{{ requiredEnv "LISTMONK_USER" }}'
           password: '{{ requiredEnv "LISTMONK_PASS" }}'
+          templates:
+            migrationRequest: '{{ requiredEnv "LISTMONK_TEMPLATE_MIGRATION_REQUEST" }}'
 
         cron:
           token: '{{ requiredEnv "CRON_TOKEN" }}'
