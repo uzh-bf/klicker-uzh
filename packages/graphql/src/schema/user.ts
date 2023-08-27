@@ -13,6 +13,7 @@ export interface IUser extends DB.User {
   catalystInstitutional: boolean
   catalystIndividual: boolean
   catalystTier: string | null
+  mediaFiles?: IMediaFile[]
 }
 export const UserRef = builder.objectRef<IUser>('User')
 export const User = UserRef.implement({
@@ -32,6 +33,11 @@ export const User = UserRef.implement({
       resolve: (user) => user.catalystInstitutional || user.catalystIndividual,
     }),
     catalystTier: t.exposeString('catalystTier', { nullable: true }),
+
+    mediaFiles: t.expose('mediaFiles', {
+      type: [MediaFileRef],
+      nullable: true,
+    }),
   }),
 })
 
@@ -46,5 +52,32 @@ export const UserLogin = UserLoginRef.implement({
     user: t.expose('user', { type: UserRef }),
     scope: t.expose('scope', { type: UserLoginScope }),
     lastLoginAt: t.expose('lastLoginAt', { type: 'Date', nullable: true }),
+  }),
+})
+
+export interface IMediaFile extends DB.MediaFile {}
+export const MediaFileRef = builder.objectRef<IMediaFile>('MediaFile')
+export const MediaFile = MediaFileRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name'),
+    href: t.exposeString('href'),
+    type: t.exposeString('type'),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+  }),
+})
+
+export interface IFileUploadSAS {
+  uploadURL: string
+  containerName: string
+  fileName: string
+}
+export const FileUploadSASRef =
+  builder.objectRef<IFileUploadSAS>('FileUploadSAS')
+export const FileUploadSAS = FileUploadSASRef.implement({
+  fields: (t) => ({
+    uploadURL: t.exposeString('uploadURL'),
+    containerName: t.exposeString('containerName'),
+    fileName: t.exposeString('fileName'),
   }),
 })

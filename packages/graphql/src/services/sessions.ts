@@ -1,6 +1,5 @@
 import {
   AccessMode,
-  Attachment,
   ConfusionTimestep,
   Question,
   QuestionInstance,
@@ -28,7 +27,6 @@ export function processQuestionData(question: Question): AllQuestionTypeData {
     case QuestionType.KPRIM: {
       return {
         ...question,
-        attachments: null,
         options: question.options!.valueOf(),
       } as unknown as ChoicesQuestionData
     }
@@ -36,14 +34,12 @@ export function processQuestionData(question: Question): AllQuestionTypeData {
     case QuestionType.NUMERICAL: {
       return {
         ...question,
-        attachments: null,
       } as NumericalQuestionData
     }
 
     case QuestionType.FREE_TEXT: {
       return {
         ...question,
-        attachments: null,
       } as FreeTextQuestionData
     }
   }
@@ -83,18 +79,16 @@ async function getQuestionMap(blocks: BlockArgs[], ctx: ContextWithUser) {
       id: { in: Array.from(allQuestionsIds) },
       ownerId: ctx.user.sub,
     },
-    include: {
-      attachments: true,
-    },
   })
 
   if (questions.length !== allQuestionsIds.size) {
     throw new GraphQLError('Not all questions could be found')
   }
 
-  return questions.reduce<
-    Record<number, Question & { attachments: Attachment[] }>
-  >((acc, question) => ({ ...acc, [question.id]: question }), {})
+  return questions.reduce<Record<number, Question>>(
+    (acc, question) => ({ ...acc, [question.id]: question }),
+    {}
+  )
 }
 
 interface BlockArgs {
@@ -140,9 +134,7 @@ export async function createSession(
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]
               const processedQuestionData = processQuestionData(question)
-              const questionAttachmentInstances = question.attachments.map(
-                pick(['type', 'href', 'name', 'description', 'originalName'])
-              )
+
               return {
                 order: ix,
                 type: QuestionInstanceType.SESSION,
@@ -153,9 +145,6 @@ export async function createSession(
                 },
                 owner: {
                   connect: { id: ctx.user.sub },
-                },
-                attachments: {
-                  create: questionAttachmentInstances,
                 },
               }
             })
@@ -277,9 +266,7 @@ export async function editSession(
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]
               const processedQuestionData = processQuestionData(question)
-              const questionAttachmentInstances = question.attachments.map(
-                pick(['type', 'href', 'name', 'description', 'originalName'])
-              )
+
               return {
                 order: ix,
                 type: QuestionInstanceType.SESSION,
@@ -290,9 +277,6 @@ export async function editSession(
                 },
                 owner: {
                   connect: { id: ctx.user.sub },
-                },
-                attachments: {
-                  create: questionAttachmentInstances,
                 },
               }
             })
@@ -1034,9 +1018,6 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
           instances: {
             orderBy: {
               order: 'asc',
-            },
-            include: {
-              attachments: true,
             },
           },
         },

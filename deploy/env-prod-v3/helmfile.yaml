@@ -13,6 +13,11 @@ releases:
     values:
       - values.yaml
       - appSecret: '{{ requiredEnv "APP_SECRET" }}'
+
+        blobStorage:
+          accountName: '{{ requiredEnv "BLOB_STORAGE_ACCOUNT_NAME" }}'
+          accessKey: '{{ requiredEnv "BLOB_STORAGE_ACCESS_KEY" }}'
+
         cron:
           token: '{{ requiredEnv "CRON_TOKEN" }}'
 

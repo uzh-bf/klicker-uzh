@@ -6,37 +6,6 @@ type Achievement {
   name: String!
 }
 
-type Attachment {
-  description: String
-  href: String!
-  id: ID!
-  name: String!
-  originalName: String
-  type: AttachmentType!
-}
-
-input AttachmentInput {
-  id: String!
-}
-
-type AttachmentInstance {
-  description: String
-  href: String!
-  id: ID!
-  name: String!
-  originalName: String
-  type: String!
-}
-
-enum AttachmentType {
-  GIF
-  JPEG
-  LINK
-  PNG
-  SVG
-  WEBP
-}
-
 input AvatarSettingsInput {
   accessory: String!
   clothing: String!
@@ -169,6 +138,12 @@ type FeedbackResponse {
   id: Int!
   negativeReactions: Int!
   positiveReactions: Int!
+}
+
+type FileUploadSAS {
+  containerName: String!
+  fileName: String!
+  uploadURL: String!
 }
 
 type FreeTextQuestionData implements QuestionData {
@@ -366,6 +341,14 @@ enum LocaleType {
   en
 }
 
+type MediaFile {
+  createdAt: Date!
+  href: String!
+  id: ID!
+  name: String!
+  type: String!
+}
+
 type MicroSession {
   arePushNotificationsSent: Boolean!
   course: Course
@@ -423,6 +406,7 @@ type Mutation {
   endSession(id: String!): Session
   flagQuestion(content: String!, questionInstanceId: Int!): String
   generateLoginToken: User
+  getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): ParticipantGroup
@@ -433,9 +417,9 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(attachments: [AttachmentInput!], content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
-  manipulateFreeTextQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
-  manipulateNumericalQuestion(attachments: [AttachmentInput!], content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
+  manipulateChoicesQuestion(content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
+  manipulateFreeTextQuestion(content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
+  manipulateNumericalQuestion(content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -627,6 +611,7 @@ type Query {
   unassignedSessions: [Session!]
   userCourses: [Course!]
   userLogins: [UserLogin!]
+  userMediaFiles: [MediaFile!]
   userProfile: User
   userQuestions: [Question!]
   userRunningSessions: [Session!]
@@ -635,7 +620,6 @@ type Query {
 }
 
 type Question {
-  attachments: [Attachment!]!
   content: String!
   createdAt: Date!
   displayMode: QuestionDisplayMode!
@@ -677,7 +661,6 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  attachments: [Attachment!]
   evaluation: InstanceEvaluation
   id: Int!
   pointsMultiplier: Int!
@@ -865,6 +848,7 @@ type User {
   locale: LocaleType!
   loginToken: String
   loginTokenExpiresAt: Date
+  mediaFiles: [MediaFile!]
   shortname: String!
 }
 

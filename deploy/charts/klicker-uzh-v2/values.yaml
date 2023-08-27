@@ -16,6 +16,10 @@ notifications:
 eduId:
   clientSecret: ''
 
+blobStorage:
+  accountName: ''
+  accessKey: ''
+
 vapid:
   publicKey: ''
   privateKey: ''

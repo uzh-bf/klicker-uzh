@@ -1,0 +1,7 @@
+mutation GetFileUploadSas($fileName: String!, $contentType: String!) {
+  getFileUploadSas(fileName: $fileName, contentType: $contentType) {
+    uploadURL
+    containerName
+    fileName
+  }
+}

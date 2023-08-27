@@ -7,7 +7,6 @@ mutation ManipulateNumericalQuestion(
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
   $pointsMultiplier: Int
-  $attachments: [AttachmentInput!]
   $tags: [String!]
 ) {
   manipulateNumericalQuestion(
@@ -20,7 +19,6 @@ mutation ManipulateNumericalQuestion(
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
     pointsMultiplier: $pointsMultiplier
-    attachments: $attachments
     tags: $tags
   ) {
     id
@@ -73,14 +71,6 @@ mutation ManipulateNumericalQuestion(
     tags {
       id
       name
-    }
-    attachments {
-      id
-      href
-      name
-      originalName
-      description
-      type
     }
   }
 }

@@ -2,11 +2,11 @@ import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ChangeCourseDescriptionDocument } from '@klicker-uzh/graphql/dist/ops'
-import ContentInput from '@klicker-uzh/shared-components/src/ContentInput'
 import { Button } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import ContentInput from '../common/ContentInput'
 
 interface CourseDescriptionProps {
   courseId: string

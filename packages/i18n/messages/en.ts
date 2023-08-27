@@ -660,7 +660,6 @@ If multipliers are activated on the activities, these multipliers are applied to
       explanationTooltip:
         'Enter a generic explanation of your question here, which will be displayed to students in practice quizzes and microlearning regardless of their answer as an explanation of the correct solution.',
       explanationPlaceholder: 'Enter your explanation here...',
-      attachments: 'Attachments',
       answerOptions: 'Answer options',
       answerOption: 'Answer option',
       answerOptionsTooltip:
@@ -686,6 +685,10 @@ If multipliers are activated on the activities, these multipliers are applied to
       editElement: 'Edit {element}',
       cancelCreation: 'Cancel creation',
       cancelEditing: 'Cancel editing',
+      mediaLibrary: 'Media Library',
+      uploadImageHeader: 'Upload Media',
+      uploadImageDescription:
+        'Drag an image here to upload or click to open file explorer.',
     },
     sessionForms: {
       sessionName: 'Please enter a name for your quiz.',
@@ -814,8 +817,6 @@ If multipliers are activated on the activities, these multipliers are applied to
         'Please ensure that the following errors in the form are resolved before saving the question:',
       questionName: 'Please enter a name for the question.',
       questionContent: 'Please add some content to your question.',
-      attachmentURL: 'Please enter a valid URL for the attachment.',
-      attachmentName: 'Please enter a name for the attachment.',
       answerContent: 'Please add some content to your answer option.',
       feedbackContent: 'Please add some content to your answer feedback.',
       SCAnswersCorrect:

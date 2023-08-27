@@ -658,7 +658,6 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       explanationTooltip:
         'Geben Sie hier eine generische Erklärung zu Ihrer Frage ein, welche den Studierenden unabhängig von Ihrer Antwort in Lernelementen und Micro-Sessions als Erklärung der Lösung angezeigt wird.',
       explanationPlaceholder: 'Erklärung hier eingeben…',
-      attachments: 'Anhänge',
       answerOptions: 'Antwortmöglichkeiten',
       answerOption: 'Antwortmöglichkeit',
       answerOptionsTooltip:
@@ -684,6 +683,10 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       editElement: '{element} bearbeiten',
       cancelCreation: 'Erstellen abbrechen',
       cancelEditing: 'Bearbeiten abbrechen',
+      mediaLibrary: 'Medienbibliothek',
+      uploadImageHeader: 'Medien hinzufügen',
+      uploadImageDescription:
+        'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
     },
     sessionForms: {
       sessionName: 'Bitte geben Sie einen Namen für Ihre Session ein.',
@@ -816,8 +819,6 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Bitte stellen Sie sicher, dass die folgenden Fehler im Formular behoben sind, bevor die Frage gespeichert werden kann:',
       questionName: 'Geben Sie einen Namen für die Frage ein.',
       questionContent: 'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu.',
-      attachmentURL: 'Bitte geben Sie eine URL für den Anhang ein.',
-      attachmentName: 'Bitte geben Sie einen Namen für den Anhang ein.',
       answerContent:
         'Bitte fügen Sie einen Inhalt zu Ihrer Antwortoption hinzu.',
       feedbackContent:

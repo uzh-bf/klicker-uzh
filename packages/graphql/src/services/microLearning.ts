@@ -1,5 +1,4 @@
 import {
-  Attachment,
   MicroSessionStatus,
   Question,
   QuestionInstanceType,
@@ -19,9 +18,6 @@ export async function getQuestionMap(
       id: { in: questions },
       ownerId: ctx.user.sub,
     },
-    include: {
-      attachments: true,
-    },
   })
 
   const uniqueQuestions = new Set(dbQuestions.map((q) => q.id))
@@ -29,9 +25,10 @@ export async function getQuestionMap(
     throw new GraphQLError('Not all questions could be found')
   }
 
-  return dbQuestions.reduce<
-    Record<number, Question & { attachments: Attachment[] }>
-  >((acc, question) => ({ ...acc, [question.id]: question }), {})
+  return dbQuestions.reduce<Record<number, Question>>(
+    (acc, question) => ({ ...acc, [question.id]: question }),
+    {}
+  )
 }
 
 interface GetMicroSessionDataArgs {
@@ -196,9 +193,7 @@ export async function createMicroSession(
         create: questions.map((questionId, ix) => {
           const question = questionMap[questionId]
           const processedQuestionData = processQuestionData(question)
-          const questionAttachmentInstances = question.attachments.map(
-            pick(['type', 'href', 'name', 'description', 'originalName'])
-          )
+
           return {
             order: ix,
             type: QuestionInstanceType.MICRO_SESSION,
@@ -209,9 +204,6 @@ export async function createMicroSession(
             },
             owner: {
               connect: { id: ctx.user.sub },
-            },
-            attachments: {
-              create: questionAttachmentInstances,
             },
           }
         }),
@@ -311,9 +303,7 @@ export async function editMicroSession(
         create: questions.map((questionId, ix) => {
           const question = questionMap[questionId]
           const processedQuestionData = processQuestionData(question)
-          const questionAttachmentInstances = question.attachments.map(
-            pick(['type', 'href', 'name', 'description', 'originalName'])
-          )
+
           return {
             order: ix,
             type: QuestionInstanceType.MICRO_SESSION,
@@ -324,9 +314,6 @@ export async function editMicroSession(
             },
             owner: {
               connect: { id: ctx.user.sub },
-            },
-            attachments: {
-              create: questionAttachmentInstances,
             },
           }
         }),

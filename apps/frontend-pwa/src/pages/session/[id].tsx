@@ -190,7 +190,6 @@ function Index({ id }: Props) {
                   return {
                     ...question.questionData,
                     instanceId: question.id,
-                    attachments: question.attachments,
                   }
                 }) ?? []
               }
