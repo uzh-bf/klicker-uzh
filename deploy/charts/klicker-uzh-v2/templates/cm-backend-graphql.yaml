@@ -13,6 +13,7 @@ data:
   CRON_TOKEN: {{ .Values.cron.token | quote }}
   REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
   REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
+  BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
   {{- if .Values.backendGraphql.redisCache.tls }}
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
   {{ end }}

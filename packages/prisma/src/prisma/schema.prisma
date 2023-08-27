@@ -117,7 +117,7 @@ model User {
   accounts          Account[]
   courses           Course[]
   questions         Question[]
-  attachments       Attachment[]
+  mediaFiles        MediaFile[]
   tags              Tag[]
   questionInstances QuestionInstance[]
   sessions          LiveSession[]
@@ -129,52 +129,23 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+// ----- MEDIA LIBRARY -----
+model MediaFile {
+  id String @id @default(uuid()) @db.Uuid
+
+  href        String  @unique
+  name        String
+  type        String
+  description String?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // ----- QUESTION POOL -----
-
-enum AttachmentType {
-  PNG
-  JPEG
-  SVG
-  WEBP
-  GIF
-  LINK // embed videos, H5P, or similar
-}
-
-model Attachment {
-  id String @id @default(uuid()) @db.Uuid
-
-  href         String  @unique
-  name         String
-  originalName String?
-  description  String?
-
-  type AttachmentType
-
-  question   Question? @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  questionId Int?
-  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId    String    @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model AttachmentInstance {
-  id String @id @default(uuid()) @db.Uuid
-
-  href         String
-  name         String
-  originalName String?
-  description  String?
-
-  type AttachmentType
-
-  questionInstance   QuestionInstance? @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  questionInstanceId Int?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
 
 enum QuestionType {
   SC
@@ -208,9 +179,8 @@ model Question {
 
   type QuestionType
 
-  attachments Attachment[]
-  tags        Tag[]
-  instances   QuestionInstance[]
+  tags      Tag[]
+  instances QuestionInstance[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -271,7 +241,6 @@ model QuestionInstance {
   groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   groupActivityId String?        @db.Uuid
 
-  attachments  AttachmentInstance[]
   bookmarkedBy Participation[]
 
   question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)

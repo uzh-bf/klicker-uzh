@@ -1,5 +1,4 @@
 import {
-  Attachment,
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -26,7 +25,6 @@ interface QuestionAreaProps {
     type: QuestionType
     options: any
     instanceId: number
-    attachments?: Attachment[]
   }[]
   handleNewResponse: (type: string, instanceId: number, answer: any) => void
   sessionId: string

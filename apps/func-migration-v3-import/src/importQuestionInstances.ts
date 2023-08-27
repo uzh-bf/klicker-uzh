@@ -56,7 +56,6 @@ export const importQuestionInstances = async (
           if (question) {
             questionData = {
               ...question,
-              attachments: null,
             }
             questionId = question?.id
           }

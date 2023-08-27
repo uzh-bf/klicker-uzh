@@ -61,7 +61,6 @@ function EvaluationCollapsible({
             content={currentInstance.questionData?.content}
           />
         </Prose>
-        {/* // TODO: <div>ATTACHMENTS</div> */}
       </div>
       {showExtensibleButton && (
         <Button
