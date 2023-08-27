@@ -15,7 +15,7 @@ env:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v2
@@ -35,11 +35,10 @@ jobs:
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          # pnpm prune --prod --config.ignore-scripts=true
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          cp -LR node_modules tmp && rm -rf node_modules && mv tmp node_modules
-          popd
+          echo 'config node-linker=hoisted' > .npmrc
           pnpm run build --scope @klicker-uzh/func-migration-v3-import
+          pnpm prune --prod --config.ignore-scripts=true
+          xcopy node_modules ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/node_modules /s /e /y /i
 
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
