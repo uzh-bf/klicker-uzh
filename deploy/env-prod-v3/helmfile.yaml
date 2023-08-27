@@ -26,8 +26,8 @@ releases:
 
         listmonk:
           url: '{{ requiredEnv "LISTMONK_URL" }}'
-          username: '{{ requiredEnv "LISTMONK_USERNAME" }}'
-          password: '{{ requiredEnv "LISTMONK_PASSWORD" }}'
+          username: '{{ requiredEnv "LISTMONK_USER" }}'
+          password: '{{ requiredEnv "LISTMONK_PASS" }}'
 
         cron:
           token: '{{ requiredEnv "CRON_TOKEN" }}'
