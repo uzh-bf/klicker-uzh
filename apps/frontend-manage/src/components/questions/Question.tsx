@@ -3,8 +3,6 @@ import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 
-import { QUESTION_TYPES_SHORT } from '@klicker-uzh/shared-components/src/constants'
-
 // TODO: readd modals and tags
 // import QuestionDetailsModal from './QuestionDetailsModal'
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
@@ -222,7 +220,7 @@ function Question({
               <div>{t('manage.questionPool.confirmDeletion')}</div>
               <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
                 <H3>
-                  {title} ({QUESTION_TYPES_SHORT[type]})
+                  {title} ({t(`shared.${type}.short`)})
                 </H3>
                 <div>{content}</div>
               </div>
