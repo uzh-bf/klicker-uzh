@@ -592,6 +592,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       shortnameMax: 'The shortname must be at most 8 characters long.',
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
+      shortnameTaken: 'The shortname you have chosen is already taken.',
     },
     token: {
       pageName: 'Token Generation',

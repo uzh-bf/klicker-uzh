@@ -589,6 +589,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       shortnameMax: 'Der Kurzname darf maximal 8 Zeichen lang sein.',
       shortnameAlphanumeric:
         'Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.',
+      shortnameTaken: 'Dieser Kurzname ist bereits vergeben.',
     },
     token: {
       pageName: 'Token Generation',
