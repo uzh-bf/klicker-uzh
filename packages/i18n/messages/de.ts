@@ -7,26 +7,31 @@ export default {
       ftPlaceholder: 'Ihre Antwort...',
     },
     SC: {
+      short: 'SC',
       typeLabel: 'Single Choice (SC)',
       text: 'Bitte eine einzige Option auswählen.',
       richtext: 'Bitte <b>eine einzige</b> Option auswählen.',
     },
     MC: {
+      short: 'MC',
       typeLabel: 'Multiple Choice (MC)',
       text: 'Bitte eine oder mehrere Optionen auswählen.',
       richtext: 'Bitte <b>eine oder mehrere</b> Optionen auswählen.',
     },
     KPRIM: {
+      short: 'KP',
       typeLabel: 'Kprim (KP)',
       text: 'Beurteile die Aussagen auf ihre Richtigkeit.',
       richtext: 'Beurteile die Aussagen auf ihre <b>Richtigkeit</b>.',
     },
     FREE_TEXT: {
+      short: 'FT',
       typeLabel: 'Freitext (FT)',
       text: 'Bitte eine Antwort eingeben.',
       richtext: 'Bitte eine <b>Antwort</b> eingeben.',
     },
     NUMERICAL: {
+      short: 'NR',
       typeLabel: 'Numerisch (NR)',
       text: 'Bitte eine Zahl eingeben.',
       richtext: 'Bitte eine <b>Zahl</b> eingeben.',

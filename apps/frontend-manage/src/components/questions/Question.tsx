@@ -105,7 +105,7 @@ function Question({
                 onKeyDown={() => setIsModificationModalOpen(true)}
                 data-cy="question-title"
               >
-                {type} - {title}
+                {t(`shared.${type}.short`)} - {title}
               </a>
             </div>
 
