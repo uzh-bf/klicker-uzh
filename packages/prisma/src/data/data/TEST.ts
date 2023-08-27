@@ -1,21 +1,6 @@
 import Prisma from '../../../dist'
 import { LearningElementStatus } from '../../client'
-const { AttachmentType, QuestionType, SessionStatus, OrderType } = Prisma
-
-export const ATTACHMENTS = [
-  {
-    id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0b',
-    href: 'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.svg',
-    name: 'Test Attachment 1',
-    type: AttachmentType.SVG,
-  },
-  {
-    id: 'b0b9c0c0-0b0b-4b4b-0b0b-0b0b0b0b0b0c',
-    href: 'https://sos-ch-dk-2.exo.io/klicker-uzh-dev/avatars/41b98856a8c221db667cf066f34b931eff048c32.webp',
-    name: 'Test Attachment 2',
-    type: AttachmentType.WEBP,
-  },
-]
+const { QuestionType, SessionStatus, OrderType } = Prisma
 
 export const QUESTIONS = [
   {
