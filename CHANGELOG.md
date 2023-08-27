@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.18...v3.0.0-rc.19) (2023-08-27)
+
+
+### Bug Fixes
+
+* **deploy:** add missing LISTMONK_TEMPLATE_MIGRATION_REQUEST ([2950db2](https://github.com/uzh-bf/klicker-uzh/commit/2950db2d260ac19c8eb6282b2e6e85de75a77940))
+* **deploy:** update listmonk environment variable naming ([a72edd4](https://github.com/uzh-bf/klicker-uzh/commit/a72edd40d9055eeef2c2420da60a3dfdb08a1f4d))
+
 ## [3.0.0-rc.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.17...v3.0.0-rc.18) (2023-08-27)
 
 
