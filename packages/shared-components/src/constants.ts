@@ -1,13 +1,6 @@
-import { QuestionType, SessionStatus } from '@klicker-uzh/graphql/dist/ops'
+import { QuestionType } from '@klicker-uzh/graphql/dist/ops'
 
 export const SMALL_BAR_THRESHOLD: number = 0.05
-
-export const SESSION_STATUS: Record<SessionStatus, string> = {
-  PREPARED: 'PREPARED',
-  SCHEDULED: 'SCHEDULED',
-  RUNNING: 'RUNNING',
-  COMPLETED: 'COMPLETED',
-}
 
 export const CHART_TYPES: Record<string, string> = {
   BAR_CHART: 'BAR_CHART',

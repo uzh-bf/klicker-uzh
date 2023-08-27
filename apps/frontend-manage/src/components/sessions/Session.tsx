@@ -13,11 +13,11 @@ import {
   GetUserRunningSessionsDocument,
   GetUserSessionsDocument,
   SessionBlock,
+  SessionStatus,
   Session as SessionType,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import { Button, Collapsible, H3 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -120,7 +120,7 @@ function Session({ session }: SessionProps) {
                   </>
                 )}
 
-                {SESSION_STATUS.RUNNING === session.status && (
+                {SessionStatus.Running === session.status && (
                   <Link href={`/sessions/${session.id}/cockpit`} legacyBehavior>
                     <div
                       className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
@@ -131,7 +131,7 @@ function Session({ session }: SessionProps) {
                     </div>
                   </Link>
                 )}
-                {SESSION_STATUS.COMPLETED === session.status && (
+                {SessionStatus.Completed === session.status && (
                   <Link
                     href={`/sessions/${session.id}/evaluation`}
                     legacyBehavior
@@ -142,8 +142,8 @@ function Session({ session }: SessionProps) {
                     </div>
                   </Link>
                 )}
-                {(SESSION_STATUS.PREPARED === session.status ||
-                  SESSION_STATUS.SCHEDULED === session.status) && (
+                {(SessionStatus.Prepared === session.status ||
+                  SessionStatus.Scheduled === session.status) && (
                   <Button
                     basic
                     onClick={async () => {
@@ -174,8 +174,8 @@ function Session({ session }: SessionProps) {
             </div>
           }
           primary={
-            (SESSION_STATUS.PREPARED === session.status ||
-              SESSION_STATUS.SCHEDULED === session.status) && (
+            (SessionStatus.Prepared === session.status ||
+              SessionStatus.Scheduled === session.status) && (
               <div className="flex flex-row float-right gap-1">
                 <Button
                   className={{ root: 'text-sm py-1 px-3' }}

@@ -1,7 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { GetUnassignedSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetUnassignedSessionsDocument,
+  SessionStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -19,15 +21,15 @@ function UnassignedSessions() {
 
   const runningSessions = useMemo(() => {
     return dataSessions?.unassignedSessions?.filter(
-      (session) => session.status === SESSION_STATUS.RUNNING
+      (session) => session.status === SessionStatus.Running
     )
   }, [dataSessions])
 
   const plannedSessions = useMemo(() => {
     return dataSessions?.unassignedSessions?.filter(
       (session) =>
-        session.status === SESSION_STATUS.SCHEDULED ||
-        session.status === SESSION_STATUS.PREPARED
+        session.status === SessionStatus.Scheduled ||
+        session.status === SessionStatus.Prepared
     )
   }, [dataSessions])
 
