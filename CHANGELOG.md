@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.17...v3.0.0-rc.18) (2023-08-27)
+
+
+### Features
+
+* image uploads and media library ([#3818](https://github.com/uzh-bf/klicker-uzh/issues/3818)) ([017cbe9](https://github.com/uzh-bf/klicker-uzh/commit/017cbe9656c761977510c7fdafd59aca7daeeb94))
+
+
+### Bug Fixes
+
+* **packages/prisma:** remove the unused password column on the User model (moved to UserLogin) ([250823e](https://github.com/uzh-bf/klicker-uzh/commit/250823e7f8635a7bb9e800d537624febf135fe09))
+
+
+### Enhancements
+
+* **migration:** add files migration to media library ([#3819](https://github.com/uzh-bf/klicker-uzh/issues/3819)) ([e0e0b1c](https://github.com/uzh-bf/klicker-uzh/commit/e0e0b1c0c8b265b9985abadd83c605c3b86d797a))
+
 ## [3.0.0-rc.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.16...v3.0.0-rc.17) (2023-08-26)
 
 
