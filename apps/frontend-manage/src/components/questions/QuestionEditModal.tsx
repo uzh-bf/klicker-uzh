@@ -14,10 +14,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
-import {
-  QUESTION_GROUPS,
-  QUESTION_TYPES,
-} from '@klicker-uzh/shared-components/src/constants'
+import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   FormikNumberField,
@@ -263,9 +260,9 @@ function QuestionEditModal({
       }
 
       switch (questionType) {
-        case QUESTION_TYPES.SC:
-        case QUESTION_TYPES.MC:
-        case QUESTION_TYPES.KPRIM:
+        case QuestionType.Sc:
+        case QuestionType.Mc:
+        case QuestionType.Kprim:
           return {
             ...common,
             options: {
@@ -273,7 +270,7 @@ function QuestionEditModal({
             },
           }
 
-        case QUESTION_TYPES.NUMERICAL:
+        case QuestionType.Numerical:
           return {
             ...common,
             options: {
@@ -284,7 +281,7 @@ function QuestionEditModal({
             },
           }
 
-        case QUESTION_TYPES.FREE_TEXT:
+        case QuestionType.FreeText:
           return {
             ...common,
             options: {

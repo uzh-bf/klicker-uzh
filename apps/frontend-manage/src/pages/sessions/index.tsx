@@ -1,9 +1,11 @@
 import { useQuery } from '@apollo/client'
-import { GetUserSessionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetUserSessionsDocument,
+  SessionStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import Session from '../../components/sessions/Session'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -22,25 +24,25 @@ function SessionList() {
 
   const runningSessions = useMemo(() => {
     return dataSessions?.userSessions
-      ?.filter((session) => session.status === SESSION_STATUS.RUNNING)
+      ?.filter((session) => session.status === SessionStatus.Running)
       .sort((a, b) => b.startedAt - a.startedAt)
   }, [dataSessions])
 
   const scheduledSessions = useMemo(() => {
     return dataSessions?.userSessions
-      ?.filter((session) => session?.status === SESSION_STATUS.SCHEDULED)
+      ?.filter((session) => session?.status === SessionStatus.Scheduled)
       .sort((a, b) => b.createdAt - a.createdAt)
   }, [dataSessions])
 
   const preparedSessions = useMemo(() => {
     return dataSessions?.userSessions
-      ?.filter((session) => session?.status === SESSION_STATUS.PREPARED)
+      ?.filter((session) => session?.status === SessionStatus.Prepared)
       .sort((a, b) => b.createdAt - a.createdAt)
   }, [dataSessions])
 
   const completedSessions = useMemo(() => {
     return dataSessions?.userSessions
-      ?.filter((session) => session?.status === SESSION_STATUS.COMPLETED)
+      ?.filter((session) => session?.status === SessionStatus.Completed)
       .sort((a, b) => b.updatedAt - a.updatedAt)
   }, [dataSessions])
 

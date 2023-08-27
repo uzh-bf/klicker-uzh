@@ -5,12 +5,12 @@ import {
   ChangeCourseColorDocument,
   ChangeCourseDatesDocument,
   GetSingleCourseDocument,
+  SessionStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { SESSION_STATUS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   ColorPicker,
@@ -74,10 +74,10 @@ function CourseOverviewPage() {
   const { course } = data
 
   const sortingOrderSessions: Record<string, number> = {
-    [SESSION_STATUS.RUNNING]: 0,
-    [SESSION_STATUS.SCHEDULED]: 1,
-    [SESSION_STATUS.PREPARED]: 2,
-    [SESSION_STATUS.COMPLETED]: 3,
+    [SessionStatus.Running]: 0,
+    [SessionStatus.Scheduled]: 1,
+    [SessionStatus.Prepared]: 2,
+    [SessionStatus.Completed]: 3,
   }
 
   return (
