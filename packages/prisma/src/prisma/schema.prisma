@@ -133,11 +133,10 @@ model User {
 model MediaFile {
   id String @id @default(uuid()) @db.Uuid
 
-  href         String  @unique
-  name         String
-  type         String
-  originalName String?
-  description  String?
+  href        String  @unique
+  name        String
+  type        String
+  description String?
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
