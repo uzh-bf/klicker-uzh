@@ -29,13 +29,35 @@ export const migrateFiles = async (
         `${id}.${extension}`
       )
 
-      await blockBlobClient.uploadData(response.data, {
-        blockSize: 4 * 1024 * 1024, // 4MB block size
-      })
-
-      // TODO: add files to media library
       // TODO: think about more efficient promise.allSettled or transaction
-      // await prisma.
+      try {
+        await prisma.mediaFile.create({
+          data: {
+            id,
+            name: file.originalName,
+            type: 'unset',
+            href: blockBlobClient.url.split('?')[0],
+            originalId: file._id,
+            owner: {
+              connect: {
+                id: user.id,
+              },
+            },
+          },
+        })
+
+        context.log(
+          `Uploading file ${file.originalName} to ${blockBlobClient.url}`
+        )
+
+        await blockBlobClient.uploadData(response.data, {
+          blockSize: 4 * 1024 * 1024, // 4MB block size
+        })
+      } catch (e) {
+        if (!e.message.includes('Unique constraint failed')) {
+          throw e
+        }
+      }
 
       const publicUrl = blockBlobClient.url.split('?')[0]
       mappedFileURLs[file._id] = {

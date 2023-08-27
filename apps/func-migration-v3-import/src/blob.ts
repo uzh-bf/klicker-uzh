@@ -9,7 +9,9 @@ async function getBlobClient(context: InvocationContext, userId: string) {
   const containerClient = blobServiceClient.getContainerClient(userId)
 
   if (!(await containerClient.exists())) {
-    await containerClient.create()
+    await containerClient.create({
+      access: 'blob',
+    })
   }
 
   return containerClient

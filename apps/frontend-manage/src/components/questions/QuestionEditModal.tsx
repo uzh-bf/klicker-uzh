@@ -454,7 +454,7 @@ function QuestionEditModal({
 
         return (
           <Modal
-            // asPortal
+            asPortal
             fullScreen
             title={t(`manage.questionForms.${mode}Title`)}
             className={{
