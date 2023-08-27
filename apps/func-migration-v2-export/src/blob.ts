@@ -10,9 +10,7 @@ async function getBlobClient(context: InvocationContext) {
         process.env.MIGRATION_BLOB_EXPORT_CONNECTION_STRING as string
       )
 
-      blobClient = blobServiceClient.getContainerClient(
-        process.env.MIGRATION_BLOB_STORAGE_PATH as string
-      )
+      blobClient = blobServiceClient.getContainerClient('exports')
     } catch (e) {
       context.error(e)
     }
