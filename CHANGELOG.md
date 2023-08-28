@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.25...v3.0.0-rc.26) (2023-08-28)
+
+
+### Bug Fixes
+
+* **ci:** copy .so.node to function dist ([015c6a5](https://github.com/uzh-bf/klicker-uzh/commit/015c6a544e576ec6edbaebcf3923350e64949591))
+
 ## [3.0.0-rc.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.24...v3.0.0-rc.25) (2023-08-28)
 
 
