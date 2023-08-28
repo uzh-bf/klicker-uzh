@@ -49,6 +49,7 @@
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
     "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
     "prisma:studio": "pnpm run --filter @klicker-uzh/prisma prisma:studio",
+    "prune": "turbo prune",
     "publish": "turbo run publish",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
     "release:alpha:dry": "standard-version --dry-run --prerelease alpha",

@@ -32,13 +32,13 @@ jobs:
           pnpm install --frozen-lockfile --ignore-scripts --filter . --shamefully-hoist --strict-peer-dependencies
           pnpm run build
           pnpm prune --prod --config.ignore-scripts=true
-          popd
           cp -Rf node_modules ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/node_modules
+          popd
 
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
         id: fa
         with:
           app-name: 'klickeruzhprod-responses'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: out/${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0119F976602A404FB7A34036973BB491 }}
