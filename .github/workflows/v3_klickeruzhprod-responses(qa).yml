@@ -39,7 +39,6 @@ jobs:
           pushd out
           pnpm install --frozen-lockfile --ignore-scripts --shamefully-hoist --strict-peer-dependencies
           pnpm run build
-          cp -Rf node_modules/* ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/node_modules/
           popd
 
       - name: 'Run Azure Functions Action'
@@ -48,5 +47,5 @@ jobs:
         with:
           app-name: 'klickeruzhprod-responses'
           slot-name: 'qa'
-          package: out/${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: out
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8B214CC3C31C4B918FD01C66B18ADCB1 }}
