@@ -48,5 +48,5 @@ jobs:
         with:
           app-name: 'klickeruzhprod-responses'
           slot-name: 'qa'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: out/${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8B214CC3C31C4B918FD01C66B18ADCB1 }}
