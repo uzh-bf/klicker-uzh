@@ -34,6 +34,7 @@ jobs:
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
           pnpm run build
           mv apps/func-migration-v3-import apps/func
+          mv apps/func/host.json .
           popd
 
       - name: 'Run Azure Functions Action'

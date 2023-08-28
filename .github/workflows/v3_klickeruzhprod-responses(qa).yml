@@ -39,6 +39,7 @@ jobs:
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
           pnpm run build
           mv apps/func-incoming-responses apps/func
+          mv apps/func/host.json .
           popd
 
       - name: 'Run Azure Functions Action'
