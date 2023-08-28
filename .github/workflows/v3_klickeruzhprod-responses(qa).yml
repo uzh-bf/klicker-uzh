@@ -39,7 +39,6 @@ jobs:
           pushd out
           pnpm install --frozen-lockfile --ignore-scripts --shamefully-hoist --strict-peer-dependencies
           pnpm run build
-          pnpm prune --prod --config.ignore-scripts=true
           cp -Rf node_modules/* ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/node_modules/
           popd
 
