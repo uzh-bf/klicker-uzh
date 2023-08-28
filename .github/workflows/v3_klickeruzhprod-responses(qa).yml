@@ -39,6 +39,7 @@ jobs:
         run: |
           pnpm dlx turbo prune --scope @klicker-uzh/func-incoming-responses
           pushd out
+          echo "node-linker=hoisted" > .npmrc
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
           pnpm run build
           mv apps/func-incoming-responses apps/func
