@@ -30,11 +30,6 @@ jobs:
         with:
           version: 8.6.12
 
-      - name: Use .npmrc
-        uses: bduff9/use-npmrc@v1.2
-        with:
-          dot-npmrc: ${{ vars.DOT_NPMRC }}
-
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
