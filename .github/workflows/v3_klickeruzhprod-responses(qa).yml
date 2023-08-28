@@ -28,8 +28,6 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           version: 8.6.12
-          run_install: |
-            - args: [--frozen-lockfile, --strict-peer-dependencies]
 
       - name: Use .npmrc
         uses: bduff9/use-npmrc@v1.2
@@ -39,7 +37,7 @@ jobs:
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          pnpm run prune --scope @klicker-uzh/func-incoming-responses
+          pnpm dlx turbo prune --scope @klicker-uzh/func-incoming-responses
           pushd out
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
           pnpm run build
