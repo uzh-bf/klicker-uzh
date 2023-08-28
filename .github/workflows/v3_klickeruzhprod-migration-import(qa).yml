@@ -41,6 +41,7 @@ jobs:
           mv apps/func-migration-v3-import apps/func
           mv apps/func/host.json .
           cp packages/prisma/dist/schema.prisma apps/func/dist/schema.prisma
+          cp packages/prisma/dist/**.so.node apps/func/dist/
           popd
 
       - name: 'Run Azure Functions Action'
