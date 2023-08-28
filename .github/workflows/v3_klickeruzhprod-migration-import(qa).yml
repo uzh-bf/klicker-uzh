@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'v3'
+      - 'CI'
     paths:
       - 'apps/func-migration-v3/**'
       - '.github/workflows/v3_klickeruzhprod-migration-import**'
@@ -32,12 +33,16 @@ jobs:
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          pushd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          pnpm install --frozen-lockfile --ignore-scripts --filter . --shamefully-hoist --strict-peer-dependencies
+          pnpm dlx turbo prune --scope @klicker-uzh/func-migration-v3-import
+          pushd out
+          echo "node-linker=hoisted" > .npmrc
+          pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
           pnpm run build
-          pnpm prune --prod --config.ignore-scripts=true
+          mv apps/func-migration-v3-import apps/func
+          mv apps/func/host.json .
+          cp packages/prisma/dist/schema.prisma apps/func/dist/schema.prisma
+          cp packages/prisma/dist/**.so.node apps/func/dist/
           popd
-          cp -Rf node_modules ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/node_modules
 
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
@@ -45,5 +50,5 @@ jobs:
         with:
           app-name: 'klickeruzhprod-migration-import'
           slot-name: 'qa'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: out
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D8E9A41BC01A4CD4BCB4B0E9F31B5C57 }}
