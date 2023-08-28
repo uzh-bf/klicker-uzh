@@ -24,15 +24,15 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           version: 8.6.12
-          run_install: |
-            - recursive: true
-              args: [--frozen-lockfile, --strict-peer-dependencies, --shamefully-hoist, '--filter @klicker-uzh/func-incoming-responses']
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          pnpm run build --scope @klicker-uzh/func-incoming-responses
+          pushd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          pnpm install --frozen-lockfile --ignore-scripts --filter . --shamefully-hoist --strict-peer-dependencies
+          pnpm run build --scope .
           pnpm prune --prod --config.ignore-scripts=true
+          popd
           cp -Rf node_modules ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/node_modules
 
       - name: 'Run Azure Functions Action'
