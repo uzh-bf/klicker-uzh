@@ -39,6 +39,7 @@ jobs:
           pushd out
           pnpm install --frozen-lockfile --ignore-scripts --shamefully-hoist --strict-peer-dependencies
           pnpm run build
+          mv apps/func-incoming-responses apps/function-app
           popd
 
       - name: 'Run Azure Functions Action'
