@@ -29,17 +29,21 @@ jobs:
         with:
           version: 8.6.12
           run_install: |
-            - recursive: true
-              args: [--frozen-lockfile, --strict-peer-dependencies]
+            - args: [--frozen-lockfile, --strict-peer-dependencies]
+
+      - name: Use .npmrc
+        uses: bduff9/use-npmrc@v1.2
+        with:
+          dot-npmrc: ${{ vars.DOT_NPMRC }}
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
           pnpm run prune --scope @klicker-uzh/func-incoming-responses
           pushd out
-          pnpm install --frozen-lockfile --ignore-scripts --shamefully-hoist --strict-peer-dependencies
+          pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
           pnpm run build
-          mv apps/func-incoming-responses apps/function-app
+          mv apps/func-incoming-responses apps/func
           popd
 
       - name: 'Run Azure Functions Action'
