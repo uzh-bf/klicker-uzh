@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'v3'
+      - 'CI'
     paths:
       - 'apps/func-migration-v2-export/**'
       - '.github/workflows/v3_klickeruzhprod-migration-export**'

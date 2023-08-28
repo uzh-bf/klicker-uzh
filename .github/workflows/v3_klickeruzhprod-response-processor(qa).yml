@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'v3'
+      - 'CI'
     paths:
       - 'apps/func-response-processor/**'
       - '.github/workflows/v3_klickeruzhprod-response-processor**'
