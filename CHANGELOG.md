@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.20...v3.0.0-rc.21) (2023-08-28)
+
+
+### Bug Fixes
+
+* **ci:** filtering ([e564432](https://github.com/uzh-bf/klicker-uzh/commit/e564432ba9b0597e602ffb645d76100d795ed69b))
+
 ## [3.0.0-rc.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.19...v3.0.0-rc.20) (2023-08-27)
 
 ## [3.0.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.18...v3.0.0-rc.19) (2023-08-27)
