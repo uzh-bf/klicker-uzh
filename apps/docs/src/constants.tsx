@@ -743,7 +743,7 @@ export default {
           external app). Furthermore, we conducted an analysis of data from the
           pilot lectures, namely Banking and Finance I and Banking and Finance
           II, during the autumn semester of 2022 and the spring semester of
-          2023. Based on these experiences, the following insights have emerged:{' '}
+          2023. Based on these experiences, the following insights have emerged:
         </p>
         <ul>
           <li>
@@ -804,6 +804,192 @@ export default {
   group_activity: {
     title: 'Group Activities',
     headerImgSrc: '/img_v3/marvin-meyer-SYTO3xs06fU-unsplash.jpg',
+    tags: [
+      'Group collaborations',
+      'Teamwork skills',
+      'Cooperative learning',
+      'Real-world application',
+      'Practical insights',
+      'Interpersonal relationships',
+      'Problem-solving skills',
+      'Effective communication',
+      'Successful professional development',
+    ],
+    goals: [
+      "Promote and strengthen group collaborations among students, encouraging them to work together as a team and profit from each other's skills and perspectives.",
+      'Offer practical insights and provide students with real-world scenarios where they can apply their knowledge, skills, and teamwork outside of the traditional lecture setting.',
+      'Enable students to develop (transversal) teamwork skills and learn to collaborate efficiently as a group.',
+      'Prepare students for future professional challenges requiring collaboration and teamwork.',
+    ],
+    introduction: (
+      <>
+        <p>
+          Group activities involve collaborative work in small teams to achieve
+          shared objectives, offering numerous benefits. They enhance students'
+          creative, problem-solving, and critical thinking abilities by
+          leveraging collective knowledge and experiences. Additionally, group
+          activities promote strong communication skills through idea sharing
+          and meaningful discussions, expanding perspectives and deepening
+          understanding. Students also develop a sense of shared responsibility
+          and accountability, learning effective collaboration, task management,
+          and meeting deadlines. By navigating diverse opinions and resolving
+          conflicts, students cultivate effective communication strategies.
+          These experiences prepare them for success in academic and
+          professional contexts where collaboration is essential.
+        </p>
+        <p>
+          However, incorporating group projects into lectures presents a
+          significant challenge, particularly in large courses, despite
+          acknowledging their immense importance as mentioned earlier.
+          KlickerUZH offers a solution by facilitating group activities and
+          tasks that extend over a lecture or spread over a longer period of
+          time. It supports various aspects such as group formation,
+          distributing the initial situation, and implementing the corresponding
+          questions. Within the KlickerUZH, students have the freedom to form
+          their own groups, enabling them to collaboratively tackle the assigned
+          tasks. This ensures that teamwork is no longer neglected, even in
+          large study courses.
+        </p>
+      </>
+    ),
+    background: (
+      <>
+        <p>
+          It is no coincidence that cooperative learning is one of the
+          predominant teaching methods worldwide. The positive attributes of
+          this form of instruction are many and not only influence student
+          motivation and achievement, but also strengthen interpersonal
+          relationships among learners (Johnson & Johnson, 2009).
+        </p>
+        <p>
+          Through the KlickerUZH, students are encouraged to tackle a challenge
+          together and work out solutions as a team. This not only enhances
+          students' problem-solving skills, but also provides an opportunity to
+          develop creative skills (Hämäläinen & Vähäsantanen, 2011). Students
+          learn how to communicate effectively and share their ideas to be
+          successful in a team and achieve common goals. Binkley et al. (2011)
+          demonstrated that these social skills play a crucial role in the
+          contemporary work environment, enabling students to effectively
+          prepare for their careers and thrive in a highly interconnected
+          society. These skills are invaluable for fostering successful
+          professional development and adaptation.
+        </p>
+        <p>
+          For more information on the benefits of{' '}
+          <a
+            href="https://teachingtools.uzh.ch/en/tools/gruppenarbeiten"
+            target="_blank"
+          >
+            group work
+          </a>{' '}
+          as well as the
+          <a
+            href="https://teachingtools.uzh.ch/en/tools/methoden-zur-gruppenbildung"
+            target="_blank"
+          >
+            methods to make group formation a success
+          </a>
+          , please go to UZH Teaching Tools.
+        </p>
+      </>
+    ),
+    scenario: (
+      <>
+        <p>
+          As a lecturer you would like to strengthen group collaborations and
+          see value in having your students work together. Therefore, you decide
+          to use the KlickerUZH to provide Group Activities where students can
+          sign up as groups (of at least two people) and work on the provided
+          tasks together. This can be done during the lecture for smaller tasks
+          or alternatively for a longer period of time during which students can
+          work on a more complex assignment. The following question types can be
+          implemented: Single Choice (SC), Multiple Choice (MC), Kprim (KPRIM),
+          Free Text (FT), and Numerical Response (NR). This is a great
+          opportunity if you want to enable students to have an insight into
+          practical considerations and tasks which they can work on as a team,
+          outside of the traditional lecture.
+        </p>
+        <p>
+          The teamwork is further encouraged thanks to distributed information.
+          When providing group activities via the KlickerUZH the necessary
+          information needed to solve the task can be distributed between the
+          team members so that they are required to work together and exchange
+          information and ideas.
+        </p>
+        <p>
+          If you wish to do so, the group activities can be incorporated into a
+          gamification context where students are rewarded for engaging in these
+          tasks.
+        </p>
+      </>
+    ),
+    learnings: (
+      <>
+        <p>
+          These kinds of group activities have been implemented in two large
+          first-year lectures at the DBF in 2022 / 2023, with up to 800
+          students. In these lectures, students had the opportunity to engage in
+          exercises related to real-world scenarios, focused on topics such as
+          company valuation, bonds, shares, and portfolio optimization (as soon
+          as the respective topic was covered in the lecture). Each team member
+          was provided with a portion of the information needed to solve the
+          exercise, resulting in the complete information being available to the
+          group as a whole. The goal was for students to collaborate, analyze
+          the given data and questions, and make decisions collectively. After
+          submitting their calculations and thoughts, the Teaching Center of the
+          DBF provided personalized feedback. Participation in these group
+          activities was incorporated as part of the lecture's gamification
+          concept, therefore, groups that took part in these exercises were
+          rewarded with points.
+        </p>
+        <p>Our learning was the following:</p>
+        <ul>
+          <li>
+            Number of groups: Since the group activity was optional and the
+            assessment courses demanded significant attention from students,
+            only a limited number of groups participated in the group activities
+            (autumn semester: 23 groups and spring semester: 6 groups). It is
+            worth considering that there may be more suitable lectures or
+            courses that offer better opportunities for integrating group tasks,
+            given the specific circumstances and requirements.
+          </li>
+          <li>
+            Student feedback: In the internal survey, only 20.63% claimed they
+            had joined a group. Of those students who did not select “no
+            opinion” in the question regarding their view on the group
+            challenges, 28.6% found them cool, but 25.71% voted unnecessary.
+            This, again, shows that a select few like the group setting and the
+            extra efforts, but many see no added value with twice as many
+            claiming the challenges are too much effort than requiring the right
+            amount of effort.
+          </li>
+          <li>
+            Real-world scenarios: The lecture focused on theory, while the group
+            activity involved working with real data sourced from annual reports
+            or price data from sources like Yahoo Finance. Careful consideration
+            was given when selecting companies and data, recognizing that
+            real-world scenarios can be complex. Simplification may be necessary
+            to make the exercises more manageable within the scope of the
+            course.
+          </li>
+          <li>
+            Grading: KlickerUZH enables automatic grading for choice-based
+            question types. However, for numerical response and free text
+            questions, manual correction is required. It is crucial to consider
+            the time and effort needed for manual grading as part of the overall
+            lecture planning process.
+          </li>
+          <li>
+            Discussion of results: Given the nature of real-life problems, there
+            may not always be a single solution. This aspect needs to be
+            considered during the correction process and feedback writing.
+            Flexibility and consideration for different approaches or
+            interpretations are often required when assessing the results of
+            group activities based on real-world scenarios.
+          </li>
+        </ul>
+      </>
+    ),
   },
   live_qa: {
     title: 'Live Q&A',
