@@ -44,6 +44,7 @@ jobs:
           mv apps/func/host.json .
           cp packages/prisma/dist/schema.prisma apps/func/dist/schema.prisma
           mkdir node_modules/@klicker-uzh
+          cp -r packages/prisma node_modules/@klicker-uzh/prisma
           popd
 
       - name: 'Run Azure Functions Action'
