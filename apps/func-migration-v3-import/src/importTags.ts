@@ -11,30 +11,37 @@ export async function importTags(
 ) {
   try {
     let mappedTags: Record<string, Record<string, string | number>> = {}
-    const tagsInDb = await prisma.tag.findMany()
-    const tagsDict: Record<string, any> = tagsInDb.reduce((acc, t) => {
-      if (t.originalId != null) {
-        acc[t.originalId] = t
-      }
-      return acc
-    }, {})
+    const tagsInDb = await prisma.tag.findMany({
+      where: {
+        originalId: {
+          not: null,
+        },
+      },
+    })
+    const tagsDict: Record<string, any> = tagsInDb.reduce(
+      (acc, t) => ({
+        ...acc,
+        [t.originalId]: t,
+      }),
+      {}
+    )
 
-    const batches = sliceIntoChunks(tags, batchSize)
+    const batches = sliceIntoChunks(tags, 20)
 
     for (const batch of batches) {
-      await prisma.$transaction(async (prisma) => {
-        for (const tag of batch) {
-          const tagExists = tagsDict[tag._id]
+      const preparedTags = batch.flatMap((tag) => {
+        const tagExists = tagsDict[tag._id]
 
-          if (tagExists) {
-            mappedTags[tag._id] = {
-              id: tagExists.id,
-              name: tagExists.name,
-            }
-            continue
+        if (tagExists) {
+          mappedTags[tag._id] = {
+            id: tagExists.id,
+            name: tagExists.name,
           }
+          return []
+        }
 
-          const newTag = await prisma.tag.upsert({
+        return [
+          {
             where: {
               ownerId_name: {
                 ownerId: user.id,
@@ -51,12 +58,20 @@ export async function importTags(
                 },
               },
             },
-          })
-          const extractedId = tag._id
-          mappedTags[extractedId] = { id: newTag.id, name: newTag.name }
-        }
+          },
+        ]
+      })
+
+      const migratedTags = await prisma.$transaction(
+        preparedTags.map((data) => prisma.tag.upsert(data))
+      )
+
+      migratedTags.forEach((tag) => {
+        mappedTags[tag.originalId] = { id: tag.id, name: tag.name }
       })
     }
+
+    context.log('mappedTags: ', mappedTags)
 
     return mappedTags
   } catch (error) {

@@ -13,12 +13,14 @@
     "@klicker-uzh/prisma": "workspace:*",
     "axios": "1.4.0",
     "jsonwebtoken": "9.0.1",
-    "mongoose": "7.3.3"
+    "mongoose": "7.3.3",
+    "uuid": "9.0.0"
   },
   "devDependencies": {
     "@tsconfig/node18": "18.2.0",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^18.17.4",
+    "@types/uuid": "^9.0.2",
     "azure-functions-core-tools": "4.0.5274",
     "cross-env": "7.0.3",
     "eslint": "8.45.0",
