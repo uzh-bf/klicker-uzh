@@ -994,9 +994,225 @@ export default {
   live_qa: {
     title: 'Live Q&A',
     headerImgSrc: '/img_v3/volodymyr-hryshchenko-V5vqWC9gyEU-unsplash.jpg',
+    tags: [
+      'Large class',
+      'Interactive lecture',
+      'Anonymous Channel',
+      'Quick feedback',
+      'Continuous dialogue',
+      'Encourage student participation',
+      'Efficient Q&A workflow',
+      'Identfying common questions and problems',
+    ],
+    goals: [
+      'Encourage students to ask questions by providing them with an anonymous channel.',
+      'Enable students to get answers to questions as soon as they come up instead of postponing them (e.g., to forum posts).',
+      'Make remote participants feel included by allowing them to ask questions during lectures.',
+      'Enable lecturers and their team to provide rapid feedback on incoming questions.',
+      'Improve the efficiency of the Q&A workflow by batching questions (in sessions, with upvotes, etc.).',
+    ],
+    introduction: (
+      <>
+        <p>
+          In order to maintain a continuous dialog with the students, it is
+          important to give them space to ask questions. However, many students
+          may hesitate to contribute verbally in front of their peers,
+          especially in large courses. This can be for a variety of reasons,
+          from shame and insecurity to fear that their questions might seem
+          trivial.
+        </p>
+        <p>
+          With the KlickerUZH, students can ask their questions anonymously
+          during the lecture. They can discuss their issues in a secure
+          environment and express their uncertainties unashamedly. For the
+          lecturers, the KlickerUZH serves as a helpful tool to keep an overview
+          of the knowledge of their students and to see where there are any
+          comprehension problems. It is up to the lecturers whether they make
+          the questions visible to all and promote interaction among the
+          students or whether they answer the questions in a pre-selected
+          manner.
+        </p>
+        <p>
+          With this approach, the KlickerUZH creates a connection between
+          lecturers and students and promotes an open and inclusive learning
+          environment in which questions and discussions are actively
+          encouraged.
+        </p>
+      </>
+    ),
+    background: (
+      <>
+        <p>
+          Asking questions undoubtedly promotes learning and understanding. But
+          what exactly makes the dialogue between lecturers and students so
+          effective and successful?
+        </p>
+        <p>
+          In an anonymous setting, such as the KlickerUZH provides, a safe
+          environment is created for students which has been shown to encourage
+          student participation (Roberts & Rajah-Kanagasabai, 2013).
+        </p>
+        <p>
+          Tan et al. (2020) show further advantages of such Q&A sessions, which
+          affect not only students but also lecturers. Namely, Q&A provides an
+          efficient way to identify students' most common questions and problems
+          and answer them directly in the lecture for everyone, rather than
+          individually after the lecture.
+        </p>
+        <p>
+          With regard to large lectures with hundreds of students, the research
+          of Exeter et al. (2010) show that the interaction with students as in
+          the setting of smaller classes can be very supportive. Thus, it is
+          important to create a platform where students can ask questions easily
+          and feel well taken care of, as in small classes. This motivates
+          students, allows them to process the course material better and,
+          ideally, stimulates their critical thinking by engaging with the
+          course topic.
+        </p>
+      </>
+    ),
+    scenario: (
+      <>
+        <p>
+          You are a lecturer delivering large-class lectures with limited
+          opportunities for personal interaction. To enable students to interact
+          with you in a more approachable way even if they participate online,
+          you start a session in the KlickerUZH and enable the anonymous Q&A
+          channel. Throughout the lecture, students access the Q&A channel on
+          their own devices to post new questions or upvote existing ones.
+          Depending on your preference, you can choose either the unmoderated
+          Q&A channel, where questions are immediately available for interaction
+          by all participants, or enable moderation to pre-approve incoming
+          questions before they are visible to others.
+        </p>
+        <p>
+          You have the option to respond to questions during the lecture, either
+          immediately or after briefly reviewing them during a break.
+          Alternatively, if you have a teaching assistant, they can provide
+          prompt responses to straightforward questions. Any particularly
+          important or challenging questions that require more in-depth answers
+          can be pinned to the lecturer cockpit, allowing you to address them
+          orally during the lecture. At the end of the lecture, you export the
+          questions and answers from the Q&A channel and post them to the
+          learning management system (LMS), ensuring that students can access
+          and review your responses even after the lecture ends.
+        </p>
+        <p>
+          While KlickerUZH employs gamification to incentivize various
+          activities, it's important to highlight that the live Q&A feature
+          operates differently compared to other learning activities. The aim is
+          to foster active participation and meaningful knowledge sharing,
+          rather than encouraging questions solely for the sake of earning
+          points. Therefore, no points are awarded for asking questions during
+          live Q&A sessions.
+        </p>
+      </>
+    ),
+    learnings: (
+      <>
+        <p>
+          The KlickerUZH Q&A has been successfully implemented in various large
+          lectures at UZH, including classes with up to 1,000 students, since
+          its inception in 2021. In order to assess the effectiveness of the Q&A
+          approach in university teaching, two surveys were conducted in 2021
+          and 2022. One survey was distributed to the lecturers who integrated
+          the live Q&A feature (n=5 lecturers), while the other survey was
+          displayed to students during the live Q&A through a banner (n=29
+          students). The insights gained from these surveys, along with valuable
+          inputs from lecturers and content creators, have yielded the following
+          valuable learnings:
+        </p>
+        <ul>
+          <li>
+            Moderation: In very large lectures, moderation of the Q&A channel
+            becomes crucial due to the high volume of questions, including
+            irrelevant ones. Moderation enables the filtering and approval of
+            questions before they are visible to other participants, ensuring
+            that only relevant and meaningful questions are addressed and
+            displayed.
+          </li>
+          <li>
+            Participation level: The participation level in the Q&A channel
+            tends to be higher in larger lectures (500-800 students) compared to
+            the smaller lectures (200 students). In the large assessment
+            lectures based on our internal survey, more than half of the
+            participants claimed to have posted questions in the Q&A in at least
+            one lecture, 73% of these did so in 1-4 lectures during the
+            semester.
+          </li>
+          <li>
+            Effort to manage the Q&A channel: According to survey responses from
+            lecturers, the effort required to manage the Q&A channel is
+            considered valuable and worthwhile. Lecturers recognize the benefits
+            of engaging with students through the Q&A functionality and find it
+            beneficial for enhancing the learning experience.
+          </li>
+          <li>
+            Continuing to use: All surveyed lecturers expressed a high
+            likelihood, whether likely or extremely likely, to continue using
+            the Q&A functionality in their future teaching. This suggests the
+            positive impact and value that the Q&A channel brings to their
+            instructional practices.
+          </li>
+          <li>
+            Time consumption: Answering questions orally during class takes
+            time. It is helpful not to answer questions too frequently so as not
+            to disrupt the flow of the lesson.
+          </li>
+          <li>
+            Interaction by students: Findings from the survey indicate that
+            around 45% of students actively read or upvoted existing questions,
+            indicating engagement with the Q&A channel. Additionally, 22% of
+            students posted their own questions, showing active participation.
+            Only a small percentage (5%) of students had not yet heard of the
+            Q&A channel, suggesting a widespread awareness among the student
+            population.
+          </li>
+          <li>
+            Student feedback: Feedback from students indicates a positive
+            perception of the Klicker Q&A functionality, with students
+            acknowledging its benefits in improving their understanding of the
+            lecture contents. The Q&A channel has provided a platform for
+            students to seek clarification, receive answers to their questions,
+            and gain a deeper understanding of the subject matter.
+          </li>
+          <li>
+            In November 2021, lecturers using the KlickerUZH Live Q&A
+            functionality have received over 400 questions, about 150 of which
+            were resolved with a response through the tool. 62 were resolved
+            without a response (e.g., orally or implicitly), and 68 were deleted
+            (e.g., because of their irrelevance). The length of feedback
+            responses ranged from extensive 530 character explanations to single
+            words like "No".
+          </li>
+        </ul>
+      </>
+    ),
   },
   gamification: {
     title: 'Gamification',
     headerImgSrc: '/img_v3/brands-people-ZdqSuxl3Lak-unsplash.jpg',
+    tags: [],
+    goals: [],
+    introduction: (
+      <>
+        <p></p>
+      </>
+    ),
+    background: (
+      <>
+        <p></p>
+      </>
+    ),
+    scenario: (
+      <>
+        <p></p>
+      </>
+    ),
+    learnings: (
+      <>
+        <p></p>
+      </>
+    ),
   },
 }
