@@ -1,7 +1,7 @@
 import { InvocationContext } from '@azure/functions'
 import { PrismaClient, User } from '@klicker-uzh/prisma'
 import axios from 'axios'
-import { uuidv5 } from 'uuid'
+import { v5 as uuidv5 } from 'uuid'
 import getBlobClient from './blob'
 import { sendTeamsNotifications } from './utils'
 

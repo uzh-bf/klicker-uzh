@@ -29,16 +29,16 @@ export const importQuestions = async (
       {}
     )
 
-    const batches = sliceIntoChunks(importedQuestions, batchSize)
+    const batches = sliceIntoChunks(importedQuestions, 1)
 
     for (const batch of batches) {
       const createdQuestions = await prisma.$transaction(
-        batch.map((question) => {
+        batch.flatMap((question) => {
           const questionExists = questionsDict[question._id]
 
           if (questionExists) {
             mappedQuestionIds[question._id] = questionExists.id
-            return Promise.resolve()
+            return []
           }
 
           const result = {
@@ -127,9 +127,11 @@ export const importQuestions = async (
             throw new Error('Unknown question type')
           }
 
-          return prisma.question.create({
-            data: result.data,
-          })
+          return [
+            prisma.question.create({
+              data: result.data,
+            }),
+          ]
         })
       )
 

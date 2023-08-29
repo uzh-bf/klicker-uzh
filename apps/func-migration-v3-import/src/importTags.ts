@@ -19,7 +19,7 @@ export async function importTags(
       return acc
     }, {})
 
-    const batches = sliceIntoChunks(tags, batchSize)
+    const batches = sliceIntoChunks(tags, 1)
 
     for (const batch of batches) {
       await prisma.$transaction(async (prisma) => {

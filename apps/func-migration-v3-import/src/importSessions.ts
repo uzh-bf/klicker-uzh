@@ -46,7 +46,7 @@ export const importSessions = async (
       return acc
     }, {})
 
-    const batches = sliceIntoChunks(importedSessions, batchSize)
+    const batches = sliceIntoChunks(importedSessions, 1)
 
     for (const batch of batches) {
       await prisma.$transaction(async (prisma) => {

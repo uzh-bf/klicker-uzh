@@ -1,4 +1,4 @@
-import fs from 'fs'
+import * as fs from 'fs'
 
 try {
   fs.rmdirSync('./dist', { recursive: true })

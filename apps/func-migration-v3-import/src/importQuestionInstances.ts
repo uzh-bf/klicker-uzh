@@ -12,7 +12,7 @@ const restoreLostLegacyResults = async (
   // mappedQuestionInstances: Record<string, Record<string, any>>,
   questionInstancesDict: Record<string, any>
 ) => {
-  let mappedQuestionInstances: Record<string, Record<string, any>>
+  let mappedQuestionInstances: Record<string, Record<string, any>> = {}
   let lostResults: any[] = []
 
   // for-loop kept due to its asynchronous nature
@@ -114,7 +114,7 @@ export const importQuestionInstances = async (
       questionInstancesDict
     )
 
-    const batches = sliceIntoChunks(importedQuestionInstances, batchSize)
+    const batches = sliceIntoChunks(importedQuestionInstances, 1)
     for (const batch of batches) {
       const createdQuestionInstances = await prisma.$transaction(
         batch.flatMap((questionInstance) => {
