@@ -1,7 +1,7 @@
 import { InvocationContext } from '@azure/functions'
 import { PrismaClient, User } from '@klicker-uzh/prisma'
 import axios from 'axios'
-import { randomUUID } from 'crypto'
+import { uuidv5 } from 'uuid'
 import getBlobClient from './blob'
 import { sendTeamsNotifications } from './utils'
 
@@ -23,7 +23,7 @@ export const migrateFiles = async (
       )
 
       // upload file to azure blob storage
-      const id = randomUUID()
+      const id = uuidv5(file._id, 'aac50793-04e0-490c-acac-8d21275c2338')
       const extension = file.originalName.split('.').pop()
       const blockBlobClient = blobClient.getBlockBlobClient(
         `${id}.${extension}`
@@ -54,6 +54,7 @@ export const migrateFiles = async (
           blockSize: 4 * 1024 * 1024, // 4MB block size
         })
       } catch (e) {
+        // TODO: also ignore if the file already exists and cannot be uploaded, or just reupload
         if (!e.message.includes('Unique constraint failed')) {
           throw e
         }
