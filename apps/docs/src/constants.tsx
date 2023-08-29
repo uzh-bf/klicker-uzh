@@ -12,6 +12,12 @@ export default {
       'Knowledge evaluation',
       'Gamification',
     ],
+    goals: [
+      'Activate and encourage student engagement by incorporating interactive questions and surveys during the lecture.',
+      'Make courses more relaxed, interactive and adaptive.',
+      'Improve motivation by incorporating interactive gamification elements.',
+      'Evaluate feedback from your students (e.g., opinions or level of knowledge).',
+    ],
     introduction: (
       <>
         <p>
@@ -242,12 +248,6 @@ export default {
         </ul>
       </>
     ),
-    goals: [
-      'Activate and encourage student engagement by incorporating interactive questions and surveys during the lecture.',
-      'Make courses more relaxed, interactive and adaptive.',
-      'Improve motivation by incorporating interactive gamification elements.',
-      'Evaluate feedback from your students (e.g., opinions or level of knowledge).',
-    ],
   },
   flipped_classroom: {
     title: 'Flipped Classroom',
@@ -273,7 +273,7 @@ export default {
       <>
         <p>
           The concept of the Flipped Classroom, or Inverted Classroom, involves
-          reversing the traditional teach-ing-learning approach by shifting the
+          reversing the traditional teaching-learning approach by shifting the
           knowledge transfer phase (phase 1) to independent, self-paced learning
           before the actual course, and focusing on practice and consolidation
           (phase 2) during in-person sessions with the teacher utilizing cases,
@@ -284,7 +284,7 @@ export default {
           the course content at their own pace before the lecture, through
           individual self-study. This can be facilitated using comprehensive
           eLearning resources such as reading materials, multiple-choice
-          questions, and videos. During the lec-ture, the acquired knowledge is
+          questions, and videos. During the lecture, the acquired knowledge is
           then applied and practiced collaboratively with the lecturer, allowing
           for a deeper understanding of the new learning materials, the
           discussion of questions and more time to address specific queries.
@@ -304,15 +304,15 @@ export default {
           consider the approach to be positive. Points such as that knowledge
           can be acquired at a student's own pace and that this knowledge can be
           directly applied in class are seen as beneficial. However, Gilboy et
-          al. (2015) point out that it is essential to explain to stu-dents the
+          al. (2015) point out that it is essential to explain to students the
           purpose and desired effect of the Flipped Classroom. In this way,
           students can best engage with this new approach and understand why
-          their learning will be most successful if they become fa-miliar with
+          their learning will be most successful if they become familiar with
           the material prior to the class.
         </p>
         <p>
           Zainuddin and Halili (2016) also note numerous positive aspects of
-          this form of teaching in their re-search. By working through the
+          this form of teaching in their research. By working through the
           lecture material before class, students feel more confident during
           class interactions, which in turn increases their motivation and leads
           to improved overall performance.
@@ -326,8 +326,23 @@ export default {
           approach, the lecturer takes into account a variety of different
           learning styles. This creates an inclusive learning environment and
           fosters greater student understanding. Please see UZH Teaching Tools
-          for more information on the alignment between lecturers and students
-          as well as the Flipped Classroom concept.
+          for more information on the{' '}
+          <a
+            href={
+              'https://teachingtools.uzh.ch/en/tools/constructive-alignment'
+            }
+            target="_blank"
+          >
+            alignment between lecturers and students
+          </a>{' '}
+          as well as the{' '}
+          <a
+            href={'https://teachingtools.uzh.ch/en/tools/flipped-classroom'}
+            target="_blank"
+          >
+            Flippeed Classroom
+          </a>{' '}
+          concept.
         </p>
       </>
     ),
@@ -345,7 +360,7 @@ export default {
           into the KlickerUZH. These can be activated during the lecture for
           students to answer, enabling them to apply their previously acquired
           knowledge. Additionally, this allows you as the lecturer to identify
-          any open questions or areas of con-fusion based on the results.
+          any open questions or areas of confusion based on the results.
           Furthermore, the KlickerUZH platform can be used by students to ask
           questions about the material they prepared beforehand, providing an
           alternative to asking questions in person. The lecturer can then
@@ -376,7 +391,7 @@ export default {
           <li>
             Self-selection: There can be a high effect of self-selection,
             especially if classroom sessions are optional, meaning that students
-            do not show up for sessions if they are not prepared. Vice ver-sa,
+            do not show up for sessions if they are not prepared. Vice versa,
             students attending class tend to be motivated to discuss the
             materials.
           </li>
@@ -392,12 +407,12 @@ export default {
             implement the questions in KlickerUZH before the lecture. "Good
             things take time" also applies here. Even experienced authors
             typically anticipate spending an average of one hour to produce a
-            single multiple-choice question in exam quality (Krebs (2004)). This
-            time is necessary to carefully consider the formulation of the
-            question, select the answer options precisely, and avoid potential
-            pitfalls. This conscientious approach ensures that the questions
-            align with the desired learning out-comes and provide students with
-            an appropriate level of challenge.
+            single multiple-choice question in exam quality{' '}
+            <mark>(Krebs, 2004)</mark>. This time is necessary to carefully
+            consider the formulation of the question, select the answer options
+            precisely, and avoid potential pitfalls. This conscientious approach
+            ensures that the questions align with the desired learning outcomes
+            and provide students with an appropriate level of challenge.
           </li>
           <li>
             Room for discussion: Questions used in the quiz should be designed
@@ -406,9 +421,9 @@ export default {
           </li>
           <li>
             Grading: It could be an option to make participation in sessions
-            and/or passing of quizzes be-fore or during sessions mandatory or
-            part of the grade. However, this could also negatively in-fluence
-            the openness of the discussions.
+            and/or passing of quizzes before or during sessions mandatory or
+            part of the grade. However, this could also negatively influence the
+            openness of the discussions. Mi
           </li>
         </ul>
       </>
