@@ -24,17 +24,17 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           version: 8.6.12
-          run_install: |
-            - recursive: true
-              args: [--frozen-lockfile, --strict-peer-dependencies]
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          pnpm run build --scope @klicker-uzh/func-incoming-responses
-          pnpm prune --prod --config.ignore-scripts=true
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-          cp -LR node_modules tmp && rm -rf node_modules && mv tmp node_modules
+          pnpm dlx turbo prune --scope @klicker-uzh/func-incoming-responses
+          pushd out
+          echo "node-linker=hoisted" > .npmrc
+          pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
+          pnpm run build
+          mv apps/func-incoming-responses apps/func
+          mv apps/func/host.json .
           popd
 
       - name: 'Run Azure Functions Action'
@@ -42,5 +42,5 @@ jobs:
         id: fa
         with:
           app-name: 'klickeruzhprod-responses'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: out
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0119F976602A404FB7A34036973BB491 }}

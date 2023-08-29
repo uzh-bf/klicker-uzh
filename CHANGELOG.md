@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.25...v3.0.0-rc.26) (2023-08-28)
+
+
+### Bug Fixes
+
+* **ci:** copy .so.node to function dist ([015c6a5](https://github.com/uzh-bf/klicker-uzh/commit/015c6a544e576ec6edbaebcf3923350e64949591))
+
+## [3.0.0-rc.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.24...v3.0.0-rc.25) (2023-08-28)
+
+
+### Bug Fixes
+
+* **ci:** copy schema.prisma to azure function for import ([ca7aed2](https://github.com/uzh-bf/klicker-uzh/commit/ca7aed2e044fb5a92b925c749d50e66168b13b18))
+
+## [3.0.0-rc.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.23...v3.0.0-rc.24) (2023-08-28)
+
+## [3.0.0-rc.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.22...v3.0.0-rc.23) (2023-08-28)
+
+## [3.0.0-rc.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.21...v3.0.0-rc.22) (2023-08-28)
+
+## [3.0.0-rc.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.20...v3.0.0-rc.21) (2023-08-28)
+
+
+### Bug Fixes
+
+* **ci:** filtering ([e564432](https://github.com/uzh-bf/klicker-uzh/commit/e564432ba9b0597e602ffb645d76100d795ed69b))
+
 ## [3.0.0-rc.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.19...v3.0.0-rc.20) (2023-08-27)
 
 ## [3.0.0-rc.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.18...v3.0.0-rc.19) (2023-08-27)

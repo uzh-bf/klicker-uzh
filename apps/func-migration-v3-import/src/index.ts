@@ -23,7 +23,7 @@ const blobTrigger: StorageBlobHandler = async function (
     context.log(context.triggerMetadata?.blobTrigger)
 
     const newUserId = context.triggerMetadata?.blobTrigger
-      ?.split('/')[1]
+      ?.split('/')[2]
       .split('_')[0]
 
     const parsedContent = JSON.parse(content)
@@ -65,7 +65,7 @@ const blobTrigger: StorageBlobHandler = async function (
 
     // context.log('mappedFileURLs: ', mappedFileURLs)
 
-    const batchSize = 50
+    const batchSize = 10
 
     const tags = parsedContent.tags
     mappedTags = await importTags(prisma, tags, user, batchSize, context)

@@ -20,3 +20,5 @@ secrets*.yaml
 packages/prisma/src/seed
 !packages/prisma/.env
 .turbo
+
+out/

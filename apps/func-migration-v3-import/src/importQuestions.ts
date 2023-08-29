@@ -32,13 +32,13 @@ export const importQuestions = async (
     const batches = sliceIntoChunks(importedQuestions, batchSize)
 
     for (const batch of batches) {
-      await prisma.$transaction(async (prisma) => {
-        for (const question of batch) {
+      const createdQuestions = await prisma.$transaction(
+        batch.map((question) => {
           const questionExists = questionsDict[question._id]
 
           if (questionExists) {
             mappedQuestionIds[question._id] = questionExists.id
-            continue
+            return Promise.resolve()
           }
 
           const result = {
@@ -127,11 +127,14 @@ export const importQuestions = async (
             throw new Error('Unknown question type')
           }
 
-          const newQuestion = await prisma.question.create({
+          return prisma.question.create({
             data: result.data,
           })
-          mappedQuestionIds[question._id] = newQuestion.id
-        }
+        })
+      )
+
+      createdQuestions.forEach((question) => {
+        mappedQuestionIds[question.originalId] = question.id
       })
     }
 
@@ -140,8 +143,8 @@ export const importQuestions = async (
     context.error('Something went wrong while importing questions: ', error)
     sendTeamsNotifications(
       'func/migration-v3-import',
-      `Failed migration of questions for user '${user.email}'`
+      `Failed migration of questions for user '${user.email}' because of ${error}`
     )
-    throw new (error as any)()
+    throw error
   }
 }

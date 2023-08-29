@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.0.0-rc.20",
+  "version": "3.0.0-rc.26",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -49,6 +49,7 @@
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
     "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
     "prisma:studio": "pnpm run --filter @klicker-uzh/prisma prisma:studio",
+    "prune": "turbo prune",
     "publish": "turbo run publish",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
     "release:alpha:dry": "standard-version --dry-run --prerelease alpha",
@@ -73,5 +74,6 @@
     "node": "18.17.0",
     "pnpm": "8.6.12"
   },
-  "packageManager": "pnpm@8.6.12"
+  "packageManager": "pnpm@8.6.12",
+  "main": "apps/func/dist/index.js"
 }
