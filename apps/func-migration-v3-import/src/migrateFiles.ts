@@ -1,7 +1,7 @@
 import { InvocationContext } from '@azure/functions'
 import { PrismaClient, User } from '@klicker-uzh/prisma'
 import axios from 'axios'
-import { randomUUID } from 'crypto'
+import { v5 as uuidv5 } from 'uuid'
 import getBlobClient from './blob'
 import { sendTeamsNotifications } from './utils'
 
@@ -23,7 +23,7 @@ export const migrateFiles = async (
       )
 
       // upload file to azure blob storage
-      const id = randomUUID()
+      const id = uuidv5(file.name, '3cbe686d-2d38-4494-9de2-28046b6241c4')
       const extension = file.originalName.split('.').pop()
       const blockBlobClient = blobClient.getBlockBlobClient(
         `${id}.${extension}`
@@ -35,7 +35,7 @@ export const migrateFiles = async (
           data: {
             id,
             name: file.originalName,
-            type: 'unset',
+            type: 'migrated',
             href: blockBlobClient.url.split('?')[0],
             originalId: file._id,
             owner: {
@@ -54,6 +54,7 @@ export const migrateFiles = async (
           blockSize: 4 * 1024 * 1024, // 4MB block size
         })
       } catch (e) {
+        // TODO: catch duplicate file
         if (!e.message.includes('Unique constraint failed')) {
           throw e
         }
@@ -72,7 +73,8 @@ export const migrateFiles = async (
     context.error('Something went wrong while migrating files: ', error)
     sendTeamsNotifications(
       'func/migration-v3-import',
-      `Failed migration of images for user '${user.email}'`
+      `Failed migration of images for user '${user.email}'`,
+      context
     )
     throw error
   }
