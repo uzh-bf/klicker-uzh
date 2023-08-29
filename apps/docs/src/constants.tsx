@@ -622,6 +622,184 @@ export default {
   practice_quiz: {
     title: 'Practice Quiz, Flashcards, and Spaced Repetition',
     headerImgSrc: '/img_v3/dan-freeman-WHPsxhB4mWQ-unsplash.jpg',
+    tags: [
+      'Repeated learning',
+      'Sustained memoriation',
+      'Individual needs',
+      'Student engagement',
+      'Regular and spaced learning',
+      'Flashcards',
+      'Immediate feedback',
+      'Active learning',
+    ],
+    goals: [
+      'Provide an opportunity for students to engage in asynchronous learning, allowing them to learn at their own pace.',
+      'Assess and monitor learning progress and helping students assess the understanding of the course material and monitor the progress in learning over time. By completing the practice quizzes, students can identify areas of strength and areas that require further study.',
+      'Provides a streamlined and familiar interface for students to access and complete the quizzes in the LMS.',
+    ],
+    introduction: (
+      <>
+        <p>
+          "How well do I understand a topic?" - A phrase most students are all
+          too familiar with. Practice questions serve as a valuable tool for
+          students to practice and apply their understanding of a topic. While a
+          topic may seem simple when heard or read, the actual application can
+          pose challenges. By engaging with practice questions, students have
+          the opportunity to bridge the gap between theory and application. This
+          process fosters a deeper comprehension of the subject matter, and
+          helps identify any gaps in knowledge. Regularly practicing questions
+          equips students with the necessary skills and familiarity with the
+          format, preparing them for assessments and improving overall learning
+          outcomes.
+        </p>
+        <p>
+          The practice quiz activity in KlickerUZH allows for asynchronous
+          learning with longer question sets (also including flashcards) that
+          specifically target modules or topics and that can be embedded within
+          Learning Management Systems (LMS) like OLAT.
+        </p>
+      </>
+    ),
+    background: (
+      <>
+        <p>
+          For sustainable learning to occur, information entering the short-term
+          memory must be transferred to the long-term memory. Sustainable
+          learning largely depends on two aspects: the meaning and sense of the
+          information, as well as the time it is processed by our brain. To
+          maximize sustainable learning, therefore, one can either increase the
+          relevance, ensure an individual’s understanding, or raise repetition
+          and reinforcement and thus the processing time. (Sousa, 2022) Not only
+          is the time relevant but also the number of confrontations with the
+          information: ‘exposure effects’ positively influence the probability
+          of retention (Johnson & Hasher, 1987). Information becomes more likely
+          to pass to long-term memory areas and to be recalled through stronger
+          fibre connections.
+        </p>
+        <p>
+          When the learning content is repeated at regular intervals, the
+          so-called spacing effect is created, which improves memory and enables
+          students to internalize their knowledge not only in the short term,
+          but in the long term (Cepeda et al., 2006).
+        </p>
+        <p>
+          Kornell's (2009) research looks at the spacing effect in the context
+          of flashcards and explains the benefit of spaced learning by repeating
+          information in different time, physical, and mental contexts. This
+          leads to a richer and more varied process of knowledge acquisition in
+          contrast to massing (repeating content in short, intensive sessions
+          with a large amount of information) or cramming (learning a massive
+          amount of material just before the exam).
+        </p>
+        <p>
+          Overall, the research results show that with the help of spaced
+          learning, students are not only well prepared for the next exam, but
+          are also able to benefit from the learned knowledge in their academic
+          and professional careers long after the exam.
+        </p>
+      </>
+    ),
+    scenario: (
+      <>
+        <p>
+          You are a lecturer and would like to provide your students with an
+          opportunity to revisit the lecture content after the lecture.
+          Therefore, you decide to provide practice quizzes via the KlickerUZH,
+          thanks to which your students can review and study online, using the
+          KlickerUZH app, webpage or even the integration into the LMS. These
+          learning activities have no restrictions on when or how often they can
+          be completed. Furthermore, the questions within each set can be shown
+          in sequence, shuffled, or ordered based on the date of the last
+          response, providing varied experiences for students. The KlickerUZH
+          supports the following question types – many of which are used in an
+          exam setting: Single Choice (SC), Multiple Choice (MC), Kprim (KPRIM),
+          Free Text (FT), and Numerical Response (NR). Additionally, the
+          KlickerUZH offers flashcards (question with an interface to enter an
+          answer, but with a sample solution) that make regular repetition of
+          the course content easy and accessible.
+        </p>
+        <p>
+          For all choice-based question types as well as for the numerical
+          response, after answering a question, students not only receive
+          feedback on their own response (correct or incorrect and why) but also
+          gain insight into the distribution of answers among their peers. This
+          allows them to observe common mistakes that others have made, and
+          identify the level of difficulty of the question.
+        </p>
+        <p>
+          ShapeWhen using gamification, the time frame in which points can be
+          collected from responding to the questions can be customized to, e.g.,
+          once a week or day.
+        </p>
+      </>
+    ),
+    learnings: (
+      <>
+        <p>
+          The inclusion of practice questions for knowledge assessment and exam
+          preparation has been a long-standing practice. Previously at DBF,
+          practice questions were integrated into the Learning Management System
+          (LMS), while flashcards were made available through card2brain (an
+          external app). Furthermore, we conducted an analysis of data from the
+          pilot lectures, namely Banking and Finance I and Banking and Finance
+          II, during the autumn semester of 2022 and the spring semester of
+          2023. Based on these experiences, the following insights have emerged:{' '}
+        </p>
+        <ul>
+          <li>
+            High participation: According to our own analysis, around 75% of all
+            students enrolled in the courses engaged with the practice quizzes
+            in the LMS. This is almost double as high as students completing the
+            microlearning.
+          </li>
+          <li>
+            Peak: Striking is the over-proportional increase in total question
+            entries between weeks 12 and 15, just before the exam. The number of
+            users solving questions in this period is approximately double the
+            number solving questions in the second week and the total number of
+            questions solved is more than 5 times the start values; it becomes
+            clear to see when exam preparation peaked.
+          </li>
+          <li>
+            Gamification increased participation: First evaluation based on
+            multiple questions in the self-learning on OLAT, the questions were
+            identical (number and content) in the autumn semester 2020, 2021 and
+            2022. However, in 2022 we included the gamification approach and
+            added microlearnings on the course level. We saw higher access
+            numbers, more repetition across all students as well as more
+            repetition per student (fall 20/21: Average: 1.96x per student,
+            maximum: 21x vs. fall 2022: Average: 2.45x per student, Maximum:
+            41x).
+          </li>
+          <li>
+            Repetition as the key performance factor in the mock exam: The most
+            significant positive correlation with good performance in a mock
+            exam in Banking and Finance II lies in the number of question
+            entries, much more so than in their accuracy or the completed range
+            across all available questions. High numbers of question entries
+            also correlate the most strongly with high leaderboard points,
+            leading to the conclusion that a high engagement level is the
+            crucial factor influencing both the mock exam and leaderboard
+            points. The reason for this may lie in the fact that answering many
+            questions more than once (which is necessary to achieve a high total
+            question entry count), means students are repeating information.
+            Thus, repetition priming by drawing upon and reusing already
+            established neural connections is key to success.
+          </li>
+          <li>
+            Devices: The majority (85%) of the students participated in the
+            practice quizzes by using their laptop.
+          </li>
+          <li>
+            Quick win: If you already have practice questions in another tool
+            (e.g., OLAT), you can easily implement them into the KlickerUZH.
+            This allows you to leverage the advantages of peer answer
+            distributions and the integration into the optional gamification
+            course concept.
+          </li>
+        </ul>
+      </>
+    ),
   },
   group_activity: {
     title: 'Group Activities',
