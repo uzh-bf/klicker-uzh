@@ -1,4 +1,4 @@
-name: Build and deploy func-migration-v2-export to Function App (Production)
+name: Build and deploy func-migration-v2-export to Azure Function App (Production)
 
 on:
   push:
