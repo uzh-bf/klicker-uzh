@@ -2,7 +2,14 @@ name: Build and deploy func-migration-v3-import to Function App (Production)
 
 on:
   push:
-    tags: ['v*.*.*']
+    branches:
+      - 'v3'
+      - 'CI'
+    paths:
+      - 'apps/func-migration-v3/**'
+      - '.github/workflows/v3_klickeruzhprod-migration-import**'
+  # push:
+  #   tags: ['v*.*.*']
   workflow_dispatch:
 
 env:

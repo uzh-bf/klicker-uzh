@@ -2,7 +2,14 @@ name: Build and deploy func-migration-v2-export to Function App (Production)
 
 on:
   push:
-    tags: ['v*.*.*']
+    branches:
+      - 'v3'
+      - 'CI'
+    paths:
+      - 'apps/func-migration-v2-export/**'
+      - '.github/workflows/v3_klickeruzhprod-migration-export**'
+  # push:
+  #   tags: ['v*.*.*']
   workflow_dispatch:
 
 env:
