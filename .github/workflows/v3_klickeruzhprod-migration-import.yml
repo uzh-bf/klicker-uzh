@@ -40,13 +40,8 @@ jobs:
           echo "node-linker=hoisted" > .npmrc
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
           pnpm run build
-          mkdir -p node_modules/@klicker-uzh apps/func-migration-v3-import/node_modules/@klicker-uzh
-          cp -Rfl packages/prisma node_modules/@klicker-uzh/
-          rm -f apps/func-migration-v3-import/node_modules/@klicker-uzh/prisma
-          cp -Rfl packages/prisma apps/func-migration-v3-import/node_modules/@klicker-uzh/
-          mv apps/func-migration-v3-import apps/func
-          mv apps/func/host.json .
           cp packages/prisma/dist/schema.prisma apps/func/dist/schema.prisma
+          cp packages/prisma/dist/*.so.node apps/func/dist/
           popd
 
       - name: 'Run Azure Functions Action'
