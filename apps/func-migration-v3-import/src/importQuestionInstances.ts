@@ -141,6 +141,8 @@ export const importQuestionInstances = async (
                     },
                   }
                 : undefined,
+              createdAt: new Date(questionInstance.createdAt),
+              updatedAt: new Date(questionInstance.updatedAt),
             }
           })
         )
@@ -193,7 +195,8 @@ export const importQuestionInstances = async (
     )
     sendTeamsNotifications(
       'func/migration-v3-import',
-      `Failed migration of question instances for user '${user.email}' because of ${error}`
+      `Failed migration of question instances for user '${user.email}' because of ${error}`,
+      context
     )
     throw error
   }

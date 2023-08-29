@@ -57,6 +57,8 @@ export async function importTags(
                   id: user.id,
                 },
               },
+              createdAt: new Date(tag.createdAt),
+              updatedAt: new Date(tag.updatedAt),
             },
           },
         ]
@@ -78,7 +80,8 @@ export async function importTags(
     context.error('Something went wrong while importing tags: ', error)
     sendTeamsNotifications(
       'func/migration-v3-import',
-      `Failed migration of tags for user '${user.email}' because of ${error}`
+      `Failed migration of tags for user '${user.email}' because of ${error}`,
+      context
     )
     throw error
   }

@@ -73,7 +73,8 @@ export const migrateFiles = async (
     context.error('Something went wrong while migrating files: ', error)
     sendTeamsNotifications(
       'func/migration-v3-import',
-      `Failed migration of images for user '${user.email}'`
+      `Failed migration of images for user '${user.email}'`,
+      context
     )
     throw error
   }

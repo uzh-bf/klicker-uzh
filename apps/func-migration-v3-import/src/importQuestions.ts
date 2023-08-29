@@ -44,8 +44,6 @@ export const importQuestions = async (
           return []
         }
 
-        context.log(question)
-
         const result = {
           data: {
             originalId: question._id,
@@ -89,6 +87,8 @@ export const importQuestions = async (
                 id: user.id,
               },
             },
+            createdAt: new Date(question.createdAt),
+            updatedAt: new Date(question.updatedAt),
           },
         }
 
@@ -154,7 +154,8 @@ export const importQuestions = async (
     context.error('Something went wrong while importing questions: ', error)
     sendTeamsNotifications(
       'func/migration-v3-import',
-      `Failed migration of questions for user '${user.email}' because of ${error}`
+      `Failed migration of questions for user '${user.email}' because of ${error}`,
+      context
     )
     throw error
   }
