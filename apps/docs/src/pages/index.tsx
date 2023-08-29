@@ -8,8 +8,8 @@ import TitleImage from '../components/landing/TitleImage'
 function Home() {
   return (
     <Layout>
-      <div className="px-8 md:px-16 mb-10">
-        <TitleImage />
+      <TitleImage />
+      <div className="max-w-[1500px] mx-auto w-full">
         <SellingPoints />
         <Separator />
         <Features />
