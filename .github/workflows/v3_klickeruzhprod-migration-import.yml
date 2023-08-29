@@ -40,6 +40,8 @@ jobs:
           echo "node-linker=hoisted" > .npmrc
           pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
           pnpm run build
+          mv apps/func-migration-v3-import apps/func
+          mv apps/func/host.json .
           cp packages/prisma/dist/schema.prisma apps/func/dist/schema.prisma
           cp packages/prisma/dist/*.so.node apps/func/dist/
           popd
