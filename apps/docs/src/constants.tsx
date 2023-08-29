@@ -1192,26 +1192,312 @@ export default {
   gamification: {
     title: 'Gamification',
     headerImgSrc: '/img_v3/brands-people-ZdqSuxl3Lak-unsplash.jpg',
-    tags: [],
-    goals: [],
+    tags: [
+      'Engagement and motivation',
+      'Active participation',
+      'Playful learning',
+      'Challenge/reward system',
+      'Competition and prizes',
+      'Immediate feedback and recognition',
+      'Increased interest and achievement',
+      'Dynamic and enriching educational experience',
+    ],
+    goals: [
+      'Enhance engagement and motivation by incorporating game elements into learning experience.',
+      'Encourage active participation and involvement of students in the lecture.',
+      'Increase motivation by incorporating a challenge/reward system throughout the lecture including points, groups and group activities, badges / achievements, levels, and prizes.',
+      'Enhance the learning experience by creating a dynamic and immersive learning environment where students can interact with the course material in a more engaging way.',
+      'Provide opportunities for healthy competition, encouraging students to strive for achievements, rewards, or higher scores, which can drive their learning progress.',
+      "Offer immediate feedback, rewards, and recognition for accomplishments, supporting students' progress and growth.",
+    ],
     introduction: (
       <>
-        <p></p>
+        <p>
+          Gamification is the integration of game-typical elements to
+          educational contexts (Deterding et al., 2011). By incorporating these
+          game elements, gamification aims to create a more interactive and
+          immersive environment, where students actively participate, compete,
+          and explore course content. It leverages intrinsic motivators, such as
+          curiosity, competition, and a sense of achievement, to foster deeper
+          learning, retention of knowledge, and the development of skills.
+        </p>
+        <p>
+          As an exemplary framework to implement gamification, Nah et al. (2014)
+          propose the following design elements after reviewing 15 papers on the
+          literature on gamification. In addition to the eight elements, it is
+          important to keep in mind that Khurana and Kumar (2012) find a crucial
+          factor for determining the success of the gamified content in
+          improving student performance is the inclusion of ‘fun’. This is not
+          surprising – if ever a non-compulsory game stops being fun, players
+          will stop playing it.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th className="p-2">Design Element</th>
+              <th>Explanation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="p-2">Points</td>
+              <td>
+                Measure success and progress, potentially leading to rewards
+              </td>
+            </tr>
+            <tr>
+              <td className="p-2">Levels / Stages</td>
+              <td>
+                Players can progress throughout the game with levels increasing
+                in difficulty
+              </td>
+            </tr>
+            <tr>
+              <td className="p-2">Badges</td>
+              <td>
+                Mark special achievements or acomplishments, useful for looking
+                into the future
+              </td>
+            </tr>
+            <tr>
+              <td className="p-2">Leaderboards</td>
+              <td>
+                Create a competitive setting, often show only a limited number
+                of participants to avoid demotivation
+              </td>
+            </tr>
+            <tr>
+              <td className="p-2">Prizes and Rewards</td>
+              <td>
+                Serves as motivation, generally better to receive many small
+                rewards than one big one
+              </td>
+            </tr>
+            <tr>
+              <td className="p-2">Progress Bars</td>
+              <td>Track progress towards overall or individual goals</td>
+            </tr>
+            <tr>
+              <td className="p-2">Storyline</td>
+              <td>Narrative for learning context and consistent motivation</td>
+            </tr>
+            <tr>
+              <td className="p-2">Feedback</td>
+              <td>The more frequent and concise, the better</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          All the afore-mentioned design elements are seamlessly integrated into
+          KlickerUZH and can be utilized at the course level, with many of them
+          applicable to specific live quizzes as well. This approach not only
+          motivates students, but also encourages deeper engagement with course
+          content in a way that is not only educational, but also entertaining.
+        </p>
       </>
     ),
     background: (
       <>
-        <p></p>
+        <p>
+          A number of studies show promising findings with regard to
+          gamification. For instance, research by Sailer & Homner (2020)
+          investigates the effect of gamification on cognitive and behavioral
+          learning outcomes. The results showed that gamified learning not only
+          improves students' cognitive skills, but also positively influences
+          their behavior in the learning environment. In this regard, the
+          challenging aspect of gamification has a motivating effect on students
+          and may be evidenced by an increased interest in the learning content.
+        </p>
+        <p>
+          But what are the effects of gamification in large classes? Especially
+          in a big class, it is often a challenge to ensure the engagement of
+          individual students and to keep them motivated. The element of
+          gamification can help in this regard. Gamification can create a
+          playful and competitive environment that encourages student engagement
+          and, accordingly, leads to higher achievement as a study of Stott &
+          Neustaedte (2013) shows.
+        </p>
+        <p>
+          Ultimately, the application of gamification in large classes allows
+          for an enriching and motivating learning environment that has the
+          potential to create a dynamic atmosphere and sustainably improve the
+          educational experience for students.
+        </p>
       </>
     ),
     scenario: (
       <>
-        <p></p>
+        <p>
+          You are a lecturer and wish to add gamification elements to your
+          lecture. KlickerUZH allows this either at the course level or by
+          implementing gamification into specific live quizzes (for the later,
+          see the use case on the (gamified) live quizzes).
+        </p>
+        <p>
+          At the course level, KlickerUZH incorporates an optional challenge
+          system that allows students to actively engage in the course
+          throughout the semester or a self-selected period. Students can create
+          an avatar and earn points by actively engaging in the course, whether
+          through participation in live or practice quizzes, microlearnings or
+          by completing group activities. These points are displayed on a course
+          leaderboard, showcasing the top 10 students as well as a participant's
+          individual ranking within the challenge. However, a participant's
+          individual ranking within the challenge is only visible to themselves
+          and not shared with other students. Within a course, students can also
+          form groups to check how their peers are doing with regard to their
+          ranking and take part in collaborative group activities. Based on the
+          points achieved there are levels which can be reached and that
+          increases their motivation to engage in the course.
+        </p>
+        <p>
+          In addition to the challenge system, the KlickerUZH offers a design
+          for a storyline and visual aspects that can be integrated optionally.
+        </p>
+        <p>
+          Lecturers have the freedom to further personalize the implementation
+          of gamification elements according to their preferences. They can
+          award achievements to recognize individual participants'
+          accomplishments (e.g., Team spirit for taking part in a group
+          activity) or giving gifts or rewards to further incentivize students'
+          engagement and participation.
+        </p>
+        <p>
+          To ensure easy accessibility and improve participation, it is
+          recommended to prepare a semester-long timeline outlining the gamified
+          learning activities in KlickerUZH and the challenge details (e.g., if
+          there are any awards for winning the challenge). This provides
+          students with a clear understanding of what to expect during the
+          semester, including when and where they can earn points to progress in
+          the competition. If these elements are clear, students could end up
+          frustrated and quit playing.
+        </p>
       </>
     ),
     learnings: (
       <>
-        <p></p>
+        <p>
+          The gamification concept has been successfully implemented in two
+          large first-year lectures, accommodating up to 800 students (Banking
+          and Finance I and II), as well as two bachelor courses at the
+          University of Zurich during the autumn semester of 2022 and the spring
+          semester of 2023. The integration of various activities aimed to
+          create a fully gamified lecture. To evaluate the effectiveness of this
+          approach, multiple sources were utilized for the conclusion. This
+          included an end-of-semester course evaluation completed by the
+          students, an internal survey distributed to the students of the latter
+          lecture (n=63), as well as valuable input from lecturers and content
+          creators. Furthermore, in the second course, a mock exam was
+          administered and corrected, and the points achieved in the mock exam
+          were considered in conjunction with student participation in the BF
+          challenge. These multiple sources of information provided a
+          comprehensive perspective on the outcomes of the gamified approach:
+        </p>
+        <ul>
+          <li>
+            Student feedback: 89.1% of participants claimed the full KlickerUZH
+            concept helped them understand the learning content and 74.6% found
+            the concept fun. These statistics are very encouraging to see; many
+            students explicitly expressed their gratitude for the concept and
+            named it the “best learning environment in the assessment!". 79.4%
+            would like to see it in further lectures as a tool to revise and
+            apply the material while interacting with other students. In a
+            multiple-choice question, 51.7% found the concept useful and more
+            than 20% deem the workload and difficulty appropriate. These results
+            indicate the majority of participants find added value in the
+            KlickerUZH and would like to engage in the concept in the future.
+          </li>
+          <li>
+            BF Challenge: Even though 89.6% of the students enrolled in Banking
+            and Finance II had created a KlickerUZH account, only 25.5% found
+            the BF Challenge motivating. At no point in the spring semester did
+            more than 40.9% of users join the leaderboard, meaning the pool of
+            students who competed for prizes was relatively small. 55.6% of
+            KlickerUZH survey participants claimed they had never been active in
+            the self-learning environment with the sole objective of receiving
+            points and 44% replied they had done so at least once. And 84.1% of
+            participants felt the chance at potential prizes did not influence
+            the number of points they collected; they would not have collected
+            fewer had there been no prizes. This shows that not only were the
+            majority of users not interested in the BF Challenge, but they were
+            also not ambitious in reaching the top.
+          </li>
+          <li>
+            Account creation: Even though they may not have wanted to compete
+            for prizes on the leaderboard, new accounts were created each week
+            and the ratio between completely inactive and active users declines
+            throughout the spring semester. This shows there was still some
+            general incentive to collect points or merely work with an avatar
+            throughout the semester since most of the features could have also
+            been completed without accounts. Students may have been interested
+            to see how they compare to their peers in the leaderboard without
+            wanting to compete, or they may have created an account for specific
+            features, such as the awarding of points from the mock exam or the
+            potential prizes after the two live quizzes.
+          </li>
+          <li>
+            Gamification as a distractor: It is important to recognize that not
+            all students may be receptive to gamification. Some individuals may
+            have personal preferences or reasons for not enjoying or engaging
+            with gamified elements. 4% found the KlickerUZH concept distracting,
+            however, none deemed it unnecessary.
+          </li>
+          <li>
+            Top20 users: Though the average user may not have been ambitious in
+            climbing the leaderboard, several did stand out as the top20. These
+            students participated, on average, in a more extensive range of the
+            different features offered, such as the microlearning and mock exam,
+            and achieved higher scores in them. More than a quarter of all
+            learning element question entries stem from this pool of 5% of
+            users; they were more than five times as active as their average
+            peer and consistently scored high points not only in the leaderboard
+            but also in the mock exam.
+          </li>
+          <li>
+            Link to performance in the mock exam: The most significant positive
+            correlation with good performance in the mock exam lies in the
+            number of question entries students complete throughout the
+            semester, much more so than in their accuracy or the completed range
+            across all available questions. High numbers of question entries
+            correlate the most strongly with high leaderboard points, too,
+            leading to the conclusion that a high engagement level is the
+            crucial factor influencing both the mock exam and leaderboard
+            points.
+          </li>
+          <li>
+            Peer pressure: The impact of gamification could also be influenced
+            by the size of the class and the level of familiarity among
+            students. Smaller classes (like the summer school course with around
+            40 students) benefit from stronger peer pressure and social
+            dynamics, which can enhance the effectiveness of gamification.
+          </li>
+          <li>
+            Overemphasis on competition: While competition can be a motivating
+            factor, an excessive focus on rankings and leaderboards may create
+            negative effects. Utilizing group activities and emphasizing
+            cooperative achievements can help balance competition and
+            collaboration.
+          </li>
+          <li>
+            Choose motivational rewards: When implementing rewards, careful
+            consideration should be given to selecting appropriate rewards that
+            align with students' interests and preferences. Rewards do not need
+            to be costly but should be meaningful and incentivize students'
+            engagement and participation (this could also be choosing a song
+            that is played in the break, or that winner can influence the
+            company names / fictional people in an exam question in the future).
+          </li>
+          <li>
+            Lecturer encouragement: Motivational encouragement from the lecturer
+            is indeed crucial to foster student participation in gamified
+            challenges.
+          </li>
+          <li>
+            Time consumption: Effectively designing gamified experiences
+            requires time, resources, and expertise. Poorly executed
+            gamification attempts can lead to confusion or disengagement among
+            students.
+          </li>
+        </ul>
       </>
     ),
   },
