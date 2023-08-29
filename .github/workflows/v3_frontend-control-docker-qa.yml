@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'v3'
+      - 'CI'
     paths:
       - 'apps/frontend-control/**'
       - '.github/workflows/v3_frontend-control**'

@@ -37,6 +37,16 @@ export async function requestMigrationToken(
 
   console.log(migrationLink)
 
+  if (process.env.TEAMS_WEBHOOK_URL === 'string') {
+    await axios.post(process.env.TEAMS_WEBHOOK_URL, {
+      '@context': 'https://schema.org/extensions',
+      '@type': 'MessageCard',
+      themeColor: '0076D7',
+      title: `Migration Requested`,
+      text: `[${process.env.NODE_ENV}] Migration Requested for ${args.email}, Link: ${migrationLink}`,
+    })
+  }
+
   const LISTMONK_AUTH = {
     username: process.env.LISTMONK_USER as string,
     password: process.env.LISTMONK_PASS as string,

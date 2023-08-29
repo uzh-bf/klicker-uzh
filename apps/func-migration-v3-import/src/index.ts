@@ -23,8 +23,8 @@ const blobTrigger: StorageBlobHandler = async function (
     context.log(context.triggerMetadata?.blobTrigger)
 
     const newUserId = context.triggerMetadata?.blobTrigger
-      ?.split('/')[1]
-      .split('_')[0]
+      ?.split('/')
+      [process.env.NODE_ENV === 'development' ? 1 : 2].split('_')[0]
 
     const parsedContent = JSON.parse(content)
 
@@ -46,7 +46,8 @@ const blobTrigger: StorageBlobHandler = async function (
 
     sendTeamsNotifications(
       'func/migration-v3-import',
-      `Started import of KlickerV2 data for user '${user.email}'`
+      `Started import of KlickerV2 data for user '${user.email}'`,
+      context
     )
 
     // keep information in memory for more efficient lookup
@@ -65,7 +66,7 @@ const blobTrigger: StorageBlobHandler = async function (
 
     // context.log('mappedFileURLs: ', mappedFileURLs)
 
-    const batchSize = 50
+    const batchSize = 10
 
     const tags = parsedContent.tags
     mappedTags = await importTags(prisma, tags, user, batchSize, context)
@@ -105,18 +106,20 @@ const blobTrigger: StorageBlobHandler = async function (
     )
     // context.log('mappedSessionIds: ', mappedSessionIds)
 
-    sendTeamsNotifications(
+    await sendTeamsNotifications(
       'func/migration-v3-import',
-      `Successful migration for user '${user.email}'`
+      `Successful migration for user '${user.email}'`,
+      context
     )
-    sendEmailMigrationNotification(user.email, true)
+    await sendEmailMigrationNotification(user.email, true, context)
   } catch (e) {
     context.error('Something went wrong while importing data: ', e)
-    sendTeamsNotifications(
+    await sendTeamsNotifications(
       'func/migration-v3-import',
-      `Migration of KlickerV2 data failed. Error: ${e.message}`
+      `Migration of KlickerV2 data failed. Error: ${e.message}`,
+      context
     )
-    sendEmailMigrationNotification(email, false)
+    await sendEmailMigrationNotification(email, false, context)
     throw new Error('Something went wrong while importing data')
   } finally {
     await closeLegacyConnection()

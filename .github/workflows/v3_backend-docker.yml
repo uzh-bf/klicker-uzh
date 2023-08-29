@@ -5,6 +5,7 @@ on:
     tags: ['v*.*.*']
     branches:
       - 'v3'
+      - 'CI'
     paths:
       - 'apps/backend-docker/**'
       - '.github/workflows/v3_backend-docker**'

@@ -23,8 +23,12 @@
     "snapshotPersistenceEnabled": true
   },
   "extensions": {
+    "blobs": {
+      "maxDequeueCount": 1
+    },
     "queues": {
       "maxDequeueCount": 1
     }
-  }
+  },
+  "functionTimeout": "00:10:00"
 }
