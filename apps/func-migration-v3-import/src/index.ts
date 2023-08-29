@@ -23,7 +23,7 @@ const blobTrigger: StorageBlobHandler = async function (
     context.log(context.triggerMetadata?.blobTrigger)
 
     const newUserId = context.triggerMetadata?.blobTrigger
-      ?.split('/')[1]
+      ?.split('/')[2]
       .split('_')[0]
 
     const parsedContent = JSON.parse(content)
