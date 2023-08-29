@@ -171,8 +171,8 @@ export const importQuestionInstances = async (
     )
     sendTeamsNotifications(
       'func/migration-v3-import',
-      `Failed migration of question instances for user '${user.email}'`
+      `Failed migration of question instances for user '${user.email}' because of ${error}`
     )
-    throw new (error as any)()
+    throw error
   }
 }

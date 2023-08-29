@@ -207,8 +207,8 @@ export const importSessions = async (
     context.error('Something went wrong while importing sessions: ', error)
     sendTeamsNotifications(
       'func/migration-v3-import',
-      `Failed migration of sessions for user '${user.email}'`
+      `Failed migration of sessions for user '${user.email}' because of ${error}`
     )
-    throw new (error as any)()
+    throw error
   }
 }
