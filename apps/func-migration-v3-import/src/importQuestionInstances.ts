@@ -141,19 +141,6 @@ export const importQuestionInstances = async (
             questionId = question?.id
           }
 
-          if (
-            questionInstance.results &&
-            !questionInstance.results.CHOICES &&
-            !questionInstance.results.FREE
-          ) {
-            questionInstance.results = await getLegacyResults(
-              questionInstance._id
-            )
-            if (questionInstance.results == null) {
-              lostResults.push(questionInstance)
-            }
-          }
-
           const results = processResults(questionData, questionInstance)
 
           const result = {
