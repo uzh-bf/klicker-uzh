@@ -456,25 +456,27 @@ export default {
           importance of carefully reviewing lectures, consistent preparation and
           reviewing often falls behind. Students usually have to spend a lot of
           time recapitulating the material in a short time period before the
-          exam. But what if there was an effi-cient and modern way to tackle
-          this problem and to encourage regular repetition? This is exactly
-          where the microlearning concept kicks in. Microlearning is a teaching
-          approach character-ized by delivering concise and focused units of
-          learning material, often in the form of short activities. It refers to
-          sessions ranging from several seconds to 15 minutes (Buchem &
-          Hamelmann, 2010) and from 30 seconds to five minutes according to
-          Jahnke et al. (2020). Generally, an average between the two is used.
-          Such short durations have two main advantages: (1) they can be
-          completed at convenient times of a busy day, for example, while
-          commuting or during a lunch break, and (2) learners are likely to stay
-          focused for the entire session since it does not extend their
-          relatively short average attention spans.
+          exam. But what if there was an efficient and modern way to tackle this
+          problem and to encourage regular repetition?
+        </p>
+        <p>
+          This is exactly where the microlearning concept kicks in.
+          Microlearning is a teaching approach characterized by delivering
+          concise and focused units of learning material, often in the form of
+          short activities. It refers to sessions ranging from several seconds
+          to 15 minutes (Buchem & Hamelmann, 2010) and from 30 seconds to five
+          minutes according to Jahnke et al. (2020). Generally, an average
+          between the two is used. Such short durations have two main
+          advantages: (1) they can be completed at convenient times of a busy
+          day, for example, while commuting or during a lunch break, and (2)
+          learners are likely to stay focused for the entire session since it
+          does not extend their relatively short average attention spans.
         </p>
         <p>
           Microlearning is designed to counter the effects of the ‘Forgetting
           Curve’, according to which our ability to retain information rapidly
-          declines after twenty minutes. It offers students the opportunity to
-          con-sume knowledge in compact units, often directly on their
+          declines after twenty minutes.  It offers students the opportunity to
+          consume knowledge in compact units, often directly on their
           smartphones. The most important content from lectures is presented
           briefly and precisely. With targeted questions, students can test
           themselves, refresh and consolidate their knowledge - regardless of
@@ -522,7 +524,7 @@ export default {
         </p>
         <p>
           To enhance student motivation and engagement, microlearning sessions
-          are designed to include con-cise summaries and visual illustrations of
+          are designed to include concise summaries and visual illustrations of
           key concepts. It is recommended to limit the question set to a range
           of five to ten questions. In order to incentivize student
           participation, microlearning sessions can be made available for a
@@ -531,10 +533,10 @@ export default {
         </p>
         <p>
           Since the questions are meant to be answered whenever students find
-          time to do so, the level of diffi-culty should not be too elevated.
+          time to do so, the level of difficulty should not be too elevated.
           Nevertheless, these short learning sequences have a positive effect on
           concentration and thus promote your long-term knowledge absorption. In
-          this context the ques-tions posed should have a clear answer.
+          this context the questions posed should have a clear answer.
         </p>
         <p>
           If you wish to do so, the microlearning sessions can be incorporated
@@ -554,10 +556,10 @@ export default {
           education, we conducted an internal surveys with a sample size of 63
           participants. Please note that the results presented here are based on
           qualitative feedback and are not derived from a statistically
-          significant dataset or formal analysis. In ad-dition to the survey
+          significant dataset or formal analysis. In addition to the survey
           data, we also gathered insights from lecturers and content creators to
-          further en-hance our understanding. Based on this collective input,
-          the following learnings have emerged:
+          further enhance our understanding. Based on this collective input, the
+          following learnings have emerged:
         </p>
         <ul>
           <li>
@@ -568,13 +570,13 @@ export default {
           </li>
           <li>
             Motivation and better understanding: Results indicate that students
-            generally have a positive at-titude towards microlearnings. In the
+            generally have a positive attitude towards microlearnings. In the
             internal survey, a majority of the participants, specifically 72%,
             expressed that engaging with the microlearning content increased
-            their motivation to re-view the learning material. An even greater
-            number claimed microlearning helped them remem-ber and understand
-            the material (87.0% of those who completed a session). Participants
-            men-tioned they found it very helpful to revise the material on a
+            their motivation to review the learning material. An even greater
+            number claimed microlearning helped them remember and understand the
+            material (87.0% of those who completed a session). Participants
+            mentioned they found it very helpful to revise the material on a
             weekly basis and see whether they had understood the concepts. It
             was even requested to increase the number of questions in the
             microlearning sessions, which currently lay at 3.75 questions per
@@ -584,7 +586,7 @@ export default {
             Level of difficulty: While some students have criticized that the
             questions are not of an exam-level difficulty, it is important to
             clarify in advance that the purpose of these questions is to
-            facili-tate repetition and enhance long-term retention of knowledge,
+            facilitate repetition and enhance long-term retention of knowledge,
             rather than to directly prepare students for exams.
           </li>
           <li>
@@ -600,14 +602,14 @@ export default {
           </li>
           <li>
             Regularity: To ensure the effectiveness of microlearning, it is
-            essential to schedule regular ques-tion sessions to provide ongoing
+            essential to schedule regular question sessions to provide ongoing
             practice and reinforcement of the course material. However, some
             students expressed a preference for having the microlearnings
-            available continuously, ra-ther than within a fixed time window.
+            available continuously, rather than within a fixed time window.
           </li>
           <li>
             Integration of microlearning into LMS: To accommodate students who
-            missed the microlearn-ing sessions, we integrated the questions into
+            missed the microlearning sessions, we integrated the questions into
             the learning management system (OLAT) some days after the
             microlearning session. This enabled students to access and engage
             with the questions, even if they couldn't attend the microlearning
