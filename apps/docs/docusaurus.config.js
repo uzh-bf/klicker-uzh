@@ -111,7 +111,7 @@ const config = {
       logo: {
         src: '/img/KlickerLogo.png',
         srcDark: '/img/KlickerLogo.png',
-        href: '/home',
+        href: '/',
       },
       items: [
         {
