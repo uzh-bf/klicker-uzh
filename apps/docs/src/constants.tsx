@@ -18,6 +18,16 @@ export default {
       'Improve motivation by incorporating interactive gamification elements.',
       'Evaluate feedback from your students (e.g., opinions or level of knowledge).',
     ],
+    abstract: (
+      <>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
+          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
+          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
+          ratione odit?
+        </p>
+      </>
+    ),
     introduction: (
       <>
         <p>
@@ -269,6 +279,16 @@ export default {
       'Provide timely feedback and help students understand where they stand and address any concerns they may have.',
       'Foster stronger interaction between the lecturer and students during the lecture and encourage active participation.',
     ],
+    abstract: (
+      <>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
+          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
+          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
+          ratione odit?
+        </p>
+      </>
+    ),
     introduction: (
       <>
         <p>
@@ -449,6 +469,16 @@ export default {
       'Promote long-term knowledge-retention.',
       'Provide timely feedback and help students understand where they stand and address any concerns they may have.',
     ],
+    abstract: (
+      <>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
+          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
+          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
+          ratione odit?
+        </p>
+      </>
+    ),
     introduction: (
       <>
         <p>
@@ -637,6 +667,16 @@ export default {
       'Assess and monitor learning progress and helping students assess the understanding of the course material and monitor the progress in learning over time. By completing the practice quizzes, students can identify areas of strength and areas that require further study.',
       'Provides a streamlined and familiar interface for students to access and complete the quizzes in the LMS.',
     ],
+    abstract: (
+      <>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
+          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
+          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
+          ratione odit?
+        </p>
+      </>
+    ),
     introduction: (
       <>
         <p>
@@ -821,6 +861,16 @@ export default {
       'Enable students to develop (transversal) teamwork skills and learn to collaborate efficiently as a group.',
       'Prepare students for future professional challenges requiring collaboration and teamwork.',
     ],
+    abstract: (
+      <>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
+          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
+          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
+          ratione odit?
+        </p>
+      </>
+    ),
     introduction: (
       <>
         <p>
@@ -1011,6 +1061,16 @@ export default {
       'Enable lecturers and their team to provide rapid feedback on incoming questions.',
       'Improve the efficiency of the Q&A workflow by batching questions (in sessions, with upvotes, etc.).',
     ],
+    abstract: (
+      <>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
+          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
+          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
+          ratione odit?
+        </p>
+      </>
+    ),
     introduction: (
       <>
         <p>
@@ -1210,6 +1270,16 @@ export default {
       'Provide opportunities for healthy competition, encouraging students to strive for achievements, rewards, or higher scores, which can drive their learning progress.',
       "Offer immediate feedback, rewards, and recognition for accomplishments, supporting students' progress and growth.",
     ],
+    abstract: (
+      <>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
+          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
+          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
+          ratione odit?
+        </p>
+      </>
+    ),
     introduction: (
       <>
         <p>
