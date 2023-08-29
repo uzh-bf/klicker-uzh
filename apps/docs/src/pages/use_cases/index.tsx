@@ -2,14 +2,14 @@ import Link from '@docusaurus/Link'
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import UseCaseLayout from '@site/src/components/usecases/UseCaseLayout'
-import { Button, H1, H3 } from '@uzh-bf/design-system'
+import { Button, H1, H2 } from '@uzh-bf/design-system'
 import USE_CASES from '../../constants'
 
 function Card({ slug, title, image, abstract }) {
   return (
-    <div className="mt-4 flex max-h-80 flex-row rounded-xl bg-slate-100">
-      <div className="flex flex-1 flex-col justify-center p-8 md:p-16">
-        <H3 className={{ root: 'text-xl' }}>{title}</H3>
+    <div className="flex flex-col md:flex-row rounded-xl bg-slate-100">
+      <div className="order-2 md:order-1 flex-1 p-8 md:p-16 space-y-4">
+        <H2>{title}</H2>
         <p className="font-sans text-lg">{abstract}</p>
         <div>
           <Link href={`/use_cases/${slug}`}>
@@ -20,7 +20,7 @@ function Card({ slug, title, image, abstract }) {
           </Link>
         </div>
       </div>
-      <div className="relative hidden flex-1 items-center justify-items-center md:flex">
+      <div className="order-1 md:order-2 flex-1">
         <img className="h-full w-full rounded-r-xl object-cover" src={image} />
       </div>
     </div>
@@ -31,15 +31,17 @@ function Index() {
   return (
     <UseCaseLayout path="/use_cases">
       <H1>Use Cases</H1>
-      {Object.entries(USE_CASES).map(([slug, useCase]) => (
-        <Card
-          key={useCase.title}
-          slug={slug}
-          title={useCase.title}
-          image={useCase.headerImgSrc}
-          abstract={useCase.abstract}
-        />
-      ))}
+      <div className="space-y-4 w-full">
+        {Object.entries(USE_CASES).map(([slug, useCase]) => (
+          <Card
+            key={useCase.title}
+            slug={slug}
+            title={useCase.title}
+            image={useCase.headerImgSrc}
+            abstract={useCase.abstract}
+          />
+        ))}
+      </div>
     </UseCaseLayout>
   )
 }

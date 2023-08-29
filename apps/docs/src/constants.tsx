@@ -21,10 +21,10 @@ export default {
     abstract: (
       <>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
-          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
-          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
-          ratione odit?
+          KlickerUZH, a Classroom Response System (CRS), fosters student
+          participation and inclusion in large courses via simple, anonymous
+          polling mechanisms. Its gamification features promote active learning
+          while reducing fears of judgment.
         </p>
       </>
     ),
@@ -282,10 +282,12 @@ export default {
     abstract: (
       <>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
-          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
-          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
-          ratione odit?
+          The Flipped Classroom model inverts traditional teaching by shifting
+          knowledge acquisition to self-paced, independent study using
+          comprehensive eLearning resources before in-person classes. During
+          these classes, the focus is on practicing and consolidating this
+          knowledge with the lecturer, thereby ensuring a deeper understanding
+          and ample time to address specific queries.
         </p>
       </>
     ),
@@ -472,10 +474,13 @@ export default {
     abstract: (
       <>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
-          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
-          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
-          ratione odit?
+          Microlearning, an education approach that delivers short, focused
+          learning units, aims to mitigate the challenges of information
+          retention and irregular study patterns often experienced by students.
+          With its brevity and flexibility, students can fit learning into their
+          daily schedules and combat the 'Forgetting Curve', enabling them to
+          review, refresh, and consolidate lecture content, irrespective of time
+          or location.
         </p>
       </>
     ),
@@ -670,10 +675,11 @@ export default {
     abstract: (
       <>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
-          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
-          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
-          ratione odit?
+          Practice questions serve as an effective tool for students to bridge
+          the gap between theory and application, enhancing comprehension and
+          identifying knowledge gaps. KlickerUZH's practice quiz activity
+          facilitates asynchronous learning through question sets targeting
+          specific modules or topics.
         </p>
       </>
     ),
@@ -864,10 +870,13 @@ export default {
     abstract: (
       <>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
-          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
-          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
-          ratione odit?
+          Group activities foster creativity, critical thinking, communication
+          skills, and accountability among students, preparing them for
+          collaborative academic and professional endeavours. KlickerUZH
+          simplifies the incorporation of group tasks into large courses,
+          supporting processes from group formation to resolving questions,
+          thereby ensuring group work remains integral even in large-scale
+          learning environments.
         </p>
       </>
     ),
@@ -1064,10 +1073,11 @@ export default {
     abstract: (
       <>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
-          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
-          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
-          ratione odit?
+          KlickerUZH offers an inclusive and secure avenue for students to ask
+          questions anonymously during lectures, overcoming hesitations tied to
+          insecurity or fear of judgement. This connection cultivates an open
+          learning environment, grants lecturers insight into students'
+          understanding, and can facilitate interactive discussions.
         </p>
       </>
     ),
@@ -1273,10 +1283,12 @@ export default {
     abstract: (
       <>
         <p>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Asperiores
-          adipisci vel quo molestias maiores quidem veritatis, est voluptatem
-          doloremque omnis debitis nobis tenetur ut. Enim soluta temporibus ad
-          ratione odit?
+          Gamification integrates gaming elements into education to stimulate
+          active participation, competition, and exploration among students,
+          leveraging their intrinsic motivators for improved learning and skill
+          development. Incorporating 'fun' into the gamification process is
+          important for promoting continued engagement and improving overall
+          educational outcomes.
         </p>
       </>
     ),
