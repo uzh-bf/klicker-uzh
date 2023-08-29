@@ -4,7 +4,7 @@ export default {
     headerImgSrc: '/img_v3/towfiqu-barbhuiya-oZuBNC-6E2s-unsplash.jpg',
     tags: [
       'Interactive lecture',
-      'Student Engagement',
+      'Student engagement',
       'Interaction in teaching',
       'Immediate feedback',
       'Surveys and opinions',
@@ -43,12 +43,15 @@ export default {
         <p>
           Interactivity and gamification elements in the context of teaching are
           widely researched areas and show positive effects on student learning
-          outcomes. A significant element of classroom interactivity is the use
-          of surveys and live quizzes that provide students with immediate
-          feedback on their understanding of the material. As Hattie (2008)
-          points out, this immediate feedback allows students to better grasp
-          concepts and quickly clear up misconceptions. This active engagement
-          with the subject matter fosters an interactive and dynamic learning
+          outcomes.
+        </p>
+        <p>
+          A significant element of classroom interactivity is the use of surveys
+          and live quizzes that provide students with immediate feedback on
+          their understanding of the material. As Hattie (2008) points out, this
+          immediate feedback allows students to better grasp concepts and
+          quickly clear up misconceptions. This active engagement with the
+          subject matter fosters an interactive and dynamic learning
           environment, resulting in improved comprehension and retention of
           information. Furthermore, in their meta-analysis, Freeman et al.
           (2014) compared the performance of different teaching styles with and
@@ -56,17 +59,22 @@ export default {
           interaction in an instructional context led to higher student
           engagement and deeper processing of content. This deeper processing in
           turn led to improved overall course performance compared to
-          traditional teaching. Another effective tool in education is
-          gamification. Research by Sailer & Homner (2020) examined the effects
-          of gamification on cognitive and behavioral learning outcomes. The
-          results show that gamified learning not only improves students'
-          cognitive skills, but also positively influences their behavior in the
-          learning environment. In this regard, the aspect of challenge in
-          gamification has a motivating effect on students and may be evidenced
-          by an increased interest in the learning content. Want to find out how
-          to encourage active participation from your students, in addition to
-          live quizzes and polling? Learn more by exploring the following advice
-          on{' '}
+          traditional teaching.
+        </p>
+        <p>
+          Another effective tool in education is gamification. Research by
+          Sailer & Homner (2020) examined the effects of gamification on
+          cognitive and behavioral learning outcomes. The results show that
+          gamified learning not only improves students' cognitive skills, but
+          also positively influences their behavior in the learning environment.
+          In this regard, the aspect of challenge in gamification has a
+          motivating effect on students and may be evidenced by an increased
+          interest in the learning content.
+        </p>
+        <p>
+          Want to find out how to encourage active participation from your
+          students, in addition to live quizzes and polling? Learn more by
+          exploring the following advice on{' '}
           <a
             href={
               'https://teachingtools.uzh.ch/en/tools/classroom-response-systeme'
@@ -86,11 +94,17 @@ export default {
           and your students in a lecture or seminar in-person or online by using
           the KlickerUZH. To achieve this, it is essential to carefully plan and
           prepare questions in advance that you can ask your students during the
-          session. It also makes sense to consider in advance what you can do
-          with the results afterwards in order to optimally exploit them. You
-          can discuss them in a plenary session, for example.
+          session. In order for lecturers to organize their questions, they can
+          group the questions into activities for sequential or stacked
+          presentation as well as they are able to group them into question
+          blocks (a question block signifies a group of questions that are shown
+          to the audience simultaneously in a sequence and are also evaluated as
+          such (as a "block"). A lecture may contain an arbitrary sequence of
+          said question blocks). It also makes sense to consider in advance what
+          you can do with the results afterwards in order to optimally exploit
+          them. You can discuss them in a plenary session, for example.
         </p>
-        <p>You can implement questions with the following purposes:</p>
+        <p>You can implement questions with the following purposes: </p>
         <ul>
           <li>
             Knowledge evaluation: To check whether the students have understood
@@ -138,7 +152,10 @@ export default {
         <p>
           At the University of Zurich, the KlickerUZH has been used in small,
           large (200-400 students), and very large (800-1500 students) lectures
-          since its inception. Here are our combined learnings:
+          since its inception. Here are the combined learnings from
+          end-of-semester student evaluations, internal surveys with KlickerUZH
+          users in the spring semester 2023 (n=63) as well as input from
+          lecturers and content creators:
         </p>
         <ul>
           <li>
@@ -147,8 +164,17 @@ export default {
             the time required for answering and discussion.
           </li>
           <li>
-            Pre-lecture time consumption: The lecturer also needs time to create
-            and implement the questions in KlickerUZH before the lecture.
+            Pre-lecture time consumption: "Good things take time" applies to the
+            creation of good (multiple-choice) questions. Even experienced
+            authors typically anticipate spending an average of one hour to
+            produce a single multiple-choice question in exam quality{' '}
+            <mark>(Krebs, 2004)</mark>. This time is necessary to carefully
+            consider the formulation of the question, select the answer options
+            precisely, and avoid potential pitfalls. This conscientious approach
+            ensures that the questions align with the desired learning outcomes
+            and provide students with an appropriate level of challenge. The
+            lecturer also needs time to implement the questions in KlickerUZH
+            before the lecture.
           </li>
           <li>
             Reaction to voting results: As a teacher, you have to react quickly
@@ -159,22 +185,30 @@ export default {
           <li>
             Submitted responses: The participation rate varies depending on the
             course but can be estimated at an average of 50% of the attending
-            students. It should be noted that when lectures are recorded,
-            students who watch the recordings may not have the opportunity to
-            actively participate, thus missing out on the interactive benefits
-            offered by KlickerUZH.
+            students.
+          </li>
+          <li>
+            Live Streaming and Podcasts: It should be noted that when lectures
+            are recorded, students who watch the recordings afterwards may not
+            have the opportunity to actively participate, thus missing out on
+            the interactive benefits offered by KlickerUZH. Furthermore, it is
+            important for lecturers to take into account the average 30-second
+            to 1-minute delay of the UZH live streaming service, as this affects
+            the timing of KlickerUZH questions and student responses, requiring
+            the questions to be open for a longer duration.
           </li>
           <li>
             Participation level: The participation level in gamified live
-            quizzes tended to be higher in smaller lectures, likely due to the
-            sense of belonging within a smaller group.
+            quizzes tended to be higher in small lectures were students know
+            each other, likely due to the sense of belonging within a smaller
+            group.
           </li>
           <li>
             Student feedback: From the students' perspective, the use of
             KlickerUZH is generally regarded as beneficial (average grade across
-            several years in different DBF lectures: 5.0/6.0). Some critical
-            voices express concerns about time loss and question the effective
-            benefits.
+            several years in different Department of Banking and Finance (DBF)
+            lectures: 5.0/6.0). Some critical voices express concerns about time
+            loss and question the effective benefits.
           </li>
           <li>
             Question type: So far, single-choice questions have been
@@ -186,22 +220,24 @@ export default {
             participated in the live quiz through the Learning Management System
             (LMS). Another significant portion (33 / 82) joined the quiz by
             scanning the QR code shared by the lecturer. Only a small number of
-            students (6 / 82) joined through a bookmark, and (4 / 82) opted to
-            participate using the KlickerUZH App.
+            students (6 / 82) joined through a personal bookmark, and (4 / 82)
+            opted to participate using the KlickerUZH App. Providing all
+            necessary components within a single system, integrating KlickerUZH
+            into OLAT, even solely for live quizzes, is strongly recommended.
           </li>
           <li>
-            Number of uses per session: In the events organized by the
-            Department of Banking and Finance, KlickerUZH is mainly utilized in
-            bachelor-level lectures with a large number of students (150-800
-            students). In a single semester (14 weeks), KlickerUZH was used
-            between three to seven times in these sessions, with an average of
-            three questions asked per session.
+            Number of uses per session: In the events organized by the DBF,
+            KlickerUZH is mainly utilized in bachelor-level lectures with a
+            large number of students (150-800 students). In a single semester
+            (14 weeks), KlickerUZH was used between three to seven times in
+            these sessions, with an average of three questions asked per
+            session.
           </li>
           <li>
-            Gamification: Incorporating gamification worked effectively by
-            creating a quiz-like atmosphere in the lecture hall and considering
-            incentives or rewards, such as small gifts, to enhance participation
-            and engagement.
+            Gamification: Incorporating gamification in live quizzes works
+            effectively when creating a quiz-like atmosphere in the lecture hall
+            and considering incentives or rewards, such as small gifts, to
+            enhance participation and engagement.
           </li>
         </ul>
       </>
