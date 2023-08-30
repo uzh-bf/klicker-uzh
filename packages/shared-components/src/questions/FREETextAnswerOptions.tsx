@@ -25,15 +25,19 @@ export function FREETextAnswerOptions({
         value={value}
         onChange={(e): void => onChange(e.target.value)}
         rows={3}
-        maxLength={maxLength ?? 1500}
+        maxLength={
+          typeof maxLength === 'number' && !isNaN(maxLength) ? maxLength : 1500
+        }
         placeholder={placeholder || t('shared.questions.ftPlaceholder')}
         data-cy="free-text-response-input"
       />
 
-      <div className="text-sm italic text-right">
-        ({value?.length ?? 0} / {maxLength ?? '1500'}{' '}
-        {t('shared.generic.characters')})
-      </div>
+      {typeof maxLength === 'number' && !isNaN(maxLength) && (
+        <div className="text-sm italic text-right">
+          ({value?.length ?? 0} / {maxLength ?? '1500'}{' '}
+          {t('shared.generic.characters')})
+        </div>
+      )}
     </div>
   )
 }

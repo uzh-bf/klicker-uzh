@@ -136,7 +136,7 @@ export function Options({
     case QuestionType.Sc: {
       return (
         <div>
-          {withGuidance && (
+          {typeof withGuidance !== 'undefined' && withGuidance && (
             <div className="mb-4 italic">
               {t.rich(`shared.${QuestionType.Sc}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
@@ -160,7 +160,7 @@ export function Options({
     case QuestionType.Mc: {
       return (
         <div>
-          {withGuidance && (
+          {typeof withGuidance !== 'undefined' && withGuidance && (
             <div className="mb-4 italic">
               {t.rich(`shared.${QuestionType.Mc}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
@@ -193,7 +193,7 @@ export function Options({
     case QuestionType.Kprim: {
       return (
         <div>
-          {withGuidance && (
+          {typeof withGuidance !== 'undefined' && withGuidance && (
             <div className="mb-4 italic">
               {t.rich(`shared.${QuestionType.Kprim}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
@@ -291,7 +291,7 @@ export function Options({
     case QuestionType.Numerical: {
       return (
         <div>
-          {withGuidance && (
+          {typeof withGuidance !== 'undefined' && withGuidance && (
             <div className="mb-2 italic">
               {t.rich(`shared.${QuestionType.Numerical}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
@@ -302,18 +302,19 @@ export function Options({
           )}
           <NUMERICALAnswerOptions
             disabled={disabled || isEvaluation}
-            accuracy={options?.accuracy}
+            accuracy={parseInt(options?.accuracy)}
             placeholder={options?.placeholder}
             unit={options?.unit}
-            min={options?.restrictions?.min}
-            max={options?.restrictions?.max}
+            min={parseFloat(options?.restrictions?.min)}
+            max={parseFloat(options?.restrictions?.max)}
             value={response}
             onChange={onChangeResponse}
             valid={validateNumericalResponse({
               response,
-              min: options?.restrictions?.min,
-              max: options?.restrictions?.max,
+              min: parseFloat(options?.restrictions?.min),
+              max: parseFloat(options?.restrictions?.max),
             })}
+            hidePrecision={typeof withGuidance !== 'undefined' && withGuidance}
           />
         </div>
       )
@@ -322,7 +323,7 @@ export function Options({
     case QuestionType.FreeText:
       return (
         <div>
-          {withGuidance && (
+          {typeof withGuidance !== 'undefined' && withGuidance && (
             <div className="mb-4 italic">
               {t.rich(`shared.${QuestionType.FreeText}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,

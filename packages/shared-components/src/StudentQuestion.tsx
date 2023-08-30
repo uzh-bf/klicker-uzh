@@ -100,7 +100,7 @@ export const StudentQuestion = ({
 
     let schema = Yup.object().shape({ input: Yup.string() })
 
-    if (currentQuestion.options?.restrictions?.maxLength) {
+    if (!isNaN(currentQuestion.options?.restrictions?.maxLength)) {
       schema = Yup.object().shape({
         input: Yup.string()
           .max(currentQuestion.options?.restrictions?.maxLength)
@@ -135,13 +135,15 @@ export const StudentQuestion = ({
     let validator = Yup.number().required()
     if (
       typeof currentQuestion.options?.restrictions?.min !== 'undefined' &&
-      currentQuestion.options?.restrictions?.min !== null
+      currentQuestion.options?.restrictions?.min !== null &&
+      !isNaN(currentQuestion.options?.restrictions?.min)
     ) {
       validator = validator.min(currentQuestion.options?.restrictions?.min)
     }
     if (
       typeof currentQuestion.options?.restrictions?.max !== 'undefined' &&
-      currentQuestion.options?.restrictions?.max !== null
+      currentQuestion.options?.restrictions?.max !== null &&
+      !isNaN(currentQuestion.options?.restrictions?.max)
     ) {
       validator = validator.max(currentQuestion.options?.restrictions?.max)
     }
@@ -188,12 +190,13 @@ export const StudentQuestion = ({
       </div>
 
       <div className="flex-1 mt-4">
-        {currentQuestion.type && (
+        {typeof currentQuestion.type !== 'undefined' && (
           <div className="mb-2">
             <span className="font-bold">
               {t(`shared.${currentQuestion.type}.text`)}
             </span>{' '}
-            {currentQuestion.options?.accuracy &&
+            {typeof currentQuestion.options?.accuracy !== 'undefined' &&
+              !isNaN(currentQuestion.options.accuracy) &&
               t('shared.questions.roundedTo', {
                 accuracy: currentQuestion.options.accuracy,
               })}
@@ -226,6 +229,7 @@ export const StudentQuestion = ({
             onChange={onNumericalValueChange}
             unit={currentQuestion.options?.unit}
             accuracy={currentQuestion.options?.accuracy}
+            hidePrecision={true}
           />
         )}
       </div>
