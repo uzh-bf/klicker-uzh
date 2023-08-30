@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'v3'
+      - 'CI'
     paths:
       - 'apps/func-response-processor/**'
       - '.github/workflows/v3_klickeruzhprod-response-processor**'
@@ -28,15 +29,18 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           version: 8.6.12
-          run_install: |
-            - recursive: true
-              args: [--frozen-lockfile, --strict-peer-dependencies]
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash
         run: |
-          pnpm run build --scope @klicker-uzh/func-response-processor
-          pnpm prune --prod --config.ignore-scripts=true
+          pnpm dlx turbo prune --scope @klicker-uzh/func-response-processor
+          pushd out
+          echo "node-linker=hoisted" > .npmrc
+          pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
+          pnpm run build
+          mv apps/func-response-processor apps/func
+          mv apps/func/host.json .
+          popd
 
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
@@ -44,5 +48,5 @@ jobs:
         with:
           app-name: 'klickeruzhprod-response-processor'
           slot-name: 'qa'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: out
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_36EB12B3E64C4803BA587F03A5F2E446 }}

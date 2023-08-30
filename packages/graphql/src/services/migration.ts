@@ -12,6 +12,14 @@ export async function requestMigrationToken(
   args: RequestMigrationTokenArgs,
   ctx: ContextWithUser
 ) {
+  const userData = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+  })
+
+  if (!userData) return false
+
   const migrationToken = JWT.sign(
     {
       sub: ctx.user.sub,
@@ -19,7 +27,7 @@ export async function requestMigrationToken(
     },
     process.env.MIGRATION_SECRET as string,
     {
-      expiresIn: '1d',
+      expiresIn: '7d',
     }
   )
 
@@ -28,6 +36,16 @@ export async function requestMigrationToken(
   }/migration?token=${encodeURIComponent(migrationToken)}`
 
   console.log(migrationLink)
+
+  if (process.env.TEAMS_WEBHOOK_URL === 'string') {
+    await axios.post(process.env.TEAMS_WEBHOOK_URL, {
+      '@context': 'https://schema.org/extensions',
+      '@type': 'MessageCard',
+      themeColor: '0076D7',
+      title: `Migration Requested`,
+      text: `[${process.env.NODE_ENV}] Migration Requested for ${args.email}, Link: ${migrationLink}`,
+    })
+  }
 
   const LISTMONK_AUTH = {
     username: process.env.LISTMONK_USER as string,
@@ -59,8 +77,8 @@ export async function requestMigrationToken(
       `${process.env.LISTMONK_URL}/api/tx`,
       {
         subscriber_emails: [args.email],
-        template_id: 3,
-        data: { migrationLink },
+        template_id: Number(process.env.LISTMONK_TEMPLATE_MIGRATION_REQUEST),
+        data: { migrationLink, newAccountEmail: userData.email },
       },
       { auth: LISTMONK_AUTH }
     )
@@ -110,7 +128,6 @@ export async function triggerMigration(
       body: {
         newUserId: token.sub,
         originalEmail: token.originalEmail,
-        // originalEmail: 'roland.schlaefli@bf.uzh.ch',
       },
     })
 
@@ -122,7 +139,3 @@ export async function triggerMigration(
     return false
   }
 }
-
-// TODO: build an azure function that exports data based on a service bus trigger and drops json on blob storage
-// TODO: build an azure function that triggers on blob storage and fills data using import scripts
-// TODO: trigger a new email to the user when the migration is complete

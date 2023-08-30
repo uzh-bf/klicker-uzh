@@ -12,13 +12,9 @@ import {
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import ContentInput from '@klicker-uzh/shared-components/src/ContentInput'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
-import {
-  QUESTION_GROUPS,
-  QUESTION_TYPES,
-} from '@klicker-uzh/shared-components/src/constants'
+import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
   FormikNumberField,
@@ -43,6 +39,7 @@ import { useTranslations } from 'next-intl'
 import React, { Suspense, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import ContentInput from '../common/ContentInput'
 import SuspendedTagInput from './tags/SuspendedTagInput'
 
 enum QuestionEditMode {
@@ -82,18 +79,6 @@ function QuestionEditModal({
     explanation: Yup.string().nullable(),
     hasSampleSolution: Yup.boolean(),
     hasAnswerFeedbacks: Yup.boolean(),
-
-    // TODO: adapt validation structure for attachments once they are available
-    attachments: Yup.array()
-      .of(
-        Yup.object().shape({
-          href: Yup.string().required(t('manage.formErrors.attachmentURL')),
-          name: Yup.string().required(t('manage.formErrors.attachmentName')),
-          originalName: Yup.string(),
-          description: Yup.string(),
-        })
-      )
-      .nullable(),
 
     options: Yup.object().when(
       ['type', 'hasSampleSolution', 'hasAnswerFeedbacks'],
@@ -269,16 +254,15 @@ function QuestionEditModal({
         content: '',
         explanation: '',
         tags: [],
-        attachments: null,
         hasSampleSolution: false,
         hasAnswerFeedbacks: false,
         pointsMultiplier: '1',
       }
 
       switch (questionType) {
-        case QUESTION_TYPES.SC:
-        case QUESTION_TYPES.MC:
-        case QUESTION_TYPES.KPRIM:
+        case QuestionType.Sc:
+        case QuestionType.Mc:
+        case QuestionType.Kprim:
           return {
             ...common,
             options: {
@@ -286,7 +270,7 @@ function QuestionEditModal({
             },
           }
 
-        case QUESTION_TYPES.NUMERICAL:
+        case QuestionType.Numerical:
           return {
             ...common,
             options: {
@@ -297,7 +281,7 @@ function QuestionEditModal({
             },
           }
 
-        case QUESTION_TYPES.FREE_TEXT:
+        case QuestionType.FreeText:
           return {
             ...common,
             options: {
@@ -354,7 +338,6 @@ function QuestionEditModal({
           explanation: values.explanation,
           hasSampleSolution: values.hasSampleSolution,
           hasAnswerFeedbacks: values.hasAnswerFeedbacks,
-          attachments: undefined, // TODO: format [ { id: 'attachmendId1' }, { id: 'attachmendId2' }]
           tags: values.tags,
           displayMode: values.displayMode,
           pointsMultiplier: parseInt(values.pointsMultiplier),
@@ -475,7 +458,7 @@ function QuestionEditModal({
             fullScreen
             title={t(`manage.questionForms.${mode}Title`)}
             className={{
-              content: 'max-w-[1400px]',
+              content: 'max-w-[1400px] md:text-base text-sm',
               title: 'text-xl',
             }}
             open={isOpen}
@@ -704,17 +687,6 @@ function QuestionEditModal({
                       </FastField>
                     )}
                   </div>
-
-                  {/* // TODO: to be released
-                <div className="mb-4">
-                  <Label
-                    label={t("manage.questionForms.attachments")}
-                    className="my-auto mr-2 text-lg font-bold"
-                    tooltipStyle="text-base font-normal"
-                    tooltip="// TODO Tooltip Content"
-                    showTooltipSymbol={true}
-                  />
-                </div> */}
 
                   <div className="flex flex-row gap-4 mt-4">
                     {QUESTION_GROUPS.CHOICES.includes(questionType) && (

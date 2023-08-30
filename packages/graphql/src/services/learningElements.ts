@@ -8,7 +8,6 @@ import {
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 import {
-  Attachment,
   LearningElementStatus,
   OrderType,
   QuestionResponse as PrismaQuestionResponse,
@@ -900,9 +899,6 @@ export async function manipulateLearningElement(
       id: { in: questions },
       ownerId: ctx.user.sub,
     },
-    include: {
-      attachments: true,
-    },
   })
 
   const uniqueQuestions = new Set(dbQuestions.map((q) => q.id))
@@ -910,9 +906,10 @@ export async function manipulateLearningElement(
     throw new GraphQLError('Not all questions could be found')
   }
 
-  const questionMap = dbQuestions.reduce<
-    Record<number, Question & { attachments: Attachment[] }>
-  >((acc, question) => ({ ...acc, [question.id]: question }), {})
+  const questionMap = dbQuestions.reduce<Record<number, Question>>(
+    (acc, question) => ({ ...acc, [question.id]: question }),
+    {}
+  )
 
   const createOrUpdateJSON = {
     name,
@@ -941,16 +938,6 @@ export async function manipulateLearningElement(
                     // create stack element with question instance
                     const question = questionMap[element.questionId]
                     const processedQuestionData = processQuestionData(question)
-                    const questionAttachmentInstances =
-                      question.attachments.map(
-                        R.pick([
-                          'type',
-                          'href',
-                          'name',
-                          'description',
-                          'originalName',
-                        ])
-                      )
 
                     return {
                       order: ixInner,
@@ -967,9 +954,6 @@ export async function manipulateLearningElement(
                           },
                           owner: {
                             connect: { id: ctx.user.sub },
-                          },
-                          attachments: {
-                            create: questionAttachmentInstances,
                           },
                         },
                       },

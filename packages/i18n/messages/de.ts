@@ -7,26 +7,31 @@ export default {
       ftPlaceholder: 'Ihre Antwort...',
     },
     SC: {
+      short: 'SC',
       typeLabel: 'Single Choice (SC)',
       text: 'Bitte eine einzige Option auswählen.',
       richtext: 'Bitte <b>eine einzige</b> Option auswählen.',
     },
     MC: {
+      short: 'MC',
       typeLabel: 'Multiple Choice (MC)',
       text: 'Bitte eine oder mehrere Optionen auswählen.',
       richtext: 'Bitte <b>eine oder mehrere</b> Optionen auswählen.',
     },
     KPRIM: {
+      short: 'KP',
       typeLabel: 'Kprim (KP)',
       text: 'Beurteile die Aussagen auf ihre Richtigkeit.',
       richtext: 'Beurteile die Aussagen auf ihre <b>Richtigkeit</b>.',
     },
     FREE_TEXT: {
+      short: 'FT',
       typeLabel: 'Freitext (FT)',
       text: 'Bitte eine Antwort eingeben.',
       richtext: 'Bitte eine <b>Antwort</b> eingeben.',
     },
     NUMERICAL: {
+      short: 'NR',
       typeLabel: 'Numerisch (NR)',
       text: 'Bitte eine Zahl eingeben.',
       richtext: 'Bitte eine <b>Zahl</b> eingeben.',
@@ -593,7 +598,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       pageName: 'Migration der Daten von KlickerV2',
       step1Title: 'Schritt 1: Migrations-Token anfordern',
       step1Description:
-        'Um Ihr altes Klicker-Konto auf KlickerV3 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist. Danach erhalten Sie einen Token, um mit der Migration fortzufahren. Stellen Sie sicher, dass Sie Zugriff auf diese E-Mail haben. Andernfalls müssen Sie Ihr Passwort zurückzusetzen.',
+        'Um Ihr altes Konto auf KlickerUZH v3.0 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist. Danach erhalten Sie einen Link, um mit der Migration fortzufahren. Sollten Sie innerhalb der nächsten 5 Minuten keine E-Mail erhalten, überprüfen Sie bitte Ihren Spam-Ordner und starten Sie den Prozess erneut. Stellen Sie sicher, dass Sie Zugriff auf diese Mailbox haben.',
       requestMigrationToken: 'Migrations-Token anfordern',
       step2Title: 'Schritt 2: Migrations-Link einfügen',
       step2Description:
@@ -659,7 +664,6 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       explanationTooltip:
         'Geben Sie hier eine generische Erklärung zu Ihrer Frage ein, welche den Studierenden unabhängig von Ihrer Antwort in Lernelementen und Micro-Sessions als Erklärung der Lösung angezeigt wird.',
       explanationPlaceholder: 'Erklärung hier eingeben…',
-      attachments: 'Anhänge',
       answerOptions: 'Antwortmöglichkeiten',
       answerOption: 'Antwortmöglichkeit',
       answerOptionsTooltip:
@@ -685,6 +689,10 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       editElement: '{element} bearbeiten',
       cancelCreation: 'Erstellen abbrechen',
       cancelEditing: 'Bearbeiten abbrechen',
+      mediaLibrary: 'Medienbibliothek',
+      uploadImageHeader: 'Medien hinzufügen',
+      uploadImageDescription:
+        'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
     },
     sessionForms: {
       sessionName: 'Bitte geben Sie einen Namen für Ihre Session ein.',
@@ -817,8 +825,6 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Bitte stellen Sie sicher, dass die folgenden Fehler im Formular behoben sind, bevor die Frage gespeichert werden kann:',
       questionName: 'Geben Sie einen Namen für die Frage ein.',
       questionContent: 'Bitte fügen Sie einen Inhalt zu Ihrer Frage hinzu.',
-      attachmentURL: 'Bitte geben Sie eine URL für den Anhang ein.',
-      attachmentName: 'Bitte geben Sie einen Namen für den Anhang ein.',
       answerContent:
         'Bitte fügen Sie einen Inhalt zu Ihrer Antwortoption hinzu.',
       feedbackContent:

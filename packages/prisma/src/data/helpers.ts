@@ -112,34 +112,6 @@ export async function prepareParticipant({
   }
 }
 
-export function prepareAttachment({
-  ownerId,
-  ...args
-}: {
-  id: string
-  ownerId: string
-  name: string
-  href: string
-  type: Prisma.AttachmentType
-}) {
-  const data = {
-    ...args,
-    owner: {
-      connect: {
-        id: ownerId,
-      },
-    },
-  }
-
-  return {
-    where: {
-      id: args.id,
-    },
-    create: data,
-    update: data,
-  }
-}
-
 export function prepareQuestion({
   choices,
   content,
@@ -218,7 +190,7 @@ export function prepareQuestionInstance({
     type,
     pointsMultiplier,
     resetTimeDays,
-    questionData: R.omit(['createdAt', 'updatedAt', 'attachments'], question),
+    questionData: R.omit(['createdAt', 'updatedAt'], question),
     question: {
       connect: {
         id: question.id,

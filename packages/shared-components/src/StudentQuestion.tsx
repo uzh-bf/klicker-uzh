@@ -1,5 +1,4 @@
 import {
-  Attachment,
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -15,7 +14,6 @@ import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
-import { QuestionAttachment } from './questions/QuestionAttachment'
 import { SCAnswerOptions } from './questions/SCAnswerOptions'
 import SessionProgress from './questions/SessionProgress'
 
@@ -35,7 +33,6 @@ export interface StudentQuestionProps {
     type: QuestionType
     options: any
     instanceId: number
-    attachments?: Attachment[] | undefined
   }
   inputValue: string | any[]
   inputValid: boolean
@@ -189,24 +186,6 @@ export const StudentQuestion = ({
       >
         <Markdown content={currentQuestion.content} />
       </div>
-
-      {currentQuestion.attachments && (
-        <div
-          className={twMerge(
-            'grid grid-cols-1',
-            currentQuestion.attachments.length > 1 && 'grid-cols-2'
-          )}
-        >
-          {currentQuestion.attachments.map((attachment: Attachment) => (
-            <div
-              key={attachment.id}
-              className="relative mx-auto h-28 w-36 sm:w-48 sm:h-36 md:w-40 md:h-32 lg:w-56 lg:h-44"
-            >
-              <QuestionAttachment attachment={attachment} />
-            </div>
-          ))}
-        </div>
-      )}
 
       <div className="flex-1 mt-4">
         {currentQuestion.type && (

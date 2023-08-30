@@ -9,7 +9,6 @@ mutation ManipulateChoicesQuestion(
   $hasSampleSolution: Boolean
   $hasAnswerFeedbacks: Boolean
   $pointsMultiplier: Int
-  $attachments: [AttachmentInput!]
   $tags: [String!]
 ) {
   manipulateChoicesQuestion(
@@ -23,7 +22,6 @@ mutation ManipulateChoicesQuestion(
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
     pointsMultiplier: $pointsMultiplier
-    attachments: $attachments
     tags: $tags
   ) {
     id
@@ -74,14 +72,6 @@ mutation ManipulateChoicesQuestion(
     tags {
       id
       name
-    }
-    attachments {
-      id
-      href
-      name
-      originalName
-      description
-      type
     }
   }
 }

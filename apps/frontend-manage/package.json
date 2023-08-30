@@ -1,10 +1,11 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.0.0-rc.17",
+  "version": "3.0.0-rc.26",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.8.0",
+    "@azure/storage-blob": "12.15.0",
     "@fortawesome/fontawesome-svg-core": "6.4.2",
     "@fortawesome/free-regular-svg-icons": "6.4.2",
     "@fortawesome/free-solid-svg-icons": "6.4.2",
@@ -38,6 +39,7 @@
     "react-dnd": "16.0.1",
     "react-dnd-html5-backend": "16.0.1",
     "react-dom": "18.2.0",
+    "react-dropzone": "14.2.3",
     "react-qrcode-logo": "2.9.0",
     "react-select": "5.7.4",
     "react-sizeme": "3.0.2",

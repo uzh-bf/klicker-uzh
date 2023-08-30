@@ -13,7 +13,14 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Tooltip } from '@uzh-bf/design-system'
 import isHotkey from 'is-hotkey'
-import React, { PropsWithChildren, Ref, useCallback, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
+import React, {
+  PropsWithChildren,
+  Ref,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react'
 import {
   BaseEditor,
   Editor,
@@ -25,8 +32,11 @@ import { HistoryEditor, withHistory } from 'slate-history'
 import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
 import { twMerge } from 'tailwind-merge'
 
-import { useTranslations } from 'next-intl'
-import { convertToMd, convertToSlate } from './utils/slateMdConversion'
+import {
+  convertToMd,
+  convertToSlate,
+} from '@klicker-uzh/shared-components/src/utils/slateMdConversion'
+import MediaLibrary from './MediaLibrary'
 
 interface Props {
   error?: any
@@ -68,6 +78,9 @@ function ContentInput({
   data_cy,
 }: Props): React.ReactElement {
   const t = useTranslations()
+
+  const [isImageDropzoneOpen, setIsImageDropzoneOpen] = useState(false)
+
   const renderElement = useCallback((props: any) => <Element {...props} />, [])
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
   const editor = useMemo(() => withHistory(withReact(createEditor())), [])
@@ -95,7 +108,7 @@ function ContentInput({
         <div className={twMerge('p-3', className?.content)}>
           <Editable
             className={twMerge(
-              'prose prose-sm leading-3 prose-blockquote:text-gray-500 max-w-none focus:!outline-none',
+              'prose prose-sm leading-6 prose-blockquote:text-gray-500 max-w-none focus:!outline-none',
               className?.editor
             )}
             autoFocus={autoFocus}
@@ -189,28 +202,25 @@ function ContentInput({
             </Tooltip>
 
             <Tooltip
+              delay={2000}
               tooltip={t('shared.contentInput.image')}
               className={{
                 tooltip: 'text-sm md:text-base max-w-[45%] md:max-w-[70%]',
               }}
               withIndicator={false}
             >
-              <Button
-                active={false}
+              <SlateButton
+                active={isImageDropzoneOpen}
                 editor={editor}
                 format="paragraph"
                 onClick={(e: any) => {
-                  e.preventDefault()
-                  Transforms.insertText(
-                    editor,
-                    '![University of Zurich](https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Lichthof_Uzh.jpg/1920px-Lichthof_Uzh.jpg)'
-                  )
+                  setIsImageDropzoneOpen((prev) => !prev)
                 }}
               >
                 <div className="ml-1 mt-0.5">
                   <FontAwesomeIcon icon={faImage} color="grey" />
                 </div>
-              </Button>
+              </SlateButton>
             </Tooltip>
 
             <Tooltip
@@ -220,7 +230,7 @@ function ContentInput({
               }}
               withIndicator={false}
             >
-              <Button
+              <SlateButton
                 active={false}
                 editor={editor}
                 format="paragraph"
@@ -232,7 +242,7 @@ function ContentInput({
                 <div className="ml-1 mt-0.5">
                   <FontAwesomeIcon icon={faSuperscript} color="grey" />
                 </div>
-              </Button>
+              </SlateButton>
             </Tooltip>
 
             <Tooltip
@@ -242,7 +252,7 @@ function ContentInput({
               }}
               withIndicator={false}
             >
-              <Button
+              <SlateButton
                 active={false}
                 editor={editor}
                 format="paragraph"
@@ -265,10 +275,10 @@ function ContentInput({
                 <div className="ml-1 mt-0.5">
                   <FontAwesomeIcon icon={faSuperscript} color="grey" />
                 </div>
-              </Button>
+              </SlateButton>
             </Tooltip>
           </div>
-          <Button
+          <SlateButton
             active={false}
             editor={editor}
             format="paragraph"
@@ -279,8 +289,8 @@ function ContentInput({
             <div className="flex items-center">
               <FontAwesomeIcon icon={faRotateLeft} color="grey" />
             </div>
-          </Button>
-          <Button
+          </SlateButton>
+          <SlateButton
             active={false}
             editor={editor}
             format="paragraph"
@@ -291,9 +301,28 @@ function ContentInput({
             <div className="flex items-center">
               <FontAwesomeIcon icon={faRotateRight} color="grey" />
             </div>
-          </Button>
+          </SlateButton>
         </div>
       </Slate>
+
+      {isImageDropzoneOpen && (
+        <div
+          className={twMerge(
+            'flex flex-col md:flex-row',
+            showToolbarOnFocus && 'group-focus-within:flex hidden'
+          )}
+        >
+          <MediaLibrary
+            onImageClick={(href, name) => {
+              Transforms.insertNodes(editor, {
+                type: 'paragraph',
+                children: [{ text: `![${name}](${href})` }],
+              })
+              setIsImageDropzoneOpen(false)
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -408,7 +437,7 @@ const Leaf = ({ attributes, children, leaf }: any) => {
 const BlockButton = ({ format, icon, className }: any) => {
   const editor = useSlate()
   return (
-    <Button
+    <SlateButton
       active={isBlockActive(editor, format)}
       editor={editor}
       format={format}
@@ -423,14 +452,14 @@ const BlockButton = ({ format, icon, className }: any) => {
           color={isBlockActive(editor, format) ? 'black' : 'grey'}
         />
       </div>
-    </Button>
+    </SlateButton>
   )
 }
 
 const MarkButton = ({ format, icon, className }: any) => {
   const editor = useSlate()
   return (
-    <Button
+    <SlateButton
       active={isMarkActive(editor, format)}
       onClick={(event: React.MouseEvent<HTMLElement>) => {
         event.preventDefault()
@@ -443,11 +472,11 @@ const MarkButton = ({ format, icon, className }: any) => {
           color={isMarkActive(editor, format) ? 'black' : 'grey'}
         />
       </div>
-    </Button>
+    </SlateButton>
   )
 }
 
-export const Button = React.forwardRef(
+export const SlateButton = React.forwardRef(
   (
     {
       className,
@@ -474,6 +503,6 @@ export const Button = React.forwardRef(
     />
   )
 )
-Button.displayName = 'Button'
+SlateButton.displayName = 'Button'
 
 export default ContentInput

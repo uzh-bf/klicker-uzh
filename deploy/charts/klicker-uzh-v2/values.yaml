@@ -16,6 +16,23 @@ notifications:
 eduId:
   clientSecret: ''
 
+blobStorage:
+  accountName: ''
+  accessKey: ''
+
+migration:
+  secret: ''
+  serviceBus:
+    connectionString: ''
+    queueName: ''
+
+listmonk:
+  url: ''
+  username: ''
+  password: ''
+  templates:
+    migrationRequest: -1
+
 vapid:
   publicKey: ''
   privateKey: ''
@@ -68,7 +85,7 @@ auth:
 frontendPWA:
   priorityClassName: production-workload
 
-  replicaCount: 1
+  replicaCount: 3
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa
@@ -108,7 +125,7 @@ frontendPWA:
 frontendManage:
   priorityClassName: production-workload
 
-  replicaCount: 1
+  replicaCount: 2
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage
@@ -188,7 +205,7 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
-  replicaCount: 1
+  replicaCount: 3
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker

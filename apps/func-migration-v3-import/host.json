@@ -16,15 +16,19 @@
   },
   "extensionBundle": {
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
-    "version": "[4.0.0, 5.0.0)"
+    "version": "[3.15.0, 4.0.0)"
   },
   "concurrency": {
     "dynamicConcurrencyEnabled": true,
     "snapshotPersistenceEnabled": true
   },
   "extensions": {
+    "blobs": {
+      "maxDequeueCount": 1
+    },
     "queues": {
       "maxDequeueCount": 1
     }
-  }
+  },
+  "functionTimeout": "00:10:00"
 }

@@ -38,7 +38,6 @@ import {
   SubscriptionObjectInput,
 } from './participant'
 import {
-  AttachmentInput,
   OptionsChoicesInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
@@ -55,7 +54,13 @@ import {
   FeedbackResponse,
   Session,
 } from './session'
-import { LocaleType, User, UserLogin, UserLoginScope } from './user'
+import {
+  FileUploadSAS,
+  LocaleType,
+  User,
+  UserLogin,
+  UserLoginScope,
+} from './user'
 
 export const Mutation = builder.mutationType({
   fields(t) {
@@ -728,9 +733,6 @@ export const Mutation = builder.mutationType({
           options: t.arg({
             type: OptionsChoicesInput,
           }),
-          attachments: t.arg({
-            type: [AttachmentInput],
-          }),
         },
         resolve(_, __, args, ctx) {
           return QuestionService.manipulateQuestion(args as any, ctx) as any
@@ -753,9 +755,6 @@ export const Mutation = builder.mutationType({
           options: t.arg({
             type: OptionsNumericalInput,
           }),
-          attachments: t.arg({
-            type: [AttachmentInput],
-          }),
         },
         resolve(_, __, args, ctx) {
           return QuestionService.manipulateQuestion(args as any, ctx) as any
@@ -777,9 +776,6 @@ export const Mutation = builder.mutationType({
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
             type: OptionsFreeTextInput,
-          }),
-          attachments: t.arg({
-            type: [AttachmentInput],
           }),
         },
         resolve(_, __, args, ctx) {
@@ -854,6 +850,18 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return SessionService.deleteSession(args, ctx)
+        },
+      }),
+
+      getFileUploadSas: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: FileUploadSAS,
+        args: {
+          fileName: t.arg.string({ required: true }),
+          contentType: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.getFileUploadSas(args, ctx)
         },
       }),
       // #endregion

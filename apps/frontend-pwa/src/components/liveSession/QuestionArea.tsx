@@ -1,5 +1,4 @@
 import {
-  Attachment,
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -11,10 +10,7 @@ import { useTranslations } from 'next-intl'
 import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
 
-import {
-  QUESTION_GROUPS,
-  QUESTION_TYPES,
-} from '@klicker-uzh/shared-components/src/constants'
+import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 
 // TODO: notifications
@@ -29,7 +25,6 @@ interface QuestionAreaProps {
     type: QuestionType
     options: any
     instanceId: number
-    attachments?: Attachment[]
   }[]
   handleNewResponse: (type: string, instanceId: number, answer: any) => void
   sessionId: string
@@ -154,9 +149,9 @@ function QuestionArea({
   ): void => {
     if (value.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
       handleNewResponse(type, instanceId, value)
-    } else if (QUESTION_TYPES.FREE_TEXT === type) {
+    } else if (QuestionType.FreeText === type) {
       handleNewResponse(type, instanceId, value)
-    } else if (QUESTION_TYPES.NUMERICAL === type) {
+    } else if (QuestionType.Numerical === type) {
       handleNewResponse(type, instanceId, String(parseFloat(value)))
     }
   }

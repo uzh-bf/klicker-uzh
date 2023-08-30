@@ -1,5 +1,5 @@
 import Prisma from '../../../dist'
-const { AttachmentType, QuestionType, SessionStatus, OrderType } = Prisma
+const { QuestionType, SessionStatus, OrderType } = Prisma
 
 export const LEARNING_ELEMENTS = [
   //   {

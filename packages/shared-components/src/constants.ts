@@ -1,13 +1,6 @@
-import { QuestionType, SessionStatus } from '@klicker-uzh/graphql/dist/ops'
+import { QuestionType } from '@klicker-uzh/graphql/dist/ops'
 
 export const SMALL_BAR_THRESHOLD: number = 0.05
-
-export const SESSION_STATUS: Record<SessionStatus, string> = {
-  PREPARED: 'PREPARED',
-  SCHEDULED: 'SCHEDULED',
-  RUNNING: 'RUNNING',
-  COMPLETED: 'COMPLETED',
-}
 
 export const CHART_TYPES: Record<string, string> = {
   BAR_CHART: 'BAR_CHART',
@@ -38,40 +31,24 @@ export const CHART_SOLUTION_COLORS = {
   incorrect: '#ff0000',
 }
 
-export const QUESTION_TYPES: Record<QuestionType, string> = {
-  FREE_TEXT: 'FREE_TEXT',
-  NUMERICAL: 'NUMERICAL',
-  MC: 'MC',
-  SC: 'SC',
-  KPRIM: 'KPRIM',
-}
-
 export const QUESTION_GROUPS: Record<string, string[]> = {
-  CHOICES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC, QUESTION_TYPES.KPRIM],
-  FREE_TEXT: [QUESTION_TYPES.FREE_TEXT],
-  NUMERICAL: [QUESTION_TYPES.NUMERICAL],
-  FREE: [QUESTION_TYPES.FREE_TEXT, QUESTION_TYPES.NUMERICAL],
+  CHOICES: [QuestionType.Sc, QuestionType.Mc, QuestionType.Kprim],
+  FREE_TEXT: [QuestionType.FreeText],
+  NUMERICAL: [QuestionType.Numerical],
+  FREE: [QuestionType.FreeText, QuestionType.Numerical],
   WITH_PERCENTAGES: [
-    QUESTION_TYPES.SC,
-    QUESTION_TYPES.MC,
-    QUESTION_TYPES.KPRIM,
-    QUESTION_TYPES.FREE_TEXT,
+    QuestionType.Sc,
+    QuestionType.Mc,
+    QuestionType.Kprim,
+    QuestionType.FreeText,
   ],
   WITH_POSSIBILITIES: [
-    QUESTION_TYPES.SC,
-    QUESTION_TYPES.MC,
-    QUESTION_TYPES.KPRIM,
-    QUESTION_TYPES.NUMERICAL,
+    QuestionType.Sc,
+    QuestionType.Mc,
+    QuestionType.Kprim,
+    QuestionType.Numerical,
   ],
-  WITH_STATISTICS: [QUESTION_TYPES.NUMERICAL],
-}
-
-export const QUESTION_TYPES_SHORT: Record<QuestionType, string> = {
-  SC: 'SC',
-  MC: 'MC',
-  FREE_TEXT: 'FT',
-  NUMERICAL: 'NR',
-  KPRIM: 'KP',
+  WITH_STATISTICS: [QuestionType.Numerical],
 }
 
 export const AVATAR_OPTIONS: Record<string, string[]> = {
@@ -90,37 +67,29 @@ export const AVATAR_OPTIONS: Record<string, string[]> = {
   // body: ['breasts', 'chest'],
 }
 
-export const TYPES_SHORT: Record<QuestionType, string> = {
-  NUMERICAL: 'NR',
-  FREE_TEXT: 'FT',
-  MC: 'MC',
-  SC: 'SC',
-  KPRIM: 'KP',
-}
-
 export const ACTIVE_CHART_TYPES: Record<
-  string,
+  QuestionType,
   { label: string; value: string }[]
 > = {
-  FREE_TEXT: [
+  [QuestionType.FreeText]: [
     { label: 'manage.evaluation.table', value: 'table' },
     { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
   ],
-  NUMERICAL: [
+  [QuestionType.Numerical]: [
     { label: 'manage.evaluation.histogram', value: 'histogram' },
     { label: 'manage.evaluation.table', value: 'table' },
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
   ],
-  SC: [
+  [QuestionType.Sc]: [
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],
-  MC: [
+  [QuestionType.Mc]: [
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],
-  KPRIM: [
+  [QuestionType.Kprim]: [
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],
@@ -135,12 +104,6 @@ export const STATISTICS_ORDER: string[] = [
   'q3',
   'sd',
 ]
-
-export const LEARNING_ELEMENT_ORDERS: Record<string, string> = {
-  SEQUENTIAL: 'Sequenziell',
-  SHUFFLED: 'Zufällig',
-  LAST_RESPONSE: 'Letzte Antwort zuletzt',
-}
 
 export const PRESET_COURSE_COLORS = [
   '#262FAD',
