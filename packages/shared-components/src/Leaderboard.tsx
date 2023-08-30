@@ -96,7 +96,6 @@ function Leaderboard({
                   key={entry.id}
                   isActive={activeParticipation ?? true}
                   pseudonym={entry.username}
-                  level={entry.level}
                   avatar={entry.avatar}
                   withAvatar={!hideAvatars}
                   points={entry.score}
@@ -114,7 +113,6 @@ function Leaderboard({
                   key={entry.id}
                   rank={entry.rank}
                   pseudonym={entry.username}
-                  level={entry.level}
                   avatar={entry.avatar}
                   withAvatar={!hideAvatars}
                   points={entry.score}
