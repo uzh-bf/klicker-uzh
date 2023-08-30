@@ -87,7 +87,7 @@ function CTA() {
 function FeatureOverview() {
   return (
     <div className="space-y-4">
-      <H2>Features</H2>
+      <H2 className={{ root: 'text-2xl' }}>Features</H2>
       <div className="grid grid-cols-1 md:grid-cols-3 w-full gap-4">
         {FEATURES.map((feature) => (
           <div key={feature.title} className="shadow p-4 space-y-2 rounded">
@@ -109,7 +109,7 @@ function FeatureOverview() {
 function UseCaseOverview() {
   return (
     <div className="space-y-4">
-      <H2>Use Cases</H2>
+      <H2 className={{ root: 'text-2xl' }}>Use Cases</H2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 rounded">
         {Object.entries(USE_CASES).map(([href, item]) => (
           <div
