@@ -561,6 +561,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       FULL_ACCESS: 'Voller Zugriff',
       SESSION_EXEC: 'Durchführung von Sessionen',
       READ_ONLY: 'Nur Lesen',
+      ACCOUNT_OWNER: 'Konto-Besitzer',
       lastUsed: 'zuletzt genutzt: {date}',
       lastUsedNever: 'zuletzt genutzt: Nie',
       createDelegatedLogin: 'Delegierten Login erstellen',
@@ -581,6 +582,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       shortnameMax: 'Der Kurzname darf maximal 8 Zeichen lang sein.',
       shortnameAlphanumeric:
         'Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.',
+      shortnameTaken: 'Dieser Kurzname ist bereits vergeben.',
     },
     token: {
       pageName: 'Token Generation',

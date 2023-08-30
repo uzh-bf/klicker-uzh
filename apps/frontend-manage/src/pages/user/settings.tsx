@@ -55,12 +55,25 @@ function Settings() {
           {editShortname ? (
             <Formik
               initialValues={{ shortname: user?.userProfile?.shortname || '' }}
-              onSubmit={async (values) => {
+              onSubmit={async (values, { setErrors, setSubmitting }) => {
+                setSubmitting(true)
+
                 const result = await changeShortname({
                   variables: { shortname: values.shortname },
                 })
 
-                if (result.data?.changeShortname?.id) {
+                if (!result) {
+                  setErrors({
+                    shortname: t('shared.generic.systemError'),
+                  })
+                } else if (
+                  result.data?.changeShortname?.shortname !== values.shortname
+                ) {
+                  setErrors({
+                    shortname: t('manage.settings.shortnameTaken'),
+                  })
+                } else {
+                  setSubmitting(false)
                   setEditShortname(false)
                 }
               }}
