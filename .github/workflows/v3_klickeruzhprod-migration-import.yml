@@ -1,8 +1,13 @@
-name: Build and deploy func-migration-v3-import to Function App (Production)
+name: Build and deploy func-migration-v3-import to Azure Function App (Production)
 
 on:
   push:
-    tags: ['v*.*.*']
+    branches:
+      - 'v3'
+      - 'CI'
+    # paths:
+    #   - 'apps/func-migration-v3/**'
+    #   - '.github/workflows/v3_klickeruzhprod-migration-import**'
   workflow_dispatch:
 
 env:
@@ -36,7 +41,7 @@ jobs:
           mv apps/func-migration-v3-import apps/func
           mv apps/func/host.json .
           cp packages/prisma/dist/schema.prisma apps/func/dist/schema.prisma
-          mkdir node_modules/@klicker-uzh
+          cp packages/prisma/dist/*.so.node apps/func/dist/
           popd
 
       - name: 'Run Azure Functions Action'

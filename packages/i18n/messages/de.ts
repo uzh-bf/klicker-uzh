@@ -606,7 +606,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       pageName: 'Migration der Daten von KlickerV2',
       step1Title: 'Schritt 1: Migrations-Token anfordern',
       step1Description:
-        'Um Ihr altes Klicker-Konto auf KlickerV3 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist. Danach erhalten Sie einen Token, um mit der Migration fortzufahren. Stellen Sie sicher, dass Sie Zugriff auf diese E-Mail haben. Andernfalls müssen Sie Ihr Passwort zurückzusetzen.',
+        'Um Ihr altes Konto auf KlickerUZH v3.0 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist. Danach erhalten Sie einen Link, um mit der Migration fortzufahren. Sollten Sie innerhalb der nächsten 5 Minuten keine E-Mail erhalten, überprüfen Sie bitte Ihren Spam-Ordner und starten Sie den Prozess erneut. Stellen Sie sicher, dass Sie Zugriff auf diese Mailbox haben.',
       requestMigrationToken: 'Migrations-Token anfordern',
       step2Title: 'Schritt 2: Migrations-Link einfügen',
       step2Description:

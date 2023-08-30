@@ -21,15 +21,21 @@ fs.copyFileSync(
 fs.copyFileSync(
   path.resolve(
     __dirname,
-    // './client/libquery_engine-debian-openssl-1.1.x.so.node'
-    // "./client/query_engine-windows.dll.node"
     './client/libquery_engine-linux-musl-openssl-3.0.x.so.node'
   ),
   path.resolve(
     __dirname,
-    // '../dist/libquery_engine-debian-openssl-1.1.x.so.node'
-    // '../dist/query_engine-windows.dll.node'
     '../dist/libquery_engine-linux-musl-openssl-3.0.x.so.node'
+  )
+)
+fs.copyFileSync(
+  path.resolve(
+    __dirname,
+    './client/libquery_engine-debian-openssl-1.1.x.so.node'
+  ),
+  path.resolve(
+    __dirname,
+    '../dist/libquery_engine-debian-openssl-1.1.x.so.node'
   )
 )
 fs.copyFileSync(
