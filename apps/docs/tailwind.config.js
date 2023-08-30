@@ -22,5 +22,5 @@ module.exports = {
     preflight: false,
     aspectRatio: false,
   },
-  plugins: [],
+  plugins: [require('@tailwindcss/typography')],
 }

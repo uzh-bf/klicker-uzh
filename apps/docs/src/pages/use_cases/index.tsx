@@ -1,9 +1,8 @@
-import Link from '@docusaurus/Link'
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import UseCaseLayout from '@site/src/components/usecases/UseCaseLayout'
-import { Button, H1, H2 } from '@uzh-bf/design-system'
-import USE_CASES from '../../constants'
+import { H1, H2 } from '@uzh-bf/design-system'
+import { USE_CASES } from '../../constants'
 
 function Card({ slug, title, image, abstract }) {
   return (
@@ -12,12 +11,13 @@ function Card({ slug, title, image, abstract }) {
         <H2>{title}</H2>
         <p className="font-sans text-lg">{abstract}</p>
         <div>
-          <Link href={`/use_cases/${slug}`}>
-            <Button>
-              <FontAwesomeIcon icon={faArrowRight} />
-              Read More
-            </Button>
-          </Link>
+          <a
+            className="inline-flex gap-2 items-center"
+            href={`/use_cases/${slug}`}
+          >
+            <FontAwesomeIcon icon={faArrowRight} />
+            <div>More Details</div>
+          </a>
         </div>
       </div>
       <div className="order-1 md:order-2 flex-1">

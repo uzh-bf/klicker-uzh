@@ -1,7 +1,7 @@
 import { H1, H2, Tag } from '@uzh-bf/design-system'
 import UseCaseLayout from './UseCaseLayout'
 
-import USE_CASES from '../../constants'
+import { USE_CASES } from '../../constants'
 
 interface UseCaseProps {
   slug: string

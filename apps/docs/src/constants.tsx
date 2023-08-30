@@ -1,4 +1,47 @@
-export default {
+export const FEATURES = [
+  {
+    title: 'Interactive Learning',
+    text: 'KlickerUZH offers a range of interactive features such as live quizzes, live Q&A and group activities promoting active student engagement and participation.',
+  },
+  {
+    title: 'Timely Feedback',
+    text: 'Instantaneous feedback on questions in a synchronous and asynchronous settings allows students to gauge their understanding and address any misconceptions promptly.',
+  },
+  {
+    title: 'Gamification',
+    text: 'With a built-in gamification system, KlickerUZH motivates students to actively participate, earn points, and unlock achievements, fostering a dynamic and rewarding learning environment.',
+  },
+  {
+    title: 'Various Question Types',
+    text: 'KlickerUZH supports question types like Single and Multiple Choice (SC/MC), Kprim (KP), Free Text (FT), and Numerical (NR). Questions can be grouped and/or stacked for sequential presentation. Sample solutions and explanations can be provided for all question types, answer-specific feedback for choice-based questions.',
+  },
+  {
+    title: 'Wide Array of Learning Activities',
+    text: 'Lecturers have the flexibility to select from five distinct learning activities that suit specific educational objectives and adapt to various teaching methods during live lectures (synchronous learning) or outside of the traditional lecture frame (asynchronous learning).',
+  },
+  {
+    title: 'Course Integration',
+    text: 'Courses help to implement KlickerUZH Learning Activities into a lecture structure, enabling lecturers to manage different activities and challenges effectively throughout a semester or over a certain period of time.',
+  },
+  {
+    title: 'LMS Integration',
+    text: 'KlickerUZH seamlessly integrates in Learning Management Systems (LMS) like OLAT, making it easy to incorporate into your current teaching setup.',
+  },
+  {
+    title: 'Customization Options',
+    text: 'Lecturers have the flexibility to customize quizzes, content, and challenges according to their specific course objectives, ensuring a tailored and targeted learning experience.',
+  },
+  {
+    title: 'Open-Source and Easy to Get Started',
+    text: 'KlickerUZH is an open-source project and licensed under the AGPL-3.0. The source code is available on GitHub and can be deployed on your own server. We also provide a hosted version of KlickerUZH, which is free to use for most educational scenarios.',
+  },
+  // {
+  //   title: 'Monitoring and Analytics',
+  //   text: 'KlickerUZH provides lecturers with valuable insights and analytics, allowing them to track student progress, identify areas for improvement, and adjust their teaching strategies accordingly.',
+  // },
+]
+
+export const USE_CASES = {
   live_quiz: {
     title: '(Gamified) Live Quizzes',
     headerImgSrc: '/img_v3/towfiqu-barbhuiya-oZuBNC-6E2s-unsplash.jpg',
