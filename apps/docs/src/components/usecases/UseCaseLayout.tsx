@@ -50,11 +50,6 @@ function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
                   },
                   {
                     type: 'link',
-                    label: 'Background',
-                    href: '/use_cases/live_quiz#Background',
-                  },
-                  {
-                    type: 'link',
                     label: 'Learnings',
                     href: '/use_cases/live_quiz#Learnings',
                   },
