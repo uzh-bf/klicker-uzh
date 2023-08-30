@@ -71,7 +71,7 @@ export const migrateFiles = async (
     return mappedFileURLs
   } catch (error) {
     context.error('Something went wrong while migrating files: ', error)
-    sendTeamsNotifications(
+    await sendTeamsNotifications(
       'func/migration-v3-import',
       `Failed migration of images for user '${user.email}'`,
       context

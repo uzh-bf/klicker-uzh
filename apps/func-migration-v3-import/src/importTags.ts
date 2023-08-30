@@ -78,7 +78,7 @@ export async function importTags(
     return mappedTags
   } catch (error) {
     context.error('Something went wrong while importing tags: ', error)
-    sendTeamsNotifications(
+    await sendTeamsNotifications(
       'func/migration-v3-import',
       `Failed migration of tags for user '${user.email}' because of ${error}`,
       context
