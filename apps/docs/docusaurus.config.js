@@ -95,6 +95,14 @@ const config = {
     ],
   ],
   themeConfig: {
+    announcementBar: {
+      id: 'release_v3',
+      content:
+        'KlickerUZH v3.0 has been released. If you are using the KlickerUZH v2.0, please refer to the corresponding <a href="/v2/getting_started/welcome">Docs v2.0</a>.',
+      backgroundColor: '#fafbfc',
+      textColor: '#091E42',
+      isCloseable: false,
+    },
     colorMode: {
       defaultMode: 'light',
       disableSwitch: true,
@@ -118,6 +126,7 @@ const config = {
           to: '/',
           label: 'Home',
           position: 'left',
+          activeBasePath: 'landing',
         },
         {
           to: 'use_cases',
@@ -126,7 +135,7 @@ const config = {
         },
         {
           to: 'getting_started/welcome',
-          label: 'Getting Started',
+          label: 'Docs',
           position: 'left',
         },
         {
@@ -153,11 +162,11 @@ const config = {
           label: 'Community',
           position: 'right',
         },
-        {
-          href: 'https://community.klicker.uzh.ch/c/announce/5',
-          label: 'Announcements',
-          position: 'right',
-        },
+        // {
+        //   href: 'https://community.klicker.uzh.ch/c/announce/5',
+        //   label: 'Announcements',
+        //   position: 'right',
+        // },
         {
           href: 'https://klicker-uzh.feedbear.com',
           label: 'Feedback',

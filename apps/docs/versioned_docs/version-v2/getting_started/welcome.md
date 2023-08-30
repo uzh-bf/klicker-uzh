@@ -8,7 +8,7 @@ KlickerUZH is developed by the Teaching Center of the Department of Banking and 
 
 ## User Guide
 
-To learn how to use the KlickerUZH efficiently, we recommend you read and follow the basic and advanced tutorials. These tutorials have been created to guide you through the entire application by means of an exemplary workflow. As an additional help to understand the workflow, the core concepts of the application are summarized in [Core Concepts](introduction/concepts.md).
+To learn how to use the KlickerUZH efficiently, we recommend you read and follow the basic and advanced tutorials. These tutorials have been created to guide you through the entire application by means of an exemplary workflow. As an additional help to understand the workflow, the core concepts of the application are summarized in [Core Concepts](getting_started/concepts.md).
 
 In case of any questions, please have a look if your problem has already been described in the [FAQ](faq/faq.md). For further support, please feel free to contact our team as described below.
 
