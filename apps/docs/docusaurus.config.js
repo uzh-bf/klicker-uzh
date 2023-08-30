@@ -9,15 +9,12 @@ const config = {
   baseUrl: '/',
   organizationName: 'uzh-bf',
   projectName: 'klicker-uzh',
-  scripts: [],
+  // scripts: ['https://identity.netlify.com/v1/netlify-identity-widget.js'],
   stylesheets: [
     'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap',
   ],
   favicon: '/favicon.ico',
   customFields: {
-    title_index: 'Klicker',
-    subtitle_index: 'UZH',
-    users: [],
     repoUrl: 'https://github.com/uzh-bf/klicker-uzh',
   },
   onBrokenLinks: 'log',
@@ -30,8 +27,15 @@ const config = {
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/dev/apps/docs',
+          editUrl: 'https://github.com/uzh-bf/klicker-uzh/edit/v3/apps/docs',
           routeBasePath: '/',
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: 'v3',
+              path: '',
+            },
+          },
         },
         pages: {},
         sitemap: {},
@@ -79,10 +83,6 @@ const config = {
       {
         redirects: [
           {
-            from: '/',
-            to: '/home',
-          },
-          {
             from: '/tos',
             to: '/terms_of_service',
           },
@@ -95,6 +95,14 @@ const config = {
     ],
   ],
   themeConfig: {
+    announcementBar: {
+      id: 'release_v3',
+      content:
+        'KlickerUZH v3.0 has been released. If you are using the KlickerUZH v2.0, please refer to the corresponding <a href="/v2/home">Docs v2.0</a>.',
+      backgroundColor: '#fafbfc',
+      textColor: '#091E42',
+      isCloseable: false,
+    },
     colorMode: {
       defaultMode: 'light',
       disableSwitch: true,
@@ -111,13 +119,14 @@ const config = {
       logo: {
         src: '/img/KlickerLogo.png',
         srcDark: '/img/KlickerLogo.png',
-        href: '/home',
+        href: '/',
       },
       items: [
         {
-          to: '/home',
+          to: '/',
           label: 'Home',
           position: 'left',
+          activeBasePath: 'landing',
         },
         {
           to: 'use_cases',
@@ -125,8 +134,8 @@ const config = {
           position: 'left',
         },
         {
-          to: 'introduction/getting_started',
-          label: 'Getting Started',
+          to: 'getting_started/welcome',
+          label: 'Docs',
           position: 'left',
         },
         {
@@ -153,11 +162,11 @@ const config = {
           label: 'Community',
           position: 'right',
         },
-        {
-          href: 'https://community.klicker.uzh.ch/c/announce/5',
-          label: 'Announcements',
-          position: 'right',
-        },
+        // {
+        //   href: 'https://community.klicker.uzh.ch/c/announce/5',
+        //   label: 'Announcements',
+        //   position: 'right',
+        // },
         {
           href: 'https://klicker-uzh.feedbear.com',
           label: 'Feedback',
@@ -179,7 +188,7 @@ const config = {
           items: [
             {
               label: 'Home',
-              to: '/home',
+              to: '/',
             },
             {
               label: 'Privacy Policy',
