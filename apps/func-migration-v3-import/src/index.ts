@@ -44,7 +44,7 @@ const blobTrigger: StorageBlobHandler = async function (
 
     email = user.email
 
-    sendTeamsNotifications(
+    await sendTeamsNotifications(
       'func/migration-v3-import',
       `Started import of KlickerV2 data for user '${user.email}'`,
       context

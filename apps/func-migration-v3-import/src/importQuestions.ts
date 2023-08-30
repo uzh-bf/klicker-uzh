@@ -152,7 +152,7 @@ export const importQuestions = async (
     return mappedQuestionIds
   } catch (error) {
     context.error('Something went wrong while importing questions: ', error)
-    sendTeamsNotifications(
+    await sendTeamsNotifications(
       'func/migration-v3-import',
       `Failed migration of questions for user '${user.email}' because of ${error}`,
       context
