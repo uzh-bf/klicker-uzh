@@ -98,7 +98,7 @@ const config = {
     announcementBar: {
       id: 'release_v3',
       content:
-        'KlickerUZH v3.0 has been released. If you are using the KlickerUZH v2.0, please refer to the corresponding <a href="/v2/getting_started/welcome">Docs v2.0</a>.',
+        'KlickerUZH v3.0 has been released. If you are using the KlickerUZH v2.0, please refer to the corresponding <a href="/v2/home">Docs v2.0</a>.',
       backgroundColor: '#fafbfc',
       textColor: '#091E42',
       isCloseable: false,

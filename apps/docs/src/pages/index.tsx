@@ -29,20 +29,20 @@ function TitleImage() {
 
 function CTA() {
   return (
-    <div className="text-center space-y-8">
+    <div className="text-center space-y-4 md:space-y-8">
       <H2 className={{ root: 'text-3xl' }}>Be Part of the Journey</H2>
       <div>
         <a href="https://manage.klicker.uzh.ch">
           <Button
             className={{
-              root: 'cursor-pointer text-2xl bg-slate-200 border-slate-300',
+              root: 'w-full md:w-max cursor-pointer text-2xl bg-uzh-blue-20 border-uzh-blue-100',
             }}
           >
             Sign In
           </Button>
         </a>
       </div>
-      <div className="grid grid-cols-2 gap-4 max-w-3xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
         <a
           href="https://klicker-uzh.feedbear.com"
           rel="noreferrer noopener"
@@ -50,7 +50,7 @@ function CTA() {
         >
           <Button
             className={{
-              root: 'cursor-pointer p-4 text-xl flex-col items-start text-left bg-slate-200 border-slate-300',
+              root: 'cursor-pointer p-4 text-xl flex-col items-start text-left bg-uzh-blue-20 border-uzh-blue-100',
             }}
           >
             <div className="font-bold">Roadmap</div>
@@ -68,7 +68,7 @@ function CTA() {
         >
           <Button
             className={{
-              root: 'cursor-pointer p-4 text-xl flex-col items-start text-left bg-slate-200 border-slate-300',
+              root: 'cursor-pointer p-4 text-xl flex-col items-start text-left bg-uzh-blue-20 border-uzh-blue-100',
             }}
           >
             <div className="font-bold">Community</div>
