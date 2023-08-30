@@ -113,15 +113,17 @@ function Catalyst() {
                     <div>Courses and Challenge</div>
                   </li>
                   <li className="flex text-sm gap-x-3 opacity-70">
-                    To get access and for other inquiries please fill out the
-                    following
-                    <a
-                      href="https://forms.office.com/e/4AsWW1uck2"
-                      target="_blank"
-                    >
-                      form
-                    </a>
-                    .
+                    <div>
+                      To get access and for other inquiries please fill out the
+                      following{' '}
+                      <a
+                        href="https://forms.office.com/e/4AsWW1uck2"
+                        target="_blank"
+                      >
+                        form
+                      </a>
+                      .
+                    </div>
                   </li>
                 </ul>
               </div>
