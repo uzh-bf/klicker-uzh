@@ -2,7 +2,7 @@ import Layout from '@theme/Layout'
 
 function KnowledgeBase() {
   return (
-    <Layout title="Welcome">
+    <Layout>
       <div className="h-screen border-2 border-red-500">
         <iframe
           src="https://www.gbl.uzh.ch/md/"

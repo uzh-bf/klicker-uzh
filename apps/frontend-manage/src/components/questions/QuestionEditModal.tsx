@@ -335,7 +335,11 @@ function QuestionEditModal({
           id: questionId,
           name: values.name,
           content: values.content,
-          explanation: values.explanation,
+          explanation:
+            !values.explanation?.match(/^(<br>(\n)*)$/g) &&
+            values.explanation !== ''
+              ? values.explanation
+              : null,
           hasSampleSolution: values.hasSampleSolution,
           hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           tags: values.tags,
