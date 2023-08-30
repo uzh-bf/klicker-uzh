@@ -7,15 +7,36 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Layout from '@theme/Layout'
+import { useEffect, useState } from 'react'
+import TextTransition, { presets } from 'react-text-transition'
+
+const TEXTS = ['Free', 'Catalyst']
 
 function Catalyst() {
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    const intervalId = setInterval(
+      () => setIndex((index) => index + 1),
+      3000 // every 3 seconds
+    )
+    return () => clearTimeout(intervalId)
+  }, [])
+
   return (
     <Layout>
       <div className="py-24">
         <div className="md:mx-auto max-w-7xl lg:px-8">
           <div className="max-w-4xl mx-auto sm:text-center">
             <h1 className="mt-2 text-5xl">
-              <u className="decoration-[#3353b7]">Free</u> for personal use
+              <div className="flex justify-center">
+                <TextTransition springConfig={presets.wobbly}>
+                  <u className="decoration-[#3353b7]">
+                    {TEXTS[index % TEXTS.length]}
+                  </u>
+                </TextTransition>
+              </div>
+              <div>for personal use</div>
             </h1>
           </div>
           <div className="max-w-xl mx-auto mt-6 text-2xl leading-tight text-muted sm:text-center">
