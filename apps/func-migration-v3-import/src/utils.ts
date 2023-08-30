@@ -1,3 +1,4 @@
+import { InvocationContext } from '@azure/functions'
 import { QuestionType } from '@klicker-uzh/prisma'
 import axios from 'axios'
 
@@ -18,15 +19,23 @@ export const QuestionTypeMap: Record<string, QuestionType> = {
   FREE: 'FREE_TEXT',
 }
 
-export async function sendTeamsNotifications(scope: string, text: string) {
+export async function sendTeamsNotifications(
+  scope: string,
+  text: string,
+  context: InvocationContext
+) {
   if (process.env.TEAMS_WEBHOOK_URL) {
-    return axios.post(process.env.TEAMS_WEBHOOK_URL, {
-      '@context': 'https://schema.org/extensions',
-      '@type': 'MessageCard',
-      themeColor: '0076D7',
-      title: `Migration: ${scope}`,
-      text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
-    })
+    try {
+      return axios.post(process.env.TEAMS_WEBHOOK_URL, {
+        '@context': 'https://schema.org/extensions',
+        '@type': 'MessageCard',
+        themeColor: '0076D7',
+        title: `Migration: ${scope}`,
+        text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
+      })
+    } catch (e) {
+      context.error(e)
+    }
   }
 
   return null
@@ -34,7 +43,8 @@ export async function sendTeamsNotifications(scope: string, text: string) {
 
 export async function sendEmailMigrationNotification(
   email: string,
-  success: boolean
+  success: boolean,
+  context: InvocationContext
 ) {
   const LISTMONK_AUTH = {
     username: process.env.LISTMONK_USER as string,
@@ -54,19 +64,30 @@ export async function sendEmailMigrationNotification(
       { auth: LISTMONK_AUTH }
     )
   } catch (e: any) {
-    if (e.response.status !== 409) {
-      console.error(e)
-    }
+    context.error(e)
+    // if (e.response.status !== 409) {
+    //   context.error(e)
+    // }
   }
 
-  return axios.post(
-    `${process.env.LISTMONK_URL}/api/tx`,
-    {
-      subscriber_emails: [email],
-      template_id: success
-        ? Number(process.env.LISTMONK_TEMPLATE_MIGRATION_SUCCESS)
-        : Number(process.env.LISTMONK_TEMPLATE_MIGRATION_FAILED),
-    },
-    { auth: LISTMONK_AUTH }
-  )
+  try {
+    const result = axios.post(
+      `${process.env.LISTMONK_URL}/api/tx`,
+      {
+        subscriber_emails: [email],
+        template_id: success
+          ? Number(process.env.LISTMONK_TEMPLATE_MIGRATION_SUCCESS)
+          : Number(process.env.LISTMONK_TEMPLATE_MIGRATION_FAILED),
+      },
+      { auth: LISTMONK_AUTH }
+    )
+
+    context.log(result)
+
+    return result
+  } catch (e) {
+    context.error(e)
+  }
+
+  return null
 }

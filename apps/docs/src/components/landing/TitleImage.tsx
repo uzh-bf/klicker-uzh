@@ -1,37 +1,19 @@
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
+import { H1, H2 } from '@uzh-bf/design-system'
 
 function TitleImage() {
   return (
-    <>
-      <div className="mt-10 md:mt-20">
-        <div className="font-bold text-2xl md:text-4xl">
-          Enhance your classroom experience.
+    <div className="relative">
+      <div className="relative w-full max-w-[1500px] mx-auto">
+        <img className="object-cover md:h-full h-64" src="/img_v3/hero_1.png" />
+        <div className="absolute bottom-4 left-0 right-0 md:right-auto md:bottom-[50px] md:left-[50px] bg-slate-100 bg-opacity-80 px-4 py-2 md:rounded">
+          <H1 className={{ root: 'text-2xl md:text-6xl m-0' }}>KlickerUZH</H1>
+          <H2 className={{ root: 'text-xl md:text-3xl m-0' }}>
+            Enhance your classroom experience.
+          </H2>
         </div>
-        <div className="text-lg md:text-2xl w-2/3">
-          Take your classroom interaction now to the next level and increase
-          your student's engagement.
-        </div>
-        <div className="mt-4 flex flex-row gap-2">
-          <Button className={{ root: 'bg-primary-80 text-white font-bold' }}>
-            <Button.Icon>
-              <FontAwesomeIcon icon={faArrowRight} />
-            </Button.Icon>
-            <Button.Label>Sign Up</Button.Label>
-          </Button>
-          <Button>
-            <Button.Icon>
-              <FontAwesomeIcon icon={faArrowRight} />
-            </Button.Icon>
-            <Button.Label>Get Started</Button.Label>
-          </Button>
-        </div>
+        <div className="text-lg md:text-2xl w-2/3"></div>
       </div>
-      <div className="w-full h-80 bg-uzh-grey-20 my-10">
-        PLACEHOLDER PHONE IMAGE LEFT OVERLAPPING ON LAPTOP RIGHT
-      </div>
-    </>
+    </div>
   )
 }
 

@@ -7,6 +7,7 @@
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
   "license": "AGPL-3.0",
+  "main": "apps/func/dist/index.js",
   "maintainers": [
     "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
     "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>",
@@ -74,6 +75,5 @@
     "node": "18.17.0",
     "pnpm": "8.6.12"
   },
-  "packageManager": "pnpm@8.6.12",
-  "main": "apps/func/dist/index.js"
+  "packageManager": "pnpm@8.6.12"
 }

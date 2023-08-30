@@ -23,6 +23,9 @@
     "snapshotPersistenceEnabled": true
   },
   "extensions": {
+    "blobs": {
+      "maxDequeueCount": 1
+    },
     "queues": {
       "maxDequeueCount": 1
     }
