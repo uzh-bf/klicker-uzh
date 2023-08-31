@@ -5,6 +5,7 @@ import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface CreationButtonProps {
+  comingSoon?: boolean
   isCatalystRequired?: boolean
   icon: IconDefinition
   text: string
@@ -17,6 +18,7 @@ interface CreationButtonProps {
 }
 
 function CreationButton({
+  comingSoon,
   isCatalystRequired,
   icon,
   text,
@@ -44,13 +46,28 @@ function CreationButton({
       </div>
       <div>
         {isCatalystRequired && (
-          <Button.Icon className={{ root: 'text-orange-400' }}>
+          <Button.Icon
+            className={{
+              root: comingSoon ? 'text-slate-400' : 'text-orange-400',
+            }}
+          >
             <FontAwesomeIcon icon={faCrown} />
           </Button.Icon>
         )}
       </div>
     </Button>
   )
+
+  if (comingSoon && disabled) {
+    return (
+      <Tooltip
+        tooltip={<div className="max-w-[300px]">Coming Soon</div>}
+        className={{ tooltip: 'z-20' }}
+      >
+        {button}
+      </Tooltip>
+    )
+  }
 
   if (isCatalystRequired && disabled) {
     return (

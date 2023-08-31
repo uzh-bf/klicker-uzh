@@ -91,6 +91,7 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         data={{ cy: 'create-learning-element' }}
       />
       <CreationButton
+        comingSoon
         isCatalystRequired
         disabled={true || !data?.userProfile?.catalyst}
         icon={faUserGroup}

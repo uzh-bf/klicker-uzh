@@ -40,6 +40,7 @@ export default {
       installButton: 'Jetzt installieren',
     },
     generic: {
+      open: 'Vorschau öffnen',
       profile: 'Profil',
       shortname: 'Kurzname',
       yes: 'Ja',
@@ -569,6 +570,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       FULL_ACCESS: 'Voller Zugriff',
       SESSION_EXEC: 'Durchführung von Sessionen',
       READ_ONLY: 'Nur Lesen',
+      ACCOUNT_OWNER: 'Konto-Besitzer',
       lastUsed: 'zuletzt genutzt: {date}',
       lastUsedNever: 'zuletzt genutzt: Nie',
       createDelegatedLogin: 'Delegierten Login erstellen',

@@ -422,6 +422,20 @@ export async function changeShortname(
   { shortname }: { shortname: string },
   ctx: ContextWithUser
 ) {
+  // check if the shortname is already taken
+  const existingUser = await ctx.prisma.user.findUnique({
+    where: { shortname },
+  })
+
+  if (existingUser && existingUser.id !== ctx.user.sub) {
+    // another user already uses the requested shortname, returning old user
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.user.sub },
+    })
+
+    return user
+  }
+
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
     data: { shortname },
