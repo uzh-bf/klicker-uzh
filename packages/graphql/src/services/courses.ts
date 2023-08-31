@@ -609,7 +609,7 @@ export async function getCourseData(
     )
 
   const totalCount = course?.participations.length || 0
-  const averageActiveScore = totalCount > 0 ? activeSum / activeCount : 0
+  const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
 
   const reducedLearningElements = course?.learningElements.map((element) => {
     return {
