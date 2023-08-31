@@ -139,17 +139,20 @@ function MicroSessionInstance() {
 
               {currentInstance.evaluation && (
                 <div className="flex-1 p-4 space-y-4 border rounded basis-1/3 bg-gray-50">
-                  <div className="flex flex-row justify-between gap-8">
-                    <div className="flex flex-col">
-                      <div className="font-bold">
-                        {t('shared.leaderboard.pointsCollected')}
-                      </div>
-                      <div className="text-xl">
-                        {currentInstance.evaluation.pointsAwarded}{' '}
-                        {t('shared.leaderboard.points')}
+                  {typeof currentInstance.evaluation.pointsAwarded ===
+                    'number' && (
+                    <div className="flex flex-row justify-between gap-8">
+                      <div className="flex flex-col">
+                        <div className="font-bold">
+                          {t('shared.leaderboard.pointsCollected')}
+                        </div>
+                        <div className="text-xl">
+                          {currentInstance.evaluation.pointsAwarded}{' '}
+                          {t('shared.leaderboard.points')}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   <EvaluationDisplay
                     options={questionData.options}

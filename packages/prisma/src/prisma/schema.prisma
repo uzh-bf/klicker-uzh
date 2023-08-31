@@ -126,6 +126,8 @@ model User {
   groupActivities   GroupActivity[]
   flashcardSets     FlashcardSet[]
 
+  firstLogin Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -239,6 +239,7 @@ function CourseOverview({ courseId }: Props) {
                     </H3>
 
                     <Leaderboard
+                      activeParticipation={participation?.isActive}
                       leaderboard={
                         filteredGroupLeaderboard?.map((entry) => ({
                           username: entry.name,
@@ -616,6 +617,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     apolloClient,
     ctx,
   })
+
+  if (typeof participantToken !== 'string') {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    }
+  }
 
   const result = await apolloClient.query({
     query: GetCourseOverviewDataDocument,

@@ -40,6 +40,7 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      open: 'Open preview',
       profile: 'Profile',
       shortname: 'Shortname',
       yes: 'Yes',
@@ -133,6 +134,7 @@ export default {
       respond: 'Respond',
       responses: 'Responses',
       ok: 'OK',
+      language: 'Language',
       english: 'English',
       german: 'German',
       flashcards: 'Flashcards',
@@ -557,6 +559,15 @@ If multipliers are activated on the activities, these multipliers are applied to
       installIOS:
         "Open the Share dialog and click 'Add to Home Screen' to install the KlickerUZH Manage app on your phone.",
     },
+    firstLogin: {
+      welcome: 'Welcome to KlickerUZH!',
+      makeFirstSettings:
+        'Since this is your first time with us, we would like to help you make some important settings right away to get you started as efficiently as possible. For now, this includes your preferred language as well as the shortname associated with this account. Both can still be changed at any time in the user settings.',
+      relevantLinks:
+        'Make sure you have seen and/or bookmarked the following relevant links:',
+      watchVideo:
+        'Please consider taking the time to watch the following introductory video, covering all core concepts of KlickerUZH v3.0 and its main features. In case you are in a hurry, directly submit your initial settings with the button below the video.',
+    },
     settings: {
       userSettings: 'User Settings',
       languageSettings: 'Language Settings',
@@ -565,6 +576,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       FULL_ACCESS: 'Full Access',
       SESSION_EXEC: 'Session Execution',
       READ_ONLY: 'Read Only',
+      ACCOUNT_OWNER: 'Account Owner',
       lastUsed: 'last used: {date}',
       lastUsedNever: 'last used: never',
       createDelegatedLogin: 'Create delegated login',
@@ -585,6 +597,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       shortnameMax: 'The shortname must be at most 8 characters long.',
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
+      shortnameTaken: 'The shortname you have chosen is already taken.',
     },
     token: {
       pageName: 'Token Generation',
@@ -1012,7 +1025,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       noLearningElements: 'No practice quizzes available',
       noMicroSessions: 'No microlearning available',
       courseLeaderboard: 'Course Leaderboard',
-      participantsLeaderboard: 'Participants Leaderboard: {number}',
+      participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
       runningSession: 'Running live quiz',
       publicAccess: 'Public access',

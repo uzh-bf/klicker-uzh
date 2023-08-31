@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.27...v3.0.0-rc.28) (2023-08-31)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** redirect from leaderboard if not logged in, add messages to redirect when existing account ([dfd9cf4](https://github.com/uzh-bf/klicker-uzh/commit/dfd9cf4471fe1c64c83da0f4e88e3f0d725f31b3))
+
+## [3.0.0-rc.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.26...v3.0.0-rc.27) (2023-08-31)
+
+
+### Features
+
+* **apps/frontend-manage:** show initial dialogue for edu-id login ([#3820](https://github.com/uzh-bf/klicker-uzh/issues/3820)) ([ff3ef79](https://github.com/uzh-bf/klicker-uzh/commit/ff3ef79dd82c4f3280ec6c9b87186de6046e41f1))
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** ensure that the implemented restrictions on number fields are used correctly ([#3827](https://github.com/uzh-bf/klicker-uzh/issues/3827)) ([9f425a7](https://github.com/uzh-bf/klicker-uzh/commit/9f425a704f26a2c6686ee87d108261779abe8e31))
+* **apps/frontend-manage:** ensure that shortnames are unique on change ([#3826](https://github.com/uzh-bf/klicker-uzh/issues/3826)) ([2d47441](https://github.com/uzh-bf/klicker-uzh/commit/2d47441477630a3a7d95199acace9b66311ca85f))
+* **apps/frontend-manage:** handle coming soon on group activity ([9396131](https://github.com/uzh-bf/klicker-uzh/commit/9396131f32f32f132ec50dd94e1706d9fa7ef1f1))
+* **apps/frontend-pwa:** improve display of micro and learning element in anonymous view ([9d16fcf](https://github.com/uzh-bf/klicker-uzh/commit/9d16fcfefd3c4f85484cf292d6c1a99520917900))
+* **apps/frontend-pwa:** pass active participation to group leaderboard ([20c25b6](https://github.com/uzh-bf/klicker-uzh/commit/20c25b6544be3dabafd7ffd589708bb2858ff237))
+* **apps/func-migration-v3-import:** error is not a constructor ([7d09d2a](https://github.com/uzh-bf/klicker-uzh/commit/7d09d2a4132dc02160e8e4eeb77726c877ab28d8))
+* **apps/func-migration-v3-import:** take userid from correct position because of export folder nesting ([5d65454](https://github.com/uzh-bf/klicker-uzh/commit/5d654543875bbc52b750058719420edee2961f7f))
+* **apps/function-migration-v3-import:** reduce batch size to 10 and rework questions transaction ([68e3957](https://github.com/uzh-bf/klicker-uzh/commit/68e3957ec426bb544bcb1a834cdc3b9d95df994b))
+* **ci:** add debian-openssl binary target to copy command for prisma build ([5a27610](https://github.com/uzh-bf/klicker-uzh/commit/5a276104f8ec91040124280bfd55c220c763e726))
+* **ci:** add mv commands to import func build ([0f6a8b3](https://github.com/uzh-bf/klicker-uzh/commit/0f6a8b3732fec3e6745ec09363fb6940bfacf01c))
+* **ci:** build before cp in import func build ([110d839](https://github.com/uzh-bf/klicker-uzh/commit/110d8393ac6a5cfb0cd3bb82bc977a1a4b9dc2e5))
+* **ci:** copy so.node into dist ([7e83a3e](https://github.com/uzh-bf/klicker-uzh/commit/7e83a3e4891f96f97ab7f4e1b51075baab0443c6))
+* **ci:** remove double prisma cp ([ab17687](https://github.com/uzh-bf/klicker-uzh/commit/ab176871058298507de4da19d912caacbcf3812d))
+* **ci:** rm -f before cp to prisma directory in import function ([8b23679](https://github.com/uzh-bf/klicker-uzh/commit/8b23679ab9fb76caac5b9580f436c6aba1bd7b5b))
+* **frontend-manage:** ensure that active participants are shown on course leaderboard ([#3832](https://github.com/uzh-bf/klicker-uzh/issues/3832)) ([7b4b664](https://github.com/uzh-bf/klicker-uzh/commit/7b4b664508445fdf7a98c518d3ecf0049e879c06))
+* **frontend-manage:** ensure that empty explanations are saved as null ([#3831](https://github.com/uzh-bf/klicker-uzh/issues/3831)) ([dc98c0d](https://github.com/uzh-bf/klicker-uzh/commit/dc98c0d72217d2f717ad2df13d715fdc2e2fb73e))
+* **packages/graphql:** active count could be NaN ([5f7a9a9](https://github.com/uzh-bf/klicker-uzh/commit/5f7a9a949b409bf8c817f890c36e4c0a04122aa7))
+* **packages/graphql:** allow full access delegated users to change initial settings ([ecc046a](https://github.com/uzh-bf/klicker-uzh/commit/ecc046ad697eccc66a791b135c66356570cdfe44))
+* **packages/graphql:** allow full access delegated users to change shortname to prevent issues with modal ([97cf62c](https://github.com/uzh-bf/klicker-uzh/commit/97cf62c1805af293c0554bb6f3304567685e79ad))
+
+
+### Refactors
+
+* **migration:** ensure transactions contain the least amount of logic, misc fixes ([#3824](https://github.com/uzh-bf/klicker-uzh/issues/3824)) ([5285c36](https://github.com/uzh-bf/klicker-uzh/commit/5285c36c3e5399c865658b714d399108cbe80fe9))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add open preview button on learning elements and microlearning ([8de292b](https://github.com/uzh-bf/klicker-uzh/commit/8de292bef8e24c991599a484c811d9937a73e59e))
+
+
+### Documentation
+
+* add initial v3 documentation and website contents ([#3813](https://github.com/uzh-bf/klicker-uzh/issues/3813)) ([66592e4](https://github.com/uzh-bf/klicker-uzh/commit/66592e4ade82231d0270a4479202b26b7703d298))
+* fix broken links ([2aaa0b1](https://github.com/uzh-bf/klicker-uzh/commit/2aaa0b17600673357b37ecfedf34651ea279ccfd))
+* improve wording on catalyst, fix marks in use cases ([c10f7e0](https://github.com/uzh-bf/klicker-uzh/commit/c10f7e068cfba7ebcb3c1b7bbf8451fd7822171f))
+
 ## [3.0.0-rc.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.25...v3.0.0-rc.26) (2023-08-28)
 
 

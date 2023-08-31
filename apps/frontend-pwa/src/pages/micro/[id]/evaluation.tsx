@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   GetMicroSessionDocument,
   MarkMicroSessionCompletedDocument,
+  SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3 } from '@uzh-bf/design-system'
@@ -21,6 +22,8 @@ function Evaluation() {
     skip: !id,
     fetchPolicy: 'cache-only',
   })
+
+  const { data: participant } = useQuery(SelfDocument)
 
   const [markMicroSessionCompleted] = useMutation(
     MarkMicroSessionCompletedDocument
@@ -69,8 +72,10 @@ function Evaluation() {
               <div className="flex flex-row justify-between" key={instance.id}>
                 <div>{instance.questionData.name}</div>
                 <div>
-                  {instance.evaluation?.pointsAwarded}/
-                  {instance.evaluation?.score}/10
+                  {instance.evaluation?.pointsAwarded &&
+                    `${instance.evaluation?.pointsAwarded}/`}
+                  {instance.evaluation?.score}
+                  {`/10`}
                 </div>
               </div>
             ))}
@@ -82,21 +87,24 @@ function Evaluation() {
             })}
           </H3>
         </div>
-        <div className="text-right">
-          <Button
-            onClick={async () => {
-              await markMicroSessionCompleted({
-                variables: {
-                  courseId: data.microSession!.course.id,
-                  id,
-                },
-              })
-              router.replace('/')
-            }}
-          >
-            {t('shared.generic.finish')}
-          </Button>
-        </div>
+
+        {participant?.self && (
+          <div className="text-right">
+            <Button
+              onClick={async () => {
+                await markMicroSessionCompleted({
+                  variables: {
+                    courseId: data.microSession!.course.id,
+                    id,
+                  },
+                })
+                router.replace('/')
+              }}
+            >
+              {t('shared.generic.finish')}
+            </Button>
+          </div>
+        )}
       </div>
     </Layout>
   )
