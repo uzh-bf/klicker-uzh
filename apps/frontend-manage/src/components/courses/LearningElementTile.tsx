@@ -1,6 +1,7 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
-  faLink,
+  faCopy,
+  faExternalLink,
   faPencil,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
@@ -12,6 +13,7 @@ import {
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import StatusTag from './StatusTag'
@@ -33,6 +35,8 @@ function LearningElementTile({
   const [publishModal, setPublishModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const router = useRouter()
+
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/element/${learningElement.id}/`
 
   return (
     <div
@@ -68,18 +72,29 @@ function LearningElementTile({
         <Button
           basic
           onClick={() => {
-            navigator.clipboard.writeText(
-              `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/element/${learningElement.id}/`
-            )
-            setCopyToast(true)
+            try {
+              navigator.clipboard.writeText(href)
+              setCopyToast(true)
+            } catch (e) {}
           }}
           className={{
             root: 'flex flex-row items-center gap-1 text-primary',
           }}
         >
-          <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
+          <FontAwesomeIcon icon={faCopy} size="sm" className="w-4" />
           <div>{t('manage.course.copyAccessLink')}</div>
         </Button>
+        <Link href={href} target="_blank">
+          <Button
+            basic
+            className={{
+              root: 'flex flex-row items-center gap-1 text-primary',
+            }}
+          >
+            <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
+            <div>{t('shared.generic.open')}</div>
+          </Button>
+        </Link>
 
         {learningElement.status === LearningElementStatus.Draft && (
           <Button

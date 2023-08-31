@@ -130,7 +130,7 @@ function CourseOverviewPage() {
               setDescriptionEditMode={setDescriptionEditMode}
             />
           ) : (
-            <div className="flex flex-row gap-2 border border-solid rounded border-uzh-grey-80">
+            <div className="flex flex-row gap-2 border border-solid rounded border-uzh-grey-80 prose-p:mb-2 last:prose-p:mb-0 prose-p:mt-0 prose prose-sm leading-6 prose-blockquote:text-gray-500 max-w-none focus:!outline-none">
               <Markdown
                 content={course.description}
                 className={{ root: 'w-full p-2 rounded' }}
@@ -232,7 +232,7 @@ function CourseOverviewPage() {
           <div className="mb-4">
             <H3>{t('manage.general.sessions')}</H3>
             {course.sessions && course.sessions.length > 0 ? (
-              <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
+              <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
                 {sort((a, b) => {
                   return (
                     sortingOrderSessions[a.status] -
@@ -254,7 +254,7 @@ function CourseOverviewPage() {
               </Button.Icon>
             </H3>
             {course.learningElements && course.learningElements.length > 0 ? (
-              <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
+              <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
                 {course.learningElements.map((learningElement) => (
                   <LearningElementTile
                     courseId={course.id}
@@ -289,7 +289,7 @@ function CourseOverviewPage() {
               </Button.Icon>
             </H3>
             {course.microSessions && course.microSessions.length > 0 ? (
-              <div className="flex flex-col gap-2 pr-4 overflow-x-scroll sm:flex-row">
+              <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
                 {course.microSessions.map((microSession) => (
                   <MicroSessionTile
                     microSession={microSession}
@@ -314,6 +314,15 @@ function CourseOverviewPage() {
                 })}
               </UserNotification>
             )}
+          </div>
+          <div className="mb-4">
+            <H3 className={{ root: 'flex flex-row gap-3' }}>
+              <div>{t('shared.generic.groupActivities')}</div>
+              <Button.Icon className={{ root: 'text-orange-400' }}>
+                <FontAwesomeIcon icon={faCrown} size="sm" />
+              </Button.Icon>
+            </H3>
+            Coming Soon
           </div>
         </div>
         <div className="w-full md:w-1/3 md:pl-2">

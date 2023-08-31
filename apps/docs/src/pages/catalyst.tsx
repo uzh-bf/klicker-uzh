@@ -40,19 +40,19 @@ function Catalyst() {
           <Prose className={{ root: 'prose-xl w-full max-w-3xl' }}>
             <p>
               The core components of our KlickerUZH instance are free to use for
-              everyone. Advanced functionalities are restricted to sponsors
-              ("catalysts") of the KlickerUZH open-source project.
+              everyone. Advanced functionalities are restricted to users at UZH
+              or sponsors ("catalysts") of the KlickerUZH open-source project.
+            </p>
+            <p>
+              We offer the advanced functionalities for free to individual
+              lecturers in small educational use cases or for piloting
+              KlickerUZH in an external organization. For broad use across a
+              larger organization, a sponsorship agreement is required.
             </p>
             <p>
               You can contribute to the project in various ways, e.g., by
               self-hosting and collaborating on the code base, or by sponsoring
               the project financially.
-            </p>
-            <p>
-              We offer the advanced functionalities for free to individual
-              lecturers in small educational use cases or for piloting
-              KlickerUZH in an organization. For broad use across a larger
-              organization, a sponsorship agreement is required.
             </p>
             <p>
               To get access and for other inquiries please fill out the

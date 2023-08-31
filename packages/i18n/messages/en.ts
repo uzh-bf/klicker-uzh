@@ -40,6 +40,7 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      open: 'Open preview',
       profile: 'Profile',
       shortname: 'Shortname',
       yes: 'Yes',

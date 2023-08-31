@@ -1,6 +1,7 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
+  faExternalLink,
   faHourglassEnd,
   faHourglassStart,
   faLink,
@@ -13,6 +14,7 @@ import { MicroSession, MicroSessionStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -50,6 +52,8 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
     month: '2-digit',
     year: 'numeric',
   })
+
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/micro/${microSession.id}/`
 
   return (
     <div
@@ -98,10 +102,10 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
       <Button
         basic
         onClick={() => {
-          navigator.clipboard.writeText(
-            `${process.env.NEXT_PUBLIC_PWA_URL}/micro/${microSession.id}/`
-          )
-          setCopyToast(true)
+          try {
+            navigator.clipboard.writeText(href)
+            setCopyToast(true)
+          } catch (e) {}
         }}
         className={{
           root: twMerge('flex flex-row items-center gap-1 text-primary'),
@@ -110,6 +114,17 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
         <div>{t('manage.course.copyAccessLink')}</div>
       </Button>
+      <Link href={href} target="_blank">
+        <Button
+          basic
+          className={{
+            root: 'flex flex-row items-center gap-1 text-primary',
+          }}
+        >
+          <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
+          <div>{t('shared.generic.open')}</div>
+        </Button>
+      </Link>
       {microSession.status === MicroSessionStatus.Draft && (
         <Button
           basic
