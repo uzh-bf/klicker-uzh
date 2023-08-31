@@ -15,6 +15,7 @@ export interface NUMERICALAnswerOptionsProps {
   min: number
   max: number
   onChange: (value: any) => any
+  hidePrecision?: boolean
 }
 
 export function NUMERICALAnswerOptions({
@@ -27,23 +28,24 @@ export function NUMERICALAnswerOptions({
   min,
   max,
   onChange,
+  hidePrecision,
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   const t = useTranslations()
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-row gap-6">
-        {typeof min === 'number' && (
+        {typeof min === 'number' && !isNaN(min) && (
           <div data-cy="input-numerical-minimum">
             {t('shared.generic.min')}: {min}
           </div>
         )}
-        {typeof max === 'number' && (
+        {typeof max === 'number' && !isNaN(max) && (
           <div data-cy="input-numerical-maximum">
             {t('shared.generic.max')}: {max}
           </div>
         )}
-        {typeof accuracy === 'number' && (
+        {!hidePrecision && typeof accuracy === 'number' && !isNaN(accuracy) && (
           <div data-cy="input-numerical-accuracy">
             {t('shared.generic.precision')}: {accuracy}
           </div>
@@ -55,7 +57,7 @@ export function NUMERICALAnswerOptions({
           onChange={onChange}
           placeholder={placeholder}
           disabled={disabled}
-          accuracy={accuracy}
+          precision={accuracy}
           className={{
             root: 'w-full',
             input: twMerge(

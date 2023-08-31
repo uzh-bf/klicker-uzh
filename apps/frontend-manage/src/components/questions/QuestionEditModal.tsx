@@ -274,7 +274,7 @@ function QuestionEditModal({
           return {
             ...common,
             options: {
-              accuracy: 0,
+              accuracy: undefined,
               unit: '',
               restrictions: { min: undefined, max: undefined },
               solutionRanges: [{ min: undefined, max: undefined }],
@@ -962,7 +962,7 @@ function QuestionEditModal({
                             name="options.restrictions.min"
                             className={{
                               root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              input: 'bg-white text-gray-500',
+                              numberField: { input: 'bg-white text-gray-500' },
                             }}
                             placeholder={t('shared.generic.minLong')}
                             data={{ cy: 'set-numerical-minimum' }}
@@ -975,7 +975,7 @@ function QuestionEditModal({
                             name="options.restrictions.max"
                             className={{
                               root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              input: 'bg-white text-gray-500',
+                              numberField: { input: 'bg-white text-gray-500' },
                             }}
                             placeholder={t('shared.generic.maxLong')}
                             data={{ cy: 'set-numerical-maximum' }}
@@ -1000,7 +1000,7 @@ function QuestionEditModal({
                             name="options.accuracy"
                             className={{
                               root: 'w-40 mr-2 rounded h-9 focus:border-primary-40',
-                              input: 'bg-white text-gray-500',
+                              numberField: { input: 'bg-white text-gray-500' },
                             }}
                             precision={0}
                             data={{ cy: 'set-numerical-accuracy' }}
@@ -1280,12 +1280,14 @@ function QuestionEditModal({
                       // options: dataQuestion?.question?.questionData.options,
                       options: {
                         choices: values.options?.choices,
-                        accuracy: values.options?.accuracy,
+                        accuracy: parseInt(values.options?.accuracy),
                         unit: values.options?.unit,
                         restrictions: {
-                          min: values.options?.restrictions?.min,
-                          max: values.options?.restrictions?.max,
-                          maxLength: values.options?.restrictions?.maxLength,
+                          min: parseFloat(values.options?.restrictions?.min),
+                          max: parseFloat(values.options?.restrictions?.max),
+                          maxLength: parseInt(
+                            values.options?.restrictions?.maxLength
+                          ),
                         },
                       },
                     }}
