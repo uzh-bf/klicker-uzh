@@ -1,0 +1,11 @@
+mutation ChangeInitialSettings($shortname: String!, $locale: LocaleType!) {
+  changeInitialSettings(shortname: $shortname, locale: $locale) {
+    id
+    email
+    shortname
+    locale
+    firstLogin
+    catalyst
+    catalystTier
+  }
+}
