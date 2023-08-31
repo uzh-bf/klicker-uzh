@@ -239,6 +239,7 @@ function CourseOverview({ courseId }: Props) {
                     </H3>
 
                     <Leaderboard
+                      activeParticipation={participation?.isActive}
                       leaderboard={
                         filteredGroupLeaderboard?.map((entry) => ({
                           username: entry.name,
