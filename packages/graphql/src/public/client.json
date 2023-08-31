@@ -88,6 +88,7 @@
    "GetParticipantCourses": "bb82d68f51f9b46767e9f6a8c9c66ef2642b487c8f8a84473ce10f1b44eaf7fe",
    "GetParticipantDetails": "dcedf4660b759eab45cd5018c25a7485653a7c2af72061e6ad0a4b26403e16b2",
    "GetParticipantGroups": "ed00e7291d2ce97456fd3d3549fbb0ac68e86573da564d38c6798e9bfb439e4d",
+   "GetParticipation": "022c93b46aabd3a5f5376fc5870bb427343c98211d7d38364cee97e5016896a5",
    "GetPinnedFeedbacks": "c518ff6077ec8146c40f030193aa568be1c3ae87223c916975e94400f752e158",
    "GetRunningSession": "18e261ee5dc35195f53f18f24d85def07ca6f2b9213cfbe6f9f244bc0b557f6b",
    "GetRunningSessions": "db9601297d4de1b497598ff8a2a58c286492ec65cec0116b63f630d1bd8c86b7",

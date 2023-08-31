@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   GetMicroSessionDocument,
+  GetParticipationDocument,
   MarkMicroSessionCompletedDocument,
-  SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3 } from '@uzh-bf/design-system'
@@ -23,7 +23,10 @@ function Evaluation() {
     fetchPolicy: 'cache-only',
   })
 
-  const { data: participant } = useQuery(SelfDocument)
+  const { data: participation } = useQuery(GetParticipationDocument, {
+    variables: { courseId: data?.microSession?.course?.id ?? '' },
+    skip: !data?.microSession?.course?.id,
+  })
 
   const [markMicroSessionCompleted] = useMutation(
     MarkMicroSessionCompletedDocument
@@ -37,16 +40,6 @@ function Evaluation() {
     )
   }, [data?.microSession])
 
-  const pointsCollectedNull = useMemo(() => {
-    if (!data?.microSession) return true
-
-    return data.microSession?.instances?.every(
-      (instance) =>
-        instance?.evaluation?.pointsAwarded === null ||
-        typeof instance?.evaluation?.pointsAwarded === 'undefined'
-    )
-  }, [data?.microSession])
-
   if (loading || !data?.microSession) {
     return (
       <Layout>
@@ -54,6 +47,8 @@ function Evaluation() {
       </Layout>
     )
   }
+
+  console.log(participation?.getParticipation)
 
   return (
     <Layout
@@ -76,9 +71,9 @@ function Evaluation() {
               {t('shared.generic.evaluation')}
             </H3>
             <H3>
-              {pointsCollectedNull
-                ? t('pwa.learningElement.pointsComputedAvailable')
-                : t('pwa.learningElement.pointsCollectedPossible')}
+              {participation?.getParticipation?.isActive
+                ? t('pwa.learningElement.pointsCollectedPossible')
+                : t('pwa.learningElement.pointsComputedAvailable')}
             </H3>
           </div>
           <div>
@@ -96,7 +91,7 @@ function Evaluation() {
             ))}
           </div>
 
-          {!pointsCollectedNull && (
+          {participation?.getParticipation?.isActive && (
             <H3 className={{ root: 'mt-4 text-right' }}>
               {t('pwa.learningElement.totalPoints', {
                 points: totalPointsAwarded,
@@ -105,7 +100,7 @@ function Evaluation() {
           )}
         </div>
 
-        {participant?.self && (
+        {participation?.getParticipation?.isActive && (
           <div className="text-right">
             <Button
               onClick={async () => {
@@ -126,6 +121,8 @@ function Evaluation() {
     </Layout>
   )
 }
+
+// TODO: show hint to activate participation or that 0 points were collected due to inactive participation
 
 export async function getStaticProps({ locale }: GetServerSidePropsContext) {
   return {
