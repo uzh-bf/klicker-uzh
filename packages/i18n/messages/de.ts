@@ -410,6 +410,8 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       infoStack: 'Informationselement',
       inactiveParticipation:
         'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
+      missingParticipation:
+        'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
     microSession: {
       notFound:
@@ -417,7 +419,9 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       solvedMicrolearning:
         'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert.',
       inactiveParticipation:
-        'Du hast die Micro-Session <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
+        'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
+      missingParticipation:
+        'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
     session: {
       noActiveQuestion: 'Keine Frage aktiv.',

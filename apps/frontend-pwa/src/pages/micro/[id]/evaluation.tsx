@@ -3,6 +3,7 @@ import {
   GetMicroSessionDocument,
   GetParticipationDocument,
   MarkMicroSessionCompletedDocument,
+  SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
@@ -23,6 +24,7 @@ function Evaluation() {
     fetchPolicy: 'cache-only',
   })
 
+  const { data: participant } = useQuery(SelfDocument)
   const { data: participation } = useQuery(GetParticipationDocument, {
     variables: { courseId: data?.microSession?.course?.id ?? '' },
     skip: !data?.microSession?.course?.id,
@@ -98,7 +100,7 @@ function Evaluation() {
           )}
         </div>
 
-        {participation?.getParticipation?.isActive && (
+        {participation?.getParticipation && (
           <div className="text-right">
             <Button
               onClick={async () => {
@@ -124,6 +126,14 @@ function Evaluation() {
               })}
             </UserNotification>
           )}
+        {participant?.self && !participation?.getParticipation && (
+          <UserNotification className={{ root: 'mt-5' }} type="info">
+            {t.rich('pwa.microSession.missingParticipation', {
+              it: (text) => <span className="italic">{text}</span>,
+              name: data.microSession.displayName,
+            })}
+          </UserNotification>
+        )}
       </div>
     </Layout>
   )

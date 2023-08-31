@@ -244,6 +244,14 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
               })}
             </UserNotification>
           )}
+        {participant?.self && !participation?.getParticipation && (
+          <UserNotification className={{ root: 'mt-5' }} type="info">
+            {t.rich('pwa.learningElement.missingParticipation', {
+              it: (text) => <span className="italic">{text}</span>,
+              name: displayName,
+            })}
+          </UserNotification>
+        )}
       </div>
     </div>
   )
