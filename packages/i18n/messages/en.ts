@@ -40,6 +40,7 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      open: 'Open preview',
       profile: 'Profile',
       shortname: 'Shortname',
       yes: 'Yes',
@@ -564,6 +565,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       FULL_ACCESS: 'Full Access',
       SESSION_EXEC: 'Session Execution',
       READ_ONLY: 'Read Only',
+      ACCOUNT_OWNER: 'Account Owner',
       lastUsed: 'last used: {date}',
       lastUsedNever: 'last used: never',
       createDelegatedLogin: 'Create delegated login',
@@ -584,6 +586,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       shortnameMax: 'The shortname must be at most 8 characters long.',
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
+      shortnameTaken: 'The shortname you have chosen is already taken.',
     },
     token: {
       pageName: 'Token Generation',

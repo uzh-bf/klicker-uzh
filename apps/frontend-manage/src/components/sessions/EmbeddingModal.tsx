@@ -42,7 +42,7 @@ function EmbeddingModal({
                   icon={faClipboard}
                   className="hover:cursor-pointer"
                   onClick={() =>
-                    navigator.clipboard.writeText(
+                    navigator?.clipboard?.writeText(
                       `${process.env.NEXT_PUBLIC_MANAGE_URL}/sessions/${sessionId}/evaluation?questionIx=${ix}`
                     )
                   }
@@ -66,7 +66,7 @@ function EmbeddingModal({
               icon={faClipboard}
               className="hover:cursor-pointer"
               onClick={() =>
-                navigator.clipboard.writeText(
+                navigator?.clipboard?.writeText(
                   `${process.env.NEXT_PUBLIC_MANAGE_URL}/sessions/${sessionId}/evaluation?leaderboard=true`
                 )
               }
