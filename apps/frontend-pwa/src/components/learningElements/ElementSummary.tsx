@@ -1,13 +1,15 @@
 import { useQuery } from '@apollo/client'
 import {
+  GetParticipationDocument,
   QuestionStack,
   SelfDocument,
   StackElement,
 } from '@klicker-uzh/graphql/dist/ops'
 import { levelFromXp } from '@klicker-uzh/graphql/dist/util'
-import { H3, Progress } from '@uzh-bf/design-system'
+import { H3, Progress, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -18,6 +20,14 @@ interface ElementSummaryProps {
 
 function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
   const t = useTranslations()
+  const router = useRouter()
+  const courseId = router.query.courseId as string
+
+  const { data: participation } = useQuery(GetParticipationDocument, {
+    variables: {
+      courseId,
+    },
+  })
 
   const { data: participant } = useQuery(SelfDocument)
 
@@ -188,7 +198,8 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
         <div className="flex flex-row items-center justify-between">
           <H3>{t('shared.generic.evaluation')}</H3>
           <H3 className={{ root: 'text-base' }}>
-            {participant?.self
+            {typeof participation?.getParticipation?.isActive === 'boolean' &&
+            participation?.getParticipation?.isActive
               ? t('pwa.learningElement.pointsCollectedPossible')
               : t('pwa.learningElement.pointsComputedAvailable')}
           </H3>
@@ -204,7 +215,9 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
               </div>
               {stack?.solved ? (
                 <div>
-                  {participant?.self ? `${stack.pointsAwarded} / ` : ''}{' '}
+                  {participation?.getParticipation?.isActive
+                    ? `${stack.pointsAwarded} / `
+                    : ''}{' '}
                   {stack.score} / {stack.pointsPossible}
                 </div>
               ) : (
@@ -214,13 +227,23 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
           ))}
         </div>
 
-        {participant?.self && (
-          <H3 className={{ root: 'mt-4 text-right text-base' }}>
-            {t('pwa.learningElement.totalPoints', {
-              points: totalPointsAwarded,
-            })}
-          </H3>
-        )}
+        {typeof participation?.getParticipation?.isActive === 'boolean' &&
+          participation?.getParticipation?.isActive && (
+            <H3 className={{ root: 'mt-4 text-right text-base' }}>
+              {t('pwa.learningElement.totalPoints', {
+                points: totalPointsAwarded,
+              })}
+            </H3>
+          )}
+        {typeof participation?.getParticipation?.isActive === 'boolean' &&
+          !participation?.getParticipation?.isActive && (
+            <UserNotification className={{ root: 'mt-5' }} type="info">
+              {t.rich('pwa.learningElement.inactiveParticipation', {
+                it: (text) => <span className="italic">{text}</span>,
+                name: displayName,
+              })}
+            </UserNotification>
+          )}
       </div>
     </div>
   )

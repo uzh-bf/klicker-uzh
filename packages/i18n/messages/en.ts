@@ -407,6 +407,8 @@ If multipliers are activated on the activities, these multipliers are applied to
       submitFeedback: 'Submit feedback',
       feedbackTransmitted: 'Your feedback has been transmitted successfully.',
       infoStack: 'Information element',
+      inactiveParticipation:
+        'You have successfully completed the practice quiz <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
     },
     microSession: {
       notFound:
