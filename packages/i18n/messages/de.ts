@@ -559,6 +559,8 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       welcome: 'Willkommen beim KlickerUZH!',
       makeFirstSettings:
         'Da Sie KlickerUZH v3.0 zum ersten Mal nutzen, möchten wir Ihnen gerne helfen, einige wichtige Einstellungen gleich zu Beginn vorzunehmen, damit Sie so effizient wie möglich starten können. Dazu gehören Ihre bevorzugte Sprache sowie der Kurzname, der mit diesem Konto verknüpft ist. Beides kann jederzeit in den Benutzereinstellungen erneut geändert werden.',
+      relevantLinks:
+        'Stellen Sie sicher, dass Sie die folgenden relevanten Links gesehen/gespeichert haben:',
       watchVideo:
         'Bitte nehmen Sie sich die Zeit, sich das folgende Einführungsvideo anzusehen, welches alle Kernkonzepte von KlickerUZH v3.0 und seine wichtigsten Funktionen abdeckt. Möchten Sie diesen Schritt überspringen, speichern Sie Ihre Einstellungen einfach mit dem Button unterhalb des Videos.',
     },

@@ -562,6 +562,8 @@ If multipliers are activated on the activities, these multipliers are applied to
       welcome: 'Welcome to KlickerUZH!',
       makeFirstSettings:
         'Since this is your first time with us, we would like to help you make some important settings right away to get you started as efficiently as possible. For now, this includes your preferred language as well as the shortname associated with this account. Both can still be changed at any time in the user settings.',
+      relevantLinks:
+        'Make sure you have seen and/or bookmarked the following relevant links:',
       watchVideo:
         'Please consider taking the time to watch the following introductory video, covering all core concepts of KlickerUZH v3.0 and its main features. In case you are in a hurry, directly submit your initial settings with the button below the video.',
     },

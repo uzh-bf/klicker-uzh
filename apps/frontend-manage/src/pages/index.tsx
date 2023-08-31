@@ -41,6 +41,7 @@ import {
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
 import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
@@ -105,7 +106,7 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
   )
 }
 
-function SuspensedFirstLoginModal() {
+function SuspendedFirstLoginModal() {
   const [firstLogin, setFirstLogin] = useState(false)
   const [showGenericError, setShowGenericError] = useState(false)
 
@@ -125,13 +126,18 @@ function SuspensedFirstLoginModal() {
 
   return (
     <Modal
+      fullScreen
       open={firstLogin}
       onClose={() => null}
       hideCloseButton
-      className={{ content: 'w-full sm:w-3/4 md:w-2/3' }}
+      className={{ content: 'w-full py-4 px-8 md:py-8 md:px-16' }}
     >
-      <H1 className={{ root: 'text-4xl' }}>{t('manage.firstLogin.welcome')}</H1>
-      <div className="mb-2">{t('manage.firstLogin.makeFirstSettings')}</div>
+      <H1 className={{ root: 'text-4xl mb-4' }}>
+        {t('manage.firstLogin.welcome')}
+      </H1>
+      <div className="mb-2 prose max-w-none">
+        {t('manage.firstLogin.makeFirstSettings')}
+      </div>
       {data.userProfile ? (
         <Formik
           validationSchema={Yup.object().shape({
@@ -176,43 +182,71 @@ function SuspensedFirstLoginModal() {
         >
           {({ isValid, isSubmitting }) => (
             <Form>
-              <div className="md:mb-5 mb-1">
-                <div className="flex flex-col md:flex-row gap-2 mb-2">
-                  <FormikTextField
-                    label={t('shared.generic.shortname')}
-                    name="shortname"
-                    className={{ root: 'w-full md:w-1/2' }}
-                    required
-                  />
-                  <FormikSelectField
-                    label={t('shared.generic.language')}
-                    name="locale"
-                    items={[
-                      { label: t('shared.generic.english'), value: 'en' },
-                      { label: t('shared.generic.german'), value: 'de' },
-                    ]}
-                    className={{ root: 'w-full md:w-1/2' }}
-                    required
-                  />
-                </div>
+              <div className="md:mb-5 mb-1 space-y-4">
+                <FormikTextField
+                  label={t('shared.generic.shortname')}
+                  name="shortname"
+                  className={{ root: 'w-[250px]' }}
+                  required
+                />
+                <FormikSelectField
+                  label={t('shared.generic.language')}
+                  name="locale"
+                  items={[
+                    { label: t('shared.generic.english'), value: 'en' },
+                    { label: t('shared.generic.german'), value: 'de' },
+                  ]}
+                  className={{ root: 'w-full md:w-1/2' }}
+                  required
+                />
                 {showGenericError && (
                   <UserNotification type="error">
                     {t('shared.generic.systemError')}
                   </UserNotification>
                 )}
               </div>
-              <div className="mb-2">{t('manage.firstLogin.watchVideo')}</div>
+
+              <div className="mb-4 prose max-w-none">
+                {t('manage.firstLogin.relevantLinks')}
+              </div>
+
+              <div className="mb-4 grid grid-cols-3 gap-4">
+                <Link
+                  href="https://www.klicker.uzh.ch/getting_started/welcome"
+                  target="_blank"
+                >
+                  <Button fluid>Documentation</Button>
+                </Link>
+                <Link href="https://community.klicker.uzh.ch" target="_blank">
+                  <Button fluid>Community</Button>
+                </Link>
+                <Link href="https://klicker-uzh.feedbear.com" target="_blank">
+                  <Button fluid>Roadmap</Button>
+                </Link>
+              </div>
+
+              <div className="mb-6 prose max-w-none">
+                {t('manage.firstLogin.watchVideo')}
+              </div>
+
               <iframe
-                id="kmsembed-0_q6tfn51u"
-                src="https://uzh.mediaspace.cast.switch.ch/embed/secure/iframe/entryId/0_q6tfn51u/uiConfId/23448425/st/0"
-                className="kmsembed mx-auto rounded-xl w-[90%] h-[25rem]"
-                allowFullScreen
+                id="kmsembed-0_ugtkafd3"
+                width="100%"
+                height="400"
+                src="https://uzh.mediaspace.cast.switch.ch/embed/secure/iframe/entryId/0_ugtkafd3/uiConfId/23448425/st/0"
+                class="kmsembed"
+                allowfullscreen
+                webkitallowfullscreen
+                mozAllowFullScreen
                 allow="autoplay *; fullscreen *; encrypted-media *"
                 referrerPolicy="no-referrer-when-downgrade"
                 sandbox="allow-downloads allow-forms allow-same-origin allow-scripts allow-top-navigation allow-pointer-lock allow-popups allow-modals allow-orientation-lock allow-popups-to-escape-sandbox allow-presentation allow-top-navigation-by-user-activation"
-                title="KlickerUZH - Core Concepts"
-              />
+                frameborder="0"
+                title="KlickerUZH_CoreConcepts_AudioEnhanced"
+              ></iframe>
+
               <Button
+                fluid
                 className={{
                   root: 'mt-4 w-32 justify-center float-right bg-primary-80 text-white',
                 }}
@@ -565,7 +599,7 @@ function Index() {
         />
       )}
       <Suspense fallback={<div />}>
-        <SuspensedFirstLoginModal />
+        <SuspendedFirstLoginModal />
       </Suspense>
     </Layout>
   )
