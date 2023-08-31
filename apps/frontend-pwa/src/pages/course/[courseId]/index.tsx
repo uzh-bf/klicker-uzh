@@ -618,6 +618,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     ctx,
   })
 
+  if (typeof participantToken !== 'string') {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    }
+  }
+
   const result = await apolloClient.query({
     query: GetCourseOverviewDataDocument,
     variables: {
