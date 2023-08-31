@@ -413,6 +413,8 @@ If multipliers are activated on the activities, these multipliers are applied to
         'The corresponding microlearning is either not available or not yet active.',
       solvedMicrolearning:
         'You have successfully completed the microlearning <it>{name}</it>.',
+      inactiveParticipation:
+        'You have successfully completed the microlearning <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
     },
     session: {
       noActiveQuestion: 'No question active.',

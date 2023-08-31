@@ -414,6 +414,8 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Unter diesem Link existiert keine Micro-Session oder diese ist noch nicht aktiv.',
       solvedMicrolearning:
         'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert.',
+      inactiveParticipation:
+        'Du hast die Micro-Session <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
     },
     session: {
       noActiveQuestion: 'Keine Frage aktiv.',

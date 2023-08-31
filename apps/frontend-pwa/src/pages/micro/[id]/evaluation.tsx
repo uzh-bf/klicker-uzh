@@ -5,7 +5,7 @@ import {
   MarkMicroSessionCompletedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H3 } from '@uzh-bf/design-system'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -47,8 +47,6 @@ function Evaluation() {
       </Layout>
     )
   }
-
-  console.log(participation?.getParticipation)
 
   return (
     <Layout
@@ -117,12 +115,19 @@ function Evaluation() {
             </Button>
           </div>
         )}
+        {typeof participation?.getParticipation?.isActive === 'boolean' &&
+          participation?.getParticipation?.isActive === false && (
+            <UserNotification type="info">
+              {t.rich('pwa.microSession.inactiveParticipation', {
+                it: (text) => <span className="italic">{text}</span>,
+                name: data.microSession.displayName,
+              })}
+            </UserNotification>
+          )}
       </div>
     </Layout>
   )
 }
-
-// TODO: show hint to activate participation or that 0 points were collected due to inactive participation
 
 export async function getStaticProps({ locale }: GetServerSidePropsContext) {
   return {
