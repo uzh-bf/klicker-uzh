@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl'
 
 interface LearningElementPointsProps {
   evaluation: InstanceEvaluation
-  pointsMultiplier: number
+  pointsMultiplier?: number
 }
 
 function LearningElementPoints({
@@ -15,12 +15,14 @@ function LearningElementPoints({
 
   return (
     <div className="block">
-      <div className="mb-2">
-        {t.rich('pwa.learningElement.multiplicatorEval', {
-          mult: pointsMultiplier,
-          b: (text) => <span className="font-bold">{text}</span>,
-        })}
-      </div>
+      {typeof pointsMultiplier === 'number' && (
+        <div className="mb-2">
+          {t.rich('pwa.learningElement.multiplicatorEval', {
+            mult: pointsMultiplier,
+            b: (text) => <span className="font-bold">{text}</span>,
+          })}
+        </div>
+      )}
       <div className="flex flex-row gap-4 md:flex-wrap">
         <div>
           <div className="font-bold">{t('shared.leaderboard.computed')}</div>

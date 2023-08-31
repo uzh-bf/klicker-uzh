@@ -330,12 +330,14 @@ function CourseOverviewPage() {
           <Leaderboard
             className={{ root: 'max-h-[31rem] overflow-y-scroll' }}
             leaderboard={course.leaderboard ?? []}
+            activeParticipation
           />
           <div className="mt-2 text-sm italic text-right text-gray-500">
             <div>
               {t('manage.course.participantsLeaderboard', {
                 number: course.numOfActiveParticipants,
               })}
+              /{course.numOfParticipants}
             </div>
             <div>
               {t('manage.course.avgPoints', {

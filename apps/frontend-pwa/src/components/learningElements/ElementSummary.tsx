@@ -144,7 +144,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
           />
           <Image
             src="/eating_bubbel.svg"
-            alt="Eating Bubbel"
+            alt="Eating Bubble"
             width={300}
             height={200}
             className="mx-2"
