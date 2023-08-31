@@ -226,14 +226,14 @@ export const USE_CASES = {
             Pre-lecture time consumption: "Good things take time" applies to the
             creation of good (multiple-choice) questions. Even experienced
             authors typically anticipate spending an average of one hour to
-            produce a single multiple-choice question in exam quality{' '}
-            <mark>(Krebs, 2004)</mark>. This time is necessary to carefully
-            consider the formulation of the question, select the answer options
-            precisely, and avoid potential pitfalls. This conscientious approach
-            ensures that the questions align with the desired learning outcomes
-            and provide students with an appropriate level of challenge. The
-            lecturer also needs time to implement the questions in KlickerUZH
-            before the lecture.
+            produce a single multiple-choice question in exam quality (Krebs,
+            2004). This time is necessary to carefully consider the formulation
+            of the question, select the answer options precisely, and avoid
+            potential pitfalls. This conscientious approach ensures that the
+            questions align with the desired learning outcomes and provide
+            students with an appropriate level of challenge. The lecturer also
+            needs time to implement the questions in KlickerUZH before the
+            lecture.
           </li>
           <li>
             Reaction to voting results: As a teacher, you have to react quickly
@@ -472,12 +472,12 @@ export const USE_CASES = {
             implement the questions in KlickerUZH before the lecture. "Good
             things take time" also applies here. Even experienced authors
             typically anticipate spending an average of one hour to produce a
-            single multiple-choice question in exam quality{' '}
-            <mark>(Krebs, 2004)</mark>. This time is necessary to carefully
-            consider the formulation of the question, select the answer options
-            precisely, and avoid potential pitfalls. This conscientious approach
-            ensures that the questions align with the desired learning outcomes
-            and provide students with an appropriate level of challenge.
+            single multiple-choice question in exam quality (Krebs, 2004). This
+            time is necessary to carefully consider the formulation of the
+            question, select the answer options precisely, and avoid potential
+            pitfalls. This conscientious approach ensures that the questions
+            align with the desired learning outcomes and provide students with
+            an appropriate level of challenge.
           </li>
           <li>
             Room for discussion: Questions used in the quiz should be designed
