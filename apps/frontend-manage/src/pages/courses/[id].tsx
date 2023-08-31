@@ -337,6 +337,7 @@ function CourseOverviewPage() {
               {t('manage.course.participantsLeaderboard', {
                 number: course.numOfActiveParticipants,
               })}
+              /{course.numOfParticipants}
             </div>
             <div>
               {t('manage.course.avgPoints', {

@@ -1017,7 +1017,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       noLearningElements: 'Keine Lernelemente vorhanden',
       noMicroSessions: 'Keine Micro-Sessions vorhanden',
       courseLeaderboard: 'Kurs Leaderboard',
-      participantsLeaderboard: 'Teilnehmende Leaderboard: {number}',
+      participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',
       runningSession: 'Laufende Session',
       publicAccess: 'Öffentlicher Zugriff',

@@ -1012,7 +1012,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       noLearningElements: 'No practice quizzes available',
       noMicroSessions: 'No microlearning available',
       courseLeaderboard: 'Course Leaderboard',
-      participantsLeaderboard: 'Participants Leaderboard: {number}',
+      participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
       runningSession: 'Running live quiz',
       publicAccess: 'Public access',
