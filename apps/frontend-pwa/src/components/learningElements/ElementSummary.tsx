@@ -135,13 +135,15 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
         </p>
       </div>
       <div className="mx-auto space-y-2">
-        <div className="flex flex-row items-center justify-between">
-          <Image
-            src={participant?.self?.levelData?.avatar ?? ''}
-            alt="Old Level"
-            width={50}
-            height={50}
-          />
+        <div className="flex flex-row items-center justify-center">
+          {participant?.self && (
+            <Image
+              src={participant?.self?.levelData?.avatar ?? ''}
+              alt="Old Level"
+              width={50}
+              height={50}
+            />
+          )}
           <Image
             src="/eating_bubbel.svg"
             alt="Eating Bubble"
@@ -149,16 +151,18 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
             height={200}
             className="mx-2"
           />
-          <Image
-            src={
-              (levelUp
-                ? participant?.self?.levelData?.nextLevel?.avatar
-                : participant?.self?.levelData?.avatar) ?? ''
-            }
-            alt="New Level"
-            width={50}
-            height={50}
-          />
+          {participant?.self && (
+            <Image
+              src={
+                (levelUp
+                  ? participant?.self?.levelData?.nextLevel?.avatar
+                  : participant?.self?.levelData?.avatar) ?? ''
+              }
+              alt="New Level"
+              width={50}
+              height={50}
+            />
+          )}
         </div>
         {participant?.self?.levelData?.nextLevel?.requiredXp && (
           <Progress
@@ -191,7 +195,9 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
               </div>
               {stack?.solved ? (
                 <div>
-                  {stack.pointsAwarded} / {stack.score} / {stack.pointsPossible}
+                  {participant?.self ? `${stack.pointsAwarded} / ` : ''}{' '}
+                  {stack.score}{' '}
+                  {participant?.self ? `/ ${stack.pointsPossible}` : ''}
                 </div>
               ) : (
                 <div>{t('pwa.learningElement.notAttempted')}</div>
@@ -200,11 +206,13 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
           ))}
         </div>
 
-        <H3 className={{ root: 'mt-4 text-right text-base' }}>
-          {t('pwa.learningElement.totalPoints', {
-            points: totalPointsAwarded,
-          })}
-        </H3>
+        {participant?.self && (
+          <H3 className={{ root: 'mt-4 text-right text-base' }}>
+            {t('pwa.learningElement.totalPoints', {
+              points: totalPointsAwarded,
+            })}
+          </H3>
+        )}
       </div>
     </div>
   )
