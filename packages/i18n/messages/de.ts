@@ -392,6 +392,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       solvedLearningElement:
         'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert.',
       pointsCollectedPossible: 'Punkte (gesammelt/berechnet/möglich)',
+      pointsComputedAvailable: 'Punkte (berechnet/möglich)',
       notAttempted: 'Nicht gelöst',
       totalPoints: 'Total Punkte (gesammelt): {points}',
       totalXp: '{xp} XP gesammelt',

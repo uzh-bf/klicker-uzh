@@ -37,6 +37,16 @@ function Evaluation() {
     )
   }, [data?.microSession])
 
+  const pointsCollectedNull = useMemo(() => {
+    if (!data?.microSession) return true
+
+    return data.microSession?.instances?.every(
+      (instance) =>
+        instance?.evaluation?.pointsAwarded === null ||
+        typeof instance?.evaluation?.pointsAwarded === 'undefined'
+    )
+  }, [data?.microSession])
+
   if (loading || !data?.microSession) {
     return (
       <Layout>
@@ -65,14 +75,19 @@ function Evaluation() {
             <H3 className={{ root: 'flex flex-row justify-between' }}>
               {t('shared.generic.evaluation')}
             </H3>
-            <H3>{t('pwa.learningElement.pointsCollectedPossible')}</H3>
+            <H3>
+              {pointsCollectedNull
+                ? t('pwa.learningElement.pointsComputedAvailable')
+                : t('pwa.learningElement.pointsCollectedPossible')}
+            </H3>
           </div>
           <div>
             {data.microSession.instances?.map((instance) => (
               <div className="flex flex-row justify-between" key={instance.id}>
                 <div>{instance.questionData.name}</div>
                 <div>
-                  {instance.evaluation?.pointsAwarded &&
+                  {typeof instance.evaluation?.pointsAwarded !== 'undefined' &&
+                    instance.evaluation.pointsAwarded !== null &&
                     `${instance.evaluation?.pointsAwarded}/`}
                   {instance.evaluation?.score}
                   {`/10`}
@@ -81,11 +96,13 @@ function Evaluation() {
             ))}
           </div>
 
-          <H3 className={{ root: 'mt-4 text-right' }}>
-            {t('pwa.learningElement.totalPoints', {
-              points: totalPointsAwarded,
-            })}
-          </H3>
+          {!pointsCollectedNull && (
+            <H3 className={{ root: 'mt-4 text-right' }}>
+              {t('pwa.learningElement.totalPoints', {
+                points: totalPointsAwarded,
+              })}
+            </H3>
+          )}
         </div>
 
         {participant?.self && (

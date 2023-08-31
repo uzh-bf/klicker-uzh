@@ -391,6 +391,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       solvedLearningElement:
         'You have successfully completed the practice quiz <it>{name}</it>.',
       pointsCollectedPossible: 'Points (collected/computed/available)',
+      pointsComputedAvailable: 'Points (computed/available)',
       notAttempted: 'Not attempted',
       totalPoints: 'Total points (collected): {points}',
       totalXp: '{xp} XP collected',
