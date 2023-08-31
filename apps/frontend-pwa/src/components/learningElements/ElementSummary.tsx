@@ -9,6 +9,7 @@ import { H3, Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface ElementSummaryProps {
   displayName: string
@@ -92,7 +93,9 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
                         (element.questionInstance.evaluation?.score ?? 0),
                       pointsPossible:
                         acc.pointsPossible +
-                        element.questionInstance.pointsMultiplier * 10,
+                        (element.questionInstance.questionData
+                          .pointsMultiplier ?? 1) *
+                          10,
                       solved:
                         acc.solved ||
                         (typeof element.questionInstance.evaluation !==
@@ -124,7 +127,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
   )
 
   return (
-    <div className="space-y-8">
+    <div className={twMerge('space-y-3', participant?.self && 'space-y-8')}>
       <div>
         <H3>{t('shared.generic.congrats')}</H3>
         <p>
@@ -137,31 +140,33 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
       <div className="mx-auto space-y-2">
         <div className="flex flex-row items-center justify-center">
           {participant?.self && (
-            <Image
-              src={participant?.self?.levelData?.avatar ?? ''}
-              alt="Old Level"
-              width={50}
-              height={50}
-            />
-          )}
-          <Image
-            src="/eating_bubbel.svg"
-            alt="Eating Bubble"
-            width={300}
-            height={200}
-            className="mx-2"
-          />
-          {participant?.self && (
-            <Image
-              src={
-                (levelUp
-                  ? participant?.self?.levelData?.nextLevel?.avatar
-                  : participant?.self?.levelData?.avatar) ?? ''
-              }
-              alt="New Level"
-              width={50}
-              height={50}
-            />
+            <>
+              <Image
+                src={participant?.self?.levelData?.avatar ?? ''}
+                alt="Old Level"
+                width={50}
+                height={50}
+              />
+
+              <Image
+                src="/eating_bubbel.svg"
+                alt="Eating Bubble"
+                width={300}
+                height={200}
+                className="mx-2"
+              />
+
+              <Image
+                src={
+                  (levelUp
+                    ? participant?.self?.levelData?.nextLevel?.avatar
+                    : participant?.self?.levelData?.avatar) ?? ''
+                }
+                alt="New Level"
+                width={50}
+                height={50}
+              />
+            </>
           )}
         </div>
         {participant?.self?.levelData?.nextLevel?.requiredXp && (
@@ -171,17 +176,21 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
             formatter={Number}
           />
         )}
-        <div className="text-center">
-          {t('pwa.learningElement.totalXp', {
-            xp: totalXpAwarded,
-          })}
-        </div>
+        {participant?.self && (
+          <div className="text-center">
+            {t('pwa.learningElement.totalXp', {
+              xp: totalXpAwarded,
+            })}
+          </div>
+        )}
       </div>
       <div>
         <div className="flex flex-row items-center justify-between">
           <H3>{t('shared.generic.evaluation')}</H3>
           <H3 className={{ root: 'text-base' }}>
-            {t('pwa.learningElement.pointsCollectedPossible')}
+            {participant?.self
+              ? t('pwa.learningElement.pointsCollectedPossible')
+              : t('pwa.learningElement.pointsComputedAvailable')}
           </H3>
         </div>
         <div>
@@ -196,8 +205,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
               {stack?.solved ? (
                 <div>
                   {participant?.self ? `${stack.pointsAwarded} / ` : ''}{' '}
-                  {stack.score}{' '}
-                  {participant?.self ? `/ ${stack.pointsPossible}` : ''}
+                  {stack.score} / {stack.pointsPossible}
                 </div>
               ) : (
                 <div>{t('pwa.learningElement.notAttempted')}</div>

@@ -19,7 +19,6 @@ interface Props {
   id: string
 }
 
-// TODO: leaderboard and points screen after all questions have been completed?
 // TODO: complete implementation of free text questions
 function LearningElementPage({ courseId, id }: Props) {
   const t = useTranslations()
