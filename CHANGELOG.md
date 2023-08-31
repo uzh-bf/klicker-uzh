@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.27...v3.0.0-rc.28) (2023-08-31)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** redirect from leaderboard if not logged in, add messages to redirect when existing account ([dfd9cf4](https://github.com/uzh-bf/klicker-uzh/commit/dfd9cf4471fe1c64c83da0f4e88e3f0d725f31b3))
+
 ## [3.0.0-rc.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.26...v3.0.0-rc.27) (2023-08-31)
 
 
