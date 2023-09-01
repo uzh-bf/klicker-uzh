@@ -329,15 +329,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       ctx,
     })
 
-    if (typeof participantToken !== 'string') {
-      return {
-        redirect: {
-          destination: '/editProfile',
-          permanent: false,
-        },
-      }
-    }
-
     if (!query?.disableLti && request?.body?.lis_person_sourcedid) {
       const signedLtiData = JWT.sign(
         {
