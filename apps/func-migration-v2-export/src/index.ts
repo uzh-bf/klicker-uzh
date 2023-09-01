@@ -29,11 +29,6 @@ const serviceBusTrigger = async function (
 
   const matchingUser = matchingUsers[0]
 
-  if (matchingUser.runningSession) {
-    // TODO: inform the user that the running session needs to be stopped before migration
-    throw new Error('User has a running session')
-  }
-
   const exportData: Record<string, any> = {
     user_id: matchingUser._id.toString(),
     user_email: matchingUser.email,
