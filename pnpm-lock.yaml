@@ -1398,19 +1398,19 @@ importers:
     devDependencies:
       '@cypress/code-coverage':
         specifier: 3.11.0
-        version: 3.11.0(@babel/core@7.21.8)(@babel/preset-env@7.22.10)(babel-loader@9.1.2)(cypress@12.17.4)(webpack@5.83.1)
+        version: 3.11.0(@babel/core@7.21.8)(@babel/preset-env@7.22.10)(babel-loader@9.1.2)(cypress@13.1.0)(webpack@5.83.1)
       '@testing-library/cypress':
         specifier: 9.0.0
-        version: 9.0.0(cypress@12.17.4)
+        version: 9.0.0(cypress@13.1.0)
       '@types/node':
         specifier: ^18.17.4
         version: 18.17.4
       cypress:
-        specifier: 12.17.4
-        version: 12.17.4
+        specifier: 13.1.0
+        version: 13.1.0
       typescript:
-        specifier: 5.1.6
-        version: 5.1.6
+        specifier: 5.2.2
+        version: 5.2.2
 
   packages/grading:
     dependencies:
@@ -4217,14 +4217,14 @@ packages:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  /@cypress/code-coverage@3.11.0(@babel/core@7.21.8)(@babel/preset-env@7.22.10)(babel-loader@9.1.2)(cypress@12.17.4)(webpack@5.83.1):
+  /@cypress/code-coverage@3.11.0(@babel/core@7.21.8)(@babel/preset-env@7.22.10)(babel-loader@9.1.2)(cypress@13.1.0)(webpack@5.83.1):
     resolution: {integrity: sha512-ihSO1s03gmLRE224oIjrbdG1ey63vw/UY+VSqQ5m/TKkAvyz6GIiniq6juk3AV/+0vQC1Eb4UWFu8ndtji4M1g==}
     peerDependencies:
       cypress: '*'
     dependencies:
       '@cypress/webpack-preprocessor': 5.17.1(@babel/core@7.21.8)(@babel/preset-env@7.22.10)(babel-loader@9.1.2)(webpack@5.83.1)
       chalk: 4.1.2
-      cypress: 12.17.4
+      cypress: 13.1.0
       dayjs: 1.11.9
       debug: 4.3.4(supports-color@8.1.1)
       execa: 4.1.0
@@ -4240,8 +4240,8 @@ packages:
       - webpack
     dev: true
 
-  /@cypress/request@2.88.12:
-    resolution: {integrity: sha512-tOn+0mDZxASFM+cuAP9szGUGPI1HwWVSvdzm7V4cCsPdFTx6qMj29CwaQmRAMIEhORIUBFBsYROYJcveK4uOjA==}
+  /@cypress/request@3.0.0:
+    resolution: {integrity: sha512-GKFCqwZwMYmL3IBoNeR2MM1SnxRIGERsQOTWeQKoYBt2JLqcqiy7JXqO894FLrpjZYqGxW92MNwRH2BN56obdQ==}
     engines: {node: '>= 6'}
     dependencies:
       aws-sign2: 0.7.0
@@ -9817,7 +9817,7 @@ packages:
       tailwindcss: 3.3.3(ts-node@10.9.1)
     dev: true
 
-  /@testing-library/cypress@9.0.0(cypress@12.17.4):
+  /@testing-library/cypress@9.0.0(cypress@13.1.0):
     resolution: {integrity: sha512-c1XiCGeHGGTWn0LAU12sFUfoX3qfId5gcSE2yHode+vsyHDWraxDPALjVnHd4/Fa3j4KBcc5k++Ccy6A9qnkMA==}
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
@@ -9825,7 +9825,7 @@ packages:
     dependencies:
       '@babel/runtime': 7.22.10
       '@testing-library/dom': 8.20.1
-      cypress: 12.17.4
+      cypress: 13.1.0
     dev: true
 
   /@testing-library/dom@8.20.1:
@@ -13787,13 +13787,13 @@ packages:
   /csstype@3.1.2:
     resolution: {integrity: sha512-I7K1Uu0MBPzaFKg4nI5Q7Vs2t+3gWWW648spaF+Rg7pI9ds18Ugn+lvg4SHczUdKlHI5LWBXyqfS8+DufyBsgQ==}
 
-  /cypress@12.17.4:
-    resolution: {integrity: sha512-gAN8Pmns9MA5eCDFSDJXWKUpaL3IDd89N9TtIupjYnzLSmlpVr+ZR+vb4U/qaMp+lB6tBvAmt7504c3Z4RU5KQ==}
-    engines: {node: ^14.0.0 || ^16.0.0 || >=18.0.0}
+  /cypress@13.1.0:
+    resolution: {integrity: sha512-LUKxCYlB973QBFls1Up4FAE9QIYobT+2I8NvvAwMfQS2YwsWbr6yx7y9hmsk97iqbHkKwZW3MRjoK1RToBFVdQ==}
+    engines: {node: ^16.0.0 || ^18.0.0 || >=20.0.0}
     hasBin: true
     requiresBuild: true
     dependencies:
-      '@cypress/request': 2.88.12
+      '@cypress/request': 3.0.0
       '@cypress/xvfb': 1.2.4(supports-color@8.1.1)
       '@types/node': 16.18.42
       '@types/sinonjs__fake-timers': 8.1.1
@@ -25720,6 +25720,12 @@ packages:
     resolution: {integrity: sha512-zaWCozRZ6DLEWAWFrVDz1H6FVXzUSfTy5FUMWsQlU8Ym5JP9eO4xkTIROFCQvhQf61z6O/G6ugw3SgAnvvm+HA==}
     engines: {node: '>=14.17'}
     hasBin: true
+
+  /typescript@5.2.2:
+    resolution: {integrity: sha512-mI4WrpHsbCIcwT9cF4FZvr80QUeKvsUsUvKDoR+X/7XHQH98xYD8YHZg7ANtz2GtZt/CBq2QJ0thkGJMHfqc1w==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+    dev: true
 
   /ua-parser-js@1.0.35:
     resolution: {integrity: sha512-fKnGuqmTBnIE+/KXSzCn4db8RTigUzw1AN0DmdU6hJovUTbYJKyqj+8Mt1c4VfRDnOVJnENmfYkIPZ946UrSAA==}
