@@ -9,6 +9,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { AVATAR_OPTIONS } from '@klicker-uzh/shared-components/src/constants'
+import { addApolloState, initializeApollo } from '@lib/apollo'
+import { getParticipantToken } from '@lib/token'
 import {
   Button,
   FormikSelectField,
@@ -20,7 +22,7 @@ import {
   Toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { GetStaticPropsContext } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import hash from 'object-hash'
 import { pick } from 'ramda'
@@ -372,12 +374,49 @@ function EditProfile() {
   )
 }
 
-export async function getStaticProps({ locale }: GetStaticPropsContext) {
-  return {
-    props: {
-      messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
-    },
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const apolloClient = initializeApollo()
+
+  const { participantToken, participant } = await getParticipantToken({
+    apolloClient,
+    ctx,
+  })
+
+  if (typeof participantToken !== 'string') {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    }
   }
+
+  const result = await apolloClient.query({
+    query: SelfDocument,
+    context: participantToken
+      ? {
+          headers: {
+            authorization: `Bearer ${participantToken}`,
+          },
+        }
+      : undefined,
+  })
+
+  if (!result.data.self) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      },
+    }
+  }
+
+  return addApolloState(apolloClient, {
+    props: {
+      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+        .default,
+    },
+  })
 }
 
 export default EditProfile
