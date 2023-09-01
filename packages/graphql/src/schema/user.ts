@@ -38,6 +38,8 @@ export const User = UserRef.implement({
       type: [MediaFileRef],
       nullable: true,
     }),
+
+    firstLogin: t.exposeBoolean('firstLogin'),
   }),
 })
 

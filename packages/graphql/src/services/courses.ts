@@ -580,35 +580,36 @@ export async function getCourseData(
     }
   })
 
-  const { activeLBEntries, activeSum } = course?.leaderboard.reduce(
-    (acc, entry) => {
-      return {
-        ...acc,
-        activeLBEntries: [
-          ...acc.activeLBEntries,
-          {
-            id: entry.id,
-            score: entry.score,
-            rank: acc.activeCount + 1,
-            email: entry.participation?.participant.email,
-            username: entry.participation?.participant.username,
-            avatar: entry.participation?.participant.avatar,
-            participation: entry.participation,
-          },
-        ],
-        activeSum: acc.activeSum + entry.score,
-        activeCount: acc.activeCount + 1,
+  const { activeLBEntries, activeSum, activeCount } =
+    course?.leaderboard.reduce(
+      (acc, entry) => {
+        return {
+          ...acc,
+          activeLBEntries: [
+            ...acc.activeLBEntries,
+            {
+              id: entry.id,
+              score: entry.score,
+              rank: acc.activeCount + 1,
+              email: entry.participation?.participant.email,
+              username: entry.participation?.participant.username,
+              avatar: entry.participation?.participant.avatar,
+              participation: entry.participation,
+            },
+          ],
+          activeSum: acc.activeSum + entry.score,
+          activeCount: acc.activeCount + 1,
+        }
+      },
+      {
+        activeLBEntries: [] as typeof course.leaderboard,
+        activeSum: 0,
+        activeCount: 0,
       }
-    },
-    {
-      activeLBEntries: [] as typeof course.leaderboard,
-      activeSum: 0,
-      activeCount: 0,
-    }
-  )
+    )
 
   const totalCount = course?.participations.length || 0
-  const averageScore = totalCount > 0 ? activeSum / totalCount : 0
+  const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
 
   const reducedLearningElements = course?.learningElements.map((element) => {
     return {
@@ -641,8 +642,9 @@ export async function getCourseData(
     learningElements: reducedLearningElements,
     microSessions: reducedMicroSessions,
     numOfParticipants: course?.participations.length,
+    numOfActiveParticipants: activeLBEntries.length,
     leaderboard: activeLBEntries,
-    averageScore,
+    averageActiveScore,
   }
 }
 

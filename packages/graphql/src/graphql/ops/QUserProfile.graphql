@@ -4,6 +4,7 @@ query UserProfile {
     email
     shortname
     locale
+    firstLogin
     catalyst
     catalystTier
   }

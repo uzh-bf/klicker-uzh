@@ -422,9 +422,51 @@ export async function changeShortname(
   { shortname }: { shortname: string },
   ctx: ContextWithUser
 ) {
+  // check if the shortname is already taken
+  const existingUser = await ctx.prisma.user.findUnique({
+    where: { shortname },
+  })
+
+  if (existingUser && existingUser.id !== ctx.user.sub) {
+    // another user already uses the requested shortname, returning old user
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.user.sub },
+    })
+
+    return user
+  }
+
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
     data: { shortname },
+  })
+
+  return user
+}
+
+export async function changeInitialSettings(
+  { shortname, locale }: { shortname: string; locale: Locale },
+  ctx: ContextWithUser
+) {
+  const existingUser = await ctx.prisma.user.findFirst({
+    where: { shortname },
+  })
+
+  console.log('query user id: ', ctx.user.sub)
+  console.log('Found user with same shortname: ', existingUser)
+
+  if (existingUser && existingUser.id !== ctx.user.sub) {
+    // another user already uses the shortname this user wants
+    const user = await ctx.prisma.user.update({
+      where: { id: ctx.user.sub },
+      data: { locale },
+    })
+    return user
+  }
+
+  const user = await ctx.prisma.user.update({
+    where: { id: ctx.user.sub },
+    data: { shortname, locale, firstLogin: false },
   })
 
   return user

@@ -44,8 +44,10 @@ function generateRandomString(length: number) {
       characters =
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     } else {
+      // TODO: re-introduce allowance for hyphens and underscores again when they are fully supported by manipulation forms
       characters =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+      // 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
     }
     const charactersLength = characters.length
     result += characters.charAt(Math.floor(Math.random() * charactersLength))

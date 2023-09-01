@@ -21,8 +21,8 @@ importers:
         specifier: 11.2.1
         version: 11.2.1
       turbo:
-        specifier: 1.10.12
-        version: 1.10.12
+        specifier: 1.10.13
+        version: 1.10.13
       yaml:
         specifier: 2.3.0
         version: 2.3.0
@@ -45,8 +45,8 @@ importers:
         specifier: 1.0.7
         version: 1.0.7(@prisma/client@4.14.1)(next-auth@4.22.3)
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -251,8 +251,8 @@ importers:
         specifier: ^3.0.6
         version: 3.0.6
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       axios:
         specifier: 1.4.0
         version: 1.4.0
@@ -294,26 +294,32 @@ importers:
     dependencies:
       '@docusaurus/core':
         specifier: 3.0.0-alpha.0
-        version: 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+        version: 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/module-type-aliases':
         specifier: 3.0.0-alpha.0
         version: 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/plugin-client-redirects':
         specifier: 3.0.0-alpha.0
-        version: 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+        version: 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/plugin-ideal-image':
         specifier: 3.0.0-alpha.0
-        version: 3.0.0-alpha.0(prop-types@15.8.1)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+        version: 3.0.0-alpha.0(prop-types@15.8.1)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/preset-classic':
         specifier: 3.0.0-alpha.0
-        version: 3.0.0-alpha.0(@algolia/client-search@4.19.1)(react-dom@18.2.0)(react@18.2.0)(search-insights@2.7.0)(typescript@5.0.4)
+        version: 3.0.0-alpha.0(@algolia/client-search@4.19.1)(react-dom@18.2.0)(react@18.2.0)(search-insights@2.7.0)(typescript@5.1.6)
+      '@docusaurus/theme-classic':
+        specifier: 3.0.0-alpha.0
+        version: 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/theme-common':
         specifier: 3.0.0-alpha.0
-        version: 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+        version: 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/tsconfig':
         specifier: '*'
         version: 0.0.0-5601
       '@fortawesome/fontawesome-svg-core':
+        specifier: 6.4.2
+        version: 6.4.2
+      '@fortawesome/free-brands-svg-icons':
         specifier: 6.4.2
         version: 6.4.2
       '@fortawesome/free-regular-svg-icons':
@@ -328,12 +334,6 @@ importers:
       '@gabrielcsapo/docusaurus-plugin-matomo':
         specifier: 0.1.2
         version: 0.1.2(react-dom@18.2.0)(react@18.2.0)
-      '@headlessui/react':
-        specifier: 1.5.0
-        version: 1.5.0(react-dom@18.2.0)(react@18.2.0)
-      '@heroicons/react':
-        specifier: 1.0.6
-        version: 1.0.6(react@18.2.0)
       '@mdx-js/react':
         specifier: 2.3.0
         version: 2.3.0(react@18.2.0)
@@ -341,8 +341,8 @@ importers:
         specifier: 1.0.5
         version: 1.0.5
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.0
+        version: 2.1.0(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       autoprefixer:
         specifier: 10.4.14
         version: 10.4.14(postcss@8.4.27)
@@ -358,12 +358,15 @@ importers:
       postcss:
         specifier: 8.4.27
         version: 8.4.27
+      postcss-import:
+        specifier: 15.1.0
+        version: 15.1.0(postcss@8.4.27)
       prettier:
         specifier: 2.8.8
         version: 2.8.8
       prettier-plugin-organize-imports:
         specifier: 3.2.3
-        version: 3.2.3(prettier@2.8.8)(typescript@5.0.4)
+        version: 3.2.3(prettier@2.8.8)(typescript@5.1.6)
       prettier-plugin-tailwindcss:
         specifier: 0.4.1
         version: 0.4.1(prettier-plugin-organize-imports@3.2.3)(prettier@2.8.8)
@@ -376,6 +379,9 @@ importers:
       react-medium-image-zoom:
         specifier: 4.4.3
         version: 4.4.3(react-dom@18.2.0)(react@18.2.0)
+      react-text-transition:
+        specifier: ^3.1.0
+        version: 3.1.0(react-dom@18.2.0)(react@18.2.0)
       recharts:
         specifier: 2.7.2
         version: 2.7.2(prop-types@15.8.1)(react-dom@18.2.0)(react@18.2.0)
@@ -386,8 +392,12 @@ importers:
         specifier: 3.3.3
         version: 3.3.3(ts-node@10.9.1)
       typescript:
-        specifier: 5.0.4
-        version: 5.0.4
+        specifier: 5.1.6
+        version: 5.1.6
+    devDependencies:
+      '@tailwindcss/typography':
+        specifier: 0.5.9
+        version: 0.5.9(tailwindcss@3.3.3)
 
   apps/frontend-control:
     dependencies:
@@ -431,8 +441,8 @@ importers:
         specifier: 1.6.1
         version: 1.6.1(next@13.4.19)
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       body-parser:
         specifier: 1.20.2
         version: 1.20.2
@@ -606,8 +616,8 @@ importers:
         specifier: 1.6.1
         version: 1.6.1(next@13.4.19)
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       d3:
         specifier: 7.8.4
         version: 7.8.4
@@ -841,8 +851,8 @@ importers:
         specifier: 1.6.1
         version: 1.6.1(next@13.4.19)
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       body-parser:
         specifier: 1.20.2
         version: 1.20.2
@@ -1020,8 +1030,8 @@ importers:
         specifier: ^18.17.4
         version: 18.17.4
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       azure-functions-core-tools:
         specifier: 4.0.5274
         version: 4.0.5274
@@ -1212,8 +1222,8 @@ importers:
         specifier: ^0.29.3
         version: 0.29.3
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       azure-functions-core-tools:
         specifier: 4.0.5274
         version: 4.0.5274
@@ -1248,8 +1258,8 @@ importers:
         specifier: 8.109.5
         version: 8.109.5(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       core-js:
         specifier: 3.30.2
         version: 3.30.2
@@ -1669,8 +1679,8 @@ importers:
   packages/lti:
     dependencies:
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       body-parser:
         specifier: 1.20.2
         version: 1.20.2
@@ -1733,8 +1743,8 @@ importers:
         specifier: 0.2.0
         version: 0.2.0(@fortawesome/fontawesome-svg-core@6.4.2)(react@18.2.0)
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       next:
         specifier: 13.4.19
         version: 13.4.19(@babel/core@7.21.8)(react-dom@18.2.0)(react@18.2.0)
@@ -1930,8 +1940,8 @@ importers:
         specifier: 0.2.0
         version: 0.2.0(@fortawesome/fontawesome-svg-core@6.4.2)(react@18.2.0)
       '@uzh-bf/design-system':
-        specifier: 2.0.13
-        version: 2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.0.14
+        version: 2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       formik:
         specifier: 2.4.3
         version: 2.4.3(react@18.2.0)
@@ -4378,7 +4388,7 @@ packages:
       - '@algolia/client-search'
     dev: false
 
-  /@docusaurus/core@3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/core@3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-e1P/PpQqy0DFnYmE6Mv7Dv0RhhA0nF5G+jwkMEEOrztRKaDOqHzWZYy7IC0s+63YizCzgYYuyD02QMhgr77Yhg==}
     engines: {node: '>=16.14'}
     hasBin: true
@@ -4437,7 +4447,7 @@ packages:
       postcss-loader: 7.3.3(postcss@8.4.27)(webpack@5.83.1)
       prompts: 2.4.2
       react: 18.2.0
-      react-dev-utils: 12.0.1(typescript@5.0.4)(webpack@5.83.1)
+      react-dev-utils: 12.0.1(typescript@5.1.6)(webpack@5.83.1)
       react-dom: 18.2.0(react@18.2.0)
       react-helmet-async: 1.3.0(react-dom@18.2.0)(react@18.2.0)
       react-loadable: /@docusaurus/react-loadable@5.5.2(react@18.2.0)
@@ -4575,14 +4585,14 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/plugin-client-redirects@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/plugin-client-redirects@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-9nsXyS9JX6mnJllPmRssFs4Q+WKMCFgyqTR4K8dq6OScNcUleokMinEAPnFIM9euiqSZM1hsYDrx/uN/m3IPsg==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/logger': 3.0.0-alpha.0
       '@docusaurus/utils': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
       '@docusaurus/utils-common': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
@@ -4612,14 +4622,14 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/plugin-content-blog@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/plugin-content-blog@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-ZKYq0Q888AeIPrTUhw6igq/e2Ee5WLENaOSy2uzVtPLieXu0BAw4gQqV2qyhZr0vwvMYhJ4Ke7KTMFSAgBXdyg==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/logger': 3.0.0-alpha.0
       '@docusaurus/mdx-loader': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/types': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
@@ -4655,14 +4665,14 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/plugin-content-docs@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/plugin-content-docs@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-dlxgXsbvjl4jARJi32dn5BAU7LgQRJX18pC/jsrq3IeHQNS9sXSBFmHItK66JtqwXTdhpipkui3iIari2NNpFQ==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/logger': 3.0.0-alpha.0
       '@docusaurus/mdx-loader': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/module-type-aliases': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
@@ -4698,14 +4708,14 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/plugin-content-pages@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/plugin-content-pages@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-yoTfh+xBZaOM3tBJFBpwYsDqnK4zAJjJtAJ80MnnnXIZ9gw640T9F+OjIqwFwp3rphpdONGg1QmeEnmAzy64QA==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/mdx-loader': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/types': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/utils': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
@@ -4733,14 +4743,14 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/plugin-debug@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/plugin-debug@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-2dNVjl//5G5djj1+YZ3aqaAmxNGGQydzUr3tZnaGfej7Z2NrhYrGo1LFKI+EgB5TpX/Pu9zIhGi/D0kS8j7BlA==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/types': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/utils': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
       fs-extra: 11.1.1
@@ -4768,14 +4778,14 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/plugin-google-analytics@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/plugin-google-analytics@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-ybaJQBHGzMNWOEPMEQ9jhln0pxBrLgWIbj7YlzjKjfHCKZ1FYEKlvQBrps8MPfH+d3LhwS7f9dd7Z1sJs3GUlA==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/types': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/utils-validation': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
       react: 18.2.0
@@ -4799,14 +4809,14 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/plugin-google-gtag@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/plugin-google-gtag@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-IJkZuBf4bIjKWUWe6qg82tSTjTI06rqIWPbw2wCW6H/m+rgI0jbinpR3pmrFl1agVi3dWtn731CVXV4lSvv7cg==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/types': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/utils-validation': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
       '@types/gtag.js': 0.0.12
@@ -4831,14 +4841,14 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/plugin-google-tag-manager@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/plugin-google-tag-manager@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-y/9jcokUjreRHghWrhMe6hy2G768JaEdmqie6X5OmXM2Lr+L3H4W4tJiRacqkW+/K5BsrVudOzxAqtXTwfBGvA==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/types': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/utils-validation': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
       react: 18.2.0
@@ -4862,7 +4872,7 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/plugin-ideal-image@3.0.0-alpha.0(prop-types@15.8.1)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/plugin-ideal-image@3.0.0-alpha.0(prop-types@15.8.1)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-nWmJ0ilRThQSTHbfSI/pH87GChJiZnk4JtJdYL3Jj6h4E5eGcy8DW3xKlYm+PIuzbYsb+8unrIghbkUN89F6gQ==}
     engines: {node: '>=16.14'}
     peerDependencies:
@@ -4873,7 +4883,7 @@ packages:
       jimp:
         optional: true
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/lqip-loader': 3.0.0-alpha.0(webpack@5.83.1)
       '@docusaurus/responsive-loader': 1.7.0(sharp@0.31.3)
       '@docusaurus/theme-translations': 3.0.0-alpha.0
@@ -4905,14 +4915,14 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/plugin-sitemap@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/plugin-sitemap@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-UftoalMEWAeKPf80tdt0Olfg82V0SyeDEVpf9epRanT9fkr1DaF5lTWhJIgjFdou5XboW7feUeGPOZ78DWQr0w==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/logger': 3.0.0-alpha.0
       '@docusaurus/types': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/utils': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
@@ -4941,25 +4951,25 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/preset-classic@3.0.0-alpha.0(@algolia/client-search@4.19.1)(react-dom@18.2.0)(react@18.2.0)(search-insights@2.7.0)(typescript@5.0.4):
+  /@docusaurus/preset-classic@3.0.0-alpha.0(@algolia/client-search@4.19.1)(react-dom@18.2.0)(react@18.2.0)(search-insights@2.7.0)(typescript@5.1.6):
     resolution: {integrity: sha512-NH2Ufv0jSGiPwBD/+JhS3pbedsyUpAU33IzRouVFniQDwBr/n//yJNXTQBW7ZTUeCSebxr4cEABArAVg+RTmQA==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-content-blog': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-content-docs': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-content-pages': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-debug': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-google-analytics': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-google-gtag': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-google-tag-manager': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-sitemap': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/theme-classic': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/theme-common': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/theme-search-algolia': 3.0.0-alpha.0(@algolia/client-search@4.19.1)(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(search-insights@2.7.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-content-blog': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-content-docs': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-content-pages': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-debug': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-google-analytics': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-google-gtag': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-google-tag-manager': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-sitemap': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/theme-classic': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/theme-common': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/theme-search-algolia': 3.0.0-alpha.0(@algolia/client-search@4.19.1)(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(search-insights@2.7.0)(typescript@5.1.6)
       '@docusaurus/types': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
@@ -5011,20 +5021,20 @@ packages:
       sharp: 0.31.3
     dev: false
 
-  /@docusaurus/theme-classic@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/theme-classic@3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-EKH1UAi/5I4gy3cpcfAnGBDfX3N5lfdg9NlXIMI5m1337n4QlbfF5f5NPnXwq7F5oWXniyeNAPQnhba/ELTNHA==}
     engines: {node: '>=16.14'}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
     dependencies:
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/mdx-loader': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/module-type-aliases': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
-      '@docusaurus/plugin-content-blog': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-content-docs': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-content-pages': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/theme-common': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/plugin-content-blog': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-content-docs': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-content-pages': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/theme-common': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/theme-translations': 3.0.0-alpha.0
       '@docusaurus/types': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/utils': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
@@ -5063,7 +5073,7 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/theme-common@3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4):
+  /@docusaurus/theme-common@3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6):
     resolution: {integrity: sha512-dEMSB0G+ZigAb9KqQ+yztz2BiXbAX3/vFlE5xpNbH8nSahSfIwF9QG5f+5DON99+0VnpF3fMmLLq6lQR5/LVMQ==}
     engines: {node: '>=16.14'}
     peerDependencies:
@@ -5072,9 +5082,9 @@ packages:
     dependencies:
       '@docusaurus/mdx-loader': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)
       '@docusaurus/module-type-aliases': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)
-      '@docusaurus/plugin-content-blog': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-content-docs': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/plugin-content-pages': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/plugin-content-blog': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-content-docs': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/plugin-content-pages': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/utils': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
       '@docusaurus/utils-common': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
       '@types/history': 4.7.11
@@ -5107,7 +5117,7 @@ packages:
       - webpack-cli
     dev: false
 
-  /@docusaurus/theme-search-algolia@3.0.0-alpha.0(@algolia/client-search@4.19.1)(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(search-insights@2.7.0)(typescript@5.0.4):
+  /@docusaurus/theme-search-algolia@3.0.0-alpha.0(@algolia/client-search@4.19.1)(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(search-insights@2.7.0)(typescript@5.1.6):
     resolution: {integrity: sha512-tOtcer8YUA1c1JUsE5UuXYMn4/PvwMXo1/2NFhws3S2+K6mh+1axongRJ8frKf0xMWWTnswtFsLBhwhG8aTwMA==}
     engines: {node: '>=16.14'}
     peerDependencies:
@@ -5115,10 +5125,10 @@ packages:
       react-dom: ^18.0.0
     dependencies:
       '@docsearch/react': 3.5.2(@algolia/client-search@4.19.1)(react-dom@18.2.0)(react@18.2.0)(search-insights@2.7.0)
-      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/core': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/logger': 3.0.0-alpha.0
-      '@docusaurus/plugin-content-docs': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
-      '@docusaurus/theme-common': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.0.4)
+      '@docusaurus/plugin-content-docs': 3.0.0-alpha.0(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
+      '@docusaurus/theme-common': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)(react-dom@18.2.0)(react@18.2.0)(typescript@5.1.6)
       '@docusaurus/theme-translations': 3.0.0-alpha.0
       '@docusaurus/utils': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
       '@docusaurus/utils-validation': 3.0.0-alpha.0(@docusaurus/types@3.0.0-alpha.0)
@@ -6282,6 +6292,14 @@ packages:
     dependencies:
       '@fortawesome/fontawesome-common-types': 6.4.2
 
+  /@fortawesome/free-brands-svg-icons@6.4.2:
+    resolution: {integrity: sha512-LKOwJX0I7+mR/cvvf6qIiqcERbdnY+24zgpUSouySml+5w8B4BJOx8EhDR/FTKAu06W12fmUIcv6lzPSwYKGGg==}
+    engines: {node: '>=6'}
+    requiresBuild: true
+    dependencies:
+      '@fortawesome/fontawesome-common-types': 6.4.2
+    dev: false
+
   /@fortawesome/free-regular-svg-icons@6.4.2:
     resolution: {integrity: sha512-0+sIUWnkgTVVXVAPQmW4vxb9ZTHv0WstOa3rBx9iPxrrrDH6bNLsDYuwXF9b6fGm+iR7DKQvQshUH/FJm3ed9Q==}
     engines: {node: '>=6'}
@@ -7052,25 +7070,6 @@ packages:
     resolution: {integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==}
     dependencies:
       '@hapi/hoek': 9.3.0
-    dev: false
-
-  /@headlessui/react@1.5.0(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-aaRnYxBb3MU2FNJf3Ut9RMTUqqU3as0aI1lQhgo2n9Fa67wRu14iOGqx93xB+uMNVfNwZ5B3y/Ndm7qZGuFeMQ==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      react: ^16 || ^17 || ^18
-      react-dom: ^16 || ^17 || ^18
-    dependencies:
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-    dev: false
-
-  /@heroicons/react@1.0.6(react@18.2.0):
-    resolution: {integrity: sha512-JJCXydOFWMDpCP4q13iEplA503MQO3xLoZiKum+955ZCtHINWnx26CUxVxxFQu/uLb4LW3ge15ZpzIkXKkJ8oQ==}
-    peerDependencies:
-      react: '>= 16'
-    dependencies:
-      react: 18.2.0
     dev: false
 
   /@humanwhocodes/config-array@0.11.10:
@@ -9312,6 +9311,54 @@ packages:
     resolution: {integrity: sha512-/RVXdLvJxLg4QKvMoM5WlwNR9ViO9z8B/qPcc+C0Sa/teJY7QG7kJ441DwzOjMYEY7GmU4dj5EcGHIkKZiQZCA==}
     dev: false
 
+  /@react-spring/animated@9.7.3(react@18.2.0):
+    resolution: {integrity: sha512-5CWeNJt9pNgyvuSzQH+uy2pvTg8Y4/OisoscZIR8/ZNLIOI+CatFBhGZpDGTF/OzdNFsAoGk3wiUYTwoJ0YIvw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@react-spring/shared': 9.7.3(react@18.2.0)
+      '@react-spring/types': 9.7.3
+      react: 18.2.0
+    dev: false
+
+  /@react-spring/core@9.7.3(react@18.2.0):
+    resolution: {integrity: sha512-IqFdPVf3ZOC1Cx7+M0cXf4odNLxDC+n7IN3MDcVCTIOSBfqEcBebSv+vlY5AhM0zw05PDbjKrNmBpzv/AqpjnQ==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@react-spring/animated': 9.7.3(react@18.2.0)
+      '@react-spring/shared': 9.7.3(react@18.2.0)
+      '@react-spring/types': 9.7.3
+      react: 18.2.0
+    dev: false
+
+  /@react-spring/shared@9.7.3(react@18.2.0):
+    resolution: {integrity: sha512-NEopD+9S5xYyQ0pGtioacLhL2luflh6HACSSDUZOwLHoxA5eku1UPuqcJqjwSD6luKjjLfiLOspxo43FUHKKSA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@react-spring/types': 9.7.3
+      react: 18.2.0
+    dev: false
+
+  /@react-spring/types@9.7.3:
+    resolution: {integrity: sha512-Kpx/fQ/ZFX31OtlqVEFfgaD1ACzul4NksrvIgYfIFq9JpDHFwQkMVZ10tbo0FU/grje4rcL4EIrjekl3kYwgWw==}
+    dev: false
+
+  /@react-spring/web@9.7.3(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-BXt6BpS9aJL/QdVqEIX9YoUy8CE6TJrU0mNCqSoxdXlIeNcEBWOfIyE6B14ENNsyQKS3wOWkiJfco0tCr/9tUg==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@react-spring/animated': 9.7.3(react@18.2.0)
+      '@react-spring/core': 9.7.3(react@18.2.0)
+      '@react-spring/shared': 9.7.3(react@18.2.0)
+      '@react-spring/types': 9.7.3
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    dev: false
+
   /@repeaterjs/repeater@3.0.4:
     resolution: {integrity: sha512-AW8PKd6iX3vAZ0vA43nOUOnbq/X5ihgU+mSXXqunMkeQADGiqw/PY0JNeYtD5sr0PAy51YPgAPbDoeapv9r8WA==}
 
@@ -11133,8 +11180,8 @@ packages:
       eslint-visitor-keys: 3.4.3
     dev: true
 
-  /@uzh-bf/design-system@2.0.13(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0):
-    resolution: {integrity: sha512-ksD9hf3WJQ0iWVg1hai+Jo8lItEqARXuv3SkxHOosze3pRCer15ioxOvLJGyHKJgLYqaSJxk+WHazOjm8Ie6qA==}
+  /@uzh-bf/design-system@2.0.14(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0):
+    resolution: {integrity: sha512-2iQhZHV0uktrN6iNCuhqsL+FjYhZY2kDAb6LBimzVlrem8CwQY9spis2ZemIkgsqvYeP7nZ/vkPK7veBzFwVvA==}
     engines: {node: '>=16'}
     peerDependencies:
       '@fortawesome/fontawesome-svg-core': ^6.3.0
@@ -11184,6 +11231,59 @@ packages:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
+
+  /@uzh-bf/design-system@2.1.0(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0):
+    resolution: {integrity: sha512-d2TE1tV+sQ12YiZtX0WS7GDveDu/IkquAFPpQTfSg9mCUs9ySXx87DQ9cfCOzFb2qst4//3sRrtX0waItHQeTg==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@fortawesome/fontawesome-svg-core': ^6.3.0
+      '@fortawesome/free-regular-svg-icons': ^6.3.0
+      '@fortawesome/free-solid-svg-icons': ^6.3.0
+      '@fortawesome/react-fontawesome': ^0.2.0
+      autoprefixer: ^10.0.0
+      dayjs: ^1.0.0
+      formik: ^2.2.9
+      postcss-import: ^15.1.0
+      react: ^18.2.0
+      react-dom: ^18.2.0
+      tailwind-merge: ^1.8.1
+      tailwindcss: ^3.3.0
+      tailwindcss-radix: ^2.8.0
+      yup: ^1.0.0
+    dependencies:
+      '@fortawesome/fontawesome-svg-core': 6.4.2
+      '@fortawesome/free-regular-svg-icons': 6.4.2
+      '@fortawesome/free-solid-svg-icons': 6.4.2
+      '@fortawesome/react-fontawesome': 0.2.0(@fortawesome/fontawesome-svg-core@6.4.2)(react@18.2.0)
+      '@radix-ui/react-checkbox': 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-collapsible': 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-dialog': 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-dropdown-menu': 2.0.5(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-label': 2.0.2(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-navigation-menu': 1.1.3(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-progress': 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-select': 1.2.2(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-slider': 1.1.2(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-switch': 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-tabs': 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-toast': 1.1.4(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-tooltip': 1.0.6(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
+      autoprefixer: 10.4.14(postcss@8.4.27)
+      dayjs: 1.11.9
+      formik: 2.4.3(react@18.2.0)
+      postcss-import: 15.1.0(postcss@8.4.27)
+      react: 18.2.0
+      react-colorful: 5.6.1(react-dom@18.2.0)(react@18.2.0)
+      react-countdown-circle-timer: 3.2.1(react@18.2.0)
+      react-dom: 18.2.0(react@18.2.0)
+      tailwind-merge: 1.14.0
+      tailwindcss: 3.3.3(ts-node@10.9.1)
+      tailwindcss-radix: 2.8.0
+      yup: 1.2.0
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+    dev: false
 
   /@webassemblyjs/ast@1.11.6:
     resolution: {integrity: sha512-IN1xI7PwOvLPgjcf180gC1bqn3q/QaOCwYUahIOhbYUu8KA/3tw2RT/T0Gidi1l7Hhj5D/INhJxiICObqpMu4Q==}
@@ -16009,7 +16109,7 @@ packages:
     resolution: {integrity: sha512-j0KLYPhm6zeac4lz3oJ3o65qvgQCcPubiyotZrXqEaG4hNagNYO8qdlUrX5vwqv9ohqeT/Z3j6+yW067yWWdUw==}
     dev: true
 
-  /fork-ts-checker-webpack-plugin@6.5.3(typescript@5.0.4)(webpack@5.83.1):
+  /fork-ts-checker-webpack-plugin@6.5.3(typescript@5.1.6)(webpack@5.83.1):
     resolution: {integrity: sha512-SbH/l9ikmMWycd5puHJKTkZJKddF4iRLyW3DeZ08HTI7NGyLS38MXd/KGgeWumQO7YNQbW2u/NtPT2YowbPaGQ==}
     engines: {node: '>=10', yarn: '>=1.0.0'}
     peerDependencies:
@@ -16036,7 +16136,7 @@ packages:
       schema-utils: 2.7.0
       semver: 7.5.4
       tapable: 1.1.3
-      typescript: 5.0.4
+      typescript: 5.1.6
       webpack: 5.83.1(webpack-cli@5.1.1)
     dev: false
 
@@ -22351,7 +22451,6 @@ packages:
     dependencies:
       prettier: 2.8.8
       typescript: 5.1.6
-    dev: true
 
   /prettier-plugin-tailwindcss@0.4.1(prettier-plugin-organize-imports@3.2.3)(prettier@2.8.8):
     resolution: {integrity: sha512-hwn2EiJmv8M+AW4YDkbjJ6HlZCTzLyz1QlySn9sMuKV/Px0fjwldlB7tol8GzdgqtkdPtzT3iJ4UzdnYXP25Ag==}
@@ -22764,7 +22863,7 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /react-dev-utils@12.0.1(typescript@5.0.4)(webpack@5.83.1):
+  /react-dev-utils@12.0.1(typescript@5.1.6)(webpack@5.83.1):
     resolution: {integrity: sha512-84Ivxmr17KjUupyqzFode6xKhjwuEJDROWKJy/BthkL7Wn6NJ8h4WE6k/exAv6ImS+0oZLRRW5j/aINMHyeGeQ==}
     engines: {node: '>=14'}
     peerDependencies:
@@ -22783,7 +22882,7 @@ packages:
       escape-string-regexp: 4.0.0
       filesize: 8.0.7
       find-up: 5.0.0
-      fork-ts-checker-webpack-plugin: 6.5.3(typescript@5.0.4)(webpack@5.83.1)
+      fork-ts-checker-webpack-plugin: 6.5.3(typescript@5.1.6)(webpack@5.83.1)
       global-modules: 2.0.0
       globby: 11.1.0
       gzip-size: 6.0.0
@@ -22798,7 +22897,7 @@ packages:
       shell-quote: 1.8.1
       strip-ansi: 6.0.1
       text-table: 0.2.0
-      typescript: 5.0.4
+      typescript: 5.1.6
       webpack: 5.83.1(webpack-cli@5.1.1)
     transitivePeerDependencies:
       - eslint
@@ -23108,6 +23207,17 @@ packages:
       react: 18.2.0
       seedrandom: 3.0.5
       shuffle-array: 1.0.1
+    dev: false
+
+  /react-text-transition@3.1.0(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-NtXEVAXvSh78+8JAnrVjpbftzD4kPowacv4GB2Nyq9C/8ko6fSm6M/XvKWQLCaZi68i9F28b++Sp8uVThlzLyg==}
+    peerDependencies:
+      react: '>=18.0.0'
+    dependencies:
+      '@react-spring/web': 9.7.3(react-dom@18.2.0)(react@18.2.0)
+      react: 18.2.0
+    transitivePeerDependencies:
+      - react-dom
     dev: false
 
   /react-textarea-autosize@8.5.2(react@18.2.0):
@@ -25680,65 +25790,64 @@ packages:
     resolution: {integrity: sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==}
     engines: {node: '>=0.6.11 <=0.7.0 || >=0.7.3'}
 
-  /turbo-darwin-64@1.10.12:
-    resolution: {integrity: sha512-vmDfGVPl5/aFenAbOj3eOx3ePNcWVUyZwYr7taRl0ZBbmv2TzjRiFotO4vrKCiTVnbqjQqAFQWY2ugbqCI1kOQ==}
+  /turbo-darwin-64@1.10.13:
+    resolution: {integrity: sha512-vmngGfa2dlYvX7UFVncsNDMuT4X2KPyPJ2Jj+xvf5nvQnZR/3IeDEGleGVuMi/hRzdinoxwXqgk9flEmAYp0Xw==}
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
     dev: true
     optional: true
 
-  /turbo-darwin-arm64@1.10.12:
-    resolution: {integrity: sha512-3JliEESLNX2s7g54SOBqqkqJ7UhcOGkS0ywMr5SNuvF6kWVTbuUq7uBU/sVbGq8RwvK1ONlhPvJne5MUqBCTCQ==}
+  /turbo-darwin-arm64@1.10.13:
+    resolution: {integrity: sha512-eMoJC+k7gIS4i2qL6rKmrIQGP6Wr9nN4odzzgHFngLTMimok2cGLK3qbJs5O5F/XAtEeRAmuxeRnzQwTl/iuAw==}
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
     dev: true
     optional: true
 
-  /turbo-linux-64@1.10.12:
-    resolution: {integrity: sha512-siYhgeX0DidIfHSgCR95b8xPee9enKSOjCzx7EjTLmPqPaCiVebRYvbOIYdQWRqiaKh9yfhUtFmtMOMScUf1gg==}
+  /turbo-linux-64@1.10.13:
+    resolution: {integrity: sha512-0CyYmnKTs6kcx7+JRH3nPEqCnzWduM0hj8GP/aodhaIkLNSAGAa+RiYZz6C7IXN+xUVh5rrWTnU2f1SkIy7Gdg==}
     cpu: [x64]
     os: [linux]
     requiresBuild: true
     dev: true
     optional: true
 
-  /turbo-linux-arm64@1.10.12:
-    resolution: {integrity: sha512-K/ZhvD9l4SslclaMkTiIrnfcACgos79YcAo4kwc8bnMQaKuUeRpM15sxLpZp3xDjDg8EY93vsKyjaOhdFG2UbA==}
+  /turbo-linux-arm64@1.10.13:
+    resolution: {integrity: sha512-0iBKviSGQQlh2OjZgBsGjkPXoxvRIxrrLLbLObwJo3sOjIH0loGmVIimGS5E323soMfi/o+sidjk2wU1kFfD7Q==}
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
     dev: true
     optional: true
 
-  /turbo-windows-64@1.10.12:
-    resolution: {integrity: sha512-7FSgSwvktWDNOqV65l9AbZwcoueAILeE4L7JvjauNASAjjbuzXGCEq5uN8AQU3U5BOFj4TdXrVmO2dX+lLu8Zg==}
+  /turbo-windows-64@1.10.13:
+    resolution: {integrity: sha512-S5XySRfW2AmnTeY1IT+Jdr6Goq7mxWganVFfrmqU+qqq3Om/nr0GkcUX+KTIo9mPrN0D3p5QViBRzulwB5iuUQ==}
     cpu: [x64]
     os: [win32]
     requiresBuild: true
     dev: true
     optional: true
 
-  /turbo-windows-arm64@1.10.12:
-    resolution: {integrity: sha512-gCNXF52dwom1HLY9ry/cneBPOKTBHhzpqhMylcyvJP0vp9zeMQQkt6yjYv+6QdnmELC92CtKNp2FsNZo+z0pyw==}
+  /turbo-windows-arm64@1.10.13:
+    resolution: {integrity: sha512-nKol6+CyiExJIuoIc3exUQPIBjP9nIq5SkMJgJuxsot2hkgGrafAg/izVDRDrRduQcXj2s8LdtxJHvvnbI8hEQ==}
     cpu: [arm64]
     os: [win32]
     requiresBuild: true
     dev: true
     optional: true
 
-  /turbo@1.10.12:
-    resolution: {integrity: sha512-WM3+jTfQWnB9W208pmP4oeehZcC6JQNlydb/ZHMRrhmQa+htGhWLCzd6Q9rLe0MwZLPpSPFV2/bN5egCLyoKjQ==}
+  /turbo@1.10.13:
+    resolution: {integrity: sha512-vOF5IPytgQPIsgGtT0n2uGZizR2N3kKuPIn4b5p5DdeLoI0BV7uNiydT7eSzdkPRpdXNnO8UwS658VaI4+YSzQ==}
     hasBin: true
-    requiresBuild: true
     optionalDependencies:
-      turbo-darwin-64: 1.10.12
-      turbo-darwin-arm64: 1.10.12
-      turbo-linux-64: 1.10.12
-      turbo-linux-arm64: 1.10.12
-      turbo-windows-64: 1.10.12
-      turbo-windows-arm64: 1.10.12
+      turbo-darwin-64: 1.10.13
+      turbo-darwin-arm64: 1.10.13
+      turbo-linux-64: 1.10.13
+      turbo-linux-arm64: 1.10.13
+      turbo-windows-64: 1.10.13
+      turbo-windows-arm64: 1.10.13
     dev: true
 
   /tweetnacl@0.14.5:

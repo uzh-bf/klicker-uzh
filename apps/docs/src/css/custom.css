@@ -1,5 +1,3 @@
-@import 'tailwindcss/src/css/preflight.css';
-
 @import 'tailwindcss/base';
 @import '@uzh-bf/design-system/dist/index.esm.css';
 
@@ -16,9 +14,6 @@
   --ifm-color-primary-light: rgb(70, 203, 174);
   --ifm-color-primary-lighter: rgb(102, 212, 189);
   --ifm-color-primary-lightest: rgb(146, 224, 208);
-}
-
-/* :root {
   --theme-color-primary: #0028a5;
   --theme-color-primary-80: #3353b7;
   --theme-color-primary-60: #667ec9;
@@ -29,8 +24,9 @@
   --theme-color-secondary-60: #eaa07d;
   --theme-color-secondary-40: #f1bfa9;
   --theme-color-secondary-20: #f8dfd4;
-} */
+}
 
-* {
-  @apply font-sans;
+html {
+  scroll-padding-top: 125px;
+  font-size: 16px;
 }

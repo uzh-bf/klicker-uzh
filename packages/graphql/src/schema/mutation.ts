@@ -862,6 +862,29 @@ export const Mutation = builder.mutationType({
           return QuestionService.getFileUploadSas(args, ctx)
         },
       }),
+
+      changeShortname: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: User,
+        args: {
+          shortname: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeShortname(args, ctx) as any
+        },
+      }),
+
+      changeInitialSettings: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: User,
+        args: {
+          shortname: t.arg.string({ required: true }),
+          locale: t.arg({ type: LocaleType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeInitialSettings(args, ctx) as any
+        },
+      }),
       // #endregion
 
       // ----- USER WITH CATALYST -----
@@ -1059,16 +1082,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeShortname: t.withAuth(asUserOwner).field({
-        nullable: true,
-        type: User,
-        args: {
-          shortname: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return AccountService.changeShortname(args, ctx) as any
-        },
-      }),
       // #endregion
     }
   },

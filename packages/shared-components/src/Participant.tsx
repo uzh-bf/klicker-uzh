@@ -9,7 +9,6 @@ interface ParticipantProps {
   withAvatar?: boolean
   pseudonym?: string
   points?: number
-  level?: number
   rank?: number | string
   isHighlighted?: boolean
   onClick?: () => void
@@ -20,7 +19,6 @@ function Participant({
   avatar,
   withAvatar = true,
   pseudonym,
-  level,
   isHighlighted,
   onClick,
   children,
@@ -47,7 +45,7 @@ function Participant({
           <div className="w-[30px] h-full flex flex-col items-center">
             <Image
               src={
-                avatar
+                typeof avatar !== 'undefined' && avatar !== null
                   ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`
                   : '/user-solid.svg'
               }
@@ -92,7 +90,7 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
           className={{ root: 'text-sm' }}
           onClick={(e) => {
             e?.stopPropagation()
-            props?.onLeaveCourse()
+            props?.onLeaveCourse?.()
           }}
         >
           {t('shared.generic.leave')}

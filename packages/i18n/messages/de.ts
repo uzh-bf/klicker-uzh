@@ -40,6 +40,7 @@ export default {
       installButton: 'Jetzt installieren',
     },
     generic: {
+      open: 'Vorschau öffnen',
       profile: 'Profil',
       shortname: 'Kurzname',
       yes: 'Ja',
@@ -133,6 +134,7 @@ export default {
       respond: 'Antworten',
       responses: 'Antworten',
       ok: 'OK',
+      language: 'Sprache',
       english: 'Englisch',
       german: 'Deutsch',
     },
@@ -553,6 +555,15 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Manage-App auf Ihrem Handy zu installieren.",
     },
+    firstLogin: {
+      welcome: 'Willkommen beim KlickerUZH!',
+      makeFirstSettings:
+        'Da Sie KlickerUZH v3.0 zum ersten Mal nutzen, möchten wir Ihnen gerne helfen, einige wichtige Einstellungen gleich zu Beginn vorzunehmen, damit Sie so effizient wie möglich starten können. Dazu gehören Ihre bevorzugte Sprache sowie der Kurzname, der mit diesem Konto verknüpft ist. Beides kann jederzeit in den Benutzereinstellungen erneut geändert werden.',
+      relevantLinks:
+        'Stellen Sie sicher, dass Sie die folgenden relevanten Links gesehen/gespeichert haben:',
+      watchVideo:
+        'Bitte nehmen Sie sich die Zeit, sich das folgende Einführungsvideo anzusehen, welches alle Kernkonzepte von KlickerUZH v3.0 und seine wichtigsten Funktionen abdeckt. Möchten Sie diesen Schritt überspringen, speichern Sie Ihre Einstellungen einfach mit dem Button unterhalb des Videos.',
+    },
     settings: {
       userSettings: 'Benutzereinstellungen',
       languageSettings: 'Spracheinstellungen',
@@ -561,6 +572,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       FULL_ACCESS: 'Voller Zugriff',
       SESSION_EXEC: 'Durchführung von Sessionen',
       READ_ONLY: 'Nur Lesen',
+      ACCOUNT_OWNER: 'Konto-Besitzer',
       lastUsed: 'zuletzt genutzt: {date}',
       lastUsedNever: 'zuletzt genutzt: Nie',
       createDelegatedLogin: 'Delegierten Login erstellen',
@@ -581,6 +593,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       shortnameMax: 'Der Kurzname darf maximal 8 Zeichen lang sein.',
       shortnameAlphanumeric:
         'Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.',
+      shortnameTaken: 'Dieser Kurzname ist bereits vergeben.',
     },
     token: {
       pageName: 'Token Generation',
@@ -1016,7 +1029,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       noLearningElements: 'Keine Lernelemente vorhanden',
       noMicroSessions: 'Keine Micro-Sessions vorhanden',
       courseLeaderboard: 'Kurs Leaderboard',
-      participantsLeaderboard: 'Teilnehmende Leaderboard: {number}',
+      participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',
       runningSession: 'Laufende Session',
       publicAccess: 'Öffentlicher Zugriff',
