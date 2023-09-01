@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.30...v3.0.0-rc.31) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** don't fail if query is not defined ([f3f68e2](https://github.com/uzh-bf/klicker-uzh/commit/f3f68e2d4230b4e9038c2f253ef64022d96cf20b))
+* **apps/frontend-pwa:** set the participant token cookie when logging in via LTI ([e23ae04](https://github.com/uzh-bf/klicker-uzh/commit/e23ae048f61ca3e8544d8c20e69464f35bbf5213))
+
 ## [3.0.0-rc.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.29...v3.0.0-rc.30) (2023-09-01)
 
 ## [3.0.0-rc.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.28...v3.0.0-rc.29) (2023-09-01)
