@@ -2,7 +2,7 @@ import { MicroSessionStatus, SessionStatus } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
 import isEmail from 'validator/lib/isEmail'
-import { ContextWithUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context'
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
@@ -113,6 +113,26 @@ export async function getParticipations(
     R.ascend(R.prop<string>('course.displayName')),
     participant.participations
   )
+}
+
+export async function getParticipation(
+  { courseId }: { courseId: string },
+  ctx: Context
+) {
+  if (!ctx.user?.sub) {
+    return null
+  }
+
+  const participation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+  })
+
+  return participation
 }
 
 // interface RegisterParticipantFromLTIArgs {

@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   GetMicroSessionDocument,
+  GetParticipationDocument,
   MarkMicroSessionCompletedDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H3 } from '@uzh-bf/design-system'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -24,6 +25,10 @@ function Evaluation() {
   })
 
   const { data: participant } = useQuery(SelfDocument)
+  const { data: participation } = useQuery(GetParticipationDocument, {
+    variables: { courseId: data?.microSession?.course?.id ?? '' },
+    skip: !data?.microSession?.course?.id,
+  })
 
   const [markMicroSessionCompleted] = useMutation(
     MarkMicroSessionCompletedDocument
@@ -65,14 +70,19 @@ function Evaluation() {
             <H3 className={{ root: 'flex flex-row justify-between' }}>
               {t('shared.generic.evaluation')}
             </H3>
-            <H3>{t('pwa.learningElement.pointsCollectedPossible')}</H3>
+            <H3>
+              {participation?.getParticipation?.isActive
+                ? t('pwa.learningElement.pointsCollectedPossible')
+                : t('pwa.learningElement.pointsComputedAvailable')}
+            </H3>
           </div>
           <div>
             {data.microSession.instances?.map((instance) => (
               <div className="flex flex-row justify-between" key={instance.id}>
                 <div>{instance.questionData.name}</div>
                 <div>
-                  {instance.evaluation?.pointsAwarded &&
+                  {typeof instance.evaluation?.pointsAwarded !== 'undefined' &&
+                    instance.evaluation.pointsAwarded !== null &&
                     `${instance.evaluation?.pointsAwarded}/`}
                   {instance.evaluation?.score}
                   {`/10`}
@@ -81,14 +91,16 @@ function Evaluation() {
             ))}
           </div>
 
-          <H3 className={{ root: 'mt-4 text-right' }}>
-            {t('pwa.learningElement.totalPoints', {
-              points: totalPointsAwarded,
-            })}
-          </H3>
+          {participation?.getParticipation?.isActive && (
+            <H3 className={{ root: 'mt-4 text-right' }}>
+              {t('pwa.learningElement.totalPoints', {
+                points: totalPointsAwarded,
+              })}
+            </H3>
+          )}
         </div>
 
-        {participant?.self && (
+        {participation?.getParticipation && (
           <div className="text-right">
             <Button
               onClick={async () => {
@@ -104,6 +116,23 @@ function Evaluation() {
               {t('shared.generic.finish')}
             </Button>
           </div>
+        )}
+        {typeof participation?.getParticipation?.isActive === 'boolean' &&
+          participation?.getParticipation?.isActive === false && (
+            <UserNotification type="info">
+              {t.rich('pwa.microSession.inactiveParticipation', {
+                it: (text) => <span className="italic">{text}</span>,
+                name: data.microSession.displayName,
+              })}
+            </UserNotification>
+          )}
+        {participant?.self && !participation?.getParticipation && (
+          <UserNotification className={{ root: 'mt-5' }} type="info">
+            {t.rich('pwa.microSession.missingParticipation', {
+              it: (text) => <span className="italic">{text}</span>,
+              name: data.microSession.displayName,
+            })}
+          </UserNotification>
         )}
       </div>
     </Layout>

@@ -391,6 +391,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       solvedLearningElement:
         'You have successfully completed the practice quiz <it>{name}</it>.',
       pointsCollectedPossible: 'Points (collected/computed/available)',
+      pointsComputedAvailable: 'Points (computed/available)',
       notAttempted: 'Not attempted',
       totalPoints: 'Total points (collected): {points}',
       totalXp: '{xp} XP collected',
@@ -406,12 +407,20 @@ If multipliers are activated on the activities, these multipliers are applied to
       submitFeedback: 'Submit feedback',
       feedbackTransmitted: 'Your feedback has been transmitted successfully.',
       infoStack: 'Information element',
+      inactiveParticipation:
+        'You have successfully completed the practice quiz <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
+      missingParticipation:
+        'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
     },
     microSession: {
       notFound:
         'The corresponding microlearning is either not available or not yet active.',
       solvedMicrolearning:
         'You have successfully completed the microlearning <it>{name}</it>.',
+      inactiveParticipation:
+        'You have successfully completed the microlearning <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
+      missingParticipation:
+        'You have successfully completed the microlearning <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
     },
     session: {
       noActiveQuestion: 'No question active.',

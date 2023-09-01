@@ -387,6 +387,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      getParticipation: t.field({
+        nullable: true,
+        type: Participation,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.getParticipation(args, ctx)
+        },
+      }),
+
       getCourseOverviewData: asParticipant.field({
         nullable: true,
         type: ParticipantLearningData,
