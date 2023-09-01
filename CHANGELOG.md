@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.33...v3.0.0-rc.34) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** editProfile needs to be LTI enabled to support redirect from createAccount ([23ca6c2](https://github.com/uzh-bf/klicker-uzh/commit/23ca6c2febf3de3593a4febf4133d47f2303d3af))
+
 ## [3.0.0-rc.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.32...v3.0.0-rc.33) (2023-09-01)
 
 
