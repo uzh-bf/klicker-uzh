@@ -18,7 +18,7 @@ export async function getParticipantToken({
 
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
-  let participantToken =
+  let participantToken: string | undefined | null =
     cookies['participant_token'] || cookies['next-auth.session-token']
 
   console.log('participantToken', participantToken)
@@ -64,20 +64,25 @@ export async function getParticipantToken({
 
         console.log('result', result.data?.loginParticipantWithLti)
 
-        nookies.set(ctx, 'participant_token', participantToken, {
-          domain: process.env.COOKIE_DOMAIN,
-          path: '/',
-          httpOnly: true,
-          maxAge: 1000 * 60 * 60 * 24 * 13,
-          secure:
-            process.env.NODE_ENV === 'production' &&
-            process.env.COOKIE_DOMAIN !== '127.0.0.1',
-          sameSite:
-            process.env.NODE_ENV === 'development' ||
-            process.env.COOKIE_DOMAIN === '127.0.0.1'
-              ? 'lax'
-              : 'none',
-        })
+        participantToken =
+          result.data?.loginParticipantWithLti?.participantToken
+
+        if (participantToken) {
+          nookies.set(ctx, 'participant_token', participantToken, {
+            domain: process.env.COOKIE_DOMAIN,
+            path: '/',
+            httpOnly: true,
+            maxAge: 1000 * 60 * 60 * 24 * 13,
+            secure:
+              process.env.NODE_ENV === 'production' &&
+              process.env.COOKIE_DOMAIN !== '127.0.0.1',
+            sameSite:
+              process.env.NODE_ENV === 'development' ||
+              process.env.COOKIE_DOMAIN === '127.0.0.1'
+                ? 'lax'
+                : 'none',
+          })
+        }
 
         return {
           participantToken:
