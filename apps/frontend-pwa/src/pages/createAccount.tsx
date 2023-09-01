@@ -24,6 +24,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import { getParticipantToken } from '@lib/token'
 import bodyParser from 'body-parser'
 import { useState } from 'react'
 import Layout from 'src/components/Layout'
@@ -321,6 +322,22 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       })
     })
 
+    const apolloClient = initializeApollo()
+
+    const { participantToken, participant } = await getParticipantToken({
+      apolloClient,
+      ctx,
+    })
+
+    if (typeof participantToken !== 'string') {
+      return {
+        redirect: {
+          destination: '/editProfile',
+          permanent: false,
+        },
+      }
+    }
+
     if (!query?.disableLti && request?.body?.lis_person_sourcedid) {
       const signedLtiData = JWT.sign(
         {
@@ -333,8 +350,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           expiresIn: '1h',
         }
       )
-
-      const apolloClient = initializeApollo()
 
       return addApolloState(apolloClient, {
         props: {
