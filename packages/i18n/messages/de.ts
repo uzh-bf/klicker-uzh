@@ -392,6 +392,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       solvedLearningElement:
         'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert.',
       pointsCollectedPossible: 'Punkte (gesammelt/berechnet/möglich)',
+      pointsComputedAvailable: 'Punkte (berechnet/möglich)',
       notAttempted: 'Nicht gelöst',
       totalPoints: 'Total Punkte (gesammelt): {points}',
       totalXp: '{xp} XP gesammelt',
@@ -407,12 +408,20 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       submitFeedback: 'Feedback abschicken',
       feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
       infoStack: 'Informationselement',
+      inactiveParticipation:
+        'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
+      missingParticipation:
+        'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
     microSession: {
       notFound:
         'Unter diesem Link existiert keine Micro-Session oder diese ist noch nicht aktiv.',
       solvedMicrolearning:
         'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert.',
+      inactiveParticipation:
+        'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
+      missingParticipation:
+        'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
     session: {
       noActiveQuestion: 'Keine Frage aktiv.',

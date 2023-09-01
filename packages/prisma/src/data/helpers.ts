@@ -28,6 +28,7 @@ export async function prepareUser({
     ...args,
     catalystIndividual,
     catalystInstitutional,
+    firstLogin: false,
     logins: {
       create: {
         name: name,

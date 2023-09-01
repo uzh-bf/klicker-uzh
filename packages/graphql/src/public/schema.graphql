@@ -591,6 +591,7 @@ type Query {
   getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionStack!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
+  getParticipation(courseId: String!): Participation
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   learningElement(id: String!): LearningElement
   learningElements: [LearningElement!]
