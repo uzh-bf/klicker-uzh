@@ -305,10 +305,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         destination: `/editProfile`,
         permanent: false,
       },
-      props: {
-        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-          .default,
-      },
     }
   }
 
@@ -325,7 +321,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       })
     })
 
-    if (!query.disableLti && request?.body?.lis_person_sourcedid) {
+    if (!query?.disableLti && request?.body?.lis_person_sourcedid) {
       const signedLtiData = JWT.sign(
         {
           sub: request.body.lis_person_sourcedid,
