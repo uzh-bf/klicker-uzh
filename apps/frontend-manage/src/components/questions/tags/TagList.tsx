@@ -55,7 +55,7 @@ function TagList({
   )
 
   return (
-    <div className="flex flex-col flex-1 h-max max-h-full p-4 md:w-[18rem] border border-uzh-grey-60 border-solid rounded-md text-[0.9rem]">
+    <div className="flex flex-col flex-1 h-max max-h-full p-4 md:w-[18rem] border border-uzh-grey-60 border-solid rounded-md text-[0.9rem] overflow-y-auto">
       <Button
         className={{
           root: twMerge(
