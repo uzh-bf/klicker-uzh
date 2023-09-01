@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.32...v3.0.0-rc.33) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** log in the user on createAccount to redirect existing users to editProfile ([10c41cc](https://github.com/uzh-bf/klicker-uzh/commit/10c41cc23b55af7c41ac096f7566bc19fd2337b8))
+
 ## [3.0.0-rc.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.31...v3.0.0-rc.32) (2023-09-01)
 
 
