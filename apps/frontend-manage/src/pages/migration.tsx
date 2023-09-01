@@ -1,9 +1,10 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   RequestMigrationTokenDocument,
   TriggerMigrationDocument,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, TextField } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
@@ -20,6 +21,7 @@ function Migration({ query }) {
   //TODO: refactor code and simplify state handling
   const t = useTranslations()
   const router = useRouter()
+
   const [isStep1Shown, setIsStep1Shown] = useState(true)
   const [isStep2Shown, setIsStep2Shown] = useState(false)
   const [isStep3Shown, setIsStep3Shown] = useState(false)
@@ -32,6 +34,8 @@ function Migration({ query }) {
 
   const [requestMigrationToken] = useMutation(RequestMigrationTokenDocument)
   const [triggerMigration] = useMutation(TriggerMigrationDocument)
+
+  const { data } = useQuery(UserProfileDocument)
 
   const toggleStep = (setStepFunction: SetBooleanState) => {
     setStepFunction((prev: boolean) => !prev)
@@ -175,7 +179,9 @@ function Migration({ query }) {
           {isStep3Shown && (
             <div className="flex flex-col w-full pl-2 pr-2 border border-t border-slate-200">
               <p className="mt-4 mb-4">
-                {t('manage.migration.step3Description')}
+                {t('manage.migration.step3Description', {
+                  email: data?.userProfile?.email,
+                })}
               </p>
               <Button
                 className={{
@@ -229,7 +235,9 @@ function Migration({ query }) {
           {isStep4Shown && (
             <div className="flex flex-col w-full pl-2 pr-2 border border-t border-slate-200">
               <p className="mt-4 mb-4">
-                {t('manage.migration.step4Description')}
+                {t('manage.migration.step4Description', {
+                  email: data?.userProfile?.email,
+                })}
               </p>
             </div>
           )}

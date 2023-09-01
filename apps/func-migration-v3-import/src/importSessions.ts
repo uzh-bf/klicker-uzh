@@ -24,6 +24,8 @@ const getSessionStatus = (status: string) => {
       return SessionStatus.PREPARED
     case 'COMPLETED':
       return SessionStatus.COMPLETED
+    default:
+      return null
   }
 }
 
@@ -52,6 +54,12 @@ export const importSessions = async (
       const preparedSessions = batch.flatMap((session) => {
         const sessionExists = sessionsDict[session._id]
 
+        // ignore all sessions that are neither created nor completed
+        const sessionStatus = getSessionStatus(session.status)
+        if (!sessionStatus) {
+          return []
+        }
+
         if (sessionExists) {
           mappedSessionIds[session._id] = sessionExists.id
           return []
@@ -73,7 +81,7 @@ export const importSessions = async (
                   session.settings.isConfusionBarometerActive,
                 isLiveQAEnabled: session.settings.isFeedbackChannelActive,
                 isModerationEnabled: !session.settings.isFeedbackChannelPublic,
-                status: getSessionStatus(session.status), // imported sessions will either be prepared or completed (no active or paused sessions)
+                status: sessionStatus, // imported sessions will either be prepared or completed (no active or paused sessions)
                 createdAt: new Date(session.createdAt),
                 updatedAt: new Date(session.updatedAt),
                 startedAt: session.startedAt
