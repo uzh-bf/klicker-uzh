@@ -18,8 +18,7 @@ export async function getParticipantToken({
 
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
-  let participantToken: string | undefined | null =
-    cookies['participant_token'] || cookies['next-auth.session-token']
+  let participantToken: string | undefined | null = cookies['participant_token']
 
   // console.log('participantToken', participantToken)
 

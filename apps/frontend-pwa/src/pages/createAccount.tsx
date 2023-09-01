@@ -14,7 +14,6 @@ import JWT from 'jsonwebtoken'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import nookies from 'nookies'
 import * as yup from 'yup'
 
 import { useMutation } from '@apollo/client'
@@ -293,12 +292,14 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const { req, res, query } = ctx
 
-  const cookies = nookies.get(ctx)
-
   // if the user already has a participant token, skip registration
   // and redirect to the edit  profile page
-  let participantToken =
-    cookies['participant_token'] || cookies['next-auth.session-token']
+  const apolloClient = initializeApollo()
+
+  const { participantToken, participant } = await getParticipantToken({
+    apolloClient,
+    ctx,
+  })
 
   if (participantToken) {
     return {
@@ -320,13 +321,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           resolve({ request: req })
         })
       })
-    })
-
-    const apolloClient = initializeApollo()
-
-    const { participantToken, participant } = await getParticipantToken({
-      apolloClient,
-      ctx,
     })
 
     if (!query?.disableLti && request?.body?.lis_person_sourcedid) {
