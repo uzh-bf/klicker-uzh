@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.35...v3.0.0-rc.36) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** get the LTI token only from participant_token ([7a1d891](https://github.com/uzh-bf/klicker-uzh/commit/7a1d8916185b5fe9371417253286e91759c444a0))
+
 ## [3.0.0-rc.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.34...v3.0.0-rc.35) (2023-09-01)
 
 
