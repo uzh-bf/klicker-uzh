@@ -21,8 +21,12 @@ export async function getParticipantToken({
   let participantToken =
     cookies['participant_token'] || cookies['next-auth.session-token']
 
+  console.log('participantToken', participantToken)
+
   try {
     if (!participantToken && req.method === 'POST') {
+      console.log('POST', req.method)
+
       // extract the body from the LTI request
       // if there is a body, request a participant token
       // TODO: verify that there is an LTI body and that it is valid
@@ -33,6 +37,8 @@ export async function getParticipantToken({
           })
         })
       })
+
+      console.log('LTI request', request?.body)
 
       if (request?.body?.lis_person_sourcedid) {
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
@@ -47,12 +53,16 @@ export async function getParticipantToken({
           }
         )
 
+        console.log('signedLtiData', signedLtiData)
+
         const result = await apolloClient.mutate({
           mutation: LoginParticipantWithLtiDocument,
           variables: {
             signedLtiData,
           },
         })
+
+        console.log('result', result.data?.loginParticipantWithLti)
 
         return {
           participantToken:
