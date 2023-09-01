@@ -613,18 +613,18 @@ If multipliers are activated on the activities, these multipliers are applied to
       pageName: 'Migrate Data from KlickerV2',
       step1Title: 'Step 1: Request Migration Token',
       step1Description:
-        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account. After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox.',
+        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox.',
       requestMigrationToken: 'Request Migration Token',
       step2Title: 'Step 2: Insert Migration Link',
       step2Description:
-        'You should have received an email containing a migration link. If it is not in your inbox, check the spam folder. Copy the link and paste it into the address bar of your browser to proceed.',
+        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed.',
       step3Title: 'Step 3: Start Migration',
       step3Description:
-        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
+        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete.',
       startMigration: 'Start Migration',
       step4Title: 'Step 4: Migration Status Notification',
       step4Description:
-        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
+        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete.',
     },
     questionPool: {
       createLiveSession: 'Create live quiz',
