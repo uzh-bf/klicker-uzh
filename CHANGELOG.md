@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.34...v3.0.0-rc.35) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** redirect from leaderboard to createAccount ([078a558](https://github.com/uzh-bf/klicker-uzh/commit/078a5586039a43b122c866c57c37a8df59aec765))
+* **docs:** add trailing slash for uzh ftp ([e6efe59](https://github.com/uzh-bf/klicker-uzh/commit/e6efe5995694c2e0cca16da77fa6765e52b8fe81))
+
+
+### Documentation
+
+* landing page should not link to second message to prevent scroll-down ([c944175](https://github.com/uzh-bf/klicker-uzh/commit/c9441754b0f076c27bff7799acc7a324a088313f))
+
 ## [3.0.0-rc.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.33...v3.0.0-rc.34) (2023-09-01)
 
 
