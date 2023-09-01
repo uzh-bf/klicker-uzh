@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.31...v3.0.0-rc.32) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure participant_token contains valid token ([c32fb53](https://github.com/uzh-bf/klicker-uzh/commit/c32fb53307e9d4dfe2c95dd6457d96aa58239960))
+
 ## [3.0.0-rc.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.30...v3.0.0-rc.31) (2023-09-01)
 
 
