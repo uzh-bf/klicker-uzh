@@ -64,6 +64,21 @@ export async function getParticipantToken({
 
         console.log('result', result.data?.loginParticipantWithLti)
 
+        nookies.set(ctx, 'participant_token', participantToken, {
+          domain: process.env.COOKIE_DOMAIN,
+          path: '/',
+          httpOnly: true,
+          maxAge: 1000 * 60 * 60 * 24 * 13,
+          secure:
+            process.env.NODE_ENV === 'production' &&
+            process.env.COOKIE_DOMAIN !== '127.0.0.1',
+          sameSite:
+            process.env.NODE_ENV === 'development' ||
+            process.env.COOKIE_DOMAIN === '127.0.0.1'
+              ? 'lax'
+              : 'none',
+        })
+
         return {
           participantToken:
             result.data?.loginParticipantWithLti?.participantToken ??
