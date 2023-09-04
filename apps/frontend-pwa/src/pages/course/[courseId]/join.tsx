@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  CreateParticipantAndJoinCourseDocument,
+  // CreateParticipantAndJoinCourseDocument,
   GetBasicCourseInformationDocument,
   JoinCourseWithPinDocument,
   SelfDocument,
@@ -90,10 +90,10 @@ function JoinCourse({
   const { loading: loadingParticipant, data: dataParticipant } =
     useQuery(SelfDocument)
 
-  const [createParticipantAndJoinCourse] = useMutation(
-    CreateParticipantAndJoinCourseDocument,
-    { refetchQueries: [SelfDocument] }
-  )
+  // const [createParticipantAndJoinCourse] = useMutation(
+  //   CreateParticipantAndJoinCourseDocument,
+  //   { refetchQueries: [SelfDocument] }
+  // )
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 
   if (loadingParticipant || courseLoading) {
@@ -180,21 +180,21 @@ function JoinCourse({
               validationSchema={joinAndRegisterSchema}
               onSubmit={async (values, { setSubmitting }) => {
                 setSubmitting(true)
-                const participant = await createParticipantAndJoinCourse({
-                  variables: {
-                    courseId: courseId,
-                    username: values.username,
-                    password: values.password,
-                    pin: Number(values.pin.replace(/\s/g, '')),
-                  },
-                })
+                // const participant = await createParticipantAndJoinCourse({
+                //   variables: {
+                //     courseId: courseId,
+                //     username: values.username,
+                //     password: values.password,
+                //     pin: Number(values.pin.replace(/\s/g, '')),
+                //   },
+                // })
 
-                if (participant?.data?.createParticipantAndJoinCourse) {
-                  router.push('/')
-                } else {
-                  setError(true)
-                  setSubmitting(false)
-                }
+                // if (participant?.data?.createParticipantAndJoinCourse) {
+                //   router.push('/')
+                // } else {
+                //   setError(true)
+                //   setSubmitting(false)
+                // }
               }}
             >
               {({ errors, touched, isSubmitting, isValid }) => {

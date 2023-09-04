@@ -40,6 +40,7 @@ export default {
       installButton: 'Jetzt installieren',
     },
     generic: {
+      download: 'Herunterladen',
       open: 'Vorschau öffnen',
       profile: 'Profil',
       shortname: 'Kurzname',
@@ -543,6 +544,8 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
   },
   manage: {
     general: {
+      qrCode: 'QR Code',
+      presentQrCode: 'QR-Code präsentieren',
       questionPool: 'Fragepool',
       sessions: 'Sessionen',
       courses: 'Kurse',
@@ -886,6 +889,12 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
     },
     cockpit: {
+      qrCodeAccountLinkTitle: 'Account Link',
+      qrCodeAccountLinkDescription:
+        'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname.',
+      qrCodeDirectLinkTitle: 'Direct Link',
+      qrCodeDirectLinkDescription:
+        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only.',
       firstBlock: 'Ersten Block starten',
       blockActive: 'Block schliessen',
       nextBlock: 'Nächsten Block starten',
@@ -898,8 +907,6 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       abortSessionHint:
         'Beim Abbrechen einer Session wird die Session zurückgesetzt, sodass sie zu einem späteren Zeitpunkt von Beginn an wieder gestartet werden kann. Bitte beachten Sie, dass alle bisherigen Antworten, Feebacks, usw. verloren gehen.',
       blockN: 'Block {number}',
-      qrCode: 'QR Code',
-      presentQrCode: 'QR-Code präsentieren',
       printTitle: 'Session "{name}" - Feedback-Kanal',
       lecturerView: 'Dozierendenansicht',
       liveQA: 'Live Q&A',

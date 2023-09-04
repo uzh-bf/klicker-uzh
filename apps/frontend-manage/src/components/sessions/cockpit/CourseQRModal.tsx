@@ -27,7 +27,7 @@ interface QRPopupPropsWithChildren extends QRPopupProps {
   children: React.ReactNode
 }
 
-function QRPopup({
+function CourseQRModal({
   link,
   relativeLink,
   triggerText,
@@ -39,6 +39,7 @@ function QRPopup({
 
   return (
     <Modal
+      title="QR Code"
       trigger={
         <Button
           className={{ root: 'w-[41%] sm:w-max !mr-0' }}
@@ -47,7 +48,7 @@ function QRPopup({
           <Button.Icon>
             <FontAwesomeIcon icon={faQrcode} />
           </Button.Icon>
-          {triggerText || t('manage.cockpit.qrCode')}
+          {triggerText || t('manage.general.qrCode')}
         </Button>
       }
       open={modalOpen}
@@ -56,17 +57,12 @@ function QRPopup({
         content: className?.modal,
       }}
     >
-      {children || (
-        <div className="flex flex-row gap-1 font-bold">
-          <div>{t('shared.generic.link')}:</div>
-          <Link href={link || ''} className="text-primary" target="_blank">
-            {link}
-          </Link>
-        </div>
-      )}
-
       <div>
-        <QR path={relativeLink} width={200} />
+        <QR
+          className={{ title: 'text-base' }}
+          path={relativeLink}
+          width={200}
+        />
       </div>
 
       <Link passHref href={`/qr/${relativeLink}`} target="_blank">
@@ -79,11 +75,11 @@ function QRPopup({
             ),
           }}
         >
-          <Button.Label>{t('manage.cockpit.presentQrCode')}</Button.Label>
+          <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
         </Button>
       </Link>
     </Modal>
   )
 }
 
-export default QRPopup
+export default CourseQRModal

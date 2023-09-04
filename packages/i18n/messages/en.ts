@@ -40,6 +40,7 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      download: 'Download',
       open: 'Open preview',
       profile: 'Profile',
       shortname: 'Shortname',
@@ -546,6 +547,8 @@ If multipliers are activated on the activities, these multipliers are applied to
   },
   manage: {
     general: {
+      qrCode: 'QR Code',
+      presentQrCode: 'Present QR code',
       questionPool: 'Question Pool',
       sessions: 'Quizzes',
       courses: 'Courses',
@@ -882,6 +885,12 @@ If multipliers are activated on the activities, these multipliers are applied to
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
     },
     cockpit: {
+      qrCodeAccountLinkTitle: 'Account Link',
+      qrCodeAccountLinkDescription:
+        'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname.',
+      qrCodeDirectLinkTitle: 'Direct Link',
+      qrCodeDirectLinkDescription:
+        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only.',
       firstBlock: 'Start first block',
       blockActive: 'Close block',
       nextBlock: 'Start next block',
@@ -894,8 +903,6 @@ If multipliers are activated on the activities, these multipliers are applied to
       abortSessionHint:
         'When aborting a live quiz, the quiz is reset so that it can be started again from the beginning at a later date. Please note that all previous answers, feedbacks, etc. will be lost.',
       blockN: 'Block {number}',
-      qrCode: 'QR Code',
-      presentQrCode: 'Present QR code',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',

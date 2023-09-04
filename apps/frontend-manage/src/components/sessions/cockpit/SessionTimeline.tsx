@@ -18,8 +18,8 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import CancelSessionModal from './CancelSessionModal'
-import QRPopup from './QRPopup'
 import SessionBlock from './SessionBlock'
+import SessionQRModal from './SessionQRModal'
 
 dayjs.extend(durationPlugin)
 
@@ -39,6 +39,7 @@ const calculateRuntime = ({ startedAt }: { startedAt?: string }): string => {
 }
 
 interface Props {
+  shortname: string
   blocks?: ISessionBlock[]
   sessionName: string
   handleEndSession: () => void
@@ -51,6 +52,7 @@ interface Props {
 }
 
 function SessionTimeline({
+  shortname,
   sessionId,
   blocks = [],
   sessionName,
@@ -142,10 +144,7 @@ function SessionTimeline({
 
         <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0 gap-2">
           <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
-            <QRPopup
-              link={`${process.env.NEXT_PUBLIC_PWA_URL}/session/${sessionId}`}
-              relativeLink={`/session/${sessionId}`}
-            />
+            <SessionQRModal sessionId={sessionId} shortname={shortname} />
             <a
               className="flex-1"
               href={`${process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${sessionId}`}
