@@ -218,16 +218,21 @@ Other participants will only see your public **participant profile**, including 
 `,
     },
     createAccount: {
+      dataProcessingTitle: 'Data Processing and Privacy',
+      dataCollectionTitle: 'What data do you collect about me?',
       dataCollectionNotice:
         'We collect and store the profile information of your created participant account (e.g., email, pseudonym, password) as well as the data that arises during your interactions with courses (e.g., created groups) and completed activities (e.g., answers to questions asked). If you decide to participate in the optional leaderboard as part of a course, we additionally collect and store the accumulated scores as part of all activities.',
+      dataSharingTitle: 'How will my data be shared with others?',
       dataSharingNotice: `
 When you create an account and participate in courses and activities using KlickerUZH, the owners of the KlickerUZH accounts related to your courses will be able to see your **e-mail address** alongside some information on the KlickerUZH activities you participated in, and might use this information for the purpose of teaching their course with KlickerUZH, or, in **anonymized** form, for research purposes outside of KlickerUZH. They are required to inform you about any such use of your data beside the use within KlickerUZH.
 
 The **detailed content** of your questions (e.g., in Live Q&A) or responses (e.g., in quizzes) will be shared with the owners of the KlickerUZH accounts only in **aggregate or anonymized form**. Only **nonsensitive** information like the number of interactions with, and collected points in activities, if you choose to participate in the leaderboard, will be shared in an identifiable way.
 
 Your data will never be shared with other parties beside the above and will never be used for commercial purposes (e.g., marketing).`,
+      dataUsageTitle: 'How is my data being used?',
       dataUsageNotice:
         'Your data is being used to provide the functionalities made available to you by KlickerUZH. Further analysis of any of the collected data outside of the KlickerUZH platform may only be performed in anonymized form and only for the purpose of teaching and research. Lecturers are obligated to inform you appropriately about any research that is being performed on your collected data.',
+      dataStorageTitle: 'How long do you store my data?',
       dataStorageNotice:
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in the KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
@@ -369,7 +374,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       introLoggedInNoCourse:
         'You are already logged in and can join a course directly by entering the corresponding PIN.',
       introNewUser:
-        'Create your KlickerUZH account for the course {name} here. If you already have an account, you can enter the corresponding login data directly in the form.',
+        'Create your KlickerUZH account for the course {name} here. If you already have an account, please log-in and return to this page.',
       coursePinFormat: 'Course-PIN (format: ### ### ###)',
       coursePinNumerical: 'Please enter a numerical course PIN.',
       coursePinRequired: 'Please enter the course PIN.',

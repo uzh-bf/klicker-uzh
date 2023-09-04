@@ -217,16 +217,21 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
 `,
     },
     createAccount: {
+      dataProcessingTitle: 'Datenverarbeitung und Datenschutz',
+      dataCollectionTitle: 'Welche Daten werden über mich gesammelt?',
       dataCollectionNotice:
         'Wir erfassen und speichern die Profilinformationen Deines erstellten Teilnehmerkontos (z. B. E-Mail, Pseudonym, Passwort) sowie die Daten, die bei Deinen Interaktionen mit Kursen (z. B. erstellte Gruppen) und abgeschlossenen Aktivitäten (z. B. Antworten auf gestellte Fragen) anfallen. Wenn Du Dich entscheidest, an der optionalen Rangliste als Teil eines Kurses teilzunehmen, erfassen und speichern wir zusätzlich die gesammelten Punktzahlen als Teil aller Aktivitäten.',
+      dataSharingTitle: 'Wie werden meine Daten geteilt?',
       dataSharingNotice: `
 Wenn Du ein Konto erstellst und an Kursen und Aktivitäten mit KlickerUZH teilnimmst, können die Besitzer der KlickerUZH-Konten, die mit Deinen Kursen verbunden sind, Deine **E-Mail-Adresse** zusammen mit einigen Informationen über die KlickerUZH-Aktivitäten, an denen Du teilgenommen hast, sehen und diese Informationen möglicherweise für den Unterricht ihres Kurses mit KlickerUZH oder, in **anonymisierter** Form, für Forschungszwecke außerhalb von KlickerUZH verwenden. Sie sind verpflichtet, Dich über eine solche Verwendung Deiner Daten neben der Verwendung innerhalb von KlickerUZH zu informieren.
 
 Der **detaillierte Inhalt** Deiner Fragen (z.B. in Live Q&A) oder Antworten (z.B. in Quiz) wird nur in **aggregierter oder anonymisierter Form** an die Besitzer der KlickerUZH-Konten weitergegeben. Nur **nicht-sensitive** Informationen wie die Anzahl der Interaktionen mit und die gesammelten Punkte bei Aktivitäten, wenn Du Dich für die Teilnahme an der Bestenliste entscheidest, werden in identifizierbarer Form weitergegeben.
 
 Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für kommerzielle Zwecke (z. B. Marketing) verwendet.`,
+      dataUsageTitle: 'Wie werden meine Daten genutzt?',
       dataUsageNotice:
         'Deine Daten werden verwendet, um die von KlickerUZH zur Verfügung gestellten Funktionalitäten bereitzustellen. Eine weitere Auswertung der gesammelten Daten außerhalb der KlickerUZH-Plattform darf nur in anonymisierter Form und nur zu Zwecken der Lehre und Forschung erfolgen. Die Lehrenden sind verpflichtet, Dich in angemessener Weise über die Forschung zu informieren, die mit Deinen gesammelten Daten durchgeführt wird.',
+      dataStorageTitle: 'Wie lange werden meine Daten gespeichert?',
       dataStorageNotice:
         'Deine Kontodaten, wie z.B. Profilinformationen, Erfolge und Erfahrungspunkte sowie Antworten, die du auf Fragen im KlickerUZH gibst, werden für die Lebenszeit Deines Kontos gespeichert. Deine Punkte und Platzierungen bei Kursaktivitäten und Bestenlisten werden so lange gespeichert, wie Du an der jeweiligen Kursrangliste teilnimmst. Du kannst jederzeit die Löschung Deiner Daten und Deines Kontos beantragen.',
       confirmationMessage:
@@ -371,7 +376,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       introLoggedInNoCourse:
         'Sie sind bereits eingeloggt und können einem Kurs durch die Eingabe des entsprechenden PINs direkt beitreten.',
       introNewUser:
-        'Erstellen Sie hier Ihr KlickerUZH Konto für den Kurs {name}. Sollten Sie bereits über ein Konto verfügen, können sie die entsprechenden Anmeldedaten direkt im Formular eingeben.',
+        'Erstellen Sie hier Ihr KlickerUZH Konto für den Kurs {name}. Sollten Sie bereits über ein Konto verfügen, loggen Sie sich bitte ein und kehren Sie dann hierher zurück.',
       coursePinFormat: 'Kurs-PIN (Format: ### ### ###)',
       coursePinNumerical: 'Bitte geben Sie einen numerischen PIN ein.',
       coursePinRequired: 'Bitte geben Sie den Kurs-PIN ein.',
@@ -889,12 +894,12 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
     },
     cockpit: {
-      qrCodeAccountLinkTitle: 'Account Link',
+      qrCodeAccountLinkTitle: 'Konto-Link',
       qrCodeAccountLinkDescription:
-        'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname.',
-      qrCodeDirectLinkTitle: 'Direct Link',
+        'Ihr Konto-Link listet alle aktiven Live-Quizzes. Wenn nur ein Quiz aktiv ist, werden Teilnehmende direkt weitergeleitet, andererseits können sie auswählen, an welchem Quiz sie teilnehmen möchten. Dieser Link wird empfohlen, um ihn zu Folien hinzuzufügen, da er konsistent bleibt, solange Sie Ihren Kurznamen nicht ändern.',
+      qrCodeDirectLinkTitle: 'Direktlink',
       qrCodeDirectLinkDescription:
-        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only.',
+        'Der Direktlink führt Teilnehmende direkt und ausschliesslich zu diesem Quiz. Wenn das Quiz beendet ist, ist der Link nicht mehr gültig. Dieser Link wird empfohlen, wenn Sie viele Quizzes parallel durchführen und die Teilnehmenden nur an einem bestimmten Quiz teilnehmen sollen.',
       firstBlock: 'Ersten Block starten',
       blockActive: 'Block schliessen',
       nextBlock: 'Nächsten Block starten',
