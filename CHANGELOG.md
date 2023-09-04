@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.36...v3.0.0-rc.37) (2023-09-04)
+
+
+### Bug Fixes
+
+* **migration:** ensure we only look for entities of the currently migrating user ([e462440](https://github.com/uzh-bf/klicker-uzh/commit/e462440a1d001d9fa8b2a5aa275838df576d79ce))
+
+
+### Enhancements
+
+* **apps/frontend-*:** improve QR modals on session execution, fix join course page with new account creation form ([#3836](https://github.com/uzh-bf/klicker-uzh/issues/3836)) ([192f449](https://github.com/uzh-bf/klicker-uzh/commit/192f4498c9eee58f217f63573ff0bdee9cabfcbf))
+
 ## [3.0.0-rc.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.35...v3.0.0-rc.36) (2023-09-01)
 
 
