@@ -6,6 +6,7 @@ import {
   Feedback,
   GetCockpitSessionDocument,
   GetUserRunningSessionsDocument,
+  GetUserSessionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -29,6 +30,9 @@ function Cockpit() {
     refetchQueries: [
       {
         query: GetUserRunningSessionsDocument,
+      },
+      {
+        query: GetUserSessionsDocument,
       },
     ],
   })
