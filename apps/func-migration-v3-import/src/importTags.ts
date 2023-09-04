@@ -16,6 +16,9 @@ export async function importTags(
         originalId: {
           not: null,
         },
+        owner: {
+          id: user.id,
+        },
       },
     })
     const tagsDict: Record<string, any> = tagsInDb.reduce(

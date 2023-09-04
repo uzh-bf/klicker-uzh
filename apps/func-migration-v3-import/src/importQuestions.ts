@@ -22,6 +22,9 @@ export const importQuestions = async (
         originalId: {
           not: null,
         },
+        owner: {
+          id: user.id,
+        },
       },
     })
 
