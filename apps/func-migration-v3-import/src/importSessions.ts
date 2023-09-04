@@ -41,8 +41,10 @@ export const importSessions = async (
     //new uuid is generated for each session -> string
     let mappedSessionIds: Record<string, string> = {}
     const sessionsInDb = await prisma.liveSession.findMany({
-      owner: {
-        id: user.id,
+      where: {
+        owner: {
+          id: user.id,
+        },
       },
     })
     const sessionsDict: Record<string, any> = sessionsInDb.reduce((acc, s) => {
