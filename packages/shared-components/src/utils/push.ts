@@ -55,7 +55,7 @@ async function subscribeParticipantToPushService(
   registration: ServiceWorkerRegistration
 ) {
   const applicationServerKey = base64ToUint8Array(
-    process.env.VAPID_PUBLIC_KEY as string
+    process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY!
   )
   const newSubscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
