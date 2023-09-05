@@ -26,7 +26,7 @@ function TitleImage() {
                   <div className="relative rounded-full px-3 py-1 text-md leading-6 text-gray-500 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
                     KlickerUZH v3.0 has been released with brand new use cases{' '}
                     <a
-                      href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-announcement-26-08-2023/79/2"
+                      href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-announcement-26-08-2023/79"
                       className="whitespace-nowrap font-semibold"
                     >
                       <span className="absolute inset-0" aria-hidden="true" />

@@ -33,7 +33,7 @@ import CourseDescription from '../../components/courses/CourseDescription'
 import LearningElementTile from '../../components/courses/LearningElementTile'
 import MicroSessionTile from '../../components/courses/MicroSessionTile'
 import SessionTile from '../../components/courses/SessionTile'
-import QRPopup from '../../components/sessions/cockpit/QRPopup'
+import CourseQRModal from '../../components/sessions/cockpit/CourseQRModal'
 
 function CourseOverviewPage() {
   const t = useTranslations()
@@ -93,7 +93,7 @@ function CourseOverviewPage() {
             })}
           </H1>
           <div className="flex flex-row items-center gap-4 mb-2">
-            <QRPopup
+            <CourseQRModal
               relativeLink={`/course/${course.id}/join?pin=${course.pinCode}`}
               triggerText={t('manage.course.joinCourse')}
               className={{ modal: 'w-[40rem]' }}
@@ -113,7 +113,7 @@ function CourseOverviewPage() {
                     ?.join(' '),
                 })}
               </div>
-            </QRPopup>
+            </CourseQRModal>
             <div className="italic">
               {t('manage.course.nParticipants', {
                 number: course.numOfParticipants,

@@ -2,7 +2,7 @@
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  trailingSlash: false,
+  trailingSlash: true,
   title: 'KlickerUZH',
   tagline: 'Open Source Audience Interaction',
   url: 'https://www.klicker.uzh.ch',

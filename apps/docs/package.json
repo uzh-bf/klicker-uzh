@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/docs",
-  "version": "3.0.0-rc.28",
+  "version": "3.0.0-rc.37",
   "license": "AGPL-3.0",
   "dependencies": {
     "@docusaurus/core": "3.0.0-alpha.0",
@@ -39,6 +39,9 @@
     "tailwindcss": "3.3.3",
     "typescript": "5.1.6"
   },
+  "devDependencies": {
+    "@tailwindcss/typography": "0.5.9"
+  },
   "scripts": {
     "build": "docusaurus build",
     "deploy": "docusaurus deploy",
@@ -58,8 +61,5 @@
   },
   "volta": {
     "extends": "../../package.json"
-  },
-  "devDependencies": {
-    "@tailwindcss/typography": "0.5.9"
   }
 }

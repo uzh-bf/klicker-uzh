@@ -22,12 +22,18 @@ export const importQuestionInstances = async (
         id: {
           in: Object.values(mappedQuestionIds),
         },
+        owner: {
+          id: user.id,
+        },
       },
     })
     const questionInstancesInDb = await prisma.questionInstance.findMany({
       where: {
         originalId: {
           not: null,
+        },
+        owner: {
+          id: user.id,
         },
       },
     })

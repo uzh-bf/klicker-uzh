@@ -27,7 +27,7 @@ services:
     networks:
       - klicker
     volumes:
-      - /var/lib/postgresql/data
+      - klicker_data:/var/lib/postgresql/data
 
     # redis instance to support session execution
   redis_exec:
@@ -37,7 +37,7 @@ services:
     networks:
       - klicker
     volumes:
-      - /data
+      - redis_data:/data
 
   # redis instance for page caching and rate limiting
   redis_cache:
@@ -82,7 +82,7 @@ services:
       - POSTGRES_USER=listmonk
       - POSTGRES_DB=listmonk
     volumes:
-      - /var/lib/postgresql/data
+      - listmonk_data:/var/lib/postgresql/data
     networks:
       - klicker
     healthcheck:
@@ -179,3 +179,8 @@ services:
 networks:
   klicker:
     driver: bridge
+
+volumes:
+  listmonk_data:
+  klicker_data:
+  redis_data:

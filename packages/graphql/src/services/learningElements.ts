@@ -177,6 +177,8 @@ export async function respondToQuestionInstance(
   }: { courseId: string; id: number; response: QuestionResponse },
   ctx: Context
 ) {
+  let treatAnonymous = false
+
   const participation = ctx.user?.sub
     ? await ctx.prisma.participation.findUnique({
         where: {
@@ -191,8 +193,10 @@ export async function respondToQuestionInstance(
       })
     : null
 
-  // if the participant is logged in but not active, return early and do not track anything
-  if (ctx.user?.sub && !participation) return null
+  // if the participant is logged in does not participate in the course, treat him as anonymous
+  if (ctx.user?.sub && !participation) {
+    treatAnonymous = true
+  }
 
   const {
     instance,
@@ -206,7 +210,9 @@ export async function respondToQuestionInstance(
       // if the participant is logged in, fetch the last response of the participant
       // the response will not be counted and will only yield points if not within the past week
       include:
-        ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+        ctx.user?.sub &&
+        !treatAnonymous &&
+        ctx.user.role === UserRole.PARTICIPANT
           ? {
               responses: {
                 where: {
@@ -231,7 +237,7 @@ export async function respondToQuestionInstance(
     // if the participant had already responded, don't track the new response
     // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
     const hasPreviousResponse = instance?.responses.length > 0
-    if (ctx.user?.sub && hasPreviousResponse) {
+    if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
       return {
         instance,
         updatedInstance: instance,
@@ -368,7 +374,11 @@ export async function respondToQuestionInstance(
 
   // if the user is logged in and the last response was not within the past 6 days
   // award points and update the response
-  if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
+  if (
+    ctx.user?.sub &&
+    !treatAnonymous &&
+    ctx.user.role === UserRole.PARTICIPANT
+  ) {
     const hasPreviousResponse = instance?.responses?.length > 0
 
     if (hasPreviousResponse) {

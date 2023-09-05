@@ -40,6 +40,7 @@ export default {
       installButton: 'Jetzt installieren',
     },
     generic: {
+      download: 'Herunterladen',
       open: 'Vorschau öffnen',
       profile: 'Profil',
       shortname: 'Kurzname',
@@ -216,16 +217,21 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
 `,
     },
     createAccount: {
+      dataProcessingTitle: 'Datenverarbeitung und Datenschutz',
+      dataCollectionTitle: 'Welche Daten werden über mich gesammelt?',
       dataCollectionNotice:
         'Wir erfassen und speichern die Profilinformationen Deines erstellten Teilnehmerkontos (z. B. E-Mail, Pseudonym, Passwort) sowie die Daten, die bei Deinen Interaktionen mit Kursen (z. B. erstellte Gruppen) und abgeschlossenen Aktivitäten (z. B. Antworten auf gestellte Fragen) anfallen. Wenn Du Dich entscheidest, an der optionalen Rangliste als Teil eines Kurses teilzunehmen, erfassen und speichern wir zusätzlich die gesammelten Punktzahlen als Teil aller Aktivitäten.',
+      dataSharingTitle: 'Wie werden meine Daten geteilt?',
       dataSharingNotice: `
 Wenn Du ein Konto erstellst und an Kursen und Aktivitäten mit KlickerUZH teilnimmst, können die Besitzer der KlickerUZH-Konten, die mit Deinen Kursen verbunden sind, Deine **E-Mail-Adresse** zusammen mit einigen Informationen über die KlickerUZH-Aktivitäten, an denen Du teilgenommen hast, sehen und diese Informationen möglicherweise für den Unterricht ihres Kurses mit KlickerUZH oder, in **anonymisierter** Form, für Forschungszwecke außerhalb von KlickerUZH verwenden. Sie sind verpflichtet, Dich über eine solche Verwendung Deiner Daten neben der Verwendung innerhalb von KlickerUZH zu informieren.
 
 Der **detaillierte Inhalt** Deiner Fragen (z.B. in Live Q&A) oder Antworten (z.B. in Quiz) wird nur in **aggregierter oder anonymisierter Form** an die Besitzer der KlickerUZH-Konten weitergegeben. Nur **nicht-sensitive** Informationen wie die Anzahl der Interaktionen mit und die gesammelten Punkte bei Aktivitäten, wenn Du Dich für die Teilnahme an der Bestenliste entscheidest, werden in identifizierbarer Form weitergegeben.
 
 Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für kommerzielle Zwecke (z. B. Marketing) verwendet.`,
+      dataUsageTitle: 'Wie werden meine Daten genutzt?',
       dataUsageNotice:
         'Deine Daten werden verwendet, um die von KlickerUZH zur Verfügung gestellten Funktionalitäten bereitzustellen. Eine weitere Auswertung der gesammelten Daten außerhalb der KlickerUZH-Plattform darf nur in anonymisierter Form und nur zu Zwecken der Lehre und Forschung erfolgen. Die Lehrenden sind verpflichtet, Dich in angemessener Weise über die Forschung zu informieren, die mit Deinen gesammelten Daten durchgeführt wird.',
+      dataStorageTitle: 'Wie lange werden meine Daten gespeichert?',
       dataStorageNotice:
         'Deine Kontodaten, wie z.B. Profilinformationen, Erfolge und Erfahrungspunkte sowie Antworten, die du auf Fragen im KlickerUZH gibst, werden für die Lebenszeit Deines Kontos gespeichert. Deine Punkte und Platzierungen bei Kursaktivitäten und Bestenlisten werden so lange gespeichert, wie Du an der jeweiligen Kursrangliste teilnimmst. Du kannst jederzeit die Löschung Deiner Daten und Deines Kontos beantragen.',
       confirmationMessage:
@@ -370,7 +376,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       introLoggedInNoCourse:
         'Sie sind bereits eingeloggt und können einem Kurs durch die Eingabe des entsprechenden PINs direkt beitreten.',
       introNewUser:
-        'Erstellen Sie hier Ihr KlickerUZH Konto für den Kurs {name}. Sollten Sie bereits über ein Konto verfügen, können sie die entsprechenden Anmeldedaten direkt im Formular eingeben.',
+        'Erstellen Sie hier Ihr KlickerUZH Konto für den Kurs {name}. Sollten Sie bereits über ein Konto verfügen, loggen Sie sich bitte ein und kehren Sie dann hierher zurück.',
       coursePinFormat: 'Kurs-PIN (Format: ### ### ###)',
       coursePinNumerical: 'Bitte geben Sie einen numerischen PIN ein.',
       coursePinRequired: 'Bitte geben Sie den Kurs-PIN ein.',
@@ -392,6 +398,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       solvedLearningElement:
         'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert.',
       pointsCollectedPossible: 'Punkte (gesammelt/berechnet/möglich)',
+      pointsComputedAvailable: 'Punkte (berechnet/möglich)',
       notAttempted: 'Nicht gelöst',
       totalPoints: 'Total Punkte (gesammelt): {points}',
       totalXp: '{xp} XP gesammelt',
@@ -407,12 +414,20 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       submitFeedback: 'Feedback abschicken',
       feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
       infoStack: 'Informationselement',
+      inactiveParticipation:
+        'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
+      missingParticipation:
+        'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
     microSession: {
       notFound:
         'Unter diesem Link existiert keine Micro-Session oder diese ist noch nicht aktiv.',
       solvedMicrolearning:
         'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert.',
+      inactiveParticipation:
+        'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
+      missingParticipation:
+        'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
     session: {
       noActiveQuestion: 'Keine Frage aktiv.',
@@ -534,6 +549,8 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
   },
   manage: {
     general: {
+      qrCode: 'QR Code',
+      presentQrCode: 'QR-Code präsentieren',
       questionPool: 'Fragepool',
       sessions: 'Sessionen',
       courses: 'Kurse',
@@ -610,18 +627,18 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       pageName: 'Migration der Daten von KlickerV2',
       step1Title: 'Schritt 1: Migrations-Token anfordern',
       step1Description:
-        'Um Ihr altes Konto auf KlickerUZH v3.0 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist. Danach erhalten Sie einen Link, um mit der Migration fortzufahren. Sollten Sie innerhalb der nächsten 5 Minuten keine E-Mail erhalten, überprüfen Sie bitte Ihren Spam-Ordner und starten Sie den Prozess erneut. Stellen Sie sicher, dass Sie Zugriff auf diese Mailbox haben.',
+        'Um Ihr altes Konto auf KlickerUZH v3.0 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist (siehe https://app.klicker.uzh.ch/user/settings). Danach erhalten Sie einen Link, um mit der Migration fortzufahren. Sollten Sie innerhalb der nächsten 5 Minuten keine E-Mail erhalten, überprüfen Sie bitte Ihren Spam-Ordner und starten Sie den Prozess erneut. Stellen Sie sicher, dass Sie Zugriff auf diese Mailbox haben.',
       requestMigrationToken: 'Migrations-Token anfordern',
       step2Title: 'Schritt 2: Migrations-Link einfügen',
       step2Description:
-        'Sie sollten eine E-Mail mit einem Migrations-Link erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner. Kopieren Sie den Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren.',
+        'Sie sollten eine E-Mail mit einem Migrations-Link in Ihr KlickerUZH-v2.0 Postfach erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner oder starten Sie den Prozess erneut. Klicken oder kopieren Sie den erhaltenen Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren.',
       step3Title: 'Schritt 3: Migration starten',
       step3Description:
-        'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.',
+        'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist.',
       startMigration: 'Migration starten',
       step4Title: 'Schritt 4: Benachrichtigung über den Migrationsstatus',
       step4Description:
-        'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail, sobald die Migration abgeschlossen ist.',
+        'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist.',
     },
     questionPool: {
       createLiveSession: 'Live-Session erstellen',
@@ -877,6 +894,12 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
     },
     cockpit: {
+      qrCodeAccountLinkTitle: 'Konto-Link',
+      qrCodeAccountLinkDescription:
+        'Ihr Konto-Link listet alle aktiven Live-Quizzes. Wenn nur ein Quiz aktiv ist, werden Teilnehmende direkt weitergeleitet, andererseits können sie auswählen, an welchem Quiz sie teilnehmen möchten. Dieser Link wird empfohlen, um ihn zu Folien hinzuzufügen, da er konsistent bleibt, solange Sie Ihren Kurznamen nicht ändern.',
+      qrCodeDirectLinkTitle: 'Direktlink',
+      qrCodeDirectLinkDescription:
+        'Der Direktlink führt Teilnehmende direkt und ausschliesslich zu diesem Quiz. Wenn das Quiz beendet ist, ist der Link nicht mehr gültig. Dieser Link wird empfohlen, wenn Sie viele Quizzes parallel durchführen und die Teilnehmenden nur an einem bestimmten Quiz teilnehmen sollen.',
       firstBlock: 'Ersten Block starten',
       blockActive: 'Block schliessen',
       nextBlock: 'Nächsten Block starten',
@@ -889,8 +912,6 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       abortSessionHint:
         'Beim Abbrechen einer Session wird die Session zurückgesetzt, sodass sie zu einem späteren Zeitpunkt von Beginn an wieder gestartet werden kann. Bitte beachten Sie, dass alle bisherigen Antworten, Feebacks, usw. verloren gehen.',
       blockN: 'Block {number}',
-      qrCode: 'QR Code',
-      presentQrCode: 'QR-Code präsentieren',
       printTitle: 'Session "{name}" - Feedback-Kanal',
       lecturerView: 'Dozierendenansicht',
       liveQA: 'Live Q&A',

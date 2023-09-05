@@ -18,11 +18,14 @@ export async function getParticipantToken({
 
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
-  let participantToken =
-    cookies['participant_token'] || cookies['next-auth.session-token']
+  let participantToken: string | undefined | null = cookies['participant_token']
+
+  // console.log('participantToken', participantToken)
 
   try {
     if (!participantToken && req.method === 'POST') {
+      // console.log('POST', req.method)
+
       // extract the body from the LTI request
       // if there is a body, request a participant token
       // TODO: verify that there is an LTI body and that it is valid
@@ -33,6 +36,8 @@ export async function getParticipantToken({
           })
         })
       })
+
+      console.log('LTI request', request?.body)
 
       if (request?.body?.lis_person_sourcedid) {
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
@@ -47,12 +52,36 @@ export async function getParticipantToken({
           }
         )
 
+        // console.log('signedLtiData', signedLtiData)
+
         const result = await apolloClient.mutate({
           mutation: LoginParticipantWithLtiDocument,
           variables: {
             signedLtiData,
           },
         })
+
+        // console.log('result', result.data?.loginParticipantWithLti)
+
+        participantToken =
+          result.data?.loginParticipantWithLti?.participantToken
+
+        if (participantToken) {
+          nookies.set(ctx, 'participant_token', participantToken, {
+            domain: process.env.COOKIE_DOMAIN,
+            path: '/',
+            httpOnly: true,
+            maxAge: 1000 * 60 * 60 * 24 * 13,
+            secure:
+              process.env.NODE_ENV === 'production' &&
+              process.env.COOKIE_DOMAIN !== '127.0.0.1',
+            sameSite:
+              process.env.NODE_ENV === 'development' ||
+              process.env.COOKIE_DOMAIN === '127.0.0.1'
+                ? 'lax'
+                : 'none',
+          })
+        }
 
         return {
           participantToken:

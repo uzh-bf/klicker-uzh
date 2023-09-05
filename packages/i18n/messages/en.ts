@@ -40,6 +40,7 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      download: 'Download',
       open: 'Open preview',
       profile: 'Profile',
       shortname: 'Shortname',
@@ -217,16 +218,21 @@ Other participants will only see your public **participant profile**, including 
 `,
     },
     createAccount: {
+      dataProcessingTitle: 'Data Processing and Privacy',
+      dataCollectionTitle: 'What data do you collect about me?',
       dataCollectionNotice:
         'We collect and store the profile information of your created participant account (e.g., email, pseudonym, password) as well as the data that arises during your interactions with courses (e.g., created groups) and completed activities (e.g., answers to questions asked). If you decide to participate in the optional leaderboard as part of a course, we additionally collect and store the accumulated scores as part of all activities.',
+      dataSharingTitle: 'How will my data be shared with others?',
       dataSharingNotice: `
 When you create an account and participate in courses and activities using KlickerUZH, the owners of the KlickerUZH accounts related to your courses will be able to see your **e-mail address** alongside some information on the KlickerUZH activities you participated in, and might use this information for the purpose of teaching their course with KlickerUZH, or, in **anonymized** form, for research purposes outside of KlickerUZH. They are required to inform you about any such use of your data beside the use within KlickerUZH.
 
 The **detailed content** of your questions (e.g., in Live Q&A) or responses (e.g., in quizzes) will be shared with the owners of the KlickerUZH accounts only in **aggregate or anonymized form**. Only **nonsensitive** information like the number of interactions with, and collected points in activities, if you choose to participate in the leaderboard, will be shared in an identifiable way.
 
 Your data will never be shared with other parties beside the above and will never be used for commercial purposes (e.g., marketing).`,
+      dataUsageTitle: 'How is my data being used?',
       dataUsageNotice:
         'Your data is being used to provide the functionalities made available to you by KlickerUZH. Further analysis of any of the collected data outside of the KlickerUZH platform may only be performed in anonymized form and only for the purpose of teaching and research. Lecturers are obligated to inform you appropriately about any research that is being performed on your collected data.',
+      dataStorageTitle: 'How long do you store my data?',
       dataStorageNotice:
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in the KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
@@ -368,7 +374,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       introLoggedInNoCourse:
         'You are already logged in and can join a course directly by entering the corresponding PIN.',
       introNewUser:
-        'Create your KlickerUZH account for the course {name} here. If you already have an account, you can enter the corresponding login data directly in the form.',
+        'Create your KlickerUZH account for the course {name} here. If you already have an account, please log-in and return to this page.',
       coursePinFormat: 'Course-PIN (format: ### ### ###)',
       coursePinNumerical: 'Please enter a numerical course PIN.',
       coursePinRequired: 'Please enter the course PIN.',
@@ -391,6 +397,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       solvedLearningElement:
         'You have successfully completed the practice quiz <it>{name}</it>.',
       pointsCollectedPossible: 'Points (collected/computed/available)',
+      pointsComputedAvailable: 'Points (computed/available)',
       notAttempted: 'Not attempted',
       totalPoints: 'Total points (collected): {points}',
       totalXp: '{xp} XP collected',
@@ -406,12 +413,20 @@ If multipliers are activated on the activities, these multipliers are applied to
       submitFeedback: 'Submit feedback',
       feedbackTransmitted: 'Your feedback has been transmitted successfully.',
       infoStack: 'Information element',
+      inactiveParticipation:
+        'You have successfully completed the practice quiz <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
+      missingParticipation:
+        'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
     },
     microSession: {
       notFound:
         'The corresponding microlearning is either not available or not yet active.',
       solvedMicrolearning:
         'You have successfully completed the microlearning <it>{name}</it>.',
+      inactiveParticipation:
+        'You have successfully completed the microlearning <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
+      missingParticipation:
+        'You have successfully completed the microlearning <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
     },
     session: {
       noActiveQuestion: 'No question active.',
@@ -537,6 +552,8 @@ If multipliers are activated on the activities, these multipliers are applied to
   },
   manage: {
     general: {
+      qrCode: 'QR Code',
+      presentQrCode: 'Present QR code',
       questionPool: 'Question Pool',
       sessions: 'Quizzes',
       courses: 'Courses',
@@ -613,18 +630,18 @@ If multipliers are activated on the activities, these multipliers are applied to
       pageName: 'Migrate Data from KlickerV2',
       step1Title: 'Step 1: Request Migration Token',
       step1Description:
-        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account. After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox.',
+        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox.',
       requestMigrationToken: 'Request Migration Token',
       step2Title: 'Step 2: Insert Migration Link',
       step2Description:
-        'You should have received an email containing a migration link. If it is not in your inbox, check the spam folder. Copy the link and paste it into the address bar of your browser to proceed.',
+        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed.',
       step3Title: 'Step 3: Start Migration',
       step3Description:
-        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
+        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete.',
       startMigration: 'Start Migration',
       step4Title: 'Step 4: Migration Status Notification',
       step4Description:
-        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email once the migration is complete.',
+        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete.',
     },
     questionPool: {
       createLiveSession: 'Create live quiz',
@@ -873,6 +890,12 @@ If multipliers are activated on the activities, these multipliers are applied to
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
     },
     cockpit: {
+      qrCodeAccountLinkTitle: 'Account Link',
+      qrCodeAccountLinkDescription:
+        'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname.',
+      qrCodeDirectLinkTitle: 'Direct Link',
+      qrCodeDirectLinkDescription:
+        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only.',
       firstBlock: 'Start first block',
       blockActive: 'Close block',
       nextBlock: 'Start next block',
@@ -885,8 +908,6 @@ If multipliers are activated on the activities, these multipliers are applied to
       abortSessionHint:
         'When aborting a live quiz, the quiz is reset so that it can be started again from the beginning at a later date. Please note that all previous answers, feedbacks, etc. will be lost.',
       blockN: 'Block {number}',
-      qrCode: 'QR Code',
-      presentQrCode: 'Present QR code',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',

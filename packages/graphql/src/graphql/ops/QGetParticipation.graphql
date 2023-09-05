@@ -1,0 +1,6 @@
+query GetParticipation($courseId: String!) {
+  getParticipation(courseId: $courseId) {
+    id
+    isActive
+  }
+}

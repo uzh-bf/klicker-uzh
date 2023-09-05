@@ -621,7 +621,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof participantToken !== 'string') {
     return {
       redirect: {
-        destination: '/login',
+        destination: '/createAccount',
         permanent: false,
       },
     }

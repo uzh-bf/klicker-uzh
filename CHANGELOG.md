@@ -2,6 +2,86 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.36...v3.0.0-rc.37) (2023-09-04)
+
+
+### Bug Fixes
+
+* **migration:** ensure we only look for entities of the currently migrating user ([e462440](https://github.com/uzh-bf/klicker-uzh/commit/e462440a1d001d9fa8b2a5aa275838df576d79ce))
+
+
+### Enhancements
+
+* **apps/frontend-*:** improve QR modals on session execution, fix join course page with new account creation form ([#3836](https://github.com/uzh-bf/klicker-uzh/issues/3836)) ([192f449](https://github.com/uzh-bf/klicker-uzh/commit/192f4498c9eee58f217f63573ff0bdee9cabfcbf))
+
+## [3.0.0-rc.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.35...v3.0.0-rc.36) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** get the LTI token only from participant_token ([7a1d891](https://github.com/uzh-bf/klicker-uzh/commit/7a1d8916185b5fe9371417253286e91759c444a0))
+
+## [3.0.0-rc.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.34...v3.0.0-rc.35) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** redirect from leaderboard to createAccount ([078a558](https://github.com/uzh-bf/klicker-uzh/commit/078a5586039a43b122c866c57c37a8df59aec765))
+* **docs:** add trailing slash for uzh ftp ([e6efe59](https://github.com/uzh-bf/klicker-uzh/commit/e6efe5995694c2e0cca16da77fa6765e52b8fe81))
+
+
+### Documentation
+
+* landing page should not link to second message to prevent scroll-down ([c944175](https://github.com/uzh-bf/klicker-uzh/commit/c9441754b0f076c27bff7799acc7a324a088313f))
+
+## [3.0.0-rc.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.33...v3.0.0-rc.34) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** editProfile needs to be LTI enabled to support redirect from createAccount ([23ca6c2](https://github.com/uzh-bf/klicker-uzh/commit/23ca6c2febf3de3593a4febf4133d47f2303d3af))
+
+## [3.0.0-rc.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.32...v3.0.0-rc.33) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** log in the user on createAccount to redirect existing users to editProfile ([10c41cc](https://github.com/uzh-bf/klicker-uzh/commit/10c41cc23b55af7c41ac096f7566bc19fd2337b8))
+
+## [3.0.0-rc.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.31...v3.0.0-rc.32) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure participant_token contains valid token ([c32fb53](https://github.com/uzh-bf/klicker-uzh/commit/c32fb53307e9d4dfe2c95dd6457d96aa58239960))
+
+## [3.0.0-rc.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.30...v3.0.0-rc.31) (2023-09-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** don't fail if query is not defined ([f3f68e2](https://github.com/uzh-bf/klicker-uzh/commit/f3f68e2d4230b4e9038c2f253ef64022d96cf20b))
+* **apps/frontend-pwa:** set the participant token cookie when logging in via LTI ([e23ae04](https://github.com/uzh-bf/klicker-uzh/commit/e23ae048f61ca3e8544d8c20e69464f35bbf5213))
+
+## [3.0.0-rc.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.29...v3.0.0-rc.30) (2023-09-01)
+
+## [3.0.0-rc.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.28...v3.0.0-rc.29) (2023-09-01)
+
+
+### Bug Fixes
+
+* **migration:** ensure duplicate tags in v2.0 do not break migration ([#3834](https://github.com/uzh-bf/klicker-uzh/issues/3834)) ([c14fd4b](https://github.com/uzh-bf/klicker-uzh/commit/c14fd4b2bca4b4db6f218ae040a984faca77e1c4))
+
+
+### Documentation
+
+* improve landing page layout ([a525d6f](https://github.com/uzh-bf/klicker-uzh/commit/a525d6fe0106dba61611601cdfc133ac7809fafd))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** handle all participant login / participation cases on asynchronous elements ([#3833](https://github.com/uzh-bf/klicker-uzh/issues/3833)) ([9cbd17d](https://github.com/uzh-bf/klicker-uzh/commit/9cbd17db75bb2667726ec7abb901ce606f460b9f))
+
 ## [3.0.0-rc.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.27...v3.0.0-rc.28) (2023-08-31)
 
 

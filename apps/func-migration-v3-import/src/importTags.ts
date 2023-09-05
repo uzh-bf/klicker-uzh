@@ -16,6 +16,9 @@ export async function importTags(
         originalId: {
           not: null,
         },
+        owner: {
+          id: user.id,
+        },
       },
     })
     const tagsDict: Record<string, any> = tagsInDb.reduce(
@@ -25,17 +28,33 @@ export async function importTags(
       }),
       {}
     )
+    const tagsNameDict: Record<string, any> = tagsInDb.reduce(
+      (acc, t) => ({
+        ...acc,
+        [t.name]: t,
+      }),
+      {}
+    )
 
     const batches = sliceIntoChunks(tags, 20)
 
     for (const batch of batches) {
       const preparedTags = batch.flatMap((tag) => {
-        const tagExists = tagsDict[tag._id]
+        const tagExistsById = tagsDict[tag._id]
+        const tagExistsByName = tagsNameDict[tag.name]
 
-        if (tagExists) {
+        if (tagExistsById) {
           mappedTags[tag._id] = {
-            id: tagExists.id,
-            name: tagExists.name,
+            id: tagExistsById.id,
+            name: tagExistsById.name,
+          }
+          return []
+        }
+
+        if (tagExistsByName) {
+          mappedTags[tag._id] = {
+            id: tagExistsByName.id,
+            name: tagExistsByName.name,
           }
           return []
         }

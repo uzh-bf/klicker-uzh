@@ -24,6 +24,8 @@ const getSessionStatus = (status: string) => {
       return SessionStatus.PREPARED
     case 'COMPLETED':
       return SessionStatus.COMPLETED
+    default:
+      return null
   }
 }
 
@@ -38,7 +40,13 @@ export const importSessions = async (
   try {
     //new uuid is generated for each session -> string
     let mappedSessionIds: Record<string, string> = {}
-    const sessionsInDb = await prisma.liveSession.findMany()
+    const sessionsInDb = await prisma.liveSession.findMany({
+      where: {
+        owner: {
+          id: user.id,
+        },
+      },
+    })
     const sessionsDict: Record<string, any> = sessionsInDb.reduce((acc, s) => {
       if (s.originalId != null) {
         acc[s.originalId] = s
@@ -51,6 +59,12 @@ export const importSessions = async (
     for (const batch of batches) {
       const preparedSessions = batch.flatMap((session) => {
         const sessionExists = sessionsDict[session._id]
+
+        // ignore all sessions that are neither created nor completed
+        const sessionStatus = getSessionStatus(session.status)
+        if (!sessionStatus) {
+          return []
+        }
 
         if (sessionExists) {
           mappedSessionIds[session._id] = sessionExists.id
@@ -73,7 +87,7 @@ export const importSessions = async (
                   session.settings.isConfusionBarometerActive,
                 isLiveQAEnabled: session.settings.isFeedbackChannelActive,
                 isModerationEnabled: !session.settings.isFeedbackChannelPublic,
-                status: getSessionStatus(session.status), // imported sessions will either be prepared or completed (no active or paused sessions)
+                status: sessionStatus, // imported sessions will either be prepared or completed (no active or paused sessions)
                 createdAt: new Date(session.createdAt),
                 updatedAt: new Date(session.updatedAt),
                 startedAt: session.startedAt
