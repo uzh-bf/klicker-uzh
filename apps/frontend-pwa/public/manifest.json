@@ -2,12 +2,23 @@
   "theme_color": "#0028a5",
   "background_color": "#ffffff",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "fullscreen",
+    "minimal-ui",
+    "browser"
+  ],
   "scope": "/",
   "start_url": "/",
   "name": "KlickerUZH",
   "short_name": "KlickerUZH",
   "description": "Open Source Audience Interaction",
   "orientation": "portrait",
+  "launch_handler": "auto",
+  "handle_links": "auto",
+  "dir": "ltr",
+  "edge_side_panel": {},
   "icons": [
     {
       "src": "/manifest-icon-192.maskable.png",
@@ -32,6 +43,81 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "id": "/",
+  "categories": [
+    "education",
+    "audience interaction",
+    "synchronous interaction",
+    "asynchronous interaction",
+    "microlearning",
+    "flipped classroom",
+    "group activities",
+    "live q&a",
+    "live quizzes",
+    "spaced repetition"
+  ],
+  "shortcuts": [
+    {
+      "name": "Home",
+      "url": "/"
+    },
+    {
+      "name": "Profile",
+      "url": "/profile"
+    },
+    {
+      "name": "Repetition",
+      "url": "/repetition",
+      "description": "Repeat Practice Questions as often as you want."
+    },
+    {
+      "name": "Bookmarks",
+      "url": "/bookmarks",
+      "description": "See all your bookmarked questions."
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/home-750-1334.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    },
+    {
+      "src": "/home-1280-800.png",
+      "sizes": "1280x800",
+      "type": "image/png"
+    },
+    {
+      "src": "/profile-750-1334.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    },
+    {
+      "src": "/profile-1280-800.png",
+      "sizes": "1280x800",
+      "type": "image/png"
+    },
+    {
+      "src": "/course-750-1334.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    },
+    {
+      "src": "/course-1280-800.png",
+      "sizes": "1280x800",
+      "type": "image/png"
+    },
+    {
+      "src": "/live-quiz-750-1334.png",
+      "sizes": "750x1334",
+      "type": "image/png"
+    },
+    {
+      "src": "/live-quiz-1280-800.png",
+      "sizes": "1280x800",
+      "type": "image/png"
     }
   ]
 }
