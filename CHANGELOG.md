@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.39...v3.0.0-rc.40) (2023-09-05)
+
 ## [3.0.0-rc.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.37...v3.0.0-rc.39) (2023-09-05)
 
 
