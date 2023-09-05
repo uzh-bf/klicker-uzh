@@ -68,7 +68,7 @@ function getNextPWAConfig({ NODE_ENV }) {
     dest: 'public',
     skipWaiting: true,
     dynamicStartUrlRedirect: true,
-    // disable: NODE_ENV === 'development',
+    disable: NODE_ENV === 'development',
   }
 }
 
