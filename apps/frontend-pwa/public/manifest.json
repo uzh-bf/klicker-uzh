@@ -1,13 +1,22 @@
 {
+  "id": "ch.uzh.bf.klicker.pwa",
   "theme_color": "#0028a5",
   "background_color": "#ffffff",
   "display": "standalone",
-  "scope": "/",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "fullscreen",
+    "minimal-ui",
+    "browser"
+  ],
+  "scope": "https://pwa.klicker.uzh.ch",
   "start_url": "/",
   "name": "KlickerUZH",
   "short_name": "KlickerUZH",
   "description": "Open Source Audience Interaction",
   "orientation": "portrait",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/manifest-icon-192.maskable.png",
