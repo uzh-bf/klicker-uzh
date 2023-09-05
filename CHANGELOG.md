@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.40...v3.0.0-rc.41) (2023-09-05)
+
+
+### Enhancements
+
+* **frontend-pwa:** extend manifest.json ([#3837](https://github.com/uzh-bf/klicker-uzh/issues/3837)) ([f47924d](https://github.com/uzh-bf/klicker-uzh/commit/f47924d9f9161bbb249a73dafe070a5630a60730))
+
 ## [3.0.0-rc.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.39...v3.0.0-rc.40) (2023-09-05)
 
 ## [3.0.0-rc.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.37...v3.0.0-rc.39) (2023-09-05)
