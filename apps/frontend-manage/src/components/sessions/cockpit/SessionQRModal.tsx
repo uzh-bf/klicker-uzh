@@ -52,7 +52,7 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
           <QR
             className={{ title: 'text-base' }}
             path={accountRelativeLink}
-            width={150}
+            width={100}
           />
 
           <Link passHref href={`/qr/${accountRelativeLink}`} target="_blank">
@@ -73,7 +73,7 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
           <QR
             className={{ title: 'text-base' }}
             path={sessionRelativeLink}
-            width={150}
+            width={100}
           />
 
           <Link passHref href={`/qr/${sessionRelativeLink}`} target="_blank">
