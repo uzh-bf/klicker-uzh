@@ -789,6 +789,8 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
         'Live-Sessions können nur Single-Choice, Multiple-Choice, Numerische und Freitext-Fragen enthalten.',
       liveSessionTimeRestriction:
         'Bitte geben Sie eine gültige Zeitbegrenzung ein.',
+      liveSessionMinQuestions:
+        'Der Frageblock muss mindestens eine Frage enthalten.',
       liveSessionCreated: 'Live-Session <b>{name}</b> erfolgreich erstellt.',
       liveSessionUpdated: 'Live-Session <b>{name}</b> erfolgreich modifiziert.',
       liveSessionDescription:

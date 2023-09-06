@@ -52,7 +52,7 @@ function SessionBlockField({
         </FieldArray>
       </div>
       <div className="text-sm text-red-400">
-        <WizardErrorMessage fieldName={`${fieldName}[0].questionIds`} />
+        <WizardErrorMessage fieldName="blocks" />
         {typeof meta.error === 'string' && meta.error}
       </div>
     </>

@@ -27,7 +27,7 @@ function BlockField({ fieldName }: BlockFieldProps) {
         />
         <FieldArray name={fieldName}>
           {({ push, remove, move }: FieldArrayRenderProps) => (
-            <div className="flex flex-row gap-1 overflow-scroll">
+            <div className="flex flex-row gap-1 overflow-auto">
               {field.value.map((question: any, index: number) => (
                 <QuestionBlock
                   key={`${question.id}-${index}`}
@@ -45,8 +45,7 @@ function BlockField({ fieldName }: BlockFieldProps) {
       </div>
       {meta.error && (
         <div className="text-sm text-red-400">
-          <WizardErrorMessage fieldName={`${fieldName}[0].type`} />
-          <WizardErrorMessage fieldName={`${fieldName}[0].hasSampleSolution`} />
+          <WizardErrorMessage fieldName="questions" />
           {typeof meta.error === 'string' && meta.error}
         </div>
       )}
