@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.42](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.41...v3.0.0-rc.42) (2023-09-06)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** refetch queries after creation of activities ([#3838](https://github.com/uzh-bf/klicker-uzh/issues/3838)) ([0ae4f72](https://github.com/uzh-bf/klicker-uzh/commit/0ae4f72b9e3423adb7a8b8a5aa570103b4420241))
+
 ## [3.0.0-rc.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.40...v3.0.0-rc.41) (2023-09-05)
 
 
