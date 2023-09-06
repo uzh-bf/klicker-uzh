@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   CreateLearningElementDocument,
   EditLearningElementDocument,
+  GetSingleCourseDocument,
   LearningElement,
   LearningElementOrderType,
   QuestionType,
@@ -115,6 +116,14 @@ function LearningElementWizard({
             order: values.order as LearningElementOrderType,
             resetTimeDays: parseInt(values.resetTimeDays),
           },
+          refetchQueries: [
+            {
+              query: GetSingleCourseDocument,
+              variables: {
+                courseId: values.courseId,
+              },
+            },
+          ],
         })
 
         if (result.data?.editLearningElement) {
@@ -135,6 +144,14 @@ function LearningElementWizard({
             order: values.order as LearningElementOrderType,
             resetTimeDays: parseInt(values.resetTimeDays),
           },
+          refetchQueries: [
+            {
+              query: GetSingleCourseDocument,
+              variables: {
+                courseId: values.courseId,
+              },
+            },
+          ],
         })
 
         if (result.data?.createLearningElement) {
