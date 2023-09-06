@@ -789,6 +789,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       liveSessionTypes:
         'Live quizzes can only contain single choice, multiple choice, numerical and free text questions.',
       liveSessionTimeRestriction: 'Please enter a valid time restriction.',
+      liveSessionMinQuestions: 'Block must contain at least one question.',
       liveSessionCreated: 'Live quiz <b>{name}</b> successfully created.',
       liveSessionUpdated: 'Live quiz <b>{name}</b> successfully updated.',
       liveSessionDescription:

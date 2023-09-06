@@ -86,6 +86,9 @@ function MicroSessionWizard({
               ],
               t('manage.sessionForms.microSessionTypes')
             ),
+          hasSampleSolution: yup
+            .boolean()
+            .isTrue(t('manage.sessionForms.learningElementSolutionReq')),
         })
       )
       .min(1),

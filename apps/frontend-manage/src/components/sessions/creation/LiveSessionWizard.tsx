@@ -69,34 +69,33 @@ function LiveSessionWizard({
   })
 
   const stepThreeValidationSchema = yup.object().shape({
-    blocks: yup
-      .array()
-      .of(
-        yup.object().shape({
-          ids: yup.array().of(yup.number()),
-          titles: yup.array().of(yup.string()),
-          types: yup
-            .array()
-            .of(
-              yup
-                .string()
-                .oneOf(
-                  [
-                    QuestionType.Sc,
-                    QuestionType.Mc,
-                    QuestionType.Numerical,
-                    QuestionType.FreeText,
-                  ],
-                  t('manage.sessionForms.liveSessionTypes')
-                )
-            ),
-          timeLimit: yup
-            .number()
-            .min(1, t('manage.sessionForms.liveSessionTimeRestriction')),
-          questionIds: yup.array().min(1),
-        })
-      )
-      .min(1),
+    blocks: yup.array().of(
+      yup.object().shape({
+        ids: yup.array().of(yup.number()),
+        titles: yup.array().of(yup.string()),
+        types: yup
+          .array()
+          .of(
+            yup
+              .string()
+              .oneOf(
+                [
+                  QuestionType.Sc,
+                  QuestionType.Mc,
+                  QuestionType.Numerical,
+                  QuestionType.FreeText,
+                ],
+                t('manage.sessionForms.liveSessionTypes')
+              )
+          ),
+        timeLimit: yup
+          .number()
+          .min(1, t('manage.sessionForms.liveSessionTimeRestriction')),
+        questionIds: yup
+          .array()
+          .min(1, t('manage.sessionForms.liveSessionMinQuestions')),
+      })
+    ),
   })
 
   const onSubmit = async (

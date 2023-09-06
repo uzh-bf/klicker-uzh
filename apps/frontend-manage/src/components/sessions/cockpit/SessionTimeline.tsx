@@ -189,7 +189,7 @@ function SessionTimeline({
                 }}
                 onClick={handleEndSession}
               >
-                <Button.Label>{buttonNames['endSession']}</Button.Label>
+                <Button.Label>{t('manage.cockpit.endSession')}</Button.Label>
               </Button>
             </div>
           )}

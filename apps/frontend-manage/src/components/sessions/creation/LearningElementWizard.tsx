@@ -86,14 +86,13 @@ function LearningElementWizard({
               ],
               t('manage.sessionForms.learningElementTypes')
             ),
+          hasSampleSolution: yup
+            .boolean()
+            .isTrue(t('manage.sessionForms.learningElementSolutionReq')),
           // hasAnswerFeedbacks: yup.boolean().when('type', {
           //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
           //   then: yup.boolean().isTrue(),
           // }),
-          // hasAnswerFeedbacks: yup.boolean().isTrue(),
-          hasSampleSolution: yup
-            .boolean()
-            .isTrue(t('manage.sessionForms.learningElementSolutionReq')),
         })
       )
       .min(1),
