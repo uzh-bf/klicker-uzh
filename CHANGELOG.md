@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.43](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.42...v3.0.0-rc.43) (2023-09-06)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** improved validation on session wizards (back and forth with revalidation, questions validation) ([#3839](https://github.com/uzh-bf/klicker-uzh/issues/3839)) ([ed06af5](https://github.com/uzh-bf/klicker-uzh/commit/ed06af53c4ee88d19d225f75ad72a43b4dbc2029))
+
 ## [3.0.0-rc.42](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.41...v3.0.0-rc.42) (2023-09-06)
 
 
