@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   CreateSessionDocument,
   EditSessionDocument,
+  GetSingleCourseDocument,
   GetUserSessionsDocument,
   Question,
   QuestionType,
@@ -126,7 +127,19 @@ function LiveSessionWizard({
             multiplier: parseInt(values.multiplier),
             isGamificationEnabled: values.isGamificationEnabled,
           },
-          refetchQueries: [GetUserSessionsDocument],
+          refetchQueries: [
+            {
+              query: GetUserSessionsDocument,
+            },
+            values.courseId
+              ? {
+                  query: GetSingleCourseDocument,
+                  variables: {
+                    courseId: values.courseId,
+                  },
+                }
+              : '',
+          ],
         })
         success = Boolean(session.data?.editSession)
       } else {
@@ -140,7 +153,19 @@ function LiveSessionWizard({
             multiplier: parseInt(values.multiplier),
             isGamificationEnabled: values.isGamificationEnabled,
           },
-          refetchQueries: [GetUserSessionsDocument],
+          refetchQueries: [
+            {
+              query: GetUserSessionsDocument,
+            },
+            values.courseId
+              ? {
+                  query: GetSingleCourseDocument,
+                  variables: {
+                    courseId: values.courseId,
+                  },
+                }
+              : '',
+          ],
         })
         success = Boolean(session.data?.createSession)
       }
