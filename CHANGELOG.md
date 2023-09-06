@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.44](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.43...v3.0.0-rc.44) (2023-09-06)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure gamification can only be enabeld if the quiz is part of a course ([7acb05a](https://github.com/uzh-bf/klicker-uzh/commit/7acb05ae8a756fcb89790d8244267a6745518b69))
+* **apps/frontend-manage:** reduce klicker logo size in QR to make instantly scannable ([529caad](https://github.com/uzh-bf/klicker-uzh/commit/529caad6e39b7cf934a8477b4f89f5c84fe9189b))
+
 ## [3.0.0-rc.43](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.42...v3.0.0-rc.43) (2023-09-06)
 
 
