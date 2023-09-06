@@ -65,7 +65,6 @@ export interface LearningElementFormValues extends CommonFormValues {
 function Validator({
   stepNumber,
   validateForm,
-  errors,
 }: {
   stepNumber: number
   validateForm: () => void
@@ -73,8 +72,6 @@ function Validator({
   useEffect(() => {
     validateForm()
   }, [stepNumber, validateForm])
-
-  console.log(errors)
 
   return null
 }
@@ -123,20 +120,9 @@ function MultistepWizard({
         isInitialValid={editMode}
         enableReinitialize
       >
-        {({
-          values,
-          isSubmitting,
-          isValid,
-          resetForm,
-          validateForm,
-          errors,
-        }) => (
+        {({ values, isSubmitting, isValid, resetForm, validateForm }) => (
           <Form className="border rounded-md h-76 border-uzh-grey-60">
-            <Validator
-              stepNumber={stepNumber}
-              validateForm={validateForm}
-              errors={errors}
-            />
+            <Validator stepNumber={stepNumber} validateForm={validateForm} />
             <Workflow
               items={workflowItems}
               onClick={(_, ix) => setStepNumber(ix)}
