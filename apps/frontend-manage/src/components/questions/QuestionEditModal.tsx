@@ -19,6 +19,7 @@ import {
   Button,
   FormikNumberField,
   FormikSelectField,
+  FormikTextField,
   H3,
   Label,
   Modal,
@@ -487,35 +488,28 @@ function QuestionEditModal({
           >
             <div className="flex flex-row gap-12">
               <div className="flex-1 max-w-5xl">
-                <div className="z-0 flex flex-row">
-                  <Label
-                    label={t('manage.questionForms.questionType')}
-                    className={{
-                      root: 'mr-2 text-lg font-bold w-max',
-                      tooltip:
-                        'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                    }}
-                    // tooltip="// TODO: tooltip content"
-                    // showTooltipSymbol={mode === 'CREATE'}
-                    required
-                  />
-                  {mode === QuestionEditMode.CREATE ? (
+                <Form className="w-full" id="question-manipulation-form">
+                  <div className="z-0 flex flex-row">
+                    <Label
+                      label={t('manage.questionForms.questionType')}
+                      className={{
+                        root: 'mr-2 text-lg font-bold w-max',
+                        tooltip:
+                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                      }}
+                      // tooltip="// TODO: tooltip content"
+                      // showTooltipSymbol={mode === 'CREATE'}
+                      required={mode === 'CREATE'}
+                    />
                     <FormikSelectField
+                      disabled={mode === 'EDIT'}
                       name="type"
                       placeholder={t('manage.questionForms.selectQuestionType')}
                       items={dropdownOptions}
                       data={{ cy: 'select-question-type' }}
                     />
-                  ) : (
-                    <div className="my-auto">
-                      {(values.type as QuestionType)
-                        ? t(`shared.${values.type}.typeLabel`)
-                        : ''}
-                    </div>
-                  )}
-                </div>
+                  </div>
 
-                <Form className="w-full" id="question-manipulation-form">
                   <div className="flex flex-row mt-2">
                     <Label
                       label={t('manage.questionForms.questionTitle')}
@@ -528,11 +522,13 @@ function QuestionEditModal({
                       showTooltipSymbol
                       required
                     />
-                    <FastField
+                    <FormikTextField
+                      onBlur={() => null}
                       name="name"
-                      type="text"
-                      className="w-full bg-opacity-50 border rounded bg-uzh-grey-20 border-uzh-grey-60 h-9 focus:border-primary-40"
-                      data-cy="insert-question-title"
+                      className={{
+                        root: 'w-full',
+                      }}
+                      data={{ cy: 'insert-question-title' }}
                     />
                   </div>
 
