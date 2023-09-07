@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.45](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.44...v3.0.0-rc.45) (2023-09-07)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** prevent crash when changing from title field to question type select ([#3840](https://github.com/uzh-bf/klicker-uzh/issues/3840)) ([8e36dbd](https://github.com/uzh-bf/klicker-uzh/commit/8e36dbd98f4e8bce73e8f83e5770171eff7541d2))
+
 ## [3.0.0-rc.44](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.43...v3.0.0-rc.44) (2023-09-06)
 
 
