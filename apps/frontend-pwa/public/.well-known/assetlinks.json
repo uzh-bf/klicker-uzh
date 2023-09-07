@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "ch.uzh.bf.klicker.pwa",
       "sha256_cert_fingerprints": [
-        "12:AE:48:3D:0D:8C:87:30:74:03:E8:E6:81:AC:BD:5D:EC:4E:2E:F6:F8:C4:24:87:EC:F1:1B:2F:AF:E5:E6:1E"
+        "12:AE:48:3D:0D:8C:87:30:74:03:E8:E6:81:AC:BD:5D:EC:4E:2E:F6:F8:C4:24:87:EC:F1:1B:2F:AF:E5:E6:1E",
+        "25:3B:72:86:F8:E4:1B:8E:A5:3C:D7:FE:8A:7A:65:05:2A:65:E3:8D:77:4F:98:CA:12:D4:FB:01:0D:B5:18:23"
       ]
     }
   }
