@@ -237,18 +237,13 @@ function QuestionEditModal({
     label: t(`shared.${type}.typeLabel`),
   }))
 
-  const [newQuestionType, setNewQuestionType] = useState(QuestionType.Sc)
-
-  const questionType = useMemo(() => {
-    return mode === QuestionEditMode.CREATE
-      ? newQuestionType
-      : dataQuestion?.question?.type
-  }, [mode, dataQuestion?.question?.type, newQuestionType])
-
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
       const common = {
-        type: questionType,
+        type:
+          mode === QuestionEditMode.CREATE
+            ? QuestionType.Sc
+            : dataQuestion?.question?.type,
         displayMode: QuestionDisplayMode.List,
         name: '',
         content: '',
@@ -259,7 +254,7 @@ function QuestionEditModal({
         pointsMultiplier: '1',
       }
 
-      switch (questionType) {
+      switch (common.type) {
         case QuestionType.Sc:
         case QuestionType.Mc:
         case QuestionType.Kprim:
@@ -292,7 +287,7 @@ function QuestionEditModal({
           }
 
         default: {
-          console.error('question type not implemented', questionType)
+          console.error('question type not implemented', common.type)
           return {}
         }
       }
@@ -312,12 +307,12 @@ function QuestionEditModal({
           options: dataQuestion.question.questionData.options,
         }
       : {}
-  }, [dataQuestion?.question, mode, questionType])
+  }, [dataQuestion?.question, mode])
 
   // TODO: styling of tooltips - some are too wide
   // TODO: show errors of form validation below fields as for the login form
 
-  if (!question || questionType !== question?.type) {
+  if (!question) {
     return <div></div>
   }
 
@@ -333,6 +328,7 @@ function QuestionEditModal({
       onSubmit={async (values) => {
         const common = {
           id: questionId,
+          type: values.type,
           name: values.name,
           content: values.content,
           explanation:
@@ -346,7 +342,7 @@ function QuestionEditModal({
           displayMode: values.displayMode,
           pointsMultiplier: parseInt(values.pointsMultiplier),
         }
-        switch (questionType) {
+        switch (common.type) {
           case QuestionType.Sc:
           case QuestionType.Mc:
           case QuestionType.Kprim:
@@ -354,7 +350,6 @@ function QuestionEditModal({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
-                type: questionType,
                 options: {
                   choices: values.options?.choices.map((choice: any) => {
                     return {
@@ -372,7 +367,6 @@ function QuestionEditModal({
               ],
             })
             break
-
           case QuestionType.Numerical:
             await manipulateNUMERICALQuestion({
               variables: {
@@ -411,7 +405,6 @@ function QuestionEditModal({
               ],
             })
             break
-
           case QuestionType.FreeText:
             await manipulateFreeTextQuestion({
               variables: {
@@ -433,11 +426,9 @@ function QuestionEditModal({
               ],
             })
             break
-
           default:
             break
         }
-
         handleSetIsOpen(false)
       }}
     >
@@ -509,20 +500,16 @@ function QuestionEditModal({
                     required
                   />
                   {mode === QuestionEditMode.CREATE ? (
-                    <Select
+                    <FormikSelectField
+                      name="type"
                       placeholder={t('manage.questionForms.selectQuestionType')}
                       items={dropdownOptions}
-                      onChange={(newValue: string) => {
-                        resetForm()
-                        setNewQuestionType(newValue)
-                      }}
-                      value={newQuestionType}
                       data={{ cy: 'select-question-type' }}
                     />
                   ) : (
                     <div className="my-auto">
-                      {(question?.type as QuestionType)
-                        ? t(`shared.${question?.type}.typeLabel`)
+                      {(values.type as QuestionType)
+                        ? t(`shared.${values.type}.typeLabel`)
                         : ''}
                     </div>
                   )}
@@ -622,11 +609,11 @@ function QuestionEditModal({
                     {typeof values.content !== 'undefined' && (
                       <FastField
                         name="content"
-                        questionType={questionType}
+                        questionType={values.type}
                         shouldUpdate={(next, prev) =>
                           next?.formik.values.content !==
                             prev?.formik.values.content ||
-                          next?.questionType !== prev?.questionType
+                          next?.formik.values.type !== prev?.formik.values.type
                         }
                       >
                         {({ field, meta }: FastFieldProps) => (
@@ -642,7 +629,7 @@ function QuestionEditModal({
                             placeholder={t(
                               'manage.questionForms.questionPlaceholder'
                             )}
-                            key={`${questionType}-content`}
+                            key={`${values.type}-content`}
                             data_cy="insert-question-text"
                             className={{ content: 'max-w-none' }}
                           />
@@ -666,11 +653,11 @@ function QuestionEditModal({
                     {typeof values.explanation !== 'undefined' && (
                       <FastField
                         name="explanation"
-                        questionType={questionType}
+                        questionType={values.type}
                         shouldUpdate={(next, prev) =>
                           next?.formik.values.explanation !==
                             prev?.formik.values.explanation ||
-                          next?.questionType !== prev?.questionType
+                          next?.formik.values.type !== prev?.formik.values.type
                         }
                       >
                         {({ field, meta }: FastFieldProps) => (
@@ -684,7 +671,7 @@ function QuestionEditModal({
                             placeholder={t(
                               'manage.questionForms.explanationPlaceholder'
                             )}
-                            key={`${questionType}-explanation`}
+                            key={`${values.type}-explanation`}
                             data_cy="insert-question-explanation"
                           />
                         )}
@@ -693,7 +680,7 @@ function QuestionEditModal({
                   </div>
 
                   <div className="flex flex-row gap-4 mt-4">
-                    {QUESTION_GROUPS.CHOICES.includes(questionType) && (
+                    {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                       <div className="flex-1">
                         <Label
                           label={t('manage.questionForms.answerOptions')}
@@ -709,7 +696,7 @@ function QuestionEditModal({
                         />
                       </div>
                     )}
-                    {QUESTION_GROUPS.FREE.includes(questionType) && (
+                    {QUESTION_GROUPS.FREE.includes(values.type) && (
                       <div className="flex-1">
                         <Label
                           label={t('shared.generic.options')}
@@ -731,7 +718,7 @@ function QuestionEditModal({
                       label={t('shared.generic.sampleSolution')}
                       data={{ cy: 'configure-sample-solution' }}
                     />
-                    {QUESTION_GROUPS.CHOICES.includes(questionType) && (
+                    {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                       <Switch
                         checked={values.hasAnswerFeedbacks || false}
                         onCheckedChange={(newValue: boolean) => {
@@ -748,7 +735,7 @@ function QuestionEditModal({
                       />
                     )}
                     {[QuestionType.Sc, QuestionType.Mc].includes(
-                      questionType
+                      values.type
                     ) && (
                       <FormikSelectField
                         name="displayMode"
@@ -762,7 +749,7 @@ function QuestionEditModal({
                     )}
                   </div>
 
-                  {QUESTION_GROUPS.CHOICES.includes(questionType) && (
+                  {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                     <FieldArray name="options.choices">
                       {({ push, remove }: FieldArrayRenderProps) => (
                         <div className="flex flex-col w-full gap-2 pt-2">
@@ -793,7 +780,7 @@ function QuestionEditModal({
                                   {/* // TODO: define maximum height of editor if possible */}
                                   <FastField
                                     name={`options.choices.${index}.value`}
-                                    questionType={questionType}
+                                    questionType={values.type}
                                     shouldUpdate={(next, prev) =>
                                       next?.formik.values[
                                         `options.choices.${index}.value`
@@ -801,7 +788,8 @@ function QuestionEditModal({
                                         prev?.formik.values[
                                           `options.choices.${index}.value`
                                         ] ||
-                                      next?.questionType !== prev?.questionType
+                                      next?.formik.values.type !==
+                                        prev?.formik.values.type
                                     }
                                   >
                                     {({ field, meta }: FastFieldProps) => (
@@ -822,7 +810,7 @@ function QuestionEditModal({
                                         className={{
                                           root: 'bg-white',
                                         }}
-                                        key={`${questionType}-choice-${index}`}
+                                        key={`${values.type}-choice-${index}`}
                                         data_cy="insert-answer-field"
                                       />
                                     )}
@@ -879,7 +867,7 @@ function QuestionEditModal({
                                       </div>
                                       <FastField
                                         name={`options.choices.${index}.feedback`}
-                                        questionType={questionType}
+                                        questionType={values.type}
                                         shouldUpdate={(next, prev) =>
                                           next?.formik.values[
                                             `options.choices.${index}.feedback`
@@ -887,8 +875,8 @@ function QuestionEditModal({
                                             prev?.formik.values[
                                               `options.choices.${index}.feedback`
                                             ] ||
-                                          next?.questionType !==
-                                            prev?.questionType
+                                          next?.formik.values.type !==
+                                            prev?.formik.values.type
                                         }
                                       >
                                         {({ field, meta }: FastFieldProps) => (
@@ -913,7 +901,7 @@ function QuestionEditModal({
                                             placeholder={t(
                                               'manage.questionForms.feedbackPlaceholder'
                                             )}
-                                            key={`${questionType}-feedback-${index}`}
+                                            key={`${values.type}-feedback-${index}`}
                                           />
                                         )}
                                       </FastField>
@@ -951,7 +939,7 @@ function QuestionEditModal({
                     </FieldArray>
                   )}
 
-                  {questionType === QuestionType.Numerical && (
+                  {values.type === QuestionType.Numerical && (
                     <div>
                       <div className="w-full">
                         <div className="flex flex-row items-center gap-2 mb-2">
@@ -1089,7 +1077,7 @@ function QuestionEditModal({
                     </div>
                   )}
 
-                  {questionType === QuestionType.FreeText && (
+                  {values.type === QuestionType.FreeText && (
                     <div className="flex flex-col">
                       <div className="flex flex-row items-center mb-4">
                         <div className="mr-2 font-bold">
@@ -1303,7 +1291,7 @@ function QuestionEditModal({
                     <Markdown content={values.explanation} />
                   </div>
                 )}
-                {QUESTION_GROUPS.CHOICES.includes(questionType) && (
+                {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                   <div className="mt-4">
                     <H3>{t('shared.generic.feedbacks')}</H3>
                     {values.options?.choices?.map((choice, index) => (
