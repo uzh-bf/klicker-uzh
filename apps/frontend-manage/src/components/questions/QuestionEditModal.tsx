@@ -233,10 +233,28 @@ function QuestionEditModal({
     ManipulateFreeTextQuestionDocument
   )
 
-  const dropdownOptions = Object.values(QuestionType).map((type) => ({
-    value: type,
-    label: t(`shared.${type}.typeLabel`),
-  }))
+  const DROPDOWN_OPTIONS = [
+    {
+      value: QuestionType.Sc,
+      label: t(`shared.${QuestionType.Sc}.typeLabel`),
+    },
+    {
+      value: QuestionType.Mc,
+      label: t(`shared.${QuestionType.Mc}.typeLabel`),
+    },
+    {
+      value: QuestionType.Kprim,
+      label: t(`shared.${QuestionType.Kprim}.typeLabel`),
+    },
+    {
+      value: QuestionType.Numerical,
+      label: t(`shared.${QuestionType.Numerical}.typeLabel`),
+    },
+    {
+      value: QuestionType.FreeText,
+      label: t(`shared.${QuestionType.FreeText}.typeLabel`),
+    },
+  ]
 
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
@@ -502,10 +520,11 @@ function QuestionEditModal({
                       required={mode === 'CREATE'}
                     />
                     <FormikSelectField
+                      contentPosition="popper"
                       disabled={mode === 'EDIT'}
                       name="type"
                       placeholder={t('manage.questionForms.selectQuestionType')}
-                      items={dropdownOptions}
+                      items={DROPDOWN_OPTIONS}
                       data={{ cy: 'select-question-type' }}
                     />
                   </div>
