@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.46](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.45...v3.0.0-rc.46) (2023-09-08)
+
+
+### Bug Fixes
+
+* prevent problems with Safari with updated cookie settings and klicker.com instead klicker.local ([#3843](https://github.com/uzh-bf/klicker-uzh/issues/3843)) ([4e017cc](https://github.com/uzh-bf/klicker-uzh/commit/4e017cc706c13e27384d5f4711e5156f5b047782))
+
 ## [3.0.0-rc.45](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.44...v3.0.0-rc.45) (2023-09-07)
 
 
