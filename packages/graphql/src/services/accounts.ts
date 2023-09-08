@@ -15,11 +15,7 @@ const COOKIE_SETTINGS: CookieOptions = {
   secure:
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1',
-  sameSite:
-    process.env.NODE_ENV === 'development' ||
-    process.env.COOKIE_DOMAIN === '127.0.0.1'
-      ? 'lax'
-      : 'none',
+  sameSite: 'lax',
 }
 
 interface LoginUserTokenArgs {
