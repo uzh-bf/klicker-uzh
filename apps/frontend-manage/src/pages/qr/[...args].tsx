@@ -19,7 +19,7 @@ interface Props {
 
 export function QR({
   path,
-  width = 334,
+  width = 200,
   className,
 }: Props): React.ReactElement {
   const t = useTranslations()
@@ -56,7 +56,7 @@ export function QR({
           logoHeight={width / 3.34}
           logoImage="/img/KlickerLogo.png"
           logoWidth={width}
-          size={width * 2}
+          size={width * 3}
           value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
         />
       </div>

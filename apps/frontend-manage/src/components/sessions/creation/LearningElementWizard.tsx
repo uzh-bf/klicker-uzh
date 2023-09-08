@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   CreateLearningElementDocument,
   EditLearningElementDocument,
+  GetSingleCourseDocument,
   LearningElement,
   LearningElementOrderType,
   QuestionType,
@@ -85,14 +86,13 @@ function LearningElementWizard({
               ],
               t('manage.sessionForms.learningElementTypes')
             ),
+          hasSampleSolution: yup
+            .boolean()
+            .isTrue(t('manage.sessionForms.learningElementSolutionReq')),
           // hasAnswerFeedbacks: yup.boolean().when('type', {
           //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
           //   then: yup.boolean().isTrue(),
           // }),
-          // hasAnswerFeedbacks: yup.boolean().isTrue(),
-          hasSampleSolution: yup
-            .boolean()
-            .isTrue(t('manage.sessionForms.learningElementSolutionReq')),
         })
       )
       .min(1),
@@ -115,6 +115,14 @@ function LearningElementWizard({
             order: values.order as LearningElementOrderType,
             resetTimeDays: parseInt(values.resetTimeDays),
           },
+          refetchQueries: [
+            {
+              query: GetSingleCourseDocument,
+              variables: {
+                courseId: values.courseId,
+              },
+            },
+          ],
         })
 
         if (result.data?.editLearningElement) {
@@ -135,6 +143,14 @@ function LearningElementWizard({
             order: values.order as LearningElementOrderType,
             resetTimeDays: parseInt(values.resetTimeDays),
           },
+          refetchQueries: [
+            {
+              query: GetSingleCourseDocument,
+              variables: {
+                courseId: values.courseId,
+              },
+            },
+          ],
         })
 
         if (result.data?.createLearningElement) {

@@ -785,10 +785,11 @@ If multipliers are activated on the activities, these multipliers are applied to
       microSessionMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
       liveSessionGamified:
-        'Please specify, if the live quiz should be gamified',
+        'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveSessionTypes:
         'Live quizzes can only contain single choice, multiple choice, numerical and free text questions.',
       liveSessionTimeRestriction: 'Please enter a valid time restriction.',
+      liveSessionMinQuestions: 'Block must contain at least one question.',
       liveSessionCreated: 'Live quiz <b>{name}</b> successfully created.',
       liveSessionUpdated: 'Live quiz <b>{name}</b> successfully updated.',
       liveSessionDescription:
@@ -810,7 +811,7 @@ If multipliers are activated on the activities, these multipliers are applied to
       liveSessionMultiplier:
         'The multiplier is a factor with which the points are multiplied when a question is answered. The factor is only used if gamification is activated.',
       liveSessionGamification:
-        'Specify whether gamification should be enabled for this live quiz.',
+        'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       learningElementResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
       learningElementValidResetDays:

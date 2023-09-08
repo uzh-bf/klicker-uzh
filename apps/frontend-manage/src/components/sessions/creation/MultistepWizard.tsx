@@ -2,7 +2,7 @@ import { LearningElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Workflow } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import CompletionStep from './CompletionStep'
 
 interface MultistepWizardProps {
@@ -62,6 +62,20 @@ export interface LearningElementFormValues extends CommonFormValues {
   resetTimeDays: string
 }
 
+function Validator({
+  stepNumber,
+  validateForm,
+}: {
+  stepNumber: number
+  validateForm: () => void
+}) {
+  useEffect(() => {
+    validateForm()
+  }, [stepNumber, validateForm])
+
+  return null
+}
+
 function MultistepWizard({
   children,
   initialValues,
@@ -106,8 +120,9 @@ function MultistepWizard({
         isInitialValid={editMode}
         enableReinitialize
       >
-        {({ values, isSubmitting, isValid, resetForm }) => (
+        {({ values, isSubmitting, isValid, resetForm, validateForm }) => (
           <Form className="border rounded-md h-76 border-uzh-grey-60">
+            <Validator stepNumber={stepNumber} validateForm={validateForm} />
             <Workflow
               items={workflowItems}
               onClick={(_, ix) => setStepNumber(ix)}

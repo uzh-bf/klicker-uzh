@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   CreateSessionDocument,
   EditSessionDocument,
+  GetSingleCourseDocument,
   GetUserSessionsDocument,
   Question,
   QuestionType,
@@ -13,7 +14,7 @@ import {
   FormikTextField,
   H3,
 } from '@uzh-bf/design-system'
-import { ErrorMessage } from 'formik'
+import { ErrorMessage, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -68,34 +69,33 @@ function LiveSessionWizard({
   })
 
   const stepThreeValidationSchema = yup.object().shape({
-    blocks: yup
-      .array()
-      .of(
-        yup.object().shape({
-          ids: yup.array().of(yup.number()),
-          titles: yup.array().of(yup.string()),
-          types: yup
-            .array()
-            .of(
-              yup
-                .string()
-                .oneOf(
-                  [
-                    QuestionType.Sc,
-                    QuestionType.Mc,
-                    QuestionType.Numerical,
-                    QuestionType.FreeText,
-                  ],
-                  t('manage.sessionForms.liveSessionTypes')
-                )
-            ),
-          timeLimit: yup
-            .number()
-            .min(1, t('manage.sessionForms.liveSessionTimeRestriction')),
-          questionIds: yup.array().min(1),
-        })
-      )
-      .min(1),
+    blocks: yup.array().of(
+      yup.object().shape({
+        ids: yup.array().of(yup.number()),
+        titles: yup.array().of(yup.string()),
+        types: yup
+          .array()
+          .of(
+            yup
+              .string()
+              .oneOf(
+                [
+                  QuestionType.Sc,
+                  QuestionType.Mc,
+                  QuestionType.Numerical,
+                  QuestionType.FreeText,
+                ],
+                t('manage.sessionForms.liveSessionTypes')
+              )
+          ),
+        timeLimit: yup
+          .number()
+          .min(1, t('manage.sessionForms.liveSessionTimeRestriction')),
+        questionIds: yup
+          .array()
+          .min(1, t('manage.sessionForms.liveSessionMinQuestions')),
+      })
+    ),
   })
 
   const onSubmit = async (
@@ -124,9 +124,22 @@ function LiveSessionWizard({
             blocks: blockQuestions,
             courseId: values.courseId,
             multiplier: parseInt(values.multiplier),
-            isGamificationEnabled: values.isGamificationEnabled,
+            isGamificationEnabled:
+              values.courseId !== '' && values.isGamificationEnabled,
           },
-          refetchQueries: [GetUserSessionsDocument],
+          refetchQueries: [
+            {
+              query: GetUserSessionsDocument,
+            },
+            values.courseId
+              ? {
+                  query: GetSingleCourseDocument,
+                  variables: {
+                    courseId: values.courseId,
+                  },
+                }
+              : '',
+          ],
         })
         success = Boolean(session.data?.editSession)
       } else {
@@ -138,9 +151,22 @@ function LiveSessionWizard({
             blocks: blockQuestions,
             courseId: values.courseId,
             multiplier: parseInt(values.multiplier),
-            isGamificationEnabled: values.isGamificationEnabled,
+            isGamificationEnabled:
+              values.courseId !== '' && values.isGamificationEnabled,
           },
-          refetchQueries: [GetUserSessionsDocument],
+          refetchQueries: [
+            {
+              query: GetUserSessionsDocument,
+            },
+            values.courseId
+              ? {
+                  query: GetSingleCourseDocument,
+                  variables: {
+                    courseId: values.courseId,
+                  },
+                }
+              : '',
+          ],
         })
         success = Boolean(session.data?.createSession)
       }
@@ -301,6 +327,8 @@ function StepOne(_: StepProps) {
 function StepTwo(props: StepProps) {
   const t = useTranslations()
 
+  const { values } = useFormikContext()
+
   return (
     <>
       <H3 className={{ root: 'mb-0' }}>{t('shared.generic.settings')}</H3>
@@ -329,8 +357,25 @@ function StepTwo(props: StepProps) {
           />
         </div>
       )}
+      <div>
+        <FormikSwitchField
+          disabled={values.courseId === ''}
+          name="isGamificationEnabled"
+          label={t('shared.generic.gamification')}
+          tooltip={t('manage.sessionForms.liveSessionGamification')}
+          standardLabel
+          data={{ cy: 'set-gamification' }}
+          className={{ tooltip: 'z-20' }}
+        />
+        <ErrorMessage
+          name="isGamificationEnabled"
+          component="div"
+          className="text-sm text-red-400"
+        />
+      </div>
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
+          disabled={!values.isGamificationEnabled}
           name="multiplier"
           label={t('shared.generic.multiplier')}
           tooltip={t('manage.sessionForms.liveSessionMultiplier')}
@@ -341,28 +386,11 @@ function StepTwo(props: StepProps) {
             { label: t('manage.sessionForms.multiplier3'), value: '3' },
             { label: t('manage.sessionForms.multiplier4'), value: '4' },
           ]}
-          required
           data={{ cy: 'select-multiplier' }}
           className={{ tooltip: 'z-20' }}
         />
         <ErrorMessage
           name="multiplier"
-          component="div"
-          className="text-sm text-red-400"
-        />
-      </div>
-      <div>
-        <FormikSwitchField
-          name="isGamificationEnabled"
-          label={t('shared.generic.gamification')}
-          tooltip={t('manage.sessionForms.liveSessionGamification')}
-          required
-          standardLabel
-          data={{ cy: 'set-gamification' }}
-          className={{ tooltip: 'z-20' }}
-        />
-        <ErrorMessage
-          name="isGamificationEnabled"
           component="div"
           className="text-sm text-red-400"
         />

@@ -5,29 +5,29 @@
       "name": "Launch Chrome (frontend-control)",
       "request": "launch",
       "type": "chrome",
-      "url": "http://control.klicker.local",
-      "webRoot": "${workspaceFolder}/apps/frontend-control",
+      "url": "http://control.klicker.com",
+      "webRoot": "${workspaceFolder}/apps/frontend-control"
     },
     {
       "name": "Launch Chrome (frontend-manage)",
       "request": "launch",
       "type": "chrome",
-      "url": "http://manage.klicker.local",
-      "webRoot": "${workspaceFolder}/apps/frontend-manage",
+      "url": "http://manage.klicker.com",
+      "webRoot": "${workspaceFolder}/apps/frontend-manage"
     },
     {
       "name": "Launch Chrome (frontend-pwa)",
       "request": "launch",
       "type": "chrome",
-      "url": "http://pwa.klicker.local",
-      "webRoot": "${workspaceFolder}/apps/frontend-pwa",
+      "url": "http://pwa.klicker.com",
+      "webRoot": "${workspaceFolder}/apps/frontend-pwa"
     },
     {
       "name": "Launch Chrome (office-addin)",
       "request": "launch",
       "type": "chrome",
-      "url": "http://office.klicker.local",
-      "webRoot": "${workspaceFolder}/apps/office-addin",
+      "url": "http://office.klicker.com",
+      "webRoot": "${workspaceFolder}/apps/office-addin"
     },
     {
       "name": "Attach to Node Functions",

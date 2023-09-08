@@ -7,6 +7,7 @@ module.exports = {
   ],
   bumpFiles: [
     '',
+    'apps/auth',
     'apps/docs/',
     'apps/backend-docker/',
     'apps/func-incoming-responses/',

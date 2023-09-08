@@ -61,7 +61,7 @@ function CourseQRModal({
         <QR
           className={{ title: 'text-base' }}
           path={relativeLink}
-          width={200}
+          width={100}
         />
       </div>
 

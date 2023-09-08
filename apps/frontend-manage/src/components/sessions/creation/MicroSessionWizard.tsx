@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   CreateMicroSessionDocument,
   EditMicroSessionDocument,
+  GetSingleCourseDocument,
   MicroSession,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -85,6 +86,9 @@ function MicroSessionWizard({
               ],
               t('manage.sessionForms.microSessionTypes')
             ),
+          hasSampleSolution: yup
+            .boolean()
+            .isTrue(t('manage.sessionForms.learningElementSolutionReq')),
         })
       )
       .min(1),
@@ -107,6 +111,14 @@ function MicroSessionWizard({
             multiplier: parseInt(values.multiplier),
             courseId: values.courseId,
           },
+          refetchQueries: [
+            {
+              query: GetSingleCourseDocument,
+              variables: {
+                courseId: values.courseId,
+              },
+            },
+          ],
         })
         success = Boolean(result.data?.editMicroSession)
       } else {
@@ -121,6 +133,14 @@ function MicroSessionWizard({
             multiplier: parseInt(values.multiplier),
             courseId: values.courseId,
           },
+          refetchQueries: [
+            {
+              query: GetSingleCourseDocument,
+              variables: {
+                courseId: values.courseId,
+              },
+            },
+          ],
         })
         success = Boolean(result.data?.createMicroSession)
       }

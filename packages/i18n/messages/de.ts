@@ -784,11 +784,13 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       microSessionMultiplier:
         'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einer gamifizierten Micro-Session multipliziert werden.',
       liveSessionGamified:
-        'Bitte spezifizieren Sie, ob die Session gamified sein soll.',
+        'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       liveSessionTypes:
         'Live-Sessions können nur Single-Choice, Multiple-Choice, Numerische und Freitext-Fragen enthalten.',
       liveSessionTimeRestriction:
         'Bitte geben Sie eine gültige Zeitbegrenzung ein.',
+      liveSessionMinQuestions:
+        'Der Frageblock muss mindestens eine Frage enthalten.',
       liveSessionCreated: 'Live-Session <b>{name}</b> erfolgreich erstellt.',
       liveSessionUpdated: 'Live-Session <b>{name}</b> erfolgreich modifiziert.',
       liveSessionDescription:
@@ -810,7 +812,7 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       liveSessionMultiplier:
         'Beim Multiplier handelt es sich um einen Faktor, mit welchem die Punkte bei einer beantworteten Frage multipliziert werden. Der Faktor findet nur Verwendung, wenn Gamification aktiviert ist.',
       liveSessionGamification:
-        'Bestimmen Sie, ob Gamification für diese Session aktiviert sein soll. Gamifizierte Sessionen sollten nur für gamifizierte Kurse verwendet werden.',
+        'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       learningElementResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.',
       learningElementValidResetDays:
