@@ -870,6 +870,10 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       NRPrecision: 'Die Anzahl Nachkommastellen muss mindestens 0 sein.',
       solutionRangeRequired:
         'Bitte geben Sie mindestens einen Lösungsbereich an.',
+      NumberQuestionsRequired:
+        'Es muss mindestens eine Antwortmöglichkeit gegeben werden',
+      NumberQuestionsRequiredKPRIM:
+        'Bei Kprim-Fragen müssen genau vier Antwortmöglichkeiten gegeben werden',
     },
     sessions: {
       runningSessions: 'Laufende Sessionen',

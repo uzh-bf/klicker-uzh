@@ -866,6 +866,9 @@ If multipliers are activated on the activities, these multipliers are applied to
         'Please enter at least one solution of deactivate the sample solution.',
       NRPrecision: 'The number of decimal places must be at least 0.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',
+      NumberQuestionsRequired: 'At least one answer option must be given',
+      NumberQuestionsRequiredKPRIM:
+        'There must be exactly four answer options for Kprim questions',
     },
     sessions: {
       runningSessions: 'Running Live Quizzes',

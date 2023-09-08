@@ -84,39 +84,36 @@ function QuestionEditModal({
     options: Yup.object().when(
       ['type', 'hasSampleSolution', 'hasAnswerFeedbacks'],
       ([type, hasSampleSolution, hasAnswerFeedbacks], schema) => {
+        const baseChoicesSchema = Yup.array().of(
+          Yup.object().shape({
+            ix: Yup.number(),
+            value: Yup.string().test({
+              message: t('manage.formErrors.answerContent'),
+              test: (content) =>
+                !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+            }),
+            correct: Yup.boolean().nullable(),
+            feedback: hasAnswerFeedbacks
+              ? Yup.string().test({
+                  message: t('manage.formErrors.feedbackContent'),
+                  test: (content) =>
+                    !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+                })
+              : Yup.string().nullable(),
+          })
+        )
+
         switch (type) {
           case 'SC':
-          case 'MC':
-          case 'KPRIM': {
-            const baseChoicesSchema = Yup.array()
-              .of(
-                Yup.object().shape({
-                  ix: Yup.number(),
-                  value: Yup.string().test({
-                    message: t('manage.formErrors.answerContent'),
-                    test: (content) =>
-                      !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-                  }),
-                  correct: Yup.boolean().nullable(),
-                  feedback: hasAnswerFeedbacks
-                    ? Yup.string().test({
-                        message: t('manage.formErrors.feedbackContent'),
-                        test: (content) =>
-                          !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-                      })
-                    : Yup.string().nullable(),
-                })
-              )
-              .min(1)
-
-            if (type === 'KPRIM')
-              return schema.shape({
-                choices: baseChoicesSchema,
-              })
+          case 'MC': {
+            let choicesSchema = baseChoicesSchema.min(
+              1,
+              t('manage.formErrors.NumberQuestionsRequired')
+            )
 
             if (type === 'SC')
               return schema.shape({
-                choices: baseChoicesSchema.test({
+                choices: choicesSchema.test({
                   message: t('manage.formErrors.SCAnswersCorrect'),
                   test: (choices) => {
                     return (
@@ -128,7 +125,7 @@ function QuestionEditModal({
               })
 
             return schema.shape({
-              choices: baseChoicesSchema.test({
+              choices: choicesSchema.test({
                 message: t('manage.formErrors.MCAnswersCorrect'),
                 test: (choices) => {
                   return (
@@ -137,6 +134,16 @@ function QuestionEditModal({
                   )
                 },
               }),
+            })
+          }
+
+          case 'KPRIM': {
+            const choicesSchema = baseChoicesSchema
+              .min(4, t('manage.formErrors.NumberQuestionsRequiredKPRIM'))
+              .max(4, t('manage.formErrors.NumberQuestionsRequiredKPRIM'))
+
+            return schema.shape({
+              choices: choicesSchema,
             })
           }
 
@@ -929,8 +936,17 @@ function QuestionEditModal({
                           <Button
                             fluid
                             className={{
-                              root: 'font-bold border border-solid border-uzh-grey-100',
+                              root: twMerge(
+                                'font-bold border border-solid border-uzh-grey-100',
+                                values.type === QuestionType.Kprim &&
+                                  values.options.choices.length >= 4 &&
+                                  'opacity-50 cursor-not-allowed'
+                              ),
                             }}
+                            disabled={
+                              values.type === QuestionType.Kprim &&
+                              values.options.choices.length >= 4
+                            }
                             onClick={() =>
                               push({
                                 ix: values.options.choices[
