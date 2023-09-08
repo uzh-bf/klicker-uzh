@@ -170,7 +170,7 @@ export const authOptions: NextAuthOptions = {
       name: 'next-auth.session-token',
       options: {
         domain: process.env.COOKIE_DOMAIN,
-        path: '/',
+        path: '/api/graphql',
         httpOnly: true,
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
