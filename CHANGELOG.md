@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.47...v3.0.0-rc.48) (2023-09-08)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** ensure COOKIE_DOMAIN does not cause double . ([5fe49f2](https://github.com/uzh-bf/klicker-uzh/commit/5fe49f24d9241eb1b2800d614398892bd6621f50))
+
 ## [3.0.0-rc.47](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.46...v3.0.0-rc.47) (2023-09-08)
 
 
