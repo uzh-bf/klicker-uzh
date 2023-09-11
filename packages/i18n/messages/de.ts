@@ -593,7 +593,9 @@ Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multipli
       lastUsed: 'zuletzt genutzt: {date}',
       lastUsedNever: 'zuletzt genutzt: Nie',
       createDelegatedLogin: 'Delegierten Login erstellen',
-      loginName: 'Login-Name',
+      delegatedLoginDescription:
+        'Um sich einzuloggen, nutzen Sie den Shortname Ihres Haupt-Accounts und das generierte Passwort des delegierten Logins.',
+      loginName: 'Login-Beschreibung',
       scope: 'Berechtigungen',
       selectScope: 'Jetzt wählen',
       createLogin: 'Login erstellen',
