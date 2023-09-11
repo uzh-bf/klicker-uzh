@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.48...v3.0.0-rc.49) (2023-09-11)
+
+
+### Bug Fixes
+
+* **packages/graphql:** nullable properties on questionData ([891601e](https://github.com/uzh-bf/klicker-uzh/commit/891601e7a988a5b5b693e38132cc14cd3b568e4f))
+
 ## [3.0.0-rc.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.47...v3.0.0-rc.48) (2023-09-08)
 
 
