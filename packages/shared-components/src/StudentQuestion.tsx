@@ -101,8 +101,7 @@ export const StudentQuestion = ({
     let schema = Yup.object().shape({ input: Yup.string() })
 
     if (
-      typeof currentQuestion.options?.restrictions?.min !== 'undefined' &&
-      currentQuestion.options?.restrictions?.min !== null &&
+      typeof currentQuestion.options?.restrictions?.maxLength === 'number' &&
       !isNaN(currentQuestion.options?.restrictions?.maxLength)
     ) {
       schema = Yup.object().shape({
@@ -138,15 +137,13 @@ export const StudentQuestion = ({
 
     let validator = Yup.number().required()
     if (
-      typeof currentQuestion.options?.restrictions?.min !== 'undefined' &&
-      currentQuestion.options?.restrictions?.min !== null &&
+      typeof currentQuestion.options?.restrictions?.min === 'number' &&
       !isNaN(currentQuestion.options?.restrictions?.min)
     ) {
       validator = validator.min(currentQuestion.options?.restrictions?.min)
     }
     if (
-      typeof currentQuestion.options?.restrictions?.max !== 'undefined' &&
-      currentQuestion.options?.restrictions?.max !== null &&
+      typeof currentQuestion.options?.restrictions?.max === 'number' &&
       !isNaN(currentQuestion.options?.restrictions?.max)
     ) {
       validator = validator.max(currentQuestion.options?.restrictions?.max)
@@ -199,7 +196,7 @@ export const StudentQuestion = ({
             <span className="font-bold">
               {t(`shared.${currentQuestion.type}.text`)}
             </span>{' '}
-            {typeof currentQuestion.options?.accuracy !== 'undefined' &&
+            {typeof currentQuestion.options?.accuracy === 'number' &&
               !isNaN(currentQuestion.options.accuracy) &&
               t('shared.questions.roundedTo', {
                 accuracy: currentQuestion.options.accuracy,
