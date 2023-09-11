@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.51...v3.0.0-rc.52) (2023-09-11)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** ensure number range questions are validated correctly ([991c633](https://github.com/uzh-bf/klicker-uzh/commit/991c63368d7b0dff6e61b4ee3224838c2d8fde4f))
+
 ## [3.0.0-rc.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.50...v3.0.0-rc.51) (2023-09-11)
 
 
