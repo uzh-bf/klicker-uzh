@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.49...v3.0.0-rc.50) (2023-09-11)
+
+
+### Bug Fixes
+
+* **email:** remove dot at end of MIGRATION REQUEST line to prevent issues in certain email clients ([06248a4](https://github.com/uzh-bf/klicker-uzh/commit/06248a42935cdffac726574072fcfb7b92b85b15))
+* **packages/graphql:** migration link ([b8e11e7](https://github.com/uzh-bf/klicker-uzh/commit/b8e11e74fb67578fd8c68c4fa130a7800c04c2fd))
+
 ## [3.0.0-rc.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.48...v3.0.0-rc.49) (2023-09-11)
 
 
