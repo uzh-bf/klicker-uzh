@@ -35,9 +35,10 @@ import {
   FieldProps,
   Form,
   Formik,
+  useFormikContext,
 } from 'formik'
 import { useTranslations } from 'next-intl'
-import React, { Suspense, useMemo, useState } from 'react'
+import React, { Suspense, useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import ContentInput from '../common/ContentInput'
@@ -284,7 +285,6 @@ function QuestionEditModal({
       switch (common.type) {
         case QuestionType.Sc:
         case QuestionType.Mc:
-        case QuestionType.Kprim:
           return {
             ...common,
             options: {
@@ -292,6 +292,18 @@ function QuestionEditModal({
             },
           }
 
+        case QuestionType.Kprim:
+          return {
+            ...common,
+            options: {
+              choices: [
+                { ix: 0, value: '', correct: false, feedback: '' },
+                { ix: 1, value: '', correct: false, feedback: '' },
+                { ix: 2, value: '', correct: false, feedback: '' },
+                { ix: 3, value: '', correct: false, feedback: '' },
+              ],
+            },
+          }
         case QuestionType.Numerical:
           return {
             ...common,
@@ -773,202 +785,216 @@ function QuestionEditModal({
                   </div>
 
                   {QUESTION_GROUPS.CHOICES.includes(values.type) && (
-                    <FieldArray name="options.choices">
-                      {({ push, remove }: FieldArrayRenderProps) => (
-                        <div className="flex flex-col w-full gap-2 pt-2">
-                          {values.options?.choices?.map(
-                            (
-                              choice: {
-                                ix: number
-                                value: string
-                                correct?: boolean
-                                feedback?: string
-                              },
-                              index: number
-                            ) => (
-                              <div
-                                key={choice.ix}
-                                className={twMerge(
-                                  'w-full rounded border-uzh-grey-80',
-                                  values.hasSampleSolution && 'p-2',
-                                  choice.correct &&
-                                    values.hasSampleSolution &&
-                                    ' bg-green-100 border-green-300',
-                                  !choice.correct &&
-                                    values.hasSampleSolution &&
-                                    ' bg-red-100 border-red-300'
-                                )}
-                              >
-                                <div className="flex flex-row w-full focus:border-primary-40">
-                                  {/* // TODO: define maximum height of editor if possible */}
-                                  <FastField
-                                    name={`options.choices.${index}.value`}
-                                    questionType={values.type}
-                                    shouldUpdate={(next, prev) =>
-                                      next?.formik.values[
-                                        `options.choices.${index}.value`
-                                      ] !==
-                                        prev?.formik.values[
-                                          `options.choices.${index}.value`
-                                        ] ||
-                                      next?.formik.values.type !==
-                                        prev?.formik.values.type
-                                    }
-                                  >
-                                    {({ field, meta }: FastFieldProps) => (
-                                      <ContentInput
-                                        error={meta.error}
-                                        touched={meta.touched}
-                                        content={field.value}
-                                        onChange={(newContent: string) => {
-                                          setFieldValue(
-                                            `options.choices.${index}.value`,
-                                            newContent
-                                          )
-                                        }}
-                                        showToolbarOnFocus={true}
-                                        placeholder={t(
-                                          'manage.questionForms.answerOptionPlaceholder'
-                                        )}
-                                        className={{
-                                          root: 'bg-white',
-                                        }}
-                                        key={`${values.type}-choice-${index}`}
-                                        data_cy="insert-answer-field"
-                                      />
-                                    )}
-                                  </FastField>
+                    // <FieldArray name="options.choices">
+                    //   {({ push, remove }: FieldArrayRenderProps) => {
+                    //     return (
+                    //       <div className="flex flex-col w-full gap-2 pt-2">
+                    //         {values.options?.choices?.map(
+                    //           (
+                    //             choice: {
+                    //               ix: number
+                    //               value: string
+                    //               correct?: boolean
+                    //               feedback?: string
+                    //             },
+                    //             index: number
+                    //           ) => (
+                    //             <div
+                    //               key={choice.ix}
+                    //               className={twMerge(
+                    //                 'w-full rounded border-uzh-grey-80',
+                    //                 values.hasSampleSolution && 'p-2',
+                    //                 choice.correct &&
+                    //                   values.hasSampleSolution &&
+                    //                   ' bg-green-100 border-green-300',
+                    //                 !choice.correct &&
+                    //                   values.hasSampleSolution &&
+                    //                   ' bg-red-100 border-red-300'
+                    //               )}
+                    //             >
+                    //               <div className="flex flex-row w-full focus:border-primary-40">
+                    //                 {/* // TODO: define maximum height of editor if possible */}
+                    //                 <FastField
+                    //                   name={`options.choices.${index}.value`}
+                    //                   questionType={values.type}
+                    //                   shouldUpdate={(next, prev) =>
+                    //                     next?.formik.values[
+                    //                       `options.choices.${index}.value`
+                    //                     ] !==
+                    //                       prev?.formik.values[
+                    //                         `options.choices.${index}.value`
+                    //                       ] ||
+                    //                     next?.formik.values.type !==
+                    //                       prev?.formik.values.type
+                    //                   }
+                    //                 >
+                    //                   {({ field, meta }: FastFieldProps) => {
+                    //                     console.log(
+                    //                       'values.options.choices: ',
+                    //                       values.options.choices
+                    //                     )
+                    //                     return (
+                    //                       <ContentInput
+                    //                         error={meta.error}
+                    //                         touched={meta.touched}
+                    //                         content={field.value}
+                    //                         onChange={(newContent: string) => {
+                    //                           setFieldValue(
+                    //                             `options.choices.${index}.value`,
+                    //                             newContent
+                    //                           )
+                    //                         }}
+                    //                         showToolbarOnFocus={true}
+                    //                         placeholder={t(
+                    //                           'manage.questionForms.answerOptionPlaceholder'
+                    //                         )}
+                    //                         className={{
+                    //                           root: 'bg-white',
+                    //                         }}
+                    //                         key={`${values.type}-choice-${index}`}
+                    //                         data_cy="insert-answer-field"
+                    //                       />
+                    //                     )
+                    //                   }}
+                    //                 </FastField>
 
-                                  {values.hasSampleSolution && (
-                                    <div className="flex flex-row items-center ml-2">
-                                      <div className="mr-2">
-                                        {t('shared.generic.correct')}?
-                                      </div>
-                                      <FastField
-                                        name={`options.choices.${index}.correct`}
-                                      >
-                                        {({ field }: FieldProps) => (
-                                          <Switch
-                                            checked={field.value || false}
-                                            label=""
-                                            className={{ root: 'gap-0 mr-0.5' }}
-                                            onCheckedChange={(
-                                              newValue: boolean
-                                            ) => {
-                                              setFieldValue(
-                                                `options.choices.${index}.correct`,
-                                                newValue
-                                              )
-                                            }}
-                                            data={{ cy: 'set-correctness' }}
-                                          />
-                                        )}
-                                      </FastField>
-                                    </div>
-                                  )}
+                    //                 {values.hasSampleSolution && (
+                    //                   <div className="flex flex-row items-center ml-2">
+                    //                     <div className="mr-2">
+                    //                       {t('shared.generic.correct')}?
+                    //                     </div>
+                    //                     <FastField
+                    //                       name={`options.choices.${index}.correct`}
+                    //                     >
+                    //                       {({ field }: FieldProps) => (
+                    //                         <Switch
+                    //                           checked={field.value || false}
+                    //                           label=""
+                    //                           className={{
+                    //                             root: 'gap-0 mr-0.5',
+                    //                           }}
+                    //                           onCheckedChange={(
+                    //                             newValue: boolean
+                    //                           ) => {
+                    //                             setFieldValue(
+                    //                               `options.choices.${index}.correct`,
+                    //                               newValue
+                    //                             )
+                    //                           }}
+                    //                           data={{ cy: 'set-correctness' }}
+                    //                         />
+                    //                       )}
+                    //                     </FastField>
+                    //                   </div>
+                    //                 )}
 
-                                  <Button
-                                    onClick={() => remove(index)}
-                                    className={{
-                                      root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
-                                    }}
-                                  >
-                                    <Button.Icon>
-                                      <FontAwesomeIcon
-                                        icon={faTrash}
-                                        className="hover:bg-primary-20"
-                                      />
-                                    </Button.Icon>
-                                  </Button>
-                                </div>
+                    //                 <Button
+                    //                   onClick={() => remove(index)}
+                    //                   className={{
+                    //                     root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
+                    //                   }}
+                    //                 >
+                    //                   <Button.Icon>
+                    //                     <FontAwesomeIcon
+                    //                       icon={faTrash}
+                    //                       className="hover:bg-primary-20"
+                    //                     />
+                    //                   </Button.Icon>
+                    //                 </Button>
+                    //               </div>
 
-                                {values.hasAnswerFeedbacks &&
-                                  values.hasSampleSolution && (
-                                    <div className="">
-                                      <div className="mt-2 text-sm font-bold">
-                                        {t('shared.generic.feedback')}
-                                      </div>
-                                      <FastField
-                                        name={`options.choices.${index}.feedback`}
-                                        questionType={values.type}
-                                        shouldUpdate={(next, prev) =>
-                                          next?.formik.values[
-                                            `options.choices.${index}.feedback`
-                                          ] !==
-                                            prev?.formik.values[
-                                              `options.choices.${index}.feedback`
-                                            ] ||
-                                          next?.formik.values.type !==
-                                            prev?.formik.values.type
-                                        }
-                                      >
-                                        {({ field, meta }: FastFieldProps) => (
-                                          <ContentInput
-                                            error={meta.error}
-                                            touched={meta.touched}
-                                            content={field.value || '<br>'}
-                                            onChange={(
-                                              newContent: string
-                                            ): void => {
-                                              setFieldValue(
-                                                `options.choices.${index}.feedback`,
-                                                newContent
-                                              )
-                                            }}
-                                            className={{
-                                              root: 'bg-white',
-                                              content:
-                                                'w-full rounded border border-uzh-grey-100 focus:border-primary-40',
-                                            }}
-                                            showToolbarOnFocus={true}
-                                            placeholder={t(
-                                              'manage.questionForms.feedbackPlaceholder'
-                                            )}
-                                            key={`${values.type}-feedback-${index}`}
-                                          />
-                                        )}
-                                      </FastField>
-                                    </div>
-                                  )}
-                              </div>
-                            )
-                          )}
+                    //               {values.hasAnswerFeedbacks &&
+                    //                 values.hasSampleSolution && (
+                    //                   <div className="">
+                    //                     <div className="mt-2 text-sm font-bold">
+                    //                       {t('shared.generic.feedback')}
+                    //                     </div>
+                    //                     <FastField
+                    //                       name={`options.choices.${index}.feedback`}
+                    //                       questionType={values.type}
+                    //                       shouldUpdate={(next, prev) =>
+                    //                         next?.formik.values[
+                    //                           `options.choices.${index}.feedback`
+                    //                         ] !==
+                    //                           prev?.formik.values[
+                    //                             `options.choices.${index}.feedback`
+                    //                           ] ||
+                    //                         next?.formik.values.type !==
+                    //                           prev?.formik.values.type
+                    //                       }
+                    //                     >
+                    //                       {({
+                    //                         field,
+                    //                         meta,
+                    //                       }: FastFieldProps) => (
+                    //                         <ContentInput
+                    //                           error={meta.error}
+                    //                           touched={meta.touched}
+                    //                           content={field.value || '<br>'}
+                    //                           onChange={(
+                    //                             newContent: string
+                    //                           ): void => {
+                    //                             setFieldValue(
+                    //                               `options.choices.${index}.feedback`,
+                    //                               newContent
+                    //                             )
+                    //                           }}
+                    //                           className={{
+                    //                             root: 'bg-white',
+                    //                             content:
+                    //                               'w-full rounded border border-uzh-grey-100 focus:border-primary-40',
+                    //                           }}
+                    //                           showToolbarOnFocus={true}
+                    //                           placeholder={t(
+                    //                             'manage.questionForms.feedbackPlaceholder'
+                    //                           )}
+                    //                           key={`${values.type}-feedback-${index}`}
+                    //                         />
+                    //                       )}
+                    //                     </FastField>
+                    //                   </div>
+                    //                 )}
+                    //             </div>
+                    //           )
+                    //         )}
 
-                          <Button
-                            fluid
-                            className={{
-                              root: twMerge(
-                                'font-bold border border-solid border-uzh-grey-100',
-                                values.type === QuestionType.Kprim &&
-                                  values.options.choices.length >= 4 &&
-                                  'opacity-50 cursor-not-allowed'
-                              ),
-                            }}
-                            disabled={
-                              values.type === QuestionType.Kprim &&
-                              values.options.choices.length >= 4
-                            }
-                            onClick={() =>
-                              push({
-                                ix: values.options.choices[
-                                  values.options.choices.length - 1
-                                ]
-                                  ? values.options.choices[
-                                      values.options.choices.length - 1
-                                    ].ix + 1
-                                  : 0,
-                                value: '<br>',
-                                correct: false,
-                                explanation: '<br>',
-                              })
-                            }
-                            data={{ cy: 'add-new-answer' }}
-                          >
-                            {t('manage.questionForms.addAnswer')}
-                          </Button>
-                        </div>
-                      )}
-                    </FieldArray>
+                    //         <Button
+                    //           fluid
+                    //           className={{
+                    //             root: twMerge(
+                    //               'font-bold border border-solid border-uzh-grey-100',
+                    //               values.type === QuestionType.Kprim &&
+                    //                 values.options.choices.length >= 4 &&
+                    //                 'opacity-50 cursor-not-allowed'
+                    //             ),
+                    //           }}
+                    //           disabled={
+                    //             values.type === QuestionType.Kprim &&
+                    //             values.options.choices.length >= 4
+                    //           }
+                    //           onClick={() =>
+                    //             push({
+                    //               ix: values.options.choices[
+                    //                 values.options.choices.length - 1
+                    //               ]
+                    //                 ? values.options.choices[
+                    //                     values.options.choices.length - 1
+                    //                   ].ix + 1
+                    //                 : 0,
+                    //               value: '<br>',
+                    //               correct: false,
+                    //               explanation: '<br>',
+                    //             })
+                    //           }
+                    //           data={{ cy: 'add-new-answer' }}
+                    //         >
+                    //           {t('manage.questionForms.addAnswer')}
+                    //         </Button>
+                    //       </div>
+                    //     )
+                    //   }}
+                    // </FieldArray>
+                    <QuestionGroupsAnswerOptions />
                   )}
 
                   {values.type === QuestionType.Numerical && (
@@ -1346,6 +1372,248 @@ function QuestionEditModal({
         )
       }}
     </Formik>
+  )
+}
+
+const QuestionGroupsAnswerOptions = () => {
+  const t = useTranslations()
+  const { values, setFieldValue } = useFormikContext()
+
+  const updateAnswerOptions = useCallback(() => {
+    if (
+      values.type === QuestionType.Kprim &&
+      values.options.choices.length < 4
+    ) {
+      console.log('inside updateAnswerOptions')
+      const fieldsToAdd = 4 - values.options.choices.length
+
+      const newAnswerOptions = [...values.options.choices]
+
+      for (let i = 0; i < fieldsToAdd; i++) {
+        newAnswerOptions.push({
+          ix: newAnswerOptions[newAnswerOptions.length - 1]
+            ? newAnswerOptions[newAnswerOptions.length - 1].ix + 1
+            : 0,
+          value: '<br>',
+          correct: false,
+          explanation: '<br>',
+        })
+      }
+
+      setFieldValue('options.choices', newAnswerOptions)
+    }
+  }, [values.type, values.options.choices, setFieldValue])
+
+  console.log(
+    'values.type === QuestionType.Kprim: ',
+    values.type === QuestionType.Kprim
+  )
+  console.log('values.options.choices.length: ', values.options.choices.length)
+  console.log('values.options.choices: ', values.options.choices)
+
+  return (
+    <FieldArray name="options.choices">
+      {({ push, remove }: FieldArrayRenderProps) => {
+        updateAnswerOptions()
+        console.log(
+          'values.options.choices inside components: ',
+          values.options.choices
+        )
+        return (
+          <div className="flex flex-col w-full gap-2 pt-2">
+            {values.options?.choices?.map(
+              (
+                choice: {
+                  ix: number
+                  value: string
+                  correct?: boolean
+                  feedback?: string
+                },
+                index: number
+              ) => (
+                <div
+                  key={choice.ix}
+                  className={twMerge(
+                    'w-full rounded border-uzh-grey-80',
+                    values.hasSampleSolution && 'p-2',
+                    choice.correct &&
+                      values.hasSampleSolution &&
+                      ' bg-green-100 border-green-300',
+                    !choice.correct &&
+                      values.hasSampleSolution &&
+                      ' bg-red-100 border-red-300'
+                  )}
+                >
+                  <div className="flex flex-row w-full focus:border-primary-40">
+                    {/* // TODO: define maximum height of editor if possible */}
+                    <FastField
+                      name={`options.choices.${index}.value`}
+                      questionType={values.type}
+                      shouldUpdate={(next, prev) =>
+                        next?.formik.values[
+                          `options.choices.${index}.value`
+                        ] !==
+                          prev?.formik.values[
+                            `options.choices.${index}.value`
+                          ] ||
+                        next?.formik.values.type !== prev?.formik.values.type
+                      }
+                    >
+                      {({ field, meta }: FastFieldProps) => (
+                        <ContentInput
+                          error={meta.error}
+                          touched={meta.touched}
+                          content={field.value}
+                          onChange={(newContent: string) => {
+                            setFieldValue(
+                              `options.choices.${index}.value`,
+                              newContent
+                            )
+                          }}
+                          showToolbarOnFocus={true}
+                          placeholder={t(
+                            'manage.questionForms.answerOptionPlaceholder'
+                          )}
+                          className={{
+                            root: 'bg-white',
+                          }}
+                          key={`${values.type}-choice-${index}`}
+                          data_cy="insert-answer-field"
+                        />
+                      )}
+                    </FastField>
+
+                    {values.hasSampleSolution && (
+                      <div className="flex flex-row items-center ml-2">
+                        <div className="mr-2">
+                          {t('shared.generic.correct')}?
+                        </div>
+                        <FastField name={`options.choices.${index}.correct`}>
+                          {({ field }: FieldProps) => (
+                            <Switch
+                              checked={field.value || false}
+                              label=""
+                              className={{
+                                root: 'gap-0 mr-0.5',
+                              }}
+                              onCheckedChange={(newValue: boolean) => {
+                                setFieldValue(
+                                  `options.choices.${index}.correct`,
+                                  newValue
+                                )
+                              }}
+                              data={{ cy: 'set-correctness' }}
+                            />
+                          )}
+                        </FastField>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={() => remove(index)}
+                      className={{
+                        root: twMerge(
+                          'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
+                          values.type === QuestionType.Kprim &&
+                            values.options.choices.length === 4 &&
+                            'opacity-50 cursor-not-allowed'
+                        ),
+                      }}
+                      disabled={
+                        values.type === QuestionType.Kprim &&
+                        values.options.choices.length === 4
+                      }
+                    >
+                      <Button.Icon>
+                        <FontAwesomeIcon
+                          icon={faTrash}
+                          className="hover:bg-primary-20"
+                        />
+                      </Button.Icon>
+                    </Button>
+                  </div>
+
+                  {values.hasAnswerFeedbacks && values.hasSampleSolution && (
+                    <div className="">
+                      <div className="mt-2 text-sm font-bold">
+                        {t('shared.generic.feedback')}
+                      </div>
+                      <FastField
+                        name={`options.choices.${index}.feedback`}
+                        questionType={values.type}
+                        shouldUpdate={(next, prev) =>
+                          next?.formik.values[
+                            `options.choices.${index}.feedback`
+                          ] !==
+                            prev?.formik.values[
+                              `options.choices.${index}.feedback`
+                            ] ||
+                          next?.formik.values.type !== prev?.formik.values.type
+                        }
+                      >
+                        {({ field, meta }: FastFieldProps) => (
+                          <ContentInput
+                            error={meta.error}
+                            touched={meta.touched}
+                            content={field.value || '<br>'}
+                            onChange={(newContent: string): void => {
+                              setFieldValue(
+                                `options.choices.${index}.feedback`,
+                                newContent
+                              )
+                            }}
+                            className={{
+                              root: 'bg-white',
+                              content:
+                                'w-full rounded border border-uzh-grey-100 focus:border-primary-40',
+                            }}
+                            showToolbarOnFocus={true}
+                            placeholder={t(
+                              'manage.questionForms.feedbackPlaceholder'
+                            )}
+                            key={`${values.type}-feedback-${index}`}
+                          />
+                        )}
+                      </FastField>
+                    </div>
+                  )}
+                </div>
+              )
+            )}
+
+            <Button
+              fluid
+              className={{
+                root: twMerge(
+                  'font-bold border border-solid border-uzh-grey-100',
+                  values.type === QuestionType.Kprim &&
+                    values.options.choices.length >= 4 &&
+                    'hidden'
+                ),
+              }}
+              disabled={
+                values.type === QuestionType.Kprim &&
+                values.options.choices.length >= 4
+              }
+              onClick={() =>
+                push({
+                  ix: values.options.choices[values.options.choices.length - 1]
+                    ? values.options.choices[values.options.choices.length - 1]
+                        .ix + 1
+                    : 0,
+                  value: '<br>',
+                  correct: false,
+                  explanation: '<br>',
+                })
+              }
+              data={{ cy: 'add-new-answer' }}
+            >
+              {t('manage.questionForms.addAnswer')}
+            </Button>
+          </div>
+        )
+      }}
+    </FieldArray>
   )
 }
 
