@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.50...v3.0.0-rc.51) (2023-09-11)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** issues with isNaN ([e05189b](https://github.com/uzh-bf/klicker-uzh/commit/e05189b12b893a93cac0a27e5dc63ed9b14ff5f3))
+
 ## [3.0.0-rc.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.49...v3.0.0-rc.50) (2023-09-11)
 
 
