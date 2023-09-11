@@ -138,9 +138,10 @@ function QuestionEditModal({
           }
 
           case 'KPRIM': {
-            const choicesSchema = baseChoicesSchema
-              .min(4, t('manage.formErrors.NumberQuestionsRequiredKPRIM'))
-              .max(4, t('manage.formErrors.NumberQuestionsRequiredKPRIM'))
+            const choicesSchema = baseChoicesSchema.length(
+              4,
+              t('manage.formErrors.NumberQuestionsRequiredKPRIM')
+            )
 
             return schema.shape({
               choices: choicesSchema,
