@@ -20,7 +20,6 @@ export function FREETextAnswerOptions({
     <div className="flex flex-col gap-2">
       <textarea
         className="rounded focus:border focus:border-solid focus:border-primary-80"
-        defaultValue=""
         id="responseInput"
         value={value}
         onChange={(e): void => onChange(e.target.value)}

@@ -100,7 +100,11 @@ export const StudentQuestion = ({
 
     let schema = Yup.object().shape({ input: Yup.string() })
 
-    if (!isNaN(currentQuestion.options?.restrictions?.maxLength)) {
+    if (
+      typeof currentQuestion.options?.restrictions?.min !== 'undefined' &&
+      currentQuestion.options?.restrictions?.min !== null &&
+      !isNaN(currentQuestion.options?.restrictions?.maxLength)
+    ) {
       schema = Yup.object().shape({
         input: Yup.string()
           .max(currentQuestion.options?.restrictions?.maxLength)
