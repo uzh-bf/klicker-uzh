@@ -120,8 +120,8 @@ export interface INumericalQuestionOptions {
   accuracy?: number | null
   placeholder?: string | null
   unit?: string | null
-  restrictions: INumericalRestrictions
-  solutionRanges: INumericalSolutionRange[]
+  restrictions?: INumericalRestrictions | null
+  solutionRanges?: INumericalSolutionRange[] | null
 }
 export const NumericalQuestionOptions = builder
   .objectRef<INumericalQuestionOptions>('NumericalQuestionOptions')
@@ -132,9 +132,11 @@ export const NumericalQuestionOptions = builder
       unit: t.exposeString('unit', { nullable: true }),
       restrictions: t.expose('restrictions', {
         type: NumericalRestrictions,
+        nullable: true,
       }),
       solutionRanges: t.expose('solutionRanges', {
         type: [NumericalSolutionRange],
+        nullable: true,
       }),
     }),
   })
@@ -164,15 +166,18 @@ export const FreeTextRestrictions = builder
   })
 
 export interface IFreeTextQuestionOptions {
-  restrictions: IFreeTextRestrictions
-  solutions: string[]
+  restrictions?: IFreeTextRestrictions | null
+  solutions?: string[] | null
 }
 export const FreeTextQuestionOptions = builder
   .objectRef<IFreeTextQuestionOptions>('FreeTextQuestionOptions')
   .implement({
     fields: (t) => ({
-      restrictions: t.expose('restrictions', { type: FreeTextRestrictions }),
-      solutions: t.exposeStringList('solutions'),
+      restrictions: t.expose('restrictions', {
+        type: FreeTextRestrictions,
+        nullable: true,
+      }),
+      solutions: t.exposeStringList('solutions', { nullable: true }),
     }),
   })
 
