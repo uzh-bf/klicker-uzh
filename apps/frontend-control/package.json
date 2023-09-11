@@ -1,10 +1,10 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.0.0-rc.45",
+  "version": "3.0.0-rc.48",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@apollo/client": "3.8.0",
+    "@apollo/client": "3.8.3",
     "@fortawesome/fontawesome-svg-core": "6.4.2",
     "@fortawesome/free-regular-svg-icons": "6.4.2",
     "@fortawesome/free-solid-svg-icons": "6.4.2",
