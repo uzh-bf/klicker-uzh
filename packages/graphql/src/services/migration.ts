@@ -31,7 +31,7 @@ export async function requestMigrationToken(
     }
   )
 
-  const migrationLink = `http://manage.${
+  const migrationLink = `https://manage${
     process.env.COOKIE_DOMAIN
   }/migration?token=${encodeURIComponent(migrationToken)}`
 
