@@ -13,6 +13,7 @@ import {
   FormikTextField,
   H4,
   Label,
+  Prose,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -20,6 +21,13 @@ import generatePassword from 'generate-password'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+
+const PW_SETTINGS = {
+  length: 16,
+  uppercase: true,
+  symbols: false,
+  numbers: true,
+}
 
 interface DelegatedAccessSettingsProps {
   shortname?: string
@@ -88,21 +96,18 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
 
       <div className="mt-5">
         <H4>{t('manage.settings.createDelegatedLogin')}</H4>
-
+        <Prose className={{ root: 'max-w-none' }}>
+          {t('manage.settings.delegatedLoginDescription')}
+        </Prose>
         <Formik
           isInitialValid={false}
           initialValues={{
-            password: generatePassword.generate({
-              length: 16,
-              uppercase: true,
-              symbols: false,
-              numbers: true,
-            }),
+            password: generatePassword.generate(PW_SETTINGS),
             name: '',
             scope: UserLoginScope.FullAccess,
           }}
           validationSchema={loginSchema}
-          onSubmit={async (values, { resetForm }) => {
+          onSubmit={async (values, { resetForm, setFieldValue }) => {
             const result = await createUserLogin({
               variables: {
                 name: values.name,
@@ -112,6 +117,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
             })
 
             if (result.data?.createUserLogin) {
+              setFieldValue('password', generatePassword.generate(PW_SETTINGS))
               resetForm()
             }
           }}
@@ -146,12 +152,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       onClick={() =>
                         setFieldValue(
                           'password',
-                          generatePassword.generate({
-                            length: 16,
-                            uppercase: true,
-                            symbols: false,
-                            numbers: true,
-                          })
+                          generatePassword.generate(PW_SETTINGS)
                         )
                       }
                     >

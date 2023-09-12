@@ -596,7 +596,9 @@ If multipliers are activated on the activities, these multipliers are applied to
       lastUsed: 'last used: {date}',
       lastUsedNever: 'last used: never',
       createDelegatedLogin: 'Create delegated login',
-      loginName: 'Login name',
+      delegatedLoginDescription:
+        'When logging in, use the shortname of your main account and the password of the delegated login.',
+      loginName: 'Login description',
       scope: 'Scope',
       selectScope: 'Select scope',
       createLogin: 'Create login',

@@ -159,8 +159,8 @@ type FreeTextQuestionData implements QuestionData {
 }
 
 type FreeTextQuestionOptions {
-  restrictions: FreeTextRestrictions!
-  solutions: [String!]!
+  restrictions: FreeTextRestrictions
+  solutions: [String!]
 }
 
 type FreeTextRestrictions {
@@ -460,8 +460,8 @@ type NumericalQuestionData implements QuestionData {
 type NumericalQuestionOptions {
   accuracy: Int
   placeholder: String
-  restrictions: NumericalRestrictions!
-  solutionRanges: [NumericalSolutionRange!]!
+  restrictions: NumericalRestrictions
+  solutionRanges: [NumericalSolutionRange!]
   unit: String
 }
 

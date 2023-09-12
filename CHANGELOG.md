@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.51...v3.0.0-rc.52) (2023-09-11)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** ensure number range questions are validated correctly ([991c633](https://github.com/uzh-bf/klicker-uzh/commit/991c63368d7b0dff6e61b4ee3224838c2d8fde4f))
+
+## [3.0.0-rc.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.50...v3.0.0-rc.51) (2023-09-11)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** issues with isNaN ([e05189b](https://github.com/uzh-bf/klicker-uzh/commit/e05189b12b893a93cac0a27e5dc63ed9b14ff5f3))
+
+## [3.0.0-rc.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.49...v3.0.0-rc.50) (2023-09-11)
+
+
+### Bug Fixes
+
+* **email:** remove dot at end of MIGRATION REQUEST line to prevent issues in certain email clients ([06248a4](https://github.com/uzh-bf/klicker-uzh/commit/06248a42935cdffac726574072fcfb7b92b85b15))
+* **packages/graphql:** migration link ([b8e11e7](https://github.com/uzh-bf/klicker-uzh/commit/b8e11e74fb67578fd8c68c4fa130a7800c04c2fd))
+
+## [3.0.0-rc.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.48...v3.0.0-rc.49) (2023-09-11)
+
+
+### Bug Fixes
+
+* **packages/graphql:** nullable properties on questionData ([891601e](https://github.com/uzh-bf/klicker-uzh/commit/891601e7a988a5b5b693e38132cc14cd3b568e4f))
+
 ## [3.0.0-rc.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.47...v3.0.0-rc.48) (2023-09-08)
 
 ### Bug Fixes
