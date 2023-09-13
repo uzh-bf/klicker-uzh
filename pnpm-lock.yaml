@@ -817,6 +817,9 @@ importers:
       '@capacitor/ios':
         specifier: 5.3.0
         version: 5.3.0(@capacitor/core@5.3.0)
+      '@capacitor/push-notifications':
+        specifier: 5.0.6
+        version: 5.0.6(@capacitor/core@5.3.0)
       '@fortawesome/fontawesome-svg-core':
         specifier: 6.4.2
         version: 6.4.2
@@ -4582,6 +4585,14 @@ packages:
     resolution: {integrity: sha512-AxcW6kp2dOhJ7D6Jz7FAiVi+tq8rv3K3VrfZ0rcGJGlqZfrOJ1m8ImcQ7cO9Fec7wf7a/XSwMOqWemYZFLOO8w==}
     peerDependencies:
       '@capacitor/core': ^5.3.0
+    dependencies:
+      '@capacitor/core': 5.3.0
+    dev: false
+
+  /@capacitor/push-notifications@5.0.6(@capacitor/core@5.3.0):
+    resolution: {integrity: sha512-o4/EcP13XduazhJkoVWEVrRD07YcqT9Uz0pQ48SItRNjtgDhcQW1vAEo6tSL6FVA5NkxNhJikk8TUeXobgOhEg==}
+    peerDependencies:
+      '@capacitor/core': ^5.0.0
     dependencies:
       '@capacitor/core': 5.3.0
     dev: false
