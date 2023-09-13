@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.53](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.52...v3.0.0-rc.53) (2023-09-13)
+
+
+### Features
+
+* **apps/frontend-pwa:** initialize capacitor apps for iOS and Android ([#3821](https://github.com/uzh-bf/klicker-uzh/issues/3821)) ([5281f17](https://github.com/uzh-bf/klicker-uzh/commit/5281f17818d5d1baf5a02492d942ac789fd3d183))
+
 ## [3.0.0-rc.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.51...v3.0.0-rc.52) (2023-09-11)
 
 
