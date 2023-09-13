@@ -1,4 +1,4 @@
-package ch.uzh.klicker.pwa;
+package ch.uzh.bf.klicker.pwa;
 
 import com.getcapacitor.BridgeActivity;
 

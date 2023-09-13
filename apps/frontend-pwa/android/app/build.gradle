@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "ch.uzh.klicker.pwa"
+    namespace "ch.uzh.bf.klicker.pwa"
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "ch.uzh.klicker.pwa"
+        applicationId "ch.uzh.bf.klicker.pwa"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
