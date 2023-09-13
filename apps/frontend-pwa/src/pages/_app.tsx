@@ -1,4 +1,10 @@
 import { ApolloProvider } from '@apollo/client'
+import {
+  ActionPerformed,
+  PushNotificationSchema,
+  PushNotifications,
+  Token,
+} from '@capacitor/push-notifications'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError } from '@klicker-uzh/i18n'
@@ -11,6 +17,7 @@ import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import ErrorBoundary from '../components/ErrorBoundary'
 
+import { Capacitor } from '@capacitor/core'
 import '../globals.css'
 
 config.autoAddCss = false
@@ -26,6 +33,48 @@ function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (MATOMO_URL && MATOMO_SITE_ID) {
       init({ url: MATOMO_URL, siteId: MATOMO_SITE_ID })
+    }
+
+    // if we are on iOS or android, register for push notifications
+    if (
+      Capacitor.getPlatform() === 'ios' ||
+      Capacitor.getPlatform() === 'android'
+    ) {
+      PushNotifications.requestPermissions().then((result) => {
+        if (result.receive === 'granted') {
+          // Register with Apple / Google to receive push via APNS/FCM
+          PushNotifications.register()
+        } else {
+          // Show some error
+          console.error(result)
+        }
+      })
+
+      // On success, we should be able to receive notifications
+      PushNotifications.addListener('registration', (token: Token) => {
+        console.log('Push registration success, token: ' + token.value)
+      })
+
+      // Some issue with our setup and push will not work
+      PushNotifications.addListener('registrationError', (error: any) => {
+        console.log('Error on registration: ' + JSON.stringify(error))
+      })
+
+      // Show us the notification payload if the app is open on our device
+      PushNotifications.addListener(
+        'pushNotificationReceived',
+        (notification: PushNotificationSchema) => {
+          console.log('Push received: ' + JSON.stringify(notification))
+        }
+      )
+
+      // Method called when tapping on a notification
+      PushNotifications.addListener(
+        'pushNotificationActionPerformed',
+        (notification: ActionPerformed) => {
+          console.log('Push action performed: ' + JSON.stringify(notification))
+        }
+      )
     }
   }, [])
 
