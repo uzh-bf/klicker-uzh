@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.55...v3.0.0-rc.56) (2023-09-14)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** update naming of create account image ([1d9a3bf](https://github.com/uzh-bf/klicker-uzh/commit/1d9a3bfc0827ab23fcccaee0a0b5ace79bb77424))
+
 ## [3.0.0-rc.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.54...v3.0.0-rc.55) (2023-09-14)
 
 
