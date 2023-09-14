@@ -1,4 +1,5 @@
 import { Markdown } from '@klicker-uzh/markdown'
+import { H3 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import DocsLayout from '../../../../components/docs/DocsLayout'
@@ -9,13 +10,16 @@ function AppSetup() {
   return (
     <DocsLayout>
       {(courseInformation) => (
-        <Markdown
-          withProse
-          className={{ root: 'prose-headings:mt-0' }}
-          content={t('pwa.studentDocs.appSetup', {
-            pwa_url: process.env.NEXT_PUBLIC_PWA_URL,
-          })}
-        />
+        <>
+          <H3>{t('pwa.studentDocs.appSetupTitle')}</H3>
+          <Markdown
+            withProse
+            className={{ root: 'prose-headings:mt-0 prose-p:mt-0' }}
+            content={t('pwa.studentDocs.appSetup', {
+              pwa_url: process.env.NEXT_PUBLIC_PWA_URL,
+            })}
+          />
+        </>
       )}
     </DocsLayout>
   )

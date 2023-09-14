@@ -75,39 +75,36 @@ function DocsLayout({
               router.push(`/course/${data.basicCourseInformation!.id}/docs`)
             }
           />
-          <Navigation.TriggerItem
-            label={t('pwa.general.setup')}
-            className={menuClassName(
-              router.pathname === '/course/[courseId]/docs/login' ||
-                router.pathname === '/course/[courseId]/docs/appSetup'
-            )}
-            dropdownWidth="w-[20rem]"
-          >
-            <Navigation.DropdownItem
-              title={t('pwa.general.firstLogin')}
-              onClick={() =>
-                router.push(
-                  `/course/${data.basicCourseInformation!.id}/docs/login`
-                )
-              }
-            />
-            <Navigation.DropdownItem
-              title={t('pwa.general.appSetup')}
-              onClick={() =>
-                router.push(
-                  `/course/${data.basicCourseInformation!.id}/docs/appSetup`
-                )
-              }
-            />
-          </Navigation.TriggerItem>
           <Navigation.ButtonItem
-            label={t('shared.generic.features')}
+            label={t('pwa.studentDocs.featuresTitle')}
             className={menuClassName(
               router.pathname === '/course/[courseId]/docs/features'
             )}
             onClick={() =>
               router.push(
                 `/course/${data.basicCourseInformation!.id}/docs/features`
+              )
+            }
+          />
+          <Navigation.ButtonItem
+            label={t('pwa.studentDocs.firstLoginTitle')}
+            className={menuClassName(
+              router.pathname === '/course/[courseId]/docs/login'
+            )}
+            onClick={() =>
+              router.push(
+                `/course/${data.basicCourseInformation!.id}/docs/login`
+              )
+            }
+          />
+          <Navigation.ButtonItem
+            label={t('pwa.studentDocs.appSetupTitle')}
+            className={menuClassName(
+              router.pathname === '/course/[courseId]/docs/appSetup'
+            )}
+            onClick={() =>
+              router.push(
+                `/course/${data.basicCourseInformation!.id}/docs/appSetup`
               )
             }
           />

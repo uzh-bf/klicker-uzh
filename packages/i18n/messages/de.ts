@@ -220,7 +220,7 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       dataProcessingTitle: 'Datenverarbeitung und Datenschutz',
       dataCollectionTitle: 'Welche Daten werden über mich gesammelt?',
       dataCollectionNotice:
-        'Wir erfassen und speichern die Profilinformationen Deines erstellten Teilnehmerkontos (z. B. E-Mail, Pseudonym, Passwort) sowie die Daten, die bei Deinen Interaktionen mit Kursen (z. B. erstellte Gruppen) und abgeschlossenen Aktivitäten (z. B. Antworten auf gestellte Fragen) anfallen. Wenn Du Dich entscheidest, an der optionalen Rangliste als Teil eines Kurses teilzunehmen, erfassen und speichern wir zusätzlich die gesammelten Punktzahlen als Teil aller Aktivitäten.',
+        'Wir erfassen und speichern die Profilinformationen Deines erstellten Teilnehmendenkontos (z. B. E-Mail, Pseudonym, Passwort) sowie die Daten, die bei Deinen Interaktionen mit Kursen (z. B. erstellte Gruppen) und abgeschlossenen Aktivitäten (z. B. Antworten auf gestellte Fragen) anfallen. Wenn Du Dich entscheidest, an der optionalen Rangliste als Teil eines Kurses teilzunehmen, erfassen und speichern wir zusätzlich die gesammelten Punktzahlen als Teil aller Aktivitäten.',
       dataSharingTitle: 'Wie werden meine Daten geteilt?',
       dataSharingNotice: `
 Wenn Du ein Konto erstellst und an Kursen und Aktivitäten mit KlickerUZH teilnimmst, können die Besitzer der KlickerUZH-Konten, die mit Deinen Kursen verbunden sind, Deine **E-Mail-Adresse** zusammen mit einigen Informationen über die KlickerUZH-Aktivitäten, an denen Du teilgenommen hast, sehen und diese Informationen möglicherweise für den Unterricht ihres Kurses mit KlickerUZH oder, in **anonymisierter** Form, für Forschungszwecke außerhalb von KlickerUZH verwenden. Sie sind verpflichtet, Dich über eine solche Verwendung Deiner Daten neben der Verwendung innerhalb von KlickerUZH zu informieren.
@@ -241,98 +241,109 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
       pageList: `
 In dieser Dokumentation finden Sie die wichtigsten Informationen zum KlickerUZH in Ihrem Kurs:
 
-- [Erstmaliges Log-in und Profileinrichtung](docs/login)
-- [Installation der KlickerUZH-App](docs/appSetup)
-- [Wichtige Features des KlickerUZH](docs/features)
+- [Features im Überblick](docs/features)
+- [Erster Login & Accounteinrichtung](docs/login)
+- [App Installation](docs/appSetup)
       `,
-      firstLogin: `
-### Erstmaliges Login und Profileinrichtung
-
-Wenn Sie das erste Mal an Aktivitäten im KlickerUZH teilnehmen, können Sie Sich einmalig für die KlickerUZH-App registrieren. Ein KlickerUZH-Konto ermöglicht Ihnen eine einfache und kursübergreifende Verwaltung und Zugriff auf die Lerninhalte Ihrer Kurse (die KlickerUZH verwenden), sowie das Hinzufügen von für Sie wichtigen Elementen in Ihre private Repetitionsbibliothek und die Teilnahme an den gamifizierten Elementen (Challenge). Dabei können Sie, je nach Organisation Ihres Kurses, wie folgt vorgehen:
-
-#### Kurse mit LMS-Integration (z.B., OLAT)
-
-Öffnen Sie im OLAT-Kurs Ihrer Vorlesung den Baustein KlickerUZH. Sie werden, wenn noch kein KlickerUZH-Konto für Sie existiert, von einer
-Willkommensseite begrüsst. Auf dieser Seite setzen Sie einen (anonymen) Nutzernamen und ein Passwort, sowie Ihren persönlichen Avatar.
-
-![](https://sos-ch-dk-2.exo.io/klicker-prod/img/klicker_profile_setup.png)
-
-Eine detailliertere Anleitung finden Sie in folgendem Dokument (Deutsch): [KlickerUZH_Anleitung_OLAT.pdf](https://sos-ch-dk-2.exo.io/klicker-prod/klicker_anleitung_olat.pdf)
-
-#### Kurse ohne LMS-Integration
-
-Falls Sie bereits ein KlickerUZH-Konto besitzen (z.B., aus anderen Kursen), öffnen Sie die KlickerUZH-App und klicken Sie unterhalb der Kursübersicht auf "Kurs beitreten". Geben Sie dort den 9-stelligen PIN ein, den Sie von Ihren Dozierenden erhalten haben. Sie sind anschliessen Teil des Kurses und können an allen Aktivitäten teilnehmen.
-
-![](https://sos-ch-dk-2.exo.io/klicker-prod/img/klicker_join_existing.png)
-
-Wenn Sie das erste Mal an einem Kurs mit dem KlickerUZH teilnehmen, öffnen Sie den Beitritts-Link, den Sie von den Dozierenden Ihres Kurses erhalten haben (z.B., _{pwa_url}/course/XYZ/join?pin=111111111_). Darüber erstellen Sie ein neues KlickerUZH-Konto mit einem (anonymen) Nutzernamen und einem Passwort. Mit diesen Daten können Sie sich anschliessend einloggen und Ihren persönlichen Avatar erstellen, sowie an Aktivitäten teilnehmen.
-
-![](https://sos-ch-dk-2.exo.io/klicker-prod/img/klicker_join_neu.png)
-
-#### Anonyme Teilnahme
-
-Generell ist es bei allen Elementen im KlickerUZH auch möglich, anonym teilzunehmen. Bei Live-Sessions finden Sie diese für Ihren Kurs unter: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
-Lernelemente und Micro-Sessions sind über direkte Links verfügbar, die Sie von Ihren Dozierenden erhalten können. Beim Zugriff auf den KlickerUZH über die OLAT-Integration wird automatisch ein Konto für Sie erstellt.
-
-      `,
-      appSetup: `
-### Installation der KlickerUZH-App
-
-Damit Sie von überall auf den Klicker zugreifen können, gibt es die KlickerUZH-App. Die App ermöglicht Ihnen eine einfache und kursübergreifende Verwaltung und Zugriff auf die Lerninhalte Ihrer Kurse (die KlickerUZH verwenden), sowie das Hinzufügen von für Sie wichtigen Elementen in Ihre private Repetitionsbibliothek und die Teilnahme an den gamifizierten Elementen (Challenge). Ausserdem können Sie (auf Android) die Push-Benachrichtigungen für Micro-Sessions in Ihren Kursen aktivieren.
-
-Sie können die KlickerUZHApp wie folgt einrichten:
-
-1. Öffnen Sie den folgenden Link auf dem Smartphone: [{pwa_url}/login]({pwa_url}/login)
-2. Es sollte eine Meldung erscheinen “Add to Homescreen” / “Zum Startbildschirm zufügen” - klicken Sie darauf.
-3. Akzeptieren Sie, dass die App installiert wird. Sobald die App installiert ist, sollten Sie darin zum Log-in weitergeleitet werden. Ausserdem finden Sie neu ein KlickerUZH-Icon auf Ihrem Homescreen oder im App-Drawer.
-4. Die Benachrichtigungen für neue Microlearning-Fragen können Sie jetzt für einzelne Kurse anwählen resp. aktivieren / deaktivieren.
-
-Weitere Details zur Installation und Nutzung der KlickerUZH-App finden Sie in folgendem Dokument (Deutsch):
-
-[KlickerUZH_Anleitung_OLAT.pdf](https://sos-ch-dk-2.exo.io/klicker-prod/klicker_anleitung_app.pdf)
-      `,
+      featuresTitle: 'Features im Überblick',
       features: `
-### Funktionen im KlickerUZH
+KlickerUZH bietet Ihnen als Kursteilnehmenden eine ganze Reihe von Funktionalitäten. Diese Übersicht fasst die wichtigsten davon zusammen. Welche Funktionen konkret zur Verfügung stehen, hängt von den Einstellungen Ihrer Dozierenden ab (z.B. ob Gruppenaktivitäten oder eine Challenge verfügbar sind) und wird Ihnen direkt von diesen mitgeteilt.
 
-Der KlickerUZH bietet Ihnen als Kursteilnehmenden eine Vielzahl Funktionen. Diese Übersicht fasst die Wichtigsten davon zusammen. Die konkret verfügbaren Funktionen hängen von den Einstellungen Ihrer Dozierenden ab (z.B., ob Gruppenaktivitäten oder eine Challenge zur Verfügung stehen) und werden Ihnen direkt von den Dozierenden kommuniziert.
+#### Umfragen und Live-Quiz
 
-#### Umfragen und Live Quizzes
+![Live-Quiz _auf der linken Seite_](/img_v3/06_live_quiz.png)
 
-Während der Lehrveranstaltung haben Sie die Möglichkeit, die von den Dozierenden gestellten Fragen auf [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})  oder in der KlickerUZH-App (oder, falls vorhanden, im OLAT unter dem Baustein "Live Quiz") zu beantworten. Die Resultate werden ohne Zeitverzug grafisch aufbereitet angezeigt und können so nach Abschluss der Beantwortungszeit von den Dozierenden präsentiert und kommentiert werden.
+Während der Vorlesung haben Sie die Möglichkeit, die von den Dozierenden gestellten Fragen auf [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) oder in der KlickerUZH-App (oder, falls vorhanden, in OLAT unter dem Modul "Live Quiz") zu beantworten. Die Resultate werden ohne Verzögerung grafisch dargestellt und können so nach Ablauf der Antwortzeit von den Dozierenden präsentiert und kommentiert werden.
 
-Zum Beantworten der Fragen ist kein Login notwendig. Mit einem Login können Sie an der Challenge Ihres Kurses teilnehmen und Punkte sammeln.
+Für die Beantwortung der Fragen ist kein Login erforderlich. Mit einem Login können Sie an der Challenge Ihres Kurses teilnehmen und Punkte sammeln.
 
-#### Live Q&A und Real-time Feedback
+#### Live Q&A und Echtzeit-Feedback
 
-Haben Sie eine Frage oder möchten Sie direktes Feedback zur Vorlesung geben? Mit dem Live Q&A können Sie den Dozierenden oder Assistierenden während der Vorlesung direkt eine Frage stellen - auch wenn Sie von zu Hause aus an der Vorlesung teilnehmen. Zudem haben Sie mit dem KlickerUZH die Möglichkeit, direkt während der Vorlesung den Dozierenden Rückmeldung zur Geschwindigkeit und dem Schwierigkeitsgrad der Vorlesung zu geben.
+![Live Q&A und Real-time Feedback _rechts_](/img_v3/06_live_quiz.png)
 
-Die Teilnahme ist unter [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) (auch anonym) oder via KlickerUZH-App möglich.
+Haben Sie eine Frage oder möchten Sie direktes Feedback zur Vorlesung geben? Mit dem Live-Q&A können Sie den Dozierenden oder Assistierenden direkt während der Vorlesung eine Frage stellen - auch wenn Sie von zu Hause aus an der Vorlesung teilnehmen. Außerdem haben Sie mit dem KlickerUZH die Möglichkeit, den Dozierenden während der Vorlesung direktes Feedback zu Tempo und Schwierigkeitsgrad der Vorlesung zu geben.
 
-#### Lernelemente und Micro-Sessions
+Die Teilnahme ist unter [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) (auch anonym) oder über die KlickerUZH-App möglich.
 
-Lernelemente und Micro-Sessions erlauben Ihnen, die Kursinhalte ausserhalb der Vorlesungszeit zu repetieren und direktes Feedback auf Ihre Lösung zu erhalten. Lernelemente sind immer und beliebig oft verfügbar, Micro-Sessions hingegen nur einmalig und in einem eingeschränkten Zeitrahmen (z.B., einmal pro Woche). Alle Elemente sind direkt über die KlickerUZH-App zugänglich, oder über den von Ihren Dozierenden bereitgestellten Link (auch anonym).
+#### Practice Quiz, Microlearning und Flashcards
 
-Während der Beantwortung der Fragen können Sie, bei vorhandenem Log-in, persönliche Lesezeichen auf wichtigen Fragen setzen, und sich so Ihren eigenen Fragepool zusammenstellen. Feedbacks zu unklaren Fragen können Sie Ihren Dozierenden mittels der Melden-Funktion zukommen lassen.
+![Übungsquiz in OLAT](/img_v3/07_practice_quiz.png)
+
+Practice Quizzes, Microlearning und Flashcards ermöglichen es Ihnen, den Kursinhalt außerhalb der Vorlesungszeit zu wiederholen und direktes Feedback zu Ihrer Lösung zu erhalten. Practice Quizzes und Flashcards sind immer und beliebig oft verfügbar, Microlearning dagegen nur einmal und in einem begrenzten Zeitrahmen (z.B. einmal pro Woche). Alle Elemente sind direkt über die KlickerUZH-App oder über den von Ihren Dozierenden zur Verfügung gestellten Link (auch anonym) zugänglich. Die Lernkarten sind noch in der Umsetzung und werden nach ca. 5 Wochen im Herbstsemester 2023 verfügbar sein.
+
+Während der Beantwortung der Fragen können Sie, wenn Sie eingeloggt sind, persönliche Lesezeichen auf wichtige Fragen setzen und so Ihren eigenen Fragenpool erstellen. Über die Reportfunktion können Sie Ihren Dozierenden ein Feedback zu unklaren Fragen geben.
 
 #### Gruppen und Gruppenaktivitäten
 
-Während des Semesters werden Ihnen gegebenenfalls praxisnahe Gruppenaktivitäten bereitgestellt, die Sie nur als Gruppe gemeinsam lösen können. Diese Aktivitäten sollen unterhaltsam sein, den Austausch mit Kommilitonen fördern, sowie die Anwendung von Theorien unterstützen. Das Bilden einer Gruppe von 2-5 Personen ist während der ersten 4 Wochen eines Kurses möglich. Danach bleibt die Gruppe während dem Semester bestehen und tritt gegen die anderen Gruppen in derselben Kohorte an. Gruppenaktivitäten sind nur für Teilnehmende mit KlickerUZH-Konto verfügbar.
+Während des Semesters werden Ihnen unter Umständen praktische Gruppenaufgaben gestellt, die nur in der Gruppe gelöst werden können. Diese Aktivitäten sollen unterhaltsam sein, den Austausch mit Kommilitonen fördern und die Anwendung von Theorien unterstützen. Die Bildung einer Gruppe von 2-5 Personen ist in den ersten Wochen einer Lehrveranstaltung möglich (nach Angabe des Dozierenden), in der Regel bis vor Beginn der ersten Gruppenaktivität. Danach bleibt die Gruppe das ganze Semester über aktiv und tritt gegen die anderen Gruppen desselben Kurses an. Die Gruppenbildung und die Aktivitäten sind nur für Teilnehmer mit einem KlickerUZH-Account zugänglich.
 
-Innerhalb einer Gruppe können Sie Ihre Punkte mit denen Ihrer Kommilitonen vergleichen; gemeinsam können Sie die Gruppenleistung auch mit anderen Gruppen vergleichen. Die gesammelten Punkte aus Gruppenaktivitäten ergeben zusammen mit den aggregierten Punkten aller Gruppenmitglieder (Durchschnitt) die Punktzahl der Gesamtgruppe.
+Innerhalb einer Gruppe können Sie Ihre Punkte mit denen Ihrer Kommilitonen vergleichen; gemeinsam können Sie auch die Leistung der Gruppe mit anderen Gruppen vergleichen. Die kumulierten Punkte aus den Gruppenaktivitäten ergeben zusammen mit den aggregierten Punkten aller Gruppenmitglieder (im Durchschnitt) die Gesamtpunktzahl der Gruppe.
 
 #### Challenge
 
-Alle Aktivitäten im KlickerUZH werden, falls von den Dozierenden aktiviert, in einer Challenge zusammengefasst. Im Rahmen der Challenge sammeln Sie mit allen Lernaktivitäten Punkte für das Kursleaderboard (wenn Sie eingeloggt teilnehmen).
+![Gamification](/img_v3/08_gamification.png)
 
-Die folgenden Aktivitäten werden in die Challenge einbezogen:
+Alle Aktivitäten im KlickerUZH sind, wenn sie von den Dozierenden aktiviert werden, Teil einer gamifizierten Challenge. Im Rahmen der Challenge sammeln Sie Punkte für die Kursrangliste (wenn Sie im eingeloggten Zustand teilnehmen), Erfahrungspunkte und Erfolge.
 
-- Umfragen und Live Quizzes: 10 Punkte pro Teilnahme an einer offenen Abstimmung (ohne Lösung), bis zu 70 Bonuspunkte für eine schnelle und richtige Antwort auf inhaltliche Fragen. Die schnellste korrekte Antwort erhält am meisten Punkte.
-- Lernelemente: 10 Punkte, wenn die Erstbeantwortung einer Frage korrekt ist. 5 Punkte für jede weitere korrekte Repetition einer Frage (nach Ablauf der angegebenen Sperrzeit). Bei KPRIM ergibt ein Fehler eine Halbierung der Punktzahl.
-- Micro-Sessions: 10 Punkte pro korrekt beantworteter Frage in einer Micro-Session. Bei KPRIM ergibt ein Fehler eine Halbierung der Punktzahl.
-- Gruppenaktivitäten: 1000 Punkte auf das individuelle Leaderboard für jedes Gruppenmitglied beim Bestehen einer Gruppenaktivität.
-- Achievements: Gesammelte Achievements (z.B., Erreichen des ersten Platzes in einem Live-Quiz) ergeben Bonuspunkte, wie auf den entsprechenden Achievements vermerkt.
+Die folgenden Aktivitäten sind Teil der Challenge:
 
-Falls Multiplikatoren auf den Aktivitäten aktiviert sind, werden diese Multiplikatoren auf die Punktezahl angewendet.
+- Umfragen und Live-Quiz: 10 Punkte pro Teilnahme an einer Abstimmung und bis zu 70 Bonuspunkte für eine schnelle und richtige Antwort auf Inhaltsfragen. Die schnellste richtige Antwort erhält die meisten Punkte.
+- Prctice Quizzes: 10 Punkte, wenn die erste Antwort auf eine Frage richtig ist. 5 Punkte für jede weitere richtige Wiederholung einer Frage (nach Ablauf der vorgegebenen Sperrzeit). Bei KPRIM-Fragen führt ein Fehler zu einer Halbierung der Punktzahl, zwei oder mehr Fehler bringen keine Punkte.
+- Microlearning: 10 Punkte pro richtig beantworteter Frage in einem Microlearning. Bei KPRIM-Fragen führt ein Fehler zur Halbierung der Punktzahl, bei zwei oder mehr Fehlern gibt es keine Punkte.
+- Gruppenaktivitäten: Punkte auf der Gruppenrangliste basierend auf der Korrektheit der Aktivität (z.B. 800 von 1000 Punkten, wenn 80% richtig gelöst wurden). Zusätzlich können Leistungen und Punkte auf der individuellen Bestenliste für jedes Gruppenmitglied verteilt werden, wenn eine Gruppenaktivität bestanden wird (mit einer Bestehensschwelle von 50% der erreichbaren Punkte).
+- Errungenschaften: Gesammelte Erfolge (z. B. das Erreichen des ersten Platzes in einem großen Live-Quiz) können zu Bonuspunkten führen, die auf den entsprechenden Erfolgen vermerkt sind. Achievements werden automatisch oder manuell von den Dozierenden verteilt.
+- Multiplikatoren: Wenn für Fragen und/oder Aktivitäten Multiplikatoren festgelegt sind, werden diese auf die Punktzahl angewandt (z. B. 2x, 3x, 4x). Multiplikatoren werden neben den Fragen in Übungsquizzen und Microlearning angezeigt und sind in Live-Quizzen nicht sichtbar.
+      `,
+      firstLoginTitle: 'Erster Login & Accounteinrichtung',
+      firstLogin: `
+Wenn Sie zum ersten Mal an KlickerUZH-Aktivitäten teilnehmen, können Sie sich für ein KlickerUZH-Teilnehmendenkonto registrieren. Ein KlickerUZH-Konto ermöglicht Ihnen die einfache Verwaltung und den Zugriff auf die Lerninhalte Ihrer Kurse mit KlickerUZH sowie das Hinzufügen wichtiger Elemente zu Ihrer privaten Wiederholungsbibliothek und die Teilnahme an den gamifizierten Elementen Ihrer Kurse.
+
+Je nachdem, wie Ihr Kurs technisch aufgebaut ist, können Sie wie folgt vorgehen:
+
+#### Kurse mit LMS-Integration (z.B. OLAT)
+
+Öffnen Sie das KlickerUZH-Modul im OLAT-Kurs Ihrer Lehrveranstaltung.
+
+![](/img_v3/01_account_erstellen.png)
+
+Wenn Sie bereits ein KlickerUZH-Konto besitzen, besuchen Sie einfach eine der KlickerUZH-Aktivitäten im LMS-Kurs und Sie sollten automatisch eingeloggt sein. Falls Sie nicht automatisch eingeloggt sind, können Sie sich über den Button oben rechts einloggen.
+
+Wenn noch kein KlickerUZH-Konto für Sie existiert, werden Sie von einer Willkommensseite begrüßt, auf der Sie ein neues Konto erstellen können. Auf dieser Seite legen Sie einen (anonymen) Benutzernamen und ein Passwort fest, sowie einen persönlichen Avatar.
+
+#### Kurse ohne LMS-Integration
+
+Wenn Sie bereits ein KlickerUZH-Konto haben (z.B. von anderen Kursen), öffnen Sie die KlickerUZH-App und klicken Sie unterhalb der Kursübersicht auf "Kurs beitreten". Geben Sie die 9-stellige PIN ein, die Sie von Ihren Dozierenden erhalten haben. Sie sind nun Teil des Kurses und können an allen Aktivitäten teilnehmen.
+
+![](/img_v3/05_join_course.png)
+
+Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den Zugangslink, den Sie von den Dozierenden Ihres Kurses erhalten haben (z.B. _{pwa_url}/course/XYZ/join?pin=111111111_). Damit können Sie ein neues KlickerUZH-Konto mit einem (anonymen) Benutzernamen und einem Passwort erstellen. Mit diesen Daten können Sie sich dann einloggen und Ihren persönlichen Avatar erstellen sowie an Aktivitäten teilnehmen.
+
+#### Anonyme Teilnahme
+
+Generell ist es möglich, an den Activitäten im KlickerUZH auch anonym teilzunehmen. Für Live Quizzes finden Sie diese für Ihren Kurs unter: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
+Practice Quiz und Microlearning sind über direkte Links verfügbar, die Sie von Ihren Dozierenden erhalten können. Wenn Sie über die OLAT-Integration auf KlickerUZH zugreifen, können Sie ein Konto erstellen und werden dann automatisch eingeloggt. Wenn Sie kein KlickerUZH-Konto haben, bleibt Ihre Teilnahme an den Practice Quizzes anonym.
+      `,
+      appSetupTitle: 'App Installation',
+      appSetup: `
+Um von überall auf KlickerUZH zugreifen zu können, gibt es eine KlickerUZH-App. Mit der App können Sie die Lerninhalte Ihrer Kurse (mit KlickerUZH) einfach verwalten und darauf zugreifen, sowie wichtige Elemente zu Ihrer privaten Wiederholungsbibliothek hinzufügen und an den gamifizierten Elementen (Challenge) teilnehmen. Außerdem können Sie (aktuell nur auf Android) die Push-Benachrichtigungen für Microlearning in Ihren Kursen aktivieren.
+
+Sie können die KlickerUZH-App wie folgt einrichten:
+
+#### Android
+
+Sie können die KlickerUZH-App im Google Play Store unter folgendem Link herunterladen:
+
+[https://play.google.com/store/apps/details?id=ch.uzh.bf.klicker.pwa](https://play.google.com/store/apps/details?id=ch.uzh.bf.klicker.pwa)
+
+Nach der Installation sollten Sie die App auf Ihrem Startbildschirm finden und können sich wie gewohnt einloggen. Sie können Push-Benachrichtigungen für Ihre Kurse aktivieren, indem Sie auf das Glockensymbol des jeweiligen Kurses klicken, woraufhin Sie z.B. über neue Microlearning-Einheiten informiert werden.
+
+#### iOS
+
+Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie dieser Anleitung, um die App auf Ihrem Startbildschirm hinzuzufügen.
+
+1. Öffnen Sie den folgenden Link auf Ihrem Smartphone: [{pwa_url}/login]({pwa_url}/login)
+2. Es sollte eine Meldung "Zum Homescreen hinzufügen" / "Zum Startbildschirm zufügen" erscheinen - klicken Sie darauf.
+3. Akzeptieren Sie, dass die App installiert wird. Sobald die App installiert ist, sollten Sie zum Log-in weitergeleitet werden. Sie werden auch ein neues KlickerUZH-Symbol auf Ihrem Startbildschirm oder in der App-Schublade finden.
       `,
     },
     login: {

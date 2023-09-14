@@ -242,60 +242,17 @@ Your data will never be shared with other parties beside the above and will neve
       pageList: `
 In this documentation you will find the most important information about KlickerUZH in your course:
 
-- [First login and profile setup](docs/login)
-- [Installation of the KlickerUZH app](docs/appSetup)
-- [Important features of KlickerUZH](docs/features)
+[Feature Overview](docs/features)
+[First Login & Account Setup](docs/login)
+[App installation](docs/appSetup)
       `,
-      firstLogin: `
-### First login and profile setup
-
-If you are participating in KlickerUZH activities for the first time, you can register for the KlickerUZH app once. A KlickerUZH account allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). Depending on the organization of your course, you can proceed as follows:
-
-#### Courses with LMS integration (e.g., OLAT)
-
-Open the KlickerUZH module in the OLAT course of your lecture. If no KlickerUZH account exists for you yet, you will be greeted by a welcome page. On this page you set an (anonymous) username and password, as well as your personal avatar.
-
-![](https://sos-ch-dk-2.exo.io/klicker-prod/img/klicker_profile_setup.png)
-
-A detailed guide can be found in the following document (German): [KlickerUZH_Anleitung_OLAT.pdf](https://sos-ch-dk-2.exo.io/klicker-prod/klicker_anleitung_olat.pdf)
-
-#### Courses without LMS integration
-
-If you already have a KlickerUZH account (e.g., from other courses), open the KlickerUZH app and click "Join course" below the course overview. Enter the 9-digit PIN you received from your lecturers. You are now part of the course and can participate in all activities.
-
-![](https://sos-ch-dk-2.exo.io/klicker-prod/img/klicker_join_existing.png)
-
-If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course (e.g., _{pwa_url}/course/XYZ/join?pin=111111111_). You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
-
-![](https://sos-ch-dk-2.exo.io/klicker-prod/img/klicker_join_neu.png)
-
-#### Anonymous participation
-
-In general, it is also possible to participate anonymously in all elements of KlickerUZH. For live quizzes, you can find these for your course under: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
-Practice quizzes and microlearning are available via direct links that you can receive from your lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically.
-      `,
-      appSetup: `
-### Installation of the KlickerUZH App
-
-In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can (on Android) activate the push notifications for microlearning in your courses.
-
-You can set up the KlickerUZH app as follows:
-
-1. Open the following link on your smartphone: [{pwa_url}/login]({pwa_url}/login)
-2. A message should appear “Add to Homescreen” / “Zum Startbildschirm zufügen” - click on it.
-3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen or in the app drawer.
-4. You can now select / activate / deactivate the notifications for new microlearning questions for individual courses.
-
-You can find further details on the installation and use of the KlickerUZH app in the following document (German):
-
-[KlickerUZH_Anleitung_OLAT.pdf](https://sos-ch-dk-2.exo.io/klicker-prod/klicker_anleitung_app.pdf)
-      `,
+      featuresTitle: 'Feature Overview',
       features: `
-### Features in KlickerUZH
-
 KlickerUZH offers you as a course participant a significant amount of functionalities. This overview summarizes the most important ones. The concrete functions available depend on the settings of your lecturers (e.g., whether group activities or a challenge are available) and will be communicated to you directly by the lecturers.
 
 #### Polls and Live Quizzes
+
+![Live Quiz _on the left_](/img_v3/06_live_quiz.png)
 
 During the lecture, you have the possibility to answer the questions asked by the lecturers on [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) or in the KlickerUZH app (or, if available, in OLAT under the "Live Quiz" module). The results are displayed graphically without delay and can thus be presented and commented on by the lecturers after the answering time has expired.
 
@@ -303,35 +260,91 @@ No login is required to answer the questions. With a login you can participate i
 
 #### Live Q&A and Real-time Feedback
 
+![Live Q&A and Real-time Feedback _on the right_](/img_v3/06_live_quiz.png)
+
 Do you have a question or would you like to give direct feedback on the lecture? With the Live Q&A you can ask the lecturers or assistants a question directly during the lecture - even if you are participating in the lecture from home. In addition, with the KlickerUZH you have the possibility to give the lecturers direct feedback on the speed and difficulty of the lecture during the lecture.
 
 Participation is possible at [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) (also anonymously) or via the KlickerUZH app.
 
-#### Practice quizzes and microlearning
+#### Practice Quizzes, Microlearning, and Flashcards
 
-Practice quizzes and microlearning allow you to repeat the course content outside of the lecture time and receive direct feedback on your solution. Practice quizzes are always and arbitrarily often available, microlearning on the other hand only once and in a limited time frame (e.g., once per week). All elements are directly accessible via the KlickerUZH app, or via the link provided by your lecturers (also anonymously).
+![Practice Quiz in OLAT](/img_v3/07_practice_quiz.png)
+
+Practice quizzes, and microlearning and flashcards allow you to repeat the course content outside of the lecture time and receive direct feedback on your solution. Practice quizzes and flashcards are always and arbitrarily often available, microlearning on the other hand only once and in a limited time frame (e.g., once per week). All elements are directly accessible via the KlickerUZH app, or via the link provided by your lecturers (also anonymously). Flash cards are still being implemented and will be available after around 5 weeks of the fall term 2023.
 
 While answering the questions, you can, if you are logged in, set personal bookmarks on important questions, and create your own question pool through that. You can send feedback on unclear questions to your lecturers using the report function.
 
-#### Groups and group activities
+#### Groups and Group Activities
 
-During the semester, you might be provided with practical group activities that can only be solved as a group. These activities are intended to be entertaining, promote exchange with fellow students, and support the application of theories. Forming a group of 2-5 people is possible during the first 4 weeks of a course. After that, the group remains active for the semester and competes against the other groups in the same cohort. Group activities are only available to participants with a KlickerUZH account.
+During the semester, you might be provided with practical group activities that can only be solved as a group. These activities are intended to be entertaining, promote exchange with fellow students, and support the application of theories. Forming a group of 2-5 people is possible during the first few weeks of a course (as specified by the lecturer), typically before the first group activity begins. After that, the group remains active for the semester and competes against the other groups in the same course. Group formation and activities are only available to participants with a KlickerUZH account.
 
 Within a group, you can compare your points with those of your fellow students; together you can also compare the group's performance with other groups. The accumulated points from group activities together with the aggregated points of all group members (average) result in the total group score.
 
 #### Challenge
 
-All activities in the KlickerUZH are, if activated by the lecturers, summarized in a challenge. As part of the challenge, you collect points for the course leaderboard (if you participate while logged in) with all learning activities.
+![Gamification](/img_v3/08_gamification.png)
 
-The following activities are included in the challenge:
+All activities in the KlickerUZH are, if activated by the lecturers, part of a gamified challenge. As part of the challenge, you collect points for the course leaderboard (if you participate while logged in), experience points, and achievements.
 
-- Polls and Live Quizzes: 10 points per participation in an open vote (without solution), up to 70 bonus points for a fast and correct answer to content questions. The fastest correct answer receives the most points.
-- Practice quizzes: 10 points if the first answer to a question is correct. 5 points for each additional correct repetition of a question (after the specified lock time has expired). In KPRIM, an error results in a halving of the score.
-- Microlearning: 10 points per correctly answered question in a microlearning. In KPRIM, an error results in a halving of the score.
-- Group activities: 1000 points on the individual leaderboard for each group member when passing a group activity.
-- Achievements: Collected achievements (e.g., reaching first place in a live quiz) result in bonus points, as noted on the corresponding achievements.
+The following activities are part of the challenge:
 
-If multipliers are activated on the activities, these multipliers are applied to the score.
+- Polls and Live Quizzes: 10 points per participation in a vote and up to 70 bonus points for a fast and correct answer to content questions. The fastest correct answer receives the most points.
+- Practice Quizzes: 10 points if the first answer to a question is correct. 5 points for each additional correct repetition of a question (after the specified lock time has expired). In KPRIM questions, one mistake results in a halving of the score, and two or more mistakes yield no points.
+- Microlearning: 10 points per correctly answered question in a microlearning. In KPRIM questions, one mistake results in a halving of the score, and two or more mistakes yield no points.
+- Group Activities: Points on the group leaderboard based on the correctness of the activity (e.g., 800 of 1000 points if 80% was solved correctly). Additionally, achievements and points on the individual leaderboard can be distributed for each group member when passing a group activity (with a passing threshold of 50% of achievable points).
+- Achievements: Collected achievements (e.g., reaching first place in a large live quiz) can result in bonus points, as noted on the corresponding achievements. Achievements are distributed automatically or manually by the lecturers.
+- Multipliers: If multipliers are set on questions and/or activities, these multipliers are applied to the score (e.g., 2x, 3x, 4x). Multipliers are shown beside questions in practice quizzes and microlearning, and not visible in live quizzes.
+      `,
+      firstLoginTitle: 'First Login & Account Setup',
+      firstLogin: `
+If you are participating in KlickerUZH activities for the first time, you can register for a KlickerUZH participant account. A KlickerUZH participant account allows you to easily manage and access the learning content of your courses using KlickerUZH, as well as to add important elements to your private repetition library and participate in the gamified elements of your courses.
+
+Depending on the technical set up of your course, you can proceed as follows:
+
+#### Courses with LMS integration (e.g., OLAT)
+
+Open the KlickerUZH module in the OLAT course of your lecture.
+
+![](/img_v3/01_create_account.png)
+
+If you already possess a KlickerUZH account, simply visit any of the KlickerUZH activities in the LMS course and you should be logged in automatically. In case you are not logged in automatically, you can log in using the button on the top right.
+
+If no KlickerUZH account exists for you yet, you will be greeted by a welcome page, which will allow you to create a new account. On this page you set an (anonymous) username and password, as well as your personal avatar.
+
+#### Courses without LMS integration
+
+If you already have a KlickerUZH account (e.g., from other courses), open the KlickerUZH app and click "Join course" below the course overview. Enter the 9-digit PIN you received from your lecturers. You are now part of the course and can participate in all activities.
+
+![](/img_v3/05_join_course.png)
+
+If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course (e.g., _{pwa_url}/course/XYZ/join?pin=111111111_). You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
+
+#### Anonymous participation
+
+In general, it is also possible to participate anonymously in all elements of KlickerUZH. For live quizzes, you can find these for your course under: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
+Practice quizzes and microlearning are available via direct links that you can receive from your lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically. If you do not have a KlickerUZH account, your participation in practice quizzes will remain anonymous.
+      `,
+      appSetupTitle: 'App Installation',
+      appSetup: `
+In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can (on Android) activate the push notifications for microlearning in your courses.
+
+You can set up the KlickerUZH app as follows:
+
+#### Android
+
+You can download the KlickerUZH app on the Google Play store using the following link:
+
+[https://play.google.com/store/apps/details?id=ch.uzh.bf.klicker.pwa](https://play.google.com/store/apps/details?id=ch.uzh.bf.klicker.pwa)
+
+After installation, you should find the app on your home screen and can log in as usual. You can enable push notifications for your courses by clicking on the bell icon of the respective course, after which you will be informed about, e.g., new microlearning units.
+
+#### iOS
+
+Since the KlickerUZH app is not yet available on the iOS App Store, follow these instructions to add the app onto your home screen.
+
+1. Open the following link on your smartphone: [{pwa_url}/login]({pwa_url}/login)
+2. A message should appear “Add to Homescreen” / “Zum Startbildschirm zufügen” - click on it.
+3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen or in the app drawer.
       `,
     },
     login: {
