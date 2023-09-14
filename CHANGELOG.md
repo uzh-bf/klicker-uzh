@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.54](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.53...v3.0.0-rc.54) (2023-09-14)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** update student docs pages ([#3844](https://github.com/uzh-bf/klicker-uzh/issues/3844)) ([20c1aef](https://github.com/uzh-bf/klicker-uzh/commit/20c1aef434f3824257b4be41c750bbdf4fb2bd38))
+
 ## [3.0.0-rc.53](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.52...v3.0.0-rc.53) (2023-09-13)
 
 
