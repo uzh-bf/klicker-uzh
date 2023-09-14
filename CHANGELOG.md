@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.54...v3.0.0-rc.55) (2023-09-14)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** await refetch queries for login ([0b35a75](https://github.com/uzh-bf/klicker-uzh/commit/0b35a754d087ba12060782ec7dded1398093fe79))
+
 ## [3.0.0-rc.54](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.53...v3.0.0-rc.54) (2023-09-14)
 
 
