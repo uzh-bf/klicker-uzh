@@ -40,6 +40,7 @@ function Login() {
       const result: FetchResult = await loginParticipant({
         variables: { username: values.username, password: values.password },
         refetchQueries: [SelfDocument],
+        awaitRefetchQueries: true,
       })
       const userID: string | null = result.data!.loginParticipant
       if (!userID) {
