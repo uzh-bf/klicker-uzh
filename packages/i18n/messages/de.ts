@@ -302,7 +302,7 @@ Je nachdem, wie Ihr Kurs technisch aufgebaut ist, können Sie wie folgt vorgehen
 
 #### Kurse mit LMS-Integration (z.B. OLAT)
 
-Öffnen Sie das KlickerUZH-Modul im OLAT-Kurs Ihrer Lehrveranstaltung.
+Öffnen Sie das KlickerUZH-Modul im OLAT-Kurs Ihrer Lehrveranstaltung.  Um Ihr KlickerUZH-Konto zu verwalten oder ein Neues zu erstellen, klicken Sie auf "Konto verwalten" innerhalb des KlickerUZH-Moduls.
 
 ![](/img_v3/01_account_erstellen.png)
 

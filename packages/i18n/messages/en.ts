@@ -303,7 +303,7 @@ Depending on the technical set up of your course, you can proceed as follows:
 
 #### Courses with LMS integration (e.g., OLAT)
 
-Open the KlickerUZH module in the OLAT course of your lecture.
+Open the KlickerUZH module in the OLAT course of your lecture. To manage your KlickerUZH account or create a new one, click on "Manage account" within the KlickerUZH module.
 
 ![](/img_v3/01_create_account.png)
 
