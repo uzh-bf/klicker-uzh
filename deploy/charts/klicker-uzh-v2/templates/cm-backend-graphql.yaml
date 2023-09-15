@@ -8,7 +8,7 @@ metadata:
 data:
   API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
   NOTIFICATION_URL: {{ .Values.backendGraphql.notifications.url | quote }}
-  NOTIFICATION_SUPPORT_EMAIL: {{ .Values.backendGraphql.notifications.supportEmail | quote }}
+  NOTIFICATION_SUPPORT_MAIL: {{ .Values.backendGraphql.notifications.supportEmail | quote }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
   CRON_TOKEN: {{ .Values.cron.token | quote }}
   REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
