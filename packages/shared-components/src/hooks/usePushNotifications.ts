@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core'
+import { PushNotifications, Token } from '@capacitor/push-notifications'
 import { useEffect, useState } from 'react'
 import {
   determineInitialSubscriptionState,
@@ -26,15 +28,17 @@ const usePushNotifications = ({
   const [subscription, setSubscription] = useState<PushSubscription | null>(
     null
   )
+  const [token, setToken] = useState<string | null>(null)
 
   // This is necessary to make sure navigator is defined
   useEffect(() => {
     determineInitialSubscriptionState()
-      .then(({ disabled, info, reg, sub }) => {
+      .then(({ disabled, info, reg, sub, token }) => {
         setPushDisabled(disabled)
         setUserInfo(info)
         setRegistration(reg)
         setSubscription(sub)
+        setToken(token)
       })
       .catch((e) => {
         console.error(
@@ -54,42 +58,70 @@ const usePushNotifications = ({
    * stored on the backend.
    */
   async function subscribeUserToPush(courseId: string) {
-    // There is a valid subscription to the push service
-    if (subscription) {
-      subscribeToPush(subscription, courseId)
-    } else {
-      // There is no valid subscription to the push service
-      try {
-        const newSubscription = await subscribeParticipantToPushService(
-          registration
-        )
-        setSubscription(newSubscription)
+    if (Capacitor.getPlatform() === 'web') {
+      // There is a valid subscription to the push service
+      if (subscription) {
+        subscribeToPush(subscription, courseId)
+      } else {
+        // There is no valid subscription to the push service
+        try {
+          const newSubscription = await subscribeParticipantToPushService(
+            registration
+          )
+          setSubscription(newSubscription)
 
-        // Store new subscription object on the server
-        subscribeToPush(newSubscription, courseId)
-      } catch (e) {
-        console.error(
-          'An error occured while subscribing a user to push notifications: ',
-          e
-        )
-        // Push notifications are disabled
-        if (Notification.permission === 'denied') {
-          setPushDisabled(true)
-          setUserInfo(
-            `Sie haben Push-Benachrichtigungen für diese Applikation deaktiviert. Wenn Sie Push-Benachrichtigungen
+          // Store new subscription object on the server
+          subscribeToPush(newSubscription, courseId)
+        } catch (e) {
+          console.error(
+            'An error occured while subscribing a user to push notifications: ',
+            e
+          )
+          // Push notifications are disabled
+          if (Notification.permission === 'denied') {
+            setPushDisabled(true)
+            setUserInfo(
+              `Sie haben Push-Benachrichtigungen für diese Applikation deaktiviert. Wenn Sie Push-Benachrichtigungen
             abonnieren möchten, aktivieren Sie diese in Ihrem Browser und laden Sie die Seite neu.`
-          )
-          // User has clicked away the prompt without allowing nor blocking
-        } else if (e instanceof DOMException && e.name === 'NotAllowedError') {
-          setUserInfo(
-            'Bitte erlauben Sie Push-Benachrichtigungen für diese Applikation in Ihrem Browser.'
-          )
-          // An error occured
-        } else {
-          console.log('error occured: ', e)
-          setUserInfo(
-            'Beim Versuch, Sie für Push-Benachrichtigungen zu registrieren, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
-          )
+            )
+            // User has clicked away the prompt without allowing nor blocking
+          } else if (
+            e instanceof DOMException &&
+            e.name === 'NotAllowedError'
+          ) {
+            setUserInfo(
+              'Bitte erlauben Sie Push-Benachrichtigungen für diese Applikation in Ihrem Browser.'
+            )
+            // An error occured
+          } else {
+            console.log('error occured: ', e)
+            setUserInfo(
+              'Beim Versuch, Sie für Push-Benachrichtigungen zu registrieren, ist ein Fehler aufgetreten. Bitte versuchen Sie es später noch einmal.'
+            )
+          }
+        }
+      }
+    } else {
+      // there exists already an APNS / FCM token
+      if (token) {
+        subscribeNativeDeviceToPush(token, courseId)
+      } else {
+        // register device for push notifications
+        try {
+          PushNotifications.register()
+          // On success, we should be able to receive notifications
+          PushNotifications.addListener('registration', (newToken: Token) => {
+            console.log('Push registration success, token: ' + newToken.value)
+            subscribeNativeDeviceToPush(newToken, courseId)
+          })
+
+          // Some issue with our setup and push will not work
+          PushNotifications.addListener('registrationError', (error: any) => {
+            console.log('Error on registration: ' + JSON.stringify(error))
+            throw error
+          })
+        } catch (error) {
+          console.log('Error on registration: ' + JSON.stringify(error))
         }
       }
     }
@@ -100,13 +132,21 @@ const usePushNotifications = ({
    * removed from the browser's push service as well as from the backend.
    */
   async function unsubscribeUserFromPush(courseId: string) {
-    if (subscription) {
-      // remove subscription from browser's push service
-      await subscription.unsubscribe()
-      setSubscription(null)
+    if (Capacitor.getPlatform() === 'web') {
+      if (subscription) {
+        // remove subscription from browser's push service
+        await subscription.unsubscribe()
+        setSubscription(null)
 
-      // remove subscription from backend
-      unsubscribeFromPush(subscription, courseId)
+        // remove subscription from backend
+        unsubscribeFromPush(subscription, courseId)
+      }
+    } else {
+      if (token) {
+        PushNotifications.unregister()
+        setToken(null)
+        unsubsubscribeNativeDeviceFromPush(token, courseId)
+      }
     }
   }
 

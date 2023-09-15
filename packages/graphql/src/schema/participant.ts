@@ -203,7 +203,8 @@ export const PushSubscription = builder.prismaObject('PushSubscription', {
   fields: (t) => ({
     id: t.exposeInt('id'),
 
-    endpoint: t.exposeString('endpoint', { nullable: false }),
+    endpoint: t.exposeString('endpoint', { nullable: true }),
+    token: t.exposeString('token', { nullable: true }),
   }),
 })
 

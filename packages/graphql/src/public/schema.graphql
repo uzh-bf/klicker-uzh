@@ -435,10 +435,12 @@ type Mutation {
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
+  subscribeNativeDeviceToPush(courseId: String!, token: String!): Participation
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Question!]
   triggerMigration(token: String!): Boolean
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
+  unsubsubscribeNativeDeviceFromPush(courseId: String!, token: String!): Boolean
   updateGroupAverageScores: Boolean!
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, email: String, isProfilePublic: Boolean, password: String, username: String): Participant
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
@@ -575,8 +577,9 @@ type Participation {
 }
 
 type PushSubscription {
-  endpoint: String!
+  endpoint: String
   id: Int!
+  token: String
 }
 
 type Query {

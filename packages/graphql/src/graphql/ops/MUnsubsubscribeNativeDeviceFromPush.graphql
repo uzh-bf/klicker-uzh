@@ -1,0 +1,6 @@
+mutation UnsubsubscribeNativeDeviceFromPush(
+  $courseId: String!
+  $token: String!
+) {
+  unsubsubscribeNativeDeviceFromPush(courseId: $courseId, token: $token)
+}

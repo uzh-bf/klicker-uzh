@@ -6,8 +6,8 @@ const config: CapacitorConfig = {
   //needed, otherwise there is no capacity.settings.gradle created, and hence, the build in android studio fails
   webDir: '.next',
   server: {
-    // url: 'https://pwa.klicker.uzh.ch',
-    url: 'http://pwa.klicker.com',
+    url: 'https://pwa.klicker.uzh.ch',
+    // url: 'http://pwa.klicker.com',
     cleartext: true,
   },
 }

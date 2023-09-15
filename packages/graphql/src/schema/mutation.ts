@@ -356,6 +356,32 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      subscribeNativeDeviceToPush: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: Participation,
+        args: {
+          token: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return NotificationService.subscribeNativeDeviceToPush(args, ctx)
+        },
+      }),
+
+      unsubsubscribeNativeDeviceFromPush: t.withAuth(asParticipant).boolean({
+        nullable: true,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          token: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return NotificationService.unsubsubscribeNativeDeviceFromPush(
+            args,
+            ctx
+          )
+        },
+      }),
+
       submitGroupActivityDecisions: t.withAuth(asParticipant).field({
         nullable: true,
         type: GroupActivityInstance,

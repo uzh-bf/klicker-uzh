@@ -1,5 +1,8 @@
 import { MicroSession, MicroSessionStatus } from '@klicker-uzh/prisma'
+import { messaging } from 'firebase-admin'
+import { cert, initializeApp } from 'firebase-admin/app'
 import { GraphQLError } from 'graphql'
+import { PushSubscription } from 'src/ops'
 import webpush from 'web-push'
 import { Context, ContextWithUser } from '../lib/context'
 import { formatDate } from '../lib/util'
@@ -193,5 +196,111 @@ async function sendPushNotificationsToSubscribers(
         }
       }
     }
+  }
+}
+
+async function sendPushNotificationsToSubscribersNativeDevices(
+  microSession: MicroSession,
+  ctx: Context
+) {
+  const app = initializeApp({
+    credential: cert(
+      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT as string)
+    ),
+  })
+
+  // TODO: only max 500 tokens per request allowed
+  const registrationTokens: string[] =
+    microsSessions.course.subscriptions.flatMap((sub: PushSubscription) => {
+      sub.token ? sub.token : []
+    })
+  const formattedDate = formatDate(microSession.scheduledEndAt)
+  const message = {
+    notification: {
+      title: `KlickerUZH - New Microlearning available for the course ${microSession.course.name}`,
+      body: `Microlearning ${microSession.displayName} for ${microSession.course.displayName} is available until ${formattedDate.date} at ${formattedDate.time}.`,
+    },
+    tokens: registrationTokens,
+  }
+
+  messaging()
+    .sendEachForMulticast(message)
+    .then((response) => {
+      if (response.failureCount > 0) {
+        const failedTokens: string[] = []
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success) {
+            failedTokens.push(registrationTokens[idx])
+          }
+        })
+        console.log('List of tokens that caused failures: ' + failedTokens)
+      }
+    })
+}
+
+interface SubscribeNativeDeviceToPushArgs {
+  token: string
+  courseId: string
+}
+
+export async function subscribeNativeDeviceToPush(
+  { token, courseId }: SubscribeNativeDeviceToPushArgs,
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.participation.update({
+    where: {
+      courseId_participantId: { courseId, participantId: ctx.user.sub },
+    },
+    data: {
+      subscriptions: {
+        upsert: {
+          where: {
+            participantId_courseId_token: {
+              participantId: ctx.user.sub,
+              courseId,
+              token: token,
+            },
+          },
+          create: {
+            token: token,
+            course: { connect: { id: courseId } },
+            participant: { connect: { id: ctx.user.sub } },
+          },
+          update: {},
+        },
+      },
+    },
+    include: {
+      subscriptions: true,
+    },
+  })
+}
+
+interface UnsubscribeNativeDeviceFromPushArgs {
+  courseId: string
+  token: string
+}
+
+export async function unsubsubscribeNativeDeviceFromPush(
+  { courseId, token }: UnsubscribeNativeDeviceFromPushArgs,
+  ctx: ContextWithUser
+) {
+  try {
+    await ctx.prisma.pushSubscription.delete({
+      where: {
+        participantId_courseId_endpoint: {
+          participantId: ctx.user.sub,
+          courseId,
+          token,
+        },
+      },
+    })
+    return true
+  } catch (error) {
+    console.error(
+      'An error occured while trying to unsubscribe from push notifications: ',
+      error
+    )
+    return false
   }
 }

@@ -19,6 +19,7 @@
     "axios": "1.4.0",
     "bcryptjs": "2.4.3",
     "dayjs": "1.11.9",
+    "firebase-admin": "^11.10.1",
     "generate-password": "1.7.0",
     "graphql": "16.7.1",
     "graphql-scalars": "1.22.2",
