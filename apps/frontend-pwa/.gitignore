@@ -39,6 +39,7 @@ public/sw*.js*
 public/workbox-*.js*
 public/fallback*.js*
 public/worker*.js
+public/firebase-messaging-sw*.js
 
 src/testPush.js
 

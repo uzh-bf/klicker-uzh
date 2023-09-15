@@ -66,7 +66,6 @@ function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
 function getNextPWAConfig({ NODE_ENV }) {
   return {
     dest: 'public',
-    sw: 'firebase-messaging-sw.js',
     skipWaiting: true,
     dynamicStartUrlRedirect: true,
     // disable: NODE_ENV === 'development',
