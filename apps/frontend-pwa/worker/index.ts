@@ -1,54 +1,54 @@
 'use strict'
 
-import { initializeApp } from "firebase/app";
-import { getMessaging } from "firebase/messaging/sw";
+import { initializeApp } from 'firebase/app'
+import { getMessaging } from 'firebase/messaging/sw'
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCrbnYUMBKIqUZJAa8fyjnkdA_plbSIXaQ",
-    authDomain: "klicker-uzh.firebaseapp.com",
-    projectId: "klicker-uzh",
-    storageBucket: "klicker-uzh.appspot.com",
-    messagingSenderId: "799601783728",
-    appId: "1:799601783728:web:45a0cc6d112efa7bd2dc75",
-    measurementId: "G-YYFTPPKX63"
-};
+  apiKey: 'AIzaSyCrbnYUMBKIqUZJAa8fyjnkdA_plbSIXaQ',
+  authDomain: 'klicker-uzh.firebaseapp.com',
+  projectId: 'klicker-uzh',
+  storageBucket: 'klicker-uzh.appspot.com',
+  messagingSenderId: '799601783728',
+  appId: '1:799601783728:web:45a0cc6d112efa7bd2dc75',
+  measurementId: 'G-YYFTPPKX63',
+}
 
-const firebaseApp = initializeApp(firebaseConfig);
+const firebaseApp = initializeApp(firebaseConfig)
 const messaging = getMessaging(firebaseApp)
 
 messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Received background message ', payload);
-    // Customize notification here
-    const notificationTitle = payload.notification.title;
-    const notificationOptions = {
-      body: payload.notification.body,
-    };
-  
-    registration.showNotification(notificationTitle,
-      notificationOptions);
-    }
-);
+  console.log(
+    '[firebase-messaging-sw.js] Received background message ',
+    payload
+  )
+  // Customize notification here
+  const notificationTitle = payload.notification.title
+  const notificationOptions = {
+    body: payload.notification.body,
+  }
+
+  registration.showNotification(notificationTitle, notificationOptions)
+})
 
 self.addEventListener('notificationclick', function (event) {
-    event.notification.close()
-    event.waitUntil(
-      clients
-        .matchAll({ type: 'window', includeUncontrolled: true })
-        .then(function (clientList) {
-          if (clientList.length > 0) {
-            let client = clientList[0]
-            for (let i = 0; i < clientList.length; i++) {
-              if (clientList[i].focused) {
-                client = clientList[i]
-              }
+  event.notification.close()
+  event.waitUntil(
+    clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then(function (clientList) {
+        if (clientList.length > 0) {
+          let client = clientList[0]
+          for (let i = 0; i < clientList.length; i++) {
+            if (clientList[i].focused) {
+              client = clientList[i]
             }
-            return client.focus()
           }
-          return clients.openWindow('/')
-        })
-    )
-  }
-)
+          return client.focus()
+        }
+        return clients.openWindow('/')
+      })
+  )
+})
 // self.addEventListener('push', function (event) {
 //   console.log(event)
 //   const data = event.data.json()
