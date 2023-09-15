@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.56...v3.0.0-rc.57) (2023-09-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** update WEB PUSH PUBLIC KEY ([be63841](https://github.com/uzh-bf/klicker-uzh/commit/be6384180dfb0e2efee40b26470a17af532424f9))
+* **deploy:** NOTIFICATION_SUPPORT_MAIL ([4892e9e](https://github.com/uzh-bf/klicker-uzh/commit/4892e9e00860a5e9c4b75af3d8a0bc058e412340))
+
 ## [3.0.0-rc.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.55...v3.0.0-rc.56) (2023-09-14)
 
 
