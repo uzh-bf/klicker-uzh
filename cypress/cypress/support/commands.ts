@@ -27,8 +27,9 @@ Cypress.Commands.add('loginLecturer', () => {
     if (btn.is('disabled')) {
       cy.get('button[data-cy="tos-checkbox"]').click()
     }
-    btn.click()
   })
+
+  cy.get('[data-cy="delegated-login-button"').click()
 
   cy.get('[data-cy="identifier-field"]').type(
     Cypress.env('LECTURER_IDENTIFIER')
