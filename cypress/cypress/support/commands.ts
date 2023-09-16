@@ -20,7 +20,7 @@ Cypress.Commands.add('loginLecturer', () => {
   cy.clearAllLocalStorage()
 
   cy.get('[data-cy="delegated-login-button"').then((btn) => {
-    if (btn.is('disabled')) {
+    if (btn.is(':disabled')) {
       cy.get('button[data-cy="tos-checkbox"]').click()
     }
   })
