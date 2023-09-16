@@ -2,6 +2,7 @@ query GetSingleCourse($courseId: String!) {
   course(id: $courseId) {
     id
     isArchived
+    isGamificationEnabled
     pinCode
     name
     displayName
