@@ -87,6 +87,10 @@ describe('Create questions', () => {
       cy.get('[data-cy="insert-answer-field"]').click().type('50%')
       cy.get('[data-cy="add-new-answer"]').click({ force: true })
       cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+      cy.get('[data-cy="add-new-answer"]').click({ force: true })
+      cy.get('[data-cy="insert-answer-field"]').eq(2).click().type('75%')
+      cy.get('[data-cy="add-new-answer"]').click({ force: true })
+      cy.get('[data-cy="insert-answer-field"]').eq(3).click().type('60%')
       cy.get('[data-cy="save-new-question"]').click({ force: true })
 
       cy.contains('[data-cy="question-block"]', questionTitle)
