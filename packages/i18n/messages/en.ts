@@ -860,7 +860,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Select an order in which the questions are to be solved by the students.',
       learningElemenSelectOrder: 'Select order',
       learningElementSEQUENTIAL: 'Sequential',
-      learningElementSHUFFLED: 'Shuffeld',
+      learningElementSHUFFLED: 'Shuffled',
       learningElementLAST_RESPONSE: 'Last response first',
     },
     formErrors: {
