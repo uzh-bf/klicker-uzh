@@ -19,17 +19,13 @@ Cypress.Commands.add('loginLecturer', () => {
   cy.clearAllCookies()
   cy.clearAllLocalStorage()
 
-  cy.wait(1000)
-
-  cy.reload()
-
   cy.get('[data-cy="delegated-login-button"').then((btn) => {
     if (btn.is('disabled')) {
       cy.get('button[data-cy="tos-checkbox"]').click()
     }
   })
 
-  cy.get('[data-cy="delegated-login-button"').click()
+  cy.get('[data-cy="delegated-login-button"').should('be.enabled').click()
 
   cy.get('[data-cy="identifier-field"]').type(
     Cypress.env('LECTURER_IDENTIFIER')
