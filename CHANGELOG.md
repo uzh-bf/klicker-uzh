@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.57...v3.0.0-rc.58) (2023-09-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** fix catalyst links ([9da5607](https://github.com/uzh-bf/klicker-uzh/commit/9da5607a698ecccc7c5502ce057b5e9119bba43d))
+* **apps/frontend-pwa:** prose on course information text ([c1b8b3b](https://github.com/uzh-bf/klicker-uzh/commit/c1b8b3b6515f14a3181852cbaee9361481256d87))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** ensure that there are exactly four answers for kprim questions ([#3842](https://github.com/uzh-bf/klicker-uzh/issues/3842)) ([0f762f2](https://github.com/uzh-bf/klicker-uzh/commit/0f762f238a1469c288c299571accd330323e5762))
+* **apps/frontend-manage:** gamification displayed on course details page, hide leaderboard if disabled ([1cc8d7a](https://github.com/uzh-bf/klicker-uzh/commit/1cc8d7af27ee50446d522c76970de13521145a2b))
+* **apps/frontend-manage:** improve multistep wizard layout ([2764e6d](https://github.com/uzh-bf/klicker-uzh/commit/2764e6d06bb87c7a127ea096e4497fce8dc3be05))
+
 ## [3.0.0-rc.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.56...v3.0.0-rc.57) (2023-09-15)
 
 
