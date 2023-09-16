@@ -860,7 +860,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Select an order in which the questions are to be solved by the students.',
       learningElemenSelectOrder: 'Select order',
       learningElementSEQUENTIAL: 'Sequential',
-      learningElementSHUFFLED: 'Shuffeld',
+      learningElementSHUFFLED: 'Shuffled',
       learningElementLAST_RESPONSE: 'Last response first',
     },
     formErrors: {
@@ -881,6 +881,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter at least one solution of deactivate the sample solution.',
       NRPrecision: 'The number of decimal places must be at least 0.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',
+      NumberQuestionsRequired: 'At least one answer option must be given',
+      NumberQuestionsRequiredKPRIM:
+        'There must be exactly four answer options for Kprim questions',
     },
     sessions: {
       runningSessions: 'Running Live Quizzes',
