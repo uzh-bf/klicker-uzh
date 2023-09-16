@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "799601783728",
+    "project_id": "klicker-uzh",
+    "storage_bucket": "klicker-uzh.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:799601783728:android:c6f42fd062a89319d2dc75",
+        "android_client_info": {
+          "package_name": "ch.uzh.bf.klicker.pwa"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "799601783728-vpdmudpahnfkuokeru6kffb7b0oliagk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnrWfaGYimPBQf3Xz8kciEPsW-wv7XNj0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "799601783728-vpdmudpahnfkuokeru6kffb7b0oliagk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

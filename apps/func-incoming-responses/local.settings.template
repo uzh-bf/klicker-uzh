@@ -11,7 +11,7 @@
     "SERVICE_BUS_QUEUE_NAME": ""
   },
   "Host": {
-    "CORS": "http://pwa.klicker.local",
+    "CORS": "http://pwa.klicker.com",
     "CORSCredentials": true
   }
 }

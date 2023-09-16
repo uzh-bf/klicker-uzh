@@ -271,7 +271,7 @@ function CourseOverviewPage() {
                   link: () => (
                     <a
                       target="_blank"
-                      href={`https://www.klicker.uzh.ch/catalyst}`}
+                      href="https://www.klicker.uzh.ch/catalyst"
                       className="underline"
                     >
                       www.klicker.uzh.ch/catalyst
@@ -305,7 +305,7 @@ function CourseOverviewPage() {
                   link: () => (
                     <a
                       target="_blank"
-                      href={`https://www.klicker.uzh.ch/catalyst}`}
+                      href="https://www.klicker.uzh.ch/catalyst"
                       className="underline"
                     >
                       www.klicker.uzh.ch/catalyst

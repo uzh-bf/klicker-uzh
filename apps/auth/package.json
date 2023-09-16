@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/auth",
-  "version": "3.0.0-beta.4",
+  "version": "3.0.0-rc.48",
   "license": "AGPL-3.0",
   "dependencies": {
     "@klicker-uzh/i18n": "workspace:*",
@@ -8,7 +8,7 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@next-auth/prisma-adapter": "1.0.7",
-    "@uzh-bf/design-system": "2.1.1",
+    "@uzh-bf/design-system": "2.1.4",
     "bcryptjs": "2.4.3",
     "js-cookie": "3.0.5",
     "jsonwebtoken": "9.0.1",

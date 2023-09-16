@@ -98,7 +98,7 @@ const CredentialProvider: Provider = CredentialsProvider({
 
   credentials: {
     identifier: {
-      label: 'Identifier',
+      label: 'Shortname of Main Account',
       type: 'text',
       placeholder: 'banking23',
       required: true,

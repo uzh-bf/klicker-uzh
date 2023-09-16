@@ -23,7 +23,7 @@ function Landing() {
     <DocsLayout>
       {(courseInformation) => (
         <DynamicMarkdown
-          className={{ root: 'prose-headings:mt-0' }}
+          className={{ root: 'prose-headings:mt-0 prose-p:mt-0' }}
           content={
             courseInformation.description ?? t('pwa.studentDocs.pageList')
           }
