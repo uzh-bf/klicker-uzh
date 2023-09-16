@@ -184,7 +184,11 @@ function CourseOverview({ courseId }: Props) {
               <H3 className={{ root: 'mb-4' }}>
                 {t('pwa.courses.courseInformation')}
               </H3>
-              <DynamicMarkdown content={course.description} />
+              <DynamicMarkdown
+                withProse
+                className={{ root: 'prose-headings:mt-0 prose-p:mt-0' }}
+                content={course.description}
+              />
             </Tabs.TabContent>
           )}
 
