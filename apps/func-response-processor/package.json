@@ -43,7 +43,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prestart": "pnpm run build",
-    "start": "func start -p 7073"
+    "start": "func start -p 7073",
+    "start:test": "func start -p 7073"
   },
   "engines": {
     "node": "=18"
