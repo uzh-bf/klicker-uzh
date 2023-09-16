@@ -23,6 +23,8 @@ import EditorField from './EditorField'
 import MultistepWizard, { LearningElementFormValues } from './MultistepWizard'
 
 interface LearningElementWizardProps {
+  title: string
+  closeWizard: () => void
   courses: {
     label: string
     value: string
@@ -31,6 +33,8 @@ interface LearningElementWizardProps {
 }
 
 function LearningElementWizard({
+  title,
+  closeWizard,
   courses,
   initialValues,
 }: LearningElementWizardProps) {
@@ -168,6 +172,8 @@ function LearningElementWizard({
   return (
     <div>
       <MultistepWizard
+        title={title}
+        onCloseWizard={closeWizard}
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode

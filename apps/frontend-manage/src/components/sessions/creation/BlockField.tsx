@@ -42,13 +42,13 @@ function BlockField({ fieldName }: BlockFieldProps) {
             </div>
           )}
         </FieldArray>
+        {meta.error && (
+          <div className="text-sm text-red-400 px-2">
+            <WizardErrorMessage fieldName="questions" />
+            {typeof meta.error === 'string' && meta.error}
+          </div>
+        )}
       </div>
-      {meta.error && (
-        <div className="text-sm text-red-400">
-          <WizardErrorMessage fieldName="questions" />
-          {typeof meta.error === 'string' && meta.error}
-        </div>
-      )}
     </div>
   )
 }

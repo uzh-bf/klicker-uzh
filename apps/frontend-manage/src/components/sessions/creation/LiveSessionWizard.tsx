@@ -12,7 +12,6 @@ import {
   FormikSelectField,
   FormikSwitchField,
   FormikTextField,
-  H3,
 } from '@uzh-bf/design-system'
 import { ErrorMessage, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -25,6 +24,7 @@ import MultistepWizard, { LiveSessionFormValues } from './MultistepWizard'
 import SessionBlockField from './SessionBlockField'
 
 interface LiveSessionWizardProps {
+  title: string
   courses?: {
     label: string
     value: string
@@ -32,13 +32,16 @@ interface LiveSessionWizardProps {
   initialValues?: Partial<Session>
   selection: Record<number, Question>
   resetSelection: () => void
+  closeWizard: () => void
 }
 
 function LiveSessionWizard({
+  title,
   courses,
   initialValues,
   selection,
   resetSelection,
+  closeWizard,
 }: LiveSessionWizardProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -186,6 +189,8 @@ function LiveSessionWizard({
   return (
     <div>
       <MultistepWizard
+        title={title}
+        onCloseWizard={closeWizard}
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
@@ -331,7 +336,6 @@ function StepTwo(props: StepProps) {
 
   return (
     <>
-      <H3 className={{ root: 'mb-0' }}>{t('shared.generic.settings')}</H3>
       {props.courses && (
         <div className="flex flex-row items-center gap-4">
           <FormikSelectField

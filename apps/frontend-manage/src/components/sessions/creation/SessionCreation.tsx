@@ -13,7 +13,6 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import CreationTitle from './CreationTitle'
 import LearningElementWizard from './LearningElementWizard'
 import LiveSessionWizard from './LiveSessionWizard'
 import MicroSessionWizard from './MicroSessionWizard'
@@ -72,53 +71,38 @@ function SessionCreation({
     <div className="flex flex-col justify-center print-hidden">
       <div className="w-full h-full rounded-lg">
         {creationMode === 'liveSession' && (
-          <>
-            <CreationTitle
-              text={t('shared.generic.liveSession')}
-              editMode={!!editMode}
-              closeWizard={closeWizard}
-            />
-            <LiveSessionWizard
-              courses={courseSelection || [{ label: '', value: '' }]}
-              initialValues={
-                (dataLiveSession?.liveSession as Session) ?? undefined
-              }
-              selection={selection}
-              resetSelection={resetSelection}
-            />
-          </>
+          <LiveSessionWizard
+            title={t('shared.generic.liveSession')}
+            closeWizard={closeWizard}
+            courses={courseSelection || [{ label: '', value: '' }]}
+            initialValues={
+              (dataLiveSession?.liveSession as Session) ?? undefined
+            }
+            selection={selection}
+            resetSelection={resetSelection}
+          />
         )}
         {creationMode === 'microSession' && (
-          <>
-            <CreationTitle
-              text={t('shared.generic.microlearning')}
-              editMode={!!editMode}
-              closeWizard={closeWizard}
-            />
-            <MicroSessionWizard
-              courses={courseSelection || [{ label: '', value: '' }]}
-              initialValues={
-                (dataMicroSession?.singleMicroSession as MicroSession) ??
-                undefined
-              }
-            />
-          </>
+          <MicroSessionWizard
+            title={t('shared.generic.microlearning')}
+            closeWizard={closeWizard}
+            courses={courseSelection || [{ label: '', value: '' }]}
+            initialValues={
+              (dataMicroSession?.singleMicroSession as MicroSession) ??
+              undefined
+            }
+          />
         )}
         {creationMode === 'learningElement' && (
-          <>
-            <CreationTitle
-              text={t('shared.generic.learningElement')}
-              editMode={!!editMode}
-              closeWizard={closeWizard}
-            />
-            <LearningElementWizard
-              courses={courseSelection || [{ label: '', value: '' }]}
-              initialValues={
-                (dataLearningElement?.learningElement as LearningElement) ??
-                undefined
-              }
-            />
-          </>
+          <LearningElementWizard
+            title={t('shared.generic.learningElement')}
+            closeWizard={closeWizard}
+            courses={courseSelection || [{ label: '', value: '' }]}
+            initialValues={
+              (dataLearningElement?.learningElement as LearningElement) ??
+              undefined
+            }
+          />
         )}
       </div>
     </div>

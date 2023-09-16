@@ -50,10 +50,10 @@ function SessionBlockField({
             </>
           )}
         </FieldArray>
-      </div>
-      <div className="text-sm text-red-400">
-        <WizardErrorMessage fieldName="blocks" />
-        {typeof meta.error === 'string' && meta.error}
+        <div className="text-sm text-red-400 px-4">
+          <WizardErrorMessage fieldName="blocks" />
+          {typeof meta.error === 'string' && meta.error}
+        </div>
       </div>
     </>
   )
