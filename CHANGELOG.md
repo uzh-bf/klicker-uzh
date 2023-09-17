@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.11](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.10...v1.8.11) (2023-09-17)
+
+
+### Other
+
+* add python version file to ensure successful gyp install ([ee1706e](https://github.com/uzh-bf/klicker-uzh/commit/ee1706e0b7930909a5f0547e4a5a0fbe66076e51))
+* update survey banner ([f3bf231](https://github.com/uzh-bf/klicker-uzh/commit/f3bf23106439f9c83538332af4477434adcc9247))
+
 ### [1.8.10](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.9...v1.8.10) (2023-07-15)
 
 
