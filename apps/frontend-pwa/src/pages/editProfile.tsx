@@ -190,7 +190,7 @@ function EditProfile() {
                       </H3>
                       <div className="space-y-3 mb-2">
                         <FormikTextField
-                          disabled={!!values.email}
+                          disabled={data.self?.email !== '' && !!values.email}
                           name="email"
                           label={t('shared.generic.email')}
                           labelType="small"
