@@ -35,6 +35,7 @@ import Tabs from '../../../components/common/Tabs'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 
+import LeaveLeaderboardModal from '@components/participant/LeaveLeaderboardModal'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import dayjs from 'dayjs'
 import Rank1Img from 'public/rank1.svg'
@@ -53,6 +54,7 @@ function CourseOverview({ courseId }: Props) {
   const [selectedTab, setSelectedTab] = useState('global')
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
+  const [isLeaveCourseModalOpen, setIsLeaveCourseModalOpen] = useState(false)
 
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
@@ -206,7 +208,7 @@ function CourseOverview({ courseId }: Props) {
                       leaderboard={leaderboard || []}
                       activeParticipation={participation?.isActive}
                       onJoin={joinCourse}
-                      onLeave={leaveCourse}
+                      onLeave={() => setIsLeaveCourseModalOpen(true)}
                       participant={participant ?? undefined}
                       onParticipantClick={openProfileModal}
                       podiumImgSrc={{
@@ -601,6 +603,14 @@ function CourseOverview({ courseId }: Props) {
           />
         )}
       </div>
+      <LeaveLeaderboardModal
+        isModalOpen={isLeaveCourseModalOpen}
+        setIsModalOpen={setIsLeaveCourseModalOpen}
+        onConfirm={() => {
+          leaveCourse()
+          setIsLeaveCourseModalOpen(false)
+        }}
+      />
     </Layout>
   )
 }

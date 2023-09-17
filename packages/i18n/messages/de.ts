@@ -379,6 +379,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage.',
       awards: 'Auszeichnungen',
       open: 'offen',
+      leaveCourseTitle: 'Leaderboard verlassen',
+      leaveCourseConfirmation:
+        'Möchten Sie das Leaderboard wirklich verlassen?',
+      leaveCourseInformation:
+        'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
     },
     joinCourse: {
       title: 'Kurs "{name}" beitreten',

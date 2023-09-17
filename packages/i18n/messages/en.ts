@@ -379,6 +379,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.',
       awards: 'Awards',
       open: 'open',
+      leaveCourseTitle: 'Leave Leaderboard',
+      leaveCourseConfirmation:
+        'Are you sure you want to leave the course leaderboard?',
+      leaveCourseInformation:
+        'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
     },
     joinCourse: {
       title: 'Join Course "{name}"',
