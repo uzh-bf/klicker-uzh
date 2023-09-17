@@ -77,6 +77,7 @@ function QuestionEvaluation({
           )}
         >
           <Select
+            contentPosition="popper"
             className={{ root: 'w-full mt-2', trigger: 'border-slate-400' }}
             items={ACTIVE_CHART_TYPES[currentInstance.questionData.type].map(
               (item) => {

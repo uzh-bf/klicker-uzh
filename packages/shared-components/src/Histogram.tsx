@@ -5,6 +5,7 @@ import {
 import { maxBy, minBy, round, sumBy } from 'lodash'
 import React, { useMemo, useState } from 'react'
 // TODO: replace lodash with ramda
+import { NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import {
   Bar,
@@ -56,7 +57,17 @@ function Histogram({
   className,
 }: HistogramProps): React.ReactElement {
   const t = useTranslations()
-  const [numBins, setNumBins] = useState(20)
+  const [numBins, setNumBins] = useState('20')
+
+  const binCount = useMemo(() => {
+    const binCount = parseInt(numBins)
+
+    if (isNaN(binCount)) {
+      return 20
+    }
+
+    return binCount
+  }, [numBins])
 
   const questionData = data.questionData as NumericalQuestionData
 
@@ -79,8 +90,8 @@ function Histogram({
         ? questionData.options.restrictions['max']
         : (maxBy(mappedData, 'value')?.value || 0) + 10
 
-    let dataArray = Array.from({ length: numBins }, (_, i) => ({
-      value: min + (max - min) * (i / numBins) + (max - min) / (2 * numBins),
+    let dataArray = Array.from({ length: binCount }, (_, i) => ({
+      value: min + (max - min) * (i / binCount) + (max - min) / (2 * binCount),
     }))
 
     dataArray = dataArray.map((bin) => {
@@ -108,7 +119,7 @@ function Histogram({
     })
 
     return { data: dataArray, domain: { min: min, max: max } }
-  }, [data.results, numBins, questionData.options.restrictions])
+  }, [data.results, binCount, questionData.options.restrictions])
 
   return (
     <div className={twMerge('h-[calc(100%-4rem)] mt-1', className?.root)}>
@@ -277,14 +288,12 @@ function Histogram({
 
       {!hideBins && (
         <div className="flex flex-row items-center float-right gap-2 mr-4">
-          <div className="font-bold">
-            {t('manage.evaluation.histogramBins')}:
-          </div>
-          <input
-            className="rounded-md"
-            type="number"
+          <NumberField
+            precision={0}
+            id="histogramBins"
+            label={t('manage.evaluation.histogramBins')}
             value={numBins}
-            onChange={(e) => setNumBins(+e.target.value)}
+            onChange={setNumBins}
           />
         </div>
       )}
