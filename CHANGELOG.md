@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.59...v3.0.0-rc.60) (2023-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** NumberField for bin count ([c759c68](https://github.com/uzh-bf/klicker-uzh/commit/c759c68f921480b656016c3c822dfacdc6637273))
+
+
+### Dependencies
+
+* upgrade turbo ([fd19c63](https://github.com/uzh-bf/klicker-uzh/commit/fd19c63841e94eeb8fe9168303c7202836060264))
+
 ## [3.0.0-rc.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.58...v3.0.0-rc.59) (2023-09-17)
 
 
