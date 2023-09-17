@@ -289,11 +289,14 @@ function Histogram({
       {!hideBins && (
         <div className="flex flex-row items-center float-right gap-2 mr-4">
           <NumberField
-            precision={0}
+            // precision={0}
             id="histogramBins"
             label={t('manage.evaluation.histogramBins')}
             value={numBins}
-            onChange={setNumBins}
+            onChange={(value) => {
+              console.log(value)
+              setNumBins(value)
+            }}
           />
         </div>
       )}
