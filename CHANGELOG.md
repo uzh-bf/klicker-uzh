@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.58...v3.0.0-rc.59) (2023-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** cancel session refetches related queries ([dafffd3](https://github.com/uzh-bf/klicker-uzh/commit/dafffd3b8367fce1805c2c741fc387255c90d590))
+* **apps/func-*:** ensure only participant logins are processed in response functions ([1cc7de6](https://github.com/uzh-bf/klicker-uzh/commit/1cc7de6da9e26803c70cd7400d7131a9cdb42445))
+* **packages/graphql:** cancel session should delete cache ([2ed9ad8](https://github.com/uzh-bf/klicker-uzh/commit/2ed9ad823821a8525fb539d48c3041ca1aa01e81))
+* **packages/graphql:** use update instead of updateMany for cancelSession ([ab52871](https://github.com/uzh-bf/klicker-uzh/commit/ab52871801dcca7a20f77c364a5c7e20336048b5))
+
 ## [3.0.0-rc.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.57...v3.0.0-rc.58) (2023-09-16)
 
 
