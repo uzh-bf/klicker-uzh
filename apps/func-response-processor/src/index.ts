@@ -74,7 +74,7 @@ const serviceBusTrigger = async function (
       return { status: 400 }
     }
 
-    let participantData: { sub: string } | null = null
+    let participantData: { sub: string; role: string } | null = null
     if (typeof queueItem.cookie === 'string') {
       try {
         const parsedCookies = queueItem.cookie
@@ -89,10 +89,14 @@ const serviceBusTrigger = async function (
 
         participantData = JWT.verify(
           parsedCookies['participant_token'],
-          process.env.APP_SECRET as string
+          process.env.APP_SECRET
         ) as any
 
-        context.log("Participant's JWT verified", participantData)
+        if (participantData.role !== 'PARTICIPANT') {
+          participantData = null
+        } else {
+          context.log("Participant's JWT verified", participantData)
+        }
       } catch (e) {
         context.error('JWT verification failed', e, queueItem.cookie)
         Sentry.captureException(e)
@@ -365,7 +369,7 @@ export default serviceBusTrigger
 // TODO: check how autoCompleteMessages needs to be applied in v4
 app.serviceBusQueue('ProcessResponse', {
   connection: 'SERVICE_BUS_CONNECTION_STRING',
-  queueName: process.env.SERVICE_BUS_QUEUE_NAME as string,
+  queueName: process.env.SERVICE_BUS_QUEUE_NAME,
   isSessionsEnabled: true,
   //autoCompleteMessages: true,
   handler: serviceBusTrigger,

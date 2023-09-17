@@ -14,7 +14,7 @@ Sentry.init()
 const serviceBusClient = getServiceBus()
 
 const serviceBusSender = serviceBusClient.createSender(
-  process.env.SERVICE_BUS_QUEUE_NAME as string
+  process.env.SERVICE_BUS_QUEUE_NAME
 )
 
 const httpTrigger = async function (
@@ -62,10 +62,10 @@ const httpTrigger = async function (
 
       const participantData = JWT.verify(
         parsedCookies['participant_token'],
-        process.env.APP_SECRET as string
+        process.env.APP_SECRET
       )
 
-      if (participantData.sub) {
+      if (participantData.sub && participantData.role === 'PARTICIPANT') {
         messageId = `${participantData.sub}-${body.sessionId}`
       }
     }
