@@ -1776,11 +1776,9 @@ export async function cancelSession(
     }),
 
     ...instances.map((instance) =>
-      ctx.prisma.questionInstance.updateMany({
+      ctx.prisma.questionInstance.update({
         where: {
-          id: {
-            in: instance.id,
-          },
+          id: instance.id,
         },
         data: {
           participants: 0,
