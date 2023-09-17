@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.61...v3.0.0-rc.62) (2023-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** allow input of email if account exists but no email set ([0b1a8e6](https://github.com/uzh-bf/klicker-uzh/commit/0b1a8e6f0722dfc6704867625bc432a817467cd1))
+
 ## [3.0.0-rc.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.60...v3.0.0-rc.61) (2023-09-17)
 
 
