@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.60...v3.0.0-rc.61) (2023-09-17)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add confirmation modal when leaving the course leaderboard ([b6744f2](https://github.com/uzh-bf/klicker-uzh/commit/b6744f2923d08a43e8b6ffe6a891d2ae9ab85aed))
+
 ## [3.0.0-rc.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.59...v3.0.0-rc.60) (2023-09-17)
 
 
