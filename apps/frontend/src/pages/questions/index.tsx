@@ -63,7 +63,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
 
   const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
     true,
-    'klicker-v3-release-announcement'
+    'klicker-v3-release-info'
   )
 
   const [creationMode, setCreationMode] = useState(
@@ -524,11 +524,18 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                 className="rounded-none"
                 content={
                   <>
-                    <div className="font-bold">KlickerUZH v3.0 - Release Announcement</div>
+                    <div className="font-bold">KlickerUZH v3.0 - Release Information</div>
                     <div>
-                      The new KlickerUZH v3.0 will be released on <strong>August 26, 2023</strong>. This version (v2) of
-                      the KlickerUZH will be available until the end of 2023. Refer to our{' '}
-                      <a href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-announcement-26-08-2023/79" rel="noreferrer" target="_blank">
+                      The new KlickerUZH v3.0 has been released (see{' '}
+                      <a href="https://www.klicker.uzh.ch" rel="noreferrer" target="_blank">
+                        www.klicker.uzh.ch
+                      </a>
+                      ). This version (v2) of the KlickerUZH will be available until the end of 2023. Refer to our{' '}
+                      <a
+                        href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-information/79"
+                        rel="noreferrer"
+                        target="_blank"
+                      >
                         community post
                       </a>{' '}
                       for more information.
