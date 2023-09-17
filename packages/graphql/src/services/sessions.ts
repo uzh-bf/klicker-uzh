@@ -66,6 +66,9 @@ export function prepareInitialInstanceResults(
     case QuestionType.FREE_TEXT: {
       return {}
     }
+
+    // default:
+    //   return {}
   }
 }
 
@@ -395,8 +398,6 @@ export async function startSession(
 
       // generate a random pin code
       const pinCode = 100000 + Math.floor(Math.random() * 900000)
-
-      // TODO: if the session is paused, reinitialize and restart
 
       return ctx.prisma.liveSession.update({
         where: {
@@ -1716,10 +1717,10 @@ export async function cancelSession(
     throw new Error('Session is not running')
   }
 
-  const leaderboardEntries = session.blocks
-    .map((block) => block.leaderboard)
-    .flat()
-  const instances = session.blocks.map((block) => block.instances).flat()
+  const leaderboardEntries = session.blocks.flatMap(
+    (block) => block.leaderboard
+  )
+  const instances = session.blocks.flatMap((block) => block.instances)
 
   const [updatedSession] = await ctx.prisma.$transaction([
     ctx.prisma.liveSession.update({
@@ -1789,6 +1790,10 @@ export async function cancelSession(
       })
     ),
   ])
+
+  ctx.redisExec.unlink(`s:${id}:meta`)
+  ctx.redisExec.unlink(`s:${id}:lb`)
+  ctx.redisExec.unlink(`s:${id}:xp`)
 
   return updatedSession as ISession
 }
