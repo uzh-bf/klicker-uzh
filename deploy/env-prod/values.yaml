@@ -54,7 +54,7 @@ services:
     enabled: true
 
 frontend:
-  replicaCount: 4
+  replicaCount: 3
 
   displayAAI: true
 
@@ -83,7 +83,7 @@ frontend:
       maxUnavailable: 50%
 
 backend:
-  replicaCount: 4
+  replicaCount: 3
 
   hostname: api.klicker.uzh.ch
 
