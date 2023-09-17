@@ -219,6 +219,11 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
 
   if (!participant) return false
 
+  ctx.res.cookie('participant_token', 'logoutString', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
+
   await ctx.prisma.participant.delete({
     where: { id: ctx.user.sub },
   })
