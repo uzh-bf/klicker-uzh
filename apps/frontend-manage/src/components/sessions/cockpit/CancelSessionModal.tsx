@@ -1,5 +1,9 @@
 import { useMutation } from '@apollo/client'
-import { CancelSessionDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CancelSessionDocument,
+  GetUserRunningSessionsDocument,
+  GetUserSessionsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -19,6 +23,14 @@ function CancelSessionModal({
 }: CancelSessionModalProps) {
   const [cancelSession] = useMutation(CancelSessionDocument, {
     variables: { id: sessionId },
+    refetchQueries: [
+      {
+        query: GetUserRunningSessionsDocument,
+      },
+      {
+        query: GetUserSessionsDocument,
+      },
+    ],
   })
   const router = useRouter()
   const t = useTranslations()
