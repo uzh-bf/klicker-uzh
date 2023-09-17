@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.63](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.62...v3.0.0-rc.63) (2023-09-17)
+
+
+### Bug Fixes
+
+* **packages/graphql:** logout the participant when deleting the account ([c954fdf](https://github.com/uzh-bf/klicker-uzh/commit/c954fdf7afc7be4a6ed8290b3974e6a3cfbf17ba))
+
 ## [3.0.0-rc.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.61...v3.0.0-rc.62) (2023-09-17)
 
 
