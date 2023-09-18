@@ -24,8 +24,6 @@ export function KPAnswerOptions({
   value,
   onChange,
 }: KPAnswerOptionsProps): React.ReactElement {
-  console.log('KPAnswerOptions - choices: ', choices)
-  console.log('KPAnswerOptions - value: ', value)
   return (
     <div
       className={twMerge(

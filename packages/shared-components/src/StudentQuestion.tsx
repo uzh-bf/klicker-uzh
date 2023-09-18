@@ -101,9 +101,7 @@ export const StudentQuestion = ({
             )
         }
       }
-      console.log('onActiveChoicesChange - inputValue: ', inputValue)
       if (inputValue && type === QuestionType.Mc) {
-        console.log('typeof inputValue: ', typeof inputValue)
         if (typeof inputValue === 'object') {
           setInputState({
             inputEmpty: false,
