@@ -1,7 +1,7 @@
 'use strict'
 
 import { initializeApp } from 'firebase/app'
-import { getMessaging } from 'firebase/messaging/sw'
+import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyCrbnYUMBKIqUZJAa8fyjnkdA_plbSIXaQ',
@@ -16,7 +16,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig)
 const messaging = getMessaging(firebaseApp)
 
-messaging.onBackgroundMessage((payload) => {
+onBackgroundMessage(messaging, (payload) => {
   console.log(
     '[firebase-messaging-sw.js] Received background message ',
     payload
@@ -27,14 +27,14 @@ messaging.onBackgroundMessage((payload) => {
     body: payload.notification.body,
   }
 
-  registration.showNotification(notificationTitle, notificationOptions)
+  self.registration.showNotification(notificationTitle, notificationOptions)
 })
 
 self.addEventListener('notificationclick', function (event) {
   event.notification.close()
   event.waitUntil(
     clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
+      .matchAll({ type: 'wind ow', includeUncontrolled: true })
       .then(function (clientList) {
         if (clientList.length > 0) {
           let client = clientList[0]
