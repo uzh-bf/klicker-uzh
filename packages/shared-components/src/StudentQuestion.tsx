@@ -265,7 +265,11 @@ export const StudentQuestion = ({
               displayMode={currentQuestion.displayMode}
               type={currentQuestion.type}
               choices={currentQuestion.options.choices}
-              value={typeof inputValue !== 'string' ? inputValue : undefined}
+              value={
+                typeof inputValue !== 'string' && !Array.isArray(inputValue)
+                  ? inputValue
+                  : undefined
+              }
               onChange={onActiveChoicesChange(currentQuestion.type)}
             />
           ) : (
