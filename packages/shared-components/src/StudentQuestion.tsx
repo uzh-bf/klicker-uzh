@@ -8,7 +8,7 @@ import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 // eslint-disable-next-line prettier/prettier
-import React from 'react'
+import React, { useEffect } from 'react'
 
 import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
@@ -56,6 +56,32 @@ export const StudentQuestion = ({
   setInputState,
 }: StudentQuestionProps) => {
   const t = useTranslations()
+
+  useEffect(() => {
+    switch (currentQuestion.type) {
+      case QuestionType.Sc:
+      case QuestionType.Mc:
+        setInputState({
+          inputValue: [],
+          inputValid: false,
+          inputEmpty: true,
+        })
+        break
+      case QuestionType.Kprim:
+        setInputState({
+          inputValue: {},
+          inputValid: false,
+          inputEmpty: true,
+        })
+        break
+      default:
+        setInputState({
+          inputValue: '',
+          inputValid: false,
+          inputEmpty: true,
+        })
+    }
+  }, [currentQuestion.type])
 
   const onActiveChoicesChange =
     (type: string): any =>
