@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.65](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.64...v3.0.0-rc.65) (2023-09-19)
+
+
+### Bug Fixes
+
+* **apps/func-response-processor:** always return 200 on ping ([b32986e](https://github.com/uzh-bf/klicker-uzh/commit/b32986ecc92b450f2e4d22b2586803db6c8fe26c))
+
 ## [3.0.0-rc.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.63...v3.0.0-rc.64) (2023-09-19)
 
 
