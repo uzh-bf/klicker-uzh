@@ -149,22 +149,24 @@ function QuestionEditModal({
           }
 
           case 'NUMERICAL': {
-            const baseSolutionRanges = Yup.array().of(
-              Yup.object().shape({
-                min: Yup.number().nullable(),
-                // TODO: min less than max if defined
-                // .when('max', {
-                //   is: (max) => typeof max !== 'undefined',
-                //   then: (schema) => schema.lessThan(Yup.ref('max')),
-                // }),
-                max: Yup.number().nullable(),
-                // TODO: max more than min if defined
-                // .when('min', {
-                //   is: (min) => typeof min !== 'undefined',
-                //   then: (schema) => schema.moreThan(Yup.ref('min')),
-                // }),
-              })
-            )
+            const baseSolutionRanges = Yup.array()
+              .of(
+                Yup.object().shape({
+                  min: Yup.number().nullable(),
+                  // TODO: min less than max if defined
+                  // .when('max', {
+                  //   is: (max) => typeof max !== 'undefined',
+                  //   then: (schema) => schema.lessThan(Yup.ref('max')),
+                  // }),
+                  max: Yup.number().nullable(),
+                  // TODO: max more than min if defined
+                  // .when('min', {
+                  //   is: (min) => typeof min !== 'undefined',
+                  //   then: (schema) => schema.moreThan(Yup.ref('min')),
+                  // }),
+                })
+              )
+              .nullable()
 
             return schema.shape({
               accuracy: Yup.number()
@@ -338,6 +340,13 @@ function QuestionEditModal({
 
   // TODO: styling of tooltips - some are too wide
   // TODO: show errors of form validation below fields as for the login form
+
+  if (question?.type === QuestionType.Numerical) {
+    console.log(
+      'question?.options?.solutionRanges',
+      question?.options?.solutionRanges
+    )
+  }
 
   if (!question) {
     return <div></div>
