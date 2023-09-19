@@ -27,7 +27,9 @@ const httpTrigger = async function (
   if (req.method === 'GET') {
     await serviceBusSender.sendMessages({
       sessionId: 'ping',
-      body: {},
+      body: {
+        sessionId: 'ping',
+      },
     })
 
     if (process.env.FUNCTION_HEARTBEAT_URL) {
