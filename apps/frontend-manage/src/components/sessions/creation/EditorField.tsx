@@ -38,7 +38,7 @@ function EditorField({
       <ContentInput
         error={meta.error}
         touched={meta.touched}
-        content={field.value || '<br>'}
+        content={field.value}
         onChange={(newValue: string) => {
           helpers.setValue(newValue)
           helpers.setTouched(true)

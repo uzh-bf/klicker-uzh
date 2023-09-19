@@ -29,17 +29,11 @@ mutation EditLearningElement(
     pointsMultiplier
     resetTimeDays
     orderType
-    previouslyAnswered
-    previousScore
-    previousPointsAwarded
-    totalTrials
     stacksWithQuestions
     numOfQuestions
 
     course {
       id
-      displayName
-      color
     }
 
     stacks {

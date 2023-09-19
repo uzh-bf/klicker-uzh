@@ -6,7 +6,6 @@ import {
   LearningElement,
   LearningElementOrderType,
   QuestionType,
-  StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FormikNumberField,
@@ -44,7 +43,6 @@ function LearningElementWizard({
 
   const [createLearningElement] = useMutation(CreateLearningElementDocument)
   const [editLearningElement] = useMutation(EditLearningElementDocument)
-  const [startSession] = useMutation(StartSessionDocument)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [editMode, setEditMode] = useState(!!initialValues)
   const [selectedCourseId, setSelectedCourseId] = useState('')

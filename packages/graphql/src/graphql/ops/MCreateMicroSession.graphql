@@ -19,5 +19,21 @@ mutation CreateMicroSession(
     endDate: $endDate
   ) {
     id
+    name
+    displayName
+    description
+    scheduledStartAt
+    scheduledEndAt
+    pointsMultiplier
+    course {
+      id
+    }
+    instances {
+      id
+      questionData {
+        id
+        name
+      }
+    }
   }
 }
