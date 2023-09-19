@@ -955,6 +955,8 @@ export async function manipulateLearningElement(
                         create: {
                           order: ix,
                           type: QuestionInstanceType.LEARNING_ELEMENT,
+                          pointsMultiplier:
+                            multiplier * question.pointsMultiplier,
                           questionData: processedQuestionData,
                           results: prepareInitialInstanceResults(
                             processedQuestionData
