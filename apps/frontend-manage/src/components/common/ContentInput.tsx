@@ -53,7 +53,6 @@ interface Props {
     content?: string
     editor?: string
   }
-  key?: string
   data_cy?: string
 }
 
@@ -74,7 +73,6 @@ function ContentInput({
   error = '',
   touched,
   className,
-  key,
   data_cy,
 }: Props): React.ReactElement {
   const t = useTranslations()
@@ -100,7 +98,6 @@ function ContentInput({
     >
       {/* eslint-disable-next-line react/no-children-prop */}
       <Slate
-        key={key}
         editor={editor}
         value={editorValue}
         onChange={(newValue) => onChange(convertToMd(newValue))}

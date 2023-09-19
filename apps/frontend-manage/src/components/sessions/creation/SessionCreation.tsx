@@ -35,18 +35,27 @@ function SessionCreation({
   resetSelection,
 }: SessionCreationProps) {
   const t = useTranslations()
-  const { data: dataLiveSession } = useQuery(GetSingleLiveSessionDocument, {
-    variables: { sessionId: sessionId || '' },
-    skip: !sessionId || editMode !== 'liveSession',
-  })
-  const { data: dataMicroSession } = useQuery(GetSingleMicroSessionDocument, {
-    variables: { id: sessionId || '' },
-    skip: !sessionId || editMode !== 'microSession',
-  })
-  const { data: dataLearningElement } = useQuery(GetLearningElementDocument, {
-    variables: { id: sessionId || '' },
-    skip: !sessionId || editMode !== 'learningElement',
-  })
+  const { data: dataLiveSession, loading: liveLoading } = useQuery(
+    GetSingleLiveSessionDocument,
+    {
+      variables: { sessionId: sessionId || '' },
+      skip: !sessionId || editMode !== 'liveSession',
+    }
+  )
+  const { data: dataMicroSession, loading: microLoading } = useQuery(
+    GetSingleMicroSessionDocument,
+    {
+      variables: { id: sessionId || '' },
+      skip: !sessionId || editMode !== 'microSession',
+    }
+  )
+  const { data: dataLearningElement, loading: learningLoading } = useQuery(
+    GetLearningElementDocument,
+    {
+      variables: { id: sessionId || '' },
+      skip: !sessionId || editMode !== 'learningElement',
+    }
+  )
 
   const {
     loading: loadingCourses,
@@ -63,7 +72,12 @@ function SessionCreation({
     [dataCourses]
   )
 
-  if (!errorCourses && loadingCourses) {
+  if (
+    (!errorCourses && loadingCourses) ||
+    (sessionId && editMode === 'liveSession' && liveLoading) ||
+    (sessionId && editMode === 'microSession' && microLoading) ||
+    (sessionId && editMode === 'learningElement' && learningLoading)
+  ) {
     return <Loader />
   }
 
