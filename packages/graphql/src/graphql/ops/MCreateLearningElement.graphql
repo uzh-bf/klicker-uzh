@@ -19,5 +19,33 @@ mutation CreateLearningElement(
     resetTimeDays: $resetTimeDays
   ) {
     id
+    name
+    displayName
+    description
+    pointsMultiplier
+    resetTimeDays
+    orderType
+    stacksWithQuestions
+    numOfQuestions
+
+    course {
+      id
+    }
+
+    stacks {
+      id
+      displayName
+      description
+      order
+      elements {
+        id
+        order
+        mdContent
+        questionInstance {
+          id
+          ...QuestionData
+        }
+      }
+    }
   }
 }
