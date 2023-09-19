@@ -32,6 +32,7 @@ interface Props {
   type: QuestionType
   content: string
   onCheck: () => void
+  resetOnDelete: () => void
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
   tagfilter?: string[]
@@ -47,6 +48,7 @@ function Question({
   type,
   content,
   onCheck,
+  resetOnDelete,
   isArchived = false,
   hasAnswerFeedbacks,
   hasSampleSolution,
@@ -195,8 +197,27 @@ function Question({
                     variables: {
                       id,
                     },
-                    refetchQueries: [{ query: GetUserQuestionsDocument }],
+                    update(cache) {
+                      const data = cache.readQuery({
+                        query: GetUserQuestionsDocument,
+                      })
+                      cache.writeQuery({
+                        query: GetUserQuestionsDocument,
+                        data: {
+                          userQuestions:
+                            data?.userQuestions?.filter((e) => e.id !== id) ??
+                            [],
+                        },
+                      })
+                    },
+                    optimisticResponse: {
+                      deleteQuestion: {
+                        __typename: 'Question',
+                        id,
+                      },
+                    },
                   })
+                  resetOnDelete()
                   setIsDeletionModalOpen(false)
                 }}
                 className={{ root: 'bg-red-600 font-bold text-white' }}

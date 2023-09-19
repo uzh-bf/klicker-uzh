@@ -584,6 +584,11 @@ function Index() {
                     })
                   }}
                   tagfilter={filters.tags}
+                  resetOnDelete={() => {
+                    setSelectedQuestions({})
+                    setSearchInput('')
+                    handleReset()
+                  }}
                 />
               </div>
             </>
