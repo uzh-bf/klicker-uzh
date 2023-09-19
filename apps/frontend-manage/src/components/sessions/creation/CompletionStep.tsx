@@ -5,6 +5,7 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface CompletionStepProps {
+  children?: React.ReactNode
   completionSuccessMessage?: (elementName: string) => React.ReactNode
   name: string
   editMode: boolean
@@ -15,6 +16,7 @@ interface CompletionStepProps {
 }
 
 function CompletionStep({
+  children,
   completionSuccessMessage,
   name,
   editMode,
@@ -35,6 +37,7 @@ function CompletionStep({
           : t('manage.sessionForms.elementCreated')}
       </div>
       <div className="space-x-2">
+        {children}
         <Button onClick={onViewElement} data={{ cy: 'load-session-list' }}>
           <Button.Icon>
             <FontAwesomeIcon icon={faEye} />

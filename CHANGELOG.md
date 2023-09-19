@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.65](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.64...v3.0.0-rc.65) (2023-09-19)
+
+
+### Bug Fixes
+
+* **apps/func-response-processor:** always return 200 on ping ([b32986e](https://github.com/uzh-bf/klicker-uzh/commit/b32986ecc92b450f2e4d22b2586803db6c8fe26c))
+
+## [3.0.0-rc.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.63...v3.0.0-rc.64) (2023-09-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** fix preview for kprim questions ([#3846](https://github.com/uzh-bf/klicker-uzh/issues/3846)) ([e846606](https://github.com/uzh-bf/klicker-uzh/commit/e84660661e9be1e49050c37e927e8d470273bfef))
+* **apps/func-incoming-responses:** try/catch around cookie parsing in incoming responses ([9ebae9d](https://github.com/uzh-bf/klicker-uzh/commit/9ebae9d771fa53ea3416be8c27e02d47d87953d9))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** session quick start and session cockpit improvements ([1183830](https://github.com/uzh-bf/klicker-uzh/commit/118383060745598acb541ded7f2504318de70a4a))
+
 ## [3.0.0-rc.63](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.62...v3.0.0-rc.63) (2023-09-17)
 
 

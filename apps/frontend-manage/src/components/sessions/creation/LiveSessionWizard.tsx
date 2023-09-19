@@ -1,4 +1,6 @@
 import { useMutation } from '@apollo/client'
+import { faPlay } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
   EditSessionDocument,
@@ -7,8 +9,10 @@ import {
   Question,
   QuestionType,
   Session,
+  StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
+  Button,
   FormikSelectField,
   FormikSwitchField,
   FormikTextField,
@@ -47,7 +51,8 @@ function LiveSessionWizard({
   const t = useTranslations()
 
   const [editSession] = useMutation(EditSessionDocument)
-  const [createSession] = useMutation(CreateSessionDocument)
+  const [createSession, { data }] = useMutation(CreateSessionDocument)
+  const [startSession] = useMutation(StartSessionDocument)
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
@@ -204,6 +209,27 @@ function LiveSessionWizard({
                 })}
           </div>
         )}
+        customCompletionAction={
+          !editMode &&
+          data?.createSession?.id && (
+            <Button
+              data={{ cy: 'quick-start' }}
+              onClick={async () => {
+                await startSession({
+                  variables: {
+                    id: data?.createSession?.id as string,
+                  },
+                })
+                router.push(`/sessions/${data?.createSession?.id}/cockpit`)
+              }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faPlay} />
+              </Button.Icon>
+              <Button.Label>Start now</Button.Label>
+            </Button>
+          )
+        }
         initialValues={{
           name: initialValues?.name || '',
           displayName: initialValues?.displayName || '',
