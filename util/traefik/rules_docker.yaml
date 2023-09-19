@@ -46,34 +46,34 @@ http:
     api:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:3000"
+          - url: "http://host.docker.internal:3000"
 
     pwa:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:3001"
+          - url: "http://host.docker.internal:3001"
 
     manage:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:3002"
+          - url: "http://host.docker.internal:3002"
 
     control:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:3003"
+          - url: "http://host.docker.internal:3003"
 
     auth:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:3010"
+          - url: "http://host.docker.internal:3010"
 
     func-responses:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:7072"
+          - url: "http://host.docker.internal:7072"
 
     func-response-processor:
       loadBalancer:
         servers:
-          - url: "http://host.containers.internal:7073"
+          - url: "http://host.docker.internal:7073"
