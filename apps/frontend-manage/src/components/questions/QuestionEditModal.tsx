@@ -341,13 +341,6 @@ function QuestionEditModal({
   // TODO: styling of tooltips - some are too wide
   // TODO: show errors of form validation below fields as for the login form
 
-  if (question?.type === QuestionType.Numerical) {
-    console.log(
-      'question?.options?.solutionRanges',
-      question?.options?.solutionRanges
-    )
-  }
-
   if (!question) {
     return <div></div>
   }
