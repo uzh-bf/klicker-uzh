@@ -816,34 +816,28 @@ function QuestionEditModal({
                                           prev?.formik.values.type
                                       }
                                     >
-                                      {({ field, meta }: FastFieldProps) => {
-                                        console.log(
-                                          'values.options.choices: ',
-                                          values.options.choices
-                                        )
-                                        return (
-                                          <ContentInput
-                                            error={meta.error}
-                                            touched={meta.touched}
-                                            content={field.value}
-                                            onChange={(newContent: string) => {
-                                              setFieldValue(
-                                                `options.choices.${index}.value`,
-                                                newContent
-                                              )
-                                            }}
-                                            showToolbarOnFocus={true}
-                                            placeholder={t(
-                                              'manage.questionForms.answerOptionPlaceholder'
-                                            )}
-                                            className={{
-                                              root: 'bg-white',
-                                            }}
-                                            key={`${values.type}-choice-${index}`}
-                                            data_cy="insert-answer-field"
-                                          />
-                                        )
-                                      }}
+                                      {({ field, meta }: FastFieldProps) => (
+                                        <ContentInput
+                                          error={meta.error}
+                                          touched={meta.touched}
+                                          content={field.value}
+                                          onChange={(newContent: string) => {
+                                            setFieldValue(
+                                              `options.choices.${index}.value`,
+                                              newContent
+                                            )
+                                          }}
+                                          showToolbarOnFocus={true}
+                                          placeholder={t(
+                                            'manage.questionForms.answerOptionPlaceholder'
+                                          )}
+                                          className={{
+                                            root: 'bg-white',
+                                          }}
+                                          key={`${values.type}-choice-${index}`}
+                                          data_cy="insert-answer-field"
+                                        />
+                                      )}
                                     </FastField>
 
                                     {values.hasSampleSolution && (
