@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.66](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.65...v3.0.0-rc.66) (2023-09-19)
+
+
+### Bug Fixes
+
+* **apps/func-incoming-responses:** add ping sessionId to ping message ([e867ea4](https://github.com/uzh-bf/klicker-uzh/commit/e867ea474212f16c1e292f6cb62e3c508b41c95a))
+
 ## [3.0.0-rc.65](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.64...v3.0.0-rc.65) (2023-09-19)
 
 
