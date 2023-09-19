@@ -15,6 +15,22 @@ services:
     networks:
       - klicker
 
+  reverse_proxy_docker:
+    image: docker.io/library/traefik:v2.10
+    command:
+      - --api.insecure=true
+      - --providers.file=true
+      - --providers.file.filename=/etc/traefik/rules.yaml
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+    ports:
+      - 8088:80
+      - 8080:8080
+    volumes:
+      - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
+    networks:
+      - klicker
+
   # main database
   postgres:
     image: docker.io/library/postgres:15
