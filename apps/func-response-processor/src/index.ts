@@ -55,9 +55,10 @@ const serviceBusTrigger = async function (
     throw new Error(`Redis connection error ${String(e)}`)
   }
 
-  if (queueItem.sessionId === 'ping' && process.env.FUNCTION_HEARTBEAT_URL) {
-    // @ts-ignore
-    await fetch(process.env.FUNCTION_HEARTBEAT_URL)
+  if (queueItem.sessionId === 'ping') {
+    if (process.env.FUNCTION_HEARTBEAT_URL) {
+      await fetch(process.env.FUNCTION_HEARTBEAT_URL)
+    }
     return { status: 200 }
   }
 

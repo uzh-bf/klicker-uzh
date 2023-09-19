@@ -27,7 +27,9 @@ const httpTrigger = async function (
   if (req.method === 'GET') {
     await serviceBusSender.sendMessages({
       sessionId: 'ping',
-      body: {},
+      body: {
+        sessionId: 'ping',
+      },
     })
 
     if (process.env.FUNCTION_HEARTBEAT_URL) {
@@ -52,21 +54,28 @@ const httpTrigger = async function (
     const cookie = req.headers.get('cookie')
 
     if (cookie) {
-      const parsedCookies = cookie
-        .split(';')
-        .map((v: string) => v.split('='))
-        .reduce<Record<string, string>>((acc, v) => {
-          acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim())
-          return acc
-        }, {})
+      try {
+        const parsedCookies = cookie
+          .split(';')
+          .map((v: string) => v.split('='))
+          .reduce<Record<string, string>>((acc, v) => {
+            acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(
+              v[1].trim()
+            )
+            return acc
+          }, {})
 
-      const participantData = JWT.verify(
-        parsedCookies['participant_token'],
-        process.env.APP_SECRET
-      )
+        const participantData = JWT.verify(
+          parsedCookies['participant_token'],
+          process.env.APP_SECRET
+        )
 
-      if (participantData.sub && participantData.role === 'PARTICIPANT') {
-        messageId = `${participantData.sub}-${body.sessionId}`
+        if (participantData.sub && participantData.role === 'PARTICIPANT') {
+          messageId = `${participantData.sub}-${body.sessionId}`
+        }
+      } catch (e) {
+        context.error('JWT verification failed', e, cookie)
+        Sentry.captureException(e)
       }
     }
 
