@@ -197,6 +197,7 @@ export async function createMicroSession(
           return {
             order: ix,
             type: QuestionInstanceType.MICRO_SESSION,
+            pointsMultiplier: multiplier * question.pointsMultiplier,
             questionData: processedQuestionData,
             results: prepareInitialInstanceResults(processedQuestionData),
             question: {
@@ -307,6 +308,7 @@ export async function editMicroSession(
           return {
             order: ix,
             type: QuestionInstanceType.MICRO_SESSION,
+            pointsMultiplier: multiplier * question.pointsMultiplier,
             questionData: processedQuestionData,
             results: prepareInitialInstanceResults(processedQuestionData),
             question: {
