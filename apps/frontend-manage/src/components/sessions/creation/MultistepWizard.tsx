@@ -12,6 +12,7 @@ import React, { useEffect, useState } from 'react'
 import CompletionStep from './CompletionStep'
 
 interface MultistepWizardProps {
+  customCompletionAction?: React.ReactNode
   title: string
   isCompleted: boolean
   editMode: boolean
@@ -85,6 +86,7 @@ function Validator({
 }
 
 function MultistepWizard({
+  customCompletionAction,
   title,
   children,
   initialValues,
@@ -164,7 +166,9 @@ function MultistepWizard({
                 onRestartForm={onRestartForm}
                 resetForm={resetForm}
                 setStepNumber={setStepNumber}
-              />
+              >
+                {customCompletionAction}
+              </CompletionStep>
             )}
 
             {!isCompleted && (

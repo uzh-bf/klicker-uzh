@@ -5,7 +5,7 @@ import {
   faUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
+import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
@@ -133,11 +133,12 @@ function SessionTimeline({
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap">
       <div className="flex flex-row flex-wrap items-end justify-between flex-1 md:flex-auto md:pb-2">
-        <div className="flex flex-row flex-wrap items-end">
+        <div className="flex flex-row flex-wrap items-end gap-8">
+          <H1 className={{ root: 'text-xl m-0' }}>Quiz: {sessionName}</H1>
           <div>
             <FontAwesomeIcon icon={faClock} className="mr-1" /> {startingTime}
           </div>
-          <div className="ml-8">
+          <div>
             <FontAwesomeIcon icon={faPlay} className="mr-1" /> {runtime}
           </div>
         </div>
@@ -197,7 +198,7 @@ function SessionTimeline({
       </div>
       {!isFeedbackSession && blocks && (
         <>
-          <div className="flex flex-row w-full gap-2 p-4 mt-2 overflow-scroll border border-solid rounded-lg border-uzh-grey-80">
+          <div className="flex flex-row w-full gap-2 p-4 overflow-auto border border-solid rounded-lg border-uzh-grey-80 mt-2 md:mt-0">
             <FontAwesomeIcon
               icon={faPlay}
               size="xl"
