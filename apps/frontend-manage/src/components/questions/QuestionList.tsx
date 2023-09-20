@@ -10,7 +10,7 @@ interface QuestionListProps {
   selectedQuestions: Record<number, QuestionType>
   questions?: QuestionType[]
   tagfilter?: string[]
-  resetOnDelete: () => void
+  unsetDeletedQuestion: (questionId: number) => void
 }
 
 function QuestionList({
@@ -18,7 +18,7 @@ function QuestionList({
   selectedQuestions,
   questions = [],
   tagfilter = [],
-  resetOnDelete,
+  unsetDeletedQuestion,
 }: QuestionListProps): React.ReactElement {
   const t = useTranslations()
   if (!questions) {
@@ -50,7 +50,7 @@ function QuestionList({
           hasAnswerFeedbacks={question.hasAnswerFeedbacks}
           hasSampleSolution={question.hasSampleSolution}
           onCheck={() => setSelectedQuestions(question.id, question)}
-          resetOnDelete={resetOnDelete}
+          unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}
           createdAt={question.createdAt}
           updatedAt={question.updatedAt}

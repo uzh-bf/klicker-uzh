@@ -32,7 +32,7 @@ interface Props {
   type: QuestionType
   content: string
   onCheck: () => void
-  resetOnDelete: () => void
+  unsetDeletedQuestion: (questionId: number) => void
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
   tagfilter?: string[]
@@ -48,7 +48,7 @@ function Question({
   type,
   content,
   onCheck,
-  resetOnDelete,
+  unsetDeletedQuestion,
   isArchived = false,
   hasAnswerFeedbacks,
   hasSampleSolution,
@@ -217,7 +217,7 @@ function Question({
                       },
                     },
                   })
-                  resetOnDelete()
+                  unsetDeletedQuestion(id)
                   setIsDeletionModalOpen(false)
                 }}
                 className={{ root: 'bg-red-600 font-bold text-white' }}

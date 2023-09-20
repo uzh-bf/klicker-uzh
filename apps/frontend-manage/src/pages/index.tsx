@@ -584,10 +584,15 @@ function Index() {
                     })
                   }}
                   tagfilter={filters.tags}
-                  resetOnDelete={() => {
-                    setSelectedQuestions({})
-                    setSearchInput('')
-                    handleReset()
+                  unsetDeletedQuestion={(questionId: number) => {
+                    setSelectedQuestions((prev) => {
+                      if (prev[questionId]) {
+                        const newSelectedQuestions = { ...prev }
+                        delete newSelectedQuestions[questionId]
+                        return newSelectedQuestions
+                      }
+                      return prev
+                    })
                   }}
                 />
               </div>
