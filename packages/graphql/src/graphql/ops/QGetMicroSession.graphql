@@ -5,6 +5,9 @@ query GetMicroSession($id: String!) {
     id
     displayName
     description
+    pointsMultiplier
+    scheduledStartAt
+    scheduledEndAt
     course {
       id
       displayName
@@ -12,6 +15,7 @@ query GetMicroSession($id: String!) {
     }
     instances {
       id
+      pointsMultiplier
       ...QuestionData
       evaluation {
         feedbacks {

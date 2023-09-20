@@ -1,11 +1,18 @@
 import { useQuery } from '@apollo/client'
 import {
+  faClock,
+  faQuestionCircle,
+  faTimesCircle,
+} from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
   GetMicroSessionDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { GetStaticPaths, GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
@@ -98,6 +105,46 @@ function MicroSessionIntroduction({ id }: Props) {
         >
           <DynamicMarkdown content={data.microSession.description} />
         </Prose>
+
+        <div className="grid grid-cols-1 mb-4 md:mb-0 md:grid-cols-2 text-sm gap-y-1">
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faQuestionCircle} />
+            <div>
+              {t('pwa.learningElement.numOfQuestions', {
+                number: data.microSession.instances?.length,
+              })}
+            </div>
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faTimesCircle} />
+            <div>
+              {t('pwa.learningElement.multiplicatorPoints', {
+                mult: data.microSession.pointsMultiplier,
+              })}
+            </div>
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faClock} />
+            <div>
+              {t('pwa.microSession.availableFrom', {
+                date: dayjs(data.microSession.scheduledStartAt).format(
+                  'DD.MM.YYYY HH:mm'
+                ),
+              })}
+            </div>
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faClock} />
+            <div>
+              {t('pwa.microSession.availableUntil', {
+                date: dayjs(data.microSession.scheduledEndAt).format(
+                  'DD.MM.YYYY HH:mm'
+                ),
+              })}
+            </div>
+          </div>
+        </div>
+
         <Link href={`/micro/${data.microSession.id}/0`} legacyBehavior>
           <Button
             className={{

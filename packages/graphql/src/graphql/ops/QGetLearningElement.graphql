@@ -33,6 +33,7 @@ query GetLearningElement($id: String!) {
         mdContent
         questionInstance {
           id
+          pointsMultiplier
           ...QuestionData
           evaluation {
             feedbacks {
