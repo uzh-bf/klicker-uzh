@@ -43,7 +43,7 @@ function Settings() {
 
   return (
     <Layout displayName={t('shared.generic.settings')}>
-      <div className="mx-auto p-4 w-[42rem] max-w-full flex flex-col border border-solid border-uzh-grey-100 rounded">
+      <div className="mx-auto p-4 w-[46rem] max-w-full flex flex-col border border-solid border-uzh-grey-100 rounded">
         <H1>{t('manage.settings.userSettings')}</H1>
         <SimpleSetting
           label={t('shared.generic.shortname')}
