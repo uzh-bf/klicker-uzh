@@ -30,7 +30,7 @@ export function checkCronToken(ctx: Context) {
 }
 
 export function formatDate(dateTime: Date) {
-  let date = dayjs(dateTime).utc()
+  let date = dayjs(dateTime).local()
 
   return {
     date: `${date.format('DD')}.${date.format('MM')}.${date.format('YYYY')}`,
