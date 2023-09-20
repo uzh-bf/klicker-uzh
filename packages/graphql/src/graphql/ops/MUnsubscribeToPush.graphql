@@ -1,3 +1,13 @@
-mutation UnsubscribeFromPush($courseId: String!, $endpoint: String!) {
-  unsubscribeFromPush(courseId: $courseId, endpoint: $endpoint)
+mutation UnsubscribeFromPush(
+  $courseId: String!
+  $endpoint: String
+  $token: String
+  $isNativePlatform: Boolean!
+) {
+  unsubscribeFromPush(
+    courseId: $courseId
+    endpoint: $endpoint
+    token: $token
+    isNativePlatform: $isNativePlatform
+  )
 }

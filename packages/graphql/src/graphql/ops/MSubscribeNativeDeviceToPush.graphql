@@ -1,9 +1,0 @@
-mutation subscribeNativeDeviceToPush($courseId: String!, $token: String!) {
-  subscribeNativeDeviceToPush(courseId: $courseId, token: $token) {
-    id
-    subscriptions {
-      id
-      token
-    }
-  }
-}

@@ -48,11 +48,11 @@ export const SubscriptionObjectInput = builder.inputType(
   'SubscriptionObjectInput',
   {
     fields: (t) => ({
-      endpoint: t.string({ required: true }),
+      endpoint: t.string({ required: false }),
       expirationTime: t.int({ required: false }),
       keys: t.field({
         type: SubscriptionKeysInput,
-        required: true,
+        required: false,
       }),
     }),
   }

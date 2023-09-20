@@ -33,36 +33,48 @@ const Index = function () {
   const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
 
   async function subscribeUser(
-    subscriptionObject: PushSubscription,
-    courseId: string
+    courseId: string,
+    isNativePlatform: boolean,
+    subscriptionObject?: PushSubscription,
+    token?: string
   ) {
     await subscribeToPush({
       variables: {
-        subscriptionObject,
         courseId,
+        subscriptionObject,
+        token,
+        isNativePlatform,
       },
       refetchQueries: [
         {
           query: ParticipationsDocument,
-          variables: { endpoint: subscriptionObject.endpoint },
+          variables: isNativePlatform
+            ? { token: token }
+            : { endpoint: subscriptionObject?.endpoint },
         },
       ],
     })
   }
 
   async function unsubscribeUser(
-    subscriptionObject: PushSubscription,
-    courseId: string
+    courseId: string,
+    isNativePlatform: boolean,
+    subscriptionObject?: PushSubscription,
+    token?: string
   ) {
     await unsubscribeFromPush({
       variables: {
         courseId,
-        endpoint: subscriptionObject.endpoint,
+        endpoint: subscriptionObject?.endpoint,
+        token,
+        isNativePlatform,
       },
       refetchQueries: [
         {
           query: ParticipationsDocument,
-          variables: { endpoint: subscriptionObject.endpoint },
+          variables: isNativePlatform
+            ? { token: token }
+            : { endpoint: subscriptionObject?.endpoint },
         },
       ],
     })

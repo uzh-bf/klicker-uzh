@@ -38,4 +38,24 @@ export function formatDate(dateTime: Date) {
   }
 }
 
+export function sliceIntoChunks(
+  registrationTokens: string[],
+  chunkSize: number
+) {
+  if (registrationTokens.length <= chunkSize) {
+    return [registrationTokens]
+  }
+
+  const chunks = []
+  let index = 0
+  const n = registrationTokens.length
+
+  while (index < n) {
+    chunks.push(registrationTokens.slice(index, index + chunkSize))
+    index += chunkSize
+  }
+
+  return chunks
+}
+
 export { levelFromXp } from '@klicker-uzh/prisma/dist/util'

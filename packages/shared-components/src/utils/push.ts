@@ -6,50 +6,27 @@ import { PushNotifications, Token } from '@capacitor/push-notifications'
  * subscription to the browser's push service on the component's initial render.
  */
 async function determineInitialSubscriptionState() {
-  if (
-    Capacitor.getPlatform() === 'ios' ||
-    Capacitor.getPlatform() === 'android'
-  ) {
-    PushNotifications.requestPermissions().then((result) => {
-      if (result.receive === 'granted') {
-        // Register with Apple / Google to receive push via APNS/FCM
-        PushNotifications.register()
-      } else {
-        // Show some error
-        console.error('Permission for registration denied: ', result)
-        return {
-          disabled: true,
-          info: 'Keine Berechtigung für Push-Benachrichtigungen erhalten',
-          reg: null,
-          sub: null,
-          token: null,
+  if (Capacitor.isNativePlatform()) {
+    let permissionStatus = await PushNotifications.checkPermissions()
+
+    if (permissionStatus.receive !== 'granted') {
+      PushNotifications.requestPermissions().then((result) => {
+        if (result.receive === 'granted') {
+          registerNativeClient()
+        } else {
+          console.error('Permission for registration denied: ', result)
+          return {
+            disabled: true,
+            info: 'Keine Berechtigung für Push-Benachrichtigungen erhalten',
+            reg: null,
+            sub: null,
+            token: null,
+          }
         }
-      }
-    })
-
-    // On success, we should be able to receive notifications
-    PushNotifications.addListener('registration', (token: Token) => {
-      console.log('Push registration success, token: ' + token.value)
-      return {
-        disabled: false,
-        info: '',
-        reg: null,
-        sub: null,
-        token: token.value,
-      }
-    })
-
-    // Some issue with our setup and push will not work
-    PushNotifications.addListener('registrationError', (error: any) => {
-      console.log('Error on registration: ' + JSON.stringify(error))
-      return {
-        disabled: false,
-        info: `${JSON.stringify(error)}`,
-        reg: null,
-        sub: null,
-        token: null,
-      }
-    })
+      })
+    } else {
+      registerNativeClient()
+    }
   } else {
     if (
       typeof window === 'undefined' ||
@@ -83,6 +60,33 @@ async function determineInitialSubscriptionState() {
       token: null,
     }
   }
+}
+
+const registerNativeClient = () => {
+  PushNotifications.register()
+
+  // On success, we should be able to receive notifications
+  PushNotifications.addListener('registration', (token: Token) => {
+    return {
+      disabled: false,
+      info: '',
+      reg: null,
+      sub: null,
+      token: token.value,
+    }
+  })
+
+  // Some issue with our setup and push will not work
+  PushNotifications.addListener('registrationError', (error: any) => {
+    console.log('Error on registration: ' + JSON.stringify(error))
+    return {
+      disabled: false,
+      info: `${JSON.stringify(error)}`,
+      reg: null,
+      sub: null,
+      token: null,
+    }
+  })
 }
 
 /**

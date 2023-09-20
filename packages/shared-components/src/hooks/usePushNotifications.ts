@@ -8,12 +8,16 @@ import {
 
 interface PushNotificationsOptions {
   subscribeToPush: (
-    subscriptionObject: PushSubscription,
-    courseId: string
+    courseId: string,
+    isNativePlatform: boolean,
+    subscriptionObject?: PushSubscription,
+    token?: string
   ) => void
   unsubscribeFromPush: (
-    subscriptionObject: PushSubscription,
-    courseId: string
+    courseId: string,
+    isNativePlatform: boolean,
+    subscriptionObject?: PushSubscription,
+    token?: string
   ) => void
 }
 
@@ -61,7 +65,7 @@ const usePushNotifications = ({
     if (Capacitor.getPlatform() === 'web') {
       // There is a valid subscription to the push service
       if (subscription) {
-        subscribeToPush(subscription, courseId)
+        subscribeToPush(courseId, false, subscription)
       } else {
         // There is no valid subscription to the push service
         try {
@@ -71,7 +75,7 @@ const usePushNotifications = ({
           setSubscription(newSubscription)
 
           // Store new subscription object on the server
-          subscribeToPush(newSubscription, courseId)
+          subscribeToPush(courseId, false, newSubscription)
         } catch (e) {
           console.error(
             'An error occured while subscribing a user to push notifications: ',
@@ -104,7 +108,7 @@ const usePushNotifications = ({
     } else {
       // there exists already an APNS / FCM token
       if (token) {
-        subscribeNativeDeviceToPush(token, courseId)
+        subscribeToPush(courseId, true, undefined, token)
       } else {
         // register device for push notifications
         try {
@@ -112,7 +116,7 @@ const usePushNotifications = ({
           // On success, we should be able to receive notifications
           PushNotifications.addListener('registration', (newToken: Token) => {
             console.log('Push registration success, token: ' + newToken.value)
-            subscribeNativeDeviceToPush(newToken, courseId)
+            subscribeToPush(courseId, true, undefined, newToken.value)
           })
 
           // Some issue with our setup and push will not work
@@ -139,13 +143,13 @@ const usePushNotifications = ({
         setSubscription(null)
 
         // remove subscription from backend
-        unsubscribeFromPush(subscription, courseId)
+        unsubscribeFromPush(courseId, false, subscription)
       }
     } else {
       if (token) {
-        PushNotifications.unregister()
+        await PushNotifications.unregister()
         setToken(null)
-        unsubsubscribeNativeDeviceFromPush(token, courseId)
+        unsubscribeFromPush(courseId, false, undefined, token)
       }
     }
   }

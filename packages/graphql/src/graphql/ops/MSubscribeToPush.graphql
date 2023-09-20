@@ -1,15 +1,20 @@
 mutation SubscribeToPush(
   $courseId: String!
-  $subscriptionObject: SubscriptionObjectInput!
+  $subscriptionObject: SubscriptionObjectInput
+  $token: String
+  $isNativePlatform: Boolean!
 ) {
   subscribeToPush(
     courseId: $courseId
     subscriptionObject: $subscriptionObject
+    token: $token
+    isNativePlatform: $isNativePlatform
   ) {
     id
     subscriptions {
       id
       endpoint
+      token
     }
   }
 }
