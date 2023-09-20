@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.68](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.67...v3.0.0-rc.68) (2023-09-20)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** allow deletion of questions during filtering ([#3854](https://github.com/uzh-bf/klicker-uzh/issues/3854)) ([75b175a](https://github.com/uzh-bf/klicker-uzh/commit/75b175a53336d652a648471bbce8103e2a6a8a31))
+
 ## [3.0.0-rc.67](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.66...v3.0.0-rc.67) (2023-09-20)
 
 
