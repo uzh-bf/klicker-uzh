@@ -128,7 +128,7 @@ function MicroSessionIntroduction({ id }: Props) {
             <div>
               {t('pwa.microSession.availableFrom', {
                 date: dayjs(data.microSession.scheduledStartAt).format(
-                  'DD/MM/YYYY HH:mm'
+                  'DD.MM.YYYY HH:mm'
                 ),
               })}
             </div>
@@ -138,7 +138,7 @@ function MicroSessionIntroduction({ id }: Props) {
             <div>
               {t('pwa.microSession.availableUntil', {
                 date: dayjs(data.microSession.scheduledEndAt).format(
-                  'DD/MM/YYYY HH:mm'
+                  'DD.MM.YYYY HH:mm'
                 ),
               })}
             </div>
