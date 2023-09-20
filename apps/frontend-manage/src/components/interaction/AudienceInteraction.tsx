@@ -14,7 +14,7 @@ import {
   RespondToFeedbackDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
-import { Switch } from '@uzh-bf/design-system'
+import { H2, Switch } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -89,9 +89,7 @@ function AudienceInteraction({
       >
         <div className="flex flex-col flex-grow gap-4 md:w-2/3">
           <div className="flex flex-row flex-wrap items-end justify-between">
-            <div className="flex text-2xl font-bold">
-              {t('manage.cockpit.liveQA')}
-            </div>
+            <H2>{t('manage.cockpit.liveQA')}</H2>
             <div className="flex flex-row flex-wrap items-end gap-4">
               <Link
                 href={`/sessions/${sessionId}/lecturer`}
@@ -239,9 +237,7 @@ function AudienceInteraction({
         </div>
         <div className="flex flex-col md:w-[250px] flex-auto gap-4 md:flex-row md:flex-wrap">
           <div className="flex flex-row flex-wrap items-end justify-between flex-none w-full gap-2">
-            <div className="text-2xl font-bold">
-              {t('shared.generic.feedback')}
-            </div>
+            <H2>{t('shared.generic.feedback')}</H2>
             <Switch
               checked={isConfusionFeedbackEnabled}
               onCheckedChange={(): void => {

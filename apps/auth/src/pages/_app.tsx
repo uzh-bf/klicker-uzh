@@ -1,13 +1,11 @@
 import { getMessageFallback, onError } from '@klicker-uzh/i18n'
+import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { SessionProvider } from 'next-auth/react'
 import { NextIntlProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
-import { Source_Sans_3 } from 'next/font/google'
 import { useRouter } from 'next/router'
 
 import '@/styles/globals.css'
-
-const sourceSans3 = Source_Sans_3({ subsets: ['latin'] })
 
 export default function App({
   Component,
@@ -16,7 +14,7 @@ export default function App({
   const { locale } = useRouter()
 
   return (
-    <div id="__app" className="font-sans">
+    <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
       <NextIntlProvider
         messages={pageProps.messages}
         locale={locale}
@@ -30,7 +28,8 @@ export default function App({
 
       <style jsx global>{`
         :root {
-          --theme-font-primary: ${sourceSans3.style.fontFamily};
+          --source-sans-pro: ${sourceSansPro.variable};
+          --theme-font-primary: ${sourceSansPro.variable};
         }
 
         #__app {

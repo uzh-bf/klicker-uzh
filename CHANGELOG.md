@@ -2,6 +2,99 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.66](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.65...v3.0.0-rc.66) (2023-09-19)
+
+
+### Bug Fixes
+
+* **apps/func-incoming-responses:** add ping sessionId to ping message ([e867ea4](https://github.com/uzh-bf/klicker-uzh/commit/e867ea474212f16c1e292f6cb62e3c508b41c95a))
+
+## [3.0.0-rc.65](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.64...v3.0.0-rc.65) (2023-09-19)
+
+
+### Bug Fixes
+
+* **apps/func-response-processor:** always return 200 on ping ([b32986e](https://github.com/uzh-bf/klicker-uzh/commit/b32986ecc92b450f2e4d22b2586803db6c8fe26c))
+
+## [3.0.0-rc.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.63...v3.0.0-rc.64) (2023-09-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** fix preview for kprim questions ([#3846](https://github.com/uzh-bf/klicker-uzh/issues/3846)) ([e846606](https://github.com/uzh-bf/klicker-uzh/commit/e84660661e9be1e49050c37e927e8d470273bfef))
+* **apps/func-incoming-responses:** try/catch around cookie parsing in incoming responses ([9ebae9d](https://github.com/uzh-bf/klicker-uzh/commit/9ebae9d771fa53ea3416be8c27e02d47d87953d9))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** session quick start and session cockpit improvements ([1183830](https://github.com/uzh-bf/klicker-uzh/commit/118383060745598acb541ded7f2504318de70a4a))
+
+## [3.0.0-rc.63](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.62...v3.0.0-rc.63) (2023-09-17)
+
+
+### Bug Fixes
+
+* **packages/graphql:** logout the participant when deleting the account ([c954fdf](https://github.com/uzh-bf/klicker-uzh/commit/c954fdf7afc7be4a6ed8290b3974e6a3cfbf17ba))
+
+## [3.0.0-rc.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.61...v3.0.0-rc.62) (2023-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** allow input of email if account exists but no email set ([0b1a8e6](https://github.com/uzh-bf/klicker-uzh/commit/0b1a8e6f0722dfc6704867625bc432a817467cd1))
+
+## [3.0.0-rc.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.60...v3.0.0-rc.61) (2023-09-17)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add confirmation modal when leaving the course leaderboard ([b6744f2](https://github.com/uzh-bf/klicker-uzh/commit/b6744f2923d08a43e8b6ffe6a891d2ae9ab85aed))
+
+## [3.0.0-rc.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.59...v3.0.0-rc.60) (2023-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** NumberField for bin count ([c759c68](https://github.com/uzh-bf/klicker-uzh/commit/c759c68f921480b656016c3c822dfacdc6637273))
+
+
+### Dependencies
+
+* upgrade turbo ([fd19c63](https://github.com/uzh-bf/klicker-uzh/commit/fd19c63841e94eeb8fe9168303c7202836060264))
+
+## [3.0.0-rc.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.58...v3.0.0-rc.59) (2023-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** cancel session refetches related queries ([dafffd3](https://github.com/uzh-bf/klicker-uzh/commit/dafffd3b8367fce1805c2c741fc387255c90d590))
+* **apps/func-*:** ensure only participant logins are processed in response functions ([1cc7de6](https://github.com/uzh-bf/klicker-uzh/commit/1cc7de6da9e26803c70cd7400d7131a9cdb42445))
+* **packages/graphql:** cancel session should delete cache ([2ed9ad8](https://github.com/uzh-bf/klicker-uzh/commit/2ed9ad823821a8525fb539d48c3041ca1aa01e81))
+* **packages/graphql:** use update instead of updateMany for cancelSession ([ab52871](https://github.com/uzh-bf/klicker-uzh/commit/ab52871801dcca7a20f77c364a5c7e20336048b5))
+
+## [3.0.0-rc.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.57...v3.0.0-rc.58) (2023-09-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** fix catalyst links ([9da5607](https://github.com/uzh-bf/klicker-uzh/commit/9da5607a698ecccc7c5502ce057b5e9119bba43d))
+* **apps/frontend-pwa:** prose on course information text ([c1b8b3b](https://github.com/uzh-bf/klicker-uzh/commit/c1b8b3b6515f14a3181852cbaee9361481256d87))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** ensure that there are exactly four answers for kprim questions ([#3842](https://github.com/uzh-bf/klicker-uzh/issues/3842)) ([0f762f2](https://github.com/uzh-bf/klicker-uzh/commit/0f762f238a1469c288c299571accd330323e5762))
+* **apps/frontend-manage:** gamification displayed on course details page, hide leaderboard if disabled ([1cc8d7a](https://github.com/uzh-bf/klicker-uzh/commit/1cc8d7af27ee50446d522c76970de13521145a2b))
+* **apps/frontend-manage:** improve multistep wizard layout ([2764e6d](https://github.com/uzh-bf/klicker-uzh/commit/2764e6d06bb87c7a127ea096e4497fce8dc3be05))
+
+## [3.0.0-rc.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.56...v3.0.0-rc.57) (2023-09-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** update WEB PUSH PUBLIC KEY ([be63841](https://github.com/uzh-bf/klicker-uzh/commit/be6384180dfb0e2efee40b26470a17af532424f9))
+* **deploy:** NOTIFICATION_SUPPORT_MAIL ([4892e9e](https://github.com/uzh-bf/klicker-uzh/commit/4892e9e00860a5e9c4b75af3d8a0bc058e412340))
+
 ## [3.0.0-rc.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.55...v3.0.0-rc.56) (2023-09-14)
 
 

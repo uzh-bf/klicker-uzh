@@ -112,6 +112,7 @@ function TableChart({
   return (
     <div>
       <Table
+        key={data.id}
         forwardedRef={ref}
         data={tableData}
         columns={columns}
@@ -120,6 +121,16 @@ function TableChart({
           tableHeader: textSize,
           body: `${textSize}`,
         }}
+        defaultSortField={
+          !QUESTION_GROUPS.CHOICES.includes(data.questionData.type)
+            ? 'count'
+            : undefined
+        }
+        defaultSortOrder={
+          !QUESTION_GROUPS.CHOICES.includes(data.questionData.type)
+            ? 'desc'
+            : undefined
+        }
       />
       {anythingSortable && (
         <Button

@@ -1,4 +1,6 @@
 import { useMutation } from '@apollo/client'
+import { faPlay } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
   EditSessionDocument,
@@ -7,12 +9,13 @@ import {
   Question,
   QuestionType,
   Session,
+  StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
+  Button,
   FormikSelectField,
   FormikSwitchField,
   FormikTextField,
-  H3,
 } from '@uzh-bf/design-system'
 import { ErrorMessage, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -25,6 +28,7 @@ import MultistepWizard, { LiveSessionFormValues } from './MultistepWizard'
 import SessionBlockField from './SessionBlockField'
 
 interface LiveSessionWizardProps {
+  title: string
   courses?: {
     label: string
     value: string
@@ -32,19 +36,23 @@ interface LiveSessionWizardProps {
   initialValues?: Partial<Session>
   selection: Record<number, Question>
   resetSelection: () => void
+  closeWizard: () => void
 }
 
 function LiveSessionWizard({
+  title,
   courses,
   initialValues,
   selection,
   resetSelection,
+  closeWizard,
 }: LiveSessionWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
   const [editSession] = useMutation(EditSessionDocument)
-  const [createSession] = useMutation(CreateSessionDocument)
+  const [createSession, { data }] = useMutation(CreateSessionDocument)
+  const [startSession] = useMutation(StartSessionDocument)
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
@@ -186,6 +194,8 @@ function LiveSessionWizard({
   return (
     <div>
       <MultistepWizard
+        title={title}
+        onCloseWizard={closeWizard}
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
@@ -199,6 +209,27 @@ function LiveSessionWizard({
                 })}
           </div>
         )}
+        customCompletionAction={
+          !editMode &&
+          data?.createSession?.id && (
+            <Button
+              data={{ cy: 'quick-start' }}
+              onClick={async () => {
+                await startSession({
+                  variables: {
+                    id: data?.createSession?.id as string,
+                  },
+                })
+                router.push(`/sessions/${data?.createSession?.id}/cockpit`)
+              }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faPlay} />
+              </Button.Icon>
+              <Button.Label>Start now</Button.Label>
+            </Button>
+          )
+        }
         initialValues={{
           name: initialValues?.name || '',
           displayName: initialValues?.displayName || '',
@@ -331,7 +362,6 @@ function StepTwo(props: StepProps) {
 
   return (
     <>
-      <H3 className={{ root: 'mb-0' }}>{t('shared.generic.settings')}</H3>
       {props.courses && (
         <div className="flex flex-row items-center gap-4">
           <FormikSelectField

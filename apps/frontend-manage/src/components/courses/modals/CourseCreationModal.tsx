@@ -1,5 +1,8 @@
 import { useMutation } from '@apollo/client'
-import { CreateCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CreateCourseDocument,
+  GetUserCoursesDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
@@ -82,6 +85,11 @@ function CourseCreationModal({
                 endDate: values.endDate + 'T23:59:59.999Z',
                 isGamificationEnabled: values.isGamificationEnabled,
               },
+              refetchQueries: [
+                {
+                  query: GetUserCoursesDocument,
+                },
+              ],
             })
 
             if (result.data?.createCourse) {

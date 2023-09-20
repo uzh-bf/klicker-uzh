@@ -98,7 +98,9 @@ function SignInOutButton() {
         />
       </Button>
       <Button
-        className={{ root: 'disabled:opacity-50' }}
+        className={{
+          root: 'disabled:opacity-50 justify-center italic',
+        }}
         disabled={!tosChecked}
         data={{ cy: 'delegated-login-button' }}
         onClick={() =>
@@ -120,9 +122,9 @@ export function Index() {
   const t = useTranslations()
 
   return (
-    <div className="m-auto flex max-w-md flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+    <div className="m-auto flex w-full md:max-w-2xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center gap-8 md:p-8">
-        <div className="w-full border-b pb-4 text-center">
+        <div className="w-full px-5 sm:px-8 border-b pb-4 text-center">
           <Image
             src="/KlickerLogo.png"
             width={300}
@@ -132,7 +134,7 @@ export function Index() {
             data-cy="login-logo"
           />
         </div>
-        <div className="w-full flex flex-row justify-between">
+        <div className="w-full px-6 sm:px-10 md:mx-0 flex flex-row justify-between">
           <H1 className={{ root: 'mb-0' }}>{t('auth.authentication')}</H1>
           <div>
             <LanguageChanger
@@ -146,12 +148,12 @@ export function Index() {
             />
           </div>
         </div>
-        <div>
+        <div className="w-full px-6 sm:px-10">
           <SignInOutButton />
         </div>
       </div>
       <div className="w-full flex-none">
-        <Footer />
+        <Footer className="!text-xs" />
       </div>
     </div>
   )

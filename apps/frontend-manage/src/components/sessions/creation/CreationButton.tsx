@@ -78,7 +78,7 @@ function CreationButton({
               link: () => (
                 <a
                   target="_blank"
-                  href={`https://www.klicker.uzh.ch/catalyst}`}
+                  href="https://www.klicker.uzh.ch/catalyst"
                   className="underline"
                 >
                   www.klicker.uzh.ch/catalyst

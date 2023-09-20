@@ -8,11 +8,12 @@ import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 // eslint-disable-next-line prettier/prettier
-import React from 'react'
+import React, { useEffect } from 'react'
 
 import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
+import KPAnswerOptions from './questions/KPAnswerOptions'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
 import { SCAnswerOptions } from './questions/SCAnswerOptions'
 import SessionProgress from './questions/SessionProgress'
@@ -34,7 +35,7 @@ export interface StudentQuestionProps {
     options: any
     instanceId: number
   }
-  inputValue: string | any[]
+  inputValue: string | any[] | {}
   inputValid: boolean
   inputEmpty: boolean
   setInputState: (input: any) => void
@@ -56,17 +57,58 @@ export const StudentQuestion = ({
 }: StudentQuestionProps) => {
   const t = useTranslations()
 
+  useEffect(() => {
+    switch (currentQuestion.type) {
+      case QuestionType.Sc:
+      case QuestionType.Mc:
+        setInputState({
+          inputValue: [],
+          inputValid: false,
+          inputEmpty: true,
+        })
+        break
+      case QuestionType.Kprim:
+        setInputState({
+          inputValue: {},
+          inputValid: false,
+          inputEmpty: true,
+        })
+        break
+      default:
+        setInputState({
+          inputValue: '',
+          inputValid: false,
+          inputEmpty: true,
+        })
+    }
+  }, [currentQuestion.type])
+
   const onActiveChoicesChange =
     (type: string): any =>
-    (choice: any): any =>
+    (choice: any, selectedValue?: boolean): any =>
     (): void => {
-      const validateChoices = (newValue: any): boolean =>
-        type === QuestionType.Sc ? newValue.length === 1 : newValue.length > 0
-
-      if (
-        inputValue &&
-        (type === QuestionType.Mc || type === QuestionType.Kprim)
-      ) {
+      const validateChoices = (newValue: any): boolean => {
+        switch (type) {
+          case QuestionType.Sc:
+            return newValue.length === 1
+          case QuestionType.Mc:
+            return newValue.length > 0
+          case QuestionType.Kprim:
+            return (
+              Object.values(newValue).length === 4 &&
+              Object.values(newValue).filter((value) => value === undefined)
+                .length === 0
+            )
+        }
+      }
+      if (inputValue && type === QuestionType.Mc) {
+        if (typeof inputValue === 'object') {
+          setInputState({
+            inputEmpty: false,
+            inputValid: validateChoices(inputValue),
+            inputValue: [],
+          })
+        }
         // if the choice is already active, remove it
         if (inputValue.includes(choice)) {
           const newInputValue = without([choice], inputValue)
@@ -83,6 +125,19 @@ export const StudentQuestion = ({
         return setInputState({
           inputEmpty: false,
           inputValid: validateChoices(newInputValue),
+          inputValue: newInputValue,
+        })
+      }
+
+      if (inputValue && type === QuestionType.Kprim) {
+        const newInputValue = {
+          ...inputValue,
+          [choice]: selectedValue,
+        }
+
+        return setInputState({
+          inputEmpty: Object.keys(newInputValue).length === 0,
+          inputValid: validateChoices(choice),
           inputValue: newInputValue,
         })
       }
@@ -204,14 +259,32 @@ export const StudentQuestion = ({
           </div>
         )}
 
-        {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) && (
-          <SCAnswerOptions
-            displayMode={currentQuestion.displayMode}
-            choices={currentQuestion.options.choices}
-            value={typeof inputValue !== 'string' ? inputValue : undefined}
-            onChange={onActiveChoicesChange(currentQuestion.type)}
-          />
-        )}
+        {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) &&
+          (currentQuestion.type === QuestionType.Kprim ? (
+            <KPAnswerOptions
+              displayMode={currentQuestion.displayMode}
+              type={currentQuestion.type}
+              choices={currentQuestion.options.choices}
+              value={
+                typeof inputValue !== 'string' && !Array.isArray(inputValue)
+                  ? inputValue
+                  : undefined
+              }
+              onChange={onActiveChoicesChange(currentQuestion.type)}
+            />
+          ) : (
+            <SCAnswerOptions
+              displayMode={currentQuestion.displayMode}
+              type={currentQuestion.type}
+              choices={currentQuestion.options.choices}
+              value={
+                typeof inputValue !== 'string' && Array.isArray(inputValue)
+                  ? inputValue
+                  : undefined
+              }
+              onChange={onActiveChoicesChange(currentQuestion.type)}
+            />
+          ))}
 
         {QUESTION_GROUPS.FREE_TEXT.includes(currentQuestion.type) && (
           <FREETextAnswerOptions

@@ -24,6 +24,8 @@ import EditorField from './EditorField'
 import MultistepWizard from './MultistepWizard'
 
 interface MicroSessionWizardProps {
+  title: string
+  closeWizard: () => void
   courses?: {
     label: string
     value: string
@@ -32,6 +34,8 @@ interface MicroSessionWizardProps {
 }
 
 function MicroSessionWizard({
+  title,
+  closeWizard,
   courses,
   initialValues,
 }: MicroSessionWizardProps) {
@@ -160,6 +164,8 @@ function MicroSessionWizard({
   return (
     <div>
       <MultistepWizard
+        title={title}
+        onCloseWizard={closeWizard}
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
@@ -371,10 +377,8 @@ function StepTwo(props: StepProps) {
 
 function StepThree(_: StepProps) {
   return (
-    <>
-      <div className="mt-2 mb-2">
-        <BlockField fieldName="questions" />
-      </div>
-    </>
+    <div className="mt-2 mb-2">
+      <BlockField fieldName="questions" />
+    </div>
   )
 }

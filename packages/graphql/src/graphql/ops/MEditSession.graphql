@@ -19,5 +19,25 @@ mutation EditSession(
     isGamificationEnabled: $isGamificationEnabled
   ) {
     id
+    name
+    displayName
+    description
+    blocks {
+      id
+      status
+      timeLimit
+      instances {
+        id
+        questionData {
+          id
+          name
+        }
+      }
+    }
+    course {
+      id
+    }
+    pointsMultiplier
+    isGamificationEnabled
   }
 }

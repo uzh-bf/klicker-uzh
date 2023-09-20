@@ -18,6 +18,7 @@ import {
   H1,
   H2,
   H3,
+  Switch,
   Toast,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -132,8 +133,11 @@ function CourseOverviewPage() {
           ) : (
             <div className="flex flex-row gap-2 border border-solid rounded border-uzh-grey-80 prose-p:mb-2 last:prose-p:mb-0 prose-p:mt-0 prose prose-sm leading-6 prose-blockquote:text-gray-500 max-w-none focus:!outline-none">
               <Markdown
+                withProse
                 content={course.description}
-                className={{ root: 'w-full p-2 rounded' }}
+                className={{
+                  root: 'w-full p-2 rounded prose-p:mt-0 prose-headings:mt-0',
+                }}
               />
               <Button
                 onClick={() => setDescriptionEditMode(true)}
@@ -154,6 +158,14 @@ function CourseOverviewPage() {
           />
         )}
         <div className="flex flex-row items-center gap-8 pt-1 h-11">
+          <div>
+            <Switch
+              disabled
+              label="Gamification"
+              checked={data?.course?.isGamificationEnabled}
+              onCheckedChange={() => null}
+            />
+          </div>
           <div className="flex flex-row">
             <div className="pr-3">{t('manage.courseList.courseColor')}</div>
             <ColorPicker
@@ -228,7 +240,7 @@ function CourseOverviewPage() {
         </div>
       </div>
       <div className="flex flex-col md:flex-row">
-        <div className="w-full md:w-2/3 md:border-r-[0.1rem] md:border-solid md:border-uzh-grey-80">
+        <div className="w-full md:w-2/3">
           <div className="mb-4">
             <H3>{t('manage.general.sessions')}</H3>
             {course.sessions && course.sessions.length > 0 ? (
@@ -271,7 +283,7 @@ function CourseOverviewPage() {
                   link: () => (
                     <a
                       target="_blank"
-                      href={`https://www.klicker.uzh.ch/catalyst}`}
+                      href="https://www.klicker.uzh.ch/catalyst"
                       className="underline"
                     >
                       www.klicker.uzh.ch/catalyst
@@ -305,7 +317,7 @@ function CourseOverviewPage() {
                   link: () => (
                     <a
                       target="_blank"
-                      href={`https://www.klicker.uzh.ch/catalyst}`}
+                      href="https://www.klicker.uzh.ch/catalyst"
                       className="underline"
                     >
                       www.klicker.uzh.ch/catalyst
@@ -325,27 +337,29 @@ function CourseOverviewPage() {
             Coming Soon
           </div>
         </div>
-        <div className="w-full md:w-1/3 md:pl-2">
-          <H3>{t('manage.course.courseLeaderboard')}</H3>
-          <Leaderboard
-            className={{ root: 'max-h-[31rem] overflow-y-scroll' }}
-            leaderboard={course.leaderboard ?? []}
-            activeParticipation
-          />
-          <div className="mt-2 text-sm italic text-right text-gray-500">
-            <div>
-              {t('manage.course.participantsLeaderboard', {
-                number: course.numOfActiveParticipants,
-              })}
-              /{course.numOfParticipants}
-            </div>
-            <div>
-              {t('manage.course.avgPoints', {
-                points: course.averageActiveScore?.toFixed(2),
-              })}
+        {data?.course?.isGamificationEnabled && (
+          <div className="w-full md:w-1/3 md:pl-2 border-l">
+            <H3>{t('manage.course.courseLeaderboard')}</H3>
+            <Leaderboard
+              className={{ root: 'max-h-[31rem] overflow-y-scroll' }}
+              leaderboard={course.leaderboard ?? []}
+              activeParticipation
+            />
+            <div className="mt-2 text-sm italic text-right text-gray-500">
+              <div>
+                {t('manage.course.participantsLeaderboard', {
+                  number: course.numOfActiveParticipants,
+                })}
+                /{course.numOfParticipants}
+              </div>
+              <div>
+                {t('manage.course.avgPoints', {
+                  points: course.averageActiveScore?.toFixed(2),
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </Layout>
   )

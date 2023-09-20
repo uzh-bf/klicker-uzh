@@ -91,6 +91,8 @@ describe('Different live-session workflows', () => {
         .parent()
         .click()
       cy.get('[data-cy="select-course"]').contains('Testkurs')
+      cy.get('[data-cy="set-gamification"]').should('not.be.checked')
+      cy.get('[data-cy="set-gamification"]').click()
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
         .contains(messages.manage.sessionForms.multiplier1)
@@ -104,8 +106,6 @@ describe('Different live-session workflows', () => {
       cy.get('[data-cy="select-multiplier"]').contains(
         messages.manage.sessionForms.multiplier2
       )
-      cy.get('[data-cy="set-gamification"]').should('not.be.checked')
-      cy.get('[data-cy="set-gamification"]').click()
       // cy.get('[data-cy="set-gamification"]').should('be.checked'); // TODO: This does not work properly as it should be checked after a click
       cy.get('[data-cy="next-or-submit"]').click()
 
@@ -163,8 +163,9 @@ describe('Different live-session workflows', () => {
       cy.wait(500)
 
       // login student again on mobile, test navigation and answer second question
-      cy.clearAllCookies()
       cy.visit(Cypress.env('URL_STUDENT'))
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
       cy.viewport('iphone-x')
       cy.get('[data-cy="username-field"]')
         .click()

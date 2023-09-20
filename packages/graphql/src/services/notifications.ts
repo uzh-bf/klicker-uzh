@@ -122,6 +122,8 @@ export async function sendPushNotifications(ctx: Context) {
     },
   })
 
+  let allSuccessful = true
+
   // TODO: improve scalability of push notification dispatch:
   // 1. Investigate implementing this method as a background process to reduce the load on the main thread.
   // 2. Investigate implementing this method in Azure
@@ -140,6 +142,7 @@ export async function sendPushNotifications(ctx: Context) {
           },
         })
       } catch (error) {
+        allSuccessful = false
         console.error(
           'An error occured while trying to send the push notifications: ',
           error
@@ -148,7 +151,7 @@ export async function sendPushNotifications(ctx: Context) {
     })
   )
 
-  return true
+  return allSuccessful
 }
 
 //TODO: how to address translation of the message when switching to multi language support?
@@ -194,6 +197,8 @@ async function sendPushNotificationsToSubscribers(
             error
           )
         }
+      } else {
+        throw error
       }
     }
   }

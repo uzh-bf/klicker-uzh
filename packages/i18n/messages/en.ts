@@ -379,6 +379,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.',
       awards: 'Awards',
       open: 'open',
+      leaveCourseTitle: 'Leave Leaderboard',
+      leaveCourseConfirmation:
+        'Are you sure you want to leave the course leaderboard?',
+      leaveCourseInformation:
+        'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
     },
     joinCourse: {
       title: 'Join Course "{name}"',
@@ -860,7 +865,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Select an order in which the questions are to be solved by the students.',
       learningElemenSelectOrder: 'Select order',
       learningElementSEQUENTIAL: 'Sequential',
-      learningElementSHUFFLED: 'Shuffeld',
+      learningElementSHUFFLED: 'Shuffled',
       learningElementLAST_RESPONSE: 'Last response first',
     },
     formErrors: {
@@ -881,6 +886,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter at least one solution of deactivate the sample solution.',
       NRPrecision: 'The number of decimal places must be at least 0.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',
+      NumberQuestionsRequired: 'At least one answer option must be given',
+      NumberQuestionsRequiredKPRIM:
+        'There must be exactly four answer options for Kprim questions',
     },
     sessions: {
       runningSessions: 'Running Live Quizzes',

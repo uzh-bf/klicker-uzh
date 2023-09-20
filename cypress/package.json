@@ -2,10 +2,10 @@
   "private": true,
   "name": "@klicker-uzh/cypress",
   "devDependencies": {
-    "@cypress/code-coverage": "3.11.0",
-    "@testing-library/cypress": "9.0.0",
+    "@cypress/code-coverage": "3.12.1",
+    "@testing-library/cypress": "10.0.1",
     "@types/node": "^18.17.4",
-    "cypress": "13.1.0",
+    "cypress": "13.2.0",
     "typescript": "5.2.2"
   },
   "scripts": {

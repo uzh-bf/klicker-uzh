@@ -8,6 +8,9 @@
     "FUNCTIONS_WORKER_PROCESS_COUNT": 10,
     "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
     "SERVICE_BUS_CONNECTION_STRING": "",
-    "SERVICE_BUS_QUEUE_NAME": ""
+    "SERVICE_BUS_QUEUE_NAME": "q-cypress",
+    "REDIS_HOST": "localhost",
+    "REDIS_PORT": 6379,
+    "APP_SECRET": "abcd"
   }
 }
