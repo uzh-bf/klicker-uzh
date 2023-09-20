@@ -34,7 +34,10 @@ export function KPAnswerOptions({
       )}
     >
       {choices.map((choice, index) => (
-        <div className="flex flex-row items-center justify-between gap-4 p-2 border">
+        <div
+          className="flex flex-row items-center justify-between gap-4 p-2 border"
+          data-cy="kp-answer-options"
+        >
           <div>
             <Markdown
               withProse

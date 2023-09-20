@@ -163,8 +163,9 @@ describe('Different live-session workflows', () => {
       cy.wait(500)
 
       // login student again on mobile, test navigation and answer second question
-      cy.clearAllCookies()
       cy.visit(Cypress.env('URL_STUDENT'))
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
       cy.viewport('iphone-x')
       cy.get('[data-cy="username-field"]')
         .click()
