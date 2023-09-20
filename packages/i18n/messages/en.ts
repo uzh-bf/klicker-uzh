@@ -618,6 +618,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       createDelegatedLogin: 'Create delegated login',
       delegatedLoginDescription:
         'When logging in, use the shortname of your main account and the password of the delegated login.',
+      copiedPassword: 'Password has been copied to the clipboard successfully.',
       loginName: 'Login description',
       scope: 'Scope',
       selectScope: 'Select scope',

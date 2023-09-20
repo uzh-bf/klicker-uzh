@@ -613,6 +613,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createDelegatedLogin: 'Delegierten Login erstellen',
       delegatedLoginDescription:
         'Um sich einzuloggen, nutzen Sie den Shortname Ihres Haupt-Accounts und das generierte Passwort des delegierten Logins.',
+      copiedPassword:
+        'Das Passwort wurde erfolgreich in die Zwischenablage kopiert.',
       loginName: 'Login-Beschreibung',
       scope: 'Berechtigungen',
       selectScope: 'Jetzt wählen',
