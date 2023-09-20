@@ -5,6 +5,9 @@ query GetMicroSession($id: String!) {
     id
     displayName
     description
+    pointsMultiplier
+    scheduledStartAt
+    scheduledEndAt
     course {
       id
       displayName

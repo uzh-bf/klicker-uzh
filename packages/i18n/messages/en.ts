@@ -445,6 +445,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You have successfully completed the microlearning <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
       missingParticipation:
         'You have successfully completed the microlearning <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
+      availableFrom: 'Available from {date}',
+      availableUntil: 'Available until {date}',
     },
     session: {
       noActiveQuestion: 'No question active.',
