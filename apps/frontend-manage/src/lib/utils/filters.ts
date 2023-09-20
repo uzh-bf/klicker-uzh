@@ -30,12 +30,6 @@ export function buildIndex(
   items: any[],
   searchIndices: any[]
 ): any[] {
-  // if an index already exists, return it
-
-  if (indices[name]) {
-    return indices[name]
-  }
-
   // build a new js-search index
   const search = new JsSearch.Search('id')
 
