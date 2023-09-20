@@ -56,11 +56,11 @@ function CourseElement({
             <div className="text-xs">
               {isFuture &&
                 t('shared.generic.startAt', {
-                  time: dayjs(course.startDate).utc().format('DD.MM.YYYY'),
+                  time: dayjs(course.startDate).local().format('DD.MM.YYYY'),
                 })}
               {isPast &&
                 t('shared.generic.finishedAt', {
-                  time: dayjs(course.endDate).utc().format('DD.MM.YYYY'),
+                  time: dayjs(course.endDate).local().format('DD.MM.YYYY'),
                 })}
             </div>
           </div>
