@@ -192,14 +192,16 @@ function MicroSessionWizard({
                 hasSampleSolution: instance.questionData.hasSampleSolution,
               }
             }) || [],
-          startDate:
-            dayjs(initialValues?.scheduledStartAt)
-              .local()
-              .format('YYYY-MM-DDThh:mm') || '',
-          endDate:
-            dayjs(initialValues?.scheduledEndAt)
-              .local()
-              .format('YYYY-MM-DDThh:mm') || '',
+          startDate: initialValues?.scheduledStartAt
+            ? dayjs(initialValues?.scheduledStartAt)
+                .local()
+                .format('YYYY-MM-DDTHH:mm')
+            : dayjs().local().format('YYYY-MM-DDTHH:mm'),
+          endDate: initialValues?.scheduledEndAt
+            ? dayjs(initialValues?.scheduledEndAt)
+                .local()
+                .format('YYYY-MM-DDTHH:mm')
+            : dayjs().add(1, 'days').format('YYYY-MM-DDTHH:mm'),
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)
             : '1',
