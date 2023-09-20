@@ -12,6 +12,7 @@ query GetMicroSession($id: String!) {
     }
     instances {
       id
+      pointsMultiplier
       ...QuestionData
       evaluation {
         feedbacks {

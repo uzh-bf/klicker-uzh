@@ -85,7 +85,7 @@ function Evaluation() {
                     instance.evaluation.pointsAwarded !== null &&
                     `${instance.evaluation?.pointsAwarded}/`}
                   {instance.evaluation?.score}
-                  {`/10`}
+                  {`/${10 * instance.pointsMultiplier}`}
                 </div>
               </div>
             ))}
