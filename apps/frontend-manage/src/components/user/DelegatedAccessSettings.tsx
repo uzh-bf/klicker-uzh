@@ -1,4 +1,5 @@
 import { useMutation, useSuspenseQuery } from '@apollo/client'
+import { faClipboard } from '@fortawesome/free-regular-svg-icons'
 import { faArrowsRotate, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -7,6 +8,7 @@ import {
   GetUserLoginsDocument,
   UserLoginScope,
 } from '@klicker-uzh/graphql/dist/ops'
+import { monoSpaceFont } from '@klicker-uzh/shared-components/src/font'
 import {
   Button,
   FormikSelectField,
@@ -14,11 +16,13 @@ import {
   H4,
   Label,
   Prose,
+  Toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import generatePassword from 'generate-password'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
@@ -36,6 +40,7 @@ interface DelegatedAccessSettingsProps {
 function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
   const t = useTranslations()
   const { data: userLogins } = useSuspenseQuery(GetUserLoginsDocument)
+  const [copiedPassword, setCopiedPassword] = useState(false)
   const [createUserLogin] = useMutation(CreateUserLoginDocument, {
     refetchQueries: [GetUserLoginsDocument],
   })
@@ -94,7 +99,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
         ))}
       </div>
 
-      <div className="mt-5">
+      <div className={(userLogins.userLogins?.length || 0) > 0 ? 'mt-5' : ''}>
         <H4>{t('manage.settings.createDelegatedLogin')}</H4>
         <Prose className={{ root: 'max-w-none' }}>
           {t('manage.settings.delegatedLoginDescription')}
@@ -125,7 +130,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
           {({ values, setFieldValue, isValid, isSubmitting }) => {
             return (
               <Form>
-                <div className="flex flex-col md:flex-row">
+                <div className="flex flex-col md:flex-row gap-1.5 md:gap-0">
                   <div className="flex flex-row items-center gap-3 w-1/2">
                     <Label
                       label={t('shared.generic.shortname')}
@@ -135,7 +140,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     />
                     <div>{shortname}</div>
                   </div>
-                  <div className="flex flex-row items-center justify-between w-1/2">
+                  <div className="flex flex-row w-full md:w-1/2 items-center justify-between w-1/2">
                     <div className="flex flex-row items-center gap-3">
                       <Label
                         label={t('shared.generic.password')}
@@ -146,26 +151,50 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                         }}
                         showTooltipSymbol
                       />
-                      <div>{values.password}</div>
+                      <div className={monoSpaceFont.className}>
+                        {values.password}
+                      </div>
                     </div>
-                    <Button
-                      onClick={() =>
-                        setFieldValue(
-                          'password',
-                          generatePassword.generate(PW_SETTINGS)
-                        )
-                      }
-                    >
-                      <FontAwesomeIcon icon={faArrowsRotate} />
-                    </Button>
+                    <div className="flex flex-row gap-0.5">
+                      <Button
+                        onClick={() => {
+                          navigator?.clipboard?.writeText(values.password).then(
+                            () => {
+                              setCopiedPassword(true)
+                            },
+                            () => {
+                              setCopiedPassword(false)
+                            }
+                          )
+                        }}
+                      >
+                        <FontAwesomeIcon
+                          icon={faClipboard}
+                          className="w-4 -mx-1"
+                        />
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          setFieldValue(
+                            'password',
+                            generatePassword.generate(PW_SETTINGS)
+                          )
+                        }
+                      >
+                        <FontAwesomeIcon
+                          icon={faArrowsRotate}
+                          className="w-4 -mx-1"
+                        />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col md:flex-row mt-1.5">
+                <div className="flex flex-col md:flex-row mt-1.5 gap-2 md:gap-0">
                   <FormikTextField
                     name="name"
                     label={t('manage.settings.loginName')}
                     className={{
-                      root: 'w-1/2 pr-5',
+                      root: 'md:w-1/2 md:pr-5',
                       input: ' bg-white',
                     }}
                     required
@@ -183,7 +212,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       label: t(`manage.settings.${scope}`),
                     }))}
                     label={t('manage.settings.scope')}
-                    className={{ root: 'w-1/2' }}
+                    className={{ root: 'md:w-1/2' }}
                     required
                   />
                 </div>
@@ -205,6 +234,13 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
           }}
         </Formik>
       </div>
+      <Toast
+        openExternal={copiedPassword}
+        setOpenExternal={setCopiedPassword}
+        type="success"
+      >
+        {t('manage.settings.copiedPassword')}
+      </Toast>
     </div>
   )
 }
