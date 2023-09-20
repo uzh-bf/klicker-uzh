@@ -39,9 +39,6 @@ public/sw*.js*
 public/workbox-*.js*
 public/fallback*.js*
 public/worker*.js
-public/worker*.LICENSE.txt
-public/firebase-messaging-sw*.js
-public/firebase-messaging-sw*.js.map
 
 src/testPush.js
 

@@ -14,8 +14,7 @@ const nextConfig = {
 if (process.env.NODE_ENV !== 'test') {
   const withPWA = require('next-pwa')(
     getNextPWAConfig({
-      NODE_ENV: process.env.NODE_ENV,
-      sw: 'firebase-messaging-sw.js'
+      NODE_ENV: process.env.NODE_ENV
     })
   )
   module.exports = withPWA(nextConfig)
