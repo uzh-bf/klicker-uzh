@@ -1,7 +1,7 @@
 import { faTag } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Tag } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import TagActions from './TagActions'
@@ -23,7 +23,7 @@ function UserTag({ tag, handleTagClick, active, onMoveDown, onMoveUp }: Props) {
     <>
       <li
         className={twMerge(
-          'px-4 py-1 hover:cursor-pointer flex flex-row justify-between group',
+          'px-4 hover:cursor-pointer flex flex-row justify-between group',
           active && 'text-primary'
         )}
       >
@@ -34,10 +34,20 @@ function UserTag({ tag, handleTagClick, active, onMoveDown, onMoveUp }: Props) {
             <Button
               basic
               onClick={(): void => handleTagClick(tag.name)}
-              className={{ root: 'flex-1 sm:hover:text-primary' }}
+              className={{
+                root: 'flex-1 sm:hover:text-primary whitespace-nowrap overflow-hidden',
+              }}
             >
-              <FontAwesomeIcon icon={faTag} />
-              {tag.name}
+              <Tooltip
+                tooltip={tag.name}
+                className={{
+                  trigger: 'flex flex-row items-center gap-1 py-1',
+                }}
+                delay={1000}
+              >
+                <FontAwesomeIcon icon={faTag} />
+                {tag.name}
+              </Tooltip>
             </Button>
 
             <TagActions
