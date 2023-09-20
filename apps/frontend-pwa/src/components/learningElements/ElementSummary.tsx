@@ -103,9 +103,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
                         (element.questionInstance.evaluation?.score ?? 0),
                       pointsPossible:
                         acc.pointsPossible +
-                        (element.questionInstance.questionData
-                          .pointsMultiplier ?? 1) *
-                          10,
+                        (element.questionInstance.pointsMultiplier ?? 1) * 10,
                       solved:
                         acc.solved ||
                         (typeof element.questionInstance.evaluation !==
