@@ -9,7 +9,7 @@
   ],
   "dependencies": {
     "@azure/service-bus": "7.9.1",
-    "@azure/storage-blob": "12.15.0",
+    "@azure/storage-blob": "12.16.0",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@pothos/core": "3.33.0",
