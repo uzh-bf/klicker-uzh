@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
-
 function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
   return {
+    experimental: {
+      optimizePackageImports: ['@uzh-bf/design-system'],
+    },
     compress: true,
     output: 'standalone',
     reactStrictMode: true,
@@ -16,14 +18,6 @@ function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
     i18n: {
       locales: ['en', 'de'],
       defaultLocale: 'en',
-    },
-    modularizeImports: {
-      ramda: {
-        transform: 'ramda/es/{{member}}',
-      },
-      lodash: {
-        transform: 'lodash/{{member}}',
-      },
     },
     images: {
       domains: [
