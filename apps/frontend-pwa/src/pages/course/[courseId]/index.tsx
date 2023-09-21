@@ -20,6 +20,7 @@ import {
   FormikTextField,
   H3,
   H4,
+  Tabs,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -31,7 +32,6 @@ import { useState } from 'react'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
-import Tabs from '../../../components/common/Tabs'
 import GroupVisualization from '../../../components/participant/GroupVisualization'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 

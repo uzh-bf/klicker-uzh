@@ -18,7 +18,7 @@
     "@pothos/plugin-validation": "3.10.0",
     "axios": "1.5.0",
     "bcryptjs": "2.4.3",
-    "dayjs": "1.11.9",
+    "dayjs": "1.11.10",
     "generate-password": "1.7.0",
     "graphql": "16.7.1",
     "graphql-scalars": "1.22.2",
@@ -54,7 +54,7 @@
     "@types/ramda": "^0.29.4",
     "@types/uuid": "^9.0.4",
     "@types/validator": "^13.9.0",
-    "@types/web-push": "^3.3.2",
+    "@types/web-push": "^3.6.0",
     "cross-env": "7.0.3",
     "dotenv": "16.3.1",
     "eslint": "8.49.0",
@@ -69,7 +69,7 @@
     "ts-node-dev": "2.0.0",
     "tsup": "7.2.0",
     "typescript": "5.1.6",
-    "web-push": "3.6.1"
+    "web-push": "3.6.6"
   },
   "scripts": {
     "analyze": "size-limit --why",
