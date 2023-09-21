@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
-    "@tsconfig/node18": "^2.0.0",
+    "@tsconfig/node18": "18.2.2",
     "@tsconfig/recommended": "1.0.3",
     "@types/node": "^18.17.18",
     "cross-env": "7.0.3",

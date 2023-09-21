@@ -13,7 +13,7 @@
   "devDependencies": {
     "@pothos/plugin-prisma": "3.56.0",
     "@size-limit/preset-small-lib": "8.2.4",
-    "@tsconfig/node18": "^2.0.1",
+    "@tsconfig/node18": "18.2.2",
     "@tsconfig/recommended": "1.0.3",
     "@types/bcryptjs": "^2.4.4",
     "@types/node": "^18.17.18",

@@ -5,7 +5,7 @@
     "messages/"
   ],
   "devDependencies": {
-    "@tsconfig/node18": "18.2.0",
+    "@tsconfig/node18": "18.2.2",
     "@tsconfig/recommended": "1.0.3",
     "typescript": "5.0.4"
   },
