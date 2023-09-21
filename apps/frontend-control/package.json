@@ -15,7 +15,6 @@
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
-    "@sentry/nextjs": "7.61.1",
     "@socialgouv/matomo-next": "1.7.0",
     "@uzh-bf/design-system": "2.1.6",
     "body-parser": "1.20.2",
@@ -63,7 +62,7 @@
     "tailwindcss": "3.3.3",
     "tailwindcss-radix": "2.8.0",
     "ts-node": "10.9.1",
-    "typescript": "5.0.4"
+    "typescript": "5.2.2"
   },
   "scripts": {
     "build": "next build",
