@@ -62,7 +62,7 @@
     "@types/js-search": "^1.4.0",
     "@types/lodash": "^4.14.196",
     "@types/node": "^18.17.18",
-    "@types/ramda": "^0.29.3",
+    "@types/ramda": "^0.29.4",
     "@types/react": "^18.2.22",
     "@types/react-dom": "^18.2.7",
     "@types/react-tagcloud": "^1.1.7",

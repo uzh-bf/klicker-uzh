@@ -8,7 +8,7 @@
     "dist/"
   ],
   "dependencies": {
-    "@azure/functions": "4.0.0-alpha.11",
+    "@azure/functions": "4.0.0-alpha.13",
     "@klicker-uzh/grading": "workspace:*",
     "@sentry/node": "7.70.0",
     "ioredis": "5.3.2",
@@ -22,7 +22,7 @@
     "@types/jsonwebtoken": "^9.0.3",
     "@types/md5": "2.3.2",
     "@types/node": "^18.17.18",
-    "@types/ramda": "^0.29.3",
+    "@types/ramda": "^0.29.4",
     "@uzh-bf/design-system": "2.1.6",
     "azure-functions-core-tools": "4.0.5348",
     "cross-env": "7.0.3",
@@ -32,7 +32,7 @@
     "prettier": "2.8.8",
     "prettier-plugin-organize-imports": "3.2.3",
     "tsup": "7.2.0",
-    "typescript": "5.1.6"
+    "typescript": "5.2.2"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",

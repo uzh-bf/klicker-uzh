@@ -8,8 +8,8 @@
     "dist/"
   ],
   "dependencies": {
-    "@azure/functions": "4.0.0-alpha.11",
-    "@azure/storage-blob": "12.15.0",
+    "@azure/functions": "4.0.0-alpha.13",
+    "@azure/storage-blob": "12.16.0",
     "jsonwebtoken": "9.0.2",
     "mongodb": "5.7.0"
   },
@@ -25,7 +25,7 @@
     "prettier": "2.8.8",
     "prettier-plugin-organize-imports": "3.2.3",
     "tsup": "7.2.0",
-    "typescript": "5.1.6"
+    "typescript": "5.2.2"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",

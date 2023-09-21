@@ -16,7 +16,7 @@
     "@tsconfig/recommended": "1.0.3",
     "@types/jest": "^29.5.5",
     "@types/node": "^18.17.18",
-    "@types/ramda": "^0.29.3",
+    "@types/ramda": "^0.29.4",
     "cross-env": "7.0.3",
     "eslint": "8.49.0",
     "jest": "29.7.0",

@@ -8,7 +8,7 @@
     "dist/"
   ],
   "dependencies": {
-    "@azure/functions": "4.0.0-alpha.11",
+    "@azure/functions": "4.0.0-alpha.13",
     "@azure/service-bus": "7.9.1",
     "@sentry/node": "7.70.0",
     "jsonwebtoken": "9.0.2"
