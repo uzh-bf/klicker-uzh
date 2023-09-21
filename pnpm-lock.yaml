@@ -1347,7 +1347,7 @@ importers:
         version: 1.11.4
       office-addin-lint:
         specifier: 2.2.5
-        version: 2.2.5(typescript@5.0.4)
+        version: 2.2.5(typescript@5.2.2)
       office-addin-manifest:
         specifier: 1.12.4
         version: 1.12.4
@@ -1365,7 +1365,7 @@ importers:
         version: 2.8.8
       prettier-plugin-organize-imports:
         specifier: 3.2.3
-        version: 3.2.3(prettier@2.8.8)(typescript@5.0.4)
+        version: 3.2.3(prettier@2.8.8)(typescript@5.2.2)
       process:
         specifier: 0.11.10
         version: 0.11.10
@@ -1380,10 +1380,10 @@ importers:
         version: 2.8.0
       ts-loader:
         specifier: 9.4.2
-        version: 9.4.2(typescript@5.0.4)(webpack@5.83.1)
+        version: 9.4.2(typescript@5.2.2)(webpack@5.83.1)
       typescript:
-        specifier: 5.0.4
-        version: 5.0.4
+        specifier: 5.2.2
+        version: 5.2.2
       webpack:
         specifier: 5.83.1
         version: 5.83.1(webpack-cli@5.1.1)
@@ -1687,16 +1687,16 @@ importers:
         version: 2.8.8
       prettier-plugin-organize-imports:
         specifier: 3.2.3
-        version: 3.2.3(prettier@2.8.8)(typescript@5.0.4)
+        version: 3.2.3(prettier@2.8.8)(typescript@5.2.2)
       size-limit:
         specifier: 8.2.4
         version: 8.2.4
       tsup:
         specifier: 6.7.0
-        version: 6.7.0(postcss@8.4.30)(typescript@5.0.4)
+        version: 6.7.0(postcss@8.4.30)(typescript@5.2.2)
       typescript:
-        specifier: 5.0.4
-        version: 5.0.4
+        specifier: 5.2.2
+        version: 5.2.2
 
   packages/markdown:
     dependencies:
@@ -1827,7 +1827,7 @@ importers:
     devDependencies:
       '@pothos/plugin-prisma':
         specifier: 3.56.0
-        version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@4.14.1)(graphql@16.7.1)(typescript@5.1.6)
+        version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@4.14.1)(graphql@16.7.1)(typescript@5.2.2)
       '@size-limit/preset-small-lib':
         specifier: 8.2.4
         version: 8.2.4(size-limit@8.2.4)
@@ -1866,7 +1866,7 @@ importers:
         version: 2.8.8
       prettier-plugin-organize-imports:
         specifier: 3.2.3
-        version: 3.2.3(prettier@2.8.8)(typescript@5.1.6)
+        version: 3.2.3(prettier@2.8.8)(typescript@5.2.2)
       prisma:
         specifier: 4.14.1
         version: 4.14.1
@@ -1878,13 +1878,13 @@ importers:
         version: 8.2.4
       ts-node:
         specifier: 10.9.1
-        version: 10.9.1(@types/node@18.17.18)(typescript@5.1.6)
+        version: 10.9.1(@types/node@18.17.18)(typescript@5.2.2)
       tsup:
         specifier: 7.2.0
-        version: 7.2.0(ts-node@10.9.1)(typescript@5.1.6)
+        version: 7.2.0(ts-node@10.9.1)(typescript@5.2.2)
       typescript:
-        specifier: 5.1.6
-        version: 5.1.6
+        specifier: 5.2.2
+        version: 5.2.2
       uuidv4:
         specifier: 6.2.13
         version: 6.2.13
@@ -1972,7 +1972,7 @@ importers:
         version: 2.8.8
       prettier-plugin-organize-imports:
         specifier: 3.2.3
-        version: 3.2.3(prettier@2.8.8)(typescript@5.0.4)
+        version: 3.2.3(prettier@2.8.8)(typescript@5.2.2)
       prettier-plugin-tailwindcss:
         specifier: 0.4.1
         version: 0.4.1(prettier-plugin-organize-imports@3.2.3)(prettier@2.8.8)
@@ -1983,8 +1983,8 @@ importers:
         specifier: 2.8.0
         version: 2.8.0
       typescript:
-        specifier: 5.0.4
-        version: 5.0.4
+        specifier: 5.2.2
+        version: 5.2.2
 
 packages:
 
@@ -9256,6 +9256,25 @@ packages:
       typescript: 5.1.6
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  /@pothos/plugin-prisma@3.56.0(@pothos/core@3.33.0)(@prisma/client@4.14.1)(graphql@16.7.1)(typescript@5.2.2):
+    resolution: {integrity: sha512-ne8s4WZC1ntRnvxnFvfGV9vVtUuRHBiI0mNkx5CYzJTBX5DuxjZk7vYBpOaQHBcMLulTLMpr0Tgd1AJggVBGDA==}
+    hasBin: true
+    peerDependencies:
+      '@pothos/core': '*'
+      '@prisma/client': '*'
+      graphql: '>=15.1.0'
+      typescript: '>=4.7.2'
+    dependencies:
+      '@pothos/core': 3.33.0(graphql@16.7.1)
+      '@prisma/client': 4.14.1(prisma@4.14.1)
+      '@prisma/generator-helper': 5.1.1
+      graphql: 16.7.1
+      typescript: 5.2.2
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
 
   /@pothos/plugin-scope-auth@3.20.0(@pothos/core@3.33.0)(graphql@16.7.1):
     resolution: {integrity: sha512-yaAWScp6ob5uG9Ob8YMTTga8DECANx5HW9q/bz4r66RifO/ZNEr1szXl6WpuyhqhGdasvTpzoYakVrYgs8J8wQ==}
@@ -11620,7 +11639,7 @@ packages:
       - supports-color
     dev: true
 
-  /@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0)(eslint@7.32.0)(typescript@5.0.4):
+  /@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0)(eslint@7.32.0)(typescript@5.2.2):
     resolution: {integrity: sha512-TiZzBSJja/LbhNPvk6yc0JrX9XqhQ0hdh6M2svYfsHGejaKFIAGd9MQ+ERIMzLGlN/kZoYIgdxFV0PuljTKXag==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     peerDependencies:
@@ -11632,18 +11651,18 @@ packages:
         optional: true
     dependencies:
       '@eslint-community/regexpp': 4.8.1
-      '@typescript-eslint/parser': 5.62.0(eslint@8.49.0)(typescript@5.0.4)
+      '@typescript-eslint/parser': 5.62.0(eslint@8.49.0)(typescript@5.2.2)
       '@typescript-eslint/scope-manager': 5.62.0
-      '@typescript-eslint/type-utils': 5.62.0(eslint@7.32.0)(typescript@5.0.4)
-      '@typescript-eslint/utils': 5.62.0(eslint@7.32.0)(typescript@5.0.4)
+      '@typescript-eslint/type-utils': 5.62.0(eslint@7.32.0)(typescript@5.2.2)
+      '@typescript-eslint/utils': 5.62.0(eslint@7.32.0)(typescript@5.2.2)
       debug: 4.3.4(supports-color@8.1.1)
       eslint: 7.32.0
       graphemer: 1.4.0
       ignore: 5.2.4
       natural-compare-lite: 1.4.0
       semver: 7.5.4
-      tsutils: 3.21.0(typescript@5.0.4)
-      typescript: 5.0.4
+      tsutils: 3.21.0(typescript@5.2.2)
+      typescript: 5.2.2
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -11668,7 +11687,7 @@ packages:
       - supports-color
     dev: true
 
-  /@typescript-eslint/parser@5.62.0(eslint@8.49.0)(typescript@5.0.4):
+  /@typescript-eslint/parser@5.62.0(eslint@8.49.0)(typescript@5.2.2):
     resolution: {integrity: sha512-VlJEV0fOQ7BExOsHYAGrgbEiZoi8D+Bl2+f6V2RrXerRSylnp+ZBHmPvaIa8cz0Ajx7WO7Z5RqfgYg7ED1nRhA==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     peerDependencies:
@@ -11680,10 +11699,10 @@ packages:
     dependencies:
       '@typescript-eslint/scope-manager': 5.62.0
       '@typescript-eslint/types': 5.62.0
-      '@typescript-eslint/typescript-estree': 5.62.0(typescript@5.0.4)
+      '@typescript-eslint/typescript-estree': 5.62.0(typescript@5.2.2)
       debug: 4.3.4(supports-color@8.1.1)
       eslint: 8.49.0
-      typescript: 5.0.4
+      typescript: 5.2.2
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -11745,7 +11764,7 @@ packages:
       - supports-color
     dev: true
 
-  /@typescript-eslint/type-utils@5.62.0(eslint@7.32.0)(typescript@5.0.4):
+  /@typescript-eslint/type-utils@5.62.0(eslint@7.32.0)(typescript@5.2.2):
     resolution: {integrity: sha512-xsSQreu+VnfbqQpW5vnCJdq1Z3Q0U31qiWmRhr98ONQmcp/yhiPJFPq8MXiJVLiksmOKSjIldZzkebzHuCGzew==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     peerDependencies:
@@ -11755,12 +11774,12 @@ packages:
       typescript:
         optional: true
     dependencies:
-      '@typescript-eslint/typescript-estree': 5.62.0(typescript@5.0.4)
-      '@typescript-eslint/utils': 5.62.0(eslint@7.32.0)(typescript@5.0.4)
+      '@typescript-eslint/typescript-estree': 5.62.0(typescript@5.2.2)
+      '@typescript-eslint/utils': 5.62.0(eslint@7.32.0)(typescript@5.2.2)
       debug: 4.3.4(supports-color@8.1.1)
       eslint: 7.32.0
-      tsutils: 3.21.0(typescript@5.0.4)
-      typescript: 5.0.4
+      tsutils: 3.21.0(typescript@5.2.2)
+      typescript: 5.2.2
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -11796,7 +11815,7 @@ packages:
       - supports-color
     dev: true
 
-  /@typescript-eslint/typescript-estree@5.62.0(typescript@5.0.4):
+  /@typescript-eslint/typescript-estree@5.62.0(typescript@5.2.2):
     resolution: {integrity: sha512-CmcQ6uY7b9y694lKdRB8FEel7JbU/40iSAPomu++SjLMntB+2Leay2LO6i8VnJk58MtE9/nQSFIH6jpyRWyYzA==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     peerDependencies:
@@ -11811,8 +11830,8 @@ packages:
       globby: 11.1.0
       is-glob: 4.0.3
       semver: 7.5.4
-      tsutils: 3.21.0(typescript@5.0.4)
-      typescript: 5.0.4
+      tsutils: 3.21.0(typescript@5.2.2)
+      typescript: 5.2.2
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -11858,7 +11877,7 @@ packages:
       - typescript
     dev: true
 
-  /@typescript-eslint/utils@5.62.0(eslint@7.32.0)(typescript@5.0.4):
+  /@typescript-eslint/utils@5.62.0(eslint@7.32.0)(typescript@5.2.2):
     resolution: {integrity: sha512-n8oxjeb5aIbPFEtmQxQYOLI0i9n5ySBEY/ZEHHZqKQSFnxio1rv6dthascc9dLuwrL0RC5mPCxB7vnAVGAYWAQ==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     peerDependencies:
@@ -11869,7 +11888,7 @@ packages:
       '@types/semver': 7.5.0
       '@typescript-eslint/scope-manager': 5.62.0
       '@typescript-eslint/types': 5.62.0
-      '@typescript-eslint/typescript-estree': 5.62.0(typescript@5.0.4)
+      '@typescript-eslint/typescript-estree': 5.62.0(typescript@5.2.2)
       eslint: 7.32.0
       eslint-scope: 5.1.1
       semver: 7.5.4
@@ -22094,12 +22113,12 @@ packages:
       - encoding
     dev: true
 
-  /office-addin-lint@2.2.5(typescript@5.0.4):
+  /office-addin-lint@2.2.5(typescript@5.2.2):
     resolution: {integrity: sha512-d5ASs9ClomKex0+e5Jv9bNC6xet1VyQrqb6ShChx22j6kWwX5mEaN/RAx7HCGRbhSQ9Dxmky+UUojdbZaR+DTw==}
     hasBin: true
     dependencies:
-      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0)(eslint@7.32.0)(typescript@5.0.4)
-      '@typescript-eslint/parser': 5.62.0(eslint@8.49.0)(typescript@5.0.4)
+      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0)(eslint@7.32.0)(typescript@5.2.2)
+      '@typescript-eslint/parser': 5.62.0(eslint@8.49.0)(typescript@5.2.2)
       commander: 6.2.1
       eslint: 7.32.0
       eslint-config-prettier: 8.10.0(eslint@7.32.0)
@@ -26765,7 +26784,7 @@ packages:
       yargs-parser: 21.1.1
     dev: true
 
-  /ts-loader@9.4.2(typescript@5.0.4)(webpack@5.83.1):
+  /ts-loader@9.4.2(typescript@5.2.2)(webpack@5.83.1):
     resolution: {integrity: sha512-OmlC4WVmFv5I0PpaxYb+qGeGOdm5giHU7HwDDUjw59emP2UYMHy9fFSDcYgSNoH8sXcj4hGCSEhlDZ9ULeDraA==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
@@ -26776,7 +26795,7 @@ packages:
       enhanced-resolve: 5.15.0
       micromatch: 4.0.5
       semver: 7.5.4
-      typescript: 5.0.4
+      typescript: 5.2.2
       webpack: 5.83.1(webpack-cli@5.1.1)
     dev: true
 
@@ -26958,6 +26977,43 @@ packages:
       - ts-node
     dev: true
 
+  /tsup@6.7.0(postcss@8.4.30)(typescript@5.2.2):
+    resolution: {integrity: sha512-L3o8hGkaHnu5TdJns+mCqFsDBo83bJ44rlK7e6VdanIvpea4ArPcU3swWGsLVbXak1PqQx/V+SSmFPujBK+zEQ==}
+    engines: {node: '>=14.18'}
+    hasBin: true
+    peerDependencies:
+      '@swc/core': ^1
+      postcss: ^8.4.12
+      typescript: '>=4.1.0'
+    peerDependenciesMeta:
+      '@swc/core':
+        optional: true
+      postcss:
+        optional: true
+      typescript:
+        optional: true
+    dependencies:
+      bundle-require: 4.0.1(esbuild@0.17.19)
+      cac: 6.7.14
+      chokidar: 3.5.3
+      debug: 4.3.4(supports-color@8.1.1)
+      esbuild: 0.17.19
+      execa: 5.1.1
+      globby: 11.1.0
+      joycon: 3.1.1
+      postcss: 8.4.30
+      postcss-load-config: 3.1.4(postcss@8.4.30)
+      resolve-from: 5.0.0
+      rollup: 3.29.2
+      source-map: 0.8.0-beta.0
+      sucrase: 3.34.0
+      tree-kill: 1.2.2
+      typescript: 5.2.2
+    transitivePeerDependencies:
+      - supports-color
+      - ts-node
+    dev: true
+
   /tsup@7.2.0(postcss@8.4.30)(typescript@5.2.2):
     resolution: {integrity: sha512-vDHlczXbgUvY3rWvqFEbSqmC1L7woozbzngMqTtL2PGBODTtWlRwGDDawhvWzr5c1QjKe4OAKqJGfE1xeXUvtQ==}
     engines: {node: '>=16.14'}
@@ -27077,14 +27133,14 @@ packages:
       typescript: 4.9.5
     dev: true
 
-  /tsutils@3.21.0(typescript@5.0.4):
+  /tsutils@3.21.0(typescript@5.2.2):
     resolution: {integrity: sha512-mHKK3iUXL+3UF6xL5k0PEhKRUBKPBCv/+RkEOpjRWxxx27KKRBmmA60A9pgOUvMi8GKhRMPEmjBRPzs2W7O1OA==}
     engines: {node: '>= 6'}
     peerDependencies:
       typescript: '>=2.8.0 || >= 3.2.0-dev || >= 3.3.0-dev || >= 3.4.0-dev || >= 3.5.0-dev || >= 3.6.0-dev || >= 3.6.0-beta || >= 3.7.0-dev || >= 3.7.0-beta'
     dependencies:
       tslib: 1.14.1
-      typescript: 5.0.4
+      typescript: 5.2.2
     dev: true
 
   /tunnel-agent@0.6.0:

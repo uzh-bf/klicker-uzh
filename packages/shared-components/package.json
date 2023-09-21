@@ -22,7 +22,7 @@
     "prettier-plugin-tailwindcss": "0.4.1",
     "tailwindcss": "3.3.3",
     "tailwindcss-radix": "2.8.0",
-    "typescript": "5.0.4"
+    "typescript": "5.2.2"
   },
   "peerDependencies": {
     "@fortawesome/fontawesome-svg-core": "6.4.2",
