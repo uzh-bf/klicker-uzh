@@ -1,7 +1,4 @@
 {
-  "extends": [
-    "@tsconfig/node18/tsconfig.json",
-    "@tsconfig/recommended/tsconfig.json"
-  ],
+  "extends": "@tsconfig/node18/tsconfig.json",
   "include": ["src"]
 }

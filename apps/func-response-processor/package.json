@@ -18,7 +18,6 @@
   },
   "devDependencies": {
     "@tsconfig/node18": "18.2.2",
-    "@tsconfig/recommended": "1.0.3",
     "@types/jsonwebtoken": "^9.0.3",
     "@types/md5": "2.3.2",
     "@types/node": "^18.17.18",

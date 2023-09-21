@@ -15,7 +15,6 @@
   },
   "devDependencies": {
     "@tsconfig/node18": "18.2.2",
-    "@tsconfig/recommended": "1.0.3",
     "@types/jsonwebtoken": "^9.0.3",
     "@types/node": "^18.17.18",
     "@uzh-bf/design-system": "2.1.6",
