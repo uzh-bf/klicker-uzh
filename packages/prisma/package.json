@@ -12,7 +12,6 @@
   },
   "devDependencies": {
     "@pothos/plugin-prisma": "3.56.0",
-    "@size-limit/preset-small-lib": "8.2.4",
     "@tsconfig/node18": "18.2.2",
     "@types/bcryptjs": "^2.4.4",
     "@types/node": "^18.17.18",
@@ -27,14 +26,12 @@
     "prettier-plugin-organize-imports": "3.2.3",
     "prisma": "4.14.1",
     "ramda": "0.29.0",
-    "size-limit": "8.2.4",
     "ts-node": "10.9.1",
     "tsup": "7.2.0",
     "typescript": "5.2.2",
     "uuidv4": "6.2.13"
   },
   "scripts": {
-    "analyze": "size-limit --why",
     "build": "run-s generate build:ts build:copy",
     "build:copy": "node src/copy.js",
     "build:ts": "cross-env NODE_ENV=production tsup",
@@ -82,8 +79,7 @@
     "seed:qa": "ENV=development doppler run --config stg -- npm-run-all seed:qa:test",
     "seed:qa:bf1": "ENV=development doppler run --config stg -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedBF1.ts",
     "seed:qa:test": "ts-node --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
-    "seed:test": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
-    "size": "size-limit"
+    "seed:test": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedTEST.ts"
   },
   "engines": {
     "node": "=18"
@@ -93,11 +89,5 @@
   },
   "prisma": {
     "seed": "pnpm run seed"
-  },
-  "size-limit": [
-    {
-      "path": "dist/index.js",
-      "limit": "10 KB"
-    }
-  ]
+  }
 }

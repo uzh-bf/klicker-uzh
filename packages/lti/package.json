@@ -11,14 +11,12 @@
     "body-parser": "1.20.2"
   },
   "devDependencies": {
-    "@size-limit/preset-small-lib": "8.2.4",
     "@tsconfig/node18": "18.2.2",
     "@types/node": "^18.17.18",
     "cross-env": "7.0.3",
     "eslint": "8.49.0",
     "prettier": "2.8.8",
     "prettier-plugin-organize-imports": "3.2.3",
-    "size-limit": "8.2.4",
     "tsup": "6.7.0",
     "typescript": "5.2.2"
   },
@@ -29,24 +27,16 @@
     "react-dom": "18.2.0"
   },
   "scripts": {
-    "analyze": "size-limit --why",
     "build": "cross-env NODE_ENV=production tsup",
     "build:watch": "cross-env NODE_ENV=development tsup --watch",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "size": "size-limit"
+    "format:check": "prettier --check ."
   },
   "engines": {
     "node": "=18"
   },
   "volta": {
     "extends": "../../package.json"
-  },
-  "size-limit": [
-    {
-      "path": "dist/index.js",
-      "limit": "10 KB"
-    }
-  ]
+  }
 }

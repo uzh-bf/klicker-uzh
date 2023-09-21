@@ -49,7 +49,6 @@
     "yup": "1.2.0"
   },
   "scripts": {
-    "analyze": "size-limit --why",
     "build": "run-s build:tw build:ts",
     "build:ts": "cross-env NODE_ENV=production tsup",
     "build:tw": "run-p build:tw:*",

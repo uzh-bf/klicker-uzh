@@ -1554,9 +1554,6 @@ importers:
       '@parcel/watcher':
         specifier: 2.2.0
         version: 2.2.0
-      '@size-limit/preset-small-lib':
-        specifier: 8.2.4
-        version: 8.2.4(size-limit@8.2.4)
       '@tsconfig/node18':
         specifier: ^2.0.0
         version: 2.0.1
@@ -1617,9 +1614,6 @@ importers:
       prettier-plugin-organize-imports:
         specifier: 3.2.3
         version: 3.2.3(prettier@2.8.8)(typescript@5.1.6)
-      size-limit:
-        specifier: 8.2.4
-        version: 8.2.4
       ts-node:
         specifier: 10.9.1
         version: 10.9.1(@types/node@18.17.18)(typescript@5.1.6)
@@ -1667,9 +1661,6 @@ importers:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@size-limit/preset-small-lib':
-        specifier: 8.2.4
-        version: 8.2.4(size-limit@8.2.4)
       '@tsconfig/node18':
         specifier: 18.2.2
         version: 18.2.2
@@ -1688,9 +1679,6 @@ importers:
       prettier-plugin-organize-imports:
         specifier: 3.2.3
         version: 3.2.3(prettier@2.8.8)(typescript@5.2.2)
-      size-limit:
-        specifier: 8.2.4
-        version: 8.2.4
       tsup:
         specifier: 6.7.0
         version: 6.7.0(postcss@8.4.30)(typescript@5.2.2)
@@ -1822,9 +1810,6 @@ importers:
       '@pothos/plugin-prisma':
         specifier: 3.56.0
         version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@4.14.1)(graphql@16.7.1)(typescript@5.2.2)
-      '@size-limit/preset-small-lib':
-        specifier: 8.2.4
-        version: 8.2.4(size-limit@8.2.4)
       '@tsconfig/node18':
         specifier: 18.2.2
         version: 18.2.2
@@ -1867,9 +1852,6 @@ importers:
       ramda:
         specifier: 0.29.0
         version: 0.29.0
-      size-limit:
-        specifier: 8.2.4
-        version: 8.2.4
       ts-node:
         specifier: 10.9.1
         version: 10.9.1(@types/node@18.17.18)(typescript@5.2.2)
@@ -10376,37 +10358,6 @@ packages:
       '@sinonjs/commons': 3.0.0
     dev: true
 
-  /@size-limit/esbuild@8.2.4(size-limit@8.2.4):
-    resolution: {integrity: sha512-kPgNfpwUvBD98s5axlf1UciFg4Ki4AYSl/cOmSyyYBuzksHiwW7Myeu0w4mTxtV9nwBFbkrrNXqszE7b+OhFLA==}
-    engines: {node: ^14.0.0 || ^16.0.0 || >=18.0.0}
-    peerDependencies:
-      size-limit: 8.2.4
-    dependencies:
-      esbuild: 0.17.19
-      nanoid: 3.3.6
-      size-limit: 8.2.4
-    dev: true
-
-  /@size-limit/file@8.2.4(size-limit@8.2.4):
-    resolution: {integrity: sha512-xLuF97W7m7lxrRJvqXRlxO/4t7cpXtfxOnjml/t4aRVUCMXLdyvebRr9OM4jjoK8Fmiz8jomCbETUCI3jVhLzA==}
-    engines: {node: ^14.0.0 || ^16.0.0 || >=18.0.0}
-    peerDependencies:
-      size-limit: 8.2.4
-    dependencies:
-      semver: 7.3.8
-      size-limit: 8.2.4
-    dev: true
-
-  /@size-limit/preset-small-lib@8.2.4(size-limit@8.2.4):
-    resolution: {integrity: sha512-AL4384oBgMcDPlNblgWHreqFSSOui0J9NbgyHhegB1h8AgRyHbdVGC3yWLpEESYQXHYnKdbNrYeRE/TclsViog==}
-    peerDependencies:
-      size-limit: 8.2.4
-    dependencies:
-      '@size-limit/esbuild': 8.2.4(size-limit@8.2.4)
-      '@size-limit/file': 8.2.4(size-limit@8.2.4)
-      size-limit: 8.2.4
-    dev: true
-
   /@slorber/react-ideal-image@0.0.12(prop-types@15.8.1)(react-waypoint@10.3.0)(react@18.2.0):
     resolution: {integrity: sha512-u8KiDTEkMA7/KAeA5ywg/P7YG4zuKhWtswfVZDH8R8HXgQsFcHIYU2WaQnGuK/Du7Wdj90I+SdFmajSGFRvoKA==}
     engines: {node: '>= 8.9.0', npm: '> 3'}
@@ -13426,11 +13377,6 @@ packages:
     engines: {node: '>=10.16.0'}
     dependencies:
       streamsearch: 1.1.0
-
-  /bytes-iec@3.1.1:
-    resolution: {integrity: sha512-fey6+4jDK7TFtFg/klGSvNKJctyU7n2aQdnM+CO0ruLPbqqMOM8Tio0Pc+deqUeVKX1tL5DQep1zQ7+37aTAsA==}
-    engines: {node: '>= 0.8'}
-    dev: true
 
   /bytes@3.0.0:
     resolution: {integrity: sha512-pMhOfFDPiv9t5jjIXkHosWmkSyQbvsgEVNkz0ERHbuLh2T/7j4Mqqpz523Fe8MVY89KC6Sh/QfS2sM+SjgFDcw==}
@@ -21409,12 +21355,6 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  /nanospinner@1.1.0:
-    resolution: {integrity: sha512-yFvNYMig4AthKYfHFl1sLj7B2nkHL4lzdig4osvl9/LdGbXwrdFRoqBS98gsEsOakr0yH+r5NZ/1Y9gdVB8trA==}
-    dependencies:
-      picocolors: 1.0.0
-    dev: true
-
   /napi-build-utils@1.0.2:
     resolution: {integrity: sha512-ONmRUqK7zj7DWX0D9ADe03wbwOBZxNAfF20PlGfCWQcD3+/MakShIHrMqx9YwPTfxDdF1zLeL+RGZiR9kGMLdg==}
 
@@ -25324,14 +25264,6 @@ packages:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
 
-  /semver@7.3.8:
-    resolution: {integrity: sha512-NB1ctGL5rlHrPJtFDVIVzTyQylMLu9N9VICA6HSFJo8MCGVTMW6gfpicwKmmK/dAjTOrqu5l63JJOpDSrAis3A==}
-    engines: {node: '>=10'}
-    hasBin: true
-    dependencies:
-      lru-cache: 6.0.0
-    dev: true
-
   /semver@7.5.4:
     resolution: {integrity: sha512-1bCSESV6Pv+i21Hvpxp3Dx+pSD8lIPt8uVjRrxAUt/nbswYc+tK6Y2btiULjd4+fnq15PX+nqQDC7Oft7WkwcA==}
     engines: {node: '>=10'}
@@ -25584,19 +25516,6 @@ packages:
       arg: 5.0.2
       sax: 1.2.4
     dev: false
-
-  /size-limit@8.2.4:
-    resolution: {integrity: sha512-Un16nSreD1v2CYwSorattiJcHuAWqXvg4TsGgzpjnoByqQwsSfCIEQHuaD14HNStzredR8cdsO9oGH91ibypTA==}
-    engines: {node: ^14.0.0 || ^16.0.0 || >=18.0.0}
-    hasBin: true
-    dependencies:
-      bytes-iec: 3.1.1
-      chokidar: 3.5.3
-      globby: 11.1.0
-      lilconfig: 2.1.0
-      nanospinner: 1.1.0
-      picocolors: 1.0.0
-    dev: true
 
   /slash@3.0.0:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
