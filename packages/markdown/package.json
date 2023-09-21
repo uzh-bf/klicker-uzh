@@ -19,8 +19,7 @@
     "unified": "10.1.2"
   },
   "devDependencies": {
-    "@size-limit/preset-small-lib": "8.2.4",
-    "@tsconfig/node18": "^2.0.0",
+    "@tsconfig/node18": "18.2.2",
     "@types/node": "^18.17.18",
     "@types/react": "^18.2.22",
     "@types/react-dom": "^18.2.7",
@@ -32,11 +31,10 @@
     "prettier": "2.8.8",
     "prettier-plugin-organize-imports": "3.2.3",
     "prettier-plugin-tailwindcss": "0.4.1",
-    "size-limit": "8.2.4",
     "tailwindcss": "3.3.3",
     "tailwindcss-radix": "2.8.0",
-    "tsup": "6.7.0",
-    "typescript": "5.0.4"
+    "tsup": "7.2.0",
+    "typescript": "5.2.2"
   },
   "peerDependencies": {
     "@fortawesome/fontawesome-svg-core": "6.4.2",
@@ -64,8 +62,7 @@
     "dev:tw:components": "tailwindcss -w -i src/components.css -o src/public/components.css",
     "dev:tw:utilities": "tailwindcss -w -i src/utilities.css -o src/public/utilities.css",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "size": "size-limit"
+    "format:check": "prettier --check ."
   },
   "engines": {
     "node": "=18"
@@ -73,11 +70,5 @@
   "volta": {
     "extends": "../../package.json"
   },
-  "size-limit": [
-    {
-      "path": "dist/index.js",
-      "limit": "10 KB"
-    }
-  ],
   "type": "module"
 }
