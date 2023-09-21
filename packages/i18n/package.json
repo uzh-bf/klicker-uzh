@@ -4,6 +4,7 @@
     "index.ts",
     "messages/"
   ],
+  "type": "module",
   "devDependencies": {
     "@tsconfig/node18": "18.2.2",
     "typescript": "5.2.2"
