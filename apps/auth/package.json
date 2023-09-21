@@ -23,11 +23,11 @@
     "tailwind-merge": "1.14.0"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.2",
-    "@types/js-cookie": "^3.0.3",
-    "@types/jsonwebtoken": "^9.0.2",
-    "@types/node": "^18.17.4",
-    "@types/react": "^18.2.18",
+    "@types/bcryptjs": "^2.4.4",
+    "@types/js-cookie": "^3.0.4",
+    "@types/jsonwebtoken": "^9.0.3",
+    "@types/node": "^18.17.18",
+    "@types/react": "^18.2.22",
     "@types/react-dom": "^18.2.7",
     "autoprefixer": "10.4.14",
     "cross-env": "7.0.3",
