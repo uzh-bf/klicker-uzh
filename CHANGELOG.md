@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.68](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.67...v3.0.0-rc.68) (2023-09-20)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** allow deletion of questions during filtering ([#3854](https://github.com/uzh-bf/klicker-uzh/issues/3854)) ([75b175a](https://github.com/uzh-bf/klicker-uzh/commit/75b175a53336d652a648471bbce8103e2a6a8a31))
+
+## [3.0.0-rc.67](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.66...v3.0.0-rc.67) (2023-09-20)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** ensure that local time is used in frontend and push notifications ([4730d03](https://github.com/uzh-bf/klicker-uzh/commit/4730d03d36221ec11174c503a1c079129e13444c))
+* **apps/frontend-manage:** allow solutionRanges to be null in QuestionModal ([#3853](https://github.com/uzh-bf/klicker-uzh/issues/3853)) ([3b89674](https://github.com/uzh-bf/klicker-uzh/commit/3b8967433234d0706eb228e6df6a25b04e7f96f9))
+* **apps/frontend-manage:** ensure correct application of multipliers ([#3855](https://github.com/uzh-bf/klicker-uzh/issues/3855)) ([bf56f0f](https://github.com/uzh-bf/klicker-uzh/commit/bf56f0ff26c846aae92761208cdd31ef321b12b4))
+* **apps/frontend-manage:** ensure that descriptions are loaded instantly during element editing ([#3850](https://github.com/uzh-bf/klicker-uzh/issues/3850)) ([09b0ba7](https://github.com/uzh-bf/klicker-uzh/commit/09b0ba74320c49d4e8d2f9fbc8fffd10cc84527e))
+* **apps/frontend-manage:** fix histogram bin input field on manage frontend ([#3848](https://github.com/uzh-bf/klicker-uzh/issues/3848)) ([3d80a88](https://github.com/uzh-bf/klicker-uzh/commit/3d80a881a75ffa66d8bdfd6af626b80c50481756))
+* **apps/frontend-manage:** set logical start and end date for micro session during creation ([afa6314](https://github.com/uzh-bf/klicker-uzh/commit/afa63140e4698c4c84cceae43cb378f5d92f782f))
+* ensure that multipliers of question and element are combined on question instance ([#3849](https://github.com/uzh-bf/klicker-uzh/issues/3849)) ([dfc52e7](https://github.com/uzh-bf/klicker-uzh/commit/dfc52e703cb84533278c945e6dac8d850f26c6e8))
+* **push-notifications:** rethrow errors to stop the sending process ([#3847](https://github.com/uzh-bf/klicker-uzh/issues/3847)) ([9903bac](https://github.com/uzh-bf/klicker-uzh/commit/9903bac9af00b978e08d3c81a7b203ea4c3989a5))
+* **test:** fix test suite with issues related to KPRIM questions ([#3852](https://github.com/uzh-bf/klicker-uzh/issues/3852)) ([ba7cde7](https://github.com/uzh-bf/klicker-uzh/commit/ba7cde7ba67e5b09f876951deaaaf00aad0d6616))
+
+
+### Other
+
+* **apps/auth:** improved responsiveness of authentication page ([#3851](https://github.com/uzh-bf/klicker-uzh/issues/3851)) ([32be16a](https://github.com/uzh-bf/klicker-uzh/commit/32be16a98f5f8e1179d8f01d2230671c88b5fa0a))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add default sorting for free text and numerical questions by count on evaluation ([2fb6c7a](https://github.com/uzh-bf/klicker-uzh/commit/2fb6c7adcb96d6f2eae47e9da2f45bbddf9909fa))
+* **apps/frontend-manage:** monospaced font and copy button for delegated login password ([#3856](https://github.com/uzh-bf/klicker-uzh/issues/3856)) ([55f6ac5](https://github.com/uzh-bf/klicker-uzh/commit/55f6ac505e4002acf133c3639b5fa872d8695fcf))
+
 ## [3.0.0-rc.66](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.65...v3.0.0-rc.66) (2023-09-19)
 
 

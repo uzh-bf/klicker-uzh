@@ -390,8 +390,7 @@ function QuestionStack({
                           <LearningElementPoints
                             evaluation={element.questionInstance.evaluation}
                             pointsMultiplier={
-                              element.questionInstance.questionData
-                                .pointsMultiplier
+                              element.questionInstance.pointsMultiplier
                             }
                           />
                         </div>
