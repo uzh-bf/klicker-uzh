@@ -1585,8 +1585,8 @@ importers:
         specifier: 8.2.4
         version: 8.2.4(size-limit@8.2.4)
       '@tsconfig/node18':
-        specifier: 18.2.2
-        version: 18.2.2
+        specifier: ^2.0.0
+        version: 2.0.1
       '@tsconfig/recommended':
         specifier: 1.0.3
         version: 1.0.3
@@ -1798,8 +1798,8 @@ importers:
         specifier: 8.2.4
         version: 8.2.4(size-limit@8.2.4)
       '@tsconfig/node18':
-        specifier: 18.2.2
-        version: 18.2.2
+        specifier: ^2.0.0
+        version: 2.0.1
       '@tsconfig/recommended':
         specifier: 1.0.3
         version: 1.0.3
@@ -11161,6 +11161,10 @@ packages:
 
   /@tsconfig/node18@18.2.2:
     resolution: {integrity: sha512-d6McJeGsuoRlwWZmVIeE8CUA27lu6jLjvv1JzqmpsytOYYbVi1tHZEnwCNVOXnj4pyLvneZlFlpXUK+X9wBWyw==}
+    dev: true
+
+  /@tsconfig/node18@2.0.1:
+    resolution: {integrity: sha512-UqdfvuJK0SArA2CxhKWwwAWfnVSXiYe63bVpMutc27vpngCntGUZQETO24pEJ46zU6XM+7SpqYoMgcO3bM11Ew==}
     dev: true
 
   /@tsconfig/recommended@1.0.3:

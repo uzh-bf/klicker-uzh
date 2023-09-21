@@ -548,11 +548,11 @@
   opacity: 0.5
 }
 
-.prose-p\:\!m-0 :is(:where(p):not(:where([class~="not-prose"] *))) {
+.prose-p\:\!m-0 :is(:where(p):not(:where([class~="not-prose"],[class~="not-prose"] *))) {
   margin: 0px !important
 }
 
-.prose-img\:\!m-0 :is(:where(img):not(:where([class~="not-prose"] *))) {
+.prose-img\:\!m-0 :is(:where(img):not(:where([class~="not-prose"],[class~="not-prose"] *))) {
   margin: 0px !important
 }
 
