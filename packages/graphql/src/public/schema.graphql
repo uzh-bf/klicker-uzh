@@ -598,10 +598,10 @@ type Query {
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
-  participantDetails(participantId: String!): Participant
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
+  publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Question
   questionStack(id: Int!): QuestionStack
   runningSessions(shortname: String!): [Session!]

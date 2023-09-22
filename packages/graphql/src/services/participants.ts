@@ -511,7 +511,7 @@ export async function flagQuestion(
   return 'OK'
 }
 
-export async function getParticipantDetails(
+export async function getPublicParticipantProfile(
   args: { participantId: string },
   ctx: ContextWithUser
 ) {
@@ -526,7 +526,19 @@ export async function getParticipantDetails(
     },
   })
 
-  return participant
+  if (participant?.isProfilePublic) {
+    return participant
+  } else {
+    if (participant === null) {
+      return participant
+    }
+    return {
+      ...participant,
+      avatar: null,
+      xp: 0,
+      achievements: [],
+    }
+  }
 }
 
 export async function getParticipantWithAchievements(ctx: ContextWithUser) {

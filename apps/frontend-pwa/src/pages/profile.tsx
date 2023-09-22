@@ -45,6 +45,7 @@ const Profile = () => {
           level={participant.levelData}
           achievements={participant.achievements}
           possibleAchievements={achievements}
+          showProfileDetails={true}
         />
 
         <div className="flex flex-row justify-between w-full px-4 space-x-2">
