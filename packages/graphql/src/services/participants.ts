@@ -542,7 +542,7 @@ export async function getPublicParticipantProfile(
 }
 
 export async function getParticipantWithAchievements(ctx: ContextWithUser) {
-  const participant = await ctx.prisma.participant.findUnique({
+  let participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
       achievements: {
@@ -557,7 +557,7 @@ export async function getParticipantWithAchievements(ctx: ContextWithUser) {
   const achievements = await ctx.prisma.achievement.findMany()
 
   return {
-    participant,
+    participant: { ...participant, isSelf: true },
     achievements,
   }
 }
