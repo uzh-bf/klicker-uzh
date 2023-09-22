@@ -1,15 +1,21 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import type { ICourse } from './course'
-import { Course } from './course'
-import type { IParticipant, IParticipantGroup } from './participant'
-import { ParticipantGroup, ParticipantRef } from './participant'
-import type { IQuestionInstance } from './question'
-import { QuestionInstance } from './question'
+import builder from '../builder.js'
+import type { ICourse } from './course.js'
+import { Course } from './course.js'
+import type { IParticipant, IParticipantGroup } from './participant.js'
+import { ParticipantGroup, ParticipantRef } from './participant.js'
+import type { IQuestionInstance } from './question.js'
+import { QuestionInstance } from './question.js'
 
-export const ParameterType = builder.enumType('ParameterType', {
-  values: Object.values(DB.ParameterType),
-})
+export const GroupActivityStatus: ReturnType<typeof builder.enumType> =
+  builder.enumType('GroupActivityStatus', {
+    values: Object.values(DB.GroupActivityStatus),
+  })
+
+export const ParameterType: ReturnType<typeof builder.enumType> =
+  builder.enumType('ParameterType', {
+    values: Object.values(DB.ParameterType),
+  })
 
 export const GroupActivityDecisionInput = builder.inputType(
   'GroupActivityDecisionInput',

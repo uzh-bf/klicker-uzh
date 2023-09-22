@@ -1,6 +1,15 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import { QuestionData, QuestionDisplayMode, QuestionType } from './questionData'
+import builder from '../builder.js'
+import {
+  QuestionData,
+  QuestionDisplayMode,
+  QuestionType,
+} from './questionData.js'
+
+export const QuestionInstanceType: ReturnType<typeof builder.enumType> =
+  builder.enumType('QuestionInstanceType', {
+    values: Object.values(DB.QuestionInstanceType),
+  })
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
   fields: (t) => ({

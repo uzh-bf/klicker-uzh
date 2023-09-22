@@ -5,5 +5,6 @@ export default defineConfig({
   clean: false,
   dts: true,
   publicDir: 'src/public',
+  format: 'esm',
   target: 'node18',
 })

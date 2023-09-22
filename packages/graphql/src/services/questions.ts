@@ -4,12 +4,11 @@ import {
   StorageSharedKeyCredential,
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
-import * as DB from '@klicker-uzh/prisma'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
-import { Question, Tag } from 'src/ops'
-import { ContextWithUser } from '../lib/context'
+import { Question, QuestionDisplayMode, QuestionType, Tag } from 'src/ops.js'
+import { ContextWithUser } from '../lib/context.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -81,7 +80,7 @@ export async function manipulateQuestion(
     displayMode,
   }: {
     id?: number | null
-    type: DB.QuestionType
+    type: QuestionType
     name?: string | null
     content?: string | null
     explanation?: string | null
@@ -110,7 +109,7 @@ export async function manipulateQuestion(
     hasAnswerFeedbacks?: boolean | null
     pointsMultiplier?: number | null
     tags?: string[] | null
-    displayMode?: DB.QuestionDisplayMode | null
+    displayMode?: QuestionDisplayMode | null
   },
   ctx: ContextWithUser
 ) {

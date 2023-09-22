@@ -1,6 +1,6 @@
-export { default as enhanceContext } from './lib/context'
+export { default as enhanceContext } from './lib/context.js'
 
-import builder from './builder'
+import builder from './builder.js'
 
 import './schema/achievement'
 import './schema/course'

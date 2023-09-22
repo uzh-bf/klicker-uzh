@@ -1,25 +1,25 @@
 import * as DB from '@klicker-uzh/prisma'
 
-import builder from '../builder'
-import type { ICourse } from './course'
-import { CourseRef } from './course'
-import type { IQuestionInstance } from './question'
-import { QuestionInstanceRef } from './question'
+import builder from '../builder.js'
+import type { ICourse } from './course.js'
+import { CourseRef } from './course.js'
+import type { IQuestionInstance } from './question.js'
+import { QuestionInstanceRef } from './question.js'
 
-export const LearningElementOrderType = builder.enumType(
-  'LearningElementOrderType',
-  {
+export const LearningElementOrderType: ReturnType<typeof builder.enumType> =
+  builder.enumType('LearningElementOrderType', {
     values: Object.values(DB.OrderType),
-  }
-)
+  })
 
-export const LearningElementStatus = builder.enumType('LearningElementStatus', {
-  values: Object.values(DB.LearningElementStatus),
-})
+export const LearningElementStatus: ReturnType<typeof builder.enumType> =
+  builder.enumType('LearningElementStatus', {
+    values: Object.values(DB.LearningElementStatus),
+  })
 
-export const QuestionStackType = builder.enumType('QuestionStackType', {
-  values: Object.values(DB.QuestionStackType),
-})
+export const QuestionStackType: ReturnType<typeof builder.enumType> =
+  builder.enumType('QuestionStackType', {
+    values: Object.values(DB.QuestionStackType),
+  })
 
 export const StackInput = builder.inputType('StackInput', {
   fields: (t) => ({

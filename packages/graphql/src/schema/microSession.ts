@@ -1,9 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import type { ICourse } from './course'
-import { Course } from './course'
-import type { IQuestionInstance } from './question'
-import { QuestionInstance } from './question'
+import builder from '../builder.js'
+import type { ICourse } from './course.js'
+import { Course } from './course.js'
+import type { IQuestionInstance } from './question.js'
+import { QuestionInstance } from './question.js'
 
 export interface IMicroSession extends DB.MicroSession {
   numOfInstances?: number
@@ -11,9 +11,10 @@ export interface IMicroSession extends DB.MicroSession {
   instances?: IQuestionInstance[]
 }
 
-export const MicroSessionStatus = builder.enumType('MicroSessionStatus', {
-  values: Object.values(DB.MicroSessionStatus),
-})
+export const MicroSessionStatus: ReturnType<typeof builder.enumType> =
+  builder.enumType('MicroSessionStatus', {
+    values: Object.values(DB.MicroSessionStatus),
+  })
 
 export const MicroSessionRef = builder.objectRef<IMicroSession>('MicroSession')
 export const MicroSession = MicroSessionRef.implement({

@@ -11,7 +11,7 @@
     "@prisma/client": "4.14.1"
   },
   "devDependencies": {
-    "@pothos/plugin-prisma": "3.56.0",
+    "@pothos/plugin-prisma": "3.60.0",
     "@tsconfig/node18": "18.2.2",
     "@types/bcryptjs": "^2.4.4",
     "@types/node": "^18.17.18",
@@ -33,7 +33,7 @@
   },
   "scripts": {
     "build": "run-s generate build:ts build:copy",
-    "build:copy": "node src/copy.js",
+    "build:copy": "node src/copy.cjs",
     "build:ts": "cross-env NODE_ENV=production tsup",
     "build:watch": "cross-env NODE_ENV=development tsup --watch",
     "check": "tsc --noEmit",

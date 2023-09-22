@@ -7,13 +7,14 @@
   "files": [
     "dist"
   ],
+  "type": "module",
   "dependencies": {
     "@azure/service-bus": "7.9.1",
     "@azure/storage-blob": "12.16.0",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
-    "@pothos/core": "3.33.0",
-    "@pothos/plugin-prisma": "3.56.0",
+    "@pothos/core": "3.37.0",
+    "@pothos/plugin-prisma": "3.60.0",
     "@pothos/plugin-scope-auth": "3.20.0",
     "@pothos/plugin-validation": "3.10.0",
     "axios": "1.5.0",
@@ -24,12 +25,12 @@
     "graphql-scalars": "1.22.2",
     "graphql-yoga": "4.0.4",
     "jsonwebtoken": "9.0.2",
-    "mathjs": "11.9.1",
+    "mathjs": "11.11.1",
     "node-schedule": "2.1.1",
     "ramda": "0.29.0",
     "uuid": "9.0.1",
-    "validator": "13.9.0",
-    "zod": "3.21.4"
+    "validator": "13.11.0",
+    "zod": "3.22.2"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "5.0.0",
@@ -41,8 +42,8 @@
     "@graphql-codegen/typescript-operations": "4.0.1",
     "@graphql-codegen/typescript-resolvers": "4.0.1",
     "@graphql-typed-document-node/core": "3.2.0",
-    "@parcel/watcher": "2.2.0",
-    "@tsconfig/node18": "^2.0.0",
+    "@parcel/watcher": "2.3.0",
+    "@tsconfig/node18": "18.2.2",
     "@types/bcryptjs": "^2.4.4",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.5",
@@ -51,7 +52,7 @@
     "@types/node-schedule": "^2.1.0",
     "@types/ramda": "^0.29.4",
     "@types/uuid": "^9.0.4",
-    "@types/validator": "^13.9.0",
+    "@types/validator": "^13.11.1",
     "@types/web-push": "^3.6.0",
     "cross-env": "7.0.3",
     "dotenv": "16.3.1",
@@ -65,7 +66,7 @@
     "ts-node": "10.9.1",
     "ts-node-dev": "2.0.0",
     "tsup": "7.2.0",
-    "typescript": "5.1.6",
+    "typescript": "5.2.2",
     "web-push": "3.6.6"
   },
   "scripts": {

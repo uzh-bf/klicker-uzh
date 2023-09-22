@@ -11,7 +11,7 @@ interface BaseContext {
 
 export interface Context extends BaseContext {
   prisma: PrismaClient
-  redisExec: Redis
+  redisExec: Redis.Redis
   pubSub: PubSub<any>
   emitter: EventEmitter
   user?: {

@@ -1,5 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma'
-import { Context, ContextWithUser } from '../lib/context'
+import { Context, ContextWithUser } from '../lib/context.js'
 
 export async function getFeedbacks({ id }: { id: string }, ctx: Context) {
   const sessionWithFeedbacks = await ctx.prisma.liveSession.findUnique({

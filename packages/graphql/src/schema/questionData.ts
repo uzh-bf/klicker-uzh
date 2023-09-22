@@ -1,13 +1,15 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
+import builder from '../builder.js'
 
-export const QuestionType = builder.enumType('QuestionType', {
-  values: Object.values(DB.QuestionType),
-})
+export const QuestionType: ReturnType<typeof builder.enumType> =
+  builder.enumType('QuestionType', {
+    values: Object.values(DB.QuestionType),
+  })
 
-export const QuestionDisplayMode = builder.enumType('QuestionDisplayMode', {
-  values: Object.values(DB.QuestionDisplayMode),
-})
+export const QuestionDisplayMode: ReturnType<typeof builder.enumType> =
+  builder.enumType('QuestionDisplayMode', {
+    values: Object.values(DB.QuestionDisplayMode),
+  })
 
 // ----- QUESTION DATA INTERFACE -----
 export interface BaseQuestionData {
@@ -21,34 +23,35 @@ export interface BaseQuestionData {
 }
 export const QuestionDataRef =
   builder.interfaceRef<BaseQuestionData>('QuestionData')
-export const QuestionData = QuestionDataRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    name: t.exposeString('name'),
-    type: t.expose('type', { type: QuestionType }),
-    content: t.exposeString('content'),
-    explanation: t.exposeString('explanation', { nullable: true }),
-    pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
-    displayMode: t.expose('displayMode', {
-      type: QuestionDisplayMode,
-      nullable: true,
+export const QuestionData: ReturnType<typeof builder.interfaceType> =
+  QuestionDataRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      name: t.exposeString('name'),
+      type: t.expose('type', { type: QuestionType }),
+      content: t.exposeString('content'),
+      explanation: t.exposeString('explanation', { nullable: true }),
+      pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
+      displayMode: t.expose('displayMode', {
+        type: QuestionDisplayMode,
+        nullable: true,
+      }),
     }),
-  }),
-  resolveType(value) {
-    switch (value.type) {
-      case DB.QuestionType.SC:
-      case DB.QuestionType.MC:
-      case DB.QuestionType.KPRIM:
-        return 'ChoicesQuestionData'
-      case DB.QuestionType.NUMERICAL:
-        return 'NumericalQuestionData'
-      case DB.QuestionType.FREE_TEXT:
-        return 'FreeTextQuestionData'
-      default:
-        return null
-    }
-  },
-})
+    resolveType(value) {
+      switch (value.type) {
+        case DB.QuestionType.SC:
+        case DB.QuestionType.MC:
+        case DB.QuestionType.KPRIM:
+          return 'ChoicesQuestionData'
+        case DB.QuestionType.NUMERICAL:
+          return 'NumericalQuestionData'
+        case DB.QuestionType.FREE_TEXT:
+          return 'FreeTextQuestionData'
+        default:
+          return null
+      }
+    },
+  })
 
 // ----- CHOICE QUESTIONS -----
 export interface IChoice {

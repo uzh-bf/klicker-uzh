@@ -1,16 +1,16 @@
 import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
-import builder from '../builder'
-import { GroupActivity } from './groupActivity'
-import type { ILearningElement } from './learningElements'
-import { LearningElementRef } from './learningElements'
-import type { IMicroSession } from './microSession'
-import { MicroSessionRef } from './microSession'
-import type { IParticipant, IParticipantGroup } from './participant'
-import { Participant, ParticipantGroup, Participation } from './participant'
-import type { ISession } from './session'
-import { SessionRef } from './session'
-import { UserRef } from './user'
+import builder from '../builder.js'
+import { GroupActivity } from './groupActivity.js'
+import type { ILearningElement } from './learningElements.js'
+import { LearningElementRef } from './learningElements.js'
+import type { IMicroSession } from './microSession.js'
+import { MicroSessionRef } from './microSession.js'
+import type { IParticipant, IParticipantGroup } from './participant.js'
+import { Participant, ParticipantGroup, Participation } from './participant.js'
+import type { ISession } from './session.js'
+import { SessionRef } from './session.js'
+import { UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -28,87 +28,90 @@ export interface ICourse extends DB.Course {
   owner?: DB.User
 }
 export const CourseRef = builder.objectRef<ICourse>('Course')
-export const Course = builder.objectType(CourseRef, {
-  fields: (t) => ({
-    id: t.exposeID('id'),
-    name: t.exposeString('name'),
-    displayName: t.exposeString('displayName'),
+export const Course: ReturnType<typeof builder.objectType> = builder.objectType(
+  CourseRef,
+  {
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      name: t.exposeString('name'),
+      displayName: t.exposeString('displayName'),
 
-    pinCode: t.exposeInt('pinCode', { nullable: true }),
+      pinCode: t.exposeInt('pinCode', { nullable: true }),
 
-    color: t.exposeString('color', { nullable: true }),
-    description: t.exposeString('description', { nullable: true }),
-    isArchived: t.exposeBoolean('isArchived'),
-    isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
+      color: t.exposeString('color', { nullable: true }),
+      description: t.exposeString('description', { nullable: true }),
+      isArchived: t.exposeBoolean('isArchived'),
+      isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
 
-    numOfParticipants: t.exposeInt('numOfParticipants', {
-      nullable: true,
-    }),
-    numOfActiveParticipants: t.exposeInt('numOfActiveParticipants', {
-      nullable: true,
-    }),
+      numOfParticipants: t.exposeInt('numOfParticipants', {
+        nullable: true,
+      }),
+      numOfActiveParticipants: t.exposeInt('numOfActiveParticipants', {
+        nullable: true,
+      }),
 
-    averageScore: t.exposeFloat('averageScore', {
-      nullable: true,
-    }),
+      averageScore: t.exposeFloat('averageScore', {
+        nullable: true,
+      }),
 
-    averageActiveScore: t.exposeFloat('averageActiveScore', {
-      nullable: true,
-    }),
+      averageActiveScore: t.exposeFloat('averageActiveScore', {
+        nullable: true,
+      }),
 
-    startDate: t.expose('startDate', { type: 'Date' }),
-    endDate: t.expose('endDate', { type: 'Date' }),
+      startDate: t.expose('startDate', { type: 'Date' }),
+      endDate: t.expose('endDate', { type: 'Date' }),
 
-    groupDeadlineDate: t.expose('groupDeadlineDate', {
-      type: 'Date',
-      nullable: true,
-    }),
+      groupDeadlineDate: t.expose('groupDeadlineDate', {
+        type: 'Date',
+        nullable: true,
+      }),
 
-    notificationEmail: t.exposeString('notificationEmail', {
-      nullable: true,
-    }),
+      notificationEmail: t.exposeString('notificationEmail', {
+        nullable: true,
+      }),
 
-    isGroupDeadlinePassed: t.boolean({
-      resolve(course: ICourse) {
-        if (typeof course.groupDeadlineDate === 'undefined') return null
-        return dayjs().isAfter(course.groupDeadlineDate)
-      },
-      nullable: true,
-    }),
+      isGroupDeadlinePassed: t.boolean({
+        resolve(course: ICourse) {
+          if (typeof course.groupDeadlineDate === 'undefined') return null
+          return dayjs().isAfter(course.groupDeadlineDate)
+        },
+        nullable: true,
+      }),
 
-    createdAt: t.expose('createdAt', { type: 'Date' }),
-    updatedAt: t.expose('updatedAt', { type: 'Date' }),
+      createdAt: t.expose('createdAt', { type: 'Date' }),
+      updatedAt: t.expose('updatedAt', { type: 'Date' }),
 
-    sessions: t.expose('sessions', {
-      type: [SessionRef],
-      nullable: true,
+      sessions: t.expose('sessions', {
+        type: [SessionRef],
+        nullable: true,
+      }),
+      learningElements: t.expose('learningElements', {
+        type: [LearningElementRef],
+        nullable: true,
+      }),
+      microSessions: t.expose('microSessions', {
+        type: [MicroSessionRef],
+        nullable: true,
+      }),
+      groupActivities: t.expose('groupActivities', {
+        type: [GroupActivity],
+        nullable: true,
+      }),
+      leaderboard: t.expose('leaderboard', {
+        type: [LeaderboardEntryRef],
+        nullable: true,
+      }),
+      awards: t.expose('awards', {
+        type: [AwardEntryRef],
+        nullable: true,
+      }),
+      owner: t.expose('owner', {
+        type: UserRef,
+        nullable: true,
+      }),
     }),
-    learningElements: t.expose('learningElements', {
-      type: [LearningElementRef],
-      nullable: true,
-    }),
-    microSessions: t.expose('microSessions', {
-      type: [MicroSessionRef],
-      nullable: true,
-    }),
-    groupActivities: t.expose('groupActivities', {
-      type: [GroupActivity],
-      nullable: true,
-    }),
-    leaderboard: t.expose('leaderboard', {
-      type: [LeaderboardEntryRef],
-      nullable: true,
-    }),
-    awards: t.expose('awards', {
-      type: [AwardEntryRef],
-      nullable: true,
-    }),
-    owner: t.expose('owner', {
-      type: UserRef,
-      nullable: true,
-    }),
-  }),
-})
+  }
+)
 
 export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   username: string

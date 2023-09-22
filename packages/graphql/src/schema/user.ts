@@ -1,13 +1,24 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
+import builder from '../builder.js'
 
-export const LocaleType = builder.enumType('LocaleType', {
-  values: Object.values(DB.Locale),
-})
+export const LocaleType: ReturnType<typeof builder.enumType> = builder.enumType(
+  'LocaleType',
+  {
+    values: Object.values(DB.Locale),
+  }
+)
 
-export const UserLoginScope = builder.enumType('UserLoginScope', {
-  values: Object.values(DB.UserLoginScope),
-})
+export const UserRole: ReturnType<typeof builder.enumType> = builder.enumType(
+  'UserRole',
+  {
+    values: Object.values(DB.UserRole),
+  }
+)
+
+export const UserLoginScope: ReturnType<typeof builder.enumType> =
+  builder.enumType('UserLoginScope', {
+    values: Object.values(DB.UserLoginScope),
+  })
 
 export interface IUser extends DB.User {
   catalystInstitutional: boolean

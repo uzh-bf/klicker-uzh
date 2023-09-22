@@ -2,7 +2,7 @@ import axios from 'axios'
 import JWT from 'jsonwebtoken'
 
 import { ServiceBusClient } from '@azure/service-bus'
-import { ContextWithUser } from 'src/lib/context'
+import { ContextWithUser } from 'src/lib/context.js'
 
 interface RequestMigrationTokenArgs {
   email: string

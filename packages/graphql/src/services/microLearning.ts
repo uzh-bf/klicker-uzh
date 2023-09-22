@@ -1,13 +1,16 @@
+import { GraphQLError } from 'graphql'
+import { pick } from 'ramda'
 import {
   MicroSessionStatus,
   Question,
   QuestionInstanceType,
   QuestionType,
-} from '@klicker-uzh/prisma'
-import { GraphQLError } from 'graphql'
-import { pick } from 'ramda'
-import { Context, ContextWithUser } from '../lib/context'
-import { prepareInitialInstanceResults, processQuestionData } from './sessions'
+} from 'src/ops.js'
+import { Context, ContextWithUser } from '../lib/context.js'
+import {
+  prepareInitialInstanceResults,
+  processQuestionData,
+} from './sessions.js'
 
 export async function getQuestionMap(
   questions: number[],
@@ -63,9 +66,9 @@ export async function getMicroSessionData(
       return instance
 
     switch (questionData.type) {
-      case QuestionType.SC:
-      case QuestionType.MC:
-      case QuestionType.KPRIM:
+      case QuestionType.Sc:
+      case QuestionType.Mc:
+      case QuestionType.Kprim:
         return {
           ...instance,
           questionData: {
@@ -77,10 +80,10 @@ export async function getMicroSessionData(
           },
         }
 
-      case QuestionType.FREE_TEXT:
+      case QuestionType.FreeText:
         return instance
 
-      case QuestionType.NUMERICAL:
+      case QuestionType.Numerical:
         return instance
 
       default:
@@ -106,7 +109,7 @@ export async function getSingleMicroSession(
           AND: {
             scheduledStartAt: { lte: new Date() },
             scheduledEndAt: { gte: new Date() },
-            status: MicroSessionStatus.PUBLISHED,
+            status: MicroSessionStatus.Published,
           },
         },
         {
@@ -268,7 +271,7 @@ export async function editMicroSession(
   if (!oldSession) {
     throw new GraphQLError('Micro-Session not found')
   }
-  if (oldSession.status === MicroSessionStatus.PUBLISHED) {
+  if (oldSession.status === MicroSessionStatus.Published) {
     throw new GraphQLError('Micro-Session is already published')
   }
 
@@ -353,7 +356,7 @@ export async function publishMicroSession(
       ownerId: ctx.user.sub,
     },
     data: {
-      status: MicroSessionStatus.PUBLISHED,
+      status: MicroSessionStatus.Published,
     },
     include: {
       instances: true,
@@ -379,7 +382,7 @@ export async function deleteMicroSession(
       where: {
         id,
         ownerId: ctx.user.sub,
-        status: MicroSessionStatus.DRAFT,
+        status: MicroSessionStatus.Draft,
       },
     })
 

@@ -1,11 +1,11 @@
+import * as R from 'ramda'
 import {
   GroupActivityStatus,
+  GroupLeaderboardEntry,
   LeaderboardEntry,
   LearningElementStatus,
-} from '@klicker-uzh/prisma'
-import * as R from 'ramda'
-import { GroupLeaderboardEntry } from 'src/ops'
-import { Context, ContextWithUser } from '../lib/context'
+} from 'src/ops.js'
+import { Context, ContextWithUser } from '../lib/context.js'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },

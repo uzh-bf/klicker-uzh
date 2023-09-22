@@ -1,12 +1,12 @@
 import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
-import type PrismaTypes from '@klicker-uzh/prisma/dist/pothos'
+import type PrismaTypes from '@klicker-uzh/prisma/dist/pothos.d.ts'
 import SchemaBuilder from '@pothos/core'
 import PrismaPlugin from '@pothos/plugin-prisma'
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ValidationPlugin from '@pothos/plugin-validation'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
-import { Context, ContextWithUser } from './lib/context'
+import { Context, ContextWithUser } from './lib/context.js'
 
 const prisma = new PrismaClient({})
 
@@ -24,6 +24,7 @@ const builder = new SchemaBuilder<{
     scope?: UserLoginScope
     catalyst?: boolean
   }
+  // @ts-ignore
   PrismaTypes: PrismaTypes
   Scalars: {
     Date: {
@@ -92,7 +93,11 @@ const builder = new SchemaBuilder<{
   },
 })
 
-export const DateScalar = builder.addScalarType('Date', DateTimeResolver, {})
-export const JsonScalar = builder.addScalarType('Json', JSONResolver, {})
+export const DateScalar = builder.addScalarType(
+  'Date',
+  DateTimeResolver,
+  {}
+) as any
+export const JsonScalar = builder.addScalarType('Json', JSONResolver, {}) as any
 
 export default builder

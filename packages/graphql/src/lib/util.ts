@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
+import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
-import { Context } from './context'
+import { Context } from './context.js'
 
 dayjs.extend(utc)
 

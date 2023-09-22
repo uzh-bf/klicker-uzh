@@ -7,10 +7,13 @@ import {
   gradeQuestionNumerical,
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
+import { QuestionResponse as PrismaQuestionResponse } from '@klicker-uzh/prisma'
+import dayjs from 'dayjs'
+import { GraphQLError } from 'graphql'
+import * as R from 'ramda'
 import {
   LearningElementStatus,
   OrderType,
-  QuestionResponse as PrismaQuestionResponse,
   Question,
   QuestionInstance,
   QuestionInstanceType,
@@ -18,13 +21,13 @@ import {
   QuestionStackType,
   QuestionType,
   UserRole,
-} from '@klicker-uzh/prisma'
-import dayjs from 'dayjs'
-import { GraphQLError } from 'graphql'
-import * as R from 'ramda'
+} from 'src/ops.js'
 import { v4 as uuidv4 } from 'uuid'
-import { Context, ContextWithUser } from '../lib/context'
-import { prepareInitialInstanceResults, processQuestionData } from './sessions'
+import { Context, ContextWithUser } from '../lib/context.js'
+import {
+  prepareInitialInstanceResults,
+  processQuestionData,
+} from './sessions.js'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6

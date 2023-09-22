@@ -1,8 +1,8 @@
-import { MicroSessionStatus, SessionStatus } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
-import isEmail from 'validator/lib/isEmail'
-import { Context, ContextWithUser } from '../lib/context'
+import { MicroSessionStatus, SessionStatus } from 'src/ops.js'
+import isEmail from 'validator/es/lib/isEmail'
+import { Context, ContextWithUser } from '../lib/context.js'
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
@@ -94,11 +94,11 @@ export async function getParticipations(
                   scheduledEndAt: {
                     gt: new Date(),
                   },
-                  status: MicroSessionStatus.PUBLISHED,
+                  status: MicroSessionStatus.Published,
                 },
               },
               sessions: {
-                where: { status: SessionStatus.RUNNING },
+                where: { status: SessionStatus.Running },
               },
             },
           },

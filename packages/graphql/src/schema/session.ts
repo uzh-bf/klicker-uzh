@@ -1,23 +1,28 @@
 import * as DB from '@klicker-uzh/prisma'
 
-import builder from '../builder'
-import type { ICourse } from './course'
-import { Course } from './course'
-import type { IQuestionInstance } from './question'
-import { QuestionInstance } from './question'
-import { QuestionData } from './questionData'
+import builder from '../builder.js'
+import type { ICourse } from './course.js'
+import { Course } from './course.js'
+import type { IQuestionInstance } from './question.js'
+import { QuestionInstance } from './question.js'
+import { QuestionData } from './questionData.js'
 
-export const SessionStatus = builder.enumType('SessionStatus', {
-  values: Object.values(DB.SessionStatus),
-})
+export const SessionStatus: ReturnType<typeof builder.enumType> =
+  builder.enumType('SessionStatus', {
+    values: Object.values(DB.SessionStatus),
+  })
 
-export const SessionBlockStatus = builder.enumType('SessionBlockStatus', {
-  values: Object.values(DB.SessionBlockStatus),
-})
+export const SessionBlockStatus: ReturnType<typeof builder.enumType> =
+  builder.enumType('SessionBlockStatus', {
+    values: Object.values(DB.SessionBlockStatus),
+  })
 
-export const SessionAccessMode = builder.enumType('SessionAccessMode', {
-  values: Object.values(DB.AccessMode),
-})
+export const AccessMode: ReturnType<typeof builder.enumType> = builder.enumType(
+  'AccessMode',
+  {
+    values: Object.values(DB.AccessMode),
+  }
+)
 
 export const BlockInput = builder.inputType('BlockInput', {
   fields: (t) => ({
@@ -57,7 +62,7 @@ export const Session = SessionRef.implement({
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
     status: t.expose('status', { type: SessionStatus }),
-    accessMode: t.expose('accessMode', { type: SessionAccessMode }),
+    accessMode: t.expose('accessMode', { type: AccessMode }),
 
     numOfBlocks: t.exposeInt('numOfBlocks', { nullable: true }),
     numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),

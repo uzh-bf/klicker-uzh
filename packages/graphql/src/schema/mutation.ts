@@ -1,30 +1,30 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import { checkCronToken } from '../lib/util'
-import * as AccountService from '../services/accounts'
-import * as CourseService from '../services/courses'
-import * as FeedbackService from '../services/feedbacks'
-import * as ParticipantGroupService from '../services/groups'
-import * as LearningElementService from '../services/learningElements'
-import * as MicroLearningService from '../services/microLearning'
-import * as MigrationService from '../services/migration'
-import * as NotificationService from '../services/notifications'
-import * as ParticipantService from '../services/participants'
-import * as QuestionService from '../services/questions'
-import * as SessionService from '../services/sessions'
-import { Course } from './course'
+import builder from '../builder.js'
+import { checkCronToken } from '../lib/util.js'
+import * as AccountService from '../services/accounts.js'
+import * as CourseService from '../services/courses.js'
+import * as FeedbackService from '../services/feedbacks.js'
+import * as ParticipantGroupService from '../services/groups.js'
+import * as LearningElementService from '../services/learningElements.js'
+import * as MicroLearningService from '../services/microLearning.js'
+import * as MigrationService from '../services/migration.js'
+import * as NotificationService from '../services/notifications.js'
+import * as ParticipantService from '../services/participants.js'
+import * as QuestionService from '../services/questions.js'
+import * as SessionService from '../services/sessions.js'
+import { Course } from './course.js'
 import {
   GroupActivityDecisionInput,
   GroupActivityDetails,
   GroupActivityInstance,
-} from './groupActivity'
+} from './groupActivity.js'
 import {
   LearningElement,
   LearningElementOrderType,
   QuestionStack,
   StackInput,
-} from './learningElements'
-import { MicroSession } from './microSession'
+} from './learningElements.js'
+import { MicroSession } from './microSession.js'
 import {
   AvatarSettingsInput,
   LeaveCourseParticipation,
@@ -34,7 +34,7 @@ import {
   ParticipantTokenData,
   Participation,
   SubscriptionObjectInput,
-} from './participant'
+} from './participant.js'
 import {
   OptionsChoicesInput,
   OptionsFreeTextInput,
@@ -43,22 +43,22 @@ import {
   QuestionInstance,
   ResponseInput,
   Tag,
-} from './question'
-import { QuestionDisplayMode, QuestionType } from './questionData'
+} from './question.js'
+import { QuestionDisplayMode, QuestionType } from './questionData.js'
 import {
   BlockInput,
   ConfusionTimestep,
   Feedback,
   FeedbackResponse,
   Session,
-} from './session'
+} from './session.js'
 import {
   FileUploadSAS,
   LocaleType,
   User,
   UserLogin,
   UserLoginScope,
-} from './user'
+} from './user.js'
 
 export const Mutation = builder.mutationType({
   fields(t) {

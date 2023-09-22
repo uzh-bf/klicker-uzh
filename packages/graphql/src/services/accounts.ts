@@ -1,11 +1,11 @@
-import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import isEmail from 'validator/lib/isEmail'
-import normalizeEmail from 'validator/lib/normalizeEmail'
-import { Context, ContextWithUser } from '../lib/context'
+import { LocaleType, UserLoginScope, UserRole } from 'src/ops.js'
+import isEmail from 'validator/es/lib/isEmail'
+import normalizeEmail from 'validator/es/lib/normalizeEmail'
+import { Context, ContextWithUser } from '../lib/context.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -52,7 +52,7 @@ export async function loginUserToken(
     {
       sub: user.id,
       role: user.role,
-      scope: UserLoginScope.SESSION_EXEC,
+      scope: UserLoginScope.SessionExec,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,
@@ -171,7 +171,7 @@ export async function getLoginToken(ctx: ContextWithUser) {
 }
 
 interface ChangeUserLocaleArgs {
-  locale: Locale
+  locale: LocaleType
 }
 
 export async function changeUserLocale(
@@ -191,7 +191,7 @@ export async function changeUserLocale(
 }
 
 interface ChangeParticipantLocaleArgs {
-  locale: Locale
+  locale: LocaleType
 }
 
 export async function changeParticipantLocale(

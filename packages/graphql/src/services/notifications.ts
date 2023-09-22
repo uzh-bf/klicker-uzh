@@ -1,8 +1,8 @@
-import { MicroSession, MicroSessionStatus } from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
+import { MicroSession, MicroSessionStatus } from 'src/ops.js'
 import webpush from 'web-push'
-import { Context, ContextWithUser } from '../lib/context'
-import { formatDate } from '../lib/util'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { formatDate } from '../lib/util.js'
 
 interface SubscriptionObjectInput {
   endpoint: string
@@ -100,7 +100,7 @@ export async function sendPushNotifications(ctx: Context) {
 
   const microSessions = await ctx.prisma.microSession.findMany({
     where: {
-      status: MicroSessionStatus.PUBLISHED,
+      status: MicroSessionStatus.Published,
       scheduledStartAt: {
         lte: new Date(),
       },

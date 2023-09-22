@@ -1,3 +1,11 @@
+import dayjs from 'dayjs'
+import * as R from 'ramda'
+import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
+import { Context, ContextWithUser } from '../lib/context.js'
+// TODO: rework scheduling for serverless
+import { GraphQLError } from 'graphql'
+import { max, mean, median, min, quantileSeq, std } from 'mathjs'
+import schedule from 'node-schedule'
 import {
   AccessMode,
   ConfusionTimestep,
@@ -7,37 +15,29 @@ import {
   QuestionType,
   SessionBlockStatus,
   SessionStatus,
-} from '@klicker-uzh/prisma'
-import dayjs from 'dayjs'
-import * as R from 'ramda'
-import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
-import { Context, ContextWithUser } from '../lib/context'
-// TODO: rework scheduling for serverless
-import { GraphQLError } from 'graphql'
-import { max, mean, median, min, quantileSeq, std } from 'mathjs'
-import schedule from 'node-schedule'
-import { ISession } from 'src/schema/session'
+} from 'src/ops.js'
+import { ISession } from 'src/schema/session.js'
 
 const scheduledJobs: Record<string, any> = {}
 
 export function processQuestionData(question: Question): AllQuestionTypeData {
   switch (question.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
+    case QuestionType.Sc:
+    case QuestionType.Mc:
+    case QuestionType.Kprim: {
       return {
         ...question,
         options: question.options!.valueOf(),
       } as unknown as ChoicesQuestionData
     }
 
-    case QuestionType.NUMERICAL: {
+    case QuestionType.Numerical: {
       return {
         ...question,
       } as NumericalQuestionData
     }
 
-    case QuestionType.FREE_TEXT: {
+    case QuestionType.FreeText: {
       return {
         ...question,
       } as FreeTextQuestionData
@@ -49,9 +49,9 @@ export function prepareInitialInstanceResults(
   questionData: AllQuestionTypeData
 ) {
   switch (questionData.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
+    case QuestionType.Sc:
+    case QuestionType.Mc:
+    case QuestionType.Kprim: {
       const choices = questionData.options.choices.reduce(
         (acc, _, ix) => ({ ...acc, [ix]: 0 }),
         {}
@@ -59,11 +59,11 @@ export function prepareInitialInstanceResults(
       return { choices } as ChoicesQuestionResults
     }
 
-    case QuestionType.NUMERICAL: {
+    case QuestionType.Numerical: {
       return {}
     }
 
-    case QuestionType.FREE_TEXT: {
+    case QuestionType.FreeText: {
       return {}
     }
 

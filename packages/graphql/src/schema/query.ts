@@ -1,28 +1,28 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import * as AccountService from '../services/accounts'
-import * as CourseService from '../services/courses'
-import * as FeedbackService from '../services/feedbacks'
-import * as ParticipantGroupService from '../services/groups'
-import * as LearningElementService from '../services/learningElements'
-import * as MicroSessionService from '../services/microLearning'
-import * as ParticipantService from '../services/participants'
-import * as QuestionService from '../services/questions'
-import * as SessionService from '../services/sessions'
-import { Course, LeaderboardEntry } from './course'
-import { GroupActivityDetails } from './groupActivity'
-import { LearningElement, QuestionStack } from './learningElements'
-import { MicroSession } from './microSession'
+import builder from '../builder.js'
+import * as AccountService from '../services/accounts.js'
+import * as CourseService from '../services/courses.js'
+import * as FeedbackService from '../services/feedbacks.js'
+import * as ParticipantGroupService from '../services/groups.js'
+import * as LearningElementService from '../services/learningElements.js'
+import * as MicroSessionService from '../services/microLearning.js'
+import * as ParticipantService from '../services/participants.js'
+import * as QuestionService from '../services/questions.js'
+import * as SessionService from '../services/sessions.js'
+import { Course, LeaderboardEntry } from './course.js'
+import { GroupActivityDetails } from './groupActivity.js'
+import { LearningElement, QuestionStack } from './learningElements.js'
+import { MicroSession } from './microSession.js'
 import {
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantWithAchievements,
   Participation,
-} from './participant'
-import { Question, Tag } from './question'
-import { Feedback, Session, SessionEvaluation } from './session'
-import { MediaFile, User, UserLogin } from './user'
+} from './participant.js'
+import { Question, Tag } from './question.js'
+import { Feedback, Session, SessionEvaluation } from './session.js'
+import { MediaFile, User, UserLogin } from './user.js'
 
 export const Query = builder.queryType({
   fields(t) {
