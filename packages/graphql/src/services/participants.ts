@@ -532,6 +532,9 @@ export async function getPublicParticipantProfile(
     if (participant === null) {
       return participant
     }
+    if (participant.id === ctx.user?.sub) {
+      return { ...participant, isSelf: true }
+    }
     return {
       ...participant,
       avatar: null,

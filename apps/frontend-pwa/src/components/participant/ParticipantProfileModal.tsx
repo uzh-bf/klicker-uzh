@@ -67,7 +67,9 @@ function ParticipantProfileModal({
             avatar={participant.avatar}
             username={participant.username}
             achievements={participant.achievements}
-            showProfileDetails={participant.isProfilePublic}
+            showProfileDetails={
+              participant.isProfilePublic || participant.isSelf
+            }
           />
           <div className="grid w-full grid-cols-10 pt-5 justify-items-center">
             {top10Participants.map((p, index) => (

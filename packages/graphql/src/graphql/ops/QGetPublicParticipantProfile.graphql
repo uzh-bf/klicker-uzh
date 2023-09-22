@@ -5,6 +5,7 @@ query GetPublicParticipantProfile($id: String!) {
     avatar
     avatarSettings
     isProfilePublic
+    isSelf
     level
     levelData {
       id
