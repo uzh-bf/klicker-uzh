@@ -71,78 +71,81 @@ function ProfileData({
           )}
         </div>
       </div>
-      <Label
-        label={username}
-        className={{ root: 'text-xl font-bold pb-4 w-full justify-center' }}
-      />
       {showProfileDetails ? (
-        <div className="flex flex-col w-full gap-4 text-md">
-          {level && (
-            <div className="flex flex-row items-center">
-              <FontAwesomeIcon icon={faTrophy} className="pr-2" />
-              <Label
-                label={t('shared.generic.levelX', { number: level.index })}
-                className={{ root: 'font-bold' }}
-              />
-            </div>
-          )}
-          <div>
-            <div className="flex flex-row items-center mb-2">
-              <FontAwesomeIcon icon={faStar} className="pr-2" />
-              <Label
-                label={t('shared.generic.experiencePoints')}
-                className={{ root: 'font-bold' }}
-              />
+        <>
+          <Label
+            label={username}
+            className={{ root: 'text-xl font-bold pb-4 w-full justify-center' }}
+          />
+
+          <div className="flex flex-col w-full gap-4 text-md">
+            {level && (
+              <div className="flex flex-row items-center">
+                <FontAwesomeIcon icon={faTrophy} className="pr-2" />
+                <Label
+                  label={t('shared.generic.levelX', { number: level.index })}
+                  className={{ root: 'font-bold' }}
+                />
+              </div>
+            )}
+            <div>
+              <div className="flex flex-row items-center mb-2">
+                <FontAwesomeIcon icon={faStar} className="pr-2" />
+                <Label
+                  label={t('shared.generic.experiencePoints')}
+                  className={{ root: 'font-bold' }}
+                />
+              </div>
+              <div>
+                {level?.nextLevel?.requiredXp && (
+                  <Progress
+                    value={xp}
+                    max={level.nextLevel.requiredXp}
+                    formatter={Number}
+                    offset={level.requiredXp}
+                    className={{ indicator: 'min-w-[55px]' }}
+                  />
+                )}
+              </div>
             </div>
             <div>
-              {level?.nextLevel?.requiredXp && (
-                <Progress
-                  value={xp}
-                  max={level.nextLevel.requiredXp}
-                  formatter={Number}
-                  offset={level.requiredXp}
-                  className={{ indicator: 'min-w-[55px]' }}
+              <div className="flex flex-row items-center mb-2">
+                <FontAwesomeIcon icon={faShieldHeart} className="pr-2" />
+                <Label
+                  label={t('pwa.profile.achievements')}
+                  className={{ root: 'font-bold' }}
                 />
-              )}
-            </div>
-          </div>
-          <div>
-            <div className="flex flex-row items-center mb-2">
-              <FontAwesomeIcon icon={faShieldHeart} className="pr-2" />
-              <Label
-                label={t('pwa.profile.achievements')}
-                className={{ root: 'font-bold' }}
-              />
-            </div>
-            <div>
-              {((!isSelf && (!achievements || achievements.length === 0)) ||
-                (isSelf &&
-                  (!achievements || achievements.length === 0) &&
-                  (!possibleAchievements ||
-                    possibleAchievements.length === 0))) && (
-                <div>{t('pwa.achievements.noAchievements')}</div>
-              )}
-            </div>
-            <div className="grid grid-cols-1 gap-3 pt-3 pb-3 md:grid-cols-2 justify-items-center">
-              {achievements?.map((achievement) => (
-                <ReceivedAchievementTile
-                  key={achievement.id}
-                  instance={achievement}
-                />
-              ))}
-              {isSelf &&
-                remainingAchievements?.map((achievement) => (
-                  <PossibleAchievementsTile
+              </div>
+              <div>
+                {((!isSelf && (!achievements || achievements.length === 0)) ||
+                  (isSelf &&
+                    (!achievements || achievements.length === 0) &&
+                    (!possibleAchievements ||
+                      possibleAchievements.length === 0))) && (
+                  <div>{t('pwa.achievements.noAchievements')}</div>
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-3 pt-3 pb-3 md:grid-cols-2 justify-items-center">
+                {achievements?.map((achievement) => (
+                  <ReceivedAchievementTile
                     key={achievement.id}
-                    achievement={achievement}
+                    instance={achievement}
                   />
                 ))}
+                {isSelf &&
+                  remainingAchievements?.map((achievement) => (
+                    <PossibleAchievementsTile
+                      key={achievement.id}
+                      achievement={achievement}
+                    />
+                  ))}
+              </div>
             </div>
           </div>
-        </div>
+        </>
       ) : (
-        <UserNotification type="info">
-          {t.rich('pwa.courses.profileAnonymous', { username: username })}
+        <UserNotification type="info" className={{ root: 'mt-2' }}>
+          {t('pwa.courses.profileAnonymous')}
         </UserNotification>
       )}
     </div>

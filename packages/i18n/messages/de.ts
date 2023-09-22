@@ -380,7 +380,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       awards: 'Auszeichnungen',
       open: 'offen',
       profileAnonymous:
-        'Das Profil des Users {username} ist auf anonym eingestellt. Aus diesem Grund sind keine Errungenschaften oder XP sichtbar',
+        'Das Profil dieses Users ist auf anonym eingestellt. Aus diesem Grund sind keine Errungenschaften oder XP sichtbar',
       leaveCourseTitle: 'Leaderboard verlassen',
       leaveCourseConfirmation:
         'Möchten Sie das Leaderboard wirklich verlassen?',
