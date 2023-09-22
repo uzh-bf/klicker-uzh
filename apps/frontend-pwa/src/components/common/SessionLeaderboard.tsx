@@ -116,7 +116,7 @@ function SessionLeaderboard({
               rank={entry.rank}
               isHighlighted={entry.participantId === selfData?.self?.id}
               pseudonym={entry.username}
-              avatar={entry.avatar ?? 'placeholder'}
+              avatar={entry.avatar}
               points={entry.score}
             />
           ))}

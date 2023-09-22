@@ -129,9 +129,11 @@ function GroupActivityDetails() {
                     >
                       <div className="flex flex-col items-center flex-none w-24 px-4">
                         <Image
-                          src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-                            clue.participant.avatar ?? 'placeholder'
-                          }.svg`}
+                          src={
+                            clue.participant.avatar
+                              ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${clue.participant.avatar}.svg`
+                              : '/user-solid.svg'
+                          }
                           alt=""
                           height={25}
                           width={30}
@@ -189,9 +191,11 @@ function GroupActivityDetails() {
                       className="border rounded shadow w-[100px] h-full p-2 flex flex-col items-center"
                     >
                       <Image
-                        src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-                          participant.avatar ?? 'placeholder'
-                        }.svg`}
+                        src={
+                          participant.avatar
+                            ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`
+                            : '/user-solid.svg'
+                        }
                         alt=""
                         height={40}
                         width={50}

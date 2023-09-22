@@ -1127,8 +1127,12 @@ export async function getLeaderboard(
     return {
       id: entry.id,
       participantId: entry.participant.id,
-      username: entry.participant.username,
-      avatar: entry.participant.avatar,
+      username: entry.participant.isProfilePublic
+        ? entry.participant.username
+        : 'Anonymous',
+      avatar: entry.participant.isProfilePublic
+        ? entry.participant.avatar
+        : null,
       score: entry.score,
       // isSelf: entry.participantId === ctx.user.sub,
       lastBlockOrder,
