@@ -188,7 +188,7 @@ export default {
       'Ich akzeptiere die KlickerUZH <tos></tos> und <privacy></privacy>.',
     termsOfService: 'Nutzungsbedingungen',
     privacyPolicy: 'Datenschutzerklärung',
-    tosUrl: 'https://www.klicker.uzh.ch/terms_of_service',
+    tosUrl: 'https://www.klicker.uzh.ch/nutzungsbedingungen',
     privacyUrl: 'https://www.klicker.uzh.ch/datenschutz',
   },
   pwa: {
