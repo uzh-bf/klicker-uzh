@@ -446,7 +446,7 @@ export async function changeShortname(
 }
 
 export async function changeInitialSettings(
-  { shortname, locale }: { shortname: string; locale: Locale },
+  { shortname, locale }: { shortname: string; locale: LocaleType },
   ctx: ContextWithUser
 ) {
   const existingUser = await ctx.prisma.user.findFirst({

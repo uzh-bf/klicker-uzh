@@ -3,6 +3,7 @@ import { printSchema } from 'graphql'
 import { schema } from './src/index'
 
 const config: CodegenConfig = {
+  emitLegacyCommonJSImports: false,
   schema: printSchema(schema),
   // schema: 'src/graphql/schema.graphql',
   documents: ['src/graphql/ops/**/*.graphql'],
