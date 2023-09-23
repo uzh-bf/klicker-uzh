@@ -1,3 +1,4 @@
+import { LeaderboardType } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import { pickRandom, round } from 'mathjs'
 import * as R from 'ramda'

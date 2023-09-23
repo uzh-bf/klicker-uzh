@@ -1,15 +1,20 @@
 import * as DB from '@klicker-uzh/prisma'
+import type { EnumRef } from '@pothos/core'
 import builder from '../builder.js'
 
-export const QuestionType: ReturnType<typeof builder.enumType> =
-  builder.enumType('QuestionType', {
+export const QuestionType: EnumRef<string, string> = builder.enumType(
+  'QuestionType',
+  {
     values: Object.values(DB.QuestionType),
-  })
+  }
+)
 
-export const QuestionDisplayMode: ReturnType<typeof builder.enumType> =
-  builder.enumType('QuestionDisplayMode', {
+export const QuestionDisplayMode: EnumRef<string, string> = builder.enumType(
+  'QuestionDisplayMode',
+  {
     values: Object.values(DB.QuestionDisplayMode),
-  })
+  }
+)
 
 // ----- QUESTION DATA INTERFACE -----
 export interface BaseQuestionData {

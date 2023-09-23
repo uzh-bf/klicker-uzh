@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-
+import type { EnumRef } from '@pothos/core'
 import builder from '../builder.js'
 import type { ICourse } from './course.js'
 import { Course } from './course.js'
@@ -7,17 +7,21 @@ import type { IQuestionInstance } from './question.js'
 import { QuestionInstance } from './question.js'
 import { QuestionData } from './questionData.js'
 
-export const SessionStatus: ReturnType<typeof builder.enumType> =
-  builder.enumType('SessionStatus', {
+export const SessionStatus: EnumRef<string, string> = builder.enumType(
+  'SessionStatus',
+  {
     values: Object.values(DB.SessionStatus),
-  })
+  }
+)
 
-export const SessionBlockStatus: ReturnType<typeof builder.enumType> =
-  builder.enumType('SessionBlockStatus', {
+export const SessionBlockStatus: EnumRef<string, string> = builder.enumType(
+  'SessionBlockStatus',
+  {
     values: Object.values(DB.SessionBlockStatus),
-  })
+  }
+)
 
-export const AccessMode: ReturnType<typeof builder.enumType> = builder.enumType(
+export const AccessMode: EnumRef<string, string> = builder.enumType(
   'AccessMode',
   {
     values: Object.values(DB.AccessMode),

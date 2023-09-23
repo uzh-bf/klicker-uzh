@@ -1,25 +1,29 @@
 import * as DB from '@klicker-uzh/prisma'
-
+import type { EnumRef } from '@pothos/core'
 import builder from '../builder.js'
 import type { ICourse } from './course.js'
 import { CourseRef } from './course.js'
 import type { IQuestionInstance } from './question.js'
 import { QuestionInstanceRef } from './question.js'
 
-export const LearningElementOrderType: ReturnType<typeof builder.enumType> =
+export const LearningElementOrderType: EnumRef<string, string> =
   builder.enumType('LearningElementOrderType', {
     values: Object.values(DB.OrderType),
   })
 
-export const LearningElementStatus: ReturnType<typeof builder.enumType> =
-  builder.enumType('LearningElementStatus', {
+export const LearningElementStatus: EnumRef<string, string> = builder.enumType(
+  'LearningElementStatus',
+  {
     values: Object.values(DB.LearningElementStatus),
-  })
+  }
+)
 
-export const QuestionStackType: ReturnType<typeof builder.enumType> =
-  builder.enumType('QuestionStackType', {
+export const QuestionStackType: EnumRef<string, string> = builder.enumType(
+  'QuestionStackType',
+  {
     values: Object.values(DB.QuestionStackType),
-  })
+  }
+)
 
 export const StackInput = builder.inputType('StackInput', {
   fields: (t) => ({

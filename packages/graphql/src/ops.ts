@@ -19,6 +19,11 @@ export type Scalars = {
   Json: { input: any; output: any; }
 };
 
+export enum AccessMode {
+  Public = 'PUBLIC',
+  Restricted = 'RESTRICTED'
+}
+
 export type Achievement = {
   __typename?: 'Achievement';
   description: Scalars['String']['output'];
@@ -277,6 +282,11 @@ export type GroupActivityParameter = {
   __typename?: 'GroupActivityParameter';
   id: Scalars['Int']['output'];
 };
+
+export enum GroupActivityStatus {
+  Draft = 'DRAFT',
+  Published = 'PUBLISHED'
+}
 
 export type GroupLeaderboardEntry = {
   __typename?: 'GroupLeaderboardEntry';
@@ -1324,6 +1334,14 @@ export type QuestionInstance = {
   questionData: QuestionData;
 };
 
+export enum QuestionInstanceType {
+  GroupActivity = 'GROUP_ACTIVITY',
+  LearningElement = 'LEARNING_ELEMENT',
+  MicroSession = 'MICRO_SESSION',
+  Session = 'SESSION',
+  Unset = 'UNSET'
+}
+
 export type QuestionResponse = {
   __typename?: 'QuestionResponse';
   id: Scalars['Int']['output'];
@@ -1366,7 +1384,7 @@ export type ResponseInput = {
 
 export type Session = {
   __typename?: 'Session';
-  accessMode: SessionAccessMode;
+  accessMode: AccessMode;
   activeBlock?: Maybe<SessionBlock>;
   blocks?: Maybe<Array<SessionBlock>>;
   confusionFeedbacks?: Maybe<Array<ConfusionTimestep>>;
@@ -1394,11 +1412,6 @@ export type Session = {
   status: SessionStatus;
   updatedAt?: Maybe<Scalars['Date']['output']>;
 };
-
-export enum SessionAccessMode {
-  Public = 'PUBLIC',
-  Restricted = 'RESTRICTED'
-}
 
 export type SessionBlock = {
   __typename?: 'SessionBlock';
@@ -1562,6 +1575,12 @@ export enum UserLoginScope {
   FullAccess = 'FULL_ACCESS',
   ReadOnly = 'READ_ONLY',
   SessionExec = 'SESSION_EXEC'
+}
+
+export enum UserRole {
+  Admin = 'ADMIN',
+  Participant = 'PARTICIPANT',
+  User = 'USER'
 }
 
 export type FeedbackDataFragment = { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> };
@@ -2349,7 +2368,7 @@ export type GetSingleCourseQueryVariables = Exact<{
 }>;
 
 
-export type GetSingleCourseQuery = { __typename?: 'Query', course?: { __typename?: 'Course', id: string, isArchived: boolean, isGamificationEnabled: boolean, pinCode?: number | null, name: string, displayName: string, description?: string | null, color?: string | null, numOfParticipants?: number | null, numOfActiveParticipants?: number | null, averageScore?: number | null, averageActiveScore?: number | null, startDate: any, endDate: any, sessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, isGamificationEnabled: boolean, pinCode?: number | null, accessMode: SessionAccessMode, status: SessionStatus, createdAt: any, numOfBlocks?: number | null, numOfQuestions?: number | null }> | null, learningElements?: Array<{ __typename?: 'LearningElement', id: string, name: string, displayName: string, status: LearningElementStatus, stacksWithQuestions?: number | null, numOfQuestions?: number | null }> | null, microSessions?: Array<{ __typename?: 'MicroSession', id: string, name: string, displayName: string, status: MicroSessionStatus, scheduledStartAt: any, scheduledEndAt: any, numOfInstances?: number | null }> | null, leaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, score: number, rank: number, username: string, avatar?: string | null }> | null } | null };
+export type GetSingleCourseQuery = { __typename?: 'Query', course?: { __typename?: 'Course', id: string, isArchived: boolean, isGamificationEnabled: boolean, pinCode?: number | null, name: string, displayName: string, description?: string | null, color?: string | null, numOfParticipants?: number | null, numOfActiveParticipants?: number | null, averageScore?: number | null, averageActiveScore?: number | null, startDate: any, endDate: any, sessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, isGamificationEnabled: boolean, pinCode?: number | null, accessMode: AccessMode, status: SessionStatus, createdAt: any, numOfBlocks?: number | null, numOfQuestions?: number | null }> | null, learningElements?: Array<{ __typename?: 'LearningElement', id: string, name: string, displayName: string, status: LearningElementStatus, stacksWithQuestions?: number | null, numOfQuestions?: number | null }> | null, microSessions?: Array<{ __typename?: 'MicroSession', id: string, name: string, displayName: string, status: MicroSessionStatus, scheduledStartAt: any, scheduledEndAt: any, numOfInstances?: number | null }> | null, leaderboard?: Array<{ __typename?: 'LeaderboardEntry', id: number, score: number, rank: number, username: string, avatar?: string | null }> | null } | null };
 
 export type GetSingleLiveSessionQueryVariables = Exact<{
   sessionId: Scalars['String']['input'];
@@ -2412,7 +2431,7 @@ export type GetUserRunningSessionsQuery = { __typename?: 'Query', userRunningSes
 export type GetUserSessionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetUserSessionsQuery = { __typename?: 'Query', userSessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, accessMode: SessionAccessMode, status: SessionStatus, createdAt: any, updatedAt?: any | null, startedAt?: any | null, numOfBlocks?: number | null, numOfQuestions?: number | null, blocks?: Array<{ __typename?: 'SessionBlock', id: number, instances?: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: QuestionType, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: QuestionType, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: QuestionType, content: string } }> | null }> | null, course?: { __typename?: 'Course', id: string, name: string, displayName: string } | null }> | null };
+export type GetUserSessionsQuery = { __typename?: 'Query', userSessions?: Array<{ __typename?: 'Session', id: string, name: string, displayName: string, accessMode: AccessMode, status: SessionStatus, createdAt: any, updatedAt?: any | null, startedAt?: any | null, numOfBlocks?: number | null, numOfQuestions?: number | null, blocks?: Array<{ __typename?: 'SessionBlock', id: number, instances?: Array<{ __typename?: 'QuestionInstance', id: number, questionData: { __typename?: 'ChoicesQuestionData', id: number, name: string, type: QuestionType, content: string } | { __typename?: 'FreeTextQuestionData', id: number, name: string, type: QuestionType, content: string } | { __typename?: 'NumericalQuestionData', id: number, name: string, type: QuestionType, content: string } }> | null }> | null, course?: { __typename?: 'Course', id: string, name: string, displayName: string } | null }> | null };
 
 export type GetUserTagsQueryVariables = Exact<{ [key: string]: never; }>;
 

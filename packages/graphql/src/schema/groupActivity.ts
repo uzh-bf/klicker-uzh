@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import type { EnumRef } from '@pothos/core'
 import builder from '../builder.js'
 import type { ICourse } from './course.js'
 import { Course } from './course.js'
@@ -7,15 +8,19 @@ import { ParticipantGroup, ParticipantRef } from './participant.js'
 import type { IQuestionInstance } from './question.js'
 import { QuestionInstance } from './question.js'
 
-export const GroupActivityStatus: ReturnType<typeof builder.enumType> =
-  builder.enumType('GroupActivityStatus', {
+export const GroupActivityStatus: EnumRef<string, string> = builder.enumType(
+  'GroupActivityStatus',
+  {
     values: Object.values(DB.GroupActivityStatus),
-  })
+  }
+)
 
-export const ParameterType: ReturnType<typeof builder.enumType> =
-  builder.enumType('ParameterType', {
+export const ParameterType: EnumRef<string, string> = builder.enumType(
+  'ParameterType',
+  {
     values: Object.values(DB.ParameterType),
-  })
+  }
+)
 
 export const GroupActivityDecisionInput = builder.inputType(
   'GroupActivityDecisionInput',

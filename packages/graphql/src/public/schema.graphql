@@ -1,3 +1,8 @@
+enum AccessMode {
+  PUBLIC
+  RESTRICTED
+}
+
 type Achievement {
   description: String!
   icon: String!
@@ -236,6 +241,11 @@ type GroupActivityInstance {
 
 type GroupActivityParameter {
   id: Int!
+}
+
+enum GroupActivityStatus {
+  DRAFT
+  PUBLISHED
 }
 
 type GroupLeaderboardEntry {
@@ -670,6 +680,14 @@ type QuestionInstance {
   questionData: QuestionData!
 }
 
+enum QuestionInstanceType {
+  GROUP_ACTIVITY
+  LEARNING_ELEMENT
+  MICRO_SESSION
+  SESSION
+  UNSET
+}
+
 type QuestionResponse {
   id: Int!
 }
@@ -708,7 +726,7 @@ input ResponseInput {
 }
 
 type Session {
-  accessMode: SessionAccessMode!
+  accessMode: AccessMode!
   activeBlock: SessionBlock
   blocks: [SessionBlock!]
   confusionFeedbacks: [ConfusionTimestep!]
@@ -735,11 +753,6 @@ type Session {
   startedAt: Date
   status: SessionStatus!
   updatedAt: Date
-}
-
-enum SessionAccessMode {
-  PUBLIC
-  RESTRICTED
 }
 
 type SessionBlock {
@@ -869,4 +882,10 @@ enum UserLoginScope {
   FULL_ACCESS
   READ_ONLY
   SESSION_EXEC
+}
+
+enum UserRole {
+  ADMIN
+  PARTICIPANT
+  USER
 }

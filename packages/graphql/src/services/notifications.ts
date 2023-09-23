@@ -1,5 +1,6 @@
+import { MicroSessionStatus } from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
-import { MicroSession, MicroSessionStatus } from 'src/ops.js'
+import { MicroSession } from 'src/ops.js'
 import webpush from 'web-push'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { formatDate } from '../lib/util.js'
@@ -100,7 +101,7 @@ export async function sendPushNotifications(ctx: Context) {
 
   const microSessions = await ctx.prisma.microSession.findMany({
     where: {
-      status: MicroSessionStatus.Published,
+      status: MicroSessionStatus.PUBLISHED,
       scheduledStartAt: {
         lte: new Date(),
       },

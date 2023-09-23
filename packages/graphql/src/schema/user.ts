@@ -1,24 +1,24 @@
 import * as DB from '@klicker-uzh/prisma'
+import type { EnumRef } from '@pothos/core'
 import builder from '../builder.js'
 
-export const LocaleType: ReturnType<typeof builder.enumType> = builder.enumType(
+export const LocaleType: EnumRef<string, string> = builder.enumType(
   'LocaleType',
   {
     values: Object.values(DB.Locale),
   }
 )
 
-export const UserRole: ReturnType<typeof builder.enumType> = builder.enumType(
-  'UserRole',
+export const UserRole: EnumRef<string, string> = builder.enumType('UserRole', {
+  values: Object.values(DB.UserRole),
+})
+
+export const UserLoginScope: EnumRef<string, string> = builder.enumType(
+  'UserLoginScope',
   {
-    values: Object.values(DB.UserRole),
+    values: Object.values(DB.UserLoginScope),
   }
 )
-
-export const UserLoginScope: ReturnType<typeof builder.enumType> =
-  builder.enumType('UserLoginScope', {
-    values: Object.values(DB.UserLoginScope),
-  })
 
 export interface IUser extends DB.User {
   catalystInstitutional: boolean

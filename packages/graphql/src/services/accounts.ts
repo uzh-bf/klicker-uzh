@@ -1,8 +1,9 @@
+import { UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import { LocaleType, UserLoginScope, UserRole } from 'src/ops.js'
+import { LocaleType } from 'src/ops.js'
 import isEmail from 'validator/es/lib/isEmail'
 import normalizeEmail from 'validator/es/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context.js'
@@ -52,7 +53,7 @@ export async function loginUserToken(
     {
       sub: user.id,
       role: user.role,
-      scope: UserLoginScope.SessionExec,
+      scope: UserLoginScope.SESSION_EXEC,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,

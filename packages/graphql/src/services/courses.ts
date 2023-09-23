@@ -1,10 +1,6 @@
+import { GroupActivityStatus, LearningElementStatus } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
-import {
-  GroupActivityStatus,
-  GroupLeaderboardEntry,
-  LeaderboardEntry,
-  LearningElementStatus,
-} from 'src/ops.js'
+import { GroupLeaderboardEntry, LeaderboardEntry } from 'src/ops.js'
 import { Context, ContextWithUser } from '../lib/context.js'
 
 export async function getBasicCourseInformation(

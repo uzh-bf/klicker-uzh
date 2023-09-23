@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import type { EnumRef } from '@pothos/core'
 import builder from '../builder.js'
 import type { ICourse } from './course.js'
 import { Course } from './course.js'
@@ -11,10 +12,12 @@ export interface IMicroSession extends DB.MicroSession {
   instances?: IQuestionInstance[]
 }
 
-export const MicroSessionStatus: ReturnType<typeof builder.enumType> =
-  builder.enumType('MicroSessionStatus', {
+export const MicroSessionStatus: EnumRef<string, string> = builder.enumType(
+  'MicroSessionStatus',
+  {
     values: Object.values(DB.MicroSessionStatus),
-  })
+  }
+)
 
 export const MicroSessionRef = builder.objectRef<IMicroSession>('MicroSession')
 export const MicroSession = MicroSessionRef.implement({

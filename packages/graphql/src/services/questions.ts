@@ -4,10 +4,11 @@ import {
   StorageSharedKeyCredential,
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
+import { QuestionDisplayMode, QuestionType } from '@klicker-uzh/prisma'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
-import { Question, QuestionDisplayMode, QuestionType, Tag } from 'src/ops.js'
+import { Question, Tag } from 'src/ops.js'
 import { ContextWithUser } from '../lib/context.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {

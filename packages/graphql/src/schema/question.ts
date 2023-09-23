@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import type { EnumRef } from '@pothos/core'
 import builder from '../builder.js'
 import {
   QuestionData,
@@ -6,10 +7,12 @@ import {
   QuestionType,
 } from './questionData.js'
 
-export const QuestionInstanceType: ReturnType<typeof builder.enumType> =
-  builder.enumType('QuestionInstanceType', {
+export const QuestionInstanceType: EnumRef<string, string> = builder.enumType(
+  'QuestionInstanceType',
+  {
     values: Object.values(DB.QuestionInstanceType),
-  })
+  }
+)
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
   fields: (t) => ({

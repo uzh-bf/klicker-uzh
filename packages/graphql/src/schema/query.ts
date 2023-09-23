@@ -383,7 +383,7 @@ export const Query = builder.queryType({
           endpoint: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return ParticipantService.getParticipations(args, ctx)
+          return ParticipantService.getParticipations(args, ctx) as any
         },
       }),
 

@@ -1,6 +1,6 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["src"],
+  "include": ["src", "@klicker-uzh/prisma/dist/pothos.ts"],
   "compilerOptions": {
     "baseUrl": "."
   },
