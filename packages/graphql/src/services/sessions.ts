@@ -1757,7 +1757,9 @@ export async function cancelSession(
             data: {
               status: SessionBlockStatus.SCHEDULED,
               expiresAt: null,
-              execution: 0,
+              execution: {
+                increment: 1,
+              },
             },
           },
         },
