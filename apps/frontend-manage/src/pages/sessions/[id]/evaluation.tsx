@@ -20,6 +20,9 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import Rank1Img from 'public/img/rank1.svg'
+import Rank2Img from 'public/img/rank2.svg'
+import Rank3Img from 'public/img/rank3.svg'
 import { useEffect, useMemo, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationInitialization from '../../../components/hooks/useEvaluationInitialization'
@@ -227,19 +230,17 @@ function Evaluation() {
         {showLeaderboard && !showConfusion && !showFeedbacks && (
           <div className="overflow-y-auto">
             <div className="p-4 border-t">
-              <div className="max-w-5xl mx-auto text-xl">
+              <div className="max-w-2xl mx-auto text-xl">
                 {data.sessionLeaderboard &&
                 data.sessionLeaderboard.length > 0 ? (
-                  <div className="mt-6">
-                    <Leaderboard
-                      activeParticipation
-                      leaderboard={data.sessionLeaderboard}
-                      className={{
-                        podiumSingle: 'text-lg',
-                        listItem: 'text-lg',
-                      }}
-                    />
-                  </div>
+                  <Leaderboard
+                    leaderboard={data.sessionLeaderboard ?? []}
+                    podiumImgSrc={{
+                      rank1: Rank1Img,
+                      rank2: Rank2Img,
+                      rank3: Rank3Img,
+                    }}
+                  />
                 ) : (
                   <UserNotification
                     className={{ message: 'text-lg' }}
