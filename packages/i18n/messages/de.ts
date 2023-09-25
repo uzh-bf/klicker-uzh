@@ -907,6 +907,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sessionEvaluation: 'Session Evaluation',
       startSession: 'Start Session',
       editSession: 'Session bearbeiten',
+      duplicateSession: 'Session duplizieren',
       deleteSession: 'Session löschen',
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
