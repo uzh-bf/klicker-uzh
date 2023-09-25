@@ -1165,8 +1165,6 @@ export async function getLeaderboard(
     return { ...entry, rank: ix + 1 }
   })
 
-  console.log(filteredEntries)
-
   return filteredEntries
 }
 
