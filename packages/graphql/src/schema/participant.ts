@@ -105,25 +105,20 @@ export const Participant = ParticipantRef.implement({
     xp: t.exposeInt('xp'),
     level: t.int({
       nullable: true,
-      resolve: (participant) =>
-        participant.isProfilePublic || participant.isSelf
-          ? levelFromXp(participant.xp)
-          : null,
+      resolve: (participant) => levelFromXp(participant.xp),
     }),
     levelData: t.field({
       type: LevelRef,
       nullable: true,
       resolve: (participant, _, ctx) => {
-        return participant.isProfilePublic || participant.isSelf
-          ? ctx.prisma.level.findUnique({
-              where: {
-                index: levelFromXp(participant.xp),
-              },
-              include: {
-                nextLevel: true,
-              },
-            })
-          : null
+        return ctx.prisma.level.findUnique({
+          where: {
+            index: levelFromXp(participant.xp),
+          },
+          include: {
+            nextLevel: true,
+          },
+        })
       },
     }),
 

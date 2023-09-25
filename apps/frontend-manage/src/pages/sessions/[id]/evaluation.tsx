@@ -19,6 +19,7 @@ import {
   useArrowNavigation,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 import Rank1Img from 'public/img/rank1.svg'
 import Rank2Img from 'public/img/rank2.svg'
@@ -191,6 +192,14 @@ function Evaluation() {
 
   return (
     <>
+      <Head>
+        <title>KlickerUZH - Evaluation</title>
+        <meta
+          name="description"
+          content="KlickerUZH - Evaluation"
+          charSet="utf-8"
+        ></meta>
+      </Head>
       <div className="z-20 flex-none h-11">
         <EvaluationControlBar
           blocks={blocks || []}

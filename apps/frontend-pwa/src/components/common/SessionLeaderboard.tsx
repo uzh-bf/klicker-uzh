@@ -95,7 +95,7 @@ function SessionLeaderboard({
         data.sessionLeaderboard.length > 0 ? (
           <Leaderboard
             leaderboard={data.sessionLeaderboard ?? []}
-            participant={selfData.self}
+            participant={selfData?.self}
             podiumImgSrc={{
               rank1: Rank1Img,
               rank2: Rank2Img,

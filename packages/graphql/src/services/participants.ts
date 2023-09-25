@@ -515,6 +515,21 @@ export async function getPublicParticipantProfile(
   args: { participantId: string },
   ctx: ContextWithUser
 ) {
+  const self = await ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+    include: {
+      achievements: {
+        include: {
+          achievement: true,
+        },
+      },
+    },
+  })
+
+  if (self?.id === args.participantId) {
+    return { ...self, isSelf: true }
+  }
+
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: args.participantId },
     include: {
@@ -526,21 +541,16 @@ export async function getPublicParticipantProfile(
     },
   })
 
-  if (participant?.isProfilePublic) {
+  if (participant === null) {
     return participant
-  } else {
-    if (participant === null) {
-      return participant
-    }
-    if (participant.id === ctx.user?.sub) {
-      return { ...participant, isSelf: true }
-    }
-    return {
-      ...participant,
-      avatar: null,
-      xp: 0,
-      achievements: [],
-    }
+  } else if (participant?.isProfilePublic && self?.isProfilePublic) {
+    return participant
+  }
+
+  return {
+    ...participant,
+    username: 'Anonymous',
+    avatar: null,
   }
 }
 

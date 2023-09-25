@@ -379,8 +379,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.',
       awards: 'Awards',
       open: 'open',
-      profileAnonymous:
-        'The profile of this user is set to anonymous. For this reason, no achievements or XP are visible.',
       leaveCourseTitle: 'Leave Leaderboard',
       leaveCourseConfirmation:
         'Are you sure you want to leave the course leaderboard?',

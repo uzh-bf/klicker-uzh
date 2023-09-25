@@ -1109,6 +1109,19 @@ export async function getLeaderboard(
 
   if (!session) return null
 
+  const participant = ctx.user?.sub
+    ? await ctx.prisma.participant.findUnique({
+        where: {
+          id: ctx.user.sub,
+        },
+      })
+    : null
+
+  const participantProfilePublic =
+    (participant?.isProfilePublic ?? false) ||
+    ctx.user?.role === 'USER' ||
+    ctx.user?.role === 'ADMIN'
+
   // find the order attribute of the last exectued block
   const executedBlockOrders = session?.blocks
     .filter(
@@ -1127,12 +1140,14 @@ export async function getLeaderboard(
     return {
       id: entry.id,
       participantId: entry.participant.id,
-      username: entry.participant.isProfilePublic
-        ? entry.participant.username
-        : 'Anonymous',
-      avatar: entry.participant.isProfilePublic
-        ? entry.participant.avatar
-        : null,
+      username:
+        entry.participant.isProfilePublic && participantProfilePublic
+          ? entry.participant.username
+          : 'Anonymous',
+      avatar:
+        entry.participant.isProfilePublic && participantProfilePublic
+          ? entry.participant.avatar
+          : null,
       score: entry.score,
       // isSelf: entry.participantId === ctx.user.sub,
       lastBlockOrder,
@@ -1149,6 +1164,8 @@ export async function getLeaderboard(
   const filteredEntries = sortedEntries.flatMap((entry, ix) => {
     return { ...entry, rank: ix + 1 }
   })
+
+  console.log(filteredEntries)
 
   return filteredEntries
 }

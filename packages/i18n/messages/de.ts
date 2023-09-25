@@ -379,8 +379,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage.',
       awards: 'Auszeichnungen',
       open: 'offen',
-      profileAnonymous:
-        'Das Profil dieses Users ist auf anonym eingestellt. Aus diesem Grund sind keine Errungenschaften oder XP sichtbar',
       leaveCourseTitle: 'Leaderboard verlassen',
       leaveCourseConfirmation:
         'Möchten Sie das Leaderboard wirklich verlassen?',
