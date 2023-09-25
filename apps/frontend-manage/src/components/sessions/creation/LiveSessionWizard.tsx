@@ -20,7 +20,7 @@ import {
 import { ErrorMessage, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import EditorField from './EditorField'
@@ -132,7 +132,8 @@ function LiveSessionWizard({
             description: values.description,
             blocks: blockQuestions,
             courseId: values.courseId,
-            multiplier: parseInt(values.multiplier),
+            multiplier:
+              values.courseId !== '' ? parseInt(values.multiplier) : 1,
             isGamificationEnabled:
               values.courseId !== '' && values.isGamificationEnabled,
           },
@@ -357,8 +358,20 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   const t = useTranslations()
+  const { values, setFieldValue } = useFormikContext()
 
-  const { values } = useFormikContext()
+  useEffect(() => {
+    if (values.courseId === '') {
+      setFieldValue('isGamificationEnabled', false)
+      setFieldValue('multiplier', '1')
+    }
+  }, [values.courseId])
+
+  useEffect(() => {
+    if (values.isGamificationEnabled === false) {
+      setFieldValue('multiplier', '1')
+    }
+  }, [values.isGamificationEnabled])
 
   return (
     <>

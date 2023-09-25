@@ -4,6 +4,7 @@ import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteParticipantAccountDocument,
+  LogoutParticipantDocument,
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -39,6 +40,7 @@ function EditProfile() {
   const [deleteParticipantAccount] = useMutation(
     DeleteParticipantAccountDocument
   )
+  const [logoutParticipant] = useMutation(LogoutParticipantDocument)
 
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/profile')
   const [showError, setShowError] = useState(false)
@@ -271,6 +273,9 @@ function EditProfile() {
                             }}
                             onClick={async () => {
                               await deleteParticipantAccount()
+                              try {
+                                await logoutParticipant()
+                              } catch (e) {}
                               window?.location.reload()
                             }}
                           >
