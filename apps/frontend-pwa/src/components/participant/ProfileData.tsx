@@ -21,6 +21,7 @@ interface ProfileProps {
   achievements?: ParticipantAchievementInstance[] | null
   possibleAchievements?: Achievement[] | null
   avatar?: string | null
+  showProfileDetails?: boolean | null
 }
 
 function ProfileData({
@@ -31,6 +32,7 @@ function ProfileData({
   achievements,
   possibleAchievements,
   avatar,
+  showProfileDetails,
 }: ProfileProps) {
   const t = useTranslations()
 

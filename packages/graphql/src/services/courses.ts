@@ -242,12 +242,16 @@ export async function getCourseOverviewData(
               {
                 id: entry.id,
                 score: entry.courseLeaderboard?.score ?? 0,
-                username: entry.participant.isProfilePublic
-                  ? entry.participant.username
-                  : 'Anonymous',
-                avatar: entry.participant.isProfilePublic
-                  ? entry.participant.avatar
-                  : null,
+                username:
+                  entry.participant.isProfilePublic &&
+                  participation.participant.isProfilePublic
+                    ? entry.participant.username
+                    : 'Anonymous',
+                avatar:
+                  entry.participant.isProfilePublic &&
+                  participation.participant.isProfilePublic
+                    ? entry.participant.avatar
+                    : null,
                 participantId: entry.participant.id,
                 isSelf: ctx.user?.sub === entry.participant.id,
               },

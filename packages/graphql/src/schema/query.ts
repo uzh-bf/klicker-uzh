@@ -61,14 +61,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      participantDetails: asParticipant.field({
+      publicParticipantProfile: asParticipant.field({
         nullable: true,
         type: Participant,
         args: {
           participantId: t.arg.string({ required: true }),
         },
         async resolve(_, args, ctx) {
-          return ParticipantService.getParticipantDetails(args, ctx)
+          return ParticipantService.getPublicParticipantProfile(args, ctx)
         },
       }),
 

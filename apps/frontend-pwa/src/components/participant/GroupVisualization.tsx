@@ -51,9 +51,11 @@ function GroupVisualization({
             left: `${POSITIONS[ix][1]}%`,
             width: '10%',
           }}
-          src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${
-            participant.avatar ?? 'placeholder'
-          }.svg`}
+          src={
+            participant.avatar
+              ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${participant.avatar}.svg`
+              : '/user-solid.svg'
+          }
           alt=""
           height={50}
           width={50}
