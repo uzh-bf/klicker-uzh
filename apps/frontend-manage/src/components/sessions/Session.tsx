@@ -1,4 +1,5 @@
 import { useMutation } from '@apollo/client'
+import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowUpRightFromSquare,
   faCalendarDays,
@@ -174,40 +175,64 @@ function Session({ session }: SessionProps) {
             </div>
           }
           primary={
-            (SessionStatus.Prepared === session.status ||
-              SessionStatus.Scheduled === session.status) && (
-              <div className="flex flex-row float-right gap-1">
-                <Button
-                  className={{ root: 'text-sm py-1 px-3' }}
-                  onClick={() =>
-                    router.push({
-                      pathname: '/',
-                      query: { sessionId: session.id, editMode: 'liveSession' },
-                    })
-                  }
-                >
-                  <Button.Icon className={{ root: 'text-slate-600' }}>
-                    <FontAwesomeIcon icon={faPencil} />
-                  </Button.Icon>
-                  <Button.Label>
-                    {t('manage.sessions.editSession')}
-                  </Button.Label>
-                </Button>
-                <Button
-                  className={{
-                    root: 'border-red-600 text-sm py-1 px-3',
-                  }}
-                  onClick={() => setDeletionModal(true)}
-                >
-                  <Button.Icon className={{ root: 'text-red-400' }}>
-                    <FontAwesomeIcon icon={faTrash} />
-                  </Button.Icon>
-                  <Button.Label>
-                    {t('manage.sessions.deleteSession')}
-                  </Button.Label>
-                </Button>
-              </div>
-            )
+            <div className="flex flex-row float-right gap-1">
+              <Button
+                className={{ root: 'text-sm py-1 px-3' }}
+                onClick={() =>
+                  router.push({
+                    pathname: '/',
+                    query: {
+                      sessionId: session.id,
+                      duplicationMode: 'liveSession',
+                    },
+                  })
+                }
+              >
+                <Button.Icon className={{ root: 'text-slate-600' }}>
+                  <FontAwesomeIcon icon={faCopy} />
+                </Button.Icon>
+                <Button.Label>
+                  {t('manage.sessions.duplicateSession')}
+                </Button.Label>
+              </Button>
+              {(SessionStatus.Prepared === session.status ||
+                SessionStatus.Scheduled === session.status) && (
+                <>
+                  <Button
+                    className={{ root: 'text-sm py-1 px-3' }}
+                    onClick={() =>
+                      router.push({
+                        pathname: '/',
+                        query: {
+                          sessionId: session.id,
+                          editMode: 'liveSession',
+                        },
+                      })
+                    }
+                  >
+                    <Button.Icon className={{ root: 'text-slate-600' }}>
+                      <FontAwesomeIcon icon={faPencil} />
+                    </Button.Icon>
+                    <Button.Label>
+                      {t('manage.sessions.editSession')}
+                    </Button.Label>
+                  </Button>
+                  <Button
+                    className={{
+                      root: 'border-red-600 text-sm py-1 px-3',
+                    }}
+                    onClick={() => setDeletionModal(true)}
+                  >
+                    <Button.Icon className={{ root: 'text-red-400' }}>
+                      <FontAwesomeIcon icon={faTrash} />
+                    </Button.Icon>
+                    <Button.Label>
+                      {t('manage.sessions.deleteSession')}
+                    </Button.Label>
+                  </Button>
+                </>
+              )}
+            </div>
           }
         >
           <div className="flex flex-row gap-2 my-2 overflow-y-scroll">

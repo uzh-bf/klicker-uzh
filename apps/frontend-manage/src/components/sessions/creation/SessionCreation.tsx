@@ -22,6 +22,7 @@ interface SessionCreationProps {
   closeWizard: () => void
   sessionId?: string
   editMode?: string
+  duplicationMode?: string
   selection: Record<number, Question>
   resetSelection: () => void
 }
@@ -31,6 +32,7 @@ function SessionCreation({
   closeWizard,
   sessionId,
   editMode,
+  duplicationMode,
   selection,
   resetSelection,
 }: SessionCreationProps) {
@@ -39,7 +41,9 @@ function SessionCreation({
     GetSingleLiveSessionDocument,
     {
       variables: { sessionId: sessionId || '' },
-      skip: !sessionId || editMode !== 'liveSession',
+      skip:
+        !sessionId ||
+        (editMode !== 'liveSession' && duplicationMode !== 'liveSession'),
     }
   )
   const { data: dataMicroSession, loading: microLoading } = useQuery(
@@ -74,7 +78,9 @@ function SessionCreation({
 
   if (
     (!errorCourses && loadingCourses) ||
-    (sessionId && editMode === 'liveSession' && liveLoading) ||
+    (sessionId &&
+      (editMode === 'liveSession' || duplicationMode === 'liveSession') &&
+      liveLoading) ||
     (sessionId && editMode === 'microSession' && microLoading) ||
     (sessionId && editMode === 'learningElement' && learningLoading)
   ) {
@@ -90,10 +96,19 @@ function SessionCreation({
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
-              (dataLiveSession?.liveSession as Session) ?? undefined
+              dataLiveSession?.liveSession
+                ? duplicationMode === 'liveSession'
+                  ? ({
+                      ...dataLiveSession?.liveSession,
+                      name: `${dataLiveSession.liveSession.name} (Copy)`,
+                      displayName: `${dataLiveSession.liveSession.displayName} (Copy)`,
+                    } as Session)
+                  : (dataLiveSession?.liveSession as Session)
+                : undefined
             }
             selection={selection}
             resetSelection={resetSelection}
+            editMode={editMode === 'liveSession'}
           />
         )}
         {creationMode === 'microSession' && (

@@ -37,6 +37,7 @@ interface LiveSessionWizardProps {
   selection: Record<number, Question>
   resetSelection: () => void
   closeWizard: () => void
+  editMode: boolean
 }
 
 function LiveSessionWizard({
@@ -46,6 +47,7 @@ function LiveSessionWizard({
   selection,
   resetSelection,
   closeWizard,
+  editMode,
 }: LiveSessionWizardProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -56,7 +58,6 @@ function LiveSessionWizard({
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [editMode, setEditMode] = useState(false)
 
   const stepOneValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -122,7 +123,7 @@ function LiveSessionWizard({
     try {
       let success = false
 
-      if (initialValues) {
+      if (editMode && initialValues) {
         const session = await editSession({
           variables: {
             id: initialValues.id || '',
@@ -182,12 +183,10 @@ function LiveSessionWizard({
 
       if (success) {
         router.push('/')
-        setEditMode(!!initialValues)
         setIsWizardCompleted(true)
       }
     } catch (error) {
       console.log('error: ', error)
-      setEditMode(!!initialValues)
       setErrorToastOpen(true)
     }
   }
@@ -200,11 +199,11 @@ function LiveSessionWizard({
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
-              ? t.rich('manage.sessionForms.liveSessionCreated', {
+              ? t.rich('manage.sessionForms.liveSessionUpdated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })
-              : t.rich('manage.sessionForms.liveSessionUpdated', {
+              : t.rich('manage.sessionForms.liveSessionCreated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })}
@@ -254,7 +253,8 @@ function LiveSessionWizard({
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
-        editMode={!!initialValues}
+        editMode={editMode}
+        initialValid={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}
@@ -291,8 +291,8 @@ function LiveSessionWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? t('manage.sessionForms.liveSessionCreationFailed')
-            : t('manage.sessionForms.liveSessionEditingFailed')
+            ? t('manage.sessionForms.liveSessionEditingFailed')
+            : t('manage.sessionForms.liveSessionCreationFailed')
         }
       />
     </div>
