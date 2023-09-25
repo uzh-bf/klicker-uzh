@@ -1,0 +1,5 @@
+mutation UpdateQuestionInstances($questionId: Int!) {
+  updateQuestionInstances(questionId: $questionId) {
+    id
+  }
+}

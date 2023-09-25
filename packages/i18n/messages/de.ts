@@ -744,6 +744,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       uploadImageHeader: 'Medien hinzufügen',
       uploadImageDescription:
         'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
+      updateInstances: 'Frage-Instanzen in KlickerUZH-Elementen aktualisieren',
+      updateInstancesExplanation:
+        'Nutzen sie diese Einstellung, um die Frage in allen geplanten Sessionen, Lernelementen und Micro-Sessions anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Elementen wird nicht aktualisiert. Veränderte Multiplier werden auch auf die erstellten Instanzen angewendet.',
     },
     sessionForms: {
       sessionName: 'Bitte geben Sie einen Namen für Ihre Session ein.',

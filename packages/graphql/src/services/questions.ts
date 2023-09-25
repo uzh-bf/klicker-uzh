@@ -10,6 +10,7 @@ import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { Question, Tag } from 'src/ops'
 import { ContextWithUser } from '../lib/context'
+import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -414,4 +415,153 @@ export async function getFileUploadSas(
     containerName: ctx.user.sub,
     fileName: blobName,
   }
+}
+
+export async function updateQuestionInstances(
+  { questionId }: { questionId: number },
+  ctx: ContextWithUser
+) {
+  // fetch the question and return null, if the question does not exist
+  const question = await ctx.prisma.question.findUnique({
+    where: {
+      id: questionId,
+    },
+  })
+
+  if (!question) {
+    return null
+  }
+
+  // get all instances that are linked to the question and contained in elements that are not published/running
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      sessions: {
+        where: {
+          status: {
+            in: [DB.SessionStatus.PREPARED, DB.SessionStatus.SCHEDULED],
+          },
+        },
+        include: {
+          blocks: {
+            include: {
+              instances: {
+                where: {
+                  questionId,
+                },
+              },
+            },
+          },
+        },
+      },
+      learningElements: {
+        where: {
+          status: DB.LearningElementStatus.DRAFT,
+        },
+        include: {
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  questionInstance: {
+                    where: {
+                      questionId,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      microSessions: {
+        where: {
+          status: DB.MicroSessionStatus.DRAFT,
+        },
+        include: {
+          instances: {
+            where: {
+              questionId,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // implement a map as above with the difference that it should not result in an array with key value pairs, but in an object {instanceId1: multiplier1, instanceId2: multiplier2}
+  const instanceMultipliers: Record<number, number> = {
+    ...user?.sessions.reduce((prev1, session) => {
+      return {
+        ...prev1,
+        ...session.blocks.reduce((prev2, block) => {
+          return {
+            ...prev2,
+            ...block.instances.reduce((prev3, i) => {
+              return { ...prev3, [i.id]: session.pointsMultiplier }
+            }, {}),
+          }
+        }, {}),
+      }
+    }, {}),
+    ...user?.learningElements.reduce((prev1, element) => {
+      return {
+        ...prev1,
+        ...element.stacks.reduce((prev2, stack) => {
+          return {
+            ...prev2,
+            ...stack.elements.reduce((prev3, stackElement) => {
+              return {
+                ...prev3,
+                [stackElement.questionInstance?.id as number]:
+                  element.pointsMultiplier,
+              }
+            }, {}),
+          }
+        }, {}),
+      }
+    }, {}),
+    ...user?.microSessions.reduce((prev, microSession) => {
+      return {
+        ...prev,
+        ...microSession.instances.reduce((prev2, i) => {
+          return { ...prev2, [i.id]: microSession.pointsMultiplier }
+        }, {}),
+      }
+    }, {}),
+  }
+
+  // prepare new question objects
+  const newQuestionData = processQuestionData(question)
+
+  // prepare new results objects
+  const newResults = prepareInitialInstanceResults(newQuestionData)
+
+  const updatedInstances = (
+    await Promise.allSettled(
+      Object.entries(instanceMultipliers).map(
+        async ([instanceId, elementMultiplier]) => {
+          const instance = await ctx.prisma.questionInstance.update({
+            where: { id: parseInt(instanceId) },
+            data: {
+              questionData: newQuestionData,
+              results: newResults,
+              pointsMultiplier: elementMultiplier * question.pointsMultiplier,
+            },
+          })
+
+          if (!instance) return null
+
+          return instance
+        }
+      )
+    )
+  ).flatMap((result) => {
+    if (result.status !== 'fulfilled' || !result.value) return []
+    return result.value
+  })
+
+  return updatedInstances
 }
