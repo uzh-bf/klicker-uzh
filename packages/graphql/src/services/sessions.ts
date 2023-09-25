@@ -868,6 +868,23 @@ export async function deactivateSessionBlock(
       activeBlock: session.activeBlock,
     })
 
+  const existingParticipantsLB = (
+    await Promise.allSettled(
+      Object.entries(sessionLeaderboard).map(async ([id, score]) => {
+        const participant = await ctx.prisma.participant.findUnique({
+          where: { id },
+        })
+
+        if (!participant) return null
+
+        return [id, score]
+      })
+    )
+  ).flatMap((result) => {
+    if (result.status !== 'fulfilled' || !result.value) return []
+    return [result.value]
+  })
+
   // TODO: what if session gamified and results are reset? are points taken away?
   const updatedSession = await ctx.prisma.liveSession.update({
     where: {
@@ -928,7 +945,7 @@ export async function deactivateSessionBlock(
       },
       leaderboard: session.isGamificationEnabled
         ? {
-            upsert: Object.entries(sessionLeaderboard).map(([id, score]) => ({
+            upsert: existingParticipantsLB.map(([id, score]) => ({
               where: {
                 type_participantId_sessionId: {
                   type: 'SESSION',
