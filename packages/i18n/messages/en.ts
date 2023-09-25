@@ -906,6 +906,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sessionEvaluation: 'Quiz Evaluation',
       startSession: 'Start Quiz',
       editSession: 'Edit Quiz',
+      duplicateSession: 'Duplicate Quiz',
       deleteSession: 'Delete Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',

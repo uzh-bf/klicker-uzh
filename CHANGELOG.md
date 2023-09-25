@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.69](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.68...v3.0.0-rc.69) (2023-09-25)
+
+
+### Features
+
+* add duplication possibility for live sessions ([#3862](https://github.com/uzh-bf/klicker-uzh/issues/3862)) ([e58aae4](https://github.com/uzh-bf/klicker-uzh/commit/e58aae4d2b99c40147afbd4d58912964867450ef))
+
+
+### Bug Fixes
+
+* **apps/auth:** ensure that link on german login page points to german ToS ([38b5818](https://github.com/uzh-bf/klicker-uzh/commit/38b5818a593c14d23020e495edc9c1cd498ec075))
+* **apps/frontend-manage:** ensure that gamification settings on save and in UI are consistent ([#3863](https://github.com/uzh-bf/klicker-uzh/issues/3863)) ([ab9887b](https://github.com/uzh-bf/klicker-uzh/commit/ab9887b1205574cbdbcd1f8e496d0f2b6b0f2261))
+* **apps/frontend-manage:** ensure that long tags do not cause wrapping ([#3857](https://github.com/uzh-bf/klicker-uzh/issues/3857)) ([77e4719](https://github.com/uzh-bf/klicker-uzh/commit/77e47190fccef1d644dc3de03f8a931db79401a1))
+* **apps/frontend-pwa:** hide anonymous profiles to other users ([#3860](https://github.com/uzh-bf/klicker-uzh/issues/3860)) ([91d80cd](https://github.com/uzh-bf/klicker-uzh/commit/91d80cdd286f3edd49c36b9b46bed82655a8a61f))
+* **apps/frontend-pwa:** try logout after account deletion ([3169c4c](https://github.com/uzh-bf/klicker-uzh/commit/3169c4cb1da6529de5a51ad772552f2da7325c77))
+* **packages/graphql:** ensure only valid participants are being updated when a question block is closed ([62d4d90](https://github.com/uzh-bf/klicker-uzh/commit/62d4d90cdce6cc138fa5da4ca7d757db8f298ddf))
+* **packages/graphql:** ensure that execution counter of session block is incremented on session abortion ([#3861](https://github.com/uzh-bf/klicker-uzh/issues/3861)) ([1d19cce](https://github.com/uzh-bf/klicker-uzh/commit/1d19cce99d84ae81e1df196556f80cc07c78dfc1))
+
 ## [3.0.0-rc.68](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.67...v3.0.0-rc.68) (2023-09-20)
 
 

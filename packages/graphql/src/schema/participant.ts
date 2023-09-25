@@ -110,15 +110,16 @@ export const Participant = ParticipantRef.implement({
     levelData: t.field({
       type: LevelRef,
       nullable: true,
-      resolve: (participant, _, ctx) =>
-        ctx.prisma.level.findUnique({
+      resolve: (participant, _, ctx) => {
+        return ctx.prisma.level.findUnique({
           where: {
             index: levelFromXp(participant.xp),
           },
           include: {
             nextLevel: true,
           },
-        }),
+        })
+      },
     }),
 
     participantGroups: t.expose('participantGroups', {

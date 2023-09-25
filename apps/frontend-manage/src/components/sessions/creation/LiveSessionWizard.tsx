@@ -20,7 +20,7 @@ import {
 import { ErrorMessage, useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import EditorField from './EditorField'
@@ -37,6 +37,7 @@ interface LiveSessionWizardProps {
   selection: Record<number, Question>
   resetSelection: () => void
   closeWizard: () => void
+  editMode: boolean
 }
 
 function LiveSessionWizard({
@@ -46,6 +47,7 @@ function LiveSessionWizard({
   selection,
   resetSelection,
   closeWizard,
+  editMode,
 }: LiveSessionWizardProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -56,7 +58,6 @@ function LiveSessionWizard({
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [editMode, setEditMode] = useState(false)
 
   const stepOneValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.sessionForms.sessionName')),
@@ -122,7 +123,7 @@ function LiveSessionWizard({
     try {
       let success = false
 
-      if (initialValues) {
+      if (editMode && initialValues) {
         const session = await editSession({
           variables: {
             id: initialValues.id || '',
@@ -131,7 +132,8 @@ function LiveSessionWizard({
             description: values.description,
             blocks: blockQuestions,
             courseId: values.courseId,
-            multiplier: parseInt(values.multiplier),
+            multiplier:
+              values.courseId !== '' ? parseInt(values.multiplier) : 1,
             isGamificationEnabled:
               values.courseId !== '' && values.isGamificationEnabled,
           },
@@ -181,12 +183,10 @@ function LiveSessionWizard({
 
       if (success) {
         router.push('/')
-        setEditMode(!!initialValues)
         setIsWizardCompleted(true)
       }
     } catch (error) {
       console.log('error: ', error)
-      setEditMode(!!initialValues)
       setErrorToastOpen(true)
     }
   }
@@ -199,11 +199,11 @@ function LiveSessionWizard({
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
-              ? t.rich('manage.sessionForms.liveSessionCreated', {
+              ? t.rich('manage.sessionForms.liveSessionUpdated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })
-              : t.rich('manage.sessionForms.liveSessionUpdated', {
+              : t.rich('manage.sessionForms.liveSessionCreated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })}
@@ -253,7 +253,8 @@ function LiveSessionWizard({
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
-        editMode={!!initialValues}
+        editMode={editMode}
+        initialValid={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}
@@ -290,8 +291,8 @@ function LiveSessionWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? t('manage.sessionForms.liveSessionCreationFailed')
-            : t('manage.sessionForms.liveSessionEditingFailed')
+            ? t('manage.sessionForms.liveSessionEditingFailed')
+            : t('manage.sessionForms.liveSessionCreationFailed')
         }
       />
     </div>
@@ -357,8 +358,20 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   const t = useTranslations()
+  const { values, setFieldValue } = useFormikContext()
 
-  const { values } = useFormikContext()
+  useEffect(() => {
+    if (values.courseId === '') {
+      setFieldValue('isGamificationEnabled', false)
+      setFieldValue('multiplier', '1')
+    }
+  }, [values.courseId])
+
+  useEffect(() => {
+    if (values.isGamificationEnabled === false) {
+      setFieldValue('multiplier', '1')
+    }
+  }, [values.isGamificationEnabled])
 
   return (
     <>

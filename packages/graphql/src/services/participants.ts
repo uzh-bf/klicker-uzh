@@ -511,10 +511,25 @@ export async function flagQuestion(
   return 'OK'
 }
 
-export async function getParticipantDetails(
+export async function getPublicParticipantProfile(
   args: { participantId: string },
   ctx: ContextWithUser
 ) {
+  const self = await ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+    include: {
+      achievements: {
+        include: {
+          achievement: true,
+        },
+      },
+    },
+  })
+
+  if (self?.id === args.participantId) {
+    return { ...self, isSelf: true }
+  }
+
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: args.participantId },
     include: {
@@ -526,11 +541,21 @@ export async function getParticipantDetails(
     },
   })
 
-  return participant
+  if (participant === null) {
+    return participant
+  } else if (participant?.isProfilePublic && self?.isProfilePublic) {
+    return participant
+  }
+
+  return {
+    ...participant,
+    username: 'Anonymous',
+    avatar: null,
+  }
 }
 
 export async function getParticipantWithAchievements(ctx: ContextWithUser) {
-  const participant = await ctx.prisma.participant.findUnique({
+  let participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
       achievements: {
@@ -545,7 +570,7 @@ export async function getParticipantWithAchievements(ctx: ContextWithUser) {
   const achievements = await ctx.prisma.achievement.findMany()
 
   return {
-    participant,
+    participant: { ...participant, isSelf: true },
     achievements,
   }
 }

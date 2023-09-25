@@ -85,7 +85,7 @@ function SinglePodium({
         />
       )}
 
-      <div className="absolute bottom-0 w-full mx-auto text-xs lg:text-sm text-slate-700">
+      <div className="absolute bottom-0 w-full mx-auto text-xs lg:text-lg text-slate-700">
         {username}
       </div>
     </div>
@@ -94,7 +94,6 @@ function SinglePodium({
 
 interface PodiumProps {
   leaderboard: Partial<LeaderboardEntry>[]
-  simple?: boolean
   className?: {
     root?: string
     single?: string
@@ -105,12 +104,7 @@ interface PodiumProps {
     rank3: any
   }
 }
-export function Podium({
-  leaderboard,
-  simple = false,
-  className,
-  imgSrc,
-}: PodiumProps) {
+export function Podium({ leaderboard, className, imgSrc }: PodiumProps) {
   const { rank1, rank2, rank3 } = useMemo(() => {
     if (!leaderboard) return {}
     return {

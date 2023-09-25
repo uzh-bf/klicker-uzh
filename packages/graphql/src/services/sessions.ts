@@ -868,6 +868,23 @@ export async function deactivateSessionBlock(
       activeBlock: session.activeBlock,
     })
 
+  const existingParticipantsLB = (
+    await Promise.allSettled(
+      Object.entries(sessionLeaderboard).map(async ([id, score]) => {
+        const participant = await ctx.prisma.participant.findUnique({
+          where: { id },
+        })
+
+        if (!participant) return null
+
+        return [id, score]
+      })
+    )
+  ).flatMap((result) => {
+    if (result.status !== 'fulfilled' || !result.value) return []
+    return [result.value]
+  })
+
   // TODO: what if session gamified and results are reset? are points taken away?
   const updatedSession = await ctx.prisma.liveSession.update({
     where: {
@@ -928,7 +945,7 @@ export async function deactivateSessionBlock(
       },
       leaderboard: session.isGamificationEnabled
         ? {
-            upsert: Object.entries(sessionLeaderboard).map(([id, score]) => ({
+            upsert: existingParticipantsLB.map(([id, score]) => ({
               where: {
                 type_participantId_sessionId: {
                   type: 'SESSION',
@@ -1109,6 +1126,19 @@ export async function getLeaderboard(
 
   if (!session) return null
 
+  const participant = ctx.user?.sub
+    ? await ctx.prisma.participant.findUnique({
+        where: {
+          id: ctx.user.sub,
+        },
+      })
+    : null
+
+  const participantProfilePublic =
+    (participant?.isProfilePublic ?? false) ||
+    ctx.user?.role === 'USER' ||
+    ctx.user?.role === 'ADMIN'
+
   // find the order attribute of the last exectued block
   const executedBlockOrders = session?.blocks
     .filter(
@@ -1127,8 +1157,14 @@ export async function getLeaderboard(
     return {
       id: entry.id,
       participantId: entry.participant.id,
-      username: entry.participant.username,
-      avatar: entry.participant.avatar,
+      username:
+        entry.participant.isProfilePublic && participantProfilePublic
+          ? entry.participant.username
+          : 'Anonymous',
+      avatar:
+        entry.participant.isProfilePublic && participantProfilePublic
+          ? entry.participant.avatar
+          : null,
       score: entry.score,
       // isSelf: entry.participantId === ctx.user.sub,
       lastBlockOrder,

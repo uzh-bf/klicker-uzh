@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { GetParticipantDetailsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetPublicParticipantProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Modal } from '@uzh-bf/design-system'
 import { useState } from 'react'
@@ -24,11 +24,11 @@ function ParticipantProfileModal({
   const [currentIndex, setCurrentIndex] = useState<number>(
     top10Participants.indexOf(participantId)
   )
-  const { data, loading } = useQuery(GetParticipantDetailsDocument, {
+  const { data, loading } = useQuery(GetPublicParticipantProfileDocument, {
     variables: { id: selectedParticipant },
   })
 
-  const participant = data?.participantDetails
+  const participant = data?.publicParticipantProfile
 
   const onNext = () => {
     const nextIndex = (currentIndex + 1) % top10Participants.length
@@ -67,6 +67,9 @@ function ParticipantProfileModal({
             avatar={participant.avatar}
             username={participant.username}
             achievements={participant.achievements}
+            showProfileDetails={
+              participant.isProfilePublic || participant.isSelf
+            }
           />
           <div className="grid w-full grid-cols-10 pt-5 justify-items-center">
             {top10Participants.map((p, index) => (
