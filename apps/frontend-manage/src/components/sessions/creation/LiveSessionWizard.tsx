@@ -131,7 +131,8 @@ function LiveSessionWizard({
             description: values.description,
             blocks: blockQuestions,
             courseId: values.courseId,
-            multiplier: parseInt(values.multiplier),
+            multiplier:
+              values.courseId !== '' ? parseInt(values.multiplier) : 1,
             isGamificationEnabled:
               values.courseId !== '' && values.isGamificationEnabled,
           },
@@ -357,8 +358,7 @@ function StepOne(_: StepProps) {
 
 function StepTwo(props: StepProps) {
   const t = useTranslations()
-
-  const { values } = useFormikContext()
+  const { values, setFieldValue } = useFormikContext()
 
   return (
     <>
@@ -379,6 +379,12 @@ function StepTwo(props: StepProps) {
             hideError
             data={{ cy: 'select-course' }}
             className={{ tooltip: 'z-20' }}
+            onSelect={(newValue) => {
+              if (newValue === '') {
+                setFieldValue('isGamificationEnabled', false)
+                setFieldValue('multiplier', '1')
+              }
+            }}
           />
           <ErrorMessage
             name="courseId"
