@@ -22,5 +22,4 @@ jobs:
           run_install: true
       - name: Test functions
         shell: bash
-        run: |
-          pnpm run test
+        run: jest
