@@ -22,4 +22,6 @@ jobs:
           run_install: true
       - name: Test functions
         shell: bash
-        run: jest
+        run: |
+          cd packages/grading
+          pnpm run test
