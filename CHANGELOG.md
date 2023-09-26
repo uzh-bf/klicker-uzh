@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.72](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.71...v3.0.0-rc.72) (2023-09-26)
+
+
+### Bug Fixes
+
+* **packages/graphql:** remove Object.entries on endSession ([ceec946](https://github.com/uzh-bf/klicker-uzh/commit/ceec946f1768ea4aa033695bcab5918705e4549a))
+
+
+### Enhancements
+
+* **deploy:** add TEAMS_WEBHOOK_URL ([462329b](https://github.com/uzh-bf/klicker-uzh/commit/462329baf8c7fdf971e152b03a8311227dc6690e))
+
 ## [3.0.0-rc.71](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.70...v3.0.0-rc.71) (2023-09-26)
 
 
