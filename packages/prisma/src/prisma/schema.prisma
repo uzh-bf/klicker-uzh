@@ -11,6 +11,10 @@ generator pothos {
   output       = "../client/pothos.d.ts"
 }
 
+generator json {
+  provider = "prisma-json-types-generator"
+}
+
 datasource db {
   provider          = "postgres"
   url               = env("DATABASE_URL")
