@@ -20,7 +20,7 @@
     "bcryptjs": "2.4.3",
     "dayjs": "1.11.9",
     "generate-password": "1.7.0",
-    "graphql": "16.7.1",
+    "graphql": "16.8.1",
     "graphql-scalars": "1.22.2",
     "graphql-yoga": "3.9.1",
     "jsonwebtoken": "9.0.1",
