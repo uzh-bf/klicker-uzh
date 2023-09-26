@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.71](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.70...v3.0.0-rc.71) (2023-09-26)
+
+
+### Bug Fixes
+
+* **packages/graphql:** add existingParticipantsLB on endSession ([790c5d1](https://github.com/uzh-bf/klicker-uzh/commit/790c5d15ee0ab7d530e1bb2e51bd5006b1b133d1))
+
 ## [3.0.0-rc.70](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.69...v3.0.0-rc.70) (2023-09-26)
 
 
