@@ -13,6 +13,7 @@ import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 // TODO: rework scheduling for serverless
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
@@ -726,12 +727,19 @@ export async function activateSessionBlock(
   return updatedSession
 }
 
+interface GetCachedBlockResultsArgs {
+  ctx: Context
+  sessionId: string
+  sessionBlockId: number
+  activeInstanceIds: number[]
+}
+
 async function getCachedBlockResults({
   ctx,
   sessionId,
   sessionBlockId,
   activeInstanceIds,
-}) {
+}: GetCachedBlockResultsArgs) {
   const redisMulti = ctx.redisExec.multi()
   redisMulti.hgetall(`s:${sessionId}:lb`)
   redisMulti.hgetall(`s:${sessionId}:b:${sessionBlockId}:lb`)
@@ -743,12 +751,19 @@ async function getCachedBlockResults({
   return await redisMulti.exec()
 }
 
+interface UnlinkCachedBlockResultsArgs {
+  ctx: Context
+  sessionId: string
+  sessionBlockId: number
+  activeInstanceIds: number[]
+}
+
 async function unlinkCachedBlockResults({
   ctx,
   sessionId,
   sessionBlockId,
   activeInstanceIds,
-}) {
+}: UnlinkCachedBlockResultsArgs) {
   // unlink everything regarding the block in redis
   const unlinkMulti = ctx.redisExec.pipeline()
   unlinkMulti.unlink(`s:${sessionId}:b:${sessionBlockId}:lb`)
@@ -761,7 +776,15 @@ async function unlinkCachedBlockResults({
   return unlinkMulti.exec()
 }
 
-async function processCachedData({ cachedResults, activeBlock }) {
+interface ProcessCachedDataArgs {
+  cachedResults: any[]
+  activeBlock: any
+}
+
+async function processCachedData({
+  cachedResults,
+  activeBlock,
+}: ProcessCachedDataArgs) {
   const mappedResults: any[] = cachedResults.map(([_, result]) => result)
 
   const sessionLeaderboard: Record<string, string> = mappedResults[0]
@@ -1189,11 +1212,12 @@ export async function getLeaderboard(
   })
 
   const sortByScoreAndUsername = R.curry(R.sortWith)([
-    R.descend(R.prop('score')),
-    R.ascend(R.prop('username')),
+    R.descend(R.prop<number>('score')),
+    R.ascend(R.prop<string>('username')),
   ])
 
-  const sortedEntries = sortByScoreAndUsername(preparedEntries)
+  const sortedEntries: typeof preparedEntries =
+    sortByScoreAndUsername(preparedEntries)
 
   const filteredEntries = sortedEntries.flatMap((entry, ix) => {
     return { ...entry, rank: ix + 1 }
@@ -1517,7 +1541,7 @@ export async function getPinnedFeedbacks(
   return reducedSession
 }
 
-function checkCorrectnessFreeText(instance) {
+function checkCorrectnessFreeText(instance: QuestionInstance) {
   // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution)(exact match, case insensitive)
   if (instance.questionData.type === 'FREE_TEXT') {
     for (const id in instance.results) {
@@ -1538,7 +1562,7 @@ function checkCorrectnessFreeText(instance) {
   return instance
 }
 
-function computeStatistics(instance) {
+function computeStatistics(instance: QuestionInstance) {
   // Compute the statistics for numerical questions
   if (instance.questionData.type === 'NUMERICAL' && !instance.statistics) {
     const results = []
@@ -1595,7 +1619,7 @@ function computeStatistics(instance) {
   return instance
 }
 
-function completeQuestionData(instances) {
+function completeQuestionData(instances: QuestionInstance[]) {
   return instances.map((instance) =>
     computeStatistics(checkCorrectnessFreeText(instance))
   )
@@ -1877,8 +1901,7 @@ export async function deleteSession(
 
     return deletedItem
   } catch (e) {
-    // TODO: resolve type issue by first testing for prisma error
-    if (e?.code === 'P2025') {
+    if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
       console.log(
         'The learning element is not in draft status and cannot be deleted.'
       )
