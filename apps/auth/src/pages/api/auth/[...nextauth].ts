@@ -17,7 +17,10 @@ interface ExtendedProfile extends Profile {
 
 function reduceCatalyst(acc: boolean, affiliation: string) {
   try {
-    if (affiliation.split('@')[1].includes('uzh.ch')) {
+    if (
+      affiliation.split('@')[1].includes('uzh.ch') ||
+      affiliation.split('@')[1].includes('usz.ch')
+    ) {
       return true
     }
 
