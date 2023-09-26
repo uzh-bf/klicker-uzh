@@ -12,7 +12,9 @@ releases:
     kubeContext: klicker-k8scbfdbd7c
     values:
       - values.yaml
-      - appSecret: '{{ requiredEnv "APP_SECRET" }}'
+      - teamsWebhookUrl: '{{ requiredEnv "TEAMS_WEBHOOK_URL" }}'
+
+        appSecret: '{{ requiredEnv "APP_SECRET" }}'
 
         blobStorage:
           accountName: '{{ requiredEnv "BLOB_STORAGE_ACCOUNT_NAME" }}'
