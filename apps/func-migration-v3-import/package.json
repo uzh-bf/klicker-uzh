@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/func-migration-v3-import",
-  "version": "3.0.0-rc.69",
+  "version": "3.0.0-rc.70",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
