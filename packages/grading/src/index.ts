@@ -200,13 +200,9 @@ export function computeSimpleAwardedPoints({
 
 interface ComputeAwardedXpArgs {
   pointsPercentage: number | null
-  multiplier: number
 }
 
-export function computeAwardedXp({
-  pointsPercentage,
-  multiplier,
-}: ComputeAwardedXpArgs) {
+export function computeAwardedXp({ pointsPercentage }: ComputeAwardedXpArgs) {
   if (pointsPercentage !== null && pointsPercentage === 1) {
     return 10
   }

@@ -1,5 +1,6 @@
 import {
   computeAwardedPoints,
+  computeAwardedXp,
   computeSimpleAwardedPoints,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
@@ -462,5 +463,22 @@ describe('@klicker-uzh/grading', () => {
       pointsMultiplier: 2,
     })
     expect(points3Multiplier).toEqual(9)
+  })
+
+  it('should compute the rewarded XP correctly', () => {
+    const xp = computeAwardedXp({
+      pointsPercentage: 1,
+    })
+    expect(xp).toEqual(10)
+
+    const xp2 = computeAwardedXp({
+      pointsPercentage: 0.5,
+    })
+    expect(xp2).toEqual(0)
+
+    const xp3 = computeAwardedXp({
+      pointsPercentage: 0,
+    })
+    expect(xp3).toEqual(0)
   })
 })
