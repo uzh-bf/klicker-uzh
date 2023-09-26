@@ -473,7 +473,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
       })
 
       const result = await ctx.prisma.$transaction(
-        Object.entries(existingParticipantsLB).map(([participantId, score]) =>
+        existingParticipantsLB.map(([participantId, score]) =>
           ctx.prisma.leaderboardEntry.upsert({
             where: {
               type_participantId_courseId: {
