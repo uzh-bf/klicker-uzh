@@ -151,7 +151,7 @@ export function computeAwardedPoints({
   const slope = maxBonus / (timeToZeroBonus ?? 20)
 
   // default number of points each student gets independent of the correctness of the answer
-  let awardedPoints = defaultPoints ?? 0
+  let awardedPoints = 0
 
   // time between the first response and the current response
   let responseTiming =
@@ -175,6 +175,8 @@ export function computeAwardedPoints({
   if (typeof pointsMultiplier !== 'undefined') {
     awardedPoints *= Number(pointsMultiplier)
   }
+
+  awardedPoints += defaultPoints || 0
 
   return Math.round(awardedPoints)
 }
