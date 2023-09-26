@@ -19,6 +19,7 @@ import {
   QuestionType,
   UserRole,
 } from '@klicker-uzh/prisma'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
@@ -1097,8 +1098,7 @@ export async function deleteLearningElement(
 
     return deletedItem
   } catch (e) {
-    // TODO: resolve type issue by first testing for prisma error
-    if (e?.code === 'P2025') {
+    if (e instanceof PrismaClientKnownRequestError && e?.code === 'P2025') {
       console.log(
         'The learning element is not in draft status and cannot be deleted.'
       )

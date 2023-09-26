@@ -295,12 +295,15 @@ export async function getCourseOverviewData(
       )
 
       const sortByScoreAndUsername = R.curry(R.sortWith)([
-        R.descend(R.prop('score')),
-        R.ascend(R.prop('username')),
+        R.descend(R.prop<number>('score')),
+        R.ascend(R.prop<string>('username')),
       ])
 
-      const sortedEntries = sortByScoreAndUsername(allEntries.mapped)
-      const sortedGroupEntries = sortByScoreAndUsername(allGroupEntries.mapped)
+      const sortedEntries: typeof allEntries.mapped = sortByScoreAndUsername(
+        allEntries.mapped
+      )
+      const sortedGroupEntries: typeof allGroupEntries.mapped =
+        sortByScoreAndUsername(allGroupEntries.mapped)
 
       const filteredEntries = sortedEntries.flatMap((entry, ix) => {
         if (ix < 10 || entry.participantId === ctx.user?.sub)
@@ -606,11 +609,11 @@ export async function getCourseData(
         }
       },
       {
-        activeLBEntries: [] as typeof course.leaderboard,
+        activeLBEntries: [] as Partial<typeof course.leaderboard>,
         activeSum: 0,
         activeCount: 0,
       }
-    )
+    ) ?? {}
 
   const totalCount = course?.participations.length || 0
   const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
