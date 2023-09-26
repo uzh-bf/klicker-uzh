@@ -193,7 +193,7 @@ export function computeSimpleAwardedPoints({
   pointsMultiplier,
 }: ComputeSimpleAwardedPointsArgs): number {
   if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
-    return points * pointsPercentage * (pointsMultiplier ?? 1)
+    return Math.round(points * pointsPercentage * (pointsMultiplier ?? 1))
   }
   return 0
 }
