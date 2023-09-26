@@ -426,64 +426,30 @@ export async function updateQuestionInstances(
     where: {
       id: questionId,
     },
-  })
-
-  if (!question) {
-    return null
-  }
-
-  // get all instances that are linked to the question and contained in elements that are not published/running
-  const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
     include: {
-      sessions: {
-        where: {
-          status: {
-            in: [DB.SessionStatus.PREPARED, DB.SessionStatus.SCHEDULED],
-          },
-        },
+      instances: {
         include: {
-          blocks: {
+          sessionBlock: {
             include: {
-              instances: {
-                where: {
-                  questionId,
-                },
-              },
+              session: true,
             },
           },
-        },
-      },
-      learningElements: {
-        where: {
-          status: DB.LearningElementStatus.DRAFT,
-        },
-        include: {
-          stacks: {
+          stackElement: {
             include: {
-              elements: {
+              stack: {
                 include: {
-                  questionInstance: {
+                  learningElement: {
                     where: {
-                      questionId,
+                      status: DB.LearningElementStatus.DRAFT,
                     },
                   },
                 },
               },
             },
           },
-        },
-      },
-      microSessions: {
-        where: {
-          status: DB.MicroSessionStatus.DRAFT,
-        },
-        include: {
-          instances: {
+          microSession: {
             where: {
-              questionId,
+              status: DB.MicroSessionStatus.DRAFT,
             },
           },
         },
@@ -491,45 +457,39 @@ export async function updateQuestionInstances(
     },
   })
 
-  // implement a map as above with the difference that it should not result in an array with key value pairs, but in an object {instanceId1: multiplier1, instanceId2: multiplier2}
+  if (!question) {
+    return null
+  }
+
+  // get all instances and the corresponding element multipliers
   const instanceMultipliers: Record<number, number> = {
-    ...user?.sessions.reduce((prev1, session) => {
-      return {
-        ...prev1,
-        ...session.blocks.reduce((prev2, block) => {
-          return {
-            ...prev2,
-            ...block.instances.reduce((prev3, i) => {
-              return { ...prev3, [i.id]: session.pointsMultiplier }
-            }, {}),
-          }
-        }, {}),
+    ...question.instances.reduce((prev1, instance) => {
+      if (
+        instance.sessionBlock?.session?.status === DB.SessionStatus.PREPARED ||
+        instance.sessionBlock?.session?.status === DB.SessionStatus.SCHEDULED
+      ) {
+        return {
+          ...prev1,
+          [instance.id]: instance.sessionBlock.session.pointsMultiplier,
+        }
+      } else if (
+        instance.stackElement?.stack?.learningElement?.status ===
+        DB.LearningElementStatus.DRAFT
+      ) {
+        return {
+          ...prev1,
+          [instance.id]:
+            instance.stackElement.stack.learningElement.pointsMultiplier,
+        }
+      } else if (
+        instance.microSession?.status === DB.MicroSessionStatus.DRAFT
+      ) {
+        return {
+          ...prev1,
+          [instance.id]: instance.microSession.pointsMultiplier,
+        }
       }
-    }, {}),
-    ...user?.learningElements.reduce((prev1, element) => {
-      return {
-        ...prev1,
-        ...element.stacks.reduce((prev2, stack) => {
-          return {
-            ...prev2,
-            ...stack.elements.reduce((prev3, stackElement) => {
-              return {
-                ...prev3,
-                [stackElement.questionInstance?.id as number]:
-                  element.pointsMultiplier,
-              }
-            }, {}),
-          }
-        }, {}),
-      }
-    }, {}),
-    ...user?.microSessions.reduce((prev, microSession) => {
-      return {
-        ...prev,
-        ...microSession.instances.reduce((prev2, i) => {
-          return { ...prev2, [i.id]: microSession.pointsMultiplier }
-        }, {}),
-      }
+      return prev1
     }, {}),
   }
 
