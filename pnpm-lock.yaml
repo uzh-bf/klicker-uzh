@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@prisma/nextjs-monorepo-workaround-plugin':
-        specifier: 5.0.0
-        version: 5.0.0
+        specifier: 5.3.1
+        version: 5.3.1
       husky:
         specifier: 8.0.3
         version: 8.0.3
@@ -43,7 +43,7 @@ importers:
         version: link:../../packages/shared-components
       '@next-auth/prisma-adapter':
         specifier: 1.0.7
-        version: 1.0.7(@prisma/client@5.0.0)(next-auth@4.22.3)
+        version: 1.0.7(@prisma/client@5.3.1)(next-auth@4.22.3)
       '@uzh-bf/design-system':
         specifier: 2.1.7
         version: 2.1.7(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
@@ -133,8 +133,8 @@ importers:
         specifier: 0.4.1
         version: 0.4.1(prettier-plugin-organize-imports@3.2.3)(prettier@2.8.8)
       prisma:
-        specifier: 5.0.0
-        version: 5.0.0
+        specifier: 5.3.1
+        version: 5.3.1
       tailwindcss:
         specifier: 3.3.3
         version: 3.3.3(ts-node@10.9.1)
@@ -281,8 +281,8 @@ importers:
         specifier: 15.1.0
         version: 15.1.0
       prisma:
-        specifier: 5.0.0
-        version: 5.0.0
+        specifier: 5.3.1
+        version: 5.3.1
       tsup:
         specifier: 6.7.0
         version: 6.7.0(postcss@8.4.27)(typescript@5.0.4)
@@ -1173,8 +1173,8 @@ importers:
         specifier: 3.2.3
         version: 3.2.3(prettier@2.8.8)(typescript@5.1.6)
       prisma:
-        specifier: 5.0.0
-        version: 5.0.0
+        specifier: 5.3.1
+        version: 5.3.1
       ts-node:
         specifier: 10.9.1
         version: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
@@ -1501,7 +1501,7 @@ importers:
         version: 3.33.0(graphql@16.7.1)
       '@pothos/plugin-prisma':
         specifier: 3.56.0
-        version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@5.0.0)(graphql@16.7.1)(typescript@5.1.6)
+        version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@5.3.1)(graphql@16.7.1)(typescript@5.1.6)
       '@pothos/plugin-scope-auth':
         specifier: 3.20.0
         version: 3.20.0(@pothos/core@3.33.0)(graphql@16.7.1)
@@ -1861,12 +1861,12 @@ importers:
   packages/prisma:
     dependencies:
       '@prisma/client':
-        specifier: 5.0.0
-        version: 5.0.0(prisma@5.0.0)
+        specifier: 5.3.1
+        version: 5.3.1(prisma@5.3.1)
     devDependencies:
       '@pothos/plugin-prisma':
         specifier: 3.56.0
-        version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@5.0.0)(graphql@16.7.1)(typescript@5.1.6)
+        version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@5.3.1)(graphql@16.7.1)(typescript@5.1.6)
       '@size-limit/preset-small-lib':
         specifier: 8.2.4
         version: 8.2.4(size-limit@8.2.4)
@@ -1913,11 +1913,11 @@ importers:
         specifier: 3.2.3
         version: 3.2.3(prettier@2.8.8)(typescript@5.1.6)
       prisma:
-        specifier: 5.0.0
-        version: 5.0.0
+        specifier: 5.3.1
+        version: 5.3.1
       prisma-json-types-generator:
         specifier: 3.0.1
-        version: 3.0.1(prisma@5.0.0)(typescript@5.1.6)
+        version: 3.0.1(prisma@5.3.1)(typescript@5.1.6)
       ramda:
         specifier: 0.29.0
         version: 0.29.0
@@ -8064,13 +8064,13 @@ packages:
       - supports-color
     dev: true
 
-  /@next-auth/prisma-adapter@1.0.7(@prisma/client@5.0.0)(next-auth@4.22.3):
+  /@next-auth/prisma-adapter@1.0.7(@prisma/client@5.3.1)(next-auth@4.22.3):
     resolution: {integrity: sha512-Cdko4KfcmKjsyHFrWwZ//lfLUbcLqlyFqjd/nYE2m3aZ7tjMNUjpks47iw7NTCnXf+5UWz5Ypyt1dSs1EP5QJw==}
     peerDependencies:
       '@prisma/client': '>=2.26.0 || >=3'
       next-auth: ^4
     dependencies:
-      '@prisma/client': 5.0.0(prisma@5.0.0)
+      '@prisma/client': 5.3.1(prisma@5.3.1)
       next-auth: 4.22.3(next@13.4.19)(react-dom@18.2.0)(react@18.2.0)
     dev: false
 
@@ -8511,7 +8511,7 @@ packages:
     dependencies:
       graphql: 16.7.1
 
-  /@pothos/plugin-prisma@3.56.0(@pothos/core@3.33.0)(@prisma/client@5.0.0)(graphql@16.7.1)(typescript@5.1.6):
+  /@pothos/plugin-prisma@3.56.0(@pothos/core@3.33.0)(@prisma/client@5.3.1)(graphql@16.7.1)(typescript@5.1.6):
     resolution: {integrity: sha512-ne8s4WZC1ntRnvxnFvfGV9vVtUuRHBiI0mNkx5CYzJTBX5DuxjZk7vYBpOaQHBcMLulTLMpr0Tgd1AJggVBGDA==}
     hasBin: true
     peerDependencies:
@@ -8521,7 +8521,7 @@ packages:
       typescript: '>=4.7.2'
     dependencies:
       '@pothos/core': 3.33.0(graphql@16.7.1)
-      '@prisma/client': 5.0.0(prisma@5.0.0)
+      '@prisma/client': 5.3.1(prisma@5.3.1)
       '@prisma/generator-helper': 5.1.1
       graphql: 16.7.1
       typescript: 5.1.6
@@ -8550,8 +8550,8 @@ packages:
       zod: 3.21.4
     dev: false
 
-  /@prisma/client@5.0.0(prisma@5.0.0):
-    resolution: {integrity: sha512-XlO5ELNAQ7rV4cXIDJUNBEgdLwX3pjtt9Q/RHqDpGf43szpNJx2hJnggfFs7TKNx0cOFsl6KJCSfqr5duEU/bQ==}
+  /@prisma/client@5.3.1(prisma@5.3.1):
+    resolution: {integrity: sha512-ArOKjHwdFZIe1cGU56oIfy7wRuTn0FfZjGuU/AjgEBOQh+4rDkB6nF+AGHP8KaVpkBIiHGPQh3IpwQ3xDMdO0Q==}
     engines: {node: '>=16.13'}
     requiresBuild: true
     peerDependencies:
@@ -8560,8 +8560,8 @@ packages:
       prisma:
         optional: true
     dependencies:
-      '@prisma/engines-version': 4.17.0-26.6b0aef69b7cdfc787f822ecd7cdc76d5f1991584
-      prisma: 5.0.0
+      '@prisma/engines-version': 5.3.1-2.61e140623197a131c2a6189271ffee05a7aa9a59
+      prisma: 5.3.1
 
   /@prisma/debug@5.1.1:
     resolution: {integrity: sha512-R9e2Tn8f+ujVjwn6ne1YkXY35BXzUmxJbGsmD1c8RAZ/NXgbYktEFAwIkOZn5H5zRfY2VDSBvGI6TFpnOu50cg==}
@@ -8582,11 +8582,11 @@ packages:
       - supports-color
     dev: true
 
-  /@prisma/engines-version@4.17.0-26.6b0aef69b7cdfc787f822ecd7cdc76d5f1991584:
-    resolution: {integrity: sha512-HHiUF6NixsldsP3JROq07TYBLEjXFKr6PdH8H4gK/XAoTmIplOJBCgrIUMrsRAnEuGyRoRLXKXWUb943+PFoKQ==}
+  /@prisma/engines-version@5.3.1-2.61e140623197a131c2a6189271ffee05a7aa9a59:
+    resolution: {integrity: sha512-y5qbUi3ql2Xg7XraqcXEdMHh0MocBfnBzDn5GbV1xk23S3Mq8MGs+VjacTNiBh3dtEdUERCrUUG7Z3QaJ+h79w==}
 
-  /@prisma/engines@5.0.0:
-    resolution: {integrity: sha512-kyT/8fd0OpWmhAU5YnY7eP31brW1q1YrTGoblWrhQJDiN/1K+Z8S1kylcmtjqx5wsUGcP1HBWutayA/jtyt+sg==}
+  /@prisma/engines@5.3.1:
+    resolution: {integrity: sha512-6QkILNyfeeN67BNEPEtkgh3Xo2tm6D7V+UhrkBbRHqKw9CTaz/vvTP/ROwYSP/3JT2MtIutZm/EnhxUiuOPVDA==}
     requiresBuild: true
 
   /@prisma/generator-helper@5.1.1:
@@ -8610,8 +8610,8 @@ packages:
       - supports-color
     dev: true
 
-  /@prisma/nextjs-monorepo-workaround-plugin@5.0.0:
-    resolution: {integrity: sha512-9iPBVd2Mz29QzJccyLJforZb/oWCLAS/5Ky6ZVtV5iST/kcDdCL+R+fllzNBltwywPrNwGorUx4C8Ps6WFZaiA==}
+  /@prisma/nextjs-monorepo-workaround-plugin@5.3.1:
+    resolution: {integrity: sha512-SrM068G8BEUmxtyis97/NGTcVodJLcG+YV7fYW7A19ls549WEXvEjXt9jMBAtd2AUw6d8PER+0G6nCfeOtSQhQ==}
     dev: true
 
   /@protobufjs/aspromise@1.1.2:
@@ -22896,7 +22896,7 @@ packages:
       react: 18.2.0
     dev: false
 
-  /prisma-json-types-generator@3.0.1(prisma@5.0.0)(typescript@5.1.6):
+  /prisma-json-types-generator@3.0.1(prisma@5.3.1)(typescript@5.1.6):
     resolution: {integrity: sha512-OKQunPOZ5RxRI450VFJqhWpGQQwHoyNTfvYHaUK9/sdf/J/GBvO2KjVk8V9vuYT/VPtyh66+BD3iWqgLTCr8Ag==}
     engines: {node: '>=14.0'}
     hasBin: true
@@ -22905,20 +22905,20 @@ packages:
       typescript: ^5.1
     dependencies:
       '@prisma/generator-helper': 5.2.0
-      prisma: 5.0.0
+      prisma: 5.3.1
       tslib: 2.6.2
       typescript: 5.1.6
     transitivePeerDependencies:
       - supports-color
     dev: true
 
-  /prisma@5.0.0:
-    resolution: {integrity: sha512-KYWk83Fhi1FH59jSpavAYTt2eoMVW9YKgu8ci0kuUnt6Dup5Qy47pcB4/TLmiPAbhGrxxSz7gsSnJcCmkyPANA==}
+  /prisma@5.3.1:
+    resolution: {integrity: sha512-Wp2msQIlMPHe+5k5Od6xnsI/WNG7UJGgFUJgqv/ygc7kOECZapcSz/iU4NIEzISs3H1W9sFLjAPbg/gOqqtB7A==}
     engines: {node: '>=16.13'}
     hasBin: true
     requiresBuild: true
     dependencies:
-      '@prisma/engines': 5.0.0
+      '@prisma/engines': 5.3.1
 
   /prismjs@1.29.0:
     resolution: {integrity: sha512-Kx/1w86q/epKcmte75LNrEoT+lX8pBpavuAbvJWRXar7Hz8jrtF+e3vY751p0R8H9HdArwaCTNDDzHg/ScJK1Q==}
