@@ -6,7 +6,7 @@ export async function sendTeamsNotifications(scope: string, text: string) {
       '@context': 'https://schema.org/extensions',
       '@type': 'MessageCard',
       themeColor: '0076D7',
-      title: `Migration: ${scope}`,
+      title: scope,
       text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
     })
   }
