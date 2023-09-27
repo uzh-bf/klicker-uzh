@@ -2,7 +2,6 @@ import {
   AccessMode,
   ConfusionTimestep,
   Question,
-  QuestionInstance,
   QuestionInstanceType,
   QuestionType,
   SessionBlockStatus,
@@ -1587,7 +1586,7 @@ export async function getPinnedFeedbacks(
   return reducedSession
 }
 
-function checkCorrectnessFreeText(instance: QuestionInstance) {
+function checkCorrectnessFreeText(instance) {
   // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution)(exact match, case insensitive)
   if (instance.questionData.type === 'FREE_TEXT') {
     for (const id in instance.results) {
@@ -1608,7 +1607,7 @@ function checkCorrectnessFreeText(instance: QuestionInstance) {
   return instance
 }
 
-function computeStatistics(instance: QuestionInstance) {
+function computeStatistics(instance) {
   // Compute the statistics for numerical questions
   if (instance.questionData.type === 'NUMERICAL' && !instance.statistics) {
     const results = []
@@ -1665,7 +1664,7 @@ function computeStatistics(instance: QuestionInstance) {
   return instance
 }
 
-function completeQuestionData(instances: QuestionInstance[]) {
+function completeQuestionData(instances) {
   return instances.map((instance) =>
     computeStatistics(checkCorrectnessFreeText(instance))
   )
