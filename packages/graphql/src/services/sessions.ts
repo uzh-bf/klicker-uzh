@@ -1072,10 +1072,12 @@ export async function deactivateSessionBlock(
     })
 
     return updatedSession
-  } catch (error) {
+  } catch (error: any) {
     await sendTeamsNotifications(
       'graphql/deactivateSessionBlock',
-      `ERROR - failed to deactivate session block ${sessionBlockId} in session ${session.id} with active block ${session.activeBlockId}: ${error}`
+      `ERROR - failed to deactivate session block ${sessionBlockId} in session ${
+        session.id
+      } with active block ${session.activeBlockId}: ${error?.message || error}`
     )
 
     throw error
