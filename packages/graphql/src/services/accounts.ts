@@ -7,6 +7,7 @@ import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context'
+import { sendTeamsNotifications } from '../lib/util'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
 const COOKIE_SETTINGS: CookieOptions = {
@@ -37,7 +38,13 @@ export async function loginUserToken(
     where: { email: normalizedEmail },
   })
 
-  if (!user) return null
+  if (!user) {
+    await sendTeamsNotifications(
+      'graphql/loginUserToken',
+      `LOGIN FAILED: User with email ${normalizedEmail} not found.`
+    )
+    return null
+  }
 
   const isLoginValid =
     token === user.loginToken &&
@@ -313,12 +320,21 @@ export async function createParticipantAccount(
 
     ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
 
+    await sendTeamsNotifications(
+      'graphql/createParticipantAccount',
+      `New participant account created: ${participant.email}`
+    )
+
     return {
       participant,
       participantToken: jwt,
     }
   } catch (e) {
     console.error(e)
+    await sendTeamsNotifications(
+      'graphql/createParticipantAccount',
+      `Failed to create participant account: ${email}`
+    )
     return null
   }
 }
