@@ -47,6 +47,9 @@ importers:
       '@uzh-bf/design-system':
         specifier: 2.1.7
         version: 2.1.7(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+      axios:
+        specifier: 1.4.0
+        version: 1.4.0
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -5543,7 +5546,7 @@ packages:
       react-dom: ^18.0.0
     dependencies:
       '@types/history': 4.7.11
-      '@types/react': 18.2.18
+      '@types/react': 18.2.21
       commander: 5.1.0
       joi: 17.9.2
       react: 18.2.0
