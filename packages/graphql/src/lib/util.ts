@@ -1,9 +1,11 @@
 import dayjs from 'dayjs'
+import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import { GraphQLError } from 'graphql'
 import { Context } from './context'
 
 dayjs.extend(utc)
+dayjs.extend(timezone)
 
 // shuffle an array and return a new copy
 export function shuffle<T>(array: Array<T>): Array<T> {
@@ -30,11 +32,11 @@ export function checkCronToken(ctx: Context) {
 }
 
 export function formatDate(dateTime: Date) {
-  let date = dayjs(dateTime).local()
+  let date = dayjs(dateTime).utc().tz('Europe/Zurich')
 
   return {
     date: `${date.format('DD')}.${date.format('MM')}.${date.format('YYYY')}`,
-    time: `${date.format('HH')}:${date.format('mm')}`,
+    time: `${date.format('HH')}:${date.format('mm')} (CET)`,
   }
 }
 
