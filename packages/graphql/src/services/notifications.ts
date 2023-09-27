@@ -1,6 +1,11 @@
-import { MicroSession, MicroSessionStatus } from '@klicker-uzh/prisma'
+import {
+  Course,
+  MicroSession,
+  MicroSessionStatus,
+  PushSubscription,
+} from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
-import webpush from 'web-push'
+import webpush, { WebPushError } from 'web-push'
 import { Context, ContextWithUser } from '../lib/context'
 import { formatDate } from '../lib/util'
 
@@ -115,7 +120,6 @@ export async function sendPushNotifications(ctx: Context) {
           subscriptions: true,
         },
       },
-      instances: false,
     },
   })
 
@@ -125,7 +129,7 @@ export async function sendPushNotifications(ctx: Context) {
   // 1. Investigate implementing this method as a background process to reduce the load on the main thread.
   // 2. Investigate implementing this method in Azure
   await Promise.all(
-    microSessions.map(async (microSession: MicroSession) => {
+    microSessions.map(async (microSession) => {
       try {
         await sendPushNotificationsToSubscribers(microSession, ctx)
 
@@ -155,10 +159,12 @@ export async function sendPushNotifications(ctx: Context) {
 //E.g., store the language on the course entity and use it here to translate the message or
 // store the language on the user subscription entity and use this language when sending to the specific user?
 async function sendPushNotificationsToSubscribers(
-  microSession: MicroSession,
+  microSession: MicroSession & {
+    course: null | (Course & { subscriptions: PushSubscription[] })
+  },
   ctx: Context
 ) {
-  for (let sub of microSession.course.subscriptions) {
+  for (let sub of microSession.course?.subscriptions ?? []) {
     try {
       const formattedDate = formatDate(microSession.scheduledEndAt)
       await webpush.sendNotification(
@@ -170,8 +176,12 @@ async function sendPushNotificationsToSubscribers(
           },
         },
         JSON.stringify({
-          message: `Microlearning ${microSession.displayName} for ${microSession.course.displayName} is available until ${formattedDate.date} at ${formattedDate.time}.`,
-          title: `KlickerUZH - New Microlearning available for the course ${microSession.course.name}`,
+          message: `Microlearning ${microSession.displayName} for ${
+            microSession.course?.displayName ?? ''
+          } is available until ${formattedDate.date} at ${formattedDate.time}.`,
+          title: `KlickerUZH - New Microlearning available for the course ${
+            microSession.course?.name ?? ''
+          }`,
         })
       )
     } catch (error) {
@@ -179,7 +189,7 @@ async function sendPushNotificationsToSubscribers(
         'An error occured while trying to send the push notification: ',
         error
       )
-      if (error.statusCode === 410) {
+      if (error instanceof WebPushError && error.statusCode === 410) {
         try {
           // subscription has expired or is no longer valid
           // remove it from the database

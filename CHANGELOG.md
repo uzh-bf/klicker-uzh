@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.73](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.72...v3.0.0-rc.73) (2023-09-27)
+
+
+### Features
+
+* **apps/frontend-manage:** add demo questions on first login ([#3876](https://github.com/uzh-bf/klicker-uzh/issues/3876)) ([9b9f040](https://github.com/uzh-bf/klicker-uzh/commit/9b9f040050e41369fc3b37ea152acac5970ad774))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that field arrays are correctly updated in question edit form ([#3872](https://github.com/uzh-bf/klicker-uzh/issues/3872)) ([37041f2](https://github.com/uzh-bf/klicker-uzh/commit/37041f214d491328780a435638bbd34dba1be3b4))
+* **apps/func-migration-v3-import:** sort alphabetically on import from v2 ([#3873](https://github.com/uzh-bf/klicker-uzh/issues/3873)) ([adfa841](https://github.com/uzh-bf/klicker-uzh/commit/adfa841c3ec0bbb740c288bd3f5211c31d667690))
+* **packages/graphql:** ensure that time on push notifications is fixed to CET ([#3877](https://github.com/uzh-bf/klicker-uzh/issues/3877)) ([1c23e54](https://github.com/uzh-bf/klicker-uzh/commit/1c23e54bb46b99a089fd2389c1c1b365828a8e88))
+* **packages/graphql:** only create or update course leaderboard entry for participants with active participation ([c5491f9](https://github.com/uzh-bf/klicker-uzh/commit/c5491f92863ff3cd8a2fdd966acb35d60125bda7))
+
+
+### Enhancements
+
+* add teams notifications for critical actions ([#3875](https://github.com/uzh-bf/klicker-uzh/issues/3875)) ([c797161](https://github.com/uzh-bf/klicker-uzh/commit/c797161dbdc0604f31bfdade5208fa03f51dfe1d))
+* **packages/grading:** update grading logic and test suite ([#3871](https://github.com/uzh-bf/klicker-uzh/issues/3871)) ([07b15db](https://github.com/uzh-bf/klicker-uzh/commit/07b15dbd4d22dfe13c0ca37fdb054ea94a402389))
+
+
+### Dependencies
+
+* upgrade azure functions to stable v4 ([07b1a40](https://github.com/uzh-bf/klicker-uzh/commit/07b1a408bd9946300c3433449bb4f9f352ce7276))
+* upgrade to prisma 5 and prepare for JSON types ([#3874](https://github.com/uzh-bf/klicker-uzh/issues/3874)) ([2608399](https://github.com/uzh-bf/klicker-uzh/commit/2608399e9965ed02e15aa8640846262d7df61000))
+
 ## [3.0.0-rc.72](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.71...v3.0.0-rc.72) (2023-09-26)
 
 

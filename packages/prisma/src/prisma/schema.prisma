@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions", "fieldReference", "extendedWhereUnique"]
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions"]
   output          = "../client"
   binaryTargets   = ["native", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x"]
 }
@@ -9,6 +9,10 @@ generator pothos {
   provider     = "prisma-pothos-types"
   clientOutput = "@klicker-uzh/prisma"
   output       = "../client/pothos.d.ts"
+}
+
+generator json {
+  provider = "prisma-json-types-generator"
 }
 
 datasource db {
@@ -526,8 +530,10 @@ model MicroSession {
 
   instances QuestionInstance[]
 
-  owner    User    @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId  String  @db.Uuid
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  // TODO: why is course optional?
   course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   courseId String? @db.Uuid
 

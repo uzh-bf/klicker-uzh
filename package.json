@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.0.0-rc.72",
+  "version": "3.0.0-rc.73",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -26,7 +26,7 @@
     "Valentin Meyer <valentin.meyer@bf.uzh.ch>"
   ],
   "devDependencies": {
-    "@prisma/nextjs-monorepo-workaround-plugin": "4.14.1",
+    "@prisma/nextjs-monorepo-workaround-plugin": "5.3.1",
     "husky": "8.0.3",
     "standard-version": "9.5.0",
     "syncpack": "11.2.1",
