@@ -817,7 +817,7 @@ function QuestionEditModal({
                                 index: number
                               ) => (
                                 <div
-                                  key={choice.ix}
+                                  key={index}
                                   className={twMerge(
                                     'w-full rounded border-uzh-grey-80',
                                     values.hasSampleSolution && 'p-2',
@@ -841,12 +841,17 @@ function QuestionEditModal({
                                           prev?.formik.values[
                                             `options.choices.${index}.value`
                                           ] ||
-                                        next?.formik.values.type !==
-                                          prev?.formik.values.type
+                                        next.formik.values.type !==
+                                          prev.formik.values.type ||
+                                        next.formik.values.options.choices
+                                          .length !==
+                                          prev.formik.values.options.choices
+                                            .length
                                       }
                                     >
                                       {({ field, meta }: FastFieldProps) => (
                                         <ContentInput
+                                          key={`${values.type}-choice-${index}-${values.options.choices.length}`}
                                           error={meta.error}
                                           touched={meta.touched}
                                           content={field.value}
@@ -863,12 +868,10 @@ function QuestionEditModal({
                                           className={{
                                             root: 'bg-white',
                                           }}
-                                          key={`${values.type}-choice-${index}`}
                                           data_cy="insert-answer-field"
                                         />
                                       )}
                                     </FastField>
-
                                     {values.hasSampleSolution && (
                                       <div className="flex flex-row items-center ml-2">
                                         <div className="mr-2">
@@ -898,9 +901,19 @@ function QuestionEditModal({
                                         </FastField>
                                       </div>
                                     )}
-
                                     <Button
-                                      onClick={() => remove(index)}
+                                      onClick={() => {
+                                        // decrement the choice.ix value of all answers after this one
+                                        values.options.choices
+                                          .slice(index + 1)
+                                          .forEach((choice) => {
+                                            setFieldValue(
+                                              `options.choices.${choice.ix}.ix`,
+                                              choice.ix - 1
+                                            )
+                                          })
+                                        remove(index)
+                                      }}
                                       className={{
                                         root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
                                       }}
@@ -1084,7 +1097,7 @@ function QuestionEditModal({
                                   (_range: any, index: number) => (
                                     <div
                                       className="flex flex-row items-center gap-2"
-                                      key={index}
+                                      key={`${index}-${values.options.solutionRanges.length}`}
                                     >
                                       <div className="font-bold">
                                         {t('shared.generic.min')}:{' '}
@@ -1171,7 +1184,7 @@ function QuestionEditModal({
                                 (_solution, index) => (
                                   <div
                                     className="flex flex-row items-center gap-2"
-                                    key={index}
+                                    key={`${index}-${values.options.solutions.length}`}
                                   >
                                     <div className="w-40 font-bold">
                                       {t(
