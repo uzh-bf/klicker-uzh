@@ -1,3 +1,4 @@
+import axios from 'axios'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
@@ -38,6 +39,20 @@ export function formatDate(dateTime: Date) {
     date: `${date.format('DD')}.${date.format('MM')}.${date.format('YYYY')}`,
     time: `${date.format('HH')}:${date.format('mm')} (CET)`,
   }
+}
+
+export async function sendTeamsNotifications(scope: string, text: string) {
+  if (process.env.TEAMS_WEBHOOK_URL) {
+    return axios.post(process.env.TEAMS_WEBHOOK_URL, {
+      '@context': 'https://schema.org/extensions',
+      '@type': 'MessageCard',
+      themeColor: '0076D7',
+      title: scope,
+      text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
+    })
+  }
+
+  return null
 }
 
 export { levelFromXp } from '@klicker-uzh/prisma/dist/util'
