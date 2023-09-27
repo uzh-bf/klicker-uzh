@@ -8,7 +8,7 @@
     "dist/"
   ],
   "dependencies": {
-    "@azure/functions": "4.0.0-alpha.11",
+    "@azure/functions": "4.0.0",
     "@azure/service-bus": "7.9.0",
     "@sentry/node": "7.52.1",
     "jsonwebtoken": "9.0.1"
@@ -19,7 +19,7 @@
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^18.17.4",
     "@uzh-bf/design-system": "2.1.7",
-    "azure-functions-core-tools": "4.0.5274",
+    "azure-functions-core-tools": "4.0.5390",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "eslint": "8.45.0",
