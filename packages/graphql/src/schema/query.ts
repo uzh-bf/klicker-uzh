@@ -372,7 +372,7 @@ export const Query = builder.queryType({
           sessionId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLeaderboard(args, ctx)
+          return SessionService.getLeaderboard(args, ctx) as any
         },
       }),
 
