@@ -471,7 +471,89 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     if (session.courseId) {
       const sessionLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
 
-      if (sessionLB) {
+    if (sessionLB) {
+      const existingParticipantsLB = (
+        await Promise.allSettled(
+          Object.entries(sessionLB).map(async ([id, score]) => {
+            const participant = await ctx.prisma.participant.findUnique({
+              where: { id },
+            })
+
+            if (!participant) return null
+
+            return [id, score]
+          })
+        )
+      ).flatMap((result) => {
+        if (result.status !== 'fulfilled' || !result.value) return []
+        return [result.value]
+      })
+
+      const result = await ctx.prisma.$transaction(
+        existingParticipantsLB.map(([participantId, score]) =>
+          ctx.prisma.leaderboardEntry.upsert({
+            where: {
+              type_participantId_courseId: {
+                type: 'COURSE',
+                courseId: session.courseId!,
+                participantId,
+              },
+              participation: {
+                isActive: true,
+              },
+            },
+            include: {
+              participation: true,
+              participant: true,
+            },
+            create: {
+              type: 'COURSE',
+              course: {
+                connect: {
+                  id: session.courseId!,
+                },
+              },
+              participant: {
+                connect: {
+                  id: participantId,
+                },
+              },
+              participation: {
+                connectOrCreate: {
+                  where: {
+                    courseId_participantId: {
+                      courseId: session.courseId!,
+                      participantId,
+                    },
+                  },
+                  create: {
+                    course: {
+                      connect: {
+                        id: session.courseId!,
+                      },
+                    },
+                    participant: {
+                      connect: {
+                        id: participantId,
+                      },
+                    },
+                  },
+                },
+              },
+              score: parseInt(score),
+            },
+            update: {
+              score: {
+                increment: parseInt(score),
+              },
+            },
+          })
+        )
+      )
+
+      const sessionXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
+
+      if (sessionXP) {
         await ctx.prisma.$transaction(
           Object.entries(sessionLB).map(([participantId, score]) =>
             ctx.prisma.leaderboardEntry.upsert({
