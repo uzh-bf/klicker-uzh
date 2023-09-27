@@ -16,8 +16,8 @@ import { Context, ContextWithUser } from '../lib/context'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
-import { sendTeamsNotifications } from 'src/lib/util'
 import { ISession } from 'src/schema/session'
+import { sendTeamsNotifications } from '../lib/util'
 
 const scheduledJobs: Record<string, any> = {}
 
