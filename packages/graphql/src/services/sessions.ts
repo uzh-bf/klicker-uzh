@@ -460,9 +460,20 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
           Object.entries(sessionLB).map(async ([id, score]) => {
             const participant = await ctx.prisma.participant.findUnique({
               where: { id },
+              include: {
+                participations: {
+                  where: {
+                    courseId: session.courseId!,
+                  },
+                },
+              },
             })
 
-            if (!participant) return null
+            if (
+              !participant ||
+              participant.participations?.[0]?.isActive === false
+            )
+              return null
 
             return [id, score]
           })
@@ -480,9 +491,6 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                 type: 'COURSE',
                 courseId: session.courseId!,
                 participantId,
-              },
-              participation: {
-                isActive: true,
               },
             },
             include: {
