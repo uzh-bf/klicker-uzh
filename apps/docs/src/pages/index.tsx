@@ -28,9 +28,11 @@ function TitleImage() {
                     <a
                       href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-announcement-26-08-2023/79"
                       className="whitespace-nowrap font-semibold"
+                      target="_blank"
+                      style={{ marginLeft: '0.75rem' }}
                     >
                       <span className="absolute inset-0" aria-hidden="true" />
-                      Read more <span aria-hidden="true">&rarr;</span>
+                      What's new? <span aria-hidden="true">&rarr;</span>
                     </a>
                   </div>
                 </div>
@@ -39,21 +41,48 @@ function TitleImage() {
                   Enhance your classroom experience.
                 </p>
                 <div className="mt-10 flex items-center gap-x-6">
-                  <a href="https://manage.klicker.uzh.ch">
+                  <a href="https://manage.klicker.uzh.ch" target="_blank">
                     <Button
                       className={{
                         root: 'w-full md:w-max cursor-pointer text-xl border-uzh-blue-40',
                       }}
                     >
-                      Get Started
+                      Sign Up / Login
                     </Button>
                   </a>
                   <a
                     href="/getting_started/welcome"
-                    className="text-sm font-semibold leading-6 text-gray-900"
+                    className="font-semibold leading-6 text-gray-900"
                   >
-                    Learn more <span aria-hidden="true">→</span>
+                    Get started <span aria-hidden="true">→</span>
                   </a>
+                </div>
+                <div className="border border-solid rounded-md px-3 py-2 mt-4 bg-slate-100 border-slate-200 shadow">
+                  <div>
+                    <div>
+                      This website contains information on KlickerUZH v3.0 only.
+                    </div>
+                    For KlickerUZH v2.0, please refer to the corresponding{' '}
+                    <a
+                      href="/v2/getting_started/welcome/"
+                      className="font-semibold leading-6 text-gray-900"
+                      target="_blank"
+                    >
+                      documentation pages
+                    </a>
+                    .
+                  </div>
+                  <div>
+                    To migrate to KlickerUZH v3.0, start the{' '}
+                    <a
+                      href="https://manage.klicker.uzh.ch/migration"
+                      className="font-semibold leading-6 text-gray-900"
+                      target="_blank"
+                    >
+                      migration process
+                    </a>
+                    .
+                  </div>
                 </div>
               </div>
             </div>
@@ -62,7 +91,7 @@ function TitleImage() {
         <div className="hidden md:block bg-gray-50 lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
           <img
             className="aspect-[3/2] object-cover lg:aspect-auto lg:h-full lg:w-full"
-            src="/img_v3/janko-ferlic-sfL_QOnmy00-unsplash.jpg"
+            src="/img_v3/hero.jpg"
             alt=""
           />
         </div>
