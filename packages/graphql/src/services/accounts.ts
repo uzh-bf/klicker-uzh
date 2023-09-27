@@ -7,6 +7,7 @@ import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context'
+import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -480,7 +481,7 @@ export async function changeInitialSettings(
 
 async function seedDemoQuestions(ctx: ContextWithUser) {
   // create single choice demo question
-  await ctx.prisma.question.create({
+  const questionSC = await ctx.prisma.question.create({
     data: {
       name: 'Demoquestion SC',
       type: DB.QuestionType.SC,
@@ -547,7 +548,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create multiple choice demo question
-  await ctx.prisma.question.create({
+  const questionMC = await ctx.prisma.question.create({
     data: {
       name: 'Demoquestion MC',
       type: DB.QuestionType.MC,
@@ -607,7 +608,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create KPRIM demo question
-  await ctx.prisma.question.create({
+  const questionKPRIM = await ctx.prisma.question.create({
     data: {
       name: 'Demoquestion KPRIM',
       type: DB.QuestionType.KPRIM,
@@ -665,7 +666,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create Numerical demo question
-  await ctx.prisma.question.create({
+  const questionNR = await ctx.prisma.question.create({
     data: {
       name: 'Demoquestion NR',
       type: DB.QuestionType.NUMERICAL,
@@ -698,7 +699,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create Free Text demo question
-  await ctx.prisma.question.create({
+  const questionFT = await ctx.prisma.question.create({
     data: {
       name: 'Demoquestion FT',
       type: DB.QuestionType.FREE_TEXT,
@@ -724,6 +725,82 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
           },
         },
       },
+    },
+  })
+
+  const blockData = [
+    {
+      questions: [questionSC, questionMC],
+      timeLimit: 100,
+      randomSelection: null,
+    },
+    {
+      questions: [questionKPRIM, questionNR, questionFT],
+      timeLimit: null,
+      randomSelection: null,
+    },
+    {
+      questions: [questionSC],
+      timeLimit: 50,
+      randomSelection: null,
+    },
+    {
+      questions: [questionMC],
+      timeLimit: 20,
+      randomSelection: null,
+    },
+    {
+      questions: [questionKPRIM],
+      timeLimit: null,
+      randomSelection: null,
+    },
+  ]
+
+  await ctx.prisma.liveSession.create({
+    data: {
+      name: 'Demo Session',
+      displayName: 'Demo Session Display Name',
+      description: 'Demo Session Description',
+      pointsMultiplier: 2,
+      isGamificationEnabled: true,
+      blocks: {
+        create: blockData.map(
+          ({ questions, randomSelection, timeLimit }, blockIx) => {
+            const newInstances = questions.map((question, ix) => {
+              const processedQuestionData = processQuestionData(question)
+
+              return {
+                order: ix,
+                type: DB.QuestionInstanceType.SESSION,
+                pointsMultiplier: 2 * question.pointsMultiplier,
+                questionData: processedQuestionData,
+                results: prepareInitialInstanceResults(processedQuestionData),
+                question: {
+                  connect: { id: question.id },
+                },
+                owner: {
+                  connect: { id: ctx.user.sub },
+                },
+              }
+            })
+
+            return {
+              order: blockIx,
+              randomSelection,
+              timeLimit,
+              instances: {
+                create: newInstances,
+              },
+            }
+          }
+        ),
+      },
+      owner: {
+        connect: { id: ctx.user.sub },
+      },
+    },
+    include: {
+      blocks: true,
     },
   })
 }
