@@ -1,0 +1,27 @@
+name: Test grading package functionalities
+
+on:
+  push:
+    branches: ["v3"]
+  pull_request:
+    branches: ["v3"]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8.6.12
+          run_install: true
+      - name: Test functions
+        shell: bash
+        run: |
+          cd packages/grading
+          pnpm run test

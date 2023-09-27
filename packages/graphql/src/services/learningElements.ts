@@ -75,7 +75,6 @@ function evaluateQuestionResponse(
           }),
           xp: computeAwardedXp({
             pointsPercentage,
-            multiplier: multiplier ?? 1,
           }),
           percentile: pointsPercentage ?? 0,
         }
@@ -95,7 +94,6 @@ function evaluateQuestionResponse(
           }),
           xp: computeAwardedXp({
             pointsPercentage,
-            multiplier: multiplier ?? 1,
           }),
           percentile: pointsPercentage ?? 0,
         }
@@ -115,7 +113,6 @@ function evaluateQuestionResponse(
           }),
           xp: computeAwardedXp({
             pointsPercentage,
-            multiplier: multiplier ?? 1,
           }),
           percentile: pointsPercentage ?? 0,
         }
@@ -138,7 +135,6 @@ function evaluateQuestionResponse(
         score: correct ? correct * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
           pointsPercentage: correct,
-          multiplier: multiplier ?? 1,
         }),
         percentile: correct ?? 0,
       }
@@ -159,7 +155,6 @@ function evaluateQuestionResponse(
         score: correct ? correct * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
           pointsPercentage: correct,
-          multiplier: multiplier ?? 1,
         }),
         percentile: correct ?? 0,
       }
