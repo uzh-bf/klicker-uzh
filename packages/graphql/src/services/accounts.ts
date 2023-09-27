@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
+import { sendTeamsNotifications } from 'src/util'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context'
@@ -35,7 +36,13 @@ export async function loginUserToken(
     where: { email: normalizedEmail },
   })
 
-  if (!user) return null
+  if (!user) {
+    await sendTeamsNotifications(
+      'graphql/loginUserToken',
+      `LOGIN FAILED: User with email ${normalizedEmail} not found.`
+    )
+    return null
+  }
 
   const isLoginValid =
     token === user.loginToken &&
