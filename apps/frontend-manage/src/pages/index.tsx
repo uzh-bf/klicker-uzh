@@ -163,6 +163,7 @@ function SuspendedFirstLoginModal() {
                 shortname: values.shortname,
                 locale: values.locale,
               },
+              refetchQueries: [GetUserQuestionsDocument],
             })
 
             if (!result) {
