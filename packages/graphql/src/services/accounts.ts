@@ -318,12 +318,21 @@ export async function createParticipantAccount(
 
     ctx.res.cookie('NEXT_LOCALE', participant.locale, COOKIE_SETTINGS)
 
+    await sendTeamsNotifications(
+      'graphql/createParticipantAccount',
+      `New participant account created: ${participant.email}`
+    )
+
     return {
       participant,
       participantToken: jwt,
     }
   } catch (e) {
     console.error(e)
+    await sendTeamsNotifications(
+      'graphql/createParticipantAccount',
+      `Failed to create participant account: ${email}`
+    )
     return null
   }
 }
