@@ -94,7 +94,35 @@ export async function importTags(
 
     context.log('mappedTags: ', mappedTags)
 
-    return mappedTags
+    const userWithTags = await prisma.user.findUnique({
+      where: {
+        id: user.id,
+      },
+      select: {
+        tags: {
+          orderBy: {
+            name: 'asc',
+          },
+        },
+      },
+    })
+
+    const [orderedTags, totalTags] = await prisma.$transaction(
+      userWithTags.tags.map((tag, index) =>
+        prisma.tag.update({
+          where: {
+            id: tag.id,
+          },
+          data: {
+            order: index,
+          },
+        })
+      )
+    )
+
+    console.log('ordered tags: ', orderedTags)
+
+    return orderedTags
   } catch (error) {
     context.error('Something went wrong while importing tags: ', error)
     await sendTeamsNotifications(
