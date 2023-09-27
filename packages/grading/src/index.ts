@@ -151,7 +151,7 @@ export function computeAwardedPoints({
   const slope = maxBonus / (timeToZeroBonus ?? 20)
 
   // default number of points each student gets independent of the correctness of the answer
-  let awardedPoints = defaultPoints ?? 0
+  let awardedPoints = 0
 
   // time between the first response and the current response
   let responseTiming =
@@ -176,6 +176,8 @@ export function computeAwardedPoints({
     awardedPoints *= Number(pointsMultiplier)
   }
 
+  awardedPoints += defaultPoints || 0
+
   return Math.round(awardedPoints)
 }
 
@@ -191,20 +193,16 @@ export function computeSimpleAwardedPoints({
   pointsMultiplier,
 }: ComputeSimpleAwardedPointsArgs): number {
   if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
-    return points * pointsPercentage * (pointsMultiplier ?? 1)
+    return Math.round(points * pointsPercentage * (pointsMultiplier ?? 1))
   }
   return 0
 }
 
 interface ComputeAwardedXpArgs {
   pointsPercentage: number | null
-  multiplier: number
 }
 
-export function computeAwardedXp({
-  pointsPercentage,
-  multiplier,
-}: ComputeAwardedXpArgs) {
+export function computeAwardedXp({ pointsPercentage }: ComputeAwardedXpArgs) {
   if (pointsPercentage !== null && pointsPercentage === 1) {
     return 10
   }

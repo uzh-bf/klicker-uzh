@@ -188,7 +188,6 @@ const serviceBusTrigger = async function (
           })
           xpAwarded = computeAwardedXp({
             pointsPercentage,
-            multiplier: parseFloat(pointsMultiplier),
           })
 
           if (
@@ -252,7 +251,6 @@ const serviceBusTrigger = async function (
           })
           xpAwarded = computeAwardedXp({
             pointsPercentage: answerCorrect ?? 0,
-            multiplier: parseFloat(pointsMultiplier),
           })
 
           if (parsedSolutions && answerCorrect && !firstResponseReceivedAt) {
@@ -312,7 +310,6 @@ const serviceBusTrigger = async function (
           })
           xpAwarded = computeAwardedXp({
             pointsPercentage: answerCorrect ?? 0,
-            multiplier: parseFloat(pointsMultiplier),
           })
 
           if (answerCorrect && !firstResponseReceivedAt) {
