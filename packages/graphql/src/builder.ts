@@ -16,7 +16,7 @@ const prisma = new PrismaClient({})
 const builder = new SchemaBuilder<{
   Directives: {
     oneOf: {
-      locations: 'INPUT_FIELD_DEFINITION'
+      locations: 'INPUT_OBJECT'
     }
   }
   Context: Context
