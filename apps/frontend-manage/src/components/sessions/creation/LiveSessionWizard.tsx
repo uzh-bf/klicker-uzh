@@ -107,10 +107,7 @@ function LiveSessionWizard({
     ),
   })
 
-  const onSubmit = async (
-    values: LiveSessionFormValues,
-    { resetForm }: any
-  ) => {
+  const onSubmit = async (values: LiveSessionFormValues) => {
     const blockQuestions = values.blocks
       .filter((block) => block.questionIds.length > 0)
       .map((block) => {
@@ -242,9 +239,14 @@ function LiveSessionWizard({
               titles: block.instances?.map(
                 (instance) => instance.questionData.name
               ),
+              types: block.instances?.map(
+                (instance) => instance.questionData.type
+              ),
               timeLimit: block.timeLimit ?? undefined,
             }
-          }) || [{ questionIds: [], titles: [], timeLimit: undefined }],
+          }) || [
+            { questionIds: [], titles: [], types: [], timeLimit: undefined },
+          ],
           courseId: initialValues?.course?.id || '',
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)
