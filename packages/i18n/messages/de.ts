@@ -113,6 +113,9 @@ export default {
       solution: 'Lösung',
       sampleSolution: 'Musterlösung',
       gamification: 'Gamifizierung',
+      liveQA: 'Live-Q&A',
+      moderation: 'Moderation',
+      feedbackChannel: 'Feedback-Channel',
       multiplier: 'Multiplier',
       options: 'Optionen',
       correct: 'Richtig',
@@ -837,6 +840,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Multiplier handelt es sich um einen Faktor, mit welchem die Punkte bei einer beantworteten Frage multipliziert werden. Der Faktor findet nur Verwendung, wenn Gamification aktiviert ist.',
       liveSessionGamification:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
+      liveSessionLiveQA:
+        'Diese Einstellung spezifiziert, ob der Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
+      liveSessionModeration:
+        'Diese Einstellung spezifiziert, ob die Moderation im Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
+      liveSessionFeedbackChannel:
+        'Diese Einstellung spezifiziert, ob der Feedback-Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
       learningElementResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.',
       learningElementValidResetDays:
