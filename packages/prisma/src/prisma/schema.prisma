@@ -943,7 +943,7 @@ model QuestionResponse {
   lastAwardedAt      DateTime?
   lastXpAwardedAt    DateTime?
 
-  /// [QuestionResponsePrisma]
+  /// [QuestionResponse]
   response Json
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -968,7 +968,7 @@ model QuestionResponseDetail {
   pointsAwarded Float? @default(0)
   xpAwarded     Float  @default(0)
 
-  /// [QuestionResponsePrisma]
+  /// [QuestionResponse]
   response Json
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)

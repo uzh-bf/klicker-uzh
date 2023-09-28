@@ -23,6 +23,7 @@ import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
+import { ResponseInput } from 'src/ops'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
@@ -31,15 +32,10 @@ const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 
-type QuestionResponse = {
-  choices?: number[] | null
-  value?: string | null
-}
-
 function evaluateQuestionResponse(
   questionData: AllQuestionTypeData,
   results: any,
-  response: QuestionResponse,
+  response: ResponseInput,
   multiplier?: number
 ) {
   switch (questionData.type) {
@@ -62,7 +58,7 @@ function evaluateQuestionResponse(
       if (data.type === QuestionType.SC) {
         const pointsPercentage = gradeQuestionSC({
           responseCount: data.options.choices.length,
-          response: response.choices!,
+          response: response.choices,
           solution,
         })
         return {
@@ -170,7 +166,7 @@ export async function respondToQuestionInstance(
     courseId,
     id,
     response,
-  }: { courseId: string; id: number; response: QuestionResponse },
+  }: { courseId: string; id: number; response: ResponseInput },
   ctx: Context
 ) {
   let treatAnonymous = false

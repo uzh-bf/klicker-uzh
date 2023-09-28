@@ -1,4 +1,4 @@
-export type AvatarSettings = {
+export type AvatarSettingsPrisma = {
   skinTone: string
   eyes: string
   mouth: string
@@ -10,17 +10,21 @@ export type AvatarSettings = {
   facialHair: string
 }
 
-export type QuestionResponse =
-  | {
-      choices: number[]
-    }
-  | {
-      value: string
-    }
+export type QuestionResponseChoicesPrisma = {
+  choices: number[]
+}
+
+export type QuestionResponseValuePrisma = {
+  value: string
+}
+
+export type QuestionResponsePrisma =
+  | QuestionResponseChoicesPrisma
+  | QuestionResponseValuePrisma
 
 declare global {
   namespace PrismaJson {
-    type AvatarSettingsPrisma = AvatarSettings
-    type QuestionResponsePrisma = QuestionResponse
+    type AvatarSettings = AvatarSettingsPrisma
+    type QuestionResponse = QuestionResponsePrisma
   }
 }
