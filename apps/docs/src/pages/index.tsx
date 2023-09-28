@@ -59,21 +59,27 @@ function TitleImage() {
                 </div>
                 <div className="border border-solid rounded-md px-3 py-2 mt-4 bg-slate-100 border-slate-200 shadow">
                   <div>
-                    <div>
-                      This website contains information on KlickerUZH v3.0 only.
-                    </div>
+                    This website contains information on KlickerUZH v3.0 only.
                     For KlickerUZH v2.0, please refer to the corresponding{' '}
+                    <a
+                      href="/v2/home"
+                      className="font-semibold leading-6 text-gray-900"
+                      target="_blank"
+                    >
+                      homepage
+                    </a>{' '}
+                    and{' '}
                     <a
                       href="/v2/getting_started/welcome/"
                       className="font-semibold leading-6 text-gray-900"
                       target="_blank"
                     >
-                      documentation pages
+                      documentation
                     </a>
                     .
                   </div>
-                  <div>
-                    To migrate to KlickerUZH v3.0, start the{' '}
+                  <div className="mt-4">
+                    To migrate to KlickerUZH v3.0, log-in and start the{' '}
                     <a
                       href="https://manage.klicker.uzh.ch/migration"
                       className="font-semibold leading-6 text-gray-900"
