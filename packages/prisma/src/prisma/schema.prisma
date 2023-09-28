@@ -178,12 +178,14 @@ model Question {
 
   name               String
   content            String
-  options            Json
   explanation        String?
   pointsMultiplier   Int                 @default(1)
   displayMode        QuestionDisplayMode @default(LIST)
   hasSampleSolution  Boolean             @default(false)
   hasAnswerFeedbacks Boolean             @default(false)
+
+  /// [QuestionOptions]
+  options Json
 
   type QuestionType
 
@@ -232,13 +234,17 @@ model QuestionInstance {
   type  QuestionInstanceType?
   order Int?
 
-  questionData     Json
   participants     Int                      @default(0)
   pointsMultiplier Int                      @default(1)
-  results          Json
   responses        QuestionResponse[]
   detailResponses  QuestionResponseDetail[]
   resetTimeDays    Int?
+
+  /// [QuestionResults]
+  results Json
+
+  /// [QuestionData]
+  questionData Json
 
   sessionBlock    SessionBlock?  @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId  Int?
@@ -738,7 +744,7 @@ model Participant {
   avatar       String?
   xp           Int     @default(0)
 
-  /// [AvatarSettingsPrisma]
+  /// [AvatarSettings]
   avatarSettings Json?
 
   isActive        Boolean @default(true)
