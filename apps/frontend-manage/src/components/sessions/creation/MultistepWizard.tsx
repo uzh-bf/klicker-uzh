@@ -43,6 +43,7 @@ export interface LiveSessionFormValues extends CommonFormValues {
   blocks: {
     questionIds: number[]
     titles: string[]
+    types: []
     timeLimit: number
   }[]
   isGamificationEnabled: boolean
@@ -151,7 +152,7 @@ function MultistepWizard({
               minimal
               showTooltipSymbols
               className={{
-                item: 'last:rounded-tr-md',
+                item: 'last:rounded-r-md first:rounded-l-md',
               }}
             />
           </div>
