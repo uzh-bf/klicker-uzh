@@ -731,13 +731,15 @@ model ParticipantAccount {
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
-  email          String? @unique
-  isEmailValid   Boolean @default(false)
-  username       String  @unique
-  password       String
-  avatar         String?
+  email        String? @unique
+  isEmailValid Boolean @default(false)
+  username     String  @unique
+  password     String
+  avatar       String?
+  xp           Int     @default(0)
+
+  /// [AvatarSettingsPrisma]
   avatarSettings Json?
-  xp             Int     @default(0)
 
   isActive        Boolean @default(true)
   isProfilePublic Boolean @default(true)

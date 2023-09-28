@@ -1,11 +1,13 @@
 import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import type PrismaTypes from '@klicker-uzh/prisma/dist/pothos'
+import '@klicker-uzh/prisma/dist/types'
 import SchemaBuilder from '@pothos/core'
 import PrismaPlugin from '@pothos/plugin-prisma'
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ValidationPlugin from '@pothos/plugin-validation'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
+
 import { Context, ContextWithUser } from './lib/context'
 
 const prisma = new PrismaClient({})
