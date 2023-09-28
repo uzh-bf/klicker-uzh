@@ -108,15 +108,15 @@ interface QuestionData<Type, Options> {
   options: Options
 }
 
-type ChoicesQuestionData = QuestionData<
+export type ChoicesQuestionData = QuestionData<
   QuestionType.SC | QuestionType.MC | QuestionType.KPRIM,
   QuestionOptionsChoicesPrisma
 >
-type FreeTextQuestionData = QuestionData<
+export type FreeTextQuestionData = QuestionData<
   QuestionType.FREE_TEXT,
   QuestionOptionsFreeTextPrisma
 >
-type NumericalQuestionData = QuestionData<
+export type NumericalQuestionData = QuestionData<
   QuestionType.NUMERICAL,
   QuestionOptionsNumericalPrisma
 >
