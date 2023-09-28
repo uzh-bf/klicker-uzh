@@ -15,6 +15,9 @@ const config: CodegenConfig = {
         'typed-document-node',
         'fragment-matcher',
       ],
+      config: {
+        avoidOptionals: false,
+      },
     },
     './src/ops.schema.json': {
       plugins: ['introspection'],
