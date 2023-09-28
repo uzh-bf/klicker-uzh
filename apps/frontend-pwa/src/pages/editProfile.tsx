@@ -192,7 +192,13 @@ function EditProfile() {
                       </H3>
                       <div className="space-y-3 mb-2">
                         <FormikTextField
-                          disabled={data.self?.email !== '' && !!values.email}
+                          // TODO: as soon as verification mechanism for email is implemented, add check for "isEmailValid" in DB for disabled field as emails with typos cannot be changed currently
+                          disabled={
+                            data.self?.email !== '' &&
+                            data.self?.email !== null &&
+                            typeof data.self?.email !== 'undefined' &&
+                            !!values.email
+                          }
                           name="email"
                           label={t('shared.generic.email')}
                           labelType="small"
