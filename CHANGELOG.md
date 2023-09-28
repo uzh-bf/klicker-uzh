@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.75](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.74...v3.0.0-rc.75) (2023-09-28)
+
+
+### Features
+
+* add possibilty to unpublish micro sessions before scheduled start ([#3881](https://github.com/uzh-bf/klicker-uzh/issues/3881)) ([90740db](https://github.com/uzh-bf/klicker-uzh/commit/90740dbd0ce851014184a055e4839f62851685a9))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add missing design-system styles as comment ([8f5d15d](https://github.com/uzh-bf/klicker-uzh/commit/8f5d15dd9175741121e25b234f36ff0ee8ceeaf4))
+* **apps/frontend-pwa:** ensure that potentially missing participant email can be added and profile updated ([#3880](https://github.com/uzh-bf/klicker-uzh/issues/3880)) ([d578cb2](https://github.com/uzh-bf/klicker-uzh/commit/d578cb2f00777e65e8524543e5b1dcd9529169dd))
+
+
+### Other
+
+* **apps/frontend-*:** fix design-system css imports ([e007dbc](https://github.com/uzh-bf/klicker-uzh/commit/e007dbc32039dc806238a2df20d2a7fd22ea91a4))
+
 ## [3.0.0-rc.74](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.73...v3.0.0-rc.74) (2023-09-28)
 
 

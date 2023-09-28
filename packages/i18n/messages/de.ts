@@ -1105,12 +1105,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Link zum Lernelement wurde erfolgreich in die Zwischenablage kopiert.',
       editMicroSession: 'Micro-Session bearbeiten',
       publishMicroSession: 'Micro-Session veröffentlichen',
+      unpublishMicroSession: 'Veröffentlichung aufheben',
       deleteMicroSession: 'Micro-Session löschen',
       publishItem: '{name} publizieren',
       confirmPublishing:
         'Sind Sie sich sicher, dass Sie das folgende Element publizieren möchten?',
       publishingHint:
-        'Das Publizieren eines Lernelements oder einer Micro-Session macht das Element für alle Teilnehmenden sichtbar. Dieser Prozess kann nicht rückgängig gemacht werden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
+        'Das Publizieren eines Lernelements oder einer Micro-Session macht das Element für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn das Element noch nicht läuft und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       microPublishingHint:
         'Micro-Sessions sind ausserdem nur innerhalb des spezifizierten Datumsbereichs sichtbar.',
       confirmDeletionMicroSession:
