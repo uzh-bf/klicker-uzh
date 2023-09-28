@@ -123,8 +123,6 @@ const useCases = [
 ]
 
 function Home() {
-  const navbarComponent = <div className="navbar"></div>
-
   useEffect(() => {
     var s: any = document.createElement('script'),
       options = {
