@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.74](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.73...v3.0.0-rc.74) (2023-09-28)
+
+
+### Bug Fixes
+
+* **apps/docs:** link to home and docs for v2 on landing page ([0647b15](https://github.com/uzh-bf/klicker-uzh/commit/0647b15a41671f9cad56356d664b2dfffc7ceecc))
+
+
+### Enhancements
+
+* **apps/docs:** update landing page hero image and add old version hints ([e6c96b8](https://github.com/uzh-bf/klicker-uzh/commit/e6c96b8d66f76fe70b6f9b77ece30b976ecf48ff))
+
 ## [3.0.0-rc.73](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.72...v3.0.0-rc.73) (2023-09-27)
 
 
