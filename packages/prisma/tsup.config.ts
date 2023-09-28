@@ -2,6 +2,6 @@ import { defineConfig } from 'tsup'
 
 export default defineConfig({
   entry: ['src/util.ts'],
-  clean: true,
+  clean: false,
   target: 'node18',
 })
