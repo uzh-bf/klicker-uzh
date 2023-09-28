@@ -1020,6 +1020,19 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      unpublishMicroSession: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: MicroSession,
+          args: {
+            id: t.arg.string({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return MicroLearningService.unpublishMicroSession(args, ctx)
+          },
+        }),
+
       // TODO: delete operations only as owner?
       deleteLearningElement: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })

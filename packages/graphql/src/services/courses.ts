@@ -517,13 +517,10 @@ export async function getCourseData(
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          updatedAt: 'desc',
         },
       },
       learningElements: {
-        orderBy: {
-          createdAt: 'asc',
-        },
         include: {
           stacks: {
             include: {
@@ -535,6 +532,9 @@ export async function getCourseData(
             },
           },
         },
+        orderBy: {
+          updatedAt: 'desc',
+        },
       },
       microSessions: {
         include: {
@@ -543,7 +543,7 @@ export async function getCourseData(
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          scheduledStartAt: 'desc',
         },
       },
       leaderboard: {

@@ -1,18 +1,25 @@
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { useMutation } from '@apollo/client'
+import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
   faExternalLink,
   faHourglassEnd,
   faHourglassStart,
   faLink,
+  faLock,
   faPencil,
   faPlay,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { MicroSession, MicroSessionStatus } from '@klicker-uzh/graphql/dist/ops'
+import {
+  MicroSession,
+  MicroSessionStatus,
+  UnpublishMicroSessionDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Toast } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -34,26 +41,14 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
 
-  const scheduledStartAt = new Date(microSession.scheduledStartAt)
-  const scheduledEndAt = new Date(microSession.scheduledEndAt)
-
-  // format scheduled start and end times as strings
-  const scheduledStartAtString = scheduledStartAt.toLocaleString('de-CH', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-  const scheduledEndAtString = scheduledEndAt.toLocaleString('de-CH', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+  const [unpublishMicroSession] = useMutation(UnpublishMicroSessionDocument, {
+    variables: { id: microSession.id },
   })
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/micro/${microSession.id}/`
+
+  const isFuture = dayjs(microSession.scheduledStartAt).isAfter(dayjs())
+  const isPast = dayjs(microSession.scheduledEndAt).isBefore(dayjs())
 
   return (
     <div
@@ -76,11 +71,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           <StatusTag
             color="bg-green-300"
             status={t('shared.generic.published')}
-            icon={
-              microSession.status === MicroSessionStatus.Published
-                ? faPlay
-                : faCheck
-            }
+            icon={isFuture ? faClock : isPast ? faCheck : faPlay}
           />
         )}
       </div>
@@ -92,12 +83,22 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
       <div className="flex flex-row items-center gap-2">
         <FontAwesomeIcon icon={faHourglassStart} />
         <div>
-          {t('manage.course.startAt', { time: scheduledStartAtString })}
+          {t('manage.course.startAt', {
+            time: dayjs(microSession.scheduledStartAt)
+              .local()
+              .format('DD.MM.YYYY, HH:mm'),
+          })}
         </div>
       </div>
       <div className="flex flex-row items-center gap-2">
         <FontAwesomeIcon icon={faHourglassEnd} />
-        <div>{t('manage.course.endAt', { time: scheduledEndAtString })}</div>
+        <div>
+          {t('manage.course.endAt', {
+            time: dayjs(microSession.scheduledEndAt)
+              .local()
+              .format('DD.MM.YYYY, HH:mm'),
+          })}
+        </div>
       </div>
       <Button
         basic
@@ -170,6 +171,21 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
             <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
           </Button.Icon>
           <Button.Label>{t('manage.course.deleteMicroSession')}</Button.Label>
+        </Button>
+      )}
+
+      {microSession.status === MicroSessionStatus.Published && isFuture && (
+        <Button
+          basic
+          className={{ root: 'text-primary' }}
+          onClick={async () => await unpublishMicroSession()}
+        >
+          <Button.Icon>
+            <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
+          </Button.Icon>
+          <Button.Label>
+            {t('manage.course.unpublishMicroSession')}
+          </Button.Label>
         </Button>
       )}
 
