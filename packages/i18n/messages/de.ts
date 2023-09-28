@@ -190,6 +190,8 @@ export default {
     privacyPolicy: 'Datenschutzerklärung',
     tosUrl: 'https://www.klicker.uzh.ch/nutzungsbedingungen',
     privacyUrl: 'https://www.klicker.uzh.ch/datenschutz',
+    loginInfo:
+      'Sie müssen sich nur hier einloggen, wenn Sie eigene Aktivitäten und Kurse erstellen möchten, nicht um an solchen teilzunehmen.',
   },
   pwa: {
     general: {
