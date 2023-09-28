@@ -367,6 +367,33 @@ export async function publishMicroSession(
   }
 }
 
+interface UnpublishMicroSessionArgs {
+  id: string
+}
+
+export async function unpublishMicroSession(
+  { id }: UnpublishMicroSessionArgs,
+  ctx: ContextWithUser
+) {
+  const microSession = await ctx.prisma.microSession.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      status: MicroSessionStatus.DRAFT,
+    },
+    include: {
+      instances: true,
+    },
+  })
+
+  return {
+    ...microSession,
+    numOfInstances: microSession.instances.length,
+  }
+}
+
 interface DeleteMicroSessionArgs {
   id: string
 }
