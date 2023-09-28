@@ -191,6 +191,8 @@ export default {
     privacyPolicy: 'Privacy Policy',
     tosUrl: 'https://www.klicker.uzh.ch/terms_of_service',
     privacyUrl: 'https://www.klicker.uzh.ch/privacy_policy',
+    loginInfo:
+      'You do not need a management account to participate in activities or a course, only to create your own activities and courses.',
   },
   pwa: {
     general: {

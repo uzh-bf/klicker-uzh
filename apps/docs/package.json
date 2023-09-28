@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/docs",
-  "version": "3.0.0-rc.73",
+  "version": "3.0.0-rc.74",
   "license": "AGPL-3.0",
   "dependencies": {
     "@docusaurus/core": "3.0.0-alpha.0",
