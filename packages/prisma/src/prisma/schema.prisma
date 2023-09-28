@@ -184,7 +184,7 @@ model Question {
   hasSampleSolution  Boolean             @default(false)
   hasAnswerFeedbacks Boolean             @default(false)
 
-  /// [QuestionOptions]
+  /// [PrismaQuestionOptions]
   options Json
 
   type QuestionType
@@ -240,10 +240,10 @@ model QuestionInstance {
   detailResponses  QuestionResponseDetail[]
   resetTimeDays    Int?
 
-  /// [QuestionResults]
+  /// [PrismaQuestionResults]
   results Json
 
-  /// [QuestionData]
+  /// [PrismaQuestionData]
   questionData Json
 
   sessionBlock    SessionBlock?  @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -744,7 +744,7 @@ model Participant {
   avatar       String?
   xp           Int     @default(0)
 
-  /// [AvatarSettings]
+  /// [PrismaAvatarSettings]
   avatarSettings Json?
 
   isActive        Boolean @default(true)
@@ -949,7 +949,7 @@ model QuestionResponse {
   lastAwardedAt      DateTime?
   lastXpAwardedAt    DateTime?
 
-  /// [QuestionResponse]
+  /// [PrismaQuestionResponse]
   response Json
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -974,7 +974,7 @@ model QuestionResponseDetail {
   pointsAwarded Float? @default(0)
   xpAwarded     Float  @default(0)
 
-  /// [QuestionResponse]
+  /// [PrismaQuestionResponse]
   response Json
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)

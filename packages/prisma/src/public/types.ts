@@ -1,21 +1,4 @@
-export enum QuestionType {
-  SC = 'SC',
-  MC = 'MC',
-  KPRIM = 'KPRIM',
-  NUMERICAL = 'NUMERICAL',
-  FREE_TEXT = 'FREE_TEXT',
-}
-
-export type QuestionDisplayMode = 'LIST' | 'GRID'
-
-export type ChoicePrisma = {
-  ix: number
-  value: string
-  correct?: boolean
-  feedback?: string
-}
-
-export type AvatarSettingsPrisma = {
+type AvatarSettingsPrisma = {
   skinTone: string
   eyes: string
   mouth: string
@@ -27,45 +10,47 @@ export type AvatarSettingsPrisma = {
   facialHair: string
 }
 
-export type QuestionResponseChoicesPrisma = {
+type QuestionResponseChoicesPrisma = {
   choices: number[]
 }
 
-export type QuestionResponseValuePrisma = {
+type QuestionResponseValuePrisma = {
   value: string
 }
 
-export type QuestionResponsePrisma =
+type QuestionResponsePrisma =
   | QuestionResponseChoicesPrisma
   | QuestionResponseValuePrisma
 
-export type QuestionResultsChoicesPrisma = {
+type QuestionResultsChoicesPrisma = {
   choices: Record<string, number>
 }
 
-export type QuestionResultsNumericalPrisma = {
+type QuestionResultsNumericalPrisma = {
   [x: string]: number
 }
 
-export type QuestionResultsFreeTextPrisma = {
+type QuestionResultsFreeTextPrisma = {
   [x: string]: number
 }
 
-export type QuestionResultsPrisma =
+type QuestionResultsPrisma =
   | QuestionResultsChoicesPrisma
   | QuestionResultsNumericalPrisma
   | QuestionResultsFreeTextPrisma
 
-export type QuestionOptionsChoicesPrisma = {
-  choices: {
-    ix: number
-    value: string
-    correct?: boolean
-    feedback?: string
-  }[]
+type ChoicePrisma = {
+  ix: number
+  value: string
+  correct?: boolean
+  feedback?: string
 }
 
-export type QuestionOptionsNumericalPrisma = {
+type QuestionOptionsChoicesPrisma = {
+  choices: ChoicePrisma[]
+}
+
+type QuestionOptionsNumericalPrisma = {
   unit?: string | null
   accuracy?: number
   placeholder?: string
@@ -79,59 +64,59 @@ export type QuestionOptionsNumericalPrisma = {
   }[]
 }
 
-export type QuestionOptionsFreeTextPrisma = {
+type QuestionOptionsFreeTextPrisma = {
   solutions?: string[]
   restrictions?: {
     maxLength?: number | null
   }
 }
 
-export type QuestionOptionsPrisma =
+type QuestionOptionsPrisma =
   | QuestionOptionsChoicesPrisma
   | QuestionOptionsNumericalPrisma
   | QuestionOptionsFreeTextPrisma
 
-interface QuestionData<Type, Options> {
-  id: number
-  name: string
-  type: Type
-  displayMode: QuestionDisplayMode
-  content: string
-  ownerId: string
-  isDeleted: boolean
-  isArchived: boolean
-  createdAt: string | Date
-  updatedAt: string | Date
-  pointsMultiplier: number
-  explanation?: string
+// interface IQuestionDataPrisma<Type, Options> {
+//   id: number
+//   name: string
+//   type: Type
+//   displayMode: QuestionDisplayMode
+//   content: string
+//   ownerId: string
+//   isDeleted: boolean
+//   isArchived: boolean
+//   createdAt: string | Date
+//   updatedAt: string | Date
+//   pointsMultiplier: number
+//   explanation?: string
 
-  options: Options
-}
+//   options: Options
+// }
 
-export type ChoicesQuestionData = QuestionData<
-  QuestionType.SC | QuestionType.MC | QuestionType.KPRIM,
-  QuestionOptionsChoicesPrisma
->
-export type FreeTextQuestionData = QuestionData<
-  QuestionType.FREE_TEXT,
-  QuestionOptionsFreeTextPrisma
->
-export type NumericalQuestionData = QuestionData<
-  QuestionType.NUMERICAL,
-  QuestionOptionsNumericalPrisma
->
+// type ChoicesQuestionDataPrisma = IQuestionDataPrisma<
+//   QuestionType.SC | QuestionType.MC | QuestionType.KPRIM,
+//   QuestionOptionsChoicesPrisma
+// >
+// type FreeTextQuestionDataPrisma = IQuestionDataPrisma<
+//   QuestionType.FREE_TEXT,
+//   QuestionOptionsFreeTextPrisma
+// >
+// type NumericalQuestionDataPrisma = IQuestionDataPrisma<
+//   QuestionType.NUMERICAL,
+//   QuestionOptionsNumericalPrisma
+// >
 
-export type QuestionDataPrisma =
-  | ChoicesQuestionData
-  | FreeTextQuestionData
-  | NumericalQuestionData
+// type QuestionDataPrisma =
+//   | ChoicesQuestionDataPrisma
+//   | FreeTextQuestionDataPrisma
+//   | NumericalQuestionDataPrisma
 
 declare global {
   namespace PrismaJson {
-    type AvatarSettings = AvatarSettingsPrisma
-    type QuestionResponse = QuestionResponsePrisma
-    type QuestionOptions = QuestionOptionsPrisma
-    type QuestionResults = QuestionResultsPrisma
-    type QuestionData = QuestionDataPrisma
+    type PrismaAvatarSettings = AvatarSettingsPrisma
+    type PrismaQuestionResponse = QuestionResponsePrisma
+    type PrismaQuestionOptions = QuestionOptionsPrisma
+    type PrismaQuestionResults = QuestionResultsPrisma
+    // type PrismaQuestionData = QuestionDataPrisma
   }
 }

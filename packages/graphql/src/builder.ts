@@ -1,6 +1,6 @@
 import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import type PrismaTypes from '@klicker-uzh/prisma/dist/pothos'
-import '@klicker-uzh/prisma/dist/types'
+import '@klicker-uzh/prisma/dist/types.ts'
 import SchemaBuilder from '@pothos/core'
 import DirectivePlugin from '@pothos/plugin-directives'
 import PrismaPlugin from '@pothos/plugin-prisma'
