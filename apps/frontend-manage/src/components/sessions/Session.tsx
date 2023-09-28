@@ -74,6 +74,8 @@ function Session({ session }: SessionProps) {
   return (
     <>
       <div key={session.id} className="p-1 border rounded" data-cy="session">
+        {/* // TODO: remove additional tailwind styles, which are not imported correctly */}
+        {/* <div className="col-span-1 col-span-2 col-span-3 col-span-4 col-span-5" /> */}
         <Collapsible
           className={{ root: 'border-0 !py-0.5' }}
           key={session.id}
