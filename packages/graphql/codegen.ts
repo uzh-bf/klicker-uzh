@@ -21,6 +21,9 @@ const config: CodegenConfig = {
     },
     './src/public/schema.graphql': {
       plugins: ['schema-ast'],
+      config: {
+        includeDirectives: true,
+      },
     },
     // './src/persisted-queries/client.json': {
     //   plugins: [

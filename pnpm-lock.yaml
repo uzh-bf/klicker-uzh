@@ -1502,6 +1502,9 @@ importers:
       '@pothos/core':
         specifier: 3.33.0
         version: 3.33.0(graphql@16.7.1)
+      '@pothos/plugin-directives':
+        specifier: 3.10.2
+        version: 3.10.2(graphql@16.7.1)
       '@pothos/plugin-prisma':
         specifier: 3.56.0
         version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@5.3.1)(graphql@16.7.1)(typescript@5.1.6)
@@ -8513,6 +8516,14 @@ packages:
       graphql: '>=15.1.0'
     dependencies:
       graphql: 16.7.1
+
+  /@pothos/plugin-directives@3.10.2(graphql@16.7.1):
+    resolution: {integrity: sha512-UubulUkureiLLMevedgVl5KAJ0TSJFs2R7XZ2hq3Gir7FU3V8XP9gyf3dQ/qv0OLUkqcQszMB0Ygs3zm1o6/6w==}
+    peerDependencies:
+      graphql: '>=15.1.0'
+    dependencies:
+      graphql: 16.7.1
+    dev: false
 
   /@pothos/plugin-prisma@3.56.0(@pothos/core@3.33.0)(@prisma/client@5.3.1)(graphql@16.7.1)(typescript@5.1.6):
     resolution: {integrity: sha512-ne8s4WZC1ntRnvxnFvfGV9vVtUuRHBiI0mNkx5CYzJTBX5DuxjZk7vYBpOaQHBcMLulTLMpr0Tgd1AJggVBGDA==}
