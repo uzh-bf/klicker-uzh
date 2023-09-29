@@ -1392,23 +1392,24 @@ function QuestionEditModal({
                     <Markdown content={values.explanation} />
                   </div>
                 )}
-                {QUESTION_GROUPS.CHOICES.includes(values.type) && (
-                  <div className="mt-4">
-                    <H3>{t('shared.generic.feedbacks')}</H3>
-                    {values.options?.choices?.map((choice, index) => (
-                      <div
-                        key={index}
-                        className="pt-1 pb-1 border-b last:border-b-0"
-                      >
-                        {choice.feedback ? (
-                          <Markdown content={choice.feedback} />
-                        ) : (
-                          t('manage.questionForms.noFeedbackDefined')
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {QUESTION_GROUPS.CHOICES.includes(values.type) &&
+                  values.hasAnswerFeedbacks && (
+                    <div className="mt-4">
+                      <H3>{t('shared.generic.feedbacks')}</H3>
+                      {values.options?.choices?.map((choice, index) => (
+                        <div
+                          key={index}
+                          className="pt-1 pb-1 border-b last:border-b-0"
+                        >
+                          {choice.feedback ? (
+                            <Markdown content={choice.feedback} />
+                          ) : (
+                            t('manage.questionForms.noFeedbackDefined')
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
               </div>
             </div>
           </Modal>
