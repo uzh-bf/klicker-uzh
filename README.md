@@ -6,7 +6,7 @@
 
 `klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) open-source audience interaction platform. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
 
-![Klicker Screenshot Timeline](https://www.klicker.uzh.ch/img/timeline_mac.png)
+![Klicker Screenshot Timeline](apps/docs/static/img/question_pool_mac.png)
 
 KlickerUZH v3.0 uses multiple different web applications and services, which communicate with each other:
 
