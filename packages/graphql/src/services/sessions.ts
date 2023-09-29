@@ -437,16 +437,26 @@ interface EndSessionArgs {
 }
 
 export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
-  // TODO: update achievement IDs after seeding, points and XP as required
+  // TODO: update achievement IDs after seeding
   const FIRST_ACHIEVEMENT_ID = 11
   const SECOND_ACHIEVEMENT_ID = 12
   const THIRD_ACHIEVEMENT_ID = 13
-  const FIRST_RANK_POINTS = 100
-  const SECOND_RANK_POINTS = 50
-  const THIRD_RANK_POINTS = 30
-  const FIRST_RANK_XP = 300
-  const SECOND_RANK_XP = 200
-  const THIRD_RANK_XP = 100
+
+  const firstRankAchievement = await ctx.prisma.achievement.findUnique({
+    where: {
+      id: FIRST_ACHIEVEMENT_ID,
+    },
+  })
+  const secondRankAchievement = await ctx.prisma.achievement.findUnique({
+    where: {
+      id: SECOND_ACHIEVEMENT_ID,
+    },
+  })
+  const thirdRankAchievement = await ctx.prisma.achievement.findUnique({
+    where: {
+      id: THIRD_ACHIEVEMENT_ID,
+    },
+  })
 
   const achievements = {
     1: FIRST_ACHIEVEMENT_ID,
@@ -454,14 +464,14 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     3: THIRD_ACHIEVEMENT_ID,
   }
   const points = {
-    1: FIRST_RANK_POINTS,
-    2: SECOND_RANK_POINTS,
-    3: THIRD_RANK_POINTS,
+    1: firstRankAchievement?.rewardedPoints || 0,
+    2: secondRankAchievement?.rewardedPoints || 0,
+    3: thirdRankAchievement?.rewardedPoints || 0,
   }
   const xp = {
-    1: FIRST_RANK_XP,
-    2: SECOND_RANK_XP,
-    3: THIRD_RANK_XP,
+    1: firstRankAchievement?.rewardedXP || 0,
+    2: secondRankAchievement?.rewardedXP || 0,
+    3: thirdRankAchievement?.rewardedXP || 0,
   }
 
   const session = await ctx.prisma.liveSession.findFirst({
