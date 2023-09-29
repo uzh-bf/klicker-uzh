@@ -55,7 +55,7 @@ export async function getMicroSessionData(
   if (!microSession) return null
 
   const instancesWithoutSolution = microSession.instances.map((instance) => {
-    const questionData = instance.questionData?.valueOf() as AllQuestionTypeData
+    const questionData = instance.questionData
     if (
       !questionData ||
       typeof questionData !== 'object' ||

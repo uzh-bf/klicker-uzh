@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 
+import { AllQuestionTypeData } from 'src/types/app'
 import builder from '../builder'
 import type { ICourse } from './course'
 import { Course } from './course'
@@ -218,7 +219,7 @@ export const InstanceResult = InstanceResultRef.implement({
     questionData: t.field({
       type: QuestionData,
       // FIXME: can we get rid of casting here?
-      resolve: (q) => q.questionData as unknown as AllQuestionTypeData,
+      resolve: (q) => q.questionData,
     }),
     statistics: t.expose('statistics', { type: Statistics, nullable: true }),
   }),

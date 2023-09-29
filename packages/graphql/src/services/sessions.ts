@@ -2,6 +2,7 @@ import {
   AccessMode,
   ConfusionTimestep,
   Question,
+  QuestionInstance,
   QuestionInstanceType,
   QuestionType,
   SessionBlockStatus,
@@ -17,6 +18,13 @@ import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { ISession } from 'src/schema/session'
+import {
+  AllQuestionTypeData,
+  ChoicesQuestionData,
+  FreeTextQuestionData,
+  NumericalQuestionData,
+  QuestionResultsChoices,
+} from 'src/types/app'
 import { sendTeamsNotifications } from '../lib/util'
 
 const scheduledJobs: Record<string, any> = {}
@@ -29,7 +37,7 @@ export function processQuestionData(question: Question): AllQuestionTypeData {
       return {
         ...question,
         options: question.options!.valueOf(),
-      } as unknown as ChoicesQuestionData
+      } as ChoicesQuestionData
     }
 
     case QuestionType.NUMERICAL: {
@@ -57,7 +65,7 @@ export function prepareInitialInstanceResults(
         (acc, _, ix) => ({ ...acc, [ix]: 0 }),
         {}
       )
-      return { choices } as ChoicesQuestionResults
+      return { choices } as QuestionResultsChoices
     }
 
     case QuestionType.NUMERICAL: {
@@ -233,7 +241,7 @@ export async function editSession(
     throw new GraphQLError('Cannot edit a running or completed session')
   }
 
-  const oldQuestionInstances = oldSession!.blocks.reduce<QuestionInstance[]>(
+  const oldQuestionInstances = oldSession.blocks.reduce<QuestionInstance[]>(
     (acc, block) => [...acc, ...block.instances],
     []
   )
@@ -703,7 +711,7 @@ export async function activateSessionBlock(
   const redisMulti = ctx.redisExec.pipeline()
 
   updatedSession.activeBlock!.instances.forEach((instance) => {
-    const questionData = instance.questionData!.valueOf() as AllQuestionTypeData
+    const questionData = instance.questionData
 
     const commonInfo = {
       namespace: session.namespace,
@@ -729,7 +737,7 @@ export async function activateSessionBlock(
         })
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
           participants: 0,
-          ...(instance.results!.valueOf() as ChoicesQuestionResults).choices,
+          ...instance.results.choices,
         })
         break
       }
@@ -1140,8 +1148,7 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
       activeBlock: {
         ...session.activeBlock,
         instances: session.activeBlock.instances.map((instance) => {
-          const questionData =
-            instance.questionData?.valueOf() as AllQuestionTypeData
+          const questionData = instance.questionData
           if (
             !questionData ||
             typeof questionData !== 'object' ||
@@ -1500,8 +1507,7 @@ export async function getCockpitSession(
       return {
         ...block,
         instances: block.instances.map((instance) => {
-          const questionData =
-            instance.questionData?.valueOf() as AllQuestionTypeData
+          const questionData = instance.questionData
           if (
             !questionData ||
             typeof questionData !== 'object' ||
@@ -1909,9 +1915,7 @@ export async function cancelSession(
         },
         data: {
           participants: 0,
-          results: prepareInitialInstanceResults(
-            instance.questionData!.valueOf() as AllQuestionTypeData
-          ),
+          results: prepareInitialInstanceResults(instance.questionData),
         },
       })
     ),

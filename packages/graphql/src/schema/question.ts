@@ -193,7 +193,7 @@ export const QuestionInstance = QuestionInstanceRef.implement({
     questionData: t.field({
       type: QuestionData,
       // FIXME: can we get rid of casting here?
-      resolve: (q) => q.questionData as object as AllQuestionTypeData,
+      resolve: (q) => q.questionData,
     }),
   }),
 })

@@ -24,6 +24,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { ResponseInput } from 'src/ops'
+import { AllQuestionTypeData } from 'src/types/app'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
 import { prepareInitialInstanceResults, processQuestionData } from './sessions'
@@ -42,7 +43,7 @@ function evaluateQuestionResponse(
     case QuestionType.SC:
     case QuestionType.MC:
     case QuestionType.KPRIM: {
-      const data = questionData as ChoicesQuestionData
+      const data = questionData
 
       // TODO: feedbacks only for selected options?
       // const feedbacks = questionData.options.choices.filter((choice) =>
@@ -116,7 +117,7 @@ function evaluateQuestionResponse(
     }
 
     case QuestionType.NUMERICAL: {
-      const data = questionData as NumericalQuestionData
+      const data = questionData
       const solutionRanges = data.options.solutionRanges
 
       const correct = gradeQuestionNumerical({
@@ -137,7 +138,7 @@ function evaluateQuestionResponse(
     }
 
     case QuestionType.FREE_TEXT: {
-      const data = questionData as FreeTextQuestionData
+      const data = questionData
       const solutions = data.options.solutions
 
       const correct = gradeQuestionFreeText({
@@ -190,161 +191,155 @@ export async function respondToQuestionInstance(
     treatAnonymous = true
   }
 
-  const {
-    instance,
-    updatedInstance,
-  }: {
-    instance?: QuestionInstance | null
-    updatedInstance?: QuestionInstance
-  } = await ctx.prisma.$transaction(async (prisma) => {
-    const instance = await prisma.questionInstance.findUnique({
-      where: { id },
-      // if the participant is logged in, fetch the last response of the participant
-      // the response will not be counted and will only yield points if not within the past week
-      include:
-        ctx.user?.sub &&
-        !treatAnonymous &&
-        ctx.user.role === UserRole.PARTICIPANT
-          ? {
-              responses: {
-                where: {
-                  participant: {
-                    id: ctx.user.sub,
+  const { instance, updatedInstance } = await ctx.prisma.$transaction(
+    async (prisma) => {
+      const instance = await prisma.questionInstance.findUnique({
+        where: { id },
+        // if the participant is logged in, fetch the last response of the participant
+        // the response will not be counted and will only yield points if not within the past week
+        include:
+          ctx.user?.sub &&
+          !treatAnonymous &&
+          ctx.user.role === UserRole.PARTICIPANT
+            ? {
+                responses: {
+                  where: {
+                    participant: {
+                      id: ctx.user.sub,
+                    },
                   },
+                  take: 1,
                 },
-                take: 1,
+              }
+            : {
+                responses: {
+                  take: 1,
+                },
               },
+      })
+
+      if (!instance) {
+        return {}
+      }
+
+      // if the participant had already responded, don't track the new response
+      // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
+      const hasPreviousResponse = instance?.responses.length > 0
+      if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
+        return {
+          instance,
+          updatedInstance: instance,
+        }
+      }
+
+      const questionData = instance?.questionData
+      const results = instance?.results
+
+      if (!questionData) {
+        return {}
+      }
+
+      let updatedResults:
+        | {
+            choices?: Record<string, number>
+          }
+        | Record<string, number> = {}
+
+      switch (questionData.type) {
+        case QuestionType.SC:
+        case QuestionType.MC:
+        case QuestionType.KPRIM: {
+          updatedResults.choices = response.choices!.reduce(
+            (acc, ix) => ({
+              ...acc,
+              [ix]: acc[ix] + 1,
+            }),
+            results.choices as Record<string, number>
+          )
+          break
+        }
+
+        case QuestionType.NUMERICAL: {
+          if (
+            typeof response.value === 'undefined' ||
+            response.value === null ||
+            response.value === ''
+          ) {
+            return {}
+          }
+
+          const parsedValue = parseFloat(response.value)
+          if (
+            isNaN(parsedValue) ||
+            (typeof questionData.options.restrictions!.min === 'number' &&
+              parsedValue < questionData.options.restrictions!.min) ||
+            (typeof questionData.options.restrictions!.max === 'number' &&
+              parsedValue > questionData.options.restrictions!.max)
+          ) {
+            return {}
+          }
+
+          const value = String(parsedValue)
+
+          if (Object.keys(results).includes(value)) {
+            updatedResults = {
+              ...results,
+              [value]: results[value] + 1,
             }
-          : {
-              responses: {
-                take: 1,
-              },
-            },
-    })
+          } else {
+            updatedResults = { ...results, [value]: 1 }
+          }
+          break
+        }
 
-    if (!instance) {
-      return {}
-    }
+        case QuestionType.FREE_TEXT: {
+          if (
+            typeof response.value === 'undefined' ||
+            response.value === null ||
+            response.value === '' ||
+            (typeof questionData.options.restrictions!.maxLength === 'number' &&
+              response.value.length >
+                questionData.options.restrictions!.maxLength)
+          ) {
+            return {}
+          }
 
-    // if the participant had already responded, don't track the new response
-    // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
-    const hasPreviousResponse = instance?.responses.length > 0
-    if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
+          const value = R.toLower(R.trim(response.value))
+
+          if (Object.keys(results).includes(value)) {
+            updatedResults = {
+              ...results,
+              [value]: results[value] + 1,
+            }
+          } else {
+            updatedResults = { ...results, [value]: 1 }
+          }
+          break
+        }
+
+        default:
+          break
+      }
+
+      const updatedInstance = await prisma.questionInstance.update({
+        where: { id },
+        data: {
+          results: updatedResults,
+          participants: {
+            increment: 1,
+          },
+        },
+      })
+
       return {
         instance,
-        updatedInstance: instance,
+        updatedInstance,
       }
     }
+  )
 
-    const questionData =
-      instance?.questionData?.valueOf() as AllQuestionTypeData
-    const results = instance?.results?.valueOf() as AllQuestionResults
-
-    if (!questionData) {
-      return {}
-    }
-
-    let updatedResults:
-      | {
-          choices?: Record<string, number>
-        }
-      | Record<string, number> = {}
-
-    switch (questionData.type) {
-      case QuestionType.SC:
-      case QuestionType.MC:
-      case QuestionType.KPRIM: {
-        updatedResults.choices = response.choices!.reduce(
-          (acc, ix) => ({
-            ...acc,
-            [ix]: acc[ix] + 1,
-          }),
-          results.choices as Record<string, number>
-        )
-        break
-      }
-
-      case QuestionType.NUMERICAL: {
-        if (
-          typeof response.value === 'undefined' ||
-          response.value === null ||
-          response.value === ''
-        ) {
-          return {}
-        }
-
-        const parsedValue = parseFloat(response.value)
-        if (
-          isNaN(parsedValue) ||
-          (typeof questionData.options.restrictions!.min === 'number' &&
-            parsedValue < questionData.options.restrictions!.min) ||
-          (typeof questionData.options.restrictions!.max === 'number' &&
-            parsedValue > questionData.options.restrictions!.max)
-        ) {
-          return {}
-        }
-
-        const value = String(parsedValue)
-
-        if (Object.keys(results).includes(value)) {
-          updatedResults = {
-            ...results,
-            [value]: (results as NumericalQuestionResults)[value] + 1,
-          }
-        } else {
-          updatedResults = { ...results, [value]: 1 }
-        }
-        break
-      }
-
-      case QuestionType.FREE_TEXT: {
-        if (
-          typeof response.value === 'undefined' ||
-          response.value === null ||
-          response.value === '' ||
-          (typeof questionData.options.restrictions!.maxLength === 'number' &&
-            response.value.length >
-              questionData.options.restrictions!.maxLength)
-        ) {
-          return {}
-        }
-
-        const value = R.toLower(R.trim(response.value))
-
-        if (Object.keys(results).includes(value)) {
-          updatedResults = {
-            ...results,
-            [value]: (results as FreeTextQuestionResults)[value] + 1,
-          }
-        } else {
-          updatedResults = { ...results, [value]: 1 }
-        }
-        break
-      }
-
-      default:
-        break
-    }
-
-    const updatedInstance = await prisma.questionInstance.update({
-      where: { id },
-      data: {
-        results: updatedResults,
-        participants: {
-          increment: 1,
-        },
-      },
-    })
-
-    return {
-      instance,
-      updatedInstance,
-    }
-  })
-
-  const questionData =
-    updatedInstance?.questionData?.valueOf() as AllQuestionTypeData
-  const results = updatedInstance?.results?.valueOf() as AllQuestionResults
+  const questionData = updatedInstance?.questionData
+  const results = updatedInstance?.results
 
   if (!instance || !updatedInstance || !questionData) return null
 
@@ -689,8 +684,7 @@ export async function getLearningElementData(
           return element
         }
 
-        const questionData =
-          element.questionInstance.questionData?.valueOf() as AllQuestionTypeData
+        const questionData = element.questionInstance.questionData
 
         switch (questionData?.type) {
           case QuestionType.SC:

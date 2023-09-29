@@ -495,9 +495,7 @@ export async function flagQuestion(
         questionInstance?.stackElement?.stack?.learningElement?.name ||
         questionInstance?.microSession?.name,
       questionId: questionInstance.questionId,
-      questionName: (
-        questionInstance.questionData?.valueOf() as AllQuestionTypeData
-      ).name,
+      questionName: questionInstance.questionData.name,
       content: args.content,
       participantId: ctx.user?.sub,
       secret: process.env.NOTIFICATION_SECRET,
