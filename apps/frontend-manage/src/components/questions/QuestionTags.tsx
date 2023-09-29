@@ -1,15 +1,18 @@
 import { Tag } from '@klicker-uzh/graphql/dist/ops'
+import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface QuestionTagsProps {
   tags: Tag[]
   tagfilter?: string[]
+  handleTagClick: (value: string, selected?: boolean) => void
 }
 
 function QuestionTags({
   tags = [],
   tagfilter = [],
+  handleTagClick,
 }: QuestionTagsProps): React.ReactElement {
   if (!tags || tags.length === 0) {
     return <></>
@@ -17,19 +20,28 @@ function QuestionTags({
 
   return (
     <div className="flex flex-row max-w-2xl overflow-auto">
-      {tags.map(
-        (tag): React.ReactElement => (
-          <div
-            className={twMerge(
-              'py-1 px-3 m-1 mt-0 bg-slate-100 border border-solid rounded-md border-blue-40 w-max',
-              tagfilter?.includes(tag.name) && 'bg-primary-20'
-            )}
+      {tags.map((tag): React.ReactElement => {
+        const selected = tagfilter?.includes(tag.name)
+
+        return (
+          <Button
+            basic
+            className={{
+              root: twMerge(
+                'py-1 px-3 m-1 mt-0 bg-slate-100 border border-solid rounded-md border-blue-40 w-max',
+                selected && 'bg-primary-20'
+              ),
+            }}
+            onClick={(event) => {
+              event?.stopPropagation()
+              handleTagClick(tag.name)
+            }}
             key={tag.id}
           >
             {tag.name}
-          </div>
+          </Button>
         )
-      )}
+      })}
     </div>
   )
 }

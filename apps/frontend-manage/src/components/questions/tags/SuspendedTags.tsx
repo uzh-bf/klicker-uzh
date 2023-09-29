@@ -10,7 +10,7 @@ import UserTag from './UserTag'
 
 interface Props {
   activeTags: string[]
-  handleTagClick: (questionType: string, selected?: boolean) => void
+  handleTagClick: (value: string, selected?: boolean) => void
 }
 
 function SuspendedTags({ activeTags, handleTagClick }: Props) {

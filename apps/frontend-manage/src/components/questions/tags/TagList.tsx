@@ -27,7 +27,7 @@ interface Props {
   sampleSolution: boolean
   answerFeedbacks: boolean
   handleReset: () => void
-  handleTagClick: (questionType: string, selected?: boolean) => void
+  handleTagClick: (value: string, selected?: boolean) => void
   handleSampleSolutionClick: (selected?: boolean) => void
   handleAnswerFeedbacksClick: (selected?: boolean) => void
   handleToggleArchive: () => void

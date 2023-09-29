@@ -588,6 +588,7 @@ function Index() {
                     })
                   }}
                   tagfilter={filters.tags}
+                  handleTagClick={handleTagClick}
                   unsetDeletedQuestion={(questionId: number) => {
                     setSelectedQuestions((prev) => {
                       if (prev[questionId]) {
