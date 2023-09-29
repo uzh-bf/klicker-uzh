@@ -437,6 +437,33 @@ interface EndSessionArgs {
 }
 
 export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
+  // TODO: update achievement IDs after seeding, points and XP as required
+  const FIRST_ACHIEVEMENT_ID = 11
+  const SECOND_ACHIEVEMENT_ID = 12
+  const THIRD_ACHIEVEMENT_ID = 13
+  const FIRST_RANK_POINTS = 100
+  const SECOND_RANK_POINTS = 50
+  const THIRD_RANK_POINTS = 30
+  const FIRST_RANK_XP = 300
+  const SECOND_RANK_XP = 200
+  const THIRD_RANK_XP = 100
+
+  const achievements = {
+    1: FIRST_ACHIEVEMENT_ID,
+    2: SECOND_ACHIEVEMENT_ID,
+    3: THIRD_ACHIEVEMENT_ID,
+  }
+  const points = {
+    1: FIRST_RANK_POINTS,
+    2: SECOND_RANK_POINTS,
+    3: THIRD_RANK_POINTS,
+  }
+  const xp = {
+    1: FIRST_RANK_XP,
+    2: SECOND_RANK_XP,
+    3: THIRD_RANK_XP,
+  }
+
   const session = await ctx.prisma.liveSession.findFirst({
     where: {
       id,
@@ -468,7 +495,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
 
   try {
     // if the session is part of a course, update the course leaderboard with the accumulated points
-    if (session.courseId) {
+    if (session.courseId && session.isGamificationEnabled) {
       const sessionLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
 
       if (sessionLB) {
@@ -492,16 +519,117 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
               )
                 return null
 
-              return [id, score]
+              return { participantId: id, score: parseInt(score) }
             })
           )
-        ).flatMap((result) => {
-          if (result.status !== 'fulfilled' || !result.value) return []
-          return [result.value]
-        })
+        )
+          .flatMap((result) => {
+            if (result.status !== 'fulfilled' || !result.value) return []
+            return [result.value]
+          })
+          .sort((a, b) => b.score - a.score)
+
+        const newAchievements = []
+
+        if (existingParticipantsLB[0]) {
+          const firstRank = existingParticipantsLB[0]
+          newAchievements.push({
+            participantId: firstRank.participantId,
+            achievementId: achievements[1],
+            points: points[1],
+            xp: xp[1],
+          })
+
+          if (existingParticipantsLB[1]) {
+            const secondRank = existingParticipantsLB[1]
+            const rank2 = secondRank.score < firstRank.score ? 2 : 1
+
+            newAchievements.push({
+              participantId: secondRank.participantId,
+              achievementId: achievements[rank2],
+              points: points[rank2],
+              xp: xp[rank2],
+            })
+
+            if (existingParticipantsLB[2]) {
+              const thirdRank = existingParticipantsLB[2]
+              const rank3 =
+                thirdRank.score < secondRank.score
+                  ? 3
+                  : thirdRank.score < firstRank.score
+                  ? 2
+                  : 1
+
+              newAchievements.push({
+                participantId: thirdRank.participantId,
+                achievementId: achievements[rank3],
+                points: points[rank3],
+                xp: xp[rank3],
+              })
+            }
+          }
+        }
+
+        // map over newAchievements and update participants in a prisma transaction
+        await ctx.prisma.$transaction(
+          newAchievements.map(({ participantId, achievementId, points, xp }) =>
+            ctx.prisma.participant.update({
+              where: {
+                id: participantId,
+              },
+              data: {
+                // increment xp
+                xp: {
+                  increment: xp,
+                },
+                // increment points on course leaderboard, if session is assigned to course
+                leaderboards: {
+                  update: {
+                    where: {
+                      type_participantId_courseId: {
+                        type: 'COURSE',
+                        courseId: session.courseId!,
+                        participantId,
+                      },
+                    },
+                    data: {
+                      score: {
+                        increment: points,
+                      },
+                    },
+                  },
+                },
+                // create achievement or increment achievement count
+                achievements: {
+                  upsert: {
+                    where: {
+                      participantId_achievementId: {
+                        participantId,
+                        achievementId,
+                      },
+                    },
+                    create: {
+                      achievement: {
+                        connect: {
+                          id: achievementId,
+                        },
+                      },
+                      achievedAt: new Date(),
+                    },
+                    update: {
+                      achievedCount: {
+                        increment: 1,
+                      },
+                    },
+                  },
+                },
+              },
+            })
+          )
+        )
 
         await ctx.prisma.$transaction(
-          existingParticipantsLB.map(([participantId, score]) =>
+          existingParticipantsLB.map(({ participantId, score }) =>
             ctx.prisma.leaderboardEntry.upsert({
               where: {
                 type_participantId_courseId: {
@@ -548,11 +676,11 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                     },
                   },
                 },
-                score: parseInt(score),
+                score: score,
               },
               update: {
                 score: {
-                  increment: parseInt(score),
+                  increment: score,
                 },
               },
             })
