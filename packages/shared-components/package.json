@@ -30,7 +30,7 @@
     "@fortawesome/free-regular-svg-icons": "6.4.2",
     "@fortawesome/free-solid-svg-icons": "6.4.2",
     "@fortawesome/react-fontawesome": "0.2.0",
-    "@uzh-bf/design-system": "2.1.7",
+    "@uzh-bf/design-system": "2.1.8",
     "formik": "2.4.3",
     "next": "13.4.19",
     "next-intl": "2.19.1",
