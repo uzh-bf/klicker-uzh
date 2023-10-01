@@ -19,7 +19,7 @@ KlickerUZH v3.0 uses multiple different web applications and services, which com
 - [Backend Response Processor](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-response-processor) accesses queued elements from the aforementioned service and processes them by computing scores and experience points, updating the cache, etc.
 - The [v2.0 Export](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-migration-v2-export) and [v3.0 Import](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/func-migration-v3-import) folders contain serverless Azure Functions related to the migration from KlickerUZH v2.0 to v3.0.
 
-In addition to the key application components, this repository also includes the codebases for our landing page and documentation at [www.klicker.uzh.ch](https://www.klicker.uzh.ch/), as well as deployment scripts. An updated deployment documentation for self-hosting KlickerUZH v3.0 will be added later:
+In addition to the key application components, this repository also includes the codebases for our landing page and documentation at [www.klicker.uzh.ch](https://www.klicker.uzh.ch/), as well as deployment scripts for Helm/Kubernetes. An updated deployment documentation for self-hosting KlickerUZH v3.0 will be added until the end of the year.
 
 - [Documentation and Website](https://github.com/uzh-bf/klicker-uzh/tree/v3/apps/docs) (subfolder)
 - [Deployment](https://github.com/uzh-bf/klicker-uzh/tree/v3/deploy) (subfolder)
