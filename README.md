@@ -2,7 +2,7 @@
 
 > Please note that this is the repository branch for KlickerUZH v3.0 released in August 2023. If you would like to have more information on the new concept of v3.0, have a look at our [public discussion](https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79).
 >
-> Please navigate to the [dev branch](https://github.com/uzh-bf/klicker-uzh/tree/dev) for the older [KlickerUZH v2.0](https://app.klicker.uzh.ch/), which will be available until the end of 2023. To migrate to KlickerUZH v3.0, first [log in](https://auth.klicker.uzh.ch/) and start the [migration process](https://manage.klicker.uzh.ch/migration).
+> Please navigate to the [dev branch](https://github.com/uzh-bf/klicker-uzh/tree/dev) for the older [KlickerUZH v2.0](https://app.klicker.uzh.ch/), which will be available until the end of 2023. To migrate to KlickerUZH v3.0, start the [migration process](https://manage.klicker.uzh.ch/migration).
 
 `klicker-uzh` is the code repository of the [KlickerUZH](https://www.klicker.uzh.ch/) open-source audience interaction platform. KlickerUZH is developed by the Teaching Center of the Department of Banking and Finance at the University of Zurich, Switzerland.
 
