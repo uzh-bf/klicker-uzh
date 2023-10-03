@@ -463,13 +463,13 @@ export async function updateQuestionInstances(
 
   // get all instances and the corresponding element multipliers
   const instanceMultipliers: Record<number, number> = {
-    ...question.instances.reduce((prev1, instance) => {
+    ...question.instances.reduce((acc, instance) => {
       if (
         instance.sessionBlock?.session?.status === DB.SessionStatus.PREPARED ||
         instance.sessionBlock?.session?.status === DB.SessionStatus.SCHEDULED
       ) {
         return {
-          ...prev1,
+          ...acc,
           [instance.id]: instance.sessionBlock.session.pointsMultiplier,
         }
       } else if (
@@ -477,7 +477,7 @@ export async function updateQuestionInstances(
         DB.LearningElementStatus.DRAFT
       ) {
         return {
-          ...prev1,
+          ...acc,
           [instance.id]:
             instance.stackElement.stack.learningElement.pointsMultiplier,
         }
@@ -485,11 +485,11 @@ export async function updateQuestionInstances(
         instance.microSession?.status === DB.MicroSessionStatus.DRAFT
       ) {
         return {
-          ...prev1,
+          ...acc,
           [instance.id]: instance.microSession.pointsMultiplier,
         }
       }
-      return prev1
+      return acc
     }, {}),
   }
 
