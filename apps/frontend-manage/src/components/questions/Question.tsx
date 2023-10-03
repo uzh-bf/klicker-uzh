@@ -28,6 +28,7 @@ interface Props {
   id: number
   isArchived?: boolean
   tags?: Tag[]
+  handleTagClick: (value: string, selected?: boolean) => void
   title: string
   type: QuestionType
   content: string
@@ -44,6 +45,7 @@ function Question({
   checked = false,
   id,
   tags = [],
+  handleTagClick,
   title,
   type,
   content,
@@ -132,7 +134,11 @@ function Question({
             </div>
           </div>
           <div className="hidden mr-6 w-max md:block">
-            <QuestionTags tags={tags} tagfilter={tagfilter} />
+            <QuestionTags
+              tags={tags}
+              tagfilter={tagfilter}
+              handleTagClick={handleTagClick}
+            />
           </div>
         </div>
 
