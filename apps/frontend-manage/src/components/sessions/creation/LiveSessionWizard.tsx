@@ -475,7 +475,7 @@ function StepTwo(props: StepProps) {
             label={t('shared.generic.liveQA')}
             tooltip={t('manage.sessionForms.liveSessionLiveQA')}
             standardLabel
-            data={{ cy: 'set-gamification' }}
+            data={{ cy: 'set-liveqa-enabled' }}
             className={{ tooltip: 'z-20' }}
           />
           <ErrorMessage
