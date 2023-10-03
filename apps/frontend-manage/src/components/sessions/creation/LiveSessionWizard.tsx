@@ -484,24 +484,22 @@ function StepTwo(props: StepProps) {
             className="text-sm text-red-400"
           />
         </div>
-        {values.isLiveQAEnabled && (
-          <div>
-            <FormikSwitchField
-              disabled={!values.isLiveQAEnabled}
-              name="isModerationEnabled"
-              label={t('shared.generic.moderation')}
-              tooltip={t('manage.sessionForms.liveSessionModeration')}
-              standardLabel
-              data={{ cy: 'set-gamification' }}
-              className={{ tooltip: 'z-20' }}
-            />
-            <ErrorMessage
-              name="isModerationEnabled"
-              component="div"
-              className="text-sm text-red-400"
-            />
-          </div>
-        )}
+        <div>
+          <FormikSwitchField
+            disabled={!values.isLiveQAEnabled}
+            name="isModerationEnabled"
+            label={t('shared.generic.moderation')}
+            tooltip={t('manage.sessionForms.liveSessionModeration')}
+            standardLabel
+            data={{ cy: 'set-gamification' }}
+            className={{ tooltip: 'z-20' }}
+          />
+          <ErrorMessage
+            name="isModerationEnabled"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
       </div>
     </div>
   )
