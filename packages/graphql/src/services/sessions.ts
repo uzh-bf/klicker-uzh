@@ -487,6 +487,8 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
       }
     })
 
+    console.log(participants)
+
     // sessionXP should always be around as soon as there are logged-in participants (check first)
     // sessionLB only for sessions that are compatible with points collection (check second)
     if (sessionXP) {
@@ -523,6 +525,8 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
         return [result.value]
       })
 
+      console.log(existingParticipants)
+
       // update xp of existing participants
       promises = promises.concat(
         existingParticipants
@@ -541,67 +545,69 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
 
       // if the session is part of a course, update the course leaderboard with the accumulated points
       if (sessionLB && session.courseId) {
-        promises = existingParticipants
-          .filter(
-            ({ score, hasParticipation }) =>
-              typeof score !== 'undefined' && hasParticipation
-          )
-          .map(({ id, score }) =>
-            ctx.prisma.leaderboardEntry.upsert({
-              where: {
-                type_participantId_courseId: {
+        promises = promises.concat(
+          existingParticipants
+            .filter(
+              ({ score, hasParticipation }) =>
+                typeof score !== 'undefined' && hasParticipation
+            )
+            .map(({ id, score }) =>
+              ctx.prisma.leaderboardEntry.upsert({
+                where: {
+                  type_participantId_courseId: {
+                    type: 'COURSE',
+                    courseId: session.courseId!,
+                    participantId: id,
+                  },
+                },
+                include: {
+                  participation: true,
+                  participant: true,
+                },
+                create: {
                   type: 'COURSE',
-                  courseId: session.courseId!,
-                  participantId: id,
-                },
-              },
-              include: {
-                participation: true,
-                participant: true,
-              },
-              create: {
-                type: 'COURSE',
-                course: {
-                  connect: {
-                    id: session.courseId!,
-                  },
-                },
-                participant: {
-                  connect: {
-                    id,
-                  },
-                },
-                participation: {
-                  connectOrCreate: {
-                    where: {
-                      courseId_participantId: {
-                        courseId: session.courseId!,
-                        participantId: id,
-                      },
+                  course: {
+                    connect: {
+                      id: session.courseId!,
                     },
-                    create: {
-                      course: {
-                        connect: {
-                          id: session.courseId!,
+                  },
+                  participant: {
+                    connect: {
+                      id,
+                    },
+                  },
+                  participation: {
+                    connectOrCreate: {
+                      where: {
+                        courseId_participantId: {
+                          courseId: session.courseId!,
+                          participantId: id,
                         },
                       },
-                      participant: {
-                        connect: {
-                          id,
+                      create: {
+                        course: {
+                          connect: {
+                            id: session.courseId!,
+                          },
+                        },
+                        participant: {
+                          connect: {
+                            id,
+                          },
                         },
                       },
                     },
                   },
+                  score: parseInt(score),
                 },
-                score: parseInt(score),
-              },
-              update: {
-                score: {
-                  increment: parseInt(score),
+                update: {
+                  score: {
+                    increment: parseInt(score),
+                  },
                 },
-              },
-            })
-          )
+              })
+            )
+        )
       }
     }
 
