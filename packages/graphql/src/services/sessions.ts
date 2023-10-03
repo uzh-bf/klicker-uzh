@@ -484,118 +484,153 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
   }
 
   try {
-    // if the session is part of a course, update the course leaderboard with the accumulated points
-    if (session.courseId) {
-      const sessionLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
+    const sessionLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
+    const sessionXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
 
-      if (sessionLB) {
-        const existingParticipantsLB = (
-          await Promise.allSettled(
-            Object.entries(sessionLB).map(async ([id, score]) => {
-              const participant = await ctx.prisma.participant.findUnique({
-                where: { id },
-                include: {
-                  participations: {
-                    where: {
-                      courseId: session.courseId!,
-                    },
-                  },
-                },
-              })
+    let promises: any[] = []
 
-              if (
-                !participant ||
-                participant.participations?.[0]?.isActive === false
-              )
-                return null
+    const participants: Record<string, any> = {}
 
-              return [id, score]
-            })
-          )
-        ).flatMap((result) => {
-          if (result.status !== 'fulfilled' || !result.value) return []
-          return [result.value]
-        })
+    Object.entries(sessionXP).forEach(([id, xp]) => {
+      participants[id] = {
+        xp,
+      }
+    })
 
-        await ctx.prisma.$transaction(
-          existingParticipantsLB.map(([participantId, score]) =>
-            ctx.prisma.leaderboardEntry.upsert({
-              where: {
-                type_participantId_courseId: {
-                  type: 'COURSE',
-                  courseId: session.courseId!,
-                  participantId,
-                },
-              },
+    Object.entries(sessionLB).forEach(([id, score]) => {
+      participants[id] = {
+        ...(participants[id] ?? {}),
+        score,
+      }
+    })
+
+    console.log(participants)
+
+    // sessionXP should always be around as soon as there are logged-in participants (check first)
+    // sessionLB only for sessions that are compatible with points collection (check second)
+    if (sessionXP) {
+      const existingParticipants = (
+        await Promise.allSettled(
+          Object.entries(participants).map(async ([id, { score, xp }]) => {
+            const participant = await ctx.prisma.participant.findUnique({
+              where: { id },
               include: {
-                participation: true,
-                participant: true,
+                // if the session is part of a course, include the corresponding participations
+                // if the participant is not part of the relevant course, the joined array will be empty
+                participations: session.courseId
+                  ? {
+                      where: {
+                        courseId: session.courseId,
+                      },
+                    }
+                  : undefined,
               },
-              create: {
-                type: 'COURSE',
-                course: {
-                  connect: {
-                    id: session.courseId!,
-                  },
-                },
-                participant: {
-                  connect: {
-                    id: participantId,
-                  },
-                },
-                participation: {
-                  connectOrCreate: {
-                    where: {
-                      courseId_participantId: {
-                        courseId: session.courseId!,
-                        participantId,
-                      },
-                    },
-                    create: {
-                      course: {
-                        connect: {
-                          id: session.courseId!,
-                        },
-                      },
-                      participant: {
-                        connect: {
-                          id: participantId,
-                        },
-                      },
-                    },
-                  },
-                },
-                score: parseInt(score),
-              },
-              update: {
-                score: {
-                  increment: parseInt(score),
+            })
+
+            if (!participant) return null
+
+            return {
+              id,
+              score,
+              xp,
+              hasParticipation: participant.participations?.[0]?.isActive,
+            }
+          })
+        )
+      ).flatMap((result) => {
+        if (result.status !== 'fulfilled' || !result.value) return []
+        return [result.value]
+      })
+
+      console.log(existingParticipants)
+
+      // update xp of existing participants
+      promises = promises.concat(
+        existingParticipants
+          .filter(({ xp }) => typeof xp !== 'undefined')
+          .map(({ id, xp }) =>
+            ctx.prisma.participant.update({
+              where: { id },
+              data: {
+                xp: {
+                  increment: Number(xp),
                 },
               },
             })
           )
-        )
+      )
 
-        const sessionXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
-
-        if (sessionXP) {
-          await ctx.prisma.$transaction(
-            Object.entries(sessionXP).map(([participantId, xp]) =>
-              ctx.prisma.participant.update({
+      // if the session is part of a course, update the course leaderboard with the accumulated points
+      if (sessionLB && session.courseId) {
+        promises = promises.concat(
+          existingParticipants
+            .filter(
+              ({ score, hasParticipation }) =>
+                typeof score !== 'undefined' && hasParticipation
+            )
+            .map(({ id, score }) =>
+              ctx.prisma.leaderboardEntry.upsert({
                 where: {
-                  id: participantId,
+                  type_participantId_courseId: {
+                    type: 'COURSE',
+                    courseId: session.courseId!,
+                    participantId: id,
+                  },
                 },
-                data: {
-                  xp: {
-                    increment: Number(xp),
+                include: {
+                  participation: true,
+                  participant: true,
+                },
+                create: {
+                  type: 'COURSE',
+                  course: {
+                    connect: {
+                      id: session.courseId!,
+                    },
+                  },
+                  participant: {
+                    connect: {
+                      id,
+                    },
+                  },
+                  participation: {
+                    connectOrCreate: {
+                      where: {
+                        courseId_participantId: {
+                          courseId: session.courseId!,
+                          participantId: id,
+                        },
+                      },
+                      create: {
+                        course: {
+                          connect: {
+                            id: session.courseId!,
+                          },
+                        },
+                        participant: {
+                          connect: {
+                            id,
+                          },
+                        },
+                      },
+                    },
+                  },
+                  score: parseInt(score),
+                },
+                update: {
+                  score: {
+                    increment: parseInt(score),
                   },
                 },
               })
             )
-          )
-        }
+        )
       }
     }
+
+    // execute XP and points in the same transaction to prevent issues when one fails
+    // the session update later on should never fail, but we need the return value (keep separate)
+    await ctx.prisma.$transaction(promises)
 
     ctx.redisExec.unlink(`s:${id}:meta`)
     ctx.redisExec.unlink(`s:${id}:lb`)
