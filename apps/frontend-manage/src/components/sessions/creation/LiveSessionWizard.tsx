@@ -460,7 +460,7 @@ function StepTwo(props: StepProps) {
             label={t('shared.generic.feedbackChannel')}
             tooltip={t('manage.sessionForms.liveSessionFeedbackChannel')}
             standardLabel
-            data={{ cy: 'set-gamification' }}
+            data={{ cy: 'set-feedback-enabled' }}
             className={{ tooltip: 'z-20' }}
           />
           <ErrorMessage
