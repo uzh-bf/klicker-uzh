@@ -47,6 +47,9 @@ export interface LiveSessionFormValues extends CommonFormValues {
     timeLimit: number
   }[]
   isGamificationEnabled: boolean
+  isConfusionFeedbackEnabled: boolean
+  isLiveQAEnabled: boolean
+  isModerationEnabled: boolean
 }
 
 export interface MicroSessionFormValues extends CommonFormValues {

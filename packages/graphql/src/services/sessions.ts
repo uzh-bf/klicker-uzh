@@ -108,7 +108,10 @@ interface CreateSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
-  isGamificationEnabled?: boolean | null
+  isGamificationEnabled: boolean
+  isConfusionFeedbackEnabled: boolean
+  isLiveQAEnabled: boolean
+  isModerationEnabled: boolean
 }
 
 export async function createSession(
@@ -120,6 +123,9 @@ export async function createSession(
     courseId,
     multiplier,
     isGamificationEnabled,
+    isConfusionFeedbackEnabled,
+    isLiveQAEnabled,
+    isModerationEnabled,
   }: CreateSessionArgs,
   ctx: ContextWithUser
 ) {
@@ -131,7 +137,10 @@ export async function createSession(
       displayName: displayName ?? name,
       description,
       pointsMultiplier: multiplier,
-      isGamificationEnabled: isGamificationEnabled ?? false,
+      isGamificationEnabled,
+      isConfusionFeedbackEnabled,
+      isLiveQAEnabled,
+      isModerationEnabled,
       blocks: {
         create: blocks.map(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
@@ -192,7 +201,10 @@ interface EditSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
-  isGamificationEnabled?: boolean | null
+  isGamificationEnabled: boolean
+  isConfusionFeedbackEnabled: boolean
+  isLiveQAEnabled: boolean
+  isModerationEnabled: boolean
 }
 
 export async function editSession(
@@ -205,6 +217,9 @@ export async function editSession(
     courseId,
     multiplier,
     isGamificationEnabled,
+    isConfusionFeedbackEnabled,
+    isLiveQAEnabled,
+    isModerationEnabled,
   }: EditSessionArgs,
   ctx: ContextWithUser
 ) {
@@ -233,10 +248,9 @@ export async function editSession(
     throw new GraphQLError('Cannot edit a running or completed session')
   }
 
-  const oldQuestionInstances = oldSession!.blocks.reduce<QuestionInstance[]>(
-    (acc, block) => [...acc, ...block.instances],
-    []
-  )
+  const oldQuestionInstances = oldSession!.blocks.reduce<
+    QuestionInstanceType[]
+  >((acc, block) => [...acc, ...block.instances] as QuestionInstanceType[], [])
 
   await ctx.prisma.questionInstance.deleteMany({
     where: {
@@ -264,7 +278,10 @@ export async function editSession(
       displayName: displayName ?? name,
       description,
       pointsMultiplier: multiplier,
-      isGamificationEnabled: isGamificationEnabled ?? false,
+      isGamificationEnabled: isGamificationEnabled,
+      isConfusionFeedbackEnabled,
+      isLiveQAEnabled,
+      isModerationEnabled,
       blocks: {
         create: blocks.map(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
