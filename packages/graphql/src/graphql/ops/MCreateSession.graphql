@@ -5,7 +5,10 @@ mutation CreateSession(
   $blocks: [BlockInput!]!
   $courseId: String
   $multiplier: Int!
-  $isGamificationEnabled: Boolean
+  $isGamificationEnabled: Boolean!
+  $isConfusionFeedbackEnabled: Boolean!
+  $isLiveQAEnabled: Boolean!
+  $isModerationEnabled: Boolean!
 ) {
   createSession(
     name: $name
@@ -15,6 +18,9 @@ mutation CreateSession(
     courseId: $courseId
     multiplier: $multiplier
     isGamificationEnabled: $isGamificationEnabled
+    isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
+    isLiveQAEnabled: $isLiveQAEnabled
+    isModerationEnabled: $isModerationEnabled
   ) {
     id
     name
@@ -37,5 +43,8 @@ mutation CreateSession(
     }
     pointsMultiplier
     isGamificationEnabled
+    isConfusionFeedbackEnabled
+    isLiveQAEnabled
+    isModerationEnabled
   }
 }

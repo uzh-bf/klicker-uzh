@@ -108,7 +108,10 @@ interface CreateSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
-  isGamificationEnabled?: boolean | null
+  isGamificationEnabled: boolean
+  isConfusionFeedbackEnabled: boolean
+  isLiveQAEnabled: boolean
+  isModerationEnabled: boolean
 }
 
 export async function createSession(
@@ -120,6 +123,9 @@ export async function createSession(
     courseId,
     multiplier,
     isGamificationEnabled,
+    isConfusionFeedbackEnabled,
+    isLiveQAEnabled,
+    isModerationEnabled,
   }: CreateSessionArgs,
   ctx: ContextWithUser
 ) {
@@ -131,7 +137,10 @@ export async function createSession(
       displayName: displayName ?? name,
       description,
       pointsMultiplier: multiplier,
-      isGamificationEnabled: isGamificationEnabled ?? false,
+      isGamificationEnabled,
+      isConfusionFeedbackEnabled,
+      isLiveQAEnabled,
+      isModerationEnabled,
       blocks: {
         create: blocks.map(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
@@ -192,7 +201,10 @@ interface EditSessionArgs {
   blocks: BlockArgs[]
   courseId?: string | null
   multiplier: number
-  isGamificationEnabled?: boolean | null
+  isGamificationEnabled: boolean
+  isConfusionFeedbackEnabled: boolean
+  isLiveQAEnabled: boolean
+  isModerationEnabled: boolean
 }
 
 export async function editSession(
@@ -205,6 +217,9 @@ export async function editSession(
     courseId,
     multiplier,
     isGamificationEnabled,
+    isConfusionFeedbackEnabled,
+    isLiveQAEnabled,
+    isModerationEnabled,
   }: EditSessionArgs,
   ctx: ContextWithUser
 ) {
@@ -233,10 +248,9 @@ export async function editSession(
     throw new GraphQLError('Cannot edit a running or completed session')
   }
 
-  const oldQuestionInstances = oldSession!.blocks.reduce<QuestionInstance[]>(
-    (acc, block) => [...acc, ...block.instances],
-    []
-  )
+  const oldQuestionInstances = oldSession!.blocks.reduce<
+    QuestionInstanceType[]
+  >((acc, block) => [...acc, ...block.instances] as QuestionInstanceType[], [])
 
   await ctx.prisma.questionInstance.deleteMany({
     where: {
@@ -264,7 +278,10 @@ export async function editSession(
       displayName: displayName ?? name,
       description,
       pointsMultiplier: multiplier,
-      isGamificationEnabled: isGamificationEnabled ?? false,
+      isGamificationEnabled: isGamificationEnabled,
+      isConfusionFeedbackEnabled,
+      isLiveQAEnabled,
+      isModerationEnabled,
       blocks: {
         create: blocks.map(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
@@ -432,30 +449,24 @@ export async function startSession(
   }
 }
 
+// TODO: update achievement IDs after seeding
+const FIRST_ACHIEVEMENT_ID = 11
+const SECOND_ACHIEVEMENT_ID = 12
+const THIRD_ACHIEVEMENT_ID = 13
+
 interface EndSessionArgs {
   id: string
 }
 
 export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
-  // TODO: update achievement IDs after seeding
-  const FIRST_ACHIEVEMENT_ID = 11
-  const SECOND_ACHIEVEMENT_ID = 12
-  const THIRD_ACHIEVEMENT_ID = 13
-
   const firstRankAchievement = await ctx.prisma.achievement.findUnique({
-    where: {
-      id: FIRST_ACHIEVEMENT_ID,
-    },
+    where: { id: FIRST_ACHIEVEMENT_ID },
   })
   const secondRankAchievement = await ctx.prisma.achievement.findUnique({
-    where: {
-      id: SECOND_ACHIEVEMENT_ID,
-    },
+    where: { id: SECOND_ACHIEVEMENT_ID },
   })
   const thirdRankAchievement = await ctx.prisma.achievement.findUnique({
-    where: {
-      id: THIRD_ACHIEVEMENT_ID,
-    },
+    where: { id: THIRD_ACHIEVEMENT_ID },
   })
 
   const achievements = {
@@ -463,15 +474,15 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     2: SECOND_ACHIEVEMENT_ID,
     3: THIRD_ACHIEVEMENT_ID,
   }
-  const points = {
-    1: firstRankAchievement?.rewardedPoints || 0,
-    2: secondRankAchievement?.rewardedPoints || 0,
-    3: thirdRankAchievement?.rewardedPoints || 0,
+  const achievementRewardsPoints = {
+    1: firstRankAchievement?.rewardedPoints ?? 0,
+    2: secondRankAchievement?.rewardedPoints ?? 0,
+    3: thirdRankAchievement?.rewardedPoints ?? 0,
   }
-  const xp = {
-    1: firstRankAchievement?.rewardedXP || 0,
-    2: secondRankAchievement?.rewardedXP || 0,
-    3: thirdRankAchievement?.rewardedXP || 0,
+  const achievementRewardsXP = {
+    1: firstRankAchievement?.rewardedXP ?? 0,
+    2: secondRankAchievement?.rewardedXP ?? 0,
+    3: thirdRankAchievement?.rewardedXP ?? 0,
   }
 
   const session = await ctx.prisma.liveSession.findFirst({
@@ -504,148 +515,113 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
   }
 
   try {
-    // if the session is part of a course, update the course leaderboard with the accumulated points
-    if (session.courseId && session.isGamificationEnabled) {
-      const sessionLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
+    const sessionLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
+    const sessionXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
 
-      if (sessionLB) {
-        const existingParticipantsLB = (
-          await Promise.allSettled(
-            Object.entries(sessionLB).map(async ([id, score]) => {
-              const participant = await ctx.prisma.participant.findUnique({
-                where: { id },
-                include: {
-                  participations: {
-                    where: {
-                      courseId: session.courseId!,
-                    },
-                  },
-                },
-              })
+    let promises: any[] = []
 
-              if (
-                !participant ||
-                participant.participations?.[0]?.isActive === false
-              )
-                return null
+    const participants: Record<
+      string,
+      {
+        xp?: number
+        score?: number
+      }
+    > = {}
 
-              return { participantId: id, score: parseInt(score) }
-            })
-          )
-        )
-          .flatMap((result) => {
-            if (result.status !== 'fulfilled' || !result.value) return []
-            return [result.value]
-          })
-          .sort((a, b) => b.score - a.score)
+    Object.entries(sessionXP).forEach(([id, xp]) => {
+      participants[id] = {
+        xp: parseInt(xp),
+      }
+    })
 
-        const newAchievements = []
+    Object.entries(sessionLB).forEach(([id, score]) => {
+      participants[id] = {
+        ...(participants[id] ?? {}),
+        score: parseInt(score),
+      }
+    })
 
-        if (existingParticipantsLB[0]) {
-          const firstRank = existingParticipantsLB[0]
-          newAchievements.push({
-            participantId: firstRank.participantId,
-            achievementId: achievements[1],
-            points: points[1],
-            xp: xp[1],
-          })
+    // TODO: compute achievements here and add to the participants mapping
+    // TODO: later on, update the achievements within the same transaction as the score
+    // TODO: what about multiple people with the same points at rank 1? everyone with max points gets rank 1?
+    // TODO: if the above is implemented: what about sessions with only questions that have no solution? everyone rank 1 and 2 and 3?
 
-          if (existingParticipantsLB[1]) {
-            const secondRank = existingParticipantsLB[1]
-            const rank2 = secondRank.score < firstRank.score ? 2 : 1
+    console.log(participants)
 
-            newAchievements.push({
-              participantId: secondRank.participantId,
-              achievementId: achievements[rank2],
-              points: points[rank2],
-              xp: xp[rank2],
-            })
-
-            if (existingParticipantsLB[2]) {
-              const thirdRank = existingParticipantsLB[2]
-              const rank3 =
-                thirdRank.score < secondRank.score
-                  ? 3
-                  : thirdRank.score < firstRank.score
-                  ? 2
-                  : 1
-
-              newAchievements.push({
-                participantId: thirdRank.participantId,
-                achievementId: achievements[rank3],
-                points: points[rank3],
-                xp: xp[rank3],
-              })
-            }
-          }
-        }
-
-        // map over newAchievements and update participants in a prisma transaction
-        await ctx.prisma.$transaction(
-          newAchievements.map(({ participantId, achievementId, points, xp }) =>
-            ctx.prisma.participant.update({
-              where: {
-                id: participantId,
+    // sessionXP should always be around as soon as there are logged-in participants (check first)
+    // sessionLB only for sessions that are compatible with points collection (check second)
+    if (sessionXP) {
+      const existingParticipants = (
+        await Promise.allSettled(
+          Object.entries(participants).map(async ([id, { score, xp }]) => {
+            const participant = await ctx.prisma.participant.findUnique({
+              where: { id },
+              include: {
+                // if the session is part of a course, include the corresponding participations
+                // if the participant is not part of the relevant course, the joined array will be empty
+                participations: session.courseId
+                  ? {
+                      where: {
+                        courseId: session.courseId,
+                      },
+                    }
+                  : undefined,
               },
+            })
+
+            if (!participant) return null
+
+            return {
+              id,
+              score,
+              xp,
+              hasParticipation: participant.participations?.[0]?.isActive,
+            }
+          })
+        )
+      ).flatMap((result) => {
+        if (result.status !== 'fulfilled' || !result.value) return []
+        return [result.value]
+      })
+
+      console.log(existingParticipants)
+
+      // update xp of existing participants
+      promises = promises.concat(
+        existingParticipants
+          .filter(({ xp }) => typeof xp !== 'undefined')
+          .map(({ id, xp }) =>
+            ctx.prisma.participant.update({
+              where: { id },
               data: {
-                // increment xp
                 xp: {
                   increment: xp,
                 },
-                // increment points on course leaderboard, if session is assigned to course
-                leaderboards: {
-                  update: {
-                    where: {
-                      type_participantId_courseId: {
-                        type: 'COURSE',
-                        courseId: session.courseId!,
-                        participantId,
-                      },
-                    },
-                    data: {
-                      score: {
-                        increment: points,
-                      },
-                    },
-                  },
-                },
-                // create achievement or increment achievement count
-                achievements: {
-                  upsert: {
-                    where: {
-                      participantId_achievementId: {
-                        participantId,
-                        achievementId,
-                      },
-                    },
-                    create: {
-                      achievement: {
-                        connect: {
-                          id: achievementId,
-                        },
-                      },
-                      achievedAt: new Date(),
-                    },
-                    update: {
-                      achievedCount: {
-                        increment: 1,
-                      },
-                    },
-                  },
-                },
               },
             })
           )
-        )
+      )
 
-        await ctx.prisma.$transaction(
-          existingParticipantsLB.map(({ participantId, score }) =>
+      // if the session is part of a course, update the course leaderboard with the accumulated points
+      if (sessionLB && session.courseId && session.isGamificationEnabled) {
+        const participantsWithScore = existingParticipants
+          .filter(
+            ({ score, hasParticipation }) =>
+              typeof score !== 'undefined' && hasParticipation
+          )
+          // @ts-ignore needed here, as score cannot be undefined (filter) but is recognized as optional
+          .sort((a, b) => b.score - a.score)
+
+        console.log(participantsWithScore)
+
+        promises = promises.concat(
+          participantsWithScore.map(({ id, score }) =>
             ctx.prisma.leaderboardEntry.upsert({
               where: {
                 type_participantId_courseId: {
                   type: 'COURSE',
                   courseId: session.courseId!,
-                  participantId,
+                  participantId: id,
                 },
               },
               include: {
@@ -661,7 +637,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                 },
                 participant: {
                   connect: {
-                    id: participantId,
+                    id,
                   },
                 },
                 participation: {
@@ -669,7 +645,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                     where: {
                       courseId_participantId: {
                         courseId: session.courseId!,
-                        participantId,
+                        participantId: id,
                       },
                     },
                     create: {
@@ -680,13 +656,13 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                       },
                       participant: {
                         connect: {
-                          id: participantId,
+                          id,
                         },
                       },
                     },
                   },
                 },
-                score: score,
+                score,
               },
               update: {
                 score: {
@@ -697,26 +673,115 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
           )
         )
 
-        const sessionXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
+        // TODO: what about race conditions between participant LB updates and achievement LB updates?
+        // TODO: need to merge the two approaches into one.. cleanly
+        // const newAchievements = []
 
-        if (sessionXP) {
-          await ctx.prisma.$transaction(
-            Object.entries(sessionXP).map(([participantId, xp]) =>
-              ctx.prisma.participant.update({
-                where: {
-                  id: participantId,
-                },
-                data: {
-                  xp: {
-                    increment: Number(xp),
-                  },
-                },
-              })
-            )
-          )
-        }
+        // if (existingParticipantsLB[0]) {
+        //   const firstRank = existingParticipantsLB[0]
+        //   newAchievements.push({
+        //     participantId: firstRank.participantId,
+        //     achievementId: achievements[1],
+        //     points: points[1],
+        //     xp: xp[1],
+        //   })
+
+        //   if (existingParticipantsLB[1]) {
+        //     const secondRank = existingParticipantsLB[1]
+        //     const rank2 = secondRank.score < firstRank.score ? 2 : 1
+
+        //     newAchievements.push({
+        //       participantId: secondRank.participantId,
+        //       achievementId: achievements[rank2],
+        //       points: points[rank2],
+        //       xp: xp[rank2],
+        //     })
+
+        //     if (existingParticipantsLB[2]) {
+        //       const thirdRank = existingParticipantsLB[2]
+        //       const rank3 =
+        //         thirdRank.score < secondRank.score
+        //           ? 3
+        //           : thirdRank.score < firstRank.score
+        //           ? 2
+        //           : 1
+
+        //       newAchievements.push({
+        //         participantId: thirdRank.participantId,
+        //         achievementId: achievements[rank3],
+        //         points: points[rank3],
+        //         xp: xp[rank3],
+        //       })
+        //     }
+        //   }
+        // }
+
+        // // map over newAchievements and update participants in a prisma transaction
+        // await ctx.prisma.$transaction(
+        //   newAchievements.map(({ participantId, achievementId, points, xp }) =>
+        //     ctx.prisma.participant.update({
+        //       where: {
+        //         id: participantId,
+        //       },
+        //       data: {
+        //         // increment xp
+        //         xp: {
+        //           increment: xp,
+        //         },
+        //         // increment points on course leaderboard, if session is assigned to course
+        //         leaderboards: {
+        //           update: {
+        //             where: {
+        //               type_participantId_courseId: {
+        //                 type: 'COURSE',
+        //                 courseId: session.courseId!,
+        //                 participantId,
+        //               },
+        //             },
+        //             data: {
+        //               score: {
+        //                 increment: points,
+        //               },
+        //             },
+        //           },
+        //         },
+        //         // create achievement or increment achievement count
+        //         achievements: {
+        //           upsert: {
+        //             where: {
+        //               participantId_achievementId: {
+        //                 participantId,
+        //                 achievementId,
+        //               },
+        //             },
+        //             create: {
+        //               achievement: {
+        //                 connect: {
+        //                   id: achievementId,
+        //                 },
+        //               },
+        //               achievedAt: new Date(),
+        //             },
+        //             update: {
+        //               achievedCount: {
+        //                 increment: 1,
+        //               },
+        //             },
+        //           },
+        //         },
+        //       },
+        //     })
+        //   )
+        // )
       }
     }
+
+    // TODO: remove this once stuff is done and should be committed
+    return null
+
+    // execute XP and points in the same transaction to prevent issues when one fails
+    // the session update later on should never fail, but we need the return value (keep separate)
+    await ctx.prisma.$transaction(promises)
 
     ctx.redisExec.unlink(`s:${id}:meta`)
     ctx.redisExec.unlink(`s:${id}:lb`)
