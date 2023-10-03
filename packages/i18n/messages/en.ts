@@ -751,7 +751,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Drag an image here to upload or click to open file explorer.',
       updateInstances: 'Update question instances in KlickerUZH elements',
       updateInstancesExplanation:
-        'Use this setting to update the question in all planned sessions, learning elements and micro-sessions. The content of questions in running and completed elements will not be updated. Changed multipliers will also be applied to the created instances.',
+        'Use this setting to update the question in all planned quizzes, practice quizzes and microlearnings. The content of questions in running and completed elements will not be updated. Changed multipliers will also be applied to the created instances.',
     },
     sessionForms: {
       sessionName: 'Please enter a name for your quiz.',
