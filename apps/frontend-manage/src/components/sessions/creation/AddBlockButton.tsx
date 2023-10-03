@@ -1,7 +1,7 @@
 import { faSquare } from '@fortawesome/free-regular-svg-icons'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Question } from '@klicker-uzh/graphql/dist/ops'
+import { Question, QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import * as R from 'ramda'
@@ -25,13 +25,14 @@ function AddBlockButton({
       accept: 'question',
       drop: (item: {
         id: number
-        type: string
+        questionType: QuestionType
         title: string
         content: string
       }) => {
         push({
           questionIds: [item.id],
           titles: [item.title],
+          types: [item.questionType],
           timeLimit: undefined,
         })
       },
@@ -49,24 +50,29 @@ function AddBlockButton({
           <Button
             fluid
             className={{
-              root: 'text-sm max-w-[125px] flex-1 flex flex-col gap-1 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+              root: 'text-sm max-w-[135px] flex-1 flex flex-col gap-1 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
             }}
             onClick={() => {
-              const { questionIds, titles } = Object.values(selection).reduce<{
+              const { questionIds, titles, types } = Object.values(
+                selection
+              ).reduce<{
                 questionIds: number[]
                 titles: string[]
+                types: QuestionType[]
               }>(
                 (acc, question) => {
                   acc.questionIds.push(question.id)
                   acc.titles.push(question.name)
+                  acc.types.push(question.type)
                   return acc
                 },
-                { questionIds: [], titles: [] }
+                { questionIds: [], titles: [], types: [] }
               )
 
               push({
                 questionIds: questionIds,
                 titles: titles,
+                types: types,
                 timeLimit: undefined,
               })
               resetSelection?.()
@@ -86,13 +92,14 @@ function AddBlockButton({
           <Button
             fluid
             className={{
-              root: 'text-sm max-w-[125px] flex-1 flex flex-col gap-2 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
+              root: 'text-sm max-w-[135px] flex-1 flex flex-col gap-2 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
             }}
             onClick={() => {
               Object.values(selection).forEach((question) => {
                 push({
                   questionIds: [question.id],
                   titles: [question.name],
+                  types: [question.type],
                   timeLimit: undefined,
                 })
               })

@@ -2,6 +2,107 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.75](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.74...v3.0.0-rc.75) (2023-09-28)
+
+
+### Features
+
+* add possibilty to unpublish micro sessions before scheduled start ([#3881](https://github.com/uzh-bf/klicker-uzh/issues/3881)) ([90740db](https://github.com/uzh-bf/klicker-uzh/commit/90740dbd0ce851014184a055e4839f62851685a9))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add missing design-system styles as comment ([8f5d15d](https://github.com/uzh-bf/klicker-uzh/commit/8f5d15dd9175741121e25b234f36ff0ee8ceeaf4))
+* **apps/frontend-pwa:** ensure that potentially missing participant email can be added and profile updated ([#3880](https://github.com/uzh-bf/klicker-uzh/issues/3880)) ([d578cb2](https://github.com/uzh-bf/klicker-uzh/commit/d578cb2f00777e65e8524543e5b1dcd9529169dd))
+
+
+### Other
+
+* **apps/frontend-*:** fix design-system css imports ([e007dbc](https://github.com/uzh-bf/klicker-uzh/commit/e007dbc32039dc806238a2df20d2a7fd22ea91a4))
+
+## [3.0.0-rc.74](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.73...v3.0.0-rc.74) (2023-09-28)
+
+
+### Bug Fixes
+
+* **apps/docs:** link to home and docs for v2 on landing page ([0647b15](https://github.com/uzh-bf/klicker-uzh/commit/0647b15a41671f9cad56356d664b2dfffc7ceecc))
+
+
+### Enhancements
+
+* **apps/docs:** update landing page hero image and add old version hints ([e6c96b8](https://github.com/uzh-bf/klicker-uzh/commit/e6c96b8d66f76fe70b6f9b77ece30b976ecf48ff))
+
+## [3.0.0-rc.73](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.72...v3.0.0-rc.73) (2023-09-27)
+
+
+### Features
+
+* **apps/frontend-manage:** add demo questions on first login ([#3876](https://github.com/uzh-bf/klicker-uzh/issues/3876)) ([9b9f040](https://github.com/uzh-bf/klicker-uzh/commit/9b9f040050e41369fc3b37ea152acac5970ad774))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that field arrays are correctly updated in question edit form ([#3872](https://github.com/uzh-bf/klicker-uzh/issues/3872)) ([37041f2](https://github.com/uzh-bf/klicker-uzh/commit/37041f214d491328780a435638bbd34dba1be3b4))
+* **apps/func-migration-v3-import:** sort alphabetically on import from v2 ([#3873](https://github.com/uzh-bf/klicker-uzh/issues/3873)) ([adfa841](https://github.com/uzh-bf/klicker-uzh/commit/adfa841c3ec0bbb740c288bd3f5211c31d667690))
+* **packages/graphql:** ensure that time on push notifications is fixed to CET ([#3877](https://github.com/uzh-bf/klicker-uzh/issues/3877)) ([1c23e54](https://github.com/uzh-bf/klicker-uzh/commit/1c23e54bb46b99a089fd2389c1c1b365828a8e88))
+* **packages/graphql:** only create or update course leaderboard entry for participants with active participation ([c5491f9](https://github.com/uzh-bf/klicker-uzh/commit/c5491f92863ff3cd8a2fdd966acb35d60125bda7))
+
+
+### Enhancements
+
+* add teams notifications for critical actions ([#3875](https://github.com/uzh-bf/klicker-uzh/issues/3875)) ([c797161](https://github.com/uzh-bf/klicker-uzh/commit/c797161dbdc0604f31bfdade5208fa03f51dfe1d))
+* **packages/grading:** update grading logic and test suite ([#3871](https://github.com/uzh-bf/klicker-uzh/issues/3871)) ([07b15db](https://github.com/uzh-bf/klicker-uzh/commit/07b15dbd4d22dfe13c0ca37fdb054ea94a402389))
+
+
+### Dependencies
+
+* upgrade azure functions to stable v4 ([07b1a40](https://github.com/uzh-bf/klicker-uzh/commit/07b1a408bd9946300c3433449bb4f9f352ce7276))
+* upgrade to prisma 5 and prepare for JSON types ([#3874](https://github.com/uzh-bf/klicker-uzh/issues/3874)) ([2608399](https://github.com/uzh-bf/klicker-uzh/commit/2608399e9965ed02e15aa8640846262d7df61000))
+
+## [3.0.0-rc.72](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.71...v3.0.0-rc.72) (2023-09-26)
+
+
+### Bug Fixes
+
+* **packages/graphql:** remove Object.entries on endSession ([ceec946](https://github.com/uzh-bf/klicker-uzh/commit/ceec946f1768ea4aa033695bcab5918705e4549a))
+
+
+### Enhancements
+
+* **deploy:** add TEAMS_WEBHOOK_URL ([462329b](https://github.com/uzh-bf/klicker-uzh/commit/462329baf8c7fdf971e152b03a8311227dc6690e))
+
+## [3.0.0-rc.71](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.70...v3.0.0-rc.71) (2023-09-26)
+
+
+### Bug Fixes
+
+* **packages/graphql:** add existingParticipantsLB on endSession ([790c5d1](https://github.com/uzh-bf/klicker-uzh/commit/790c5d15ee0ab7d530e1bb2e51bd5006b1b133d1))
+
+## [3.0.0-rc.70](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.69...v3.0.0-rc.70) (2023-09-26)
+
+
+### Bug Fixes
+
+* **apps/auth:** allow usz.ch in affiliations ([77ad65b](https://github.com/uzh-bf/klicker-uzh/commit/77ad65bda2200ebbd8214c7b9db8031784661bc4))
+
+## [3.0.0-rc.69](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.68...v3.0.0-rc.69) (2023-09-25)
+
+
+### Features
+
+* add duplication possibility for live sessions ([#3862](https://github.com/uzh-bf/klicker-uzh/issues/3862)) ([e58aae4](https://github.com/uzh-bf/klicker-uzh/commit/e58aae4d2b99c40147afbd4d58912964867450ef))
+
+
+### Bug Fixes
+
+* **apps/auth:** ensure that link on german login page points to german ToS ([38b5818](https://github.com/uzh-bf/klicker-uzh/commit/38b5818a593c14d23020e495edc9c1cd498ec075))
+* **apps/frontend-manage:** ensure that gamification settings on save and in UI are consistent ([#3863](https://github.com/uzh-bf/klicker-uzh/issues/3863)) ([ab9887b](https://github.com/uzh-bf/klicker-uzh/commit/ab9887b1205574cbdbcd1f8e496d0f2b6b0f2261))
+* **apps/frontend-manage:** ensure that long tags do not cause wrapping ([#3857](https://github.com/uzh-bf/klicker-uzh/issues/3857)) ([77e4719](https://github.com/uzh-bf/klicker-uzh/commit/77e47190fccef1d644dc3de03f8a931db79401a1))
+* **apps/frontend-pwa:** hide anonymous profiles to other users ([#3860](https://github.com/uzh-bf/klicker-uzh/issues/3860)) ([91d80cd](https://github.com/uzh-bf/klicker-uzh/commit/91d80cdd286f3edd49c36b9b46bed82655a8a61f))
+* **apps/frontend-pwa:** try logout after account deletion ([3169c4c](https://github.com/uzh-bf/klicker-uzh/commit/3169c4cb1da6529de5a51ad772552f2da7325c77))
+* **packages/graphql:** ensure only valid participants are being updated when a question block is closed ([62d4d90](https://github.com/uzh-bf/klicker-uzh/commit/62d4d90cdce6cc138fa5da4ca7d757db8f298ddf))
+* **packages/graphql:** ensure that execution counter of session block is incremented on session abortion ([#3861](https://github.com/uzh-bf/klicker-uzh/issues/3861)) ([1d19cce](https://github.com/uzh-bf/klicker-uzh/commit/1d19cce99d84ae81e1df196556f80cc07c78dfc1))
+
 ## [3.0.0-rc.68](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.67...v3.0.0-rc.68) (2023-09-20)
 
 

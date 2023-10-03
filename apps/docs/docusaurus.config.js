@@ -169,6 +169,11 @@ const config = {
         //   position: 'right',
         // },
         {
+          href: 'https://auth.klicker.uzh.ch',
+          label: 'Login',
+          position: 'right',
+        },
+        {
           href: 'https://klicker-uzh.feedbear.com',
           label: 'Feedback',
           position: 'right',

@@ -2,7 +2,6 @@ import {
   AccessMode,
   ConfusionTimestep,
   Question,
-  QuestionInstance,
   QuestionInstanceType,
   QuestionType,
   SessionBlockStatus,
@@ -13,10 +12,12 @@ import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 // TODO: rework scheduling for serverless
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { ISession } from 'src/schema/session'
+import { sendTeamsNotifications } from '../lib/util'
 
 const scheduledJobs: Record<string, any> = {}
 
@@ -356,63 +357,78 @@ export async function startSession(
   { id }: StartSessionArgs,
   ctx: ContextWithUser
 ) {
-  const session = await ctx.prisma.liveSession.findFirst({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      blocks: {
-        orderBy: {
-          id: 'asc',
+  try {
+    const session = await ctx.prisma.liveSession.findFirst({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      include: {
+        blocks: {
+          orderBy: {
+            id: 'asc',
+          },
         },
       },
-    },
-  })
+    })
 
-  // if there is no session matching the current user and session id, exit early
-  if (!session) {
-    return null
-  }
-
-  switch (session.status) {
-    case SessionStatus.COMPLETED:
+    // if there is no session matching the current user and session id, exit early
+    if (!session) {
       return null
-
-    case SessionStatus.RUNNING:
-      return session
-
-    case SessionStatus.PREPARED:
-    case SessionStatus.SCHEDULED: {
-      try {
-        const results = await ctx.redisExec
-          .pipeline()
-          .hmset(`s:${session.id}:meta`, {
-            // TODO: remove the namespace entirely, as the session id is also a uuid
-            namespace: session.namespace,
-            // execution: session.execution,
-            startedAt: Number(new Date()),
-          })
-          .exec()
-      } catch (e) {
-        console.error(e)
-      }
-
-      // generate a random pin code
-      const pinCode = 100000 + Math.floor(Math.random() * 900000)
-
-      return ctx.prisma.liveSession.update({
-        where: {
-          id,
-        },
-        data: {
-          status: SessionStatus.RUNNING,
-          startedAt: new Date(),
-          pinCode:
-            session.accessMode === AccessMode.RESTRICTED ? pinCode : null,
-        },
-      })
     }
+
+    switch (session.status) {
+      case SessionStatus.COMPLETED:
+        return null
+
+      case SessionStatus.RUNNING:
+        return session
+
+      case SessionStatus.PREPARED:
+      case SessionStatus.SCHEDULED: {
+        try {
+          await ctx.redisExec
+            .pipeline()
+            .hmset(`s:${session.id}:meta`, {
+              // TODO: remove the namespace entirely, as the session id is also a uuid
+              namespace: session.namespace,
+              // execution: session.execution,
+              startedAt: Number(new Date()),
+            })
+            .exec()
+        } catch (e) {
+          console.error(e)
+        }
+
+        // generate a random pin code
+        const pinCode = 100000 + Math.floor(Math.random() * 900000)
+
+        const startedSession = await ctx.prisma.liveSession.update({
+          where: {
+            id,
+          },
+          data: {
+            status: SessionStatus.RUNNING,
+            startedAt: new Date(),
+            pinCode:
+              session.accessMode === AccessMode.RESTRICTED ? pinCode : null,
+          },
+        })
+
+        await sendTeamsNotifications(
+          'graphql/startSession',
+          `START Session ${session.name} with id ${session.id}.`
+        )
+
+        return startedSession
+      }
+    }
+  } catch (error) {
+    await sendTeamsNotifications(
+      'graphql/startSession',
+      `ERROR - failed to start session: ${error}`
+    )
+    throw error
   }
 }
 
@@ -450,108 +466,148 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     return null
   }
 
-  // if the session is part of a course, update the course leaderboard with the accumulated points
-  if (session.courseId) {
-    const sessionLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
+  try {
+    // if the session is part of a course, update the course leaderboard with the accumulated points
+    if (session.courseId) {
+      const sessionLB = await ctx.redisExec.hgetall(`s:${id}:lb`)
 
-    if (sessionLB) {
-      const result = await ctx.prisma.$transaction(
-        Object.entries(sessionLB).map(([participantId, score]) =>
-          ctx.prisma.leaderboardEntry.upsert({
-            where: {
-              type_participantId_courseId: {
-                type: 'COURSE',
-                courseId: session.courseId!,
-                participantId,
-              },
-              participation: {
-                isActive: true,
-              },
-            },
-            include: {
-              participation: true,
-              participant: true,
-            },
-            create: {
-              type: 'COURSE',
-              course: {
-                connect: {
-                  id: session.courseId!,
-                },
-              },
-              participant: {
-                connect: {
-                  id: participantId,
-                },
-              },
-              participation: {
-                connectOrCreate: {
-                  where: {
-                    courseId_participantId: {
+      if (sessionLB) {
+        const existingParticipantsLB = (
+          await Promise.allSettled(
+            Object.entries(sessionLB).map(async ([id, score]) => {
+              const participant = await ctx.prisma.participant.findUnique({
+                where: { id },
+                include: {
+                  participations: {
+                    where: {
                       courseId: session.courseId!,
-                      participantId,
                     },
                   },
-                  create: {
-                    course: {
-                      connect: {
-                        id: session.courseId!,
+                },
+              })
+
+              if (
+                !participant ||
+                participant.participations?.[0]?.isActive === false
+              )
+                return null
+
+              return [id, score]
+            })
+          )
+        ).flatMap((result) => {
+          if (result.status !== 'fulfilled' || !result.value) return []
+          return [result.value]
+        })
+
+        await ctx.prisma.$transaction(
+          existingParticipantsLB.map(([participantId, score]) =>
+            ctx.prisma.leaderboardEntry.upsert({
+              where: {
+                type_participantId_courseId: {
+                  type: 'COURSE',
+                  courseId: session.courseId!,
+                  participantId,
+                },
+              },
+              include: {
+                participation: true,
+                participant: true,
+              },
+              create: {
+                type: 'COURSE',
+                course: {
+                  connect: {
+                    id: session.courseId!,
+                  },
+                },
+                participant: {
+                  connect: {
+                    id: participantId,
+                  },
+                },
+                participation: {
+                  connectOrCreate: {
+                    where: {
+                      courseId_participantId: {
+                        courseId: session.courseId!,
+                        participantId,
                       },
                     },
-                    participant: {
-                      connect: {
-                        id: participantId,
+                    create: {
+                      course: {
+                        connect: {
+                          id: session.courseId!,
+                        },
+                      },
+                      participant: {
+                        connect: {
+                          id: participantId,
+                        },
                       },
                     },
                   },
                 },
+                score: parseInt(score),
               },
-              score: parseInt(score),
-            },
-            update: {
-              score: {
-                increment: parseInt(score),
-              },
-            },
-          })
-        )
-      )
-
-      const sessionXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
-
-      if (sessionXP) {
-        await ctx.prisma.$transaction(
-          Object.entries(sessionXP).map(([participantId, xp]) =>
-            ctx.prisma.participant.update({
-              where: {
-                id: participantId,
-              },
-              data: {
-                xp: {
-                  increment: Number(xp),
+              update: {
+                score: {
+                  increment: parseInt(score),
                 },
               },
             })
           )
         )
+
+        const sessionXP = await ctx.redisExec.hgetall(`s:${id}:xp`)
+
+        if (sessionXP) {
+          await ctx.prisma.$transaction(
+            Object.entries(sessionXP).map(([participantId, xp]) =>
+              ctx.prisma.participant.update({
+                where: {
+                  id: participantId,
+                },
+                data: {
+                  xp: {
+                    increment: Number(xp),
+                  },
+                },
+              })
+            )
+          )
+        }
       }
     }
+
+    ctx.redisExec.unlink(`s:${id}:meta`)
+    ctx.redisExec.unlink(`s:${id}:lb`)
+    ctx.redisExec.unlink(`s:${id}:xp`)
+
+    const stoppedSession = await ctx.prisma.liveSession.update({
+      where: {
+        id,
+      },
+      data: {
+        status: SessionStatus.COMPLETED,
+        finishedAt: new Date(),
+        pinCode: null,
+      },
+    })
+
+    await sendTeamsNotifications(
+      'graphql/endSession',
+      `END Session ${session.name} with id ${session.id}.`
+    )
+
+    return stoppedSession
+  } catch (error) {
+    await sendTeamsNotifications(
+      'graphql/endSession',
+      `ERROR - failed to end session ${session.name} with id ${session.id}: ${error}`
+    )
+    throw error
   }
-
-  ctx.redisExec.unlink(`s:${id}:meta`)
-  ctx.redisExec.unlink(`s:${id}:lb`)
-  ctx.redisExec.unlink(`s:${id}:xp`)
-
-  return ctx.prisma.liveSession.update({
-    where: {
-      id,
-    },
-    data: {
-      status: SessionStatus.COMPLETED,
-      finishedAt: new Date(),
-      pinCode: null,
-    },
-  })
 }
 
 interface ActivateSessionBlockArgs {
@@ -709,12 +765,19 @@ export async function activateSessionBlock(
   return updatedSession
 }
 
+interface GetCachedBlockResultsArgs {
+  ctx: Context
+  sessionId: string
+  sessionBlockId: number
+  activeInstanceIds: number[]
+}
+
 async function getCachedBlockResults({
   ctx,
   sessionId,
   sessionBlockId,
   activeInstanceIds,
-}) {
+}: GetCachedBlockResultsArgs) {
   const redisMulti = ctx.redisExec.multi()
   redisMulti.hgetall(`s:${sessionId}:lb`)
   redisMulti.hgetall(`s:${sessionId}:b:${sessionBlockId}:lb`)
@@ -726,12 +789,19 @@ async function getCachedBlockResults({
   return await redisMulti.exec()
 }
 
+interface UnlinkCachedBlockResultsArgs {
+  ctx: Context
+  sessionId: string
+  sessionBlockId: number
+  activeInstanceIds: number[]
+}
+
 async function unlinkCachedBlockResults({
   ctx,
   sessionId,
   sessionBlockId,
   activeInstanceIds,
-}) {
+}: UnlinkCachedBlockResultsArgs) {
   // unlink everything regarding the block in redis
   const unlinkMulti = ctx.redisExec.pipeline()
   unlinkMulti.unlink(`s:${sessionId}:b:${sessionBlockId}:lb`)
@@ -744,7 +814,15 @@ async function unlinkCachedBlockResults({
   return unlinkMulti.exec()
 }
 
-async function processCachedData({ cachedResults, activeBlock }) {
+interface ProcessCachedDataArgs {
+  cachedResults: any[]
+  activeBlock: any
+}
+
+async function processCachedData({
+  cachedResults,
+  activeBlock,
+}: ProcessCachedDataArgs) {
   const mappedResults: any[] = cachedResults.map(([_, result]) => result)
 
   const sessionLeaderboard: Record<string, string> = mappedResults[0]
@@ -862,154 +940,178 @@ export async function deactivateSessionBlock(
 
   if (!cachedResults) return null
 
-  const { instanceResults, sessionLeaderboard, blockLeaderboard } =
-    await processCachedData({
-      cachedResults,
-      activeBlock: session.activeBlock,
+  try {
+    const { instanceResults, sessionLeaderboard, blockLeaderboard } =
+      await processCachedData({
+        cachedResults,
+        activeBlock: session.activeBlock,
+      })
+
+    const existingParticipantsLB = (
+      await Promise.allSettled(
+        Object.entries(sessionLeaderboard).map(async ([id, score]) => {
+          const participant = await ctx.prisma.participant.findUnique({
+            where: { id },
+          })
+
+          if (!participant) return null
+
+          return [id, score]
+        })
+      )
+    ).flatMap((result) => {
+      if (result.status !== 'fulfilled' || !result.value) return []
+      return [result.value]
     })
 
-  // TODO: what if session gamified and results are reset? are points taken away?
-  const updatedSession = await ctx.prisma.liveSession.update({
-    where: {
-      id: sessionId,
-    },
-    data: {
-      activeBlock: {
-        disconnect: true,
+    // TODO: what if session gamified and results are reset? are points taken away?
+    const updatedSession = await ctx.prisma.liveSession.update({
+      where: {
+        id: sessionId,
       },
-      blocks: {
-        update: {
-          where: {
-            id: Number(sessionBlockId),
-          },
-          data: {
-            status: SessionBlockStatus.EXECUTED,
-            instances: {
-              update: Object.entries(instanceResults).map(([id, results]) => ({
-                where: { id: Number(id) },
-                data: {
-                  results: results.results,
-                  participants: Number(results.participants),
-                  // TODO: persist responses or "too much information"? delete when session is completed? what about anonymous users?
-                  // responses: {
-                  //   create: Object.entries(results.responses).map(
-                  //     ([participantId, response]) => ({
-                  //       response,
-                  //       participant: {
-                  //         connect: { id: participantId },
-                  //       },
-                  //       participation: {
-                  //         connect: {
-                  //           courseId_participantId: {
-                  //             // TODO: this is not set if the session is not in a course (i.e., not gamified)
-                  //             courseId: session.courseId as string,
-                  //             participantId,
-                  //           },
-                  //         },
-                  //       },
-                  //     })
-                  //   ),
-                  // },
-                },
-              })),
+      data: {
+        activeBlock: {
+          disconnect: true,
+        },
+        blocks: {
+          update: {
+            where: {
+              id: Number(sessionBlockId),
             },
-            // leaderboard: {
-            //   create: Object.entries(blockLeaderboard).map(([id, score]) => ({
-            //     score: parseInt(score),
-            //     participant: {
-            //       connect: { id },
-            //     },
-            //     type: 'SESSION_BLOCK',
-            //     username: id,
-            //   })),
-            // },
+            data: {
+              status: SessionBlockStatus.EXECUTED,
+              instances: {
+                update: Object.entries(instanceResults).map(
+                  ([id, results]) => ({
+                    where: { id: Number(id) },
+                    data: {
+                      results: results.results,
+                      participants: Number(results.participants),
+                      // TODO: persist responses or "too much information"? delete when session is completed? what about anonymous users?
+                      // responses: {
+                      //   create: Object.entries(results.responses).map(
+                      //     ([participantId, response]) => ({
+                      //       response,
+                      //       participant: {
+                      //         connect: { id: participantId },
+                      //       },
+                      //       participation: {
+                      //         connect: {
+                      //           courseId_participantId: {
+                      //             // TODO: this is not set if the session is not in a course (i.e., not gamified)
+                      //             courseId: session.courseId as string,
+                      //             participantId,
+                      //           },
+                      //         },
+                      //       },
+                      //     })
+                      //   ),
+                      // },
+                    },
+                  })
+                ),
+              },
+              // leaderboard: {
+              //   create: Object.entries(blockLeaderboard).map(([id, score]) => ({
+              //     score: parseInt(score),
+              //     participant: {
+              //       connect: { id },
+              //     },
+              //     type: 'SESSION_BLOCK',
+              //     username: id,
+              //   })),
+              // },
+            },
           },
         },
-      },
-      leaderboard: session.isGamificationEnabled
-        ? {
-            upsert: Object.entries(sessionLeaderboard).map(([id, score]) => ({
-              where: {
-                type_participantId_sessionId: {
+        leaderboard: session.isGamificationEnabled
+          ? {
+              upsert: existingParticipantsLB.map(([id, score]) => ({
+                where: {
+                  type_participantId_sessionId: {
+                    type: 'SESSION',
+                    participantId: id,
+                    sessionId,
+                  },
+                },
+                create: {
                   type: 'SESSION',
-                  participantId: id,
-                  sessionId,
-                },
-              },
-              create: {
-                type: 'SESSION',
-                participant: {
-                  connect: { id },
-                },
-                score: parseInt(score),
-                sessionParticipation: {
-                  connectOrCreate: {
-                    where: {
-                      courseId_participantId: {
-                        courseId: session.courseId as string,
-                        participantId: id,
-                      },
-                    },
-                    create: {
-                      course: {
-                        connect: {
-                          id: session.courseId!,
+                  participant: {
+                    connect: { id },
+                  },
+                  score: parseInt(score),
+                  sessionParticipation: {
+                    connectOrCreate: {
+                      where: {
+                        courseId_participantId: {
+                          courseId: session.courseId as string,
+                          participantId: id,
                         },
                       },
-                      participant: {
-                        connect: {
-                          id,
+                      create: {
+                        course: {
+                          connect: {
+                            id: session.courseId!,
+                          },
+                        },
+                        participant: {
+                          connect: {
+                            id,
+                          },
                         },
                       },
                     },
                   },
                 },
-              },
-              update: {
-                score: parseInt(score),
-              },
-            })),
-          }
-        : undefined,
-    },
-    include: {
-      blocks: {
-        orderBy: {
-          order: 'asc',
+                update: {
+                  score: parseInt(score),
+                },
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        blocks: {
+          orderBy: {
+            order: 'asc',
+          },
         },
       },
-    },
-  })
+    })
 
-  ctx.pubSub.publish('runningSessionUpdated', {
-    sessionId,
-    block: null,
-  })
+    ctx.pubSub.publish('runningSessionUpdated', {
+      sessionId,
+      block: null,
+    })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'Session',
-    id: session.id,
-  })
+    ctx.emitter.emit('invalidate', {
+      typename: 'Session',
+      id: session.id,
+    })
 
-  // const leaderboardUpdates = Object.entries(sessionLeaderboard).map(
-  //   ([id, score]) => {
-  //     out
-  //   }
-  // )
+    if (!isScheduled && scheduledJobs[sessionBlockId]) {
+      await scheduledJobs[sessionBlockId].cancel()
+      delete scheduledJobs[sessionBlockId]
+    }
 
-  if (!isScheduled && scheduledJobs[sessionBlockId]) {
-    await scheduledJobs[sessionBlockId].cancel()
-    delete scheduledJobs[sessionBlockId]
+    unlinkCachedBlockResults({
+      ctx,
+      sessionId,
+      sessionBlockId,
+      activeInstanceIds,
+    })
+
+    return updatedSession
+  } catch (error: any) {
+    await sendTeamsNotifications(
+      'graphql/deactivateSessionBlock',
+      `ERROR - failed to deactivate session block ${sessionBlockId} in session ${
+        session.id
+      } with active block ${session.activeBlockId}: ${error?.message || error}`
+    )
+
+    throw error
   }
-
-  unlinkCachedBlockResults({
-    ctx,
-    sessionId,
-    sessionBlockId,
-    activeInstanceIds,
-  })
-
-  return updatedSession
 }
 
 export async function getRunningSession({ id }: { id: string }, ctx: Context) {
@@ -1109,6 +1211,19 @@ export async function getLeaderboard(
 
   if (!session) return null
 
+  const participant = ctx.user?.sub
+    ? await ctx.prisma.participant.findUnique({
+        where: {
+          id: ctx.user.sub,
+        },
+      })
+    : null
+
+  const participantProfilePublic =
+    (participant?.isProfilePublic ?? false) ||
+    ctx.user?.role === 'USER' ||
+    ctx.user?.role === 'ADMIN'
+
   // find the order attribute of the last exectued block
   const executedBlockOrders = session?.blocks
     .filter(
@@ -1127,8 +1242,14 @@ export async function getLeaderboard(
     return {
       id: entry.id,
       participantId: entry.participant.id,
-      username: entry.participant.username,
-      avatar: entry.participant.avatar,
+      username:
+        entry.participant.isProfilePublic && participantProfilePublic
+          ? entry.participant.username
+          : 'Anonymous',
+      avatar:
+        entry.participant.isProfilePublic && participantProfilePublic
+          ? entry.participant.avatar
+          : null,
       score: entry.score,
       // isSelf: entry.participantId === ctx.user.sub,
       lastBlockOrder,
@@ -1136,11 +1257,12 @@ export async function getLeaderboard(
   })
 
   const sortByScoreAndUsername = R.curry(R.sortWith)([
-    R.descend(R.prop('score')),
-    R.ascend(R.prop('username')),
+    R.descend(R.prop<number>('score')),
+    R.ascend(R.prop<string>('username')),
   ])
 
-  const sortedEntries = sortByScoreAndUsername(preparedEntries)
+  const sortedEntries: typeof preparedEntries =
+    sortByScoreAndUsername(preparedEntries)
 
   const filteredEntries = sortedEntries.flatMap((entry, ix) => {
     return { ...entry, rank: ix + 1 }
@@ -1753,7 +1875,9 @@ export async function cancelSession(
             data: {
               status: SessionBlockStatus.SCHEDULED,
               expiresAt: null,
-              execution: 0,
+              execution: {
+                increment: 1,
+              },
             },
           },
         },
@@ -1822,8 +1946,7 @@ export async function deleteSession(
 
     return deletedItem
   } catch (e) {
-    // TODO: resolve type issue by first testing for prisma error
-    if (e?.code === 'P2025') {
+    if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
       console.log(
         'The learning element is not in draft status and cannot be deleted.'
       )

@@ -4,6 +4,7 @@ import {
   QuestionInstanceType,
   QuestionType,
 } from '@klicker-uzh/prisma'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { GraphQLError } from 'graphql'
 import { pick } from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
@@ -366,6 +367,33 @@ export async function publishMicroSession(
   }
 }
 
+interface UnpublishMicroSessionArgs {
+  id: string
+}
+
+export async function unpublishMicroSession(
+  { id }: UnpublishMicroSessionArgs,
+  ctx: ContextWithUser
+) {
+  const microSession = await ctx.prisma.microSession.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      status: MicroSessionStatus.DRAFT,
+    },
+    include: {
+      instances: true,
+    },
+  })
+
+  return {
+    ...microSession,
+    numOfInstances: microSession.instances.length,
+  }
+}
+
 interface DeleteMicroSessionArgs {
   id: string
 }
@@ -387,8 +415,7 @@ export async function deleteMicroSession(
 
     return deletedItem
   } catch (e) {
-    // TODO: resolve type issue by first testing for prisma error
-    if (e?.code === 'P2025') {
+    if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
       console.log(
         'The micro-session is already published and cannot be deleted anymore.'
       )

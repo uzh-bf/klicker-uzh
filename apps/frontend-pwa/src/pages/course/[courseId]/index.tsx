@@ -36,7 +36,9 @@ import GroupVisualization from '../../../components/participant/GroupVisualizati
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 
 import LeaveLeaderboardModal from '@components/participant/LeaveLeaderboardModal'
+import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { Podium } from '@klicker-uzh/shared-components/src/Podium'
 import dayjs from 'dayjs'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
@@ -203,20 +205,49 @@ function CourseOverview({ courseId }: Props) {
                       {t('pwa.courses.individualLeaderboard')}
                     </H3>
 
-                    <Leaderboard
-                      courseName={course.displayName}
-                      leaderboard={leaderboard || []}
-                      activeParticipation={participation?.isActive}
-                      onJoin={joinCourse}
-                      onLeave={() => setIsLeaveCourseModalOpen(true)}
-                      participant={participant ?? undefined}
-                      onParticipantClick={openProfileModal}
-                      podiumImgSrc={{
-                        rank1: Rank1Img,
-                        rank2: Rank2Img,
-                        rank3: Rank3Img,
-                      }}
-                    />
+                    {participant?.id && participation?.isActive && (
+                      <Leaderboard
+                        courseName={course.displayName}
+                        leaderboard={leaderboard || []}
+                        activeParticipation={participation?.isActive}
+                        onJoin={joinCourse}
+                        onLeave={() => setIsLeaveCourseModalOpen(true)}
+                        participant={participant ?? undefined}
+                        onParticipantClick={openProfileModal}
+                        podiumImgSrc={{
+                          rank1: Rank1Img,
+                          rank2: Rank2Img,
+                          rank3: Rank3Img,
+                        }}
+                      />
+                    )}
+                    {participant?.id && !participation?.isActive && (
+                      <div className="space-y-4">
+                        <Podium leaderboard={[]} />
+                        <div className="max-w-none p-2 bg-slate-100 rounded border-slate-300 border text-slate-600 text-sm">
+                          <Markdown
+                            withProse
+                            withLinkButtons={false}
+                            content={t('pwa.general.joinLeaderboardNotice', {
+                              username: participant.username,
+                              courseName: course.displayName,
+                            })}
+                          />
+                          <Button
+                            fluid
+                            className={{ root: 'bg-white' }}
+                            onClick={() => joinCourse()}
+                          >
+                            {t.rich('pwa.courses.joinLeaderboardCourse', {
+                              name: course.displayName,
+                              b: (text) => (
+                                <span className="font-bold">{text}</span>
+                              ),
+                            })}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mt-4 mb-2 text-sm text-right text-slate-600">
                       <div>

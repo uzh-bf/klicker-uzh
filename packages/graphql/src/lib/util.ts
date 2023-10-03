@@ -1,9 +1,12 @@
+import axios from 'axios'
 import dayjs from 'dayjs'
+import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import { GraphQLError } from 'graphql'
 import { Context } from './context'
 
 dayjs.extend(utc)
+dayjs.extend(timezone)
 
 // shuffle an array and return a new copy
 export function shuffle<T>(array: Array<T>): Array<T> {
@@ -30,11 +33,13 @@ export function checkCronToken(ctx: Context) {
 }
 
 export function formatDate(dateTime: Date) {
-  let date = dayjs(dateTime).local()
+  let date = dayjs(dateTime)
+    .utc()
+    .tz(process.env.TZ ?? 'Europe/Zurich')
 
   return {
     date: `${date.format('DD')}.${date.format('MM')}.${date.format('YYYY')}`,
-    time: `${date.format('HH')}:${date.format('mm')}`,
+    time: `${date.format('HH')}:${date.format('mm')} (CET)`,
   }
 }
 
@@ -56,6 +61,20 @@ export function sliceIntoChunks(
   }
 
   return chunks
+}
+
+export async function sendTeamsNotifications(scope: string, text: string) {
+  if (process.env.TEAMS_WEBHOOK_URL) {
+    return axios.post(process.env.TEAMS_WEBHOOK_URL, {
+      '@context': 'https://schema.org/extensions',
+      '@type': 'MessageCard',
+      themeColor: '0076D7',
+      title: scope,
+      text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
+    })
+  }
+
+  return null
 }
 
 export { levelFromXp } from '@klicker-uzh/prisma/dist/util'

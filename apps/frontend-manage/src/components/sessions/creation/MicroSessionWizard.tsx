@@ -210,6 +210,7 @@ function MicroSessionWizard({
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
         editMode={!!initialValues}
+        initialValid={!!initialValues}
         onRestartForm={() => {
           setIsWizardCompleted(false)
         }}

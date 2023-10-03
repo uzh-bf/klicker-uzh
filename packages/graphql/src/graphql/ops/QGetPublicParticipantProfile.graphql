@@ -1,9 +1,11 @@
-query GetParticipantDetails($id: String!) {
-  participantDetails(participantId: $id) {
+query GetPublicParticipantProfile($id: String!) {
+  publicParticipantProfile(participantId: $id) {
     id
     username
     avatar
     avatarSettings
+    isProfilePublic
+    isSelf
     level
     levelData {
       id

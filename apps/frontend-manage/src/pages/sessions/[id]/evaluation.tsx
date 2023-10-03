@@ -12,14 +12,20 @@ import {
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { ACTIVE_CHART_TYPES } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
+  Select,
   Switch,
   UserNotification,
   useArrowNavigation,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
+import Rank1Img from 'public/img/rank1.svg'
+import Rank2Img from 'public/img/rank2.svg'
+import Rank3Img from 'public/img/rank3.svg'
 import { useEffect, useMemo, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationInitialization from '../../../components/hooks/useEvaluationInitialization'
@@ -188,6 +194,14 @@ function Evaluation() {
 
   return (
     <>
+      <Head>
+        <title>KlickerUZH - Evaluation</title>
+        <meta
+          name="description"
+          content="KlickerUZH - Evaluation"
+          charSet="utf-8"
+        ></meta>
+      </Head>
       <div className="z-20 flex-none h-11">
         <EvaluationControlBar
           blocks={blocks || []}
@@ -220,26 +234,24 @@ function Evaluation() {
               showSolution={showSolution}
               textSize={textSize}
               chartType={chartType}
-              setChartType={setChartType}
+              totalParticipants={currentInstance.participants}
             />
           )}
 
         {showLeaderboard && !showConfusion && !showFeedbacks && (
           <div className="overflow-y-auto">
             <div className="p-4 border-t">
-              <div className="max-w-5xl mx-auto text-xl">
+              <div className="max-w-2xl mx-auto text-xl">
                 {data.sessionLeaderboard &&
                 data.sessionLeaderboard.length > 0 ? (
-                  <div className="mt-6">
-                    <Leaderboard
-                      activeParticipation
-                      leaderboard={data.sessionLeaderboard}
-                      className={{
-                        podiumSingle: 'text-lg',
-                        listItem: 'text-lg',
-                      }}
-                    />
-                  </div>
+                  <Leaderboard
+                    leaderboard={data.sessionLeaderboard ?? []}
+                    podiumImgSrc={{
+                      rank1: Rank1Img,
+                      rank2: Rank2Img,
+                      rank3: Rank3Img,
+                    }}
+                  />
                 ) : (
                   <UserNotification
                     className={{ message: 'text-lg' }}
@@ -300,24 +312,22 @@ function Evaluation() {
             !showFeedbacks &&
             !showConfusion &&
             !showLeaderboard && (
-              <div className="flex flex-row items-center justify-between px-4 py-2.5 pr-8 m-0">
+              <div className="flex flex-row items-center justify-between py-2.5 m-0">
                 <div className="text-lg" data-cy="session-total-participants">
                   {t('manage.evaluation.totalParticipants', {
                     number: currentInstance.participants,
                   })}
                 </div>
-                <div className="flex flex-row items-center gap-5">
-                  <Switch
-                    checked={showSolution}
-                    label={t('manage.evaluation.showSolution')}
-                    onCheckedChange={(newValue) => setShowSolution(newValue)}
-                  />
+                <div className="flex flex-row items-center gap-7">
                   <div className="flex flex-row items-center gap-2 ml-2">
                     <Button
                       onClick={() => {
                         settextSize({ type: 'decrease' })
                       }}
                       disabled={textSize.size === 'sm'}
+                      className={{
+                        root: 'w-8 h-8 flex items-center justify-center',
+                      }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={faMinus} />
@@ -328,6 +338,9 @@ function Evaluation() {
                         settextSize({ type: 'increase' })
                       }}
                       disabled={textSize.size === 'xl'}
+                      className={{
+                        root: 'w-8 h-8 flex items-center justify-center',
+                      }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={faPlus} />
@@ -336,6 +349,24 @@ function Evaluation() {
                     <FontAwesomeIcon icon={faFont} size="lg" />
                     {t('manage.evaluation.fontSize')}
                   </div>
+                  <Switch
+                    checked={showSolution}
+                    label={t('manage.evaluation.showSolution')}
+                    onCheckedChange={(newValue) => setShowSolution(newValue)}
+                  />
+                  <Select
+                    contentPosition="popper"
+                    className={{
+                      trigger: 'border-slate-400',
+                    }}
+                    items={ACTIVE_CHART_TYPES[
+                      currentInstance.questionData.type
+                    ].map((item) => {
+                      return { label: t(item.label), value: item.value }
+                    })}
+                    value={chartType}
+                    onChange={(newValue: string) => setChartType(newValue)}
+                  />
                 </div>
               </div>
             )}

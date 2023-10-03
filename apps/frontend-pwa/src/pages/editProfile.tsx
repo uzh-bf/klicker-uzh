@@ -4,6 +4,7 @@ import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteParticipantAccountDocument,
+  LogoutParticipantDocument,
   SelfDocument,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -39,6 +40,7 @@ function EditProfile() {
   const [deleteParticipantAccount] = useMutation(
     DeleteParticipantAccountDocument
   )
+  const [logoutParticipant] = useMutation(LogoutParticipantDocument)
 
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/profile')
   const [showError, setShowError] = useState(false)
@@ -190,7 +192,13 @@ function EditProfile() {
                       </H3>
                       <div className="space-y-3 mb-2">
                         <FormikTextField
-                          disabled={data.self?.email !== '' && !!values.email}
+                          // TODO: as soon as verification mechanism for email is implemented, add check for "isEmailValid" in DB for disabled field as emails with typos cannot be changed currently
+                          disabled={
+                            data.self?.email !== '' &&
+                            data.self?.email !== null &&
+                            typeof data.self?.email !== 'undefined' &&
+                            !!values.email
+                          }
                           name="email"
                           label={t('shared.generic.email')}
                           labelType="small"
@@ -271,6 +279,9 @@ function EditProfile() {
                             }}
                             onClick={async () => {
                               await deleteParticipantAccount()
+                              try {
+                                await logoutParticipant()
+                              } catch (e) {}
                               window?.location.reload()
                             }}
                           >

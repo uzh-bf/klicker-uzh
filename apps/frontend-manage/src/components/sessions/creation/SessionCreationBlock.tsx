@@ -9,7 +9,7 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Question } from '@klicker-uzh/graphql/dist/ops'
+import { Question, QuestionType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -20,7 +20,12 @@ import { twMerge } from 'tailwind-merge'
 
 interface SessionCreationBlockProps {
   index: number
-  block: { questionIds: number[]; titles: string[]; timeLimit: string }
+  block: {
+    questionIds: number[]
+    titles: string[]
+    types: QuestionType[]
+    timeLimit: string
+  }
   numOfBlocks: number
   remove: (index: number) => void
   move: (from: number, to: number) => void
@@ -48,7 +53,7 @@ function SessionCreationBlock({
       drop: (item: {
         id: number
         type: string
-        questionType: string
+        questionType: QuestionType
         title: string
         content: string
       }) => {
@@ -56,6 +61,7 @@ function SessionCreationBlock({
           ...block,
           questionIds: [...block.questionIds, item.id],
           titles: [...block.titles, item.title],
+          types: [...block.types, item.questionType],
         })
       },
       collect: (monitor) => ({
@@ -160,6 +166,7 @@ function SessionCreationBlock({
                         questionIdx - 1,
                         block.titles
                       ),
+                      types: R.move(questionIdx, questionIdx - 1, block.types),
                     })
                   }
                 }}
@@ -191,6 +198,7 @@ function SessionCreationBlock({
                         questionIdx + 1,
                         block.titles
                       ),
+                      types: R.move(questionIdx, questionIdx + 1, block.types),
                     })
                   }
                 }}
@@ -212,6 +220,9 @@ function SessionCreationBlock({
                   titles: block.titles
                     .slice(0, questionIdx)
                     .concat(block.titles.slice(questionIdx + 1)),
+                  types: block.types
+                    .slice(0, questionIdx)
+                    .concat(block.types.slice(questionIdx + 1)),
                 })
               }}
             >
@@ -229,22 +240,27 @@ function SessionCreationBlock({
             root: 'mb-2 text-sm gap-3 justify-center hover:bg-orange-200 hover:border-orange-400 hover:text-orange-900 bg-orange-100 border-orange-300',
           }}
           onClick={() => {
-            const { questionIds, titles } = Object.values(selection).reduce<{
+            const { questionIds, titles, types } = Object.values(
+              selection
+            ).reduce<{
               questionIds: number[]
               titles: string[]
+              types: QuestionType[]
             }>(
               (acc, question) => {
                 acc.questionIds.push(question.id)
                 acc.titles.push(question.name)
+                acc.types.push(question.type)
                 return acc
               },
-              { questionIds: [], titles: [] }
+              { questionIds: [], titles: [], types: [] }
             )
 
             replace(index, {
               ...block,
               questionIds: [...block.questionIds, ...questionIds],
               titles: [...block.titles, ...titles],
+              types: [...block.types, ...types],
             })
             resetSelection?.()
           }}

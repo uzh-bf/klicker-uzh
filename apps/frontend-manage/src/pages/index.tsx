@@ -163,6 +163,7 @@ function SuspendedFirstLoginModal() {
                 shortname: values.shortname,
                 locale: values.locale,
               },
+              refetchQueries: [GetUserQuestionsDocument],
             })
 
             if (!result) {
@@ -311,8 +312,10 @@ function Index() {
     router.prefetch('/sessions/running')
     router.prefetch('/sessions')
 
-    if (router.query.sessionId) {
+    if (router.query.sessionId && router.query.editMode) {
       setCreationMode(router.query.editMode as any)
+    } else if (router.query.sessionId && router.query.duplicationMode) {
+      setCreationMode(router.query.duplicationMode as any)
     }
   }, [router])
 
@@ -371,6 +374,7 @@ function Index() {
             }}
             sessionId={router.query.sessionId as string}
             editMode={router.query.editMode as string}
+            duplicationMode={router.query.duplicationMode as string}
             selection={selectedQuestionData}
             resetSelection={() => setSelectedQuestions({})}
           />

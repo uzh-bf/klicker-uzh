@@ -191,6 +191,8 @@ export default {
     privacyPolicy: 'Privacy Policy',
     tosUrl: 'https://www.klicker.uzh.ch/terms_of_service',
     privacyUrl: 'https://www.klicker.uzh.ch/privacy_policy',
+    loginInfo:
+      'You do not need a management account to participate in activities or a course, only to create your own activities and courses.',
   },
   pwa: {
     general: {
@@ -903,6 +905,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sessionEvaluation: 'Quiz Evaluation',
       startSession: 'Start Quiz',
       editSession: 'Edit Quiz',
+      duplicateSession: 'Duplicate Quiz',
       deleteSession: 'Delete Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
@@ -1087,13 +1090,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The link to the practice quiz has been successfully copied to the clipboard.',
       editMicroSession: 'Edit microlearning',
       publishMicroSession: 'Publish microlearning',
+      unpublishMicroSession: 'Unpublish microlearning',
       deleteMicroSession: 'Delete microlearning',
       publishItem: 'Publish {name}',
       confirmPublishing: 'Are you sure you want to publish the following item?',
       publishingHint:
-        'Publishing a practice quiz or microlearning makes the item visible to all participants. This process cannot be undone. Changes to the content of an item cannot be made after publishing.',
+        'Publishing a practice quiz or microlearning makes the item visible to all participants. This process can only be undone later, if the element has not yet started and/or has not received any answers. Changes to the content of an item cannot be made after publishing.',
       microPublishingHint:
-        'Microlearning are additionally only visible within the specified date range.',
+        'Microlearnings are additionally only visible within the specified date range.',
       confirmDeletionMicroSession:
         'Are you sure you want to delete the following microlearing?',
       hintDeletionMicroSession:

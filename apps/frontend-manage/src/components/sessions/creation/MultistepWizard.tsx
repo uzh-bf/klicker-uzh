@@ -16,6 +16,7 @@ interface MultistepWizardProps {
   title: string
   isCompleted: boolean
   editMode: boolean
+  initialValid: boolean
   completionSuccessMessage?: (elementName: string) => React.ReactNode
   children: React.ReactNode[]
   initialValues?: any
@@ -42,6 +43,7 @@ export interface LiveSessionFormValues extends CommonFormValues {
   blocks: {
     questionIds: number[]
     titles: string[]
+    types: []
     timeLimit: number
   }[]
   isGamificationEnabled: boolean
@@ -93,6 +95,7 @@ function MultistepWizard({
   onSubmit,
   isCompleted,
   editMode,
+  initialValid,
   completionSuccessMessage,
   onViewElement,
   onRestartForm,
@@ -128,7 +131,7 @@ function MultistepWizard({
       initialValues={initialValues}
       onSubmit={handleSubmit}
       validationSchema={step.props.validationSchema}
-      isInitialValid={editMode}
+      isInitialValid={initialValid}
       enableReinitialize
     >
       {({ values, isSubmitting, isValid, resetForm, validateForm }) => (
@@ -149,7 +152,7 @@ function MultistepWizard({
               minimal
               showTooltipSymbols
               className={{
-                item: 'last:rounded-tr-md',
+                item: 'last:rounded-r-md first:rounded-l-md',
               }}
             />
           </div>

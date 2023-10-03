@@ -372,25 +372,85 @@ enum MicroSessionStatus {
 
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
-  addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
-  bookmarkQuestion(bookmarked: Boolean!, courseId: String!, stackId: Int!): [QuestionStack!]
+  addConfusionTimestep(
+    difficulty: Int!
+    sessionId: String!
+    speed: Int!
+  ): ConfusionTimestep
+  bookmarkQuestion(
+    bookmarked: Boolean!
+    courseId: String!
+    stackId: Int!
+  ): [QuestionStack!]
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDates(courseId: String!, endDate: Date, startDate: Date): Course
   changeCourseDescription(courseId: String!, input: String!): Course
   changeInitialSettings(locale: LocaleType!, shortname: String!): User
   changeParticipantLocale(locale: LocaleType!): Participant
-  changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
+  changeSessionSettings(
+    id: String!
+    isConfusionFeedbackEnabled: Boolean
+    isGamificationEnabled: Boolean
+    isLiveQAEnabled: Boolean
+    isModerationEnabled: Boolean
+  ): Session
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
-  createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date, isGamificationEnabled: Boolean!, name: String!, notificationEmail: String, startDate: Date!): Course
+  createCourse(
+    color: String
+    description: String
+    displayName: String!
+    endDate: Date!
+    groupDeadlineDate: Date
+    isGamificationEnabled: Boolean!
+    name: String!
+    notificationEmail: String
+    startDate: Date!
+  ): Course
   createFeedback(content: String!, sessionId: String!): Feedback
-  createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
-  createMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
-  createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
+  createLearningElement(
+    courseId: String
+    description: String
+    displayName: String!
+    multiplier: Int!
+    name: String!
+    order: LearningElementOrderType!
+    resetTimeDays: Int!
+    stacks: [StackInput!]!
+  ): LearningElement
+  createMicroSession(
+    courseId: String
+    description: String
+    displayName: String!
+    endDate: Date!
+    multiplier: Int!
+    name: String!
+    questions: [Int!]!
+    startDate: Date!
+  ): MicroSession
+  createParticipantAccount(
+    email: String!
+    isProfilePublic: Boolean!
+    password: String!
+    signedLtiData: String
+    username: String!
+  ): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
-  createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
-  createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
+  createSession(
+    blocks: [BlockInput!]!
+    courseId: String
+    description: String
+    displayName: String!
+    isGamificationEnabled: Boolean
+    multiplier: Int!
+    name: String!
+  ): Session
+  createUserLogin(
+    name: String!
+    password: String!
+    scope: UserLoginScope!
+  ): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
@@ -401,9 +461,38 @@ type Mutation {
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
-  editLearningElement(courseId: String, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
-  editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
-  editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isGamificationEnabled: Boolean, multiplier: Int!, name: String!): Session
+  editLearningElement(
+    courseId: String
+    description: String
+    displayName: String!
+    id: String!
+    multiplier: Int!
+    name: String!
+    order: LearningElementOrderType!
+    resetTimeDays: Int!
+    stacks: [StackInput!]!
+  ): LearningElement
+  editMicroSession(
+    courseId: String
+    description: String
+    displayName: String!
+    endDate: Date!
+    id: String!
+    multiplier: Int!
+    name: String!
+    questions: [Int!]!
+    startDate: Date!
+  ): MicroSession
+  editSession(
+    blocks: [BlockInput!]!
+    courseId: String
+    description: String
+    displayName: String!
+    id: String!
+    isGamificationEnabled: Boolean
+    multiplier: Int!
+    name: String!
+  ): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
   flagQuestion(content: String!, questionInstanceId: Int!): String
@@ -419,9 +508,43 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
-  manipulateFreeTextQuestion(content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
-  manipulateNumericalQuestion(content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
+  manipulateChoicesQuestion(
+    content: String
+    displayMode: QuestionDisplayMode
+    explanation: String
+    hasAnswerFeedbacks: Boolean
+    hasSampleSolution: Boolean
+    id: Int
+    name: String
+    options: OptionsChoicesInput
+    pointsMultiplier: Int
+    tags: [String!]
+    type: QuestionType!
+  ): Question
+  manipulateFreeTextQuestion(
+    content: String
+    explanation: String
+    hasAnswerFeedbacks: Boolean
+    hasSampleSolution: Boolean
+    id: Int
+    name: String
+    options: OptionsFreeTextInput
+    pointsMultiplier: Int
+    tags: [String!]
+    type: QuestionType!
+  ): Question
+  manipulateNumericalQuestion(
+    content: String
+    explanation: String
+    hasAnswerFeedbacks: Boolean
+    hasSampleSolution: Boolean
+    id: Int
+    name: String
+    options: OptionsNumericalInput
+    pointsMultiplier: Int
+    tags: [String!]
+    type: QuestionType!
+  ): Question
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -430,20 +553,47 @@ type Mutation {
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
-  respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
+  respondToQuestionInstance(
+    courseId: String!
+    id: Int!
+    response: ResponseInput!
+  ): QuestionInstance
   sendPushNotifications: Boolean!
-  startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
+  startGroupActivity(
+    activityId: String!
+    groupId: String!
+  ): GroupActivityDetails
   startSession(id: String!): Session
-  submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
-  subscribeToPush(courseId: String!, isNativePlatform: Boolean!, subscriptionObject: SubscriptionObjectInput, token: String): Participation
+  submitGroupActivityDecisions(
+    activityInstanceId: Int!
+    decisions: [GroupActivityDecisionInput!]!
+  ): GroupActivityInstance
+  subscribeToPush(
+    courseId: String!
+    isNativePlatform: Boolean!
+    subscriptionObject: SubscriptionObjectInput
+    token: String
+  ): Participation
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Question!]
   triggerMigration(token: String!): Boolean
-  unsubscribeFromPush(courseId: String!, endpoint: String, isNativePlatform: Boolean!, token: String): Boolean
+  unpublishMicroSession(id: String!): MicroSession
+  unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
-  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, email: String, isProfilePublic: Boolean, password: String, username: String): Participant
+  updateParticipantProfile(
+    avatar: String
+    avatarSettings: AvatarSettingsInput
+    email: String
+    isProfilePublic: Boolean
+    password: String
+    username: String
+  ): Participant
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
-  voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
+  voteFeedbackResponse(
+    id: Int!
+    incrementDownvote: Int!
+    incrementUpvote: Int!
+  ): FeedbackResponse
 }
 
 type NumericalQuestionData implements QuestionData {
@@ -589,20 +739,26 @@ type Query {
   course(id: String!): Course
   feedbacks(id: String!): [Feedback!]
   getBookmarkedQuestions(courseId: String!): [QuestionStack!]
-  getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionStack!]
+  getBookmarksLearningElement(
+    courseId: String!
+    elementId: String!
+  ): [QuestionStack!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   getParticipation(courseId: String!): Participation
-  groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
+  groupActivityDetails(
+    activityId: String!
+    groupId: String!
+  ): GroupActivityDetails
   learningElement(id: String!): LearningElement
   learningElements: [LearningElement!]
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
-  participantDetails(participantId: String!): Participant
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
+  publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Question
   questionStack(id: Int!): QuestionStack
   runningSessions(shortname: String!): [Session!]

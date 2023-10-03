@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@prisma/nextjs-monorepo-workaround-plugin':
-        specifier: 4.14.1
-        version: 4.14.1
+        specifier: 5.3.1
+        version: 5.3.1
       husky:
         specifier: 8.0.3
         version: 8.0.3
@@ -43,10 +43,13 @@ importers:
         version: link:../../packages/shared-components
       '@next-auth/prisma-adapter':
         specifier: 1.0.7
-        version: 1.0.7(@prisma/client@4.14.1)(next-auth@4.22.3)
+        version: 1.0.7(@prisma/client@5.3.1)(next-auth@4.22.3)
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+      axios:
+        specifier: 1.4.0
+        version: 1.4.0
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -133,8 +136,8 @@ importers:
         specifier: 0.4.1
         version: 0.4.1(prettier-plugin-organize-imports@3.2.3)(prettier@2.8.8)
       prisma:
-        specifier: 4.14.1
-        version: 4.14.1
+        specifier: 5.3.1
+        version: 5.3.1
       tailwindcss:
         specifier: 3.3.3
         version: 3.3.3(ts-node@10.9.1)
@@ -251,8 +254,8 @@ importers:
         specifier: ^3.0.6
         version: 3.0.6
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       axios:
         specifier: 1.4.0
         version: 1.4.0
@@ -281,8 +284,8 @@ importers:
         specifier: 15.1.0
         version: 15.1.0
       prisma:
-        specifier: 4.14.1
-        version: 4.14.1
+        specifier: 5.3.1
+        version: 5.3.1
       tsup:
         specifier: 6.7.0
         version: 6.7.0(postcss@8.4.27)(typescript@5.0.4)
@@ -341,8 +344,8 @@ importers:
         specifier: 1.0.5
         version: 1.0.5
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       autoprefixer:
         specifier: 10.4.14
         version: 10.4.14(postcss@8.4.27)
@@ -441,8 +444,8 @@ importers:
         specifier: 1.6.1
         version: 1.6.1(next@13.4.19)
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       body-parser:
         specifier: 1.20.2
         version: 1.20.2
@@ -616,8 +619,8 @@ importers:
         specifier: 1.6.1
         version: 1.6.1(next@13.4.19)
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       d3:
         specifier: 7.8.4
         version: 7.8.4
@@ -857,8 +860,8 @@ importers:
         specifier: 1.6.1
         version: 1.6.1(next@13.4.19)
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       body-parser:
         specifier: 1.20.2
         version: 1.20.2
@@ -1014,8 +1017,8 @@ importers:
   apps/func-incoming-responses:
     dependencies:
       '@azure/functions':
-        specifier: 4.0.0-alpha.11
-        version: 4.0.0-alpha.11
+        specifier: 4.0.0
+        version: 4.0.0
       '@azure/service-bus':
         specifier: 7.9.0
         version: 7.9.0
@@ -1039,11 +1042,11 @@ importers:
         specifier: ^18.17.4
         version: 18.17.4
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       azure-functions-core-tools:
-        specifier: 4.0.5274
-        version: 4.0.5274
+        specifier: 4.0.5390
+        version: 4.0.5390
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -1072,8 +1075,8 @@ importers:
   apps/func-migration-v2-export:
     dependencies:
       '@azure/functions':
-        specifier: 4.0.0-alpha.11
-        version: 4.0.0-alpha.11
+        specifier: 4.0.0
+        version: 4.0.0
       '@azure/storage-blob':
         specifier: 12.15.0
         version: 12.15.0
@@ -1097,8 +1100,8 @@ importers:
         specifier: ^18.17.4
         version: 18.17.4
       azure-functions-core-tools:
-        specifier: 4.0.5274
-        version: 4.0.5274
+        specifier: 4.0.5390
+        version: 4.0.5390
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -1124,8 +1127,8 @@ importers:
   apps/func-migration-v3-import:
     dependencies:
       '@azure/functions':
-        specifier: 4.0.0-alpha.11
-        version: 4.0.0-alpha.11
+        specifier: 4.0.0
+        version: 4.0.0
       '@azure/storage-blob':
         specifier: 12.15.0
         version: 12.15.0
@@ -1158,8 +1161,8 @@ importers:
         specifier: ^9.0.2
         version: 9.0.2
       azure-functions-core-tools:
-        specifier: 4.0.5274
-        version: 4.0.5274
+        specifier: 4.0.5390
+        version: 4.0.5390
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -1176,8 +1179,8 @@ importers:
         specifier: 3.2.3
         version: 3.2.3(prettier@2.8.8)(typescript@5.1.6)
       prisma:
-        specifier: 4.14.1
-        version: 4.14.1
+        specifier: 5.3.1
+        version: 5.3.1
       ts-node:
         specifier: 10.9.1
         version: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
@@ -1191,8 +1194,8 @@ importers:
   apps/func-response-processor:
     dependencies:
       '@azure/functions':
-        specifier: 4.0.0-alpha.11
-        version: 4.0.0-alpha.11
+        specifier: 4.0.0
+        version: 4.0.0
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../../packages/grading
@@ -1231,11 +1234,11 @@ importers:
         specifier: ^0.29.3
         version: 0.29.3
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       azure-functions-core-tools:
-        specifier: 4.0.5274
-        version: 4.0.5274
+        specifier: 4.0.5390
+        version: 4.0.5390
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -1267,8 +1270,8 @@ importers:
         specifier: 8.109.5
         version: 8.109.5(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       core-js:
         specifier: 3.30.2
         version: 3.30.2
@@ -1504,7 +1507,7 @@ importers:
         version: 3.33.0(graphql@16.7.1)
       '@pothos/plugin-prisma':
         specifier: 3.56.0
-        version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@4.14.1)(graphql@16.7.1)(typescript@5.1.6)
+        version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@5.3.1)(graphql@16.7.1)(typescript@5.1.6)
       '@pothos/plugin-scope-auth':
         specifier: 3.20.0
         version: 3.20.0(@pothos/core@3.33.0)(graphql@16.7.1)
@@ -1691,8 +1694,8 @@ importers:
   packages/lti:
     dependencies:
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       body-parser:
         specifier: 1.20.2
         version: 1.20.2
@@ -1755,8 +1758,8 @@ importers:
         specifier: 0.2.0
         version: 0.2.0(@fortawesome/fontawesome-svg-core@6.4.2)(react@18.2.0)
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       next:
         specifier: 13.4.19
         version: 13.4.19(@babel/core@7.21.8)(react-dom@18.2.0)(react@18.2.0)
@@ -1867,12 +1870,12 @@ importers:
   packages/prisma:
     dependencies:
       '@prisma/client':
-        specifier: 4.14.1
-        version: 4.14.1(prisma@4.14.1)
+        specifier: 5.3.1
+        version: 5.3.1(prisma@5.3.1)
     devDependencies:
       '@pothos/plugin-prisma':
         specifier: 3.56.0
-        version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@4.14.1)(graphql@16.7.1)(typescript@5.1.6)
+        version: 3.56.0(@pothos/core@3.33.0)(@prisma/client@5.3.1)(graphql@16.7.1)(typescript@5.1.6)
       '@size-limit/preset-small-lib':
         specifier: 8.2.4
         version: 8.2.4(size-limit@8.2.4)
@@ -1906,6 +1909,9 @@ importers:
       eslint:
         specifier: 8.45.0
         version: 8.45.0
+      fs-extra:
+        specifier: 11.1.1
+        version: 11.1.1
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5
@@ -1916,8 +1922,11 @@ importers:
         specifier: 3.2.3
         version: 3.2.3(prettier@2.8.8)(typescript@5.1.6)
       prisma:
-        specifier: 4.14.1
-        version: 4.14.1
+        specifier: 5.3.1
+        version: 5.3.1
+      prisma-json-types-generator:
+        specifier: 3.0.1
+        version: 3.0.1(prisma@5.3.1)(typescript@5.1.6)
       ramda:
         specifier: 0.29.0
         version: 0.29.0
@@ -1958,8 +1967,8 @@ importers:
         specifier: 0.2.0
         version: 0.2.0(@fortawesome/fontawesome-svg-core@6.4.2)(react@18.2.0)
       '@uzh-bf/design-system':
-        specifier: 2.1.6
-        version: 2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+        specifier: 2.1.8
+        version: 2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
       formik:
         specifier: 2.4.3
         version: 2.4.3(react@18.2.0)
@@ -2767,8 +2776,8 @@ packages:
       tslib: 2.6.2
     dev: false
 
-  /@azure/functions@4.0.0-alpha.11:
-    resolution: {integrity: sha512-9Hrg9AkMgI6i9fFiROFQAwOI2Eid2OEZT85kPxb9GJW8UKUdJmgYYEkpMqOoW9gMIVEEEwyNq3nz9PNa1wTQQA==}
+  /@azure/functions@4.0.0:
+    resolution: {integrity: sha512-NsL1vbYtsh19eA6d3Syo9bP8d1JAguE9nRd9AFBTcK+lhbRzKvKQ98efiGz21ug2Cm526SMet0imxUSykviEHA==}
     engines: {node: '>=18.0'}
     dependencies:
       long: 4.0.0
@@ -5555,7 +5564,7 @@ packages:
       react-dom: ^18.0.0
     dependencies:
       '@types/history': 4.7.11
-      '@types/react': 18.2.18
+      '@types/react': 18.2.21
       commander: 5.1.0
       joi: 17.9.2
       react: 18.2.0
@@ -8198,14 +8207,14 @@ packages:
       '@jest/test-result': 29.6.2
       '@jest/transform': 29.6.2
       '@jest/types': 29.6.1
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       ci-info: 3.8.0
       exit: 0.1.2
       graceful-fs: 4.2.11
       jest-changed-files: 29.5.0
-      jest-config: 29.6.2(@types/node@18.17.4)(ts-node@10.9.1)
+      jest-config: 29.6.2(@types/node@18.17.14)(ts-node@10.9.1)
       jest-haste-map: 29.6.2
       jest-message-util: 29.6.2
       jest-regex-util: 29.4.3
@@ -8380,7 +8389,7 @@ packages:
       '@jest/schemas': 29.6.0
       '@types/istanbul-lib-coverage': 2.0.4
       '@types/istanbul-reports': 3.0.1
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
       '@types/yargs': 17.0.24
       chalk: 4.1.2
 
@@ -8667,13 +8676,13 @@ packages:
       - supports-color
     dev: true
 
-  /@next-auth/prisma-adapter@1.0.7(@prisma/client@4.14.1)(next-auth@4.22.3):
+  /@next-auth/prisma-adapter@1.0.7(@prisma/client@5.3.1)(next-auth@4.22.3):
     resolution: {integrity: sha512-Cdko4KfcmKjsyHFrWwZ//lfLUbcLqlyFqjd/nYE2m3aZ7tjMNUjpks47iw7NTCnXf+5UWz5Ypyt1dSs1EP5QJw==}
     peerDependencies:
       '@prisma/client': '>=2.26.0 || >=3'
       next-auth: ^4
     dependencies:
-      '@prisma/client': 4.14.1(prisma@4.14.1)
+      '@prisma/client': 5.3.1(prisma@5.3.1)
       next-auth: 4.22.3(next@13.4.19)(react-dom@18.2.0)(react@18.2.0)
     dev: false
 
@@ -9114,7 +9123,7 @@ packages:
     dependencies:
       graphql: 16.7.1
 
-  /@pothos/plugin-prisma@3.56.0(@pothos/core@3.33.0)(@prisma/client@4.14.1)(graphql@16.7.1)(typescript@5.1.6):
+  /@pothos/plugin-prisma@3.56.0(@pothos/core@3.33.0)(@prisma/client@5.3.1)(graphql@16.7.1)(typescript@5.1.6):
     resolution: {integrity: sha512-ne8s4WZC1ntRnvxnFvfGV9vVtUuRHBiI0mNkx5CYzJTBX5DuxjZk7vYBpOaQHBcMLulTLMpr0Tgd1AJggVBGDA==}
     hasBin: true
     peerDependencies:
@@ -9124,7 +9133,7 @@ packages:
       typescript: '>=4.7.2'
     dependencies:
       '@pothos/core': 3.33.0(graphql@16.7.1)
-      '@prisma/client': 4.14.1(prisma@4.14.1)
+      '@prisma/client': 5.3.1(prisma@5.3.1)
       '@prisma/generator-helper': 5.1.1
       graphql: 16.7.1
       typescript: 5.1.6
@@ -9153,9 +9162,9 @@ packages:
       zod: 3.21.4
     dev: false
 
-  /@prisma/client@4.14.1(prisma@4.14.1):
-    resolution: {integrity: sha512-TZIswkeX1ccsHG/eN2kICzg/csXll0osK3EHu1QKd8VJ3XLcXozbNELKkCNfsCUvKJAwPdDtFCzF+O+raIVldw==}
-    engines: {node: '>=14.17'}
+  /@prisma/client@5.3.1(prisma@5.3.1):
+    resolution: {integrity: sha512-ArOKjHwdFZIe1cGU56oIfy7wRuTn0FfZjGuU/AjgEBOQh+4rDkB6nF+AGHP8KaVpkBIiHGPQh3IpwQ3xDMdO0Q==}
+    engines: {node: '>=16.13'}
     requiresBuild: true
     peerDependencies:
       prisma: '*'
@@ -9163,8 +9172,8 @@ packages:
       prisma:
         optional: true
     dependencies:
-      '@prisma/engines-version': 4.14.0-67.d9a4c5988f480fa576d43970d5a23641aa77bc9c
-      prisma: 4.14.1
+      '@prisma/engines-version': 5.3.1-2.61e140623197a131c2a6189271ffee05a7aa9a59
+      prisma: 5.3.1
 
   /@prisma/debug@5.1.1:
     resolution: {integrity: sha512-R9e2Tn8f+ujVjwn6ne1YkXY35BXzUmxJbGsmD1c8RAZ/NXgbYktEFAwIkOZn5H5zRfY2VDSBvGI6TFpnOu50cg==}
@@ -9175,11 +9184,21 @@ packages:
     transitivePeerDependencies:
       - supports-color
 
-  /@prisma/engines-version@4.14.0-67.d9a4c5988f480fa576d43970d5a23641aa77bc9c:
-    resolution: {integrity: sha512-3jum8/YSudeSN0zGW5qkpz+wAN2V/NYCQ+BPjvHYDfWatLWlQkqy99toX0GysDeaUoBIJg1vaz2yKqiA3CFcQw==}
+  /@prisma/debug@5.2.0:
+    resolution: {integrity: sha512-dOrNOA8B65l3dCp2r3gn5A5dbMXNbEixO3JAaMWiS2q03qMU3/R9oNv86H2c1i3GSwQglH5gjwpkA9olp/+h1A==}
+    dependencies:
+      '@types/debug': 4.1.8
+      debug: 4.3.4(supports-color@8.1.1)
+      strip-ansi: 6.0.1
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
 
-  /@prisma/engines@4.14.1:
-    resolution: {integrity: sha512-APqFddPVHYmWNKqc+5J5SqrLFfOghKOLZxobmguDUacxOwdEutLsbXPVhNnpFDmuQWQFbXmrTTPoRrrF6B1MWA==}
+  /@prisma/engines-version@5.3.1-2.61e140623197a131c2a6189271ffee05a7aa9a59:
+    resolution: {integrity: sha512-y5qbUi3ql2Xg7XraqcXEdMHh0MocBfnBzDn5GbV1xk23S3Mq8MGs+VjacTNiBh3dtEdUERCrUUG7Z3QaJ+h79w==}
+
+  /@prisma/engines@5.3.1:
+    resolution: {integrity: sha512-6QkILNyfeeN67BNEPEtkgh3Xo2tm6D7V+UhrkBbRHqKw9CTaz/vvTP/ROwYSP/3JT2MtIutZm/EnhxUiuOPVDA==}
     requiresBuild: true
 
   /@prisma/generator-helper@5.1.1:
@@ -9192,8 +9211,19 @@ packages:
     transitivePeerDependencies:
       - supports-color
 
-  /@prisma/nextjs-monorepo-workaround-plugin@4.14.1:
-    resolution: {integrity: sha512-WbK3DajKklEdeWh4Ds4ltTTBs0s+0yqXMtGVR1jFB2ma8vtrqKdRJtEi0xVNc8Sb6V+kS2fJ5sPSNP43LeMRRQ==}
+  /@prisma/generator-helper@5.2.0:
+    resolution: {integrity: sha512-jju+nGe8IgwDhs412sx6PSk5efkuoBqHOJSqbRBb9Y/fMfeDRGLVdwia8Hj+PKmd/YXrqFgBd4NDeFxeCcVVqw==}
+    dependencies:
+      '@prisma/debug': 5.2.0
+      '@types/cross-spawn': 6.0.2
+      cross-spawn: 7.0.3
+      kleur: 4.1.5
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
+  /@prisma/nextjs-monorepo-workaround-plugin@5.3.1:
+    resolution: {integrity: sha512-SrM068G8BEUmxtyis97/NGTcVodJLcG+YV7fYW7A19ls549WEXvEjXt9jMBAtd2AUw6d8PER+0G6nCfeOtSQhQ==}
     dev: true
 
   /@protobufjs/aspromise@1.1.2:
@@ -11031,7 +11061,7 @@ packages:
   /@types/bonjour@3.5.10:
     resolution: {integrity: sha512-p7ienRMiS41Nu2/igbJxxLDWrSZ0WxM8UQgCeO9KhoVF7cOVFkrKsiDr1EsJIla8vV3oEEjGcz11jc5yimhzZw==}
     dependencies:
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
 
   /@types/cacheable-request@6.0.3:
     resolution: {integrity: sha512-IQ3EbTzGxIigb1I3qPZc1rWJnH0BmSKv5QYTalEwweFvyBDLSAe24zP0le/hyi7ecGfZVlIVAg4BZqb8WBwKqw==}
@@ -11046,12 +11076,12 @@ packages:
     resolution: {integrity: sha512-4x5FkPpLipqwthjPsF7ZRbOv3uoLUFkTA9G9v583qi4pACvq0uTELrB8OLUzPWUI4IJIyvM85vzkV1nyiI2Lig==}
     dependencies:
       '@types/express-serve-static-core': 4.17.35
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
 
   /@types/connect@3.4.35:
     resolution: {integrity: sha512-cdeYyv4KWoEgpBISTxWvqYsVy444DOqehiF3fM3ne10AmJ62RSyNkUnxMJXHQWRQQX2eR94m5y1IZyDwBjV9FQ==}
     dependencies:
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
 
   /@types/cookie-parser@1.4.3:
     resolution: {integrity: sha512-CqSKwFwefj4PzZ5n/iwad/bow2hTCh0FlNAeWLtQM3JA/NX/iYagIpWG2cf1bQKQ2c9gU2log5VUCrn7LDOs0w==}
@@ -11275,7 +11305,7 @@ packages:
   /@types/express-serve-static-core@4.17.35:
     resolution: {integrity: sha512-wALWQwrgiB2AWTT91CB62b6Yt0sNHpznUXeZEcnPU3DRdlDIz74x8Qg1UUYKSVFi+va5vKOLYRBI1bRKiLLKIg==}
     dependencies:
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
       '@types/qs': 6.9.7
       '@types/range-parser': 1.2.4
       '@types/send': 0.17.1
@@ -11350,7 +11380,7 @@ packages:
   /@types/is-buffer@2.0.0:
     resolution: {integrity: sha512-0f7N/e3BAz32qDYvgB4d2cqv1DqUwvGxHkXsrucICn8la1Vb6Yl6Eg8mPScGwUiqHJeE7diXlzaK+QMA9m4Gxw==}
     dependencies:
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
     dev: false
 
   /@types/is-hotkey@0.1.7:
@@ -11684,7 +11714,7 @@ packages:
     dependencies:
       '@types/http-errors': 2.0.1
       '@types/mime': 3.0.1
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
 
   /@types/sinonjs__fake-timers@8.1.1:
     resolution: {integrity: sha512-0kSuKjAS0TrGLJ0M/+8MaFkGsQhZpB6pxOmvS3K8FYI72K//YmdfoW9X2qPsAKh1mkwxGD5zib9s1FIFed6E8g==}
@@ -11701,7 +11731,7 @@ packages:
   /@types/sockjs@0.3.33:
     resolution: {integrity: sha512-f0KEEe05NvUnat+boPTZ0dgaLZ4SfSouXUgv5noUiefG2ajgKjmETo9ZJyuqsl7dfl2aHlLJUiki6B4ZYldiiw==}
     dependencies:
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
 
   /@types/source-list-map@0.1.2:
     resolution: {integrity: sha512-K5K+yml8LTo9bWJI/rECfIPrGgxdpeNbj+d53lwN4QjW1MCwlkhUms+gtdzigTeUyBr09+u8BwOIY3MXvHdcsA==}
@@ -11801,7 +11831,7 @@ packages:
   /@types/webpack@4.41.33:
     resolution: {integrity: sha512-PPajH64Ft2vWevkerISMtnZ8rTs4YmRbs+23c402J0INmxDKCrhZNvwZYtzx96gY2wAtXdrK1BS2fiC8MlLr3g==}
     dependencies:
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
       '@types/tapable': 1.0.8
       '@types/uglify-js': 3.17.1
       '@types/webpack-sources': 3.2.0
@@ -11832,7 +11862,7 @@ packages:
   /@types/ws@8.5.5:
     resolution: {integrity: sha512-lwhs8hktwxSjf9UaZ9tG5M03PGogvFaH8gUgLNbN9HKIg0dvv6q+gkSuJ8HN4/VbyxkuLzCjlN7GquQ0gUJfIg==}
     dependencies:
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
 
   /@types/yargs-parser@21.0.0:
     resolution: {integrity: sha512-iO9ZQHkZxHn4mSakYV0vFHAVDyEOIJQrV2uZ06HxEPcx+mt8swXoZHIbaaJ2crJYFfErySgktuTZ3BeLz+XmFA==}
@@ -12152,8 +12182,8 @@ packages:
       eslint-visitor-keys: 3.4.3
     dev: true
 
-  /@uzh-bf/design-system@2.1.6(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0):
-    resolution: {integrity: sha512-I8cD6CPgJxOw9PpZAgr+ueFVjiM4I3/RKgy2s8vFTVc9yMgGv1lPvl1b7Mzh63GKhXugyWR5z5m1FOcFJ2A3WQ==}
+  /@uzh-bf/design-system@2.1.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0):
+    resolution: {integrity: sha512-9ZrLtdE6+dQJ+mynBpcqY9Z2ILhxwoyGFg/jzq0Vjed3z8JWlCck4lvBLyQRhxVjvY7FlGKu8GBs1Z1hfufrrA==}
     engines: {node: '>=16'}
     peerDependencies:
       '@fortawesome/fontawesome-svg-core': ^6.3.0
@@ -13032,8 +13062,8 @@ packages:
       dequal: 2.0.3
     dev: true
 
-  /azure-functions-core-tools@4.0.5274:
-    resolution: {integrity: sha512-chonhkn8ADVkFMs/5cDS01xHtInxMnBM0eMlnHJBepHDvzwwQ1iFVhtbbDPjjEuUed9DoOOCinUorDXbb5c7GA==}
+  /azure-functions-core-tools@4.0.5390:
+    resolution: {integrity: sha512-qunPPVm5lU0oJjXSytfKTFeJDTDlxdfGVMQECIWT/o0YLQO8r6kEsJjfpTp7smVUOTyFujofOVhOJ5l0AJCpOg==}
     engines: {node: '>=6.9.1'}
     os: [win32, darwin, linux]
     hasBin: true
@@ -16706,7 +16736,7 @@ packages:
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     dependencies:
       '@jest/expect-utils': 29.6.2
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
       jest-get-type: 29.4.3
       jest-matcher-utils: 29.6.2
       jest-message-util: 29.6.2
@@ -17254,7 +17284,6 @@ packages:
       graceful-fs: 4.2.11
       jsonfile: 6.1.0
       universalify: 2.0.0
-    dev: false
 
   /fs-extra@7.0.1:
     resolution: {integrity: sha512-YJDaCJZEnBmcbw13fvdAM9AwNOJwOzrE4pqMqBq5nFiEqXUqHwlK4B+3pUw6JNvfSPtX05xFHtYy/1ni01eGCw==}
@@ -19312,6 +19341,47 @@ packages:
       - ts-node
     dev: true
 
+  /jest-config@29.6.2(@types/node@18.17.14)(ts-node@10.9.1):
+    resolution: {integrity: sha512-VxwFOC8gkiJbuodG9CPtMRjBUNZEHxwfQXmIudSTzFWxaci3Qub1ddTRbFNQlD/zUeaifLndh/eDccFX4wCMQw==}
+    engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
+    peerDependencies:
+      '@types/node': '*'
+      ts-node: '>=9.0.0'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      ts-node:
+        optional: true
+    dependencies:
+      '@babel/core': 7.21.8
+      '@jest/test-sequencer': 29.6.2
+      '@jest/types': 29.6.1
+      '@types/node': 18.17.14
+      babel-jest: 29.6.2(@babel/core@7.21.8)
+      chalk: 4.1.2
+      ci-info: 3.8.0
+      deepmerge: 4.3.1
+      glob: 7.2.3
+      graceful-fs: 4.2.11
+      jest-circus: 29.6.2
+      jest-environment-node: 29.6.2
+      jest-get-type: 29.4.3
+      jest-regex-util: 29.4.3
+      jest-resolve: 29.6.2
+      jest-runner: 29.6.2
+      jest-util: 29.6.2
+      jest-validate: 29.6.2
+      micromatch: 4.0.5
+      parse-json: 5.2.0
+      pretty-format: 29.6.2
+      slash: 3.0.0
+      strip-json-comments: 3.1.1
+      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
+    transitivePeerDependencies:
+      - babel-plugin-macros
+      - supports-color
+    dev: true
+
   /jest-config@29.6.2(@types/node@18.17.4)(ts-node@10.9.1):
     resolution: {integrity: sha512-VxwFOC8gkiJbuodG9CPtMRjBUNZEHxwfQXmIudSTzFWxaci3Qub1ddTRbFNQlD/zUeaifLndh/eDccFX4wCMQw==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -19593,7 +19663,7 @@ packages:
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     dependencies:
       '@jest/types': 29.6.1
-      '@types/node': 18.17.4
+      '@types/node': 18.17.14
       chalk: 4.1.2
       ci-info: 3.8.0
       graceful-fs: 4.2.11
@@ -23889,13 +23959,29 @@ packages:
       react: 18.2.0
     dev: false
 
-  /prisma@4.14.1:
-    resolution: {integrity: sha512-z6hxzTMYqT9SIKlzD08dhzsLUpxjFKKsLpp5/kBDnSqiOjtUyyl/dC5tzxLcOa3jkEHQ8+RpB/fE3w8bgNP51g==}
-    engines: {node: '>=14.17'}
+  /prisma-json-types-generator@3.0.1(prisma@5.3.1)(typescript@5.1.6):
+    resolution: {integrity: sha512-OKQunPOZ5RxRI450VFJqhWpGQQwHoyNTfvYHaUK9/sdf/J/GBvO2KjVk8V9vuYT/VPtyh66+BD3iWqgLTCr8Ag==}
+    engines: {node: '>=14.0'}
+    hasBin: true
+    peerDependencies:
+      prisma: ^5.1
+      typescript: ^5.1
+    dependencies:
+      '@prisma/generator-helper': 5.2.0
+      prisma: 5.3.1
+      tslib: 2.6.2
+      typescript: 5.1.6
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
+  /prisma@5.3.1:
+    resolution: {integrity: sha512-Wp2msQIlMPHe+5k5Od6xnsI/WNG7UJGgFUJgqv/ygc7kOECZapcSz/iU4NIEzISs3H1W9sFLjAPbg/gOqqtB7A==}
+    engines: {node: '>=16.13'}
     hasBin: true
     requiresBuild: true
     dependencies:
-      '@prisma/engines': 4.14.1
+      '@prisma/engines': 5.3.1
 
   /prismjs@1.29.0:
     resolution: {integrity: sha512-Kx/1w86q/epKcmte75LNrEoT+lX8pBpavuAbvJWRXar7Hz8jrtF+e3vY751p0R8H9HdArwaCTNDDzHg/ScJK1Q==}

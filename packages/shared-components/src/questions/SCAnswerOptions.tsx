@@ -37,7 +37,7 @@ export function SCAnswerOptions({
               ),
             }}
             onClick={onChange(index)}
-            key={choice.value}
+            key={`${choice.value}-${index}`}
             active={value?.includes(index)}
             data={{ cy: 'sc-answer-options' }}
           >

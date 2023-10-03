@@ -62,6 +62,9 @@ function SignInOutButton() {
 
   return (
     <div className="flex flex-col gap-4">
+      <p className="bg-slate-100 px-3 py-2 rounded border-slate-300 shadow">
+        {t('auth.loginInfo')}
+      </p>
       <Checkbox
         data={{ cy: 'tos-checkbox' }}
         label={

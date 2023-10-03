@@ -1,3 +1,4 @@
+import { sendTeamsNotifications } from '@/lib/util'
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
@@ -17,7 +18,10 @@ interface ExtendedProfile extends Profile {
 
 function reduceCatalyst(acc: boolean, affiliation: string) {
   try {
-    if (affiliation.split('@')[1].includes('uzh.ch')) {
+    if (
+      affiliation.split('@')[1].includes('uzh.ch') ||
+      affiliation.split('@')[1].includes('usz.ch')
+    ) {
       return true
     }
 
@@ -191,7 +195,7 @@ export const authOptions: NextAuthOptions = {
         })
 
         if (userAccount) {
-          await prisma.user.update({
+          const user = await prisma.user.update({
             where: { id: userAccount.userId },
             data: {
               email: profile.email,
@@ -203,6 +207,13 @@ export const authOptions: NextAuthOptions = {
                 ) ?? false,
             },
           })
+
+          if (user.firstLogin) {
+            await sendTeamsNotifications(
+              'eduId/signUp',
+              `User ${user.shortname} with email ${user.email} logged in for the first time.`
+            )
+          }
         }
       }
 
