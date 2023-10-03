@@ -21,5 +21,8 @@ query GetSingleLiveSession($sessionId: String!) {
     }
     pointsMultiplier
     isGamificationEnabled
+    isLiveQAEnabled
+    isConfusionFeedbackEnabled
+    isModerationEnabled
   }
 }

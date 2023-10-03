@@ -6,7 +6,10 @@ mutation EditSession(
   $blocks: [BlockInput!]!
   $courseId: String
   $multiplier: Int!
-  $isGamificationEnabled: Boolean
+  $isGamificationEnabled: Boolean!
+  $isConfusionFeedbackEnabled: Boolean!
+  $isLiveQAEnabled: Boolean!
+  $isModerationEnabled: Boolean!
 ) {
   editSession(
     id: $id
@@ -17,6 +20,9 @@ mutation EditSession(
     courseId: $courseId
     multiplier: $multiplier
     isGamificationEnabled: $isGamificationEnabled
+    isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
+    isLiveQAEnabled: $isLiveQAEnabled
+    isModerationEnabled: $isModerationEnabled
   ) {
     id
     name
@@ -39,5 +45,8 @@ mutation EditSession(
     }
     pointsMultiplier
     isGamificationEnabled
+    isConfusionFeedbackEnabled
+    isLiveQAEnabled
+    isModerationEnabled
   }
 }

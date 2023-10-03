@@ -133,6 +133,9 @@ function LiveSessionWizard({
               values.courseId !== '' ? parseInt(values.multiplier) : 1,
             isGamificationEnabled:
               values.courseId !== '' && values.isGamificationEnabled,
+            isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
+            isLiveQAEnabled: values.isLiveQAEnabled,
+            isModerationEnabled: values.isModerationEnabled,
           },
           refetchQueries: [
             {
@@ -160,6 +163,9 @@ function LiveSessionWizard({
             multiplier: parseInt(values.multiplier),
             isGamificationEnabled:
               values.courseId !== '' && values.isGamificationEnabled,
+            isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
+            isLiveQAEnabled: values.isLiveQAEnabled,
+            isModerationEnabled: values.isModerationEnabled,
           },
           refetchQueries: [
             {
@@ -251,7 +257,11 @@ function LiveSessionWizard({
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)
             : '1',
-          isGamificationEnabled: initialValues?.isGamificationEnabled || false,
+          isGamificationEnabled: initialValues?.isGamificationEnabled ?? false,
+          isConfusionFeedbackEnabled:
+            initialValues?.isConfusionFeedbackEnabled ?? true,
+          isLiveQAEnabled: initialValues?.isLiveQAEnabled ?? false,
+          isModerationEnabled: initialValues?.isModerationEnabled ?? true,
         }}
         onSubmit={onSubmit}
         isCompleted={isWizardCompleted}
@@ -376,71 +386,122 @@ function StepTwo(props: StepProps) {
   }, [values.isGamificationEnabled])
 
   return (
-    <>
+    <div className="flex flex-row gap-16">
       {props.courses && (
-        <div className="flex flex-row items-center gap-4">
-          <FormikSelectField
-            name="courseId"
-            label={t('shared.generic.course')}
-            tooltip={t('manage.sessionForms.liveSessionCourse')}
-            placeholder={t('manage.sessionForms.liveSessionSelectCourse')}
-            items={[
-              {
-                label: t('manage.sessionForms.liveSessionNoCourse'),
-                value: '',
-              },
-              ...props.courses,
-            ]}
-            hideError
-            data={{ cy: 'select-course' }}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-row items-center gap-4">
+            <FormikSelectField
+              name="courseId"
+              label={t('shared.generic.course')}
+              tooltip={t('manage.sessionForms.liveSessionCourse')}
+              placeholder={t('manage.sessionForms.liveSessionSelectCourse')}
+              items={[
+                {
+                  label: t('manage.sessionForms.liveSessionNoCourse'),
+                  value: '',
+                },
+                ...props.courses,
+              ]}
+              hideError
+              data={{ cy: 'select-course' }}
+              className={{ tooltip: 'z-20' }}
+            />
+            <ErrorMessage
+              name="courseId"
+              component="div"
+              className="text-sm text-red-400"
+            />
+          </div>
+
+          <div>
+            <FormikSwitchField
+              disabled={values.courseId === ''}
+              name="isGamificationEnabled"
+              label={t('shared.generic.gamification')}
+              tooltip={t('manage.sessionForms.liveSessionGamification')}
+              standardLabel
+              data={{ cy: 'set-gamification' }}
+              className={{ tooltip: 'z-20' }}
+            />
+            <ErrorMessage
+              name="isGamificationEnabled"
+              component="div"
+              className="text-sm text-red-400"
+            />
+          </div>
+          <div className="flex flex-row items-center gap-4">
+            <FormikSelectField
+              disabled={!values.isGamificationEnabled}
+              name="multiplier"
+              label={t('shared.generic.multiplier')}
+              tooltip={t('manage.sessionForms.liveSessionMultiplier')}
+              placeholder={t('manage.sessionForms.multiplierDefault')}
+              items={[
+                { label: t('manage.sessionForms.multiplier1'), value: '1' },
+                { label: t('manage.sessionForms.multiplier2'), value: '2' },
+                { label: t('manage.sessionForms.multiplier3'), value: '3' },
+                { label: t('manage.sessionForms.multiplier4'), value: '4' },
+              ]}
+              data={{ cy: 'select-multiplier' }}
+              className={{ tooltip: 'z-20' }}
+            />
+            <ErrorMessage
+              name="multiplier"
+              component="div"
+              className="text-sm text-red-400"
+            />
+          </div>
+        </div>
+      )}
+      <div className="flex flex-col gap-4">
+        <div>
+          <FormikSwitchField
+            name="isConfusionFeedbackEnabled"
+            label={t('shared.generic.feedbackChannel')}
+            tooltip={t('manage.sessionForms.liveSessionFeedbackChannel')}
+            standardLabel
+            data={{ cy: 'set-feedback-enabled' }}
             className={{ tooltip: 'z-20' }}
           />
           <ErrorMessage
-            name="courseId"
+            name="isConfusionFeedbackEnabled"
             component="div"
             className="text-sm text-red-400"
           />
         </div>
-      )}
-      <div>
-        <FormikSwitchField
-          disabled={values.courseId === ''}
-          name="isGamificationEnabled"
-          label={t('shared.generic.gamification')}
-          tooltip={t('manage.sessionForms.liveSessionGamification')}
-          standardLabel
-          data={{ cy: 'set-gamification' }}
-          className={{ tooltip: 'z-20' }}
-        />
-        <ErrorMessage
-          name="isGamificationEnabled"
-          component="div"
-          className="text-sm text-red-400"
-        />
+        <div>
+          <FormikSwitchField
+            name="isLiveQAEnabled"
+            label={t('shared.generic.liveQA')}
+            tooltip={t('manage.sessionForms.liveSessionLiveQA')}
+            standardLabel
+            data={{ cy: 'set-liveqa-enabled' }}
+            className={{ tooltip: 'z-20' }}
+          />
+          <ErrorMessage
+            name="isLiveQAEnabled"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
+        <div>
+          <FormikSwitchField
+            disabled={!values.isLiveQAEnabled}
+            name="isModerationEnabled"
+            label={t('shared.generic.moderation')}
+            tooltip={t('manage.sessionForms.liveSessionModeration')}
+            standardLabel
+            data={{ cy: 'set-liveqa-moderation' }}
+            className={{ tooltip: 'z-20' }}
+          />
+          <ErrorMessage
+            name="isModerationEnabled"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
       </div>
-      <div className="flex flex-row items-center gap-4">
-        <FormikSelectField
-          disabled={!values.isGamificationEnabled}
-          name="multiplier"
-          label={t('shared.generic.multiplier')}
-          tooltip={t('manage.sessionForms.liveSessionMultiplier')}
-          placeholder={t('manage.sessionForms.multiplierDefault')}
-          items={[
-            { label: t('manage.sessionForms.multiplier1'), value: '1' },
-            { label: t('manage.sessionForms.multiplier2'), value: '2' },
-            { label: t('manage.sessionForms.multiplier3'), value: '3' },
-            { label: t('manage.sessionForms.multiplier4'), value: '4' },
-          ]}
-          data={{ cy: 'select-multiplier' }}
-          className={{ tooltip: 'z-20' }}
-        />
-        <ErrorMessage
-          name="multiplier"
-          component="div"
-          className="text-sm text-red-400"
-        />
-      </div>
-    </>
+    </div>
   )
 }
 
