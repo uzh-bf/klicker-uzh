@@ -686,7 +686,10 @@ export const Mutation = builder.mutationType({
           }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
-          isGamificationEnabled: t.arg.boolean({ required: false }),
+          isGamificationEnabled: t.arg.boolean({ required: true }),
+          isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
+          isLiveQAEnabled: t.arg.boolean({ required: true }),
+          isModerationEnabled: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return SessionService.createSession(args, ctx)
@@ -707,7 +710,10 @@ export const Mutation = builder.mutationType({
           }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
-          isGamificationEnabled: t.arg.boolean({ required: false }),
+          isGamificationEnabled: t.arg.boolean({ required: true }),
+          isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
+          isLiveQAEnabled: t.arg.boolean({ required: true }),
+          isModerationEnabled: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return SessionService.editSession(args, ctx)

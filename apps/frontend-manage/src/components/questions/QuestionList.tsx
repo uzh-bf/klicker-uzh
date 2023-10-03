@@ -10,6 +10,7 @@ interface QuestionListProps {
   selectedQuestions: Record<number, QuestionType>
   questions?: QuestionType[]
   tagfilter?: string[]
+  handleTagClick: (value: string, selected?: boolean) => void
   unsetDeletedQuestion: (questionId: number) => void
 }
 
@@ -18,6 +19,7 @@ function QuestionList({
   selectedQuestions,
   questions = [],
   tagfilter = [],
+  handleTagClick,
   unsetDeletedQuestion,
 }: QuestionListProps): React.ReactElement {
   const t = useTranslations()
@@ -44,6 +46,7 @@ function QuestionList({
           isArchived={question.isArchived}
           key={question.id}
           tags={question.tags || []}
+          handleTagClick={handleTagClick}
           title={question.name}
           type={question.type}
           content={question.content}

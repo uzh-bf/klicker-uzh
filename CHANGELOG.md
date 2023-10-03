@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.76](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.75...v3.0.0-rc.76) (2023-10-03)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** hide answer feedbacks on question editor preview when not activated ([93646ea](https://github.com/uzh-bf/klicker-uzh/commit/93646eaa7ab3e374da55cdfeb17065d85c6816f2))
+* **packages/graphql:** rework endSession logic to ensure XP and points are assigned consistently ([#3887](https://github.com/uzh-bf/klicker-uzh/issues/3887)) ([5dbab78](https://github.com/uzh-bf/klicker-uzh/commit/5dbab78542c6432aadcd1b14327ecd35ef8714a9))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add possibility to select tag on question list element ([#3885](https://github.com/uzh-bf/klicker-uzh/issues/3885)) ([a3526f0](https://github.com/uzh-bf/klicker-uzh/commit/a3526f06e192bc04f6f07d1e7e344e2b741c80b6))
+* **apps/frontend-manage:** allow to preset live session settings ([#3883](https://github.com/uzh-bf/klicker-uzh/issues/3883)) ([d0f2d1f](https://github.com/uzh-bf/klicker-uzh/commit/d0f2d1fad050c647cae39f13584b7f6a15682c9b))
+
 ## [3.0.0-rc.75](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.74...v3.0.0-rc.75) (2023-09-28)
 
 
