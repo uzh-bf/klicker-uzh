@@ -1510,7 +1510,7 @@ importers:
         version: 3.20.0(@pothos/core@3.33.0)(graphql@16.7.1)
       '@pothos/plugin-validation':
         specifier: 3.10.0
-        version: 3.10.0(@pothos/core@3.33.0)(graphql@16.7.1)(zod@3.21.4)
+        version: 3.10.0(@pothos/core@3.33.0)(graphql@16.7.1)(zod@3.22.3)
       axios:
         specifier: 1.4.0
         version: 1.4.0
@@ -1551,8 +1551,8 @@ importers:
         specifier: 13.9.0
         version: 13.9.0
       zod:
-        specifier: 3.21.4
-        version: 3.21.4
+        specifier: 3.22.3
+        version: 3.22.3
     devDependencies:
       '@graphql-codegen/cli':
         specifier: 5.0.0
@@ -8541,7 +8541,7 @@ packages:
       graphql: 16.7.1
     dev: false
 
-  /@pothos/plugin-validation@3.10.0(@pothos/core@3.33.0)(graphql@16.7.1)(zod@3.21.4):
+  /@pothos/plugin-validation@3.10.0(@pothos/core@3.33.0)(graphql@16.7.1)(zod@3.22.3):
     resolution: {integrity: sha512-/f5u7XYSXeuLDohYB5qerhrWS9eJWa913oJyRI51Ur/fW0Ekuc5HQjGJ+EZjAgKh4FnyWMD/zpwWiXqZzxua5g==}
     peerDependencies:
       '@pothos/core': '*'
@@ -8550,7 +8550,7 @@ packages:
     dependencies:
       '@pothos/core': 3.33.0(graphql@16.7.1)
       graphql: 16.7.1
-      zod: 3.21.4
+      zod: 3.22.3
     dev: false
 
   /@prisma/client@5.3.1(prisma@5.3.1):
@@ -10992,7 +10992,7 @@ packages:
     resolution: {integrity: sha512-pFFVXUIydHlcJP6wJm7sDii5mD/bCmmAY0wQzq+M+uX7bqS95AQqHZWP1iNMKrWVQSuHIzj5qi9BvrtLX2/T4w==}
     dependencies:
       '@types/history': 4.7.11
-      '@types/react': 18.2.18
+      '@types/react': 18.2.21
       '@types/react-router': 5.1.20
     dev: false
 
@@ -11000,7 +11000,7 @@ packages:
     resolution: {integrity: sha512-kpqnYK4wcdm5UaWI3fLcELopqLrHgLqNsdpHauzlQktfkHL3npOSwtj1Uz9oKBAzs7lFtVkV8j83voAz2D8fhw==}
     dependencies:
       '@types/history': 4.7.11
-      '@types/react': 18.2.18
+      '@types/react': 18.2.21
       '@types/react-router': 5.1.20
     dev: false
 
@@ -27786,6 +27786,10 @@ packages:
 
   /zod@3.21.4:
     resolution: {integrity: sha512-m46AKbrzKVzOzs/DZgVnG5H55N1sv1M8qZU3A8RIKbs3mrACDNeIOeilDymVb2HdmP8uwshOCF4uJ8uM9rCqJw==}
+    dev: false
+
+  /zod@3.22.3:
+    resolution: {integrity: sha512-EjIevzuJRiRPbVH4mGc8nApb/lVLKVpmUhAaR5R5doKGfAnGJ6Gr3CViAVjP+4FWSxCsybeWQdcgCtbX+7oZug==}
     dev: false
 
   /zwitch@2.0.4:
