@@ -10,7 +10,7 @@ import UserTag from './UserTag'
 
 interface Props {
   activeTags: string[]
-  handleTagClick: (questionType: string, selected?: boolean) => void
+  handleTagClick: (value: string, selected?: boolean) => void
 }
 
 function SuspendedTags({ activeTags, handleTagClick }: Props) {
@@ -33,7 +33,7 @@ function SuspendedTags({ activeTags, handleTagClick }: Props) {
     )
 
   return (
-    <ul className="flex flex-col overflow-y-auto list-none">
+    <ul className="flex flex-col min-h-[4.7rem] overflow-y-auto list-none">
       {data.userTags.map(
         (tag: Tag, ix): React.ReactElement => (
           <UserTag
