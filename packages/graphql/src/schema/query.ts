@@ -361,7 +361,7 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getSessionEvaluation(args, ctx)
+          return SessionService.getSessionEvaluation(args, ctx) as any
         },
       }),
 

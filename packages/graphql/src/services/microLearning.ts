@@ -7,8 +7,9 @@ import {
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { GraphQLError } from 'graphql'
 import { pick } from 'ramda'
+import { AllQuestionTypeData } from 'src/types/app'
 import { Context, ContextWithUser } from '../lib/context'
-import { prepareInitialInstanceResults, processQuestionData } from './sessions'
+import { prepareInitialInstanceResults } from './sessions'
 
 export async function getQuestionMap(
   questions: number[],
@@ -193,14 +194,15 @@ export async function createMicroSession(
       instances: {
         create: questions.map((questionId, ix) => {
           const question = questionMap[questionId]
-          const processedQuestionData = processQuestionData(question)
 
           return {
             order: ix,
             type: QuestionInstanceType.MICRO_SESSION,
             pointsMultiplier: multiplier * question.pointsMultiplier,
-            questionData: processedQuestionData,
-            results: prepareInitialInstanceResults(processedQuestionData),
+            questionData: question,
+            results: prepareInitialInstanceResults(
+              question as AllQuestionTypeData
+            ),
             question: {
               connect: { id: questionId },
             },

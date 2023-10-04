@@ -27,7 +27,7 @@ import { ResponseInput } from 'src/ops'
 import { AllQuestionTypeData } from 'src/types/app'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
-import { prepareInitialInstanceResults, processQuestionData } from './sessions'
+import { prepareInitialInstanceResults } from './sessions'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
@@ -933,7 +933,6 @@ export async function manipulateLearningElement(
                   } else if (typeof element.questionId === 'number') {
                     // create stack element with question instance
                     const question = questionMap[element.questionId]
-                    const processedQuestionData = processQuestionData(question)
 
                     return {
                       order: ixInner,
@@ -943,9 +942,9 @@ export async function manipulateLearningElement(
                           type: QuestionInstanceType.LEARNING_ELEMENT,
                           pointsMultiplier:
                             multiplier * question.pointsMultiplier,
-                          questionData: processedQuestionData,
+                          questionData: question,
                           results: prepareInitialInstanceResults(
-                            processedQuestionData
+                            question as AllQuestionTypeData
                           ),
                           question: {
                             connect: { id: element.questionId },

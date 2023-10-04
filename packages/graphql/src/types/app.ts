@@ -1,4 +1,9 @@
-import { QuestionDisplayMode } from '@klicker-uzh/prisma'
+import {
+  Question,
+  QuestionDisplayMode,
+  QuestionInstance,
+  QuestionType,
+} from '@klicker-uzh/prisma'
 
 export type AvatarSettings = {
   skinTone: string
@@ -27,8 +32,13 @@ export type QuestionResultsChoices = {
 }
 
 export type QuestionResultsOpen = {
-  [x: string]: number
+  [x: string]: {
+    count: number
+    value: string
+    correct?: boolean
+  }
 }
+
 export type QuestionResults = QuestionResultsChoices | QuestionResultsOpen
 
 export type Choice = {
@@ -68,7 +78,10 @@ export type QuestionOptions =
   | QuestionOptionsNumerical
   | QuestionOptionsFreeText
 
-interface IQuestionData<Type, Options> {
+interface IQuestionData<
+  Type extends QuestionType,
+  Options extends QuestionOptions
+> extends Question {
   id: number
   name: string
   type: Type
@@ -77,10 +90,10 @@ interface IQuestionData<Type, Options> {
   ownerId: string
   isDeleted: boolean
   isArchived: boolean
-  createdAt: string | Date
-  updatedAt: string | Date
+  createdAt: Date
+  updatedAt: Date
   pointsMultiplier: number
-  explanation?: string
+  explanation: string | null
 
   options: Options
 }
@@ -103,8 +116,39 @@ export type AllQuestionTypeData =
   | FreeTextQuestionData
   | NumericalQuestionData
 
+export interface IQuestionInstanceWithResults<
+  Type extends QuestionType,
+  Results extends QuestionResults
+> extends QuestionInstance {
+  elementType?: Type
+  questionData: AllQuestionTypeData
+  results: Results
+  statistics?: {
+    max?: number
+    mean?: number
+    median?: number
+    min?: number
+    q1?: number
+    q3?: number
+    sd?: number[]
+  }
+}
+
+export type ChoicesQuestionInstanceData = IQuestionInstanceWithResults<
+  'SC' | 'MC' | 'KPRIM',
+  QuestionResultsChoices
+>
+export type OpenQuestionInstanceData = IQuestionInstanceWithResults<
+  'FREE_TEXT' | 'NUMERICAL',
+  QuestionResultsOpen
+>
+
+export type AllQuestionInstanceTypeData =
+  | ChoicesQuestionInstanceData
+  | OpenQuestionInstanceData
+
 declare global {
-  namespace Json {
+  namespace PrismaJson {
     type PrismaAvatarSettings = AvatarSettings
     type PrismaQuestionResponse = QuestionResponse
     type PrismaQuestionOptions = QuestionOptions
