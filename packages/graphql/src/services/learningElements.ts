@@ -43,22 +43,23 @@ function evaluateQuestionResponse(
     case QuestionType.SC:
     case QuestionType.MC:
     case QuestionType.KPRIM: {
-      const data = questionData
-
       // TODO: feedbacks only for selected options?
       // const feedbacks = questionData.options.choices.filter((choice) =>
       //   response.choices!.includes(choice.ix)
       // )
 
-      const feedbacks = data.options.choices
-      const solution = data.options.choices.reduce<number[]>((acc, choice) => {
-        if (choice.correct) return [...acc, choice.ix]
-        return acc
-      }, [])
+      const feedbacks = questionData.options.choices
+      const solution = questionData.options.choices.reduce<number[]>(
+        (acc, choice) => {
+          if (choice.correct) return [...acc, choice.ix]
+          return acc
+        },
+        []
+      )
 
-      if (data.type === QuestionType.SC) {
+      if (questionData.type === QuestionType.SC) {
         const pointsPercentage = gradeQuestionSC({
-          responseCount: data.options.choices.length,
+          responseCount: questionData.options.choices.length,
           response: response.choices,
           solution,
         })
@@ -75,9 +76,9 @@ function evaluateQuestionResponse(
           }),
           percentile: pointsPercentage ?? 0,
         }
-      } else if (data.type === QuestionType.MC) {
+      } else if (questionData.type === QuestionType.MC) {
         const pointsPercentage = gradeQuestionMC({
-          responseCount: data.options.choices.length,
+          responseCount: questionData.options.choices.length,
           response: response.choices!,
           solution,
         })
@@ -96,7 +97,7 @@ function evaluateQuestionResponse(
         }
       } else {
         const pointsPercentage = gradeQuestionKPRIM({
-          responseCount: data.options.choices.length,
+          responseCount: questionData.options.choices.length,
           response: response.choices!,
           solution,
         })
@@ -117,8 +118,7 @@ function evaluateQuestionResponse(
     }
 
     case QuestionType.NUMERICAL: {
-      const data = questionData
-      const solutionRanges = data.options.solutionRanges
+      const solutionRanges = questionData.options.solutionRanges
 
       const correct = gradeQuestionNumerical({
         response: parseFloat(String(response.value)),
@@ -138,8 +138,7 @@ function evaluateQuestionResponse(
     }
 
     case QuestionType.FREE_TEXT: {
-      const data = questionData
-      const solutions = data.options.solutions
+      const solutions = questionData.options.solutions
 
       const correct = gradeQuestionFreeText({
         response: response.value ?? '',
