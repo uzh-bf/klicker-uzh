@@ -29,7 +29,7 @@
     "ramda": "0.29.0",
     "uuid": "9.0.0",
     "validator": "13.9.0",
-    "zod": "3.21.4"
+    "zod": "3.22.3"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "5.0.0",
