@@ -11,7 +11,7 @@
     "@prisma/client": "5.3.1"
   },
   "devDependencies": {
-    "@pothos/plugin-prisma": "3.56.0",
+    "@pothos/plugin-prisma": "3.60.0",
     "@size-limit/preset-small-lib": "8.2.4",
     "@tsconfig/node18": "^2.0.1",
     "@tsconfig/recommended": "^1.0.2",
