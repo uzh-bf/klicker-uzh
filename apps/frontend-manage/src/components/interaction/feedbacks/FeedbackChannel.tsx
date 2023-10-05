@@ -10,6 +10,7 @@ import { Button } from '@uzh-bf/design-system'
 
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
+import FeedbacksPrintView from '@components/sessions/evaluation/FeedbacksPrintView'
 import { useTranslations } from 'next-intl'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
@@ -41,7 +42,6 @@ function FeedbackChannel({
   const { sortedFeedbacks, filterProps } = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })
-  // const [feedbackLength, setFeedbackLength] = useState(0)
 
   // useEffect(() => {
   //   requestNotificationPermissions((permission) => {
@@ -62,7 +62,8 @@ function FeedbackChannel({
   // }, [feedbacks.length])
 
   return (
-    <div>
+    <>
+      <FeedbacksPrintView feedbacks={sortedFeedbacks} sessionName={'TODO'} />
       <FeedbackSearchAndFilters
         disabled={{
           sorting: sortedFeedbacks?.length === 0,
@@ -70,7 +71,7 @@ function FeedbackChannel({
         }}
         {...filterProps}
       />
-      <div className="flex flex-col gap-2 mt-4 overflow-y-auto">
+      <div className="flex flex-col gap-2 mt-4 overflow-y-auto print:hidden">
         {/* // TODO: styling */}
         {!feedbacks ||
           (feedbacks.length === 0 && (
@@ -170,7 +171,7 @@ function FeedbackChannel({
           </div>
         )} */}
       </div>
-    </div>
+    </>
   )
 }
 
