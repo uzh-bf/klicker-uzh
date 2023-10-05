@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0-rc.77](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.76...v3.0.0-rc.77) (2023-10-05)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** introduce updated print view for feedback channel ([#3898](https://github.com/uzh-bf/klicker-uzh/issues/3898)) ([f53d1b9](https://github.com/uzh-bf/klicker-uzh/commit/f53d1b9079b48e16c5757c677c08767e42b7b071))
+
 ## [3.0.0-rc.76](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.75...v3.0.0-rc.76) (2023-10-03)
 
 
