@@ -10,8 +10,8 @@ import { Button } from '@uzh-bf/design-system'
 
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
-import FeedbacksPrintView from '@components/sessions/evaluation/FeedbacksPrintView'
 import { useTranslations } from 'next-intl'
+import FeedbacksPrintView from '../../sessions/evaluation/FeedbacksPrintView'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 

@@ -1,4 +1,3 @@
-import DynamicMarkdown from '@components/learningElements/DynamicMarkdown'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
@@ -17,6 +16,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import DynamicMarkdown from '../learningElements/DynamicMarkdown'
 
 interface Props {
   initialUsername?: string
