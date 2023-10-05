@@ -1,70 +1,55 @@
-import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
-import { faCheck } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import useFeedbackFilter from '@lib/hooks/useFeedbackFilter'
-import dayjs from 'dayjs'
+import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import FeedbackSearchAndFilters from '../../interaction/feedbacks/FeedbackSearchAndFilters'
+import SingleFeedback from './SingleFeedback'
 
 interface EvaluationFeedbacksProps {
   feedbacks: Feedback[]
+  sessionName: string
 }
 
-function EvaluationFeedbacks({ feedbacks }: EvaluationFeedbacksProps) {
+function EvaluationFeedbacks({
+  feedbacks,
+  sessionName,
+}: EvaluationFeedbacksProps) {
   const t = useTranslations()
   const { sortedFeedbacks, filterProps } = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })
 
   return (
-    <div className="flex flex-col gap-3">
-      <FeedbackSearchAndFilters
-        className="text-base"
-        disabled={{
-          search: feedbacks?.length === 0,
-          filters: feedbacks?.length === 0,
-          print: feedbacks?.length === 0,
-          sorting: feedbacks?.length === 0,
-        }}
-        {...filterProps}
-      />
-      {sortedFeedbacks?.length === 0 && (
-        <div>{t('manage.evaluation.noFeedbacksMatchFilter')}</div>
-      )}
-      {sortedFeedbacks?.map((feedback) => (
-        <div key={feedback.content}>
-          <div className="w-full p-2 border border-solid rounded-md border-uzh-grey-40">
-            <div className="flex flex-row justify-between">
-              <div>{feedback.content}</div>
-              <div className="flex flex-row items-center text-gray-500">
-                <div>{feedback.votes}</div>
-                <FontAwesomeIcon icon={faThumbsUp} className="ml-1.5" />
-              </div>
-            </div>
-            <div className="flex flex-row justify-between text-base text-gray-500">
-              <div>{dayjs(feedback.createdAt).format('DD.MM.YYYY HH:mm')}</div>
-              {feedback.isResolved && (
-                <div className="flex flex-row items-center">
-                  <FontAwesomeIcon icon={faCheck} className="mr-1.5" />
-                  <div>{t('manage.evaluation.resolvedDuringSession')}</div>
-                </div>
-              )}
-            </div>
-          </div>
-          {feedback.responses?.map((response) => (
-            <div
-              key={response?.content}
-              className="w-full pl-12 mt-1 text-base"
-            >
-              <div className="border border-solid rounded border-uzh-grey-40 p-1.5 bg-opacity-50 bg-primary-20">
-                {response?.content}
-              </div>
-            </div>
+    <>
+      {sortedFeedbacks && sortedFeedbacks.length > 0 && (
+        <div className="hidden print:block space-y-3">
+          <H2 className={{ root: 'border-b-2 border-solid border-gray-400' }}>
+            {t('manage.cockpit.printTitle', { name: sessionName })}
+          </H2>
+          {sortedFeedbacks.map((feedback) => (
+            <SingleFeedback key={feedback.id} feedback={feedback} />
           ))}
         </div>
-      ))}
-    </div>
+      )}
+      <div className="space-y-3 print:hidden">
+        <FeedbackSearchAndFilters
+          className="text-base"
+          disabled={{
+            search: feedbacks?.length === 0,
+            filters: feedbacks?.length === 0,
+            print: feedbacks?.length === 0,
+            sorting: feedbacks?.length === 0,
+          }}
+          {...filterProps}
+        />
+        {sortedFeedbacks?.length === 0 && (
+          <div>{t('manage.evaluation.noFeedbacksMatchFilter')}</div>
+        )}
+        {sortedFeedbacks?.map((feedback) => (
+          <SingleFeedback key={feedback.id} feedback={feedback} />
+        ))}
+      </div>
+    </>
   )
 }
 
