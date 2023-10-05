@@ -1,8 +1,8 @@
 import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import useFeedbackFilter from '@lib/hooks/useFeedbackFilter'
-import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import FeedbackSearchAndFilters from '../../interaction/feedbacks/FeedbackSearchAndFilters'
+import FeedbacksPrintView from './FeedbacksPrintView'
 import SingleFeedback from './SingleFeedback'
 
 interface EvaluationFeedbacksProps {
@@ -21,16 +21,10 @@ function EvaluationFeedbacks({
 
   return (
     <>
-      {sortedFeedbacks && sortedFeedbacks.length > 0 && (
-        <div className="hidden print:block space-y-3">
-          <H2 className={{ root: 'border-b-2 border-solid border-gray-400' }}>
-            {t('manage.cockpit.printTitle', { name: sessionName })}
-          </H2>
-          {sortedFeedbacks.map((feedback) => (
-            <SingleFeedback key={feedback.id} feedback={feedback} />
-          ))}
-        </div>
-      )}
+      <FeedbacksPrintView
+        feedbacks={sortedFeedbacks}
+        sessionName={sessionName}
+      />
       <div className="space-y-3 print:hidden">
         <FeedbackSearchAndFilters
           className="text-base"
