@@ -78,17 +78,13 @@ function AudienceInteraction({
 
   return (
     <div className="flex flex-col justify-between md:flex-row md:flex-wrap">
-      <div className="hidden print:block">
-        <h1>{t('manage.cockpit.printTitle', { name: sessionName })}</h1>
-      </div>
-
       <div
         className={twMerge(
-          'flex flex-col md:items-start w-full gap-2 md:gap-8 md:flex-row print:hidden'
+          'flex flex-col md:items-start w-full gap-2 md:gap-8 md:flex-row'
         )}
       >
         <div className="flex flex-col flex-grow gap-4 md:w-2/3">
-          <div className="flex flex-row flex-wrap items-end justify-between">
+          <div className="flex flex-row flex-wrap items-end justify-between print:hidden">
             <H2>{t('manage.cockpit.liveQA')}</H2>
             <div className="flex flex-row flex-wrap items-end gap-4">
               <Link
@@ -145,13 +141,13 @@ function AudienceInteraction({
           </div>
 
           {!isLiveQAEnabled && (
-            <div className="flex items-center justify-center flex-1 font-bold border rounded">
+            <div className="flex items-center justify-center flex-1 font-bold border rounded print:hidden">
               {t('manage.cockpit.QaNotActive')}
             </div>
           )}
 
           {isLiveQAEnabled && (
-            <div className="flex flex-col flex-1 p-4 border rounded md:flex-row md:flex-wrap">
+            <div className="flex flex-col flex-1 p-4 border print:border-0 rounded md:flex-row md:flex-wrap">
               <div className="flex-1">
                 <FeedbackChannel
                   feedbacks={feedbacks}
@@ -235,7 +231,7 @@ function AudienceInteraction({
             </div>
           )}
         </div>
-        <div className="flex flex-col md:w-[250px] flex-auto gap-4 md:flex-row md:flex-wrap">
+        <div className="flex flex-col md:w-[250px] flex-auto gap-4 md:flex-row md:flex-wrap print:hidden">
           <div className="flex flex-row flex-wrap items-end justify-between flex-none w-full gap-2">
             <H2>{t('shared.generic.feedback')}</H2>
             <Switch

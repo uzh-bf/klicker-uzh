@@ -1,6 +1,7 @@
 query GetSessionEvaluation($id: String!) {
   sessionEvaluation(id: $id) {
     id
+    displayName
     status
     isGamificationEnabled
     blocks {

@@ -94,7 +94,7 @@
    "GetPublicParticipantProfile": "e7bd5487dfe6197685fb2a7c3c6a81cab8a87db3429f5badeb311b6b237039d3",
    "GetRunningSession": "18e261ee5dc35195f53f18f24d85def07ca6f2b9213cfbe6f9f244bc0b557f6b",
    "GetRunningSessions": "db9601297d4de1b497598ff8a2a58c286492ec65cec0116b63f630d1bd8c86b7",
-   "GetSessionEvaluation": "7b738682851c7ec891cacac7fc20e2090ab007a32d26f49eac56cf48051b6d8b",
+   "GetSessionEvaluation": "a666b4fe01594de4b4dbfc7ca4a209bab283ccdfb13c9dea630add0c21cb6152",
    "GetSessionLeaderboard": "09404af10f91c8da107743b4ba18a43e35507163176a8cd8ac6542feaa08bb91",
    "GetSingleCourse": "c16f2b17c41749e44bf29e00af797513506482023c2b6cea89275adea418268f",
    "GetSingleLiveSession": "6186d80c8d6e5c082c22cad63c19f92fdbf95e70fae6f8aa5dd8fd5cdc68df0c",
