@@ -769,6 +769,7 @@ enum SessionBlockStatus {
 type SessionEvaluation {
   blocks: [EvaluationBlock!]!
   confusionFeedbacks: [ConfusionTimestep!]!
+  displayName: String!
   feedbacks: [Feedback!]!
   id: String!
   instanceResults: [InstanceResult!]!

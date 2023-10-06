@@ -271,6 +271,7 @@ export const EvaluationBlock = builder
 
 export interface ISessionEvaluation {
   id: string
+  displayName: string
   status: DB.SessionStatus
   isGamificationEnabled: boolean
   blocks: IEvaluationBlock[]
@@ -283,6 +284,7 @@ export const SessionEvaluationRef =
 export const SessionEvaluation = SessionEvaluationRef.implement({
   fields: (t) => ({
     id: t.exposeString('id'),
+    displayName: t.exposeString('displayName'),
     status: t.field({
       type: SessionStatus,
       resolve: (evaluation) => evaluation.status,

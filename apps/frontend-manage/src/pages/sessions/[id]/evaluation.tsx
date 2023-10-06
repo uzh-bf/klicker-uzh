@@ -223,7 +223,7 @@ function Evaluation() {
         />
       </div>
 
-      <div className={twMerge('flex-1 flex flex-col min-h-0')}>
+      <div className="flex-1 flex flex-col min-h-0">
         {currentInstance &&
           !showConfusion &&
           !showFeedbacks &&
@@ -264,23 +264,29 @@ function Evaluation() {
           </div>
         )}
 
-        {!showLeaderboard && !showConfusion && showFeedbacks && (
-          <div className="overflow-y-auto">
-            <div className="p-4 border-t">
-              <div className="max-w-5xl mx-auto text-xl">
-                {feedbacks && feedbacks.length > 0 ? (
-                  <EvaluationFeedbacks feedbacks={feedbacks} />
-                ) : (
-                  <UserNotification
-                    className={{ message: 'text-lg' }}
-                    type="warning"
-                    message={t('manage.evaluation.noFeedbacksYet')}
-                  />
-                )}
+        {!showLeaderboard &&
+          !showConfusion &&
+          showFeedbacks &&
+          data.sessionEvaluation && (
+            <div className="overflow-y-auto print:overflow-y-visible">
+              <div className="p-4">
+                <div className="max-w-5xl mx-auto text-xl">
+                  {feedbacks && feedbacks.length > 0 ? (
+                    <EvaluationFeedbacks
+                      feedbacks={feedbacks}
+                      sessionName={data.sessionEvaluation.displayName}
+                    />
+                  ) : (
+                    <UserNotification
+                      className={{ message: 'text-lg' }}
+                      type="warning"
+                      message={t('manage.evaluation.noFeedbacksYet')}
+                    />
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         {!showLeaderboard && showConfusion && !showFeedbacks && (
           <div className="overflow-y-auto">
