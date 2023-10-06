@@ -1950,6 +1950,7 @@ export async function getSessionEvaluation(
 
         return {
           id: `${instance?.id}-eval`,
+          displayName: session.displayName,
           blockIx: session.activeBlock!.order,
           instanceIx: instance?.order,
           status: session.activeBlock!.status,
@@ -2005,6 +2006,7 @@ export async function getSessionEvaluation(
 
   return {
     id: `${id}-eval`,
+    displayName: session.displayName,
     status: session.status,
     isGamificationEnabled: session.isGamificationEnabled,
     blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,

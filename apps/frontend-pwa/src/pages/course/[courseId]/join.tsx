@@ -15,9 +15,9 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import * as yup from 'yup'
 
-import CreateAccountForm from '@components/forms/CreateAccountForm'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import Layout from '../../../components/Layout'
+import CreateAccountForm from '../../../components/forms/CreateAccountForm'
 
 function JoinCourse({
   courseId,
