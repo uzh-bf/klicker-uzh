@@ -1,16 +1,25 @@
 import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import type PrismaTypes from '@klicker-uzh/prisma/dist/pothos'
 import SchemaBuilder from '@pothos/core'
+import DirectivePlugin from '@pothos/plugin-directives'
 import PrismaPlugin from '@pothos/plugin-prisma'
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ValidationPlugin from '@pothos/plugin-validation'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
+import './types/app'
+
 import { Context, ContextWithUser } from './lib/context'
 
 const prisma = new PrismaClient({})
 
 const builder = new SchemaBuilder<{
+  Directives: {
+    // TEMPLATE for future directives
+    // oneOf: {
+    //   locations: 'INPUT_OBJECT'
+    // }
+  }
   Context: Context
   AuthContexts: {
     authenticated: ContextWithUser
@@ -73,7 +82,8 @@ const builder = new SchemaBuilder<{
     },
     catalyst: ctx.user?.catalystInstitutional || ctx.user?.catalystIndividual,
   }),
-  plugins: [ScopeAuthPlugin, PrismaPlugin, ValidationPlugin],
+  plugins: [ScopeAuthPlugin, PrismaPlugin, ValidationPlugin, DirectivePlugin],
+  useGraphQLToolsUnorderedDirectives: true,
   prisma: {
     client: prisma,
     filterConnectionTotalCount: true,

@@ -7,8 +7,11 @@ import JWT from 'jsonwebtoken'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context'
+import {
+  prepareInitialInstanceResults,
+  processQuestionData,
+} from '../lib/questions'
 import { sendTeamsNotifications } from '../lib/util'
-import { prepareInitialInstanceResults, processQuestionData } from './sessions'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -784,7 +787,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
           ({ questions, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questions.map((question, ix) => {
               const processedQuestionData = processQuestionData(question)
-
               return {
                 order: ix,
                 type: DB.QuestionInstanceType.SESSION,

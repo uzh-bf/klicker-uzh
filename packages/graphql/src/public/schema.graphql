@@ -1,3 +1,9 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
 type Achievement {
   description: String!
   icon: String!
@@ -57,6 +63,8 @@ type ChoicesQuestionData implements QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
   explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   name: String!
   options: ChoiceQuestionOptions!
@@ -151,6 +159,8 @@ type FreeTextQuestionData implements QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
   explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   name: String!
   options: FreeTextQuestionOptions!
@@ -451,6 +461,8 @@ type NumericalQuestionData implements QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
   explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   name: String!
   options: NumericalQuestionOptions!
@@ -646,6 +658,8 @@ interface QuestionData {
   content: String!
   displayMode: QuestionDisplayMode
   explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   id: Int!
   name: String!
   pointsMultiplier: Int

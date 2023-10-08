@@ -2,6 +2,7 @@ import {
   AccessMode,
   ConfusionTimestep,
   Question,
+  QuestionInstance,
   QuestionInstanceType,
   QuestionType,
   SessionBlockStatus,
@@ -11,69 +12,28 @@ import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
-// TODO: rework scheduling for serverless
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
 import { ISession } from 'src/schema/session'
+import {
+  AllQuestionInstanceTypeData,
+  QuestionResultsChoices,
+} from 'src/types/app'
+import {
+  prepareInitialInstanceResults,
+  processQuestionData,
+} from '../lib/questions'
 import { sendTeamsNotifications } from '../lib/util'
 
+// TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
 
-export function processQuestionData(question: Question): AllQuestionTypeData {
-  switch (question.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
-      return {
-        ...question,
-        options: question.options!.valueOf(),
-      } as unknown as ChoicesQuestionData
-    }
-
-    case QuestionType.NUMERICAL: {
-      return {
-        ...question,
-      } as NumericalQuestionData
-    }
-
-    case QuestionType.FREE_TEXT: {
-      return {
-        ...question,
-      } as FreeTextQuestionData
-    }
-  }
-}
-
-export function prepareInitialInstanceResults(
-  questionData: AllQuestionTypeData
-) {
-  switch (questionData.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
-      const choices = questionData.options.choices.reduce(
-        (acc, _, ix) => ({ ...acc, [ix]: 0 }),
-        {}
-      )
-      return { choices } as ChoicesQuestionResults
-    }
-
-    case QuestionType.NUMERICAL: {
-      return {}
-    }
-
-    case QuestionType.FREE_TEXT: {
-      return {}
-    }
-
-    // default:
-    //   return {}
-  }
-}
-
-async function getQuestionMap(blocks: BlockArgs[], ctx: ContextWithUser) {
+async function getQuestionMap(
+  blocks: BlockArgs[],
+  ctx: ContextWithUser
+): Promise<Record<number, Question>> {
   const allQuestionsIds = new Set(
     blocks.reduce<number[]>((acc, block) => [...acc, ...block.questionIds], [])
   )
@@ -248,9 +208,10 @@ export async function editSession(
     throw new GraphQLError('Cannot edit a running or completed session')
   }
 
-  const oldQuestionInstances = oldSession!.blocks.reduce<
-    QuestionInstanceType[]
-  >((acc, block) => [...acc, ...block.instances] as QuestionInstanceType[], [])
+  const oldQuestionInstances = oldSession.blocks.reduce<QuestionInstance[]>(
+    (acc, block) => [...acc, ...block.instances],
+    []
+  )
 
   await ctx.prisma.questionInstance.deleteMany({
     where: {
@@ -906,7 +867,7 @@ export async function activateSessionBlock(
   const redisMulti = ctx.redisExec.pipeline()
 
   updatedSession.activeBlock!.instances.forEach((instance) => {
-    const questionData = instance.questionData!.valueOf() as AllQuestionTypeData
+    const questionData = instance.questionData
 
     const commonInfo = {
       namespace: session.namespace,
@@ -932,7 +893,7 @@ export async function activateSessionBlock(
         })
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:results`, {
           participants: 0,
-          ...(instance.results!.valueOf() as ChoicesQuestionResults).choices,
+          ...(instance.results as QuestionResultsChoices).choices,
         })
         break
       }
@@ -989,7 +950,7 @@ async function getCachedBlockResults({
     redisMulti.hgetall(`s:${sessionId}:i:${instanceId}:responses`)
     redisMulti.hgetall(`s:${sessionId}:i:${instanceId}:results`)
   })
-  return await redisMulti.exec()
+  return redisMulti.exec()
 }
 
 interface UnlinkCachedBlockResultsArgs {
@@ -1026,7 +987,7 @@ async function processCachedData({
   cachedResults,
   activeBlock,
 }: ProcessCachedDataArgs) {
-  const mappedResults: any[] = cachedResults.map(([_, result]) => result)
+  const mappedResults = cachedResults.map(([_, result]) => result)
 
   const sessionLeaderboard: Record<string, string> = mappedResults[0]
   const blockLeaderboard: Record<string, string> = mappedResults[1]
@@ -1039,10 +1000,9 @@ async function processCachedData({
       results: Record<string, any>
       participants: number
     }
-  > = mappedResults.slice(2).reduce((acc: any, cacheObj: any, ix) => {
+  > = mappedResults.slice(2).reduce((acc, cacheObj, ix) => {
     const ixMod = ix % 3
-    const instance: QuestionInstance =
-      activeBlock!.instances[Math.floor((ix - ixMod) / 3)]
+    const instance = activeBlock.instances[Math.floor((ix - ixMod) / 3)]
     switch (ixMod) {
       // results
       case 2: {
@@ -1343,8 +1303,7 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
       activeBlock: {
         ...session.activeBlock,
         instances: session.activeBlock.instances.map((instance) => {
-          const questionData =
-            instance.questionData?.valueOf() as AllQuestionTypeData
+          const questionData = instance.questionData
           if (
             !questionData ||
             typeof questionData !== 'object' ||
@@ -1703,8 +1662,7 @@ export async function getCockpitSession(
       return {
         ...block,
         instances: block.instances.map((instance) => {
-          const questionData =
-            instance.questionData?.valueOf() as AllQuestionTypeData
+          const questionData = instance.questionData
           if (
             !questionData ||
             typeof questionData !== 'object' ||
@@ -1789,11 +1747,15 @@ export async function getPinnedFeedbacks(
   return reducedSession
 }
 
-function checkCorrectnessFreeText(instance) {
+function checkCorrectnessFreeText(instance: AllQuestionInstanceTypeData) {
   // Adds "correct" attribute (true/false) to results in FREE_TEXT questions if they match any given solution)(exact match, case insensitive)
-  if (instance.questionData.type === 'FREE_TEXT') {
+  instance.elementType = instance.questionData.type
+  if (
+    instance.elementType === 'FREE_TEXT' &&
+    instance.questionData.type === 'FREE_TEXT'
+  ) {
     for (const id in instance.results) {
-      if (instance.questionData?.options.solutions) {
+      if (instance.questionData.options.solutions) {
         const solutions = instance.questionData.options.solutions.map(
           (solution: string) => solution.toLowerCase()
         )
@@ -1810,14 +1772,18 @@ function checkCorrectnessFreeText(instance) {
   return instance
 }
 
-function computeStatistics(instance) {
+function computeStatistics(instance: AllQuestionInstanceTypeData) {
   // Compute the statistics for numerical questions
-  if (instance.questionData.type === 'NUMERICAL' && !instance.statistics) {
+  instance.elementType = instance.questionData.type
+  if (
+    instance.elementType === 'NUMERICAL' &&
+    instance.questionData.type === 'NUMERICAL'
+  ) {
     const results = []
     for (const key in instance.results) {
       results.push(instance.results[key])
     }
-    const valueArray = results.reduce((acc, { count, value }) => {
+    const valueArray = results.reduce<number[]>((acc, { count, value }) => {
       const elements = Array(count).fill(parseFloat(value))
       return acc.concat(elements)
     }, [])
@@ -1836,7 +1802,14 @@ function computeStatistics(instance) {
         correct = false
         const solutionRanges = instance.questionData.options.solutionRanges
         for (const range of solutionRanges) {
-          if (value >= range['min'] && value <= range['max']) {
+          if (
+            (typeof range.min === 'undefined' ||
+              range.min === null ||
+              value >= range.min) &&
+            (typeof range.max === 'undefined' ||
+              range.max === null ||
+              value <= range.max)
+          ) {
             correct = true
             break
           }
@@ -1854,20 +1827,22 @@ function computeStatistics(instance) {
 
     const hasResults = valueArray.length > 0
 
-    instance.statistics = {
-      max: hasResults && max(valueArray),
-      mean: hasResults && mean(valueArray),
-      median: hasResults && median(valueArray),
-      min: hasResults && min(valueArray),
-      q1: hasResults && quantileSeq(valueArray, 0.25),
-      q3: hasResults && quantileSeq(valueArray, 0.75),
-      sd: hasResults && std(valueArray),
-    }
+    instance.statistics = hasResults
+      ? {
+          max: max(valueArray),
+          mean: mean(valueArray),
+          median: median(valueArray),
+          min: min(valueArray),
+          q1: quantileSeq(valueArray, 0.25) as number,
+          q3: quantileSeq(valueArray, 0.75) as number,
+          sd: std(valueArray) as number[],
+        }
+      : undefined
   }
   return instance
 }
 
-function completeQuestionData(instances) {
+function completeQuestionData(instances: AllQuestionInstanceTypeData[]) {
   return instances.map((instance) =>
     computeStatistics(checkCorrectnessFreeText(instance))
   )
@@ -2114,9 +2089,7 @@ export async function cancelSession(
         },
         data: {
           participants: 0,
-          results: prepareInitialInstanceResults(
-            instance.questionData!.valueOf() as AllQuestionTypeData
-          ),
+          results: prepareInitialInstanceResults(instance.questionData),
         },
       })
     ),
