@@ -4,12 +4,14 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import { AllQuestionTypeData } from 'src/types/app'
+import {
+  prepareInitialInstanceResults,
+  processQuestionData,
+} from 'src/lib/questions'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context'
 import { sendTeamsNotifications } from '../lib/util'
-import { prepareInitialInstanceResults } from './sessions'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -784,14 +786,13 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
         create: blockData.map(
           ({ questions, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questions.map((question, ix) => {
+              const processedQuestionData = processQuestionData(question)
               return {
                 order: ix,
                 type: DB.QuestionInstanceType.SESSION,
                 pointsMultiplier: 2 * question.pointsMultiplier,
-                questionData: question,
-                results: prepareInitialInstanceResults(
-                  question as AllQuestionTypeData
-                ),
+                questionData: processedQuestionData,
+                results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
                   connect: { id: question.id },
                 },

@@ -17,43 +17,18 @@ import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
+import {
+  prepareInitialInstanceResults,
+  processQuestionData,
+} from 'src/lib/questions'
 import { ISession } from 'src/schema/session'
 import {
   AllQuestionInstanceTypeData,
-  AllQuestionTypeData,
-  QuestionResults,
   QuestionResultsChoices,
 } from 'src/types/app'
 import { sendTeamsNotifications } from '../lib/util'
 
 const scheduledJobs: Record<string, any> = {}
-
-export function prepareInitialInstanceResults(
-  questionData: AllQuestionTypeData
-): QuestionResults {
-  switch (questionData.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
-      const choices = questionData.options.choices.reduce(
-        (acc, _, ix) => ({ ...acc, [ix]: 0 }),
-        {}
-      )
-      return { choices } as QuestionResultsChoices
-    }
-
-    case QuestionType.NUMERICAL: {
-      return {}
-    }
-
-    case QuestionType.FREE_TEXT: {
-      return {}
-    }
-
-    // default:
-    //   return {}
-  }
-}
 
 async function getQuestionMap(
   blocks: BlockArgs[],
@@ -131,15 +106,14 @@ export async function createSession(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]
+              const processedQuestionData = processQuestionData(question)
 
               return {
                 order: ix,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
-                questionData: question,
-                results: prepareInitialInstanceResults(
-                  question as AllQuestionTypeData
-                ),
+                questionData: processedQuestionData,
+                results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
                   connect: { id: questionId },
                 },
@@ -274,15 +248,14 @@ export async function editSession(
           ({ questionIds, randomSelection, timeLimit }, blockIx) => {
             const newInstances = questionIds.map((questionId, ix) => {
               const question = questionMap[questionId]
+              const processedQuestionData = processQuestionData(question)
 
               return {
                 order: ix,
                 type: QuestionInstanceType.SESSION,
                 pointsMultiplier: multiplier * question.pointsMultiplier,
-                questionData: question,
-                results: prepareInitialInstanceResults(
-                  question as AllQuestionTypeData
-                ),
+                questionData: processedQuestionData,
+                results: prepareInitialInstanceResults(processedQuestionData),
                 question: {
                   connect: { id: questionId },
                 },
