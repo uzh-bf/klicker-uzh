@@ -79,9 +79,9 @@ export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
 })
 
 export const ResponseInput = builder.inputType('ResponseInput', {
-  directives: {
-    oneOf: {},
-  },
+  // directives: {
+  //   oneOf: {},
+  // },
   fields: (t) => ({
     choices: t.intList({ required: false }),
     value: t.string({ required: false }),

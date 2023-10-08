@@ -15,9 +15,10 @@ const prisma = new PrismaClient({})
 
 const builder = new SchemaBuilder<{
   Directives: {
-    oneOf: {
-      locations: 'INPUT_OBJECT'
-    }
+    // TEMPLATE for future directives
+    // oneOf: {
+    //   locations: 'INPUT_OBJECT'
+    // }
   }
   Context: Context
   AuthContexts: {
