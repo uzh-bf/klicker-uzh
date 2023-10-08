@@ -4,13 +4,13 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from 'src/lib/questions'
 import isEmail from 'validator/lib/isEmail'
 import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context'
+import {
+  prepareInitialInstanceResults,
+  processQuestionData,
+} from '../lib/questions'
 import { sendTeamsNotifications } from '../lib/util'
 
 const COOKIE_SETTINGS: CookieOptions = {

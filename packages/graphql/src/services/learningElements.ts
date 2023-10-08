@@ -23,14 +23,14 @@ import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from 'src/lib/questions'
 import { ResponseInput } from 'src/ops'
 import { AllQuestionTypeData } from 'src/types/app'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
+import {
+  prepareInitialInstanceResults,
+  processQuestionData,
+} from '../lib/questions'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6

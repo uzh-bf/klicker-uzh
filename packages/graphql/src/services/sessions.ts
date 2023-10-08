@@ -12,22 +12,22 @@ import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
-// TODO: rework scheduling for serverless
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from 'src/lib/questions'
 import { ISession } from 'src/schema/session'
 import {
   AllQuestionInstanceTypeData,
   QuestionResultsChoices,
 } from 'src/types/app'
+import {
+  prepareInitialInstanceResults,
+  processQuestionData,
+} from '../lib/questions'
 import { sendTeamsNotifications } from '../lib/util'
 
+// TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
 
 async function getQuestionMap(
