@@ -88,7 +88,10 @@ export interface BaseQuestionData {
   explanation: string | null
   hasSampleSolution: boolean
   hasAnswerFeedbacks: boolean
+  options: object
 }
+
+export type BaseQuestionDataKeys = (keyof BaseQuestionData)[]
 
 interface IQuestionData<
   Type extends QuestionType,

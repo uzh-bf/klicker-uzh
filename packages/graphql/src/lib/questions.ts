@@ -2,6 +2,7 @@ import { Question, QuestionType } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import {
   AllQuestionTypeData,
+  BaseQuestionDataKeys,
   ChoicesQuestionData,
   FreeTextQuestionData,
   NumericalQuestionData,
@@ -9,19 +10,21 @@ import {
   QuestionResultsChoices,
 } from 'src/types/app'
 
+const RELEVANT_KEYS: BaseQuestionDataKeys = [
+  'id',
+  'name',
+  'content',
+  'explanation',
+  'pointsMultiplier',
+  'displayMode',
+  'hasSampleSolution',
+  'hasAnswerFeedbacks',
+  'type',
+  'options',
+]
+
 export function processQuestionData(question: Question) {
-  const extractRelevantKeys = R.pick([
-    'id',
-    'name',
-    'content',
-    'explanation',
-    'pointsMultiplier',
-    'displayMode',
-    'hasSampleSolution',
-    'hasAnswerFeedbacks',
-    'options',
-    'type',
-  ])
+  const extractRelevantKeys = R.pick(RELEVANT_KEYS)
 
   switch (question.type) {
     case QuestionType.SC:
