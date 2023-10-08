@@ -136,19 +136,24 @@ const config = {
         },
         {
           to: 'getting_started/welcome',
-          label: 'Docs',
+          label: 'Docs v3',
+          position: 'left',
+        },
+        {
+          to: 'v2/getting_started/welcome',
+          label: 'Docs v2',
           position: 'left',
         },
         {
           to: 'development',
-          label: 'Get Involved',
+          label: 'Roadmap',
           position: 'left',
         },
-        {
-          to: 'faq',
-          label: 'FAQ',
-          position: 'left',
-        },
+        // {
+        //   to: 'faq',
+        //   label: 'FAQ',
+        //   position: 'left',
+        // },
         // {
         //   to: 'kb',
         //   label: 'Knowledge Base',
