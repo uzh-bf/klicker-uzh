@@ -46,6 +46,7 @@
     "format:check": "turbo run format:check --parallel --continue",
     "lint": "turbo run lint --parallel --continue",
     "prepare": "husky install",
+    "prisma:deploy": "pnpm run --filter @klicker-uzh/prisma prisma:deploy",
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
     "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
