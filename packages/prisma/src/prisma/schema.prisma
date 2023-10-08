@@ -120,10 +120,10 @@ model User {
   session           Session[]
   accounts          Account[]
   courses           Course[]
-  questions         Question[]
+  questions         Element[]
   mediaFiles        MediaFile[]
   tags              Tag[]
-  questionInstances QuestionInstance[]
+  questionInstances ElementInstance[]
   sessions          LiveSession[]
   learningElements  LearningElement[]
   microSessions     MicroSession[]
@@ -155,7 +155,7 @@ model MediaFile {
 
 // ----- QUESTION POOL -----
 
-enum QuestionType {
+enum ElementType {
   SC
   MC
   KPRIM
@@ -168,7 +168,7 @@ enum QuestionDisplayMode {
   GRID
 }
 
-model Question {
+model Element {
   id Int @id @default(autoincrement())
 
   originalId String? @unique
@@ -187,10 +187,10 @@ model Question {
   /// [PrismaQuestionOptions]
   options Json
 
-  type QuestionType
+  type ElementType
 
   tags      Tag[]
-  instances QuestionInstance[]
+  instances ElementInstance[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -207,7 +207,7 @@ model Tag {
 
   originalId String? @unique
 
-  questions Question[]
+  questions Element[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -218,7 +218,7 @@ model Tag {
   @@unique([ownerId, name])
 }
 
-enum QuestionInstanceType {
+enum ElementInstanceType {
   UNSET
   SESSION
   MICRO_SESSION
@@ -226,18 +226,21 @@ enum QuestionInstanceType {
   GROUP_ACTIVITY
 }
 
-model QuestionInstance {
+model ElementInstance {
   id Int @id @default(autoincrement())
 
   originalId String? @unique
 
-  type  QuestionInstanceType?
-  order Int?
+  // TODO: make the type here required (with a migration to set it where missing)
+  type        ElementInstanceType?
+  elementType ElementType?
+  order       Int?
 
-  participants     Int                      @default(0)
-  pointsMultiplier Int                      @default(1)
-  responses        QuestionResponse[]
-  detailResponses  QuestionResponseDetail[]
+  // TODO: move below to results and new options json
+  participants     Int                     @default(0)
+  pointsMultiplier Int                     @default(1)
+  responses        ElementResponse[]
+  detailResponses  ElementResponseDetail[]
   resetTimeDays    Int?
 
   /// [PrismaQuestionResults]
@@ -245,6 +248,9 @@ model QuestionInstance {
 
   /// [PrismaQuestionData]
   questionData Json
+
+  // TODO: type
+  options Json
 
   sessionBlock    SessionBlock?  @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId  Int?
@@ -257,10 +263,10 @@ model QuestionInstance {
 
   bookmarkedBy Participation[]
 
-  question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  question   Element? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questionId Int?
-  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId    String    @db.Uuid
+  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId    String   @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -272,17 +278,17 @@ model QuestionInstance {
 }
 
 // TODO: think about usage of question stacks for group activities
-enum QuestionStackType {
+enum ElementStackType {
   LEARNING_ELEMENT
   MICRO_SESSION
   LIVE_SESSION
   GROUP_ACTIVITY
 }
 
-model QuestionStack {
+model ElementStack {
   id Int @id @default(autoincrement())
 
-  type        QuestionStackType
+  type        ElementStackType
   displayName String?
   description String?
   order       Int?
@@ -303,12 +309,12 @@ model StackElement {
 
   order Int?
 
-  stack   QuestionStack @relation(fields: [stackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  stack   ElementStack @relation(fields: [stackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   stackId Int
 
   mdContent String?
 
-  questionInstance QuestionInstance?
+  questionInstance ElementInstance?
 }
 
 // ----- COURSES -----
@@ -410,7 +416,7 @@ model SessionBlock {
 
   execution Int @default(0)
 
-  instances   QuestionInstance[]
+  instances   ElementInstance[]
   leaderboard LeaderboardEntry[]
 
   activeInSession LiveSession[] @relation(name: "ActiveSessionBlock")
@@ -502,7 +508,7 @@ model LearningElement {
   orderType        OrderType             @default(SEQUENTIAL)
   status           LearningElementStatus @default(DRAFT)
 
-  stacks QuestionStack[]
+  stacks ElementStack[]
 
   owner    User    @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String  @db.Uuid
@@ -534,7 +540,7 @@ model MicroSession {
 
   arePushNotificationsSent Boolean @default(false)
 
-  instances QuestionInstance[]
+  instances ElementInstance[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -619,12 +625,12 @@ model GroupActivity {
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
 
-  questionStack   QuestionStack? @relation(fields: [questionStackId], references: [id])
-  questionStackId Int?           @unique
+  questionStack   ElementStack? @relation(fields: [questionStackId], references: [id])
+  questionStackId Int?          @unique
 
   parameters        GroupActivityParameter[]
   clues             GroupActivityClue[]
-  instances         QuestionInstance[]
+  instances         ElementInstance[]
   activityInstances GroupActivityInstance[]
 
   owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -758,8 +764,8 @@ model Participant {
   participantGroups       ParticipantGroup[]
   accounts                ParticipantAccount[]
   participations          Participation[]
-  questionResponses       QuestionResponse[]
-  detailQuestionResponses QuestionResponseDetail[]
+  questionResponses       ElementResponse[]
+  detailQuestionResponses ElementResponseDetail[]
   feedbacks               Feedback[]
   leaderboards            LeaderboardEntry[]
   subscriptions           PushSubscription[]
@@ -813,12 +819,12 @@ model Participation {
 
   sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
 
-  responses              QuestionResponse[]
-  detailResponses        QuestionResponseDetail[]
+  responses              ElementResponse[]
+  detailResponses        ElementResponseDetail[]
   subscriptions          PushSubscription[]
   completedMicroSessions String[]
-  bookmarkedQuestions    QuestionInstance[]
-  bookmarkedStacks       QuestionStack[]
+  bookmarkedQuestions    ElementInstance[]
+  bookmarkedStacks       ElementStack[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -939,7 +945,7 @@ model ClassAchievementInstance {
 
 // ----- RESPONSE TRACKING -----
 
-model QuestionResponse {
+model ElementResponse {
   id Int @id @default(autoincrement())
 
   trialsCount        Int       @default(0)
@@ -958,7 +964,7 @@ model QuestionResponse {
   participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participationId Int
 
-  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstance   ElementInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   questionInstanceId Int
 
   createdAt DateTime @default(now())
@@ -967,7 +973,7 @@ model QuestionResponse {
   @@unique([participantId, questionInstanceId])
 }
 
-model QuestionResponseDetail {
+model ElementResponseDetail {
   id Int @id @default(autoincrement())
 
   score         Float  @default(0)
@@ -983,7 +989,7 @@ model QuestionResponseDetail {
   participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participationId Int
 
-  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstance   ElementInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   questionInstanceId Int
 
   createdAt DateTime @default(now())

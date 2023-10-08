@@ -58,6 +58,7 @@
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
+    "seed": "pnpm run --filter @klicker-uzh/prisma seed",
     "start": "turbo run start",
     "start:test": "turbo run start:test",
     "syncpack:format": "syncpack format",
