@@ -82,8 +82,8 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
             }
 
             return (
-              req.cookies['next-auth.session-token'] ||
-              req.cookies['participant_token']
+              req.cookies['participant_token'] ||
+              req.cookies['next-auth.session-token']
             )
           }
 
