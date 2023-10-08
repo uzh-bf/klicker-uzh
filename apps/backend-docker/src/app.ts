@@ -43,20 +43,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     new JWTStrategy(
       {
         jwtFromRequest(req: Request) {
-          console.log(req)
-
           if (req.headers?.['authorization']) {
             return req.headers['authorization']?.replace('Bearer ', '')
           }
-
-          // if (req.cookies?.['next-auth.session-token']) {
-          //   decode({
-          //     token: req.cookies['next-auth.session-token'],
-          //     secret: process.env.NEXTAUTH_SECRET as string,
-          //   }).then((decoded) => {
-          //     return decoded
-          //   })
-          // }
 
           if (req.cookies) {
             if (
