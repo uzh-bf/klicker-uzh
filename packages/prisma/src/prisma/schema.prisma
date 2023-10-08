@@ -232,9 +232,9 @@ model ElementInstance {
   originalId String? @unique
 
   // TODO: make the type here required (with a migration to set it where missing)
-  type        ElementInstanceType?
-  elementType ElementType?
-  order       Int?
+  type  ElementInstanceType?
+  // elementType ElementType?
+  order Int?
 
   // TODO: move below to results and new options json
   participants     Int                     @default(0)
@@ -250,7 +250,7 @@ model ElementInstance {
   questionData Json
 
   // TODO: type
-  options Json
+  // options Json?
 
   sessionBlock    SessionBlock?  @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId  Int?
