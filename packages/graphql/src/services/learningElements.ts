@@ -24,7 +24,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { ResponseInput } from 'src/ops'
-import { AllQuestionTypeData } from 'src/types/app'
+import { AllQuestionTypeData, QuestionResponseChoices } from 'src/types/app'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
 import {
@@ -63,7 +63,7 @@ function evaluateQuestionResponse(
       if (questionData.type === QuestionType.SC) {
         const pointsPercentage = gradeQuestionSC({
           responseCount: questionData.options.choices.length,
-          response: response.choices,
+          response: (response as QuestionResponseChoices).choices,
           solution,
         })
         return {
@@ -82,7 +82,7 @@ function evaluateQuestionResponse(
       } else if (questionData.type === QuestionType.MC) {
         const pointsPercentage = gradeQuestionMC({
           responseCount: questionData.options.choices.length,
-          response: response.choices!,
+          response: (response as QuestionResponseChoices).choices,
           solution,
         })
         return {
@@ -101,7 +101,7 @@ function evaluateQuestionResponse(
       } else {
         const pointsPercentage = gradeQuestionKPRIM({
           responseCount: questionData.options.choices.length,
-          response: response.choices!,
+          response: (response as QuestionResponseChoices).choices,
           solution,
         })
         return {
@@ -251,7 +251,9 @@ export async function respondToQuestionInstance(
         case QuestionType.SC:
         case QuestionType.MC:
         case QuestionType.KPRIM: {
-          updatedResults.choices = response.choices!.reduce(
+          updatedResults.choices = (
+            response as QuestionResponseChoices
+          ).choices.reduce(
             (acc, ix) => ({
               ...acc,
               [ix]: acc[ix] + 1,
@@ -273,7 +275,7 @@ export async function respondToQuestionInstance(
           const parsedValue = parseFloat(response.value)
           if (
             isNaN(parsedValue) ||
-            (typeof questionData.options.restrictions!.min === 'number' &&
+            (typeof questionData.options.restrictions?.min === 'number' &&
               parsedValue < questionData.options.restrictions!.min) ||
             (typeof questionData.options.restrictions!.max === 'number' &&
               parsedValue > questionData.options.restrictions!.max)
@@ -299,9 +301,9 @@ export async function respondToQuestionInstance(
             typeof response.value === 'undefined' ||
             response.value === null ||
             response.value === '' ||
-            (typeof questionData.options.restrictions!.maxLength === 'number' &&
+            (typeof questionData.options.restrictions?.maxLength === 'number' &&
               response.value.length >
-                questionData.options.restrictions!.maxLength)
+                questionData.options.restrictions?.maxLength)
           ) {
             return {}
           }
@@ -857,7 +859,7 @@ export async function manipulateLearningElement(
       throw new GraphQLError('Cannot edit a published learning element')
     }
 
-    const oldQuestionInstances = oldElement!.stacks.reduce<QuestionInstance[]>(
+    const oldQuestionInstances = oldElement.stacks.reduce<QuestionInstance[]>(
       (acc, stack) => [
         ...acc,
         ...(stack.elements
