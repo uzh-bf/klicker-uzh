@@ -43,6 +43,8 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     new JWTStrategy(
       {
         jwtFromRequest(req: Request) {
+          console.log(req)
+
           if (req.headers?.['authorization']) {
             return req.headers['authorization']?.replace('Bearer ', '')
           }
@@ -57,6 +59,28 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           // }
 
           if (req.cookies) {
+            if (
+              req.headers.origin?.includes(
+                process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+              ) ||
+              req.headers.origin?.includes(
+                process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
+              )
+            ) {
+              return req.cookies['next-auth.session-token']
+            }
+
+            if (
+              req.headers.origin?.includes(
+                process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
+              )
+            ) {
+              return (
+                req.cookies['participant_token'] ||
+                req.cookies['next-auth.session-token']
+              )
+            }
+
             return (
               req.cookies['next-auth.session-token'] ||
               req.cookies['participant_token']
