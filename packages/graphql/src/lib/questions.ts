@@ -1,4 +1,5 @@
 import { Question, QuestionType } from '@klicker-uzh/prisma'
+import * as R from 'ramda'
 import {
   AllQuestionTypeData,
   ChoicesQuestionData,
@@ -9,17 +10,30 @@ import {
 } from 'src/types/app'
 
 export function processQuestionData(question: Question) {
+  const extractRelevantKeys = R.pick([
+    'id',
+    'name',
+    'content',
+    'explanation',
+    'pointsMultiplier',
+    'displayMode',
+    'hasSampleSolution',
+    'hasAnswerFeedbacks',
+    'options',
+    'type',
+  ])
+
   switch (question.type) {
     case QuestionType.SC:
     case QuestionType.MC:
     case QuestionType.KPRIM:
-      return { ...question } as ChoicesQuestionData
+      return { ...extractRelevantKeys(question) } as ChoicesQuestionData
 
     case QuestionType.NUMERICAL:
-      return { ...question } as NumericalQuestionData
+      return { ...extractRelevantKeys(question) } as NumericalQuestionData
 
     case QuestionType.FREE_TEXT:
-      return { ...question } as FreeTextQuestionData
+      return { ...extractRelevantKeys(question) } as FreeTextQuestionData
 
     default:
       throw new Error('Unknown question type')
