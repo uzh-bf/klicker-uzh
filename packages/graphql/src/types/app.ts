@@ -87,14 +87,10 @@ interface IQuestionData<
   type: Type
   displayMode: QuestionDisplayMode
   content: string
-  ownerId: string
-  isDeleted: boolean
-  isArchived: boolean
-  createdAt: Date
-  updatedAt: Date
   pointsMultiplier: number
   explanation: string | null
-
+  hasSampleSolution: boolean
+  hasAnswerFeedbacks: boolean
   options: Options
 }
 
