@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.77...v3.0.0) (2023-10-08)
+
+
+### Enhancements
+
+* **apps/backend-docker:** select JWT based on origin to allow manage and pwa logins within same browser ([#3899](https://github.com/uzh-bf/klicker-uzh/issues/3899)) ([7e59f12](https://github.com/uzh-bf/klicker-uzh/commit/7e59f1299efed57d3d2bdd9d6925f20b45ac0276))
+* **apps/docs:** docs v3 and v2 in navbar ([a9ed8e8](https://github.com/uzh-bf/klicker-uzh/commit/a9ed8e87564a225d8c8ad53ed26c615a07f1cef8))
+
+
+### Refactors
+
+* add types for JSON fields and improve generic type structure ([#3882](https://github.com/uzh-bf/klicker-uzh/issues/3882)) ([0134645](https://github.com/uzh-bf/klicker-uzh/commit/01346450430dc814851e00c0cdcb2d9703bc359e))
+
 ## [3.0.0-rc.77](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.76...v3.0.0-rc.77) (2023-10-05)
 
 
