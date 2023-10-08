@@ -79,6 +79,9 @@ export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
 })
 
 export const ResponseInput = builder.inputType('ResponseInput', {
+  // directives: {
+  //   oneOf: {},
+  // },
   fields: (t) => ({
     choices: t.intList({ required: false }),
     value: t.string({ required: false }),
@@ -189,8 +192,7 @@ export const QuestionInstance = QuestionInstanceRef.implement({
 
     questionData: t.field({
       type: QuestionData,
-      // FIXME: can we get rid of casting here?
-      resolve: (q) => q.questionData as object as AllQuestionTypeData,
+      resolve: (q) => q.questionData,
     }),
   }),
 })

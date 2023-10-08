@@ -8,10 +8,15 @@ export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> =
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
+  /** The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `"4"`) or integer (such as `4`) input value will be accepted as an ID. */
   ID: { input: string; output: string; }
+  /** The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text. */
   String: { input: string; output: string; }
+  /** The `Boolean` scalar type represents `true` or `false`. */
   Boolean: { input: boolean; output: boolean; }
+  /** The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1. */
   Int: { input: number; output: number; }
+  /** The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point). */
   Float: { input: number; output: number; }
   /** A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar. */
   Date: { input: any; output: any; }
@@ -83,6 +88,8 @@ export type ChoicesQuestionData = QuestionData & {
   content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
   explanation?: Maybe<Scalars['String']['output']>;
+  hasAnswerFeedbacks: Scalars['Boolean']['output'];
+  hasSampleSolution: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   options: ChoiceQuestionOptions;
@@ -181,6 +188,8 @@ export type FreeTextQuestionData = QuestionData & {
   content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
   explanation?: Maybe<Scalars['String']['output']>;
+  hasAnswerFeedbacks: Scalars['Boolean']['output'];
+  hasSampleSolution: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   options: FreeTextQuestionOptions;
@@ -980,6 +989,8 @@ export type NumericalQuestionData = QuestionData & {
   content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
   explanation?: Maybe<Scalars['String']['output']>;
+  hasAnswerFeedbacks: Scalars['Boolean']['output'];
+  hasSampleSolution: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   options: NumericalQuestionOptions;
@@ -1315,6 +1326,8 @@ export type QuestionData = {
   content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
   explanation?: Maybe<Scalars['String']['output']>;
+  hasAnswerFeedbacks: Scalars['Boolean']['output'];
+  hasSampleSolution: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   pointsMultiplier?: Maybe<Scalars['Int']['output']>;

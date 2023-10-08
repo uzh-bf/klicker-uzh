@@ -15,12 +15,18 @@ const config: CodegenConfig = {
         'typed-document-node',
         'fragment-matcher',
       ],
+      config: {
+        avoidOptionals: false,
+      },
     },
     './src/ops.schema.json': {
       plugins: ['introspection'],
     },
     './src/public/schema.graphql': {
       plugins: ['schema-ast'],
+      config: {
+        includeDirectives: true,
+      },
     },
     // './src/persisted-queries/client.json': {
     //   plugins: [

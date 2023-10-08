@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { BaseQuestionData } from 'src/types/app'
 import builder from '../builder'
 
 export const QuestionType = builder.enumType('QuestionType', {
@@ -10,15 +11,6 @@ export const QuestionDisplayMode = builder.enumType('QuestionDisplayMode', {
 })
 
 // ----- QUESTION DATA INTERFACE -----
-export interface BaseQuestionData {
-  id: number
-  name: string
-  type: DB.QuestionType
-  content: string
-  explanation?: string | null
-  pointsMultiplier?: number
-  displayMode?: DB.QuestionDisplayMode
-}
 export const QuestionDataRef =
   builder.interfaceRef<BaseQuestionData>('QuestionData')
 export const QuestionData = QuestionDataRef.implement({
@@ -33,6 +25,8 @@ export const QuestionData = QuestionDataRef.implement({
       type: QuestionDisplayMode,
       nullable: true,
     }),
+    hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+    hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
   }),
   resolveType(value) {
     switch (value.type) {

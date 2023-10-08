@@ -178,12 +178,14 @@ model Question {
 
   name               String
   content            String
-  options            Json
   explanation        String?
   pointsMultiplier   Int                 @default(1)
   displayMode        QuestionDisplayMode @default(LIST)
   hasSampleSolution  Boolean             @default(false)
   hasAnswerFeedbacks Boolean             @default(false)
+
+  /// [PrismaQuestionOptions]
+  options Json
 
   type QuestionType
 
@@ -232,13 +234,17 @@ model QuestionInstance {
   type  QuestionInstanceType?
   order Int?
 
-  questionData     Json
   participants     Int                      @default(0)
   pointsMultiplier Int                      @default(1)
-  results          Json
   responses        QuestionResponse[]
   detailResponses  QuestionResponseDetail[]
   resetTimeDays    Int?
+
+  /// [PrismaQuestionResults]
+  results Json
+
+  /// [PrismaQuestionData]
+  questionData Json
 
   sessionBlock    SessionBlock?  @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId  Int?
@@ -731,13 +737,15 @@ model ParticipantAccount {
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
-  email          String? @unique
-  isEmailValid   Boolean @default(false)
-  username       String  @unique
-  password       String
-  avatar         String?
+  email        String? @unique
+  isEmailValid Boolean @default(false)
+  username     String  @unique
+  password     String
+  avatar       String?
+  xp           Int     @default(0)
+
+  /// [PrismaAvatarSettings]
   avatarSettings Json?
-  xp             Int     @default(0)
 
   isActive        Boolean @default(true)
   isProfilePublic Boolean @default(true)
@@ -941,6 +949,7 @@ model QuestionResponse {
   lastAwardedAt      DateTime?
   lastXpAwardedAt    DateTime?
 
+  /// [PrismaQuestionResponse]
   response Json
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -965,6 +974,7 @@ model QuestionResponseDetail {
   pointsAwarded Float? @default(0)
   xpAwarded     Float  @default(0)
 
+  /// [PrismaQuestionResponse]
   response Json
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
