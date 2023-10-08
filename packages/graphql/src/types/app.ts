@@ -78,19 +78,23 @@ export type QuestionOptions =
   | QuestionOptionsNumerical
   | QuestionOptionsFreeText
 
-interface IQuestionData<
-  Type extends QuestionType,
-  Options extends QuestionOptions
-> extends Question {
+export interface BaseQuestionData {
   id: number
   name: string
-  type: Type
+  type: QuestionType
   displayMode: QuestionDisplayMode
   content: string
   pointsMultiplier: number
   explanation: string | null
   hasSampleSolution: boolean
   hasAnswerFeedbacks: boolean
+}
+
+interface IQuestionData<
+  Type extends QuestionType,
+  Options extends QuestionOptions
+> extends Question {
+  type: Type
   options: Options
 }
 
