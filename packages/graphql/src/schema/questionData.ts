@@ -25,6 +25,8 @@ export const QuestionData = QuestionDataRef.implement({
       type: QuestionDisplayMode,
       nullable: true,
     }),
+    hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+    hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
   }),
   resolveType(value) {
     switch (value.type) {
