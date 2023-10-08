@@ -47,19 +47,32 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
             return req.headers['authorization']?.replace('Bearer ', '')
           }
 
-          // if (req.cookies?.['next-auth.session-token']) {
-          //   decode({
-          //     token: req.cookies['next-auth.session-token'],
-          //     secret: process.env.NEXTAUTH_SECRET as string,
-          //   }).then((decoded) => {
-          //     return decoded
-          //   })
-          // }
-
           if (req.cookies) {
+            if (
+              req.headers.origin?.includes(
+                process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+              ) ||
+              req.headers.origin?.includes(
+                process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
+              )
+            ) {
+              return req.cookies['next-auth.session-token']
+            }
+
+            if (
+              req.headers.origin?.includes(
+                process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
+              )
+            ) {
+              return (
+                req.cookies['participant_token'] ||
+                req.cookies['next-auth.session-token']
+              )
+            }
+
             return (
-              req.cookies['next-auth.session-token'] ||
-              req.cookies['participant_token']
+              req.cookies['participant_token'] ||
+              req.cookies['next-auth.session-token']
             )
           }
 
