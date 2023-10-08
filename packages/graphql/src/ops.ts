@@ -88,6 +88,8 @@ export type ChoicesQuestionData = QuestionData & {
   content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
   explanation?: Maybe<Scalars['String']['output']>;
+  hasAnswerFeedbacks: Scalars['Boolean']['output'];
+  hasSampleSolution: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   options: ChoiceQuestionOptions;
@@ -186,6 +188,8 @@ export type FreeTextQuestionData = QuestionData & {
   content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
   explanation?: Maybe<Scalars['String']['output']>;
+  hasAnswerFeedbacks: Scalars['Boolean']['output'];
+  hasSampleSolution: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   options: FreeTextQuestionOptions;
@@ -979,6 +983,8 @@ export type NumericalQuestionData = QuestionData & {
   content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
   explanation?: Maybe<Scalars['String']['output']>;
+  hasAnswerFeedbacks: Scalars['Boolean']['output'];
+  hasSampleSolution: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   options: NumericalQuestionOptions;
@@ -1314,6 +1320,8 @@ export type QuestionData = {
   content: Scalars['String']['output'];
   displayMode?: Maybe<QuestionDisplayMode>;
   explanation?: Maybe<Scalars['String']['output']>;
+  hasAnswerFeedbacks: Scalars['Boolean']['output'];
+  hasSampleSolution: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   pointsMultiplier?: Maybe<Scalars['Int']['output']>;
