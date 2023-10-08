@@ -75,8 +75,8 @@ export function gradeQuestionKPRIM({
 interface GradeQuestionNumericalArgs {
   response: number
   solutionRanges: {
-    min?: number
-    max?: number
+    min?: number | null
+    max?: number | null
   }[]
 }
 
