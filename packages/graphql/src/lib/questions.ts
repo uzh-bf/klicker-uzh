@@ -8,19 +8,14 @@ import {
   QuestionResults,
   QuestionResultsChoices,
 } from 'src/types/app'
+import { QuestionData } from '../schema/questionData'
+
+const ADDITIONAL_KEYS: string[] = []
 
 export function processQuestionData(question: Question) {
   const extractRelevantKeys = R.pick([
-    'id',
-    'name',
-    'content',
-    'explanation',
-    'pointsMultiplier',
-    'displayMode',
-    'hasSampleSolution',
-    'hasAnswerFeedbacks',
-    'options',
-    'type',
+    ...Object.keys(QuestionData),
+    ...ADDITIONAL_KEYS,
   ])
 
   switch (question.type) {
