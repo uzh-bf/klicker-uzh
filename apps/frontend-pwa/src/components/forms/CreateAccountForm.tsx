@@ -125,12 +125,7 @@ function CreateAccountForm({
                   root: 'flex-none w-full md:w-max',
                 }}
                 type="submit"
-                disabled={
-                  !tosChecked ||
-                  isSubmitting ||
-                  !isValid ||
-                  !isUsernameAvailable
-                }
+                disabled={!tosChecked || isSubmitting || !isValid}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faSave} />
