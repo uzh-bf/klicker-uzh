@@ -19,7 +19,7 @@ function DebouncedUsernameField({
 }: DebouncedUsernameFieldProps) {
   const t = useTranslations()
 
-  const [field, _, helpers] = useField(name)
+  const [field, meta, helpers] = useField(name)
   const [valid, setValid] = useState<boolean | undefined>(undefined)
 
   const [checkUsernameAvailable] = useLazyQuery(
@@ -78,6 +78,7 @@ function DebouncedUsernameField({
         helpers.setValue(username)
       }}
       icon={typeof valid === 'undefined' ? faSpinner : valid ? faCheck : faX}
+      error={meta.error}
     />
   )
 }
