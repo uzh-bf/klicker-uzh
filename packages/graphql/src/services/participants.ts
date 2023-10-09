@@ -25,7 +25,7 @@ export async function updateParticipantProfile(
   ctx: ContextWithUser
 ) {
   if (typeof username === 'string') {
-    if (username.length < 5 || username.length > 10) {
+    if (username.length < 5 || username.length > 15) {
       return null
     }
   }
