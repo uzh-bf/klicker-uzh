@@ -9,7 +9,7 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementType, Question } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType }Elementklicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -30,7 +30,7 @@ interface SessionCreationBlockProps {
   remove: (index: number) => void
   move: (from: number, to: number) => void
   replace: (index: number, value: any) => void
-  selection?: Record<number, Question>
+  selection?: Record<number, Element>
   resetSelection?: () => void
 }
 

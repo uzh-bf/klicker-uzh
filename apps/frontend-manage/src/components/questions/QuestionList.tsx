@@ -1,4 +1,4 @@
-import type { Question as ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type { Element as ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import React from 'react'
 
