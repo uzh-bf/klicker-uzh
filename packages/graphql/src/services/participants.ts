@@ -36,6 +36,17 @@ export async function updateParticipantProfile(
     }
   }
 
+  // check that username corresponds to no other participant
+  if (username) {
+    const existingParticipant = await ctx.prisma.participant.findUnique({
+      where: { username },
+    })
+
+    if (existingParticipant && existingParticipant.id !== ctx.user.sub) {
+      return null
+    }
+  }
+
   if (typeof password === 'string') {
     if (password.length >= 8) {
       const hashedPassword = await bcrypt.hash(password, 12)
