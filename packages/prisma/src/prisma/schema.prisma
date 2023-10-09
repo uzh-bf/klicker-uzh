@@ -21,6 +21,12 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
+enum PublicationStatus {
+  DRAFT
+  // REVIEW
+  PUBLISHED
+}
+
 // ----- USER ACCOUNTS -----
 // #region
 enum UserRole {
@@ -160,6 +166,12 @@ model MediaFile {
 
 // ----- ELEMENTS -----
 // #region
+enum ElementOrderType {
+  SEQUENTIAL
+  SHUFFLED
+  LAST_RESPONSE
+}
+
 enum ElementType {
   SC
   MC
@@ -175,6 +187,7 @@ enum ElementType {
   QUESTION_NUMERICAL
 }
 
+// TODO: remove once moved to options
 enum QuestionDisplayMode {
   LIST
   GRID
@@ -183,15 +196,21 @@ enum QuestionDisplayMode {
 model Element {
   id Int @id @default(autoincrement())
 
+  // TODO: implement the logic for this
+  version Int @default(1) // used to track question versions, incremented on each update
+
   originalId String? @unique
 
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
 
-  name               String
-  content            String
-  explanation        String?
-  pointsMultiplier   Int                 @default(1)
+  name        String
+  content     String // markdown content
+  explanation String? // markdown content
+
+  pointsMultiplier Int @default(1) // currently only relevant for FLASHCARD and QUESTION types
+
+  // TODO: the three properties below are only relevant for questions and can be moved to options Json
   displayMode        QuestionDisplayMode @default(LIST)
   hasSampleSolution  Boolean             @default(false)
   hasAnswerFeedbacks Boolean             @default(false)
@@ -228,6 +247,93 @@ model Tag {
   updatedAt DateTime @updatedAt
 
   @@unique([ownerId, name])
+}
+
+enum ElementInstanceType {
+  LEARNING_ELEMENT
+}
+
+model ElementInstance {
+  id Int @id @default(autoincrement())
+
+  originalId String? @unique
+
+  type  ElementInstanceType?
+  order Int?
+
+  participants     Int                      @default(0)
+  pointsMultiplier Int                      @default(1)
+  responses        QuestionResponse[]
+  detailResponses  QuestionResponseDetail[]
+  resetTimeDays    Int?
+
+  // TODO: types
+  options Json // contains element type specific settings
+
+  /// [PrismaQuestionData]
+  elementData Json // contains a copy of relevant element data
+
+  /// [PrismaQuestionResults]
+  results Json // contains the collection of gathered results
+
+  bookmarkedBy Participation[]
+
+  element   Element? @relation(fields: [elementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  elementId Int?
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId   String   @db.Uuid
+  course    Course
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, elementStackId, order])
+}
+
+enum ElementStackType {
+  LEARNING_ELEMENT
+}
+
+model ElementStack {
+  id Int @id @default(autoincrement())
+
+  type        ElementStackType
+  // TODO: we needed the two below for the stacked learning elements (Excel) as a top-level title and description. maybe we could drop them if we add a content element before the questions and the name of the content element is the top-level title, though it would be the same "size" as the other titles.
+  displayName String?
+  description String?
+  order       Int?
+
+  elements ElementInstance[]
+
+  bookmarkedBy Participation[]
+
+  // @@unique([type, learningElementId, order])
+}
+
+// #endregion
+
+// ----- PRACTICE QUIZZES -----
+// #region
+model PracticeQuiz {
+  id String @id @default(uuid()) @db.Uuid
+
+  name             String
+  displayName      String
+  description      String?
+  pointsMultiplier Int               @default(1)
+  resetTimeDays    Int               @default(6)
+  orderType        OrderType         @default(SEQUENTIAL)
+  status           PublicationStatus @default(DRAFT)
+
+  stacks ElementStack[]
+
+  owner    User    @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId  String  @db.Uuid
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  courseId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // #endregion
