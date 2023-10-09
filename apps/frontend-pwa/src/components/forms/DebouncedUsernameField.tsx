@@ -3,14 +3,22 @@ import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
 import { CheckUsernameAvailabilityDocument } from '@klicker-uzh/graphql/dist/ops'
 import { FormikTextField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
+import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface DebouncedUsernameFieldProps {
   name: string
   label: string
+  onAvailabilityChange: (isAvailable: boolean) => void
 }
 
-function DebouncedUsernameField({ name, label }: DebouncedUsernameFieldProps) {
+function DebouncedUsernameField({
+  name,
+  label,
+  onAvailabilityChange,
+}: DebouncedUsernameFieldProps) {
+  const t = useTranslations()
+
   const [field, _, helpers] = useField(name)
   const [valid, setValid] = useState<boolean | undefined>(undefined)
 
@@ -36,7 +44,15 @@ function DebouncedUsernameField({ name, label }: DebouncedUsernameFieldProps) {
       setValid(undefined)
       usernameValidationTimeout.current = setTimeout(async () => {
         const value = await checkUsernameAvailable({ variables: { username } })
-        setValid(value.data?.checkUsernameAvailability)
+        const isAvailable = value.data?.checkUsernameAvailability
+        setValid(isAvailable)
+        onAvailabilityChange(isAvailable)
+        if (!isAvailable) {
+          helpers.setError(t('pwa.createAccount.usernameAvailability'))
+        } else {
+          helpers.setError(undefined)
+        }
+        console.log('value', value.data?.checkUsernameAvailability)
       }, 1000)
     },
     [checkUsernameAvailable]

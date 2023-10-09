@@ -65,6 +65,8 @@ function CreateAccountForm({
 
   const [openCollapsibleIx, setOpenCollapsibleIx] = useState<number>(0)
 
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean>(true)
+  console.log('isUsernameAvailable', isUsernameAvailable)
   return (
     <Formik
       isInitialValid={false}
@@ -116,7 +118,12 @@ function CreateAccountForm({
                   root: 'flex-none w-full md:w-max',
                 }}
                 type="submit"
-                disabled={!tosChecked || isSubmitting || !isValid}
+                disabled={
+                  !tosChecked ||
+                  isSubmitting ||
+                  !isValid ||
+                  !isUsernameAvailable
+                }
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faSave} />
@@ -141,6 +148,9 @@ function CreateAccountForm({
                 <DebouncedUsernameField
                   name="username"
                   label={t('shared.generic.username')}
+                  onAvailabilityChange={(usernameAvailable: boolean) =>
+                    setIsUsernameAvailable(usernameAvailable)
+                  }
                 />
                 <FormikTextField
                   name="password"
