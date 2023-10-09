@@ -221,7 +221,7 @@ export const Mutation = builder.mutationType({
         args: {
           username: t.arg.string({
             required: true,
-            validate: { minLength: 5, maxLength: 10 },
+            validate: { minLength: 5, maxLength: 15 },
           }),
           password: t.arg.string({ required: true }),
           email: t.arg.string({ required: true, validate: { email: true } }),
