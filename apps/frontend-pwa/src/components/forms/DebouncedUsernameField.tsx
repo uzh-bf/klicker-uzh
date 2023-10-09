@@ -65,11 +65,14 @@ function DebouncedUsernameField({
         label: 'font-bold text-md text-black',
         icon:
           typeof valid === 'undefined'
-            ? 'animate-spin !py-0'
-            : valid
-            ? 'text-green-600'
-            : 'text-red-600 bg-red-50',
-        input: valid === false ? 'border-red-600 bg-red-50' : '',
+            ? 'animate-spin !py-0 bg-transparent'
+            : !valid || typeof meta.error !== 'undefined'
+            ? 'text-red-600 bg-red-50'
+            : 'text-green-600',
+        input:
+          valid === false || typeof meta.error !== 'undefined'
+            ? 'border-red-600 bg-red-50'
+            : '',
       }}
       onChange={async (username: string) => {
         debouncedUsernameCheck({ username })
