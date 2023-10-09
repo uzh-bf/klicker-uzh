@@ -68,8 +68,8 @@ function DebouncedUsernameField({
             ? 'animate-spin !py-0'
             : valid
             ? 'text-green-600'
-            : 'text-red-600',
-        input: valid === false ? 'border-red-600' : '',
+            : 'text-red-600 bg-red-50',
+        input: valid === false ? 'border-red-600 bg-red-50' : '',
       }}
       onChange={async (username: string) => {
         debouncedUsernameCheck({ username })
