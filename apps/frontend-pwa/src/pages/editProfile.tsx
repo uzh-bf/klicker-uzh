@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
+import DebouncedUsernameField from '@components/forms/DebouncedUsernameField'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -45,6 +46,9 @@ function EditProfile() {
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/profile')
   const [showError, setShowError] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<
+    boolean | undefined
+  >(true)
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window?.location?.search)
@@ -80,7 +84,14 @@ function EditProfile() {
             .string()
             .required(t('pwa.profile.usernameRequired'))
             .min(5, t('pwa.profile.usernameMinLength', { length: '5' }))
-            .max(15, t('pwa.profile.usernameMaxLength', { length: '15' })),
+            .max(15, t('pwa.profile.usernameMaxLength', { length: '15' }))
+            .test(
+              'isUsernameAvailable',
+              t('pwa.createAccount.usernameAvailability'),
+              () =>
+                typeof isUsernameAvailable === 'undefined' ||
+                isUsernameAvailable === true
+            ),
           password: yup
             .string()
             .optional()
@@ -180,7 +191,7 @@ function EditProfile() {
           }
         }}
       >
-        {({ values, isSubmitting, isValid }) => {
+        {({ values, isSubmitting, isValid, validateField }) => {
           return (
             <Form>
               <div className="flex flex-col md:w-full md:max-w-5xl md:mx-auto gap-4">
@@ -204,11 +215,16 @@ function EditProfile() {
                           labelType="small"
                           className={{ label: 'font-bold text-md text-black' }}
                         />
-                        <FormikTextField
+                        <DebouncedUsernameField
                           name="username"
                           label={t('shared.generic.username')}
-                          labelType="small"
-                          className={{ label: 'font-bold text-md text-black' }}
+                          valid={isUsernameAvailable}
+                          setValid={(usernameAvailable: boolean | undefined) =>
+                            setIsUsernameAvailable(usernameAvailable)
+                          }
+                          validateField={async () => {
+                            await validateField('username')
+                          }}
                         />
                         <FormikTextField
                           name="password"
