@@ -1,5 +1,5 @@
 import { useLazyQuery } from '@apollo/client'
-import { faCheck } from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
 import { CheckUsernameAvailabilityDocument } from '@klicker-uzh/graphql/dist/ops'
 import { FormikTextField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
@@ -36,6 +36,7 @@ function DebouncedUsernameField({ name, label }: DebouncedUsernameFieldProps) {
       setValid(undefined)
       usernameValidationTimeout.current = setTimeout(async () => {
         const value = await checkUsernameAvailable({ variables: { username } })
+        setValid(value.data?.checkUsernameAvailability)
         console.log('value', value.data?.checkUsernameAvailability)
       }, 1000)
     },
@@ -54,8 +55,7 @@ function DebouncedUsernameField({ name, label }: DebouncedUsernameFieldProps) {
         debouncedUsernameCheck({ username })
         helpers.setValue(username)
       }}
-      // TODO: set valid attribute according to current value - undefined for loading while validating, true for available, false for not available and show a corresponding icon here
-      icon={faCheck}
+      icon={valid === undefined ? faSpinner : valid ? faCheck : faX}
     />
   )
 }
