@@ -120,7 +120,7 @@ model User {
   session           Session[]
   accounts          Account[]
   courses           Course[]
-  questions         Question[]
+  questions         Element[]
   mediaFiles        MediaFile[]
   tags              Tag[]
   questionInstances QuestionInstance[]
@@ -161,6 +161,13 @@ enum QuestionType {
   KPRIM
   FREE_TEXT
   NUMERICAL
+  CONTENT
+  FLASHCARD
+  QUESTION_SC
+  QUESTION_MC
+  QUESTION_KPRIM
+  QUESTION_FREE_TEXT
+  QUESTION_NUMERICAL
 }
 
 enum QuestionDisplayMode {
@@ -168,7 +175,7 @@ enum QuestionDisplayMode {
   GRID
 }
 
-model Question {
+model Element {
   id Int @id @default(autoincrement())
 
   originalId String? @unique
@@ -207,7 +214,7 @@ model Tag {
 
   originalId String? @unique
 
-  questions Question[]
+  questions Element[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -257,10 +264,10 @@ model QuestionInstance {
 
   bookmarkedBy Participation[]
 
-  question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  question   Element? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questionId Int?
-  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId    String    @db.Uuid
+  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId    String   @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
