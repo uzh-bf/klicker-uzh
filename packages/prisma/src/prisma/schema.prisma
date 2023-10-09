@@ -134,6 +134,8 @@ model User {
   learningElements  LearningElement[]
   microSessions     MicroSession[]
   groupActivities   GroupActivity[]
+  elementInstances  ElementInstance[]
+  practiceQuizzes   PracticeQuiz[]
 
   firstLogin Boolean @default(true)
 
@@ -220,8 +222,11 @@ model Element {
 
   type ElementType
 
-  tags      Tag[]
-  instances QuestionInstance[]
+  tags Tag[]
+
+  // TODO: as we renamed Question to Element, it will need to have instances and elementInstances in parallel for a while. once we migrated all question instances and activities to elements, we can remove instances with a migration.
+  instances        QuestionInstance[]
+  elementInstances ElementInstance[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -249,8 +254,9 @@ model Tag {
   @@unique([ownerId, name])
 }
 
+// TODO: elements are only supported for the new PRACTICE_QUIZ type in the first iteration. add the other types here when working on them.
 enum ElementInstanceType {
-  LEARNING_ELEMENT
+  PRACTICE_QUIZ
 }
 
 model ElementInstance {
@@ -278,11 +284,14 @@ model ElementInstance {
 
   bookmarkedBy Participation[]
 
-  element   Element? @relation(fields: [elementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  elementId Int?
-  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId   String   @db.Uuid
-  course    Course
+  element        Element?     @relation(fields: [elementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  elementId      Int?
+  elementStack   ElementStack @relation(fields: [elementStackId], references: [id])
+  elementStackId Int
+  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId        String       @db.Uuid
+  course         Course?      @relation(fields: [courseId], references: [id])
+  courseId       String?      @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -291,14 +300,14 @@ model ElementInstance {
 }
 
 enum ElementStackType {
-  LEARNING_ELEMENT
+  PRACTICE_QUIZ
 }
 
 model ElementStack {
   id Int @id @default(autoincrement())
 
   type        ElementStackType
-  // TODO: we needed the two below for the stacked learning elements (Excel) as a top-level title and description. maybe we could drop them if we add a content element before the questions and the name of the content element is the top-level title, though it would be the same "size" as the other titles.
+  // TODO: we needed the two below for the stacked learning elements (Excel) as a top-level title and description. maybe we could drop them if we add a content element before the questions and the name of the content element is the top-level title, though it would be the same "size" as the other titles. however, this would add a lot of content elements to the question pool that cannot "stand on their own", and we might want to use content elements primarily for short snippets of content to repeat, not for some intro text to an element stack. this would mean we keep displayName and description here and as optional fields.
   displayName String?
   description String?
   order       Int?
@@ -307,7 +316,10 @@ model ElementStack {
 
   bookmarkedBy Participation[]
 
-  // @@unique([type, learningElementId, order])
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id])
+  practiceQuizId String?       @db.Uuid
+
+  @@unique([type, practiceQuizId, order])
 }
 
 // #endregion
@@ -322,7 +334,7 @@ model PracticeQuiz {
   description      String?
   pointsMultiplier Int               @default(1)
   resetTimeDays    Int               @default(6)
-  orderType        OrderType         @default(SEQUENTIAL)
+  orderType        ElementOrderType  @default(SEQUENTIAL)
   status           PublicationStatus @default(DRAFT)
 
   stacks ElementStack[]
@@ -456,19 +468,20 @@ model Course {
   sessions          LiveSession[]
   learningElements  LearningElement[]
   microSessions     MicroSession[]
-  leaderboard       LeaderboardEntry[]
+  elementInstances  ElementInstance[]
+  practiceQuizzes   PracticeQuiz[]
   groupActivities   GroupActivity[]
+  leaderboard       LeaderboardEntry[]
   awards            AwardEntry[]
   classAchievements ClassAchievementInstance[]
   achievements      Achievement[]
   titles            Title[]
-
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId String @db.Uuid
-
   participations    Participation[]
   subscriptions     PushSubscription[]
   participantGroups ParticipantGroup[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -912,12 +925,14 @@ model Participation {
 
   sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
 
-  responses              QuestionResponse[]
-  detailResponses        QuestionResponseDetail[]
-  subscriptions          PushSubscription[]
-  completedMicroSessions String[]
-  bookmarkedQuestions    QuestionInstance[]
-  bookmarkedStacks       QuestionStack[]
+  responses               QuestionResponse[]
+  detailResponses         QuestionResponseDetail[]
+  subscriptions           PushSubscription[]
+  completedMicroSessions  String[]
+  bookmarkedQuestions     QuestionInstance[]
+  bookmarkedStacks        QuestionStack[]
+  bookmarkedElements      ElementInstance[]
+  bookmarkedElementStacks ElementStack[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -983,8 +998,11 @@ model QuestionResponse {
   participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participationId Int
 
-  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  questionInstanceId Int
+  // TODO: for now, a response can be associated with either a questionInstance or elementInstance, but in the future only elementInstance will remain and be required
+  questionInstance   QuestionInstance? @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstanceId Int?
+  elementInstance    ElementInstance?  @relation(fields: [elementInstanceId], references: [id])
+  elementInstanceId  Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1008,8 +1026,11 @@ model QuestionResponseDetail {
   participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participationId Int
 
-  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  questionInstanceId Int
+  // TODO: for now, a response can be associated with either a questionInstance or elementInstance, but in the future only elementInstance will remain and be required
+  questionInstance   QuestionInstance? @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstanceId Int?
+  elementInstance    ElementInstance?  @relation(fields: [elementInstanceId], references: [id])
+  elementInstanceId  Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
