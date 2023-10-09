@@ -1,4 +1,4 @@
-import { QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 
 export const SMALL_BAR_THRESHOLD: number = 0.05
 
@@ -32,23 +32,23 @@ export const CHART_SOLUTION_COLORS = {
 }
 
 export const QUESTION_GROUPS: Record<string, string[]> = {
-  CHOICES: [QuestionType.Sc, QuestionType.Mc, QuestionType.Kprim],
-  FREE_TEXT: [QuestionType.FreeText],
-  NUMERICAL: [QuestionType.Numerical],
-  FREE: [QuestionType.FreeText, QuestionType.Numerical],
+  CHOICES: [ElementType.Sc, ElementType.Mc, ElementType.Kprim],
+  FREE_TEXT: [ElementType.FreeText],
+  NUMERICAL: [ElementType.Numerical],
+  FREE: [ElementType.FreeText, ElementType.Numerical],
   WITH_PERCENTAGES: [
-    QuestionType.Sc,
-    QuestionType.Mc,
-    QuestionType.Kprim,
-    QuestionType.FreeText,
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.FreeText,
   ],
   WITH_POSSIBILITIES: [
-    QuestionType.Sc,
-    QuestionType.Mc,
-    QuestionType.Kprim,
-    QuestionType.Numerical,
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.Numerical,
   ],
-  WITH_STATISTICS: [QuestionType.Numerical],
+  WITH_STATISTICS: [ElementType.Numerical],
 }
 
 export const AVATAR_OPTIONS: Record<string, string[]> = {
@@ -68,28 +68,28 @@ export const AVATAR_OPTIONS: Record<string, string[]> = {
 }
 
 export const ACTIVE_CHART_TYPES: Record<
-  QuestionType,
+  ElementType,
   { label: string; value: string }[]
 > = {
-  [QuestionType.FreeText]: [
+  [ElementType.FreeText]: [
     { label: 'manage.evaluation.table', value: 'table' },
     { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
   ],
-  [QuestionType.Numerical]: [
+  [ElementType.Numerical]: [
     { label: 'manage.evaluation.histogram', value: 'histogram' },
     { label: 'manage.evaluation.table', value: 'table' },
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.wordCloud', value: 'wordCloud' },
   ],
-  [QuestionType.Sc]: [
+  [ElementType.Sc]: [
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],
-  [QuestionType.Mc]: [
+  [ElementType.Mc]: [
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],
-  [QuestionType.Kprim]: [
+  [ElementType.Kprim]: [
     { label: 'manage.evaluation.barChart', value: 'barChart' },
     { label: 'manage.evaluation.table', value: 'table' },
   ],

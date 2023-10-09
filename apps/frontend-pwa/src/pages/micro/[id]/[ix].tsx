@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  ElementType,
   GetMicroSessionDocument,
-  QuestionType,
   ResponseToQuestionInstanceDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -42,11 +42,11 @@ function MicroSessionInstance() {
   useEffect(() => {
     if (questionData?.type) {
       if (
-        questionData.type === QuestionType.Sc ||
-        questionData.type === QuestionType.Mc
+        questionData.type === ElementType.Sc ||
+        questionData.type === ElementType.Mc
       ) {
         setResponse([])
-      } else if (questionData.type === QuestionType.Kprim) {
+      } else if (questionData.type === ElementType.Kprim) {
         setResponse({})
       } else {
         setResponse('')
@@ -131,7 +131,7 @@ function MicroSessionInstance() {
                   onSubmitResponse={
                     isEvaluation ? handleNextQuestion : handleSubmitResponse
                   }
-                  questionType={questionData.type as QuestionType}
+                  questionType={questionData.type as ElementType}
                   options={questionData.options}
                   displayMode={questionData.displayMode}
                 />

@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementType,
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
   GetUserTagsDocument,
@@ -9,7 +10,6 @@ import {
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
   QuestionDisplayMode,
-  QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -69,7 +69,7 @@ function QuestionEditModal({
   const questionManipulationSchema = Yup.object().shape({
     name: Yup.string().required(t('manage.formErrors.questionName')),
     tags: Yup.array().of(Yup.string()),
-    type: Yup.string().oneOf(Object.values(QuestionType)).required(),
+    type: Yup.string().oneOf(Object.values(ElementType)).required(),
     displayMode: Yup.string().oneOf(Object.values(QuestionDisplayMode)),
     content: Yup.string()
       .required(t('manage.formErrors.questionContent'))
@@ -245,24 +245,24 @@ function QuestionEditModal({
 
   const DROPDOWN_OPTIONS = [
     {
-      value: QuestionType.Sc,
-      label: t(`shared.${QuestionType.Sc}.typeLabel`),
+      value: ElementType.Sc,
+      label: t(`shared.${ElementType.Sc}.typeLabel`),
     },
     {
-      value: QuestionType.Mc,
-      label: t(`shared.${QuestionType.Mc}.typeLabel`),
+      value: ElementType.Mc,
+      label: t(`shared.${ElementType.Mc}.typeLabel`),
     },
     {
-      value: QuestionType.Kprim,
-      label: t(`shared.${QuestionType.Kprim}.typeLabel`),
+      value: ElementType.Kprim,
+      label: t(`shared.${ElementType.Kprim}.typeLabel`),
     },
     {
-      value: QuestionType.Numerical,
-      label: t(`shared.${QuestionType.Numerical}.typeLabel`),
+      value: ElementType.Numerical,
+      label: t(`shared.${ElementType.Numerical}.typeLabel`),
     },
     {
-      value: QuestionType.FreeText,
-      label: t(`shared.${QuestionType.FreeText}.typeLabel`),
+      value: ElementType.FreeText,
+      label: t(`shared.${ElementType.FreeText}.typeLabel`),
     },
   ]
 
@@ -271,7 +271,7 @@ function QuestionEditModal({
       const common = {
         type:
           mode === QuestionEditMode.CREATE
-            ? QuestionType.Sc
+            ? ElementType.Sc
             : dataQuestion?.question?.type,
         displayMode: QuestionDisplayMode.List,
         name: '',
@@ -284,9 +284,9 @@ function QuestionEditModal({
       }
 
       switch (common.type) {
-        case QuestionType.Sc:
-        case QuestionType.Mc:
-        case QuestionType.Kprim:
+        case ElementType.Sc:
+        case ElementType.Mc:
+        case ElementType.Kprim:
           return {
             ...common,
             options: {
@@ -294,7 +294,7 @@ function QuestionEditModal({
             },
           }
 
-        case QuestionType.Numerical:
+        case ElementType.Numerical:
           return {
             ...common,
             options: {
@@ -305,7 +305,7 @@ function QuestionEditModal({
             },
           }
 
-        case QuestionType.FreeText:
+        case ElementType.FreeText:
           return {
             ...common,
             options: {
@@ -372,9 +372,9 @@ function QuestionEditModal({
           pointsMultiplier: parseInt(values.pointsMultiplier),
         }
         switch (common.type) {
-          case QuestionType.Sc:
-          case QuestionType.Mc:
-          case QuestionType.Kprim:
+          case ElementType.Sc:
+          case ElementType.Mc:
+          case ElementType.Kprim:
             await manipulateChoicesQuestion({
               variables: {
                 ...common,
@@ -396,7 +396,7 @@ function QuestionEditModal({
               ],
             })
             break
-          case QuestionType.Numerical:
+          case ElementType.Numerical:
             await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
@@ -434,7 +434,7 @@ function QuestionEditModal({
               ],
             })
             break
-          case QuestionType.FreeText:
+          case ElementType.FreeText:
             await manipulateFreeTextQuestion({
               variables: {
                 ...common,
@@ -759,9 +759,7 @@ function QuestionEditModal({
                         }}
                       />
                     )}
-                    {[QuestionType.Sc, QuestionType.Mc].includes(
-                      values.type
-                    ) && (
+                    {[ElementType.Sc, ElementType.Mc].includes(values.type) && (
                       <FormikSelectField
                         name="displayMode"
                         items={Object.values(QuestionDisplayMode).map(
@@ -960,13 +958,13 @@ function QuestionEditModal({
                               className={{
                                 root: twMerge(
                                   'font-bold border border-solid border-uzh-grey-100',
-                                  values.type === QuestionType.Kprim &&
+                                  values.type === ElementType.Kprim &&
                                     values.options.choices.length >= 4 &&
                                     'opacity-50 cursor-not-allowed'
                                 ),
                               }}
                               disabled={
-                                values.type === QuestionType.Kprim &&
+                                values.type === ElementType.Kprim &&
                                 values.options.choices.length >= 4
                               }
                               onClick={() =>
@@ -993,7 +991,7 @@ function QuestionEditModal({
                     </FieldArray>
                   )}
 
-                  {values.type === QuestionType.Numerical && (
+                  {values.type === ElementType.Numerical && (
                     <div>
                       <div className="w-full">
                         <div className="flex flex-row items-center gap-2 mb-2">
@@ -1131,7 +1129,7 @@ function QuestionEditModal({
                     </div>
                   )}
 
-                  {values.type === QuestionType.FreeText && (
+                  {values.type === ElementType.FreeText && (
                     <div className="flex flex-col">
                       <div className="flex flex-row items-center mb-4">
                         <div className="mr-2 font-bold">

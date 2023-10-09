@@ -9,7 +9,7 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Question, QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType, Question } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -23,7 +23,7 @@ interface SessionCreationBlockProps {
   block: {
     questionIds: number[]
     titles: string[]
-    types: QuestionType[]
+    types: ElementType[]
     timeLimit: string
   }
   numOfBlocks: number
@@ -53,7 +53,7 @@ function SessionCreationBlock({
       drop: (item: {
         id: number
         type: string
-        questionType: QuestionType
+        questionType: ElementType
         title: string
         content: string
       }) => {
@@ -245,7 +245,7 @@ function SessionCreationBlock({
             ).reduce<{
               questionIds: number[]
               titles: string[]
-              types: QuestionType[]
+              types: ElementType[]
             }>(
               (acc, question) => {
                 acc.questionIds.push(question.id)

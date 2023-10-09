@@ -1,7 +1,4 @@
-import {
-  QuestionDisplayMode,
-  QuestionType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementType, QuestionDisplayMode } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { without } from 'ramda'
 import { twMerge } from 'tailwind-merge'
@@ -31,7 +28,7 @@ export interface StudentQuestionProps {
     content: string
     id: number
     name: string
-    type: QuestionType
+    type: ElementType
     options: any
     instanceId: number
   }
@@ -59,15 +56,15 @@ export const StudentQuestion = ({
 
   useEffect(() => {
     switch (currentQuestion.type) {
-      case QuestionType.Sc:
-      case QuestionType.Mc:
+      case ElementType.Sc:
+      case ElementType.Mc:
         setInputState({
           inputValue: [],
           inputValid: false,
           inputEmpty: true,
         })
         break
-      case QuestionType.Kprim:
+      case ElementType.Kprim:
         setInputState({
           inputValue: {},
           inputValid: false,
@@ -89,11 +86,11 @@ export const StudentQuestion = ({
     (): void => {
       const validateChoices = (newValue: any): boolean => {
         switch (type) {
-          case QuestionType.Sc:
+          case ElementType.Sc:
             return newValue.length === 1
-          case QuestionType.Mc:
+          case ElementType.Mc:
             return newValue.length > 0
-          case QuestionType.Kprim:
+          case ElementType.Kprim:
             return (
               Object.values(newValue).length === 4 &&
               Object.values(newValue).filter((value) => value === undefined)
@@ -101,7 +98,7 @@ export const StudentQuestion = ({
             )
         }
       }
-      if (inputValue && type === QuestionType.Mc) {
+      if (inputValue && type === ElementType.Mc) {
         if (typeof inputValue === 'object') {
           setInputState({
             inputEmpty: false,
@@ -129,7 +126,7 @@ export const StudentQuestion = ({
         })
       }
 
-      if (inputValue && type === QuestionType.Kprim) {
+      if (inputValue && type === ElementType.Kprim) {
         const newInputValue = {
           ...inputValue,
           [choice]: selectedValue,
@@ -260,7 +257,7 @@ export const StudentQuestion = ({
         )}
 
         {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) &&
-          (currentQuestion.type === QuestionType.Kprim ? (
+          (currentQuestion.type === ElementType.Kprim ? (
             <KPAnswerOptions
               displayMode={currentQuestion.displayMode}
               type={currentQuestion.type}

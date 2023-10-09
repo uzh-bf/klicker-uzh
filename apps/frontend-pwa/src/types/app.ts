@@ -1,4 +1,4 @@
-export enum QuestionType {
+export enum ElementType {
   SC = 'SC',
   MC = 'MC',
   NUMERICAL = 'NUMERICAL',

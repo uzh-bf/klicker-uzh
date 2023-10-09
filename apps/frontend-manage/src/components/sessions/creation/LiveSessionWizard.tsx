@@ -4,10 +4,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
   EditSessionDocument,
+  ElementType,
   GetSingleCourseDocument,
   GetUserSessionsDocument,
   Question,
-  QuestionType,
   Session,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -89,10 +89,10 @@ function LiveSessionWizard({
               .string()
               .oneOf(
                 [
-                  QuestionType.Sc,
-                  QuestionType.Mc,
-                  QuestionType.Numerical,
-                  QuestionType.FreeText,
+                  ElementType.Sc,
+                  ElementType.Mc,
+                  ElementType.Numerical,
+                  ElementType.FreeText,
                 ],
                 t('manage.sessionForms.liveSessionTypes')
               )

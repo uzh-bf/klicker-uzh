@@ -1,9 +1,6 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  QuestionDisplayMode,
-  QuestionType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementType, QuestionDisplayMode } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
@@ -11,7 +8,7 @@ import { twMerge } from 'tailwind-merge'
 
 export interface KPAnswerOptionsProps {
   displayMode?: QuestionDisplayMode
-  type: QuestionType
+  type: ElementType
   choices: { value: string; correct: boolean; feedback: string }[]
   value?: { [key: number]: boolean }
   onChange: (answer: any, selectedValue: boolean) => any

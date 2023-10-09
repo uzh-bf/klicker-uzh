@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { QuestionType } from '@type/app'
+import { ElementType } from '@type/app'
 import { Button, H1 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
@@ -238,8 +238,8 @@ function GroupActivityDetails() {
                 initialValues={data.groupActivityDetails.instances.reduce(
                   (acc, instance) => {
                     if (
-                      instance.questionData.type === QuestionType.NUMERICAL ||
-                      instance.questionData.type === QuestionType.FREE_TEXT
+                      instance.questionData.type === ElementType.NUMERICAL ||
+                      instance.questionData.type === ElementType.FREE_TEXT
                     ) {
                       const previousDecision =
                         data.groupActivityDetails?.activityInstance.decisions?.find(
@@ -268,7 +268,7 @@ function GroupActivityDetails() {
                   data.groupActivityDetails.instances.reduce(
                     (acc, instance) => {
                       if (
-                        instance.questionData.type === QuestionType.NUMERICAL
+                        instance.questionData.type === ElementType.NUMERICAL
                       ) {
                         return {
                           ...acc,
@@ -277,7 +277,7 @@ function GroupActivityDetails() {
                       }
 
                       if (
-                        instance.questionData.type === QuestionType.FREE_TEXT
+                        instance.questionData.type === ElementType.FREE_TEXT
                       ) {
                         return {
                           ...acc,
