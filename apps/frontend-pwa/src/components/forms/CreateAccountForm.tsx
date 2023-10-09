@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CheckUsernameAvailabilityDocument } from '@klicker-uzh/graphql/dist/ops'
@@ -19,6 +19,7 @@ import { useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import DynamicMarkdown from '../learningElements/DynamicMarkdown'
+import DebounceField from './DebounceField'
 
 interface Props {
   initialUsername?: string
@@ -32,10 +33,7 @@ function CreateAccountForm({
   handleSubmit,
 }: Props) {
   const t = useTranslations()
-  const [isUsernambeAvailable, setIsUsernameAvailable] = useState()
-  const [checkUsernameAvailability] = useMutation(
-    CheckUsernameAvailabilityDocument
-  )
+  const [isUsernambeAvailable, setIsUsernameAvailable] = useState(false)
 
   const createAccountSchema = yup.object({
     email: yup
@@ -70,26 +68,21 @@ function CreateAccountForm({
 
   const [openCollapsibleIx, setOpenCollapsibleIx] = useState<number>(0)
 
-  const debounceTimeoutRef = useRef()
+  const debounceTimeoutRef = useRef<any>()
+  const debounceUsernameCheck = useCallback((username: string) => {
+    clearTimeout(debounceTimeoutRef.current)
+    debounceTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { data: result } = useQuery(CheckUsernameAvailabilityDocument, {
+          variables: { username: username },
+        })
 
-  const debounceUsernameCheck = useCallback(
-    (username: string) => {
-      clearTimeout(debounceTimeoutRef.current)
-      debounceTimeoutRef.current = setTimeout(async () => {
-        try {
-          const response = await checkUsernameAvailability({
-            variables: {
-              username,
-            },
-          })
-          setIsUsernameAvailable(response.data)
-        } catch (e) {
-          console.error(e)
-        }
-      }, 500)
-    },
-    [checkUsernameAvailability]
-  )
+        setIsUsernameAvailable(!!result?.checkUsernameAvailability)
+      } catch (e) {
+        console.error(e)
+      }
+    }, 500)
+  }, [])
 
   return (
     <Formik
@@ -164,16 +157,10 @@ function CreateAccountForm({
                     label: 'font-bold text-md text-black',
                   }}
                 />
-                <FormikTextField
+                <DebounceField
                   name="username"
                   label={t('shared.generic.username')}
-                  labelType="small"
-                  className={{
-                    label: 'font-bold text-md text-black',
-                  }}
-                  onChange={(username: string) =>
-                    debounceUsernameCheck(username)
-                  }
+                  debounceFunction={debounceUsernameCheck}
                 />
                 <FormikTextField
                   name="password"
