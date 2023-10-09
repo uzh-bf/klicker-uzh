@@ -31,7 +31,6 @@ function CreateAccountForm({
   handleSubmit,
 }: Props) {
   const t = useTranslations()
-  const [isUsernambeAvailable, setIsUsernameAvailable] = useState(false)
 
   const createAccountSchema = yup.object({
     email: yup
@@ -65,22 +64,6 @@ function CreateAccountForm({
   const [tosChecked, setTosChecked] = useState<boolean>(false)
 
   const [openCollapsibleIx, setOpenCollapsibleIx] = useState<number>(0)
-
-  // const debounceTimeoutRef = useRef<any>()
-  // const debounceUsernameCheck = useCallback((username: string) => {
-  //   clearTimeout(debounceTimeoutRef.current)
-  //   debounceTimeoutRef.current = setTimeout(async () => {
-  //     try {
-  //       const { data: result } = useQuery(CheckUsernameAvailabilityDocument, {
-  //         variables: { username: username },
-  //       })
-
-  //       setIsUsernameAvailable(!!result?.checkUsernameAvailability)
-  //     } catch (e) {
-  //       console.error(e)
-  //     }
-  //   }, 500)
-  // }, [])
 
   return (
     <Formik

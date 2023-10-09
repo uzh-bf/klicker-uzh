@@ -267,6 +267,15 @@ export async function createParticipantAccount(
         signedLtiData,
         process.env.APP_SECRET as string
       ) as { email: string; sub: string }
+      // check if the username is already taken by another user
+      const existingUser = await ctx.prisma.participant.findUnique({
+        where: { username },
+      })
+
+      if (existingUser) {
+        // another user already uses the requested username, returning old user
+        return null
+      }
 
       const account = await ctx.prisma.participantAccount.create({
         data: {
