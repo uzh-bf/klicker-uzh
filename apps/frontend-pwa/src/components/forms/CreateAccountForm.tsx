@@ -41,7 +41,12 @@ function CreateAccountForm({
       .string()
       .required(t('pwa.profile.usernameRequired'))
       .min(5, t('pwa.profile.usernameMinLength', { length: '5' }))
-      .max(15, t('pwa.profile.usernameMaxLength', { length: '15' })),
+      .max(15, t('pwa.profile.usernameMaxLength', { length: '15' }))
+      .test(
+        'isUsernameAvailable',
+        t('pwa.createAccount.usernameAvailability'),
+        () => isUsernameAvailable
+      ),
     password: yup
       .string()
       .required()
