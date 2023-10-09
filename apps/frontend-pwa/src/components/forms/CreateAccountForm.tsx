@@ -1,7 +1,5 @@
-import { useQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CheckUsernameAvailabilityDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
   Button,
@@ -15,11 +13,11 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useCallback, useRef, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import DynamicMarkdown from '../learningElements/DynamicMarkdown'
-import DebounceField from './DebounceField'
+import DebouncedUsernameField from './DebouncedUsernameField'
 
 interface Props {
   initialUsername?: string
@@ -68,21 +66,21 @@ function CreateAccountForm({
 
   const [openCollapsibleIx, setOpenCollapsibleIx] = useState<number>(0)
 
-  const debounceTimeoutRef = useRef<any>()
-  const debounceUsernameCheck = useCallback((username: string) => {
-    clearTimeout(debounceTimeoutRef.current)
-    debounceTimeoutRef.current = setTimeout(async () => {
-      try {
-        const { data: result } = useQuery(CheckUsernameAvailabilityDocument, {
-          variables: { username: username },
-        })
+  // const debounceTimeoutRef = useRef<any>()
+  // const debounceUsernameCheck = useCallback((username: string) => {
+  //   clearTimeout(debounceTimeoutRef.current)
+  //   debounceTimeoutRef.current = setTimeout(async () => {
+  //     try {
+  //       const { data: result } = useQuery(CheckUsernameAvailabilityDocument, {
+  //         variables: { username: username },
+  //       })
 
-        setIsUsernameAvailable(!!result?.checkUsernameAvailability)
-      } catch (e) {
-        console.error(e)
-      }
-    }, 500)
-  }, [])
+  //       setIsUsernameAvailable(!!result?.checkUsernameAvailability)
+  //     } catch (e) {
+  //       console.error(e)
+  //     }
+  //   }, 500)
+  // }, [])
 
   return (
     <Formik
@@ -157,10 +155,9 @@ function CreateAccountForm({
                     label: 'font-bold text-md text-black',
                   }}
                 />
-                <DebounceField
+                <DebouncedUsernameField
                   name="username"
                   label={t('shared.generic.username')}
-                  debounceFunction={debounceUsernameCheck}
                 />
                 <FormikTextField
                   name="password"
