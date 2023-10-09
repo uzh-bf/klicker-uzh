@@ -79,11 +79,6 @@ function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
                   },
                   {
                     type: 'link',
-                    label: 'Background',
-                    href: '/use_cases/flipped_classroom#Background',
-                  },
-                  {
-                    type: 'link',
                     label: 'Learnings',
                     href: '/use_cases/flipped_classroom#Learnings',
                   },
@@ -110,11 +105,6 @@ function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
                     type: 'link',
                     label: 'Scenario',
                     href: '/use_cases/microlearning#Scenario',
-                  },
-                  {
-                    type: 'link',
-                    label: 'Background',
-                    href: '/use_cases/microlearning#Background',
                   },
                   {
                     type: 'link',
@@ -147,11 +137,6 @@ function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
                   },
                   {
                     type: 'link',
-                    label: 'Background',
-                    href: '/use_cases/practice_quiz#Background',
-                  },
-                  {
-                    type: 'link',
                     label: 'Learnings',
                     href: '/use_cases/practice_quiz#Learnings',
                   },
@@ -178,11 +163,6 @@ function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
                     type: 'link',
                     label: 'Scenario',
                     href: '/use_cases/group_activity#Scenario',
-                  },
-                  {
-                    type: 'link',
-                    label: 'Background',
-                    href: '/use_cases/group_activity#Background',
                   },
                   {
                     type: 'link',
@@ -215,11 +195,6 @@ function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
                   },
                   {
                     type: 'link',
-                    label: 'Background',
-                    href: '/use_cases/live_qa#Background',
-                  },
-                  {
-                    type: 'link',
                     label: 'Learnings',
                     href: '/use_cases/live_qa#Learnings',
                   },
@@ -246,11 +221,6 @@ function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
                     type: 'link',
                     label: 'Scenario',
                     href: '/use_cases/gamification#Scenario',
-                  },
-                  {
-                    type: 'link',
-                    label: 'Background',
-                    href: '/use_cases/gamification#Background',
                   },
                   {
                     type: 'link',
