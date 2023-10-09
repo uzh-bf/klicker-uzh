@@ -155,7 +155,7 @@ model MediaFile {
 
 // ----- QUESTION POOL -----
 
-enum QuestionType {
+enum ElementType {
   SC
   MC
   KPRIM
@@ -194,7 +194,7 @@ model Element {
   /// [PrismaQuestionOptions]
   options Json
 
-  type QuestionType
+  type ElementType
 
   tags      Tag[]
   instances QuestionInstance[]
