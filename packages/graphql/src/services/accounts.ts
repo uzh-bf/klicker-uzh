@@ -391,6 +391,19 @@ export async function getUserLogins(ctx: ContextWithUser) {
   return logins
 }
 
+export async function checkUsernameAvailability(
+  { username }: { username: string },
+  ctx: Context
+) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { username },
+  })
+
+  if (!participant) return true
+
+  return false
+}
+
 interface UserLoginProps {
   password: string
   name: string
