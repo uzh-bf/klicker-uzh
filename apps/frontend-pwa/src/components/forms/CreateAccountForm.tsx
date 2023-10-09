@@ -45,7 +45,9 @@ function CreateAccountForm({
       .test(
         'isUsernameAvailable',
         t('pwa.createAccount.usernameAvailability'),
-        () => isUsernameAvailable
+        () =>
+          typeof isUsernameAvailable === 'undefined' ||
+          isUsernameAvailable === true
       ),
     password: yup
       .string()
@@ -85,7 +87,7 @@ function CreateAccountForm({
       validationSchema={createAccountSchema}
       onSubmit={handleSubmit}
     >
-      {({ isSubmitting, isValid, values }) => (
+      {({ isSubmitting, isValid, values, validateField }) => (
         <Form>
           <div className="flex flex-col md:grid md:grid-cols-2 md:w-full md:max-w-[1090px] md:mx-auto gap-2">
             <div className="flex flex-col items-center justify-between order-3 gap-2 p-4 py-2 rounded md:col-span-2 md:gap-4 md:flex-row bg-slate-100 md:px-4">
@@ -157,6 +159,9 @@ function CreateAccountForm({
                   setValid={(usernameAvailable: boolean | undefined) =>
                     setIsUsernameAvailable(usernameAvailable)
                   }
+                  validateField={async () => {
+                    await validateField('username')
+                  }}
                 />
                 <FormikTextField
                   name="password"

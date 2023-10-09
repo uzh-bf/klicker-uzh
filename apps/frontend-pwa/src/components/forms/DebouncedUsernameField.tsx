@@ -11,6 +11,7 @@ interface DebouncedUsernameFieldProps {
   label: string
   valid: boolean | undefined
   setValid: (isAvailable: boolean | undefined) => void
+  validateField: () => void
 }
 
 function DebouncedUsernameField({
@@ -18,12 +19,18 @@ function DebouncedUsernameField({
   label,
   valid,
   setValid,
+  validateField,
 }: DebouncedUsernameFieldProps) {
   const t = useTranslations()
   const [field, meta, helpers] = useField(name)
   const [checkUsernameAvailable] = useLazyQuery(
     CheckUsernameAvailabilityDocument
   )
+
+  // validate field when valid value changes
+  useEffect(() => {
+    validateField()
+  }, [valid])
 
   // check if initial username is valid
   useEffect(() => {
@@ -75,8 +82,8 @@ function DebouncedUsernameField({
             : '',
       }}
       onChange={async (username: string) => {
+        await helpers.setValue(username)
         debouncedUsernameCheck({ username })
-        helpers.setValue(username)
       }}
       icon={
         typeof valid === 'undefined'
