@@ -408,7 +408,7 @@ export async function checkUsernameAvailability(
     where: { username },
   })
 
-  if (!participant) return true
+  if (!participant || participant.id === ctx.user?.sub) return true
 
   return false
 }
