@@ -62,11 +62,11 @@ function CreateAccountForm({
   })
 
   const [tosChecked, setTosChecked] = useState<boolean>(false)
-
   const [openCollapsibleIx, setOpenCollapsibleIx] = useState<number>(0)
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<
+    boolean | undefined
+  >(true)
 
-  const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean>(true)
-  console.log('isUsernameAvailable', isUsernameAvailable)
   return (
     <Formik
       isInitialValid={false}
@@ -148,7 +148,8 @@ function CreateAccountForm({
                 <DebouncedUsernameField
                   name="username"
                   label={t('shared.generic.username')}
-                  onAvailabilityChange={(usernameAvailable: boolean) =>
+                  valid={isUsernameAvailable}
+                  setValid={(usernameAvailable: boolean | undefined) =>
                     setIsUsernameAvailable(usernameAvailable)
                   }
                 />

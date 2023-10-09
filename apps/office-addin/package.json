@@ -4,7 +4,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@fluentui/react": "8.109.5",
-    "@uzh-bf/design-system": "2.1.11",
+    "@uzh-bf/design-system": "2.1.12",
     "core-js": "3.30.2",
     "es6-promise": "4.2.8",
     "formik": "2.4.3",

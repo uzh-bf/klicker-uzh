@@ -4,23 +4,24 @@ import { CheckUsernameAvailabilityDocument } from '@klicker-uzh/graphql/dist/ops
 import { FormikTextField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 interface DebouncedUsernameFieldProps {
   name: string
   label: string
-  onAvailabilityChange: (isAvailable: boolean) => void
+  valid: boolean | undefined
+  setValid: (isAvailable: boolean | undefined) => void
 }
 
 function DebouncedUsernameField({
   name,
   label,
-  onAvailabilityChange,
+  valid,
+  setValid,
 }: DebouncedUsernameFieldProps) {
   const t = useTranslations()
 
-  const [field, _, helpers] = useField(name)
-  const [valid, setValid] = useState<boolean | undefined>(undefined)
+  const [field, meta, helpers] = useField(name)
 
   const [checkUsernameAvailable] = useLazyQuery(
     CheckUsernameAvailabilityDocument
@@ -43,25 +44,24 @@ function DebouncedUsernameField({
       clearTimeout(usernameValidationTimeout.current)
       setValid(undefined)
       usernameValidationTimeout.current = setTimeout(async () => {
-        const value = await checkUsernameAvailable({ variables: { username } })
-        const isAvailable = value.data?.checkUsernameAvailability
+        const { data: result } = await checkUsernameAvailable({
+          variables: { username },
+        })
+        const isAvailable = result?.checkUsernameAvailability
         setValid(isAvailable)
-        onAvailabilityChange(isAvailable)
         if (!isAvailable) {
           helpers.setError(t('pwa.createAccount.usernameAvailability'))
-        } else {
-          helpers.setError(undefined)
         }
-        console.log('value', value.data?.checkUsernameAvailability)
       }, 1000)
     },
-    [checkUsernameAvailable]
+    []
   )
 
   return (
     <FormikTextField
       value={field.value}
       label={label}
+      error={meta.error}
       labelType="small"
       className={{
         label: 'font-bold text-md text-black',
