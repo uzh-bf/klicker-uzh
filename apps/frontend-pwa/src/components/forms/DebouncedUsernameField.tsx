@@ -37,7 +37,6 @@ function DebouncedUsernameField({ name, label }: DebouncedUsernameFieldProps) {
       usernameValidationTimeout.current = setTimeout(async () => {
         const value = await checkUsernameAvailable({ variables: { username } })
         setValid(value.data?.checkUsernameAvailability)
-        console.log('value', value.data?.checkUsernameAvailability)
       }, 1000)
     },
     [checkUsernameAvailable]
@@ -50,12 +49,19 @@ function DebouncedUsernameField({ name, label }: DebouncedUsernameFieldProps) {
       labelType="small"
       className={{
         label: 'font-bold text-md text-black',
+        icon:
+          typeof valid === 'undefined'
+            ? 'animate-spin !py-0'
+            : valid
+            ? 'text-green-600'
+            : 'text-red-600',
+        input: valid === false ? 'border-red-600' : '',
       }}
       onChange={async (username: string) => {
         debouncedUsernameCheck({ username })
         helpers.setValue(username)
       }}
-      icon={valid === undefined ? faSpinner : valid ? faCheck : faX}
+      icon={typeof valid === 'undefined' ? faSpinner : valid ? faCheck : faX}
     />
   )
 }
