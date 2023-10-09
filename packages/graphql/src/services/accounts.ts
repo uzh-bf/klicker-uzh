@@ -345,7 +345,9 @@ export async function createParticipantAccount(
     console.error(e)
     await sendTeamsNotifications(
       'graphql/createParticipantAccount',
-      `Failed to create participant account: ${email}`
+      `Failed to create participant account: ${email} with error: ${
+        e || 'missing'
+      }`
     )
     return null
   }
