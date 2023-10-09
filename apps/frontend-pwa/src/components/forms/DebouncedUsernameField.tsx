@@ -76,7 +76,6 @@ function DebouncedUsernameField({
         helpers.setValue(username)
       }}
       icon={typeof valid === 'undefined' ? faSpinner : valid ? faCheck : faX}
-      error={meta.error}
     />
   )
 }
