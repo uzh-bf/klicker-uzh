@@ -1,26 +1,26 @@
 import {
   AccessMode,
   ConfusionTimestep,
-  Question,
+  Element,
+  ElementType,
   QuestionInstance,
   QuestionInstanceType,
-  QuestionType,
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import dayjs from 'dayjs'
-import * as R from 'ramda'
-import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
-import { Context, ContextWithUser } from '../lib/context'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
+import * as R from 'ramda'
+import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ISession } from 'src/schema/session'
 import {
   AllQuestionInstanceTypeData,
   QuestionResultsChoices,
 } from 'src/types/app'
+import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
   processQuestionData,
@@ -33,12 +33,12 @@ const scheduledJobs: Record<string, any> = {}
 async function getQuestionMap(
   blocks: BlockArgs[],
   ctx: ContextWithUser
-): Promise<Record<number, Question>> {
+): Promise<Record<number, Element>> {
   const allQuestionsIds = new Set(
     blocks.reduce<number[]>((acc, block) => [...acc, ...block.questionIds], [])
   )
 
-  const questions = await ctx.prisma.question.findMany({
+  const questions = await ctx.prisma.element.findMany({
     where: {
       id: { in: Array.from(allQuestionsIds) },
       ownerId: ctx.user.sub,
@@ -49,7 +49,7 @@ async function getQuestionMap(
     throw new GraphQLError('Not all questions could be found')
   }
 
-  return questions.reduce<Record<number, Question>>(
+  return questions.reduce<Record<number, Element>>(
     (acc, question) => ({ ...acc, [question.id]: question }),
     {}
   )
@@ -727,9 +727,9 @@ export async function activateSessionBlock(
     }
 
     switch (questionData.type) {
-      case QuestionType.SC:
-      case QuestionType.MC:
-      case QuestionType.KPRIM: {
+      case ElementType.SC:
+      case ElementType.MC:
+      case ElementType.KPRIM: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
           choiceCount: questionData.options.choices.length,
@@ -747,7 +747,7 @@ export async function activateSessionBlock(
         break
       }
 
-      case QuestionType.NUMERICAL: {
+      case ElementType.NUMERICAL: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: JSON.stringify(questionData.options.solutionRanges),
@@ -758,7 +758,7 @@ export async function activateSessionBlock(
         break
       }
 
-      case QuestionType.FREE_TEXT: {
+      case ElementType.FREE_TEXT: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: JSON.stringify(questionData.options.solutions),
@@ -1161,8 +1161,8 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
             return instance
 
           switch (questionData.type) {
-            case QuestionType.SC:
-            case QuestionType.MC:
+            case ElementType.SC:
+            case ElementType.MC:
               return {
                 ...instance,
                 questionData: {
@@ -1176,8 +1176,8 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
                 },
               }
 
-            case QuestionType.NUMERICAL:
-            case QuestionType.FREE_TEXT:
+            case ElementType.NUMERICAL:
+            case ElementType.FREE_TEXT:
               return {
                 ...instance,
                 questionData,

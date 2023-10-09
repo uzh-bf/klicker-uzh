@@ -20,7 +20,7 @@ import {
   ParticipantWithAchievements,
   Participation,
 } from './participant'
-import { Question, Tag } from './question'
+import { Element, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
 import { MediaFile, User, UserLogin } from './user'
 
@@ -159,7 +159,7 @@ export const Query = builder.queryType({
 
       userQuestions: asUser.prismaField({
         nullable: true,
-        type: [Question],
+        type: [Element],
         resolve(_, __, ___, ctx) {
           return QuestionService.getUserQuestions(ctx)
         },
@@ -334,7 +334,7 @@ export const Query = builder.queryType({
 
       question: asUser.prismaField({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: true }),
         },

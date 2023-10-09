@@ -1,8 +1,8 @@
 import {
-  Question,
+  Element,
+  ElementType,
   QuestionDisplayMode,
   QuestionInstance,
-  QuestionType,
 } from '@klicker-uzh/prisma'
 
 export type AvatarSettings = {
@@ -81,7 +81,7 @@ export type QuestionOptions =
 export interface BaseQuestionData {
   id: number
   name: string
-  type: QuestionType
+  type: ElementType
   displayMode: QuestionDisplayMode
   content: string
   pointsMultiplier: number
@@ -94,9 +94,9 @@ export interface BaseQuestionData {
 export type BaseQuestionDataKeys = (keyof BaseQuestionData)[]
 
 interface IQuestionData<
-  Type extends QuestionType,
+  Type extends ElementType,
   Options extends QuestionOptions
-> extends Question {
+> extends Element {
   type: Type
   options: Options
 }
@@ -120,7 +120,7 @@ export type AllQuestionTypeData =
   | NumericalQuestionData
 
 export interface IQuestionInstanceWithResults<
-  Type extends QuestionType,
+  Type extends ElementType,
   Results extends QuestionResults
 > extends QuestionInstance {
   elementType?: Type

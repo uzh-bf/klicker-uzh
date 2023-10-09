@@ -36,15 +36,15 @@ import {
   SubscriptionObjectInput,
 } from './participant'
 import {
+  Element,
   OptionsChoicesInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
-  Question,
   QuestionInstance,
   ResponseInput,
   Tag,
 } from './question'
-import { QuestionDisplayMode, QuestionType } from './questionData'
+import { ElementType, QuestionDisplayMode } from './questionData'
 import {
   BlockInput,
   ConfusionTimestep,
@@ -528,7 +528,7 @@ export const Mutation = builder.mutationType({
 
       deleteQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: true }),
         },
@@ -722,10 +722,10 @@ export const Mutation = builder.mutationType({
 
       manipulateChoicesQuestion: t.withAuth(asUserFullAccess).prismaField({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -745,10 +745,10 @@ export const Mutation = builder.mutationType({
 
       manipulateNumericalQuestion: t.withAuth(asUserFullAccess).prismaField({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -767,10 +767,10 @@ export const Mutation = builder.mutationType({
 
       manipulateFreeTextQuestion: t.withAuth(asUserFullAccess).prismaField({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -824,7 +824,7 @@ export const Mutation = builder.mutationType({
 
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: [Question],
+        type: [Element],
         args: {
           questionIds: t.arg.intList({ required: true }),
           isArchived: t.arg.boolean({ required: true }),

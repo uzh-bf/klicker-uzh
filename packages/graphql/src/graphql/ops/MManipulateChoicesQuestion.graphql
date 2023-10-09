@@ -1,6 +1,6 @@
 mutation ManipulateChoicesQuestion(
   $id: Int
-  $type: QuestionType!
+  $type: ElementType!
   $name: String
   $content: String
   $explanation: String

@@ -1,4 +1,4 @@
-import { Question, QuestionType } from '@klicker-uzh/prisma'
+import { Element, ElementType } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import {
   AllQuestionTypeData,
@@ -23,19 +23,19 @@ const RELEVANT_KEYS: BaseQuestionDataKeys = [
   'options',
 ]
 
-export function processQuestionData(question: Question) {
+export function processQuestionData(question: Element) {
   const extractRelevantKeys = R.pick(RELEVANT_KEYS)
 
   switch (question.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM:
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM:
       return { ...extractRelevantKeys(question) } as ChoicesQuestionData
 
-    case QuestionType.NUMERICAL:
+    case ElementType.NUMERICAL:
       return { ...extractRelevantKeys(question) } as NumericalQuestionData
 
-    case QuestionType.FREE_TEXT:
+    case ElementType.FREE_TEXT:
       return { ...extractRelevantKeys(question) } as FreeTextQuestionData
 
     default:
@@ -47,9 +47,9 @@ export function prepareInitialInstanceResults(
   questionData: AllQuestionTypeData
 ): QuestionResults {
   switch (questionData.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
       const choices = questionData.options.choices.reduce(
         (acc, _, ix) => ({ ...acc, [ix]: 0 }),
         {}
@@ -57,8 +57,8 @@ export function prepareInitialInstanceResults(
       return { choices } as QuestionResultsChoices
     }
 
-    case QuestionType.NUMERICAL:
-    case QuestionType.FREE_TEXT: {
+    case ElementType.NUMERICAL:
+    case ElementType.FREE_TEXT: {
       return {}
     }
 

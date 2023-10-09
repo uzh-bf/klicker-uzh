@@ -2,8 +2,8 @@ import * as DB from '@klicker-uzh/prisma'
 import { BaseQuestionData } from 'src/types/app'
 import builder from '../builder'
 
-export const QuestionType = builder.enumType('QuestionType', {
-  values: Object.values(DB.QuestionType),
+export const ElementType = builder.enumType('ElementType', {
+  values: Object.values(DB.ElementType),
 })
 
 export const QuestionDisplayMode = builder.enumType('QuestionDisplayMode', {
@@ -17,7 +17,7 @@ export const QuestionData = QuestionDataRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     name: t.exposeString('name'),
-    type: t.expose('type', { type: QuestionType }),
+    type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
     explanation: t.exposeString('explanation', { nullable: true }),
     pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
@@ -30,13 +30,13 @@ export const QuestionData = QuestionDataRef.implement({
   }),
   resolveType(value) {
     switch (value.type) {
-      case DB.QuestionType.SC:
-      case DB.QuestionType.MC:
-      case DB.QuestionType.KPRIM:
+      case DB.ElementType.SC:
+      case DB.ElementType.MC:
+      case DB.ElementType.KPRIM:
         return 'ChoicesQuestionData'
-      case DB.QuestionType.NUMERICAL:
+      case DB.ElementType.NUMERICAL:
         return 'NumericalQuestionData'
-      case DB.QuestionType.FREE_TEXT:
+      case DB.ElementType.FREE_TEXT:
         return 'FreeTextQuestionData'
       default:
         return null

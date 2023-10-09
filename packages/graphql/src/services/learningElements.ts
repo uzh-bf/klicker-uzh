@@ -8,15 +8,15 @@ import {
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 import {
+  Element,
+  ElementType,
   LearningElementStatus,
   OrderType,
   QuestionResponse as PrismaQuestionResponse,
-  Question,
   QuestionInstance,
   QuestionInstanceType,
   QuestionStack,
   QuestionStackType,
-  QuestionType,
   UserRole,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
@@ -43,9 +43,9 @@ function evaluateQuestionResponse(
   multiplier?: number
 ) {
   switch (questionData.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
       // TODO: feedbacks only for selected options?
       // const feedbacks = questionData.options.choices.filter((choice) =>
       //   response.choices!.includes(choice.ix)
@@ -60,7 +60,7 @@ function evaluateQuestionResponse(
         []
       )
 
-      if (questionData.type === QuestionType.SC) {
+      if (questionData.type === ElementType.SC) {
         const pointsPercentage = gradeQuestionSC({
           responseCount: questionData.options.choices.length,
           response: (response as QuestionResponseChoices).choices,
@@ -79,7 +79,7 @@ function evaluateQuestionResponse(
           }),
           percentile: pointsPercentage ?? 0,
         }
-      } else if (questionData.type === QuestionType.MC) {
+      } else if (questionData.type === ElementType.MC) {
         const pointsPercentage = gradeQuestionMC({
           responseCount: questionData.options.choices.length,
           response: (response as QuestionResponseChoices).choices,
@@ -120,7 +120,7 @@ function evaluateQuestionResponse(
       }
     }
 
-    case QuestionType.NUMERICAL: {
+    case ElementType.NUMERICAL: {
       const solutionRanges = questionData.options.solutionRanges
 
       const correct = gradeQuestionNumerical({
@@ -140,7 +140,7 @@ function evaluateQuestionResponse(
       }
     }
 
-    case QuestionType.FREE_TEXT: {
+    case ElementType.FREE_TEXT: {
       const solutions = questionData.options.solutions
 
       const correct = gradeQuestionFreeText({
@@ -248,9 +248,9 @@ export async function respondToQuestionInstance(
         | Record<string, number> = {}
 
       switch (questionData.type) {
-        case QuestionType.SC:
-        case QuestionType.MC:
-        case QuestionType.KPRIM: {
+        case ElementType.SC:
+        case ElementType.MC:
+        case ElementType.KPRIM: {
           updatedResults.choices = (
             response as QuestionResponseChoices
           ).choices.reduce(
@@ -263,7 +263,7 @@ export async function respondToQuestionInstance(
           break
         }
 
-        case QuestionType.NUMERICAL: {
+        case ElementType.NUMERICAL: {
           if (
             typeof response.value === 'undefined' ||
             response.value === null ||
@@ -296,7 +296,7 @@ export async function respondToQuestionInstance(
           break
         }
 
-        case QuestionType.FREE_TEXT: {
+        case ElementType.FREE_TEXT: {
           if (
             typeof response.value === 'undefined' ||
             response.value === null ||
@@ -691,9 +691,9 @@ export async function getLearningElementData(
         const questionData = element.questionInstance.questionData
 
         switch (questionData?.type) {
-          case QuestionType.SC:
-          case QuestionType.MC:
-          case QuestionType.KPRIM:
+          case ElementType.SC:
+          case ElementType.MC:
+          case ElementType.KPRIM:
             return {
               ...element,
               questionInstance: {
@@ -710,8 +710,8 @@ export async function getLearningElementData(
               },
             }
 
-          case QuestionType.NUMERICAL:
-          case QuestionType.FREE_TEXT:
+          case ElementType.NUMERICAL:
+          case ElementType.FREE_TEXT:
             return {
               ...element,
               questionInstance: {
@@ -894,7 +894,7 @@ export async function manipulateLearningElement(
       (stackElem) => stackElem !== null && typeof stackElem !== undefined
     ) as number[]
 
-  const dbQuestions = await ctx.prisma.question.findMany({
+  const dbQuestions = await ctx.prisma.element.findMany({
     where: {
       id: { in: questions },
       ownerId: ctx.user.sub,
@@ -906,7 +906,7 @@ export async function manipulateLearningElement(
     throw new GraphQLError('Not all questions could be found')
   }
 
-  const questionMap = dbQuestions.reduce<Record<number, Question>>(
+  const questionMap = dbQuestions.reduce<Record<number, Element>>(
     (acc, question) => ({ ...acc, [question.id]: question }),
     {}
   )

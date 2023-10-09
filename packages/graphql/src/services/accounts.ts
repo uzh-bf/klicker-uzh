@@ -500,10 +500,10 @@ export async function changeInitialSettings(
 
 async function seedDemoQuestions(ctx: ContextWithUser) {
   // create single choice demo question
-  const questionSC = await ctx.prisma.question.create({
+  const questionSC = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion SC',
-      type: DB.QuestionType.SC,
+      type: DB.ElementType.SC,
       displayMode: DB.QuestionDisplayMode.GRID,
       content:
         'Which of the following statements is applicable to _KlickerUZH_?',
@@ -567,10 +567,10 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create multiple choice demo question
-  const questionMC = await ctx.prisma.question.create({
+  const questionMC = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion MC',
-      type: DB.QuestionType.MC,
+      type: DB.ElementType.MC,
       content:
         'Which of the following formulas have the form of a Taylor polynomial of some degree $$n$$: $$T_n f(x;a)$$? (multiple answers are possible)',
       options: {
@@ -627,10 +627,10 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create KPRIM demo question
-  const questionKPRIM = await ctx.prisma.question.create({
+  const questionKPRIM = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion KPRIM',
-      type: DB.QuestionType.KPRIM,
+      type: DB.ElementType.KPRIM,
       content:
         'Which of the following statements is applicable to _KlickerUZH_? (multiple correct answers possible)',
       options: {
@@ -685,10 +685,10 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create Numerical demo question
-  const questionNR = await ctx.prisma.question.create({
+  const questionNR = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion NR',
-      type: DB.QuestionType.NUMERICAL,
+      type: DB.ElementType.NUMERICAL,
       content:
         'Estimate the length of the **longest** river in the world (answer in kilometres).',
       options: {
@@ -718,10 +718,10 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create Free Text demo question
-  const questionFT = await ctx.prisma.question.create({
+  const questionFT = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion FT',
-      type: DB.QuestionType.FREE_TEXT,
+      type: DB.ElementType.FREE_TEXT,
       content: 'Describe a main principle of a social market economy.',
       options: {
         solutions: ['fair competition', 'private companies', 'balance'],
