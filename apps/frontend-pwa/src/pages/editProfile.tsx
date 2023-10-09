@@ -80,7 +80,7 @@ function EditProfile() {
             .string()
             .required(t('pwa.profile.usernameRequired'))
             .min(5, t('pwa.profile.usernameMinLength', { length: '5' }))
-            .max(10, t('pwa.profile.usernameMaxLength', { length: '10' })),
+            .max(15, t('pwa.profile.usernameMaxLength', { length: '15' })),
           password: yup
             .string()
             .optional()

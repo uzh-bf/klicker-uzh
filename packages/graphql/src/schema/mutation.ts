@@ -304,7 +304,7 @@ export const Mutation = builder.mutationType({
           email: t.arg.string({ required: false, validate: { email: true } }),
           username: t.arg.string({
             required: false,
-            validate: { minLength: 5, maxLength: 10 },
+            validate: { minLength: 5, maxLength: 15 },
           }),
           avatar: t.arg.string({ required: false }),
           password: t.arg.string({ required: false }),
