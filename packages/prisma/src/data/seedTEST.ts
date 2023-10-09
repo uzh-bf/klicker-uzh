@@ -1,4 +1,4 @@
-import Prisma, { Question } from '../../dist'
+import Prisma, { Element } from '../../dist'
 import {
   COURSE_ID_TEST,
   USER_ID_TEST,
@@ -98,18 +98,18 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   const questionsTest = (await Promise.all(
     DATA_TEST.QUESTIONS.map((data) =>
-      prisma.question.upsert(
-        prepareQuestion({ ownerId: USER_ID_TEST, ...data })
-      )
+      prisma.element.upsert(prepareQuestion({ ownerId: USER_ID_TEST, ...data }))
     )
-  )) as Question[]
+  )) as Element[]
 
-  const questionCount = await prisma.question.findFirst({
+  const questionCount = await prisma.element.findFirst({
     orderBy: { id: 'desc' },
   })
 
   await prisma.$executeRawUnsafe(
-    `ALTER SEQUENCE "Question_id_seq" RESTART WITH ${questionCount.id + 1}`
+    `ALTER SEQUENCE "Question_id_seq" RESTART WITH ${
+      questionCount?.id ?? -1 + 1
+    }`
   )
 
   const learningElementsTest = await Promise.all(
@@ -124,7 +124,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
               ...stack,
               elements: stack.elements.map((element) => {
                 if (typeof element !== 'string') {
-                  return questionsTest.find((q) => q.id === element) as Question
+                  return questionsTest.find((q) => q.id === element) as Element
                 }
                 return element
               }),
@@ -205,7 +205,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       instances: {
         connectOrCreate: await Promise.all(
           [0].map(async (qId, ix) => {
-            const question = await prisma.question.findUnique({
+            const question = await prisma.element.findUnique({
               where: { id: qId },
             })
 

@@ -1,6 +1,6 @@
 import Prisma from '../../../dist'
 import { LearningElementStatus } from '../../client'
-const { QuestionType, SessionStatus, OrderType } = Prisma
+const { ElementType, SessionStatus, OrderType } = Prisma
 
 export const QUESTIONS = [
   {
@@ -9,7 +9,7 @@ export const QUESTIONS = [
     content:
       'Beantworte mich korrekt, richtig, oder genau. Ansonsten bekommst du keine Punkte!',
     explanation: 'FT generische Erklärung, warum diese Frage richtig ist.',
-    type: QuestionType.FREE_TEXT,
+    type: ElementType.FREE_TEXT,
     hasSampleSolution: true,
     hasAnswerFeedbacks: false,
     options: {
@@ -24,7 +24,7 @@ export const QUESTIONS = [
     name: 'Testfrage MC',
     content: 'Wähle 2 und 3, denn sonst ist es vorbei.',
     explanation: 'MC generische Erklärung, warum diese Frage richtig ist.',
-    type: QuestionType.MC,
+    type: ElementType.MC,
     hasSampleSolution: true,
     hasAnswerFeedbacks: true,
     choices: [
@@ -66,7 +66,7 @@ export const QUESTIONS = [
     name: 'Testfrage NUMERICAL',
     content: 'Wie viel würdest du in Aktien anlegen? Beni mag 17%.',
     explanation: 'NR generische Erklärung, warum diese Frage richtig ist.',
-    type: QuestionType.NUMERICAL,
+    type: ElementType.NUMERICAL,
     hasSampleSolution: true,
     hasAnswerFeedbacks: false,
     options: {
@@ -94,7 +94,7 @@ export const QUESTIONS = [
     id: 3,
     name: 'Multi-Faktor-Modell',
     content: '<br>',
-    type: QuestionType.KPRIM,
+    type: ElementType.KPRIM,
     hasSampleSolution: true,
     hasAnswerFeedbacks: true,
     explanation: 'KPRIM generische Erklärung, warum diese Frage richtig ist.',
@@ -130,7 +130,7 @@ export const QUESTIONS = [
     name: 'Modul 4 Business Cycle I',
     content:
       'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',
-    type: QuestionType.SC,
+    type: ElementType.SC,
     hasSampleSolution: true,
     hasAnswerFeedbacks: true,
     pointsMultiplier: 2,
