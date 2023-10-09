@@ -9,9 +9,9 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Modal, NumberField } from '@uzh-bf/design-system'
-import { Element, ElementType } from 'klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import * as R from 'ramda'
 import { useState } from 'react'
