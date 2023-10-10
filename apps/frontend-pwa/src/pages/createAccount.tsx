@@ -124,7 +124,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   return {
     props: {
       username: generatePassword.generate({
-        length: 8,
+        length: 10,
         uppercase: true,
         symbols: false,
         numbers: true,

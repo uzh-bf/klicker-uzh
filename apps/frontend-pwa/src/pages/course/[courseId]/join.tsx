@@ -9,6 +9,7 @@ import {
 import { initializeApollo } from '@lib/apollo'
 import { Button, H2, PinField, UserNotification } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
+import generatePassword from 'generate-password'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -136,6 +137,12 @@ function JoinCourse({
               {t('pwa.joinCourse.introNewUser', { name: displayName })}
             </div>
             <CreateAccountForm
+              initialUsername={generatePassword.generate({
+                length: 10,
+                uppercase: true,
+                symbols: false,
+                numbers: true,
+              })}
               handleSubmit={async (values) => {
                 await createParticipantAccount({
                   variables: {
