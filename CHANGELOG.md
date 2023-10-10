@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.1...v3.0.2) (2023-10-10)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that username on creation form is initialized with possible value ([58ed435](https://github.com/uzh-bf/klicker-uzh/commit/58ed4352b86cfab2c644eb57d29d07aeadda9fee))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add tab to join course and create account on login page ([#3905](https://github.com/uzh-bf/klicker-uzh/issues/3905)) ([8444e74](https://github.com/uzh-bf/klicker-uzh/commit/8444e7492b4e353b6f6eb91756c8002c948ce2ef))
+
 ### [3.0.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0...v3.0.1) (2023-10-09)
 
 
