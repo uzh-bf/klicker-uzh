@@ -17,6 +17,7 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import DynamicMarkdown from '../learningElements/DynamicMarkdown'
+import DebouncedUsernameField from './DebouncedUsernameField'
 
 interface Props {
   initialUsername?: string
@@ -40,7 +41,14 @@ function CreateAccountForm({
       .string()
       .required(t('pwa.profile.usernameRequired'))
       .min(5, t('pwa.profile.usernameMinLength', { length: '5' }))
-      .max(10, t('pwa.profile.usernameMaxLength', { length: '10' })),
+      .max(15, t('pwa.profile.usernameMaxLength', { length: '15' }))
+      .test(
+        'isUsernameAvailable',
+        t('pwa.createAccount.usernameAvailability'),
+        () =>
+          typeof isUsernameAvailable === 'undefined' ||
+          isUsernameAvailable === true
+      ),
     password: yup
       .string()
       .required()
@@ -61,8 +69,10 @@ function CreateAccountForm({
   })
 
   const [tosChecked, setTosChecked] = useState<boolean>(false)
-
   const [openCollapsibleIx, setOpenCollapsibleIx] = useState<number>(0)
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<
+    boolean | undefined
+  >(true)
 
   return (
     <Formik
@@ -77,10 +87,10 @@ function CreateAccountForm({
       validationSchema={createAccountSchema}
       onSubmit={handleSubmit}
     >
-      {({ isSubmitting, isValid, values }) => (
+      {({ isSubmitting, isValid, values, validateField }) => (
         <Form>
           <div className="flex flex-col md:grid md:grid-cols-2 md:w-full md:max-w-[1090px] md:mx-auto gap-2">
-            <div className="order-3 md:col-span-2 gap-2 md:gap-4 flex flex-col justify-between md:flex-row bg-slate-100 rounded p-4 md:px-4 py-2 items-center">
+            <div className="flex flex-col items-center justify-between order-3 gap-2 p-4 py-2 rounded md:col-span-2 md:gap-4 md:flex-row bg-slate-100 md:px-4">
               <div className="flex flex-row items-center gap-4">
                 <div className="flex-1 text-slate-600">
                   {/* <FontAwesomeIcon icon={faWarning} /> */}
@@ -123,11 +133,11 @@ function CreateAccountForm({
                 <Button.Label>{t('pwa.profile.createProfile')}</Button.Label>
               </Button>
             </div>
-            <div className="order-1 md:order-1 gap-3 md:bg-slate-50 md:p-4 rounded">
+            <div className="order-1 gap-3 rounded md:order-1 md:bg-slate-50 md:p-4">
               <H3 className={{ root: 'border-b mb-0' }}>
                 {t('shared.generic.profile')}
               </H3>
-              <div className="space-y-3 mb-2">
+              <div className="mb-2 space-y-3">
                 <FormikTextField
                   disabled={!!initialEmail}
                   name="email"
@@ -137,12 +147,15 @@ function CreateAccountForm({
                     label: 'font-bold text-md text-black',
                   }}
                 />
-                <FormikTextField
+                <DebouncedUsernameField
                   name="username"
                   label={t('shared.generic.username')}
-                  labelType="small"
-                  className={{
-                    label: 'font-bold text-md text-black',
+                  valid={isUsernameAvailable}
+                  setValid={(usernameAvailable: boolean | undefined) =>
+                    setIsUsernameAvailable(usernameAvailable)
+                  }
+                  validateField={async () => {
+                    await validateField('username')
                   }}
                 />
                 <FormikTextField
@@ -168,7 +181,7 @@ function CreateAccountForm({
                   <div className="font-bold">
                     {t('pwa.profile.publicProfile')}
                   </div>
-                  <div className="flex flex-row space-between gap-4">
+                  <div className="flex flex-row gap-4 space-between">
                     <div className="flex flex-col items-center gap-1">
                       <FormikSwitchField name="isProfilePublic" />
                       {values.isProfilePublic
@@ -184,7 +197,7 @@ function CreateAccountForm({
                 </div>
               </div>
             </div>
-            <div className="order-2 md:order-2 md:bg-slate-50 md:p-4 rounded md:justify-between space-y-2">
+            <div className="order-2 space-y-2 rounded md:order-2 md:bg-slate-50 md:p-4 md:justify-between">
               <H3 className={{ root: 'border-b mb-0' }}>
                 {t('pwa.createAccount.dataProcessingTitle')}
               </H3>

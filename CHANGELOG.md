@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0...v3.0.1) (2023-10-09)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:**  check username availability before participant account creation ([#3903](https://github.com/uzh-bf/klicker-uzh/issues/3903)) ([62844ad](https://github.com/uzh-bf/klicker-uzh/commit/62844ade2f84a1c45b38e707bd40a98bde71e04c))
+
 ## [3.0.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.77...v3.0.0) (2023-10-08)
 
 

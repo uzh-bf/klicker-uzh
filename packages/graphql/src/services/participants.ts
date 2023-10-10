@@ -25,13 +25,24 @@ export async function updateParticipantProfile(
   ctx: ContextWithUser
 ) {
   if (typeof username === 'string') {
-    if (username.length < 5 || username.length > 10) {
+    if (username.length < 5 || username.length > 15) {
       return null
     }
   }
 
   if (typeof email === 'string') {
     if (!isEmail(email)) {
+      return null
+    }
+  }
+
+  // check that username corresponds to no other participant
+  if (username) {
+    const existingParticipant = await ctx.prisma.participant.findUnique({
+      where: { username },
+    })
+
+    if (existingParticipant && existingParticipant.id !== ctx.user.sub) {
       return null
     }
   }

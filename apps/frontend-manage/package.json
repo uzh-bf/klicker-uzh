@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.8.3",
@@ -17,7 +17,7 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@socialgouv/matomo-next": "1.6.1",
-    "@uzh-bf/design-system": "2.1.11",
+    "@uzh-bf/design-system": "2.1.12",
     "d3": "7.8.4",
     "dayjs": "1.11.9",
     "deepmerge": "4.3.1",
