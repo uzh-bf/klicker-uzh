@@ -362,7 +362,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       existingParticipantAccount:
         'Should you already have a KlickerUZH participant account, please use the login to sign in. You can join a new course after logging in. Otherwise, you can create a KlickerUZH account here as part of your course.',
       joinCourseTooltip:
-        'Enter the PIN of your course here to create a new account and join the course',
+        'Enter the PIN of your course here to create a new account and join the course. You can obtain the PIN from your lecturer.',
       signup: 'Sign up',
       coursePinInvalid: 'The entered course PIN is invalid.',
     },

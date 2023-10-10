@@ -58,7 +58,10 @@ function CreateAccountJoinForm() {
               label={t('pwa.joinCourse.coursePinFormat')}
               tooltip={t('pwa.login.joinCourseTooltip')}
               name="pin"
-              className={{ root: 'mt-3' }}
+              className={{
+                root: 'mt-3',
+                tooltip: 'max-w-[20rem] md:max-w-[30rem]',
+              }}
               data={{ cy: 'pin-field' }}
             />
             <Button
