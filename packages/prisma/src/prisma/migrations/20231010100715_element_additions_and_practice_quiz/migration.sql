@@ -8,7 +8,7 @@ CREATE TYPE "ElementOrderType" AS ENUM ('SEQUENTIAL', 'SHUFFLED', 'LAST_RESPONSE
 CREATE TYPE "ElementInstanceType" AS ENUM ('PRACTICE_QUIZ');
 
 -- CreateEnum
-CREATE TYPE "ElementStackType" AS ENUM ('PRACTICE_QUIZ');
+CREATE TYPE "ElementStackType" AS ENUM ('LIVE_QUIZ', 'PRACTICE_QUIZ', 'MICROLEARNING', 'GROUP_ACTIVITY');
 
 -- AlterTable
 ALTER TABLE "Element" ADD COLUMN     "version" INTEGER NOT NULL DEFAULT 1;
@@ -44,6 +44,7 @@ CREATE TABLE "ElementInstance" (
 -- CreateTable
 CREATE TABLE "ElementStack" (
     "id" SERIAL NOT NULL,
+    "originalId" TEXT,
     "type" "ElementStackType" NOT NULL,
     "displayName" TEXT,
     "description" TEXT,
@@ -89,6 +90,9 @@ CREATE UNIQUE INDEX "ElementInstance_originalId_key" ON "ElementInstance"("origi
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ElementInstance_type_elementStackId_order_key" ON "ElementInstance"("type", "elementStackId", "order");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ElementStack_originalId_key" ON "ElementStack"("originalId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ElementStack_type_practiceQuizId_order_key" ON "ElementStack"("type", "practiceQuizId", "order");

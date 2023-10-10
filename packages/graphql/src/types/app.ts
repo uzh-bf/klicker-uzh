@@ -1,10 +1,14 @@
 import {
   Element,
   ElementDisplayMode,
+  ElementStackType,
   ElementType,
   QuestionInstance,
+  SessionBlockStatus,
 } from '@klicker-uzh/prisma'
 
+// ----- AVATAR SETTINGS -----
+// #region
 export type AvatarSettings = {
   skinTone: string
   eyes: string
@@ -17,6 +21,15 @@ export type AvatarSettings = {
   facialHair: string
 }
 
+declare global {
+  namespace PrismaJson {
+    type PrismaAvatarSettings = AvatarSettings
+  }
+}
+// #endregion
+
+// ----- ELEMENT DATA AND INSTANCES -----
+// #region
 export type QuestionResponseChoices = {
   choices: number[]
 }
@@ -27,10 +40,12 @@ export type QuestionResponseValue = {
 
 export type QuestionResponse = QuestionResponseChoices | QuestionResponseValue
 
+// TODO: results should also include the participants count (instead of storing it on the top-level)
 export type QuestionResultsChoices = {
   choices: Record<string, number>
 }
 
+// TODO: to be consistent with choices results, the real results should be nested inside an e.g., values object, and participants should be included as a property
 export type QuestionResultsOpen = {
   [x: string]: {
     count: number
@@ -160,10 +175,49 @@ export type AllQuestionInstanceTypeData =
 
 declare global {
   namespace PrismaJson {
-    type PrismaAvatarSettings = AvatarSettings
     type PrismaQuestionResponse = QuestionResponse
     type PrismaElementOptions = ElementOptions
     type PrismaQuestionResults = QuestionResults
     type PrismaElementData = AllElementTypeData
   }
 }
+// #endregion
+
+// ----- ELEMENT STACKS -----
+// #region
+export type LiveQuizStackOptions = {
+  timeLimit?: number
+  expiresAt?: Date
+  randomSelection?: number
+  // TODO: by moving it here, we lose the default value, so ensure it is set in backend code correctly
+  execution: number
+  // TODO: rename the enum for consistency
+  status: SessionBlockStatus
+}
+
+export type MicrolearningStackOptions = {}
+
+export type PracticeQuizStackOptions = {}
+
+export type ElementStackOptions =
+  | LiveQuizStackOptions
+  | MicrolearningStackOptions
+  | PracticeQuizStackOptions
+
+interface IElementStackOptions<
+  Type extends ElementStackType,
+  Options extends ElementStackOptions | null
+> {}
+
+export type AllElementStackOptions =
+  | IElementStackOptions<'LIVE_QUIZ', LiveQuizStackOptions>
+  | IElementStackOptions<'PRACTICE_QUIZ', PracticeQuizStackOptions>
+  | IElementStackOptions<'MICROLEARNING', MicrolearningStackOptions>
+  | IElementStackOptions<'GROUP_ACTIVITY', null>
+
+declare global {
+  namespace PrismaJson {
+    type PrismaElementStackOptions = ElementStackOptions
+  }
+}
+// #endregion
