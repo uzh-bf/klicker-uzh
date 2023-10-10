@@ -49,8 +49,8 @@ export type Choice = {
 }
 
 interface BaseElementOptions {
-  hasSampleSolution: boolean
-  hasAnswerFeedbacks: boolean
+  hasSampleSolution?: boolean
+  hasAnswerFeedbacks?: boolean
 }
 
 export interface ElementOptionsChoices extends BaseElementOptions {
@@ -96,9 +96,9 @@ export interface BaseElementData {
   options: object
 
   // TODO: these legacy props have been moved to options
-  // displayMode: ElementDisplayMode
-  // hasSampleSolution: boolean
-  // hasAnswerFeedbacks: boolean
+  displayMode: ElementDisplayMode
+  hasSampleSolution: boolean
+  hasAnswerFeedbacks: boolean
 }
 
 export type BaseElementDataKeys = (keyof BaseElementData)[]

@@ -24,7 +24,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { ResponseInput } from 'src/ops'
-import { AllQuestionTypeData, QuestionResponseChoices } from 'src/types/app'
+import { AllElementTypeData, QuestionResponseChoices } from 'src/types/app'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
 import {
@@ -37,7 +37,7 @@ const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 
 function evaluateQuestionResponse(
-  questionData: AllQuestionTypeData,
+  questionData: AllElementTypeData,
   results: any,
   response: ResponseInput,
   multiplier?: number

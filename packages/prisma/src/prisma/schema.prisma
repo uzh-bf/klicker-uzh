@@ -388,11 +388,11 @@ model QuestionInstance {
   detailResponses  QuestionResponseDetail[]
   resetTimeDays    Int?
 
+  /// [PrismaElementData]
+  questionData Json
+
   /// [PrismaQuestionResults]
   results Json
-
-  /// [PrismaQuestionData]
-  questionData Json
 
   sessionBlock    SessionBlock?  @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId  Int?

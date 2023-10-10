@@ -7,7 +7,7 @@ import {
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { GraphQLError } from 'graphql'
 import { pick } from 'ramda'
-import { AllQuestionTypeData } from 'src/types/app'
+import { AllElementTypeData } from 'src/types/app'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -204,7 +204,7 @@ export async function createMicroSession(
             pointsMultiplier: multiplier * question.pointsMultiplier,
             questionData: question,
             results: prepareInitialInstanceResults(
-              question as AllQuestionTypeData
+              question as AllElementTypeData
             ),
             question: {
               connect: { id: questionId },

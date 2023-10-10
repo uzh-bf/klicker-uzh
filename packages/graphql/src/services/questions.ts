@@ -105,12 +105,15 @@ export async function manipulateQuestion(
         correct?: boolean
         feedback?: string
       }[]
+      hasSampleSolution?: boolean | null
+      hasAnswerFeedbacks?: boolean | null
+      pointsMultiplier?: number | null
     } | null
     hasSampleSolution?: boolean | null
     hasAnswerFeedbacks?: boolean | null
     pointsMultiplier?: number | null
     tags?: string[] | null
-    displayMode?: DB.QuestionDisplayMode | null
+    displayMode?: DB.ElementDisplayMode | null
   },
   ctx: ContextWithUser
 ) {

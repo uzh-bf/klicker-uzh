@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { BaseQuestionData } from 'src/types/app'
+import { BaseElementData } from 'src/types/app'
 import builder from '../builder'
 
 export const ElementType = builder.enumType('ElementType', {
@@ -7,12 +7,12 @@ export const ElementType = builder.enumType('ElementType', {
 })
 
 export const QuestionDisplayMode = builder.enumType('QuestionDisplayMode', {
-  values: Object.values(DB.QuestionDisplayMode),
+  values: Object.values(DB.ElementDisplayMode),
 })
 
 // ----- QUESTION DATA INTERFACE -----
 export const QuestionDataRef =
-  builder.interfaceRef<BaseQuestionData>('QuestionData')
+  builder.interfaceRef<BaseElementData>('QuestionData')
 export const QuestionData = QuestionDataRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
@@ -71,7 +71,7 @@ export const ChoiceQuestionOptions = builder
     }),
   })
 
-export interface IChoicesQuestionData extends BaseQuestionData {
+export interface IChoicesQuestionData extends BaseElementData {
   options: IChoiceQuestionOptions
 }
 export const ChoicesQuestionData = builder
@@ -135,7 +135,7 @@ export const NumericalQuestionOptions = builder
     }),
   })
 
-export interface INumericalQuestionData extends BaseQuestionData {
+export interface INumericalQuestionData extends BaseElementData {
   options: INumericalQuestionOptions
 }
 export const NumericalQuestionData = builder
@@ -175,7 +175,7 @@ export const FreeTextQuestionOptions = builder
     }),
   })
 
-export interface IFreeTextQuestionData extends BaseQuestionData {
+export interface IFreeTextQuestionData extends BaseElementData {
   options: IFreeTextQuestionOptions
 }
 export const FreeTextQuestionData = builder
