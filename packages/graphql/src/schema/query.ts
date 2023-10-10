@@ -474,6 +474,17 @@ export const Query = builder.queryType({
           return AccountService.checkUsernameAvailability(args, ctx)
         },
       }),
+
+      checkValidCoursePin: t.field({
+        nullable: true,
+        type: 'String',
+        args: {
+          pin: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.checkValidCoursePin(args, ctx)
+        },
+      }),
     }
   },
 })
