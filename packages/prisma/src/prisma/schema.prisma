@@ -166,6 +166,29 @@ model MediaFile {
 
 // #endregion
 
+// ----- TAGS AND SKILLS -----
+// #region
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  order Int @default(0)
+
+  originalId String? @unique
+
+  questions Element[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
+}
+
+// #endregion
+
 // ----- ELEMENTS -----
 // #region
 enum ElementOrderType {
@@ -175,11 +198,14 @@ enum ElementOrderType {
 }
 
 enum ElementType {
+  // TODO: remove old types, to be migrated to new ones
   SC
   MC
   KPRIM
   FREE_TEXT
   NUMERICAL
+
+  // new types
   CONTENT
   FLASHCARD
   QUESTION_SC
@@ -190,7 +216,7 @@ enum ElementType {
 }
 
 // TODO: remove once moved to options
-enum QuestionDisplayMode {
+enum ElementDisplayMode {
   LIST
   GRID
 }
@@ -213,11 +239,11 @@ model Element {
   pointsMultiplier Int @default(1) // currently only relevant for FLASHCARD and QUESTION types
 
   // TODO: the three properties below are only relevant for questions and can be moved to options Json
-  displayMode        QuestionDisplayMode @default(LIST)
-  hasSampleSolution  Boolean             @default(false)
-  hasAnswerFeedbacks Boolean             @default(false)
+  displayMode        ElementDisplayMode @default(LIST)
+  hasSampleSolution  Boolean            @default(false)
+  hasAnswerFeedbacks Boolean            @default(false)
 
-  /// [PrismaQuestionOptions]
+  /// [PrismaElementOptions]
   options Json
 
   type ElementType
@@ -235,25 +261,6 @@ model Element {
   updatedAt DateTime @updatedAt
 }
 
-model Tag {
-  id   Int    @id @default(autoincrement())
-  name String
-
-  order Int @default(0)
-
-  originalId String? @unique
-
-  questions Element[]
-
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId String @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([ownerId, name])
-}
-
 // TODO: elements are only supported for the new PRACTICE_QUIZ type in the first iteration. add the other types here when working on them.
 enum ElementInstanceType {
   PRACTICE_QUIZ
@@ -264,23 +271,27 @@ model ElementInstance {
 
   originalId String? @unique
 
-  type  ElementInstanceType?
-  order Int?
+  type        ElementInstanceType
+  elementType ElementType
+  order       Int
 
-  participants     Int                      @default(0)
-  pointsMultiplier Int                      @default(1)
-  responses        QuestionResponse[]
-  detailResponses  QuestionResponseDetail[]
-  resetTimeDays    Int?
+  // TODO: moved to options Json
+  // resetTimeDays    Int?
+  // pointsMultiplier Int                      @default(1)
+  // TODO: moved to results Json
+  // participants    Int                      @default(0)
 
-  // TODO: types
-  options Json // contains element type specific settings
+  /// [PrismaElementInstanceOptions]
+  options Json // contains element type specific settings (resetTimeDays for LE instances, pointsMultiplier where relevant)
 
-  /// [PrismaQuestionData]
+  /// [PrismaElementData]
   elementData Json // contains a copy of relevant element data
 
-  /// [PrismaQuestionResults]
+  /// [PrismaElementInstanceResults]
   results Json // contains the collection of gathered results
+
+  responses       QuestionResponse[]
+  detailResponses QuestionResponseDetail[]
 
   bookmarkedBy Participation[]
 
@@ -311,6 +322,9 @@ model ElementStack {
   displayName String?
   description String?
   order       Int?
+
+  /// [PrismaElementStackOptions]
+  options Json
 
   elements ElementInstance[]
 
