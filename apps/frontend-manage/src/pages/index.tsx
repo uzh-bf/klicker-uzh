@@ -2,6 +2,7 @@ import { useMutation, useQuery, useSuspenseQuery } from '@apollo/client'
 import {
   ChangeInitialSettingsDocument,
   GetUserQuestionsDocument,
+  ToggleIsArchivedDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
