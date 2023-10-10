@@ -3,7 +3,6 @@ import {
   LoginParticipantDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import LoginForm from '@klicker-uzh/shared-components/src/LoginForm'
 import { Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
@@ -11,6 +10,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
+import LoginForm from '../components/forms/LoginForm'
 
 function Login() {
   const t = useTranslations()
@@ -73,7 +73,6 @@ function Login() {
         {({ isSubmitting }) => {
           return (
             <LoginForm
-              header={t('shared.generic.login')}
               labelIdentifier={t('shared.generic.username')}
               fieldIdentifier="username"
               dataIdentifier={{ cy: 'username-field' }}

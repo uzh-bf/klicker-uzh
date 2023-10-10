@@ -358,6 +358,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.',
       installIOS:
         "Open the Share dialog and click 'Add to Home Screen' to install the KlickerUZH app on your phone.",
+      createAccountJoin: 'Create Account & Join Course',
+      existingParticipantAccount:
+        'Should you already have a KlickerUZH participant account, please use the login to sign in. You can join a new course after logging in. Otherwise, you can create a KlickerUZH account here as part of your course.',
+      joinCourseTooltip:
+        'Enter the PIN of your course here to create a new account and join the course. You can obtain the PIN from your lecturer.',
+      signup: 'Sign up',
+      coursePinInvalid: 'The entered course PIN is invalid.',
     },
     courses: {
       courseInformation: 'Course Information',

@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { LoginUserTokenDocument } from '@klicker-uzh/graphql/dist/ops'
-import LoginForm from '@klicker-uzh/shared-components/src/LoginForm'
 import { Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
@@ -8,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import Router from 'next/router'
 import { useState } from 'react'
 import * as Yup from 'yup'
+import LoginForm from '../components/common/LoginForm'
 
 function Login() {
   const t = useTranslations()

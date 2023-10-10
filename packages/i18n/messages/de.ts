@@ -357,6 +357,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Installieren Sie die KlickerUZH App auf Ihrem Handy, um Push-Benachrichtigungen zu erhalten, wenn neue Lerninhalte verfügbar sind.',
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH App auf Ihrem Handy zu installieren.",
+      createAccountJoin: 'Account erstellen & Kurs beitreten',
+      existingParticipantAccount:
+        'Sollten Sie bereits einen KlickerUZH Studierenden-Account haben, nutzen Sie bitte das Login um sich anzumelden. Einem neuen Kurs können Sie nach der Anmeldung in der Übersicht beitreten. Anderenfalls können Sie hier im Rahmen Ihres Kurses einen KlickerUZH Account erstellen.',
+      joinCourseTooltip:
+        'Geben Sie hier die PIN Ihres Kurses ein, um einen neuen Account zu erstellen und dem Kurs beizutreten. Sie erhalten diese von Ihrem Dozierenden.',
+      signup: 'Registrieren',
+      coursePinInvalid: 'Die von Ihnen eingebene Kurs-PIN ist ungültig.',
     },
     courses: {
       courseInformation: 'Kursinformationen',
