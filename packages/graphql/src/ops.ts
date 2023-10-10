@@ -1129,7 +1129,7 @@ export type Query = {
   __typename?: 'Query';
   basicCourseInformation?: Maybe<Course>;
   checkUsernameAvailability: Scalars['Boolean']['output'];
-  checkValidCoursePin: Scalars['Boolean']['output'];
+  checkValidCoursePin?: Maybe<Scalars['String']['output']>;
   cockpitSession?: Maybe<Session>;
   controlCourse?: Maybe<Course>;
   controlCourses?: Maybe<Array<Course>>;
@@ -2260,7 +2260,7 @@ export type CheckValidCoursePinQueryVariables = Exact<{
 }>;
 
 
-export type CheckValidCoursePinQuery = { __typename?: 'Query', checkValidCoursePin: boolean };
+export type CheckValidCoursePinQuery = { __typename?: 'Query', checkValidCoursePin?: string | null };
 
 export type GetBasicCourseInformationQueryVariables = Exact<{
   courseId: Scalars['String']['input'];
