@@ -4,7 +4,6 @@ import {
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
 import Histogram from '@klicker-uzh/shared-components/src/Histogram'
-import {} from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
