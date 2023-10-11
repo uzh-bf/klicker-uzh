@@ -1,3 +1,4 @@
+import { Element } from '@klicker-uzh/graphql/dist/ops'
 import { FieldArray, FieldArrayRenderProps, useField } from 'formik'
 import AddBlockButton from './AddBlockButton'
 import SessionCreationBlock from './SessionCreationBlock'

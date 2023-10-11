@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   Course,
+  Element,
   GetLearningElementDocument,
   GetSingleLiveSessionDocument,
   GetSingleMicroSessionDocument,

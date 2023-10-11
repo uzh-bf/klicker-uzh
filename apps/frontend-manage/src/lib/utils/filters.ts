@@ -4,6 +4,7 @@
 import dayjs from 'dayjs'
 import _every from 'lodash/every'
 // import Fuse from 'fuse.js'
+import { Element } from '@klicker-uzh/graphql/dist/ops'
 import * as JsSearch from 'js-search'
 
 const indices = {}

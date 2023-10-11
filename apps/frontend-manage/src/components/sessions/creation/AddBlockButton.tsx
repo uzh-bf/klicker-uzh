@@ -1,7 +1,7 @@
 import { faSquare } from '@fortawesome/free-regular-svg-icons'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import type { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import * as R from 'ramda'

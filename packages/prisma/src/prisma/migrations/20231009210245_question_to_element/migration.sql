@@ -23,11 +23,6 @@ ALTER INDEX "_QuestionToTag_B_index" RENAME TO "_ElementToTag_B_index";
 ALTER TYPE "QuestionType" RENAME TO "ElementType";
 ALTER TYPE "ElementType" ADD VALUE 'CONTENT';
 ALTER TYPE "ElementType" ADD VALUE 'FLASHCARD';
-ALTER TYPE "ElementType" ADD VALUE 'QUESTION_SC';
-ALTER TYPE "ElementType" ADD VALUE 'QUESTION_MC';
-ALTER TYPE "ElementType" ADD VALUE 'QUESTION_KPRIM';
-ALTER TYPE "ElementType" ADD VALUE 'QUESTION_FREE_TEXT';
-ALTER TYPE "ElementType" ADD VALUE 'QUESTION_NUMERICAL';
 
 -- AlterEnum
 ALTER TYPE "QuestionDisplayMode" RENAME TO "ElementDisplayMode";

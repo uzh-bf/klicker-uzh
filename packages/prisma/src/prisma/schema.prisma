@@ -208,11 +208,13 @@ enum ElementType {
   // new types
   CONTENT
   FLASHCARD
-  QUESTION_SC
-  QUESTION_MC
-  QUESTION_KPRIM
-  QUESTION_FREE_TEXT
-  QUESTION_NUMERICAL
+
+  // TODO: add new types to be migrated to (careful to migrate questionData.type as well with a script)
+  // QUESTION_SC
+  // QUESTION_MC
+  // QUESTION_KPRIM
+  // QUESTION_FREE_TEXT
+  // QUESTION_NUMERICAL
 }
 
 // TODO: remove once moved to options
