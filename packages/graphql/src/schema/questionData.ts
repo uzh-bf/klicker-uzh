@@ -61,12 +61,18 @@ export const Choice = builder.objectRef<IChoice>('Choice').implement({
 })
 
 export interface IChoiceQuestionOptions {
+  displayMode: DB.ElementDisplayMode
+  hasSampleSolution: boolean
+  hasAnswerFeedbacks: boolean
   choices: IChoice[]
 }
 export const ChoiceQuestionOptions = builder
   .objectRef<IChoiceQuestionOptions>('ChoiceQuestionOptions')
   .implement({
     fields: (t) => ({
+      displayMode: t.expose('displayMode', { type: QuestionDisplayMode }),
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
       choices: t.expose('choices', { type: [Choice] }),
     }),
   })
@@ -111,6 +117,8 @@ export const NumericalSolutionRange = builder
   })
 
 export interface INumericalQuestionOptions {
+  hasSampleSolution: boolean
+  hasAnswerFeedbacks: boolean
   accuracy?: number | null
   placeholder?: string | null
   unit?: string | null
@@ -121,6 +129,8 @@ export const NumericalQuestionOptions = builder
   .objectRef<INumericalQuestionOptions>('NumericalQuestionOptions')
   .implement({
     fields: (t) => ({
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
       accuracy: t.exposeInt('accuracy', { nullable: true }),
       placeholder: t.exposeString('placeholder', { nullable: true }),
       unit: t.exposeString('unit', { nullable: true }),
@@ -160,6 +170,8 @@ export const FreeTextRestrictions = builder
   })
 
 export interface IFreeTextQuestionOptions {
+  hasSampleSolution: boolean
+  hasAnswerFeedbacks: boolean
   restrictions?: IFreeTextRestrictions | null
   solutions?: string[] | null
 }
@@ -167,6 +179,8 @@ export const FreeTextQuestionOptions = builder
   .objectRef<IFreeTextQuestionOptions>('FreeTextQuestionOptions')
   .implement({
     fields: (t) => ({
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
       restrictions: t.expose('restrictions', {
         type: FreeTextRestrictions,
         nullable: true,

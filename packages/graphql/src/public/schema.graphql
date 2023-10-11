@@ -57,6 +57,9 @@ input ChoiceInput {
 
 type ChoiceQuestionOptions {
   choices: [Choice!]!
+  displayMode: QuestionDisplayMode!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
 }
 
 type ChoicesQuestionData implements QuestionData {
@@ -198,6 +201,8 @@ type FreeTextQuestionData implements QuestionData {
 }
 
 type FreeTextQuestionOptions {
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   restrictions: FreeTextRestrictions
   solutions: [String!]
 }
@@ -458,9 +463,9 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
-  manipulateFreeTextQuestion(content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
-  manipulateNumericalQuestion(content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
+  manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
+  manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
+  manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -501,6 +506,8 @@ type NumericalQuestionData implements QuestionData {
 
 type NumericalQuestionOptions {
   accuracy: Int
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   placeholder: String
   restrictions: NumericalRestrictions
   solutionRanges: [NumericalSolutionRange!]
@@ -513,6 +520,8 @@ type NumericalRestrictions {
 }
 
 input NumericalRestrictionsInput {
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
   max: Float
   min: Float
 }
@@ -524,10 +533,15 @@ type NumericalSolutionRange {
 
 input OptionsChoicesInput {
   choices: [ChoiceInput!]
+  displayMode: QuestionDisplayMode
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
 }
 
 input OptionsFreeTextInput {
   feedback: String
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
   placeholder: String
   restrictions: FreeTextRestrictionsInput
   solutions: [String!]
@@ -536,6 +550,8 @@ input OptionsFreeTextInput {
 input OptionsNumericalInput {
   accuracy: Int
   feedback: String
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
   restrictions: NumericalRestrictionsInput
   solutionRanges: [SolutionRangeInput!]
   unit: String

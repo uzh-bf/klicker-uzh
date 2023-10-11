@@ -13,6 +13,9 @@ export const ChoiceInput = builder.inputType('ChoiceInput', {
 
 export const OptionsChoicesInput = builder.inputType('OptionsChoicesInput', {
   fields: (t) => ({
+    displayMode: t.field({ required: false, type: QuestionDisplayMode }),
+    hasSampleSolution: t.boolean({ required: false }),
+    hasAnswerFeedbacks: t.boolean({ required: false }),
     choices: t.field({
       type: [ChoiceInput],
     }),
@@ -23,6 +26,8 @@ export const NumericalRestrictionsInput = builder.inputType(
   'NumericalRestrictionsInput',
   {
     fields: (t) => ({
+      hasSampleSolution: t.boolean({ required: false }),
+      hasAnswerFeedbacks: t.boolean({ required: false }),
       min: t.float({ required: false }),
       max: t.float({ required: false }),
     }),
@@ -40,6 +45,8 @@ export const OptionsNumericalInput = builder.inputType(
   'OptionsNumericalInput',
   {
     fields: (t) => ({
+      hasSampleSolution: t.boolean({ required: false }),
+      hasAnswerFeedbacks: t.boolean({ required: false }),
       accuracy: t.int({ required: false }),
       unit: t.string({ required: false }),
       restrictions: t.field({
@@ -68,6 +75,8 @@ export const FreeTextRestrictionsInput = builder.inputType(
 
 export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
   fields: (t) => ({
+    hasSampleSolution: t.boolean({ required: false }),
+    hasAnswerFeedbacks: t.boolean({ required: false }),
     placeholder: t.string({ required: false }),
     restrictions: t.field({
       type: FreeTextRestrictionsInput,

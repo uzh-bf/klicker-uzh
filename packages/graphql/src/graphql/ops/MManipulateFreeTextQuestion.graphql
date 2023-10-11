@@ -4,8 +4,6 @@ mutation ManipulateFreeTextQuestion(
   $content: String
   $explanation: String
   $options: OptionsFreeTextInput
-  $hasSampleSolution: Boolean
-  $hasAnswerFeedbacks: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
@@ -16,8 +14,6 @@ mutation ManipulateFreeTextQuestion(
     content: $content
     explanation: $explanation
     options: $options
-    hasSampleSolution: $hasSampleSolution
-    hasAnswerFeedbacks: $hasAnswerFeedbacks
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
@@ -26,13 +22,13 @@ mutation ManipulateFreeTextQuestion(
     type
     content
     explanation
-    hasSampleSolution
-    hasAnswerFeedbacks
     pointsMultiplier
 
     questionData {
       ... on ChoicesQuestionData {
         options {
+          hasSampleSolution
+          hasAnswerFeedbacks
           choices {
             ix
             correct
@@ -44,6 +40,8 @@ mutation ManipulateFreeTextQuestion(
 
       ... on NumericalQuestionData {
         options {
+          hasSampleSolution
+          hasAnswerFeedbacks
           restrictions {
             min
             max
@@ -57,6 +55,8 @@ mutation ManipulateFreeTextQuestion(
 
       ... on FreeTextQuestionData {
         options {
+          hasSampleSolution
+          hasAnswerFeedbacks
           restrictions {
             maxLength
           }
