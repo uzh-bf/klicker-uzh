@@ -173,11 +173,6 @@ export enum ElementType {
   Kprim = 'KPRIM',
   Mc = 'MC',
   Numerical = 'NUMERICAL',
-  QuestionFreeText = 'QUESTION_FREE_TEXT',
-  QuestionKprim = 'QUESTION_KPRIM',
-  QuestionMc = 'QUESTION_MC',
-  QuestionNumerical = 'QUESTION_NUMERICAL',
-  QuestionSc = 'QUESTION_SC',
   Sc = 'SC'
 }
 
