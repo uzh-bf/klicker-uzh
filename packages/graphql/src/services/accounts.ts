@@ -528,7 +528,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     data: {
       name: 'Demoquestion SC',
       type: DB.ElementType.SC,
-      displayMode: DB.QuestionDisplayMode.GRID,
+      displayMode: DB.ElementDisplayMode.GRID,
       content:
         'Which of the following statements is applicable to _KlickerUZH_?',
       options: {

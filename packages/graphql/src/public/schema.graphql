@@ -57,14 +57,14 @@ input ChoiceInput {
 
 type ChoiceQuestionOptions {
   choices: [Choice!]!
-  displayMode: QuestionDisplayMode!
+  displayMode: ElementDisplayMode!
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
 }
 
 type ChoicesQuestionData implements QuestionData {
   content: String!
-  displayMode: QuestionDisplayMode
+  displayMode: ElementDisplayMode
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -128,7 +128,7 @@ scalar Date
 type Element {
   content: String!
   createdAt: Date!
-  displayMode: QuestionDisplayMode!
+  displayMode: ElementDisplayMode!
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -142,6 +142,11 @@ type Element {
   tags: [Tag!]!
   type: ElementType!
   updatedAt: Date!
+}
+
+enum ElementDisplayMode {
+  GRID
+  LIST
 }
 
 enum ElementType {
@@ -189,7 +194,7 @@ type FileUploadSAS {
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
-  displayMode: QuestionDisplayMode
+  displayMode: ElementDisplayMode
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -493,7 +498,7 @@ type Mutation {
 
 type NumericalQuestionData implements QuestionData {
   content: String!
-  displayMode: QuestionDisplayMode
+  displayMode: ElementDisplayMode
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -533,7 +538,7 @@ type NumericalSolutionRange {
 
 input OptionsChoicesInput {
   choices: [ChoiceInput!]
-  displayMode: QuestionDisplayMode
+  displayMode: ElementDisplayMode
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
 }
@@ -683,7 +688,7 @@ type Query {
 
 interface QuestionData {
   content: String!
-  displayMode: QuestionDisplayMode
+  displayMode: ElementDisplayMode
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -691,11 +696,6 @@ interface QuestionData {
   name: String!
   pointsMultiplier: Int
   type: ElementType!
-}
-
-enum QuestionDisplayMode {
-  GRID
-  LIST
 }
 
 type QuestionFeedback {

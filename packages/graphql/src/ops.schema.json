@@ -624,7 +624,7 @@
               "name": null,
               "ofType": {
                 "kind": "ENUM",
-                "name": "QuestionDisplayMode",
+                "name": "ElementDisplayMode",
                 "ofType": null
               }
             },
@@ -696,7 +696,7 @@
             "args": [],
             "type": {
               "kind": "ENUM",
-              "name": "QuestionDisplayMode",
+              "name": "ElementDisplayMode",
               "ofType": null
             },
             "isDeprecated": false,
@@ -1438,7 +1438,7 @@
               "name": null,
               "ofType": {
                 "kind": "ENUM",
-                "name": "QuestionDisplayMode",
+                "name": "ElementDisplayMode",
                 "ofType": null
               }
             },
@@ -1661,6 +1661,29 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "ENUM",
+        "name": "ElementDisplayMode",
+        "description": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "GRID",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "LIST",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
         "possibleTypes": null
       },
       {
@@ -2141,7 +2164,7 @@
             "args": [],
             "type": {
               "kind": "ENUM",
-              "name": "QuestionDisplayMode",
+              "name": "ElementDisplayMode",
               "ofType": null
             },
             "isDeprecated": false,
@@ -8527,7 +8550,7 @@
             "args": [],
             "type": {
               "kind": "ENUM",
-              "name": "QuestionDisplayMode",
+              "name": "ElementDisplayMode",
               "ofType": null
             },
             "isDeprecated": false,
@@ -8936,7 +8959,7 @@
             "description": null,
             "type": {
               "kind": "ENUM",
-              "name": "QuestionDisplayMode",
+              "name": "ElementDisplayMode",
               "ofType": null
             },
             "defaultValue": null,
@@ -11209,7 +11232,7 @@
             "args": [],
             "type": {
               "kind": "ENUM",
-              "name": "QuestionDisplayMode",
+              "name": "ElementDisplayMode",
               "ofType": null
             },
             "isDeprecated": false,
@@ -11340,29 +11363,6 @@
             "ofType": null
           }
         ]
-      },
-      {
-        "kind": "ENUM",
-        "name": "QuestionDisplayMode",
-        "description": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": [
-          {
-            "name": "GRID",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "LIST",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "possibleTypes": null
       },
       {
         "kind": "OBJECT",

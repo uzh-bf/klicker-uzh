@@ -1,4 +1,4 @@
-import { ElementType, QuestionDisplayMode } from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { without } from 'ramda'
 import { twMerge } from 'tailwind-merge'
@@ -24,7 +24,7 @@ export interface StudentQuestionProps {
   onSubmit: () => void
   onExpire: () => void
   currentQuestion: {
-    displayMode?: QuestionDisplayMode
+    displayMode?: ElementDisplayMode
     content: string
     id: number
     name: string

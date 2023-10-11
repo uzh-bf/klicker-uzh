@@ -6,7 +6,7 @@ export const ElementType = builder.enumType('ElementType', {
   values: Object.values(DB.ElementType),
 })
 
-export const QuestionDisplayMode = builder.enumType('QuestionDisplayMode', {
+export const ElementDisplayMode = builder.enumType('ElementDisplayMode', {
   values: Object.values(DB.ElementDisplayMode),
 })
 
@@ -22,7 +22,7 @@ export const QuestionData = QuestionDataRef.implement({
     explanation: t.exposeString('explanation', { nullable: true }),
     pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
     displayMode: t.expose('displayMode', {
-      type: QuestionDisplayMode,
+      type: ElementDisplayMode,
       nullable: true,
     }),
     hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
@@ -70,7 +70,7 @@ export const ChoiceQuestionOptions = builder
   .objectRef<IChoiceQuestionOptions>('ChoiceQuestionOptions')
   .implement({
     fields: (t) => ({
-      displayMode: t.expose('displayMode', { type: QuestionDisplayMode }),
+      displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
       hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
       hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
       choices: t.expose('choices', { type: [Choice] }),

@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementDisplayMode,
   ElementType,
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
@@ -9,7 +10,6 @@ import {
   ManipulateChoicesQuestionDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
-  QuestionDisplayMode,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -70,7 +70,7 @@ function QuestionEditModal({
     name: Yup.string().required(t('manage.formErrors.questionName')),
     tags: Yup.array().of(Yup.string()),
     type: Yup.string().oneOf(Object.values(ElementType)).required(),
-    displayMode: Yup.string().oneOf(Object.values(QuestionDisplayMode)),
+    displayMode: Yup.string().oneOf(Object.values(ElementDisplayMode)),
     content: Yup.string()
       .required(t('manage.formErrors.questionContent'))
       .test({
@@ -282,7 +282,7 @@ function QuestionEditModal({
       }
 
       const commonOptions = {
-        displayMode: QuestionDisplayMode.List,
+        displayMode: ElementDisplayMode.List,
         hasSampleSolution: false,
         hasAnswerFeedbacks: false,
       }
@@ -339,7 +339,7 @@ function QuestionEditModal({
           explanation: dataQuestion.question.explanation ?? '',
           displayMode:
             dataQuestion.question.questionData.options.displayMode ??
-            QuestionDisplayMode.List,
+            ElementDisplayMode.List,
           hasSampleSolution:
             dataQuestion.question.questionData.options.hasSampleSolution ??
             false,
@@ -382,7 +382,7 @@ function QuestionEditModal({
           tags: values.tags,
           pointsMultiplier: parseInt(values.pointsMultiplier),
           options: {
-            displayMode: values.displayMode || QuestionDisplayMode.List,
+            displayMode: values.displayMode || ElementDisplayMode.List,
             hasSampleSolution: values.hasSampleSolution,
             hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           },
@@ -781,7 +781,7 @@ function QuestionEditModal({
                     {[ElementType.Sc, ElementType.Mc].includes(values.type) && (
                       <FormikSelectField
                         name="displayMode"
-                        items={Object.values(QuestionDisplayMode).map(
+                        items={Object.values(ElementDisplayMode).map(
                           (mode) => ({
                             value: mode,
                             label: t(`manage.questionForms.${mode}Display`),
