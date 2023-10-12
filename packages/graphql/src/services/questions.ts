@@ -20,6 +20,15 @@ export async function getUserQuestions(ctx: ContextWithUser) {
       questions: {
         where: {
           isDeleted: false,
+          type: {
+            in: [
+              DB.ElementType.SC,
+              DB.ElementType.MC,
+              DB.ElementType.KPRIM,
+              DB.ElementType.FREE_TEXT,
+              DB.ElementType.NUMERICAL,
+            ],
+          },
         },
         orderBy: [
           {
