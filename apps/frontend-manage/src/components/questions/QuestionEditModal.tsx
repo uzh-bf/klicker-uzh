@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementDisplayMode,
   ElementType,
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
@@ -9,7 +10,6 @@ import {
   ManipulateChoicesQuestionDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
-  QuestionDisplayMode,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -70,7 +70,7 @@ function QuestionEditModal({
     name: Yup.string().required(t('manage.formErrors.questionName')),
     tags: Yup.array().of(Yup.string()),
     type: Yup.string().oneOf(Object.values(ElementType)).required(),
-    displayMode: Yup.string().oneOf(Object.values(QuestionDisplayMode)),
+    displayMode: Yup.string().oneOf(Object.values(ElementDisplayMode)),
     content: Yup.string()
       .required(t('manage.formErrors.questionContent'))
       .test({
@@ -273,14 +273,18 @@ function QuestionEditModal({
           mode === QuestionEditMode.CREATE
             ? ElementType.Sc
             : dataQuestion?.question?.type,
-        displayMode: QuestionDisplayMode.List,
         name: '',
         content: '',
         explanation: '',
         tags: [],
+
+        pointsMultiplier: '1',
+      }
+
+      const commonOptions = {
+        displayMode: ElementDisplayMode.List,
         hasSampleSolution: false,
         hasAnswerFeedbacks: false,
-        pointsMultiplier: '1',
       }
 
       switch (common.type) {
@@ -290,6 +294,7 @@ function QuestionEditModal({
           return {
             ...common,
             options: {
+              ...commonOptions,
               choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
             },
           }
@@ -298,6 +303,7 @@ function QuestionEditModal({
           return {
             ...common,
             options: {
+              ...commonOptions,
               accuracy: undefined,
               unit: '',
               restrictions: { min: undefined, max: undefined },
@@ -309,6 +315,7 @@ function QuestionEditModal({
           return {
             ...common,
             options: {
+              ...commonOptions,
               placeholder: '',
               restrictions: { maxLength: undefined },
               solutions: [],
@@ -331,7 +338,14 @@ function QuestionEditModal({
           pointsMultiplier: String(dataQuestion.question.pointsMultiplier),
           explanation: dataQuestion.question.explanation ?? '',
           displayMode:
-            dataQuestion.question.displayMode ?? QuestionDisplayMode.List,
+            dataQuestion.question.questionData.options.displayMode ??
+            ElementDisplayMode.List,
+          hasSampleSolution:
+            dataQuestion.question.questionData.options.hasSampleSolution ??
+            false,
+          hasAnswerFeedbacks:
+            dataQuestion.question.questionData.options.hasAnswerFeedbacks ??
+            false,
           tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
           options: dataQuestion.question.questionData.options,
         }
@@ -365,11 +379,13 @@ function QuestionEditModal({
             values.explanation !== ''
               ? values.explanation
               : null,
-          hasSampleSolution: values.hasSampleSolution,
-          hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           tags: values.tags,
-          displayMode: values.displayMode,
           pointsMultiplier: parseInt(values.pointsMultiplier),
+          options: {
+            displayMode: values.displayMode || ElementDisplayMode.List,
+            hasSampleSolution: values.hasSampleSolution,
+            hasAnswerFeedbacks: values.hasAnswerFeedbacks,
+          },
         }
         switch (common.type) {
           case ElementType.Sc:
@@ -380,6 +396,7 @@ function QuestionEditModal({
                 ...common,
                 id: isDuplication ? undefined : questionId,
                 options: {
+                  ...common.options,
                   choices: values.options?.choices.map((choice: any) => {
                     return {
                       ix: choice.ix,
@@ -402,6 +419,7 @@ function QuestionEditModal({
                 ...common,
                 id: isDuplication ? undefined : questionId,
                 options: {
+                  ...common.options,
                   unit: values.options?.unit,
                   accuracy: parseInt(values.options?.accuracy),
                   restrictions: {
@@ -440,6 +458,7 @@ function QuestionEditModal({
                 ...common,
                 id: isDuplication ? undefined : questionId,
                 options: {
+                  ...common.options,
                   placeholder: values.options?.placeholder,
                   restrictions: {
                     maxLength: parseInt(
@@ -762,7 +781,7 @@ function QuestionEditModal({
                     {[ElementType.Sc, ElementType.Mc].includes(values.type) && (
                       <FormikSelectField
                         name="displayMode"
-                        items={Object.values(QuestionDisplayMode).map(
+                        items={Object.values(ElementDisplayMode).map(
                           (mode) => ({
                             value: mode,
                             label: t(`manage.questionForms.${mode}Display`),

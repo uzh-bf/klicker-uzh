@@ -4,8 +4,6 @@ mutation ManipulateNumericalQuestion(
   $content: String
   $explanation: String
   $options: OptionsNumericalInput
-  $hasSampleSolution: Boolean
-  $hasAnswerFeedbacks: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
@@ -16,8 +14,6 @@ mutation ManipulateNumericalQuestion(
     content: $content
     explanation: $explanation
     options: $options
-    hasSampleSolution: $hasSampleSolution
-    hasAnswerFeedbacks: $hasAnswerFeedbacks
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
@@ -26,13 +22,13 @@ mutation ManipulateNumericalQuestion(
     type
     content
     explanation
-    hasSampleSolution
-    hasAnswerFeedbacks
     pointsMultiplier
 
     questionData {
       ... on ChoicesQuestionData {
         options {
+          hasSampleSolution
+          hasAnswerFeedbacks
           choices {
             ix
             correct
@@ -44,6 +40,8 @@ mutation ManipulateNumericalQuestion(
 
       ... on NumericalQuestionData {
         options {
+          hasSampleSolution
+          hasAnswerFeedbacks
           accuracy
           placeholder
           unit
@@ -60,6 +58,8 @@ mutation ManipulateNumericalQuestion(
 
       ... on FreeTextQuestionData {
         options {
+          hasSampleSolution
+          hasAnswerFeedbacks
           restrictions {
             maxLength
           }

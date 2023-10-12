@@ -30,13 +30,29 @@ export function processQuestionData(question: Element) {
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM:
-      return { ...extractRelevantKeys(question) } as ChoicesQuestionData
+      // TODO: remove the extra keys, once the questionData options are compatible
+      return {
+        ...extractRelevantKeys(question),
+        displayMode: question.options.displayMode,
+        hasSampleSolution: question.options.hasSampleSolution,
+        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
+      } as ChoicesQuestionData
 
     case ElementType.NUMERICAL:
-      return { ...extractRelevantKeys(question) } as NumericalQuestionData
+      // TODO: remove the extra keys, once the questionData options are compatible
+      return {
+        ...extractRelevantKeys(question),
+        hasSampleSolution: question.options.hasSampleSolution,
+        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
+      } as NumericalQuestionData
 
     case ElementType.FREE_TEXT:
-      return { ...extractRelevantKeys(question) } as FreeTextQuestionData
+      // TODO: remove the extra keys, once the questionData options are compatible
+      return {
+        ...extractRelevantKeys(question),
+        hasSampleSolution: question.options.hasSampleSolution,
+        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
+      } as FreeTextQuestionData
 
     default:
       throw new Error('Unknown question type')
