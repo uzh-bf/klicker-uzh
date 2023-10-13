@@ -15,6 +15,7 @@ function Flashcard({ content, explanation }: FlashcardProps) {
   }
   const contentt =
     'This is the content. It is a bit longer, so it should still fit as the box is intended to grow'
+
   return (
     <div
       className={twMerge(
@@ -22,27 +23,48 @@ function Flashcard({ content, explanation }: FlashcardProps) {
       )}
     >
       <div
-        className="flex items-center justify-center border border-gray-300 rounded shadow-lg min-h-[300px] transition-transform transform cursor-pointer w-full p-4"
+        className="relative flex items-center justify-center min-h-[300px] border border-gray-300 rounded shadow-lg cursor-pointer"
+        style={{
+          transformStyle: 'preserve-3d',
+          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+          transition: 'transform 0.6s',
+        }}
         onClick={handleFlip}
       >
-        {isFlipped ? (
-          <FlashcardBack explanation={explanation} />
-        ) : (
-          <FlashcardFront content={contentt} />
-        )}
+        <FlashcardFront content={contentt} isFlipped={isFlipped} />
+        <FlashcardBack explanation={explanation} isFlipped={isFlipped} />
       </div>
     </div>
   )
 }
 
-const FlashcardFront = ({ content }: { content: string }) => (
-  <div className="flex items-center justify-center w-full h-full p-4">
+const FlashcardFront = ({
+  content,
+  isFlipped,
+}: {
+  content: string
+  isFlipped: boolean
+}) => (
+  <div
+    className="absolute flex items-center justify-center w-full h-full p-4"
+    style={{ backfaceVisibility: 'hidden' }}
+  >
     <div className="text-xl font-bold">{content}</div>
   </div>
 )
 
-const FlashcardBack = ({ explanation }: { explanation: string }) => (
-  <div className="flex flex-col w-full h-full p-4">
+const FlashcardBack = ({
+  explanation,
+  isFlipped,
+}: {
+  explanation: string
+  isFlipped: boolean
+}) => (
+  <div
+    // className="absolute flex flex-col w-full h-full p-4"
+    className="absolute flex flex-col items-center justify-center w-full h-full p-4"
+    style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden' }}
+  >
     <div className="flex items-center justify-center flex-1 mb-4">
       <div className="text-lg font-semibold">{explanation}</div>
     </div>
