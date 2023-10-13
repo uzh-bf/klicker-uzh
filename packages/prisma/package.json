@@ -86,6 +86,7 @@
     "seed:qa:bf1": "ENV=development doppler run --config stg -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedBF1.ts",
     "seed:qa:test": "ts-node --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
     "seed:test": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
+    "seed:bf1": "ENV=development doppler run --config dev -- ts-node --esm --experimental-specifier-resolution=node src/data/seedBF1.ts",
     "size": "size-limit"
   },
   "engines": {
