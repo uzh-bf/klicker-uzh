@@ -4,10 +4,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateSessionDocument,
   EditSessionDocument,
+  Element,
+  ElementType,
   GetSingleCourseDocument,
   GetUserSessionsDocument,
-  Question,
-  QuestionType,
   Session,
   StartSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -34,7 +34,7 @@ interface LiveSessionWizardProps {
     value: string
   }[]
   initialValues?: Partial<Session>
-  selection: Record<number, Question>
+  selection: Record<number, Element>
   resetSelection: () => void
   closeWizard: () => void
   editMode: boolean
@@ -89,10 +89,10 @@ function LiveSessionWizard({
               .string()
               .oneOf(
                 [
-                  QuestionType.Sc,
-                  QuestionType.Mc,
-                  QuestionType.Numerical,
-                  QuestionType.FreeText,
+                  ElementType.Sc,
+                  ElementType.Mc,
+                  ElementType.Numerical,
+                  ElementType.FreeText,
                 ],
                 t('manage.sessionForms.liveSessionTypes')
               )
@@ -320,7 +320,7 @@ interface StepProps {
     label: string
     value: string
   }[]
-  selection?: Record<number, Question>
+  selection?: Record<number, Element>
   resetSelection?: () => void
 }
 

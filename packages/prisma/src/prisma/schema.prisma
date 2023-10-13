@@ -8,7 +8,7 @@ generator client {
 generator pothos {
   provider     = "prisma-pothos-types"
   clientOutput = "@klicker-uzh/prisma"
-  output       = "../client/pothos.d.ts"
+  output       = "../client/pothos.ts"
 }
 
 generator json {
@@ -21,8 +21,14 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
-// ----- USER ACCOUNTS -----
+enum PublicationStatus {
+  DRAFT
+  // REVIEW
+  PUBLISHED
+}
 
+// ----- USER ACCOUNTS -----
+// #region
 enum UserRole {
   PARTICIPANT
   USER
@@ -120,7 +126,7 @@ model User {
   session           Session[]
   accounts          Account[]
   courses           Course[]
-  questions         Question[]
+  questions         Element[]
   mediaFiles        MediaFile[]
   tags              Tag[]
   questionInstances QuestionInstance[]
@@ -128,6 +134,8 @@ model User {
   learningElements  LearningElement[]
   microSessions     MicroSession[]
   groupActivities   GroupActivity[]
+  elementInstances  ElementInstance[]
+  practiceQuizzes   PracticeQuiz[]
 
   firstLogin Boolean @default(true)
 
@@ -135,7 +143,10 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+// #endregion
+
 // ----- MEDIA LIBRARY -----
+// #region
 model MediaFile {
   id String @id @default(uuid()) @db.Uuid
 
@@ -153,52 +164,10 @@ model MediaFile {
   updatedAt DateTime @updatedAt
 }
 
-// ----- QUESTION POOL -----
+// #endregion
 
-enum QuestionType {
-  SC
-  MC
-  KPRIM
-  FREE_TEXT
-  NUMERICAL
-}
-
-enum QuestionDisplayMode {
-  LIST
-  GRID
-}
-
-model Question {
-  id Int @id @default(autoincrement())
-
-  originalId String? @unique
-
-  isArchived Boolean @default(false)
-  isDeleted  Boolean @default(false)
-
-  name               String
-  content            String
-  explanation        String?
-  pointsMultiplier   Int                 @default(1)
-  displayMode        QuestionDisplayMode @default(LIST)
-  hasSampleSolution  Boolean             @default(false)
-  hasAnswerFeedbacks Boolean             @default(false)
-
-  /// [PrismaQuestionOptions]
-  options Json
-
-  type QuestionType
-
-  tags      Tag[]
-  instances QuestionInstance[]
-
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId String @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
+// ----- TAGS AND SKILLS -----
+// #region
 model Tag {
   id   Int    @id @default(autoincrement())
   name String
@@ -207,7 +176,7 @@ model Tag {
 
   originalId String? @unique
 
-  questions Question[]
+  questions Element[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -218,6 +187,193 @@ model Tag {
   @@unique([ownerId, name])
 }
 
+// #endregion
+
+// ----- ELEMENTS -----
+// #region
+enum ElementOrderType {
+  SEQUENTIAL
+  SHUFFLED
+  LAST_RESPONSE
+}
+
+enum ElementType {
+  // TODO: remove old types, to be migrated to new ones
+  SC
+  MC
+  KPRIM
+  FREE_TEXT
+  NUMERICAL
+
+  // new types
+  CONTENT
+  FLASHCARD
+
+  // TODO: add new types to be migrated to (careful to migrate questionData.type as well with a script)
+  // QUESTION_SC
+  // QUESTION_MC
+  // QUESTION_KPRIM
+  // QUESTION_FREE_TEXT
+  // QUESTION_NUMERICAL
+}
+
+// TODO: remove once moved to options
+enum ElementDisplayMode {
+  LIST
+  GRID
+}
+
+model Element {
+  id Int @id @default(autoincrement())
+
+  // TODO: implement the logic for this
+  version Int @default(1) // used to track question versions, incremented on each update
+
+  originalId String? @unique
+
+  isArchived Boolean @default(false)
+  isDeleted  Boolean @default(false)
+
+  name        String
+  content     String // markdown content
+  explanation String? // markdown content
+
+  pointsMultiplier Int @default(1) // currently only relevant for FLASHCARD and QUESTION types
+
+  // TODO: the three properties below are only relevant for questions and can be moved to options Json
+  displayMode        ElementDisplayMode @default(LIST)
+  hasSampleSolution  Boolean            @default(false)
+  hasAnswerFeedbacks Boolean            @default(false)
+
+  /// [PrismaElementOptions]
+  options Json
+
+  type ElementType
+
+  tags Tag[]
+
+  // TODO: as we renamed Question to Element, it will need to have instances and elementInstances in parallel for a while. once we migrated all question instances and activities to elements, we can remove instances with a migration.
+  instances        QuestionInstance[]
+  elementInstances ElementInstance[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// TODO: elements are only supported for the new PRACTICE_QUIZ type in the first iteration. add the other types here when working on them.
+enum ElementInstanceType {
+  PRACTICE_QUIZ
+}
+
+model ElementInstance {
+  id Int @id @default(autoincrement())
+
+  originalId String? @unique
+
+  type        ElementInstanceType
+  elementType ElementType
+  order       Int
+
+  // TODO: moved to options Json
+  // resetTimeDays    Int?
+  // pointsMultiplier Int                      @default(1)
+  // TODO: moved to results Json
+  // participants    Int                      @default(0)
+
+  /// [PrismaElementInstanceOptions]
+  options Json // contains element type specific settings (resetTimeDays for LE instances, pointsMultiplier where relevant)
+
+  /// [PrismaElementData]
+  elementData Json // contains a copy of relevant element data
+
+  /// [PrismaElementInstanceResults]
+  results Json // contains the collection of gathered results
+
+  responses       QuestionResponse[]
+  detailResponses QuestionResponseDetail[]
+
+  bookmarkedBy Participation[]
+
+  element        Element?     @relation(fields: [elementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  elementId      Int?
+  elementStack   ElementStack @relation(fields: [elementStackId], references: [id])
+  elementStackId Int
+  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId        String       @db.Uuid
+  course         Course?      @relation(fields: [courseId], references: [id])
+  courseId       String?      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, elementStackId, order])
+}
+
+enum ElementStackType {
+  LIVE_QUIZ
+  PRACTICE_QUIZ
+  MICROLEARNING
+  GROUP_ACTIVITY
+}
+
+model ElementStack {
+  id Int @id @default(autoincrement())
+
+  // element stacks need to have an originalId to enable migration from v2 session blocks
+  originalId String? @unique
+
+  type  ElementStackType
+  order Int?
+
+  // TODO: we needed the two below for the stacked learning elements (Excel) as a top-level title and description. maybe we could drop them if we add a content element before the questions and the name of the content element is the top-level title, though it would be the same "size" as the other titles. however, this would add a lot of content elements to the question pool that cannot "stand on their own", and we might want to use content elements primarily for short snippets of content to repeat, not for some intro text to an element stack. this would mean we keep displayName and description here and as optional fields.
+  displayName String?
+  description String?
+
+  /// [PrismaElementStackOptions]
+  options Json
+
+  elements     ElementInstance[]
+  bookmarkedBy Participation[]
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id])
+  practiceQuizId String?       @db.Uuid
+
+  @@unique([type, practiceQuizId, order])
+}
+
+// #endregion
+
+// ----- PRACTICE QUIZZES -----
+// #region
+model PracticeQuiz {
+  id String @id @default(uuid()) @db.Uuid
+
+  name             String
+  displayName      String
+  description      String?
+  pointsMultiplier Int               @default(1)
+  resetTimeDays    Int               @default(6)
+  orderType        ElementOrderType  @default(SEQUENTIAL)
+  status           PublicationStatus @default(DRAFT)
+
+  stacks ElementStack[]
+
+  owner    User    @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId  String  @db.Uuid
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  courseId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// #endregion
+
+// ----- QUESTION POOL (LEGACY) -----
+// #region
 enum QuestionInstanceType {
   UNSET
   SESSION
@@ -240,11 +396,11 @@ model QuestionInstance {
   detailResponses  QuestionResponseDetail[]
   resetTimeDays    Int?
 
+  /// [PrismaElementData]
+  questionData Json
+
   /// [PrismaQuestionResults]
   results Json
-
-  /// [PrismaQuestionData]
-  questionData Json
 
   sessionBlock    SessionBlock?  @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId  Int?
@@ -257,10 +413,10 @@ model QuestionInstance {
 
   bookmarkedBy Participation[]
 
-  question   Question? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  question   Element? @relation(fields: [questionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questionId Int?
-  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId    String    @db.Uuid
+  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId    String   @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -271,7 +427,6 @@ model QuestionInstance {
   @@unique([type, groupActivityId, order])
 }
 
-// TODO: think about usage of question stacks for group activities
 enum QuestionStackType {
   LEARNING_ELEMENT
   MICRO_SESSION
@@ -311,8 +466,10 @@ model StackElement {
   questionInstance QuestionInstance?
 }
 
-// ----- COURSES -----
+// #endregion
 
+// ----- COURSES -----
+// #region
 model Course {
   id String @id @default(uuid()) @db.Uuid
 
@@ -333,63 +490,29 @@ model Course {
   sessions          LiveSession[]
   learningElements  LearningElement[]
   microSessions     MicroSession[]
-  leaderboard       LeaderboardEntry[]
+  elementInstances  ElementInstance[]
+  practiceQuizzes   PracticeQuiz[]
   groupActivities   GroupActivity[]
+  leaderboard       LeaderboardEntry[]
   awards            AwardEntry[]
   classAchievements ClassAchievementInstance[]
   achievements      Achievement[]
   titles            Title[]
-
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId String @db.Uuid
-
   participations    Participation[]
   subscriptions     PushSubscription[]
   participantGroups ParticipantGroup[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// TODO: CourseInstance -> holds participants, leaderboards, instances, etc. (parallel courses, same course in repetition across years)
-
-enum LeaderboardType {
-  SESSION_BLOCK
-  SESSION
-  COURSE
-}
-
-model LeaderboardEntry {
-  id Int @id @default(autoincrement())
-
-  type LeaderboardType
-
-  score Int
-
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String      @db.Uuid
-
-  participation Participation?
-
-  sessionParticipation   Participation? @relation("SessionLeaderboards", fields: [sessionParticipationId], references: [id])
-  sessionParticipationId Int?
-
-  sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionBlockId Int?
-
-  session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String?      @db.Uuid
-
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  courseId String? @db.Uuid
-
-  @@unique([type, participantId, sessionBlockId])
-  @@unique([type, participantId, sessionId])
-  @@unique([type, participantId, courseId])
-}
+// #endregion
 
 // ----- SESSIONS -----
-
+// #region
 enum SessionBlockStatus {
   SCHEDULED
   ACTIVE
@@ -478,8 +601,10 @@ model LiveSession {
   updatedAt DateTime @updatedAt
 }
 
-// ----- LEARNING ELEMENTS -----
+// #endregion
 
+// ----- LEARNING ELEMENTS -----
+// #region
 enum OrderType {
   SEQUENTIAL
   SHUFFLED
@@ -513,8 +638,10 @@ model LearningElement {
   updatedAt DateTime @updatedAt
 }
 
-// ----- MICROLEARNING -----
+// #endregion
 
+// ----- MICROLEARNING -----
+// #region
 enum MicroSessionStatus {
   DRAFT
   PUBLISHED
@@ -547,8 +674,10 @@ model MicroSession {
   updatedAt DateTime @updatedAt
 }
 
-// ----- GROUP ACTIVITIES -----
+// #endregion
 
+// ----- GROUP ACTIVITIES -----
+// #region
 enum ParameterType {
   NUMBER
   STRING
@@ -670,8 +799,10 @@ model GroupActivityInstance {
   @@unique([groupActivityId, groupId])
 }
 
-// ----- LIVE Q&A -----
+// #endregion
 
+// ----- LIVE Q&A -----
+// #region
 model Feedback {
   id Int @id @default(autoincrement())
 
@@ -722,7 +853,10 @@ model ConfusionTimestep {
   createdAt DateTime @default(now())
 }
 
+// #endregion
+
 // ----- PARTICIPANTS -----
+// #region
 model ParticipantAccount {
   id String @id @default(uuid()) @db.Uuid
 
@@ -813,12 +947,14 @@ model Participation {
 
   sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
 
-  responses              QuestionResponse[]
-  detailResponses        QuestionResponseDetail[]
-  subscriptions          PushSubscription[]
-  completedMicroSessions String[]
-  bookmarkedQuestions    QuestionInstance[]
-  bookmarkedStacks       QuestionStack[]
+  responses               QuestionResponse[]
+  detailResponses         QuestionResponseDetail[]
+  subscriptions           PushSubscription[]
+  completedMicroSessions  String[]
+  bookmarkedQuestions     QuestionInstance[]
+  bookmarkedStacks        QuestionStack[]
+  bookmarkedElements      ElementInstance[]
+  bookmarkedElementStacks ElementStack[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -826,7 +962,132 @@ model Participation {
   @@unique([courseId, participantId])
 }
 
+enum LeaderboardType {
+  SESSION_BLOCK
+  SESSION
+  COURSE
+}
+
+model LeaderboardEntry {
+  id Int @id @default(autoincrement())
+
+  type LeaderboardType
+
+  score Int
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation Participation?
+
+  sessionParticipation   Participation? @relation("SessionLeaderboards", fields: [sessionParticipationId], references: [id])
+  sessionParticipationId Int?
+
+  sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionBlockId Int?
+
+  session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionId String?      @db.Uuid
+
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  courseId String? @db.Uuid
+
+  @@unique([type, participantId, sessionBlockId])
+  @@unique([type, participantId, sessionId])
+  @@unique([type, participantId, courseId])
+}
+
+// #endregion
+
+// ----- RESPONSE TRACKING -----
+// #region
+model QuestionResponse {
+  id Int @id @default(autoincrement())
+
+  trialsCount        Int       @default(0)
+  totalScore         Float     @default(0)
+  totalPointsAwarded Float?    @default(0)
+  totalXpAwarded     Float     @default(0)
+  lastAwardedAt      DateTime?
+  lastXpAwardedAt    DateTime?
+
+  /// [PrismaQuestionResponse]
+  response Json
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  // TODO: for now, a response can be associated with either a questionInstance or elementInstance, but in the future only elementInstance will remain and be required
+  questionInstance   QuestionInstance? @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstanceId Int?
+  elementInstance    ElementInstance?  @relation(fields: [elementInstanceId], references: [id])
+  elementInstanceId  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, questionInstanceId])
+}
+
+model QuestionResponseDetail {
+  id Int @id @default(autoincrement())
+
+  score         Float  @default(0)
+  pointsAwarded Float? @default(0)
+  xpAwarded     Float  @default(0)
+
+  /// [PrismaQuestionResponse]
+  response Json
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  // TODO: for now, a response can be associated with either a questionInstance or elementInstance, but in the future only elementInstance will remain and be required
+  questionInstance   QuestionInstance? @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstanceId Int?
+  elementInstance    ElementInstance?  @relation(fields: [elementInstanceId], references: [id])
+  elementInstanceId  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// #endregion
+
+// ----- PUSH SUBSCRIPTIONS -----
+// #region
+model PushSubscription {
+  id Int @id @default(autoincrement())
+
+  endpoint       String
+  expirationTime Int?
+  p256dh         String
+  auth           String
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([participantId, courseId, endpoint])
+}
+
+// #endregion
+
 // ----- ACHIEVEMENTS -----
+// #region
 enum AchievementType {
   PARTICIPANT // achievement awarded to individual participants
   GROUP // achievement awarded to a group of participants
@@ -937,84 +1198,10 @@ model ClassAchievementInstance {
   @@unique([courseId, achievementId])
 }
 
-// ----- RESPONSE TRACKING -----
-
-model QuestionResponse {
-  id Int @id @default(autoincrement())
-
-  trialsCount        Int       @default(0)
-  totalScore         Float     @default(0)
-  totalPointsAwarded Float?    @default(0)
-  totalXpAwarded     Float     @default(0)
-  lastAwardedAt      DateTime?
-  lastXpAwardedAt    DateTime?
-
-  /// [PrismaQuestionResponse]
-  response Json
-
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String      @db.Uuid
-
-  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participationId Int
-
-  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  questionInstanceId Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([participantId, questionInstanceId])
-}
-
-model QuestionResponseDetail {
-  id Int @id @default(autoincrement())
-
-  score         Float  @default(0)
-  pointsAwarded Float? @default(0)
-  xpAwarded     Float  @default(0)
-
-  /// [PrismaQuestionResponse]
-  response Json
-
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String      @db.Uuid
-
-  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participationId Int
-
-  questionInstance   QuestionInstance @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  questionInstanceId Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ----- PUSH SUBSCRIPTIONS -----
-
-model PushSubscription {
-  id Int @id @default(autoincrement())
-
-  endpoint       String
-  expirationTime Int?
-  p256dh         String
-  auth           String
-
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String @db.Uuid
-
-  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participationId Int
-
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String      @db.Uuid
-
-  createdAt DateTime @default(now())
-
-  @@unique([participantId, courseId, endpoint])
-}
+// #endregion
 
 // ----- AWARDS -----
+// #region
 enum AwardType {
   PARTICIPANT
   GROUP
@@ -1045,7 +1232,10 @@ model AwardEntry {
   @@unique([courseId, type, name])
 }
 
+// #endregion
+
 // ----- LEVELS -----
+// #region
 model Level {
   id Int @id @default(autoincrement())
 
@@ -1058,3 +1248,5 @@ model Level {
   nextLevelIx Int?
   prevLevel   Level[] @relation("level")
 }
+
+// #endregion

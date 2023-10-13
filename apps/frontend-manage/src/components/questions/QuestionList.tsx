@@ -1,4 +1,4 @@
-import type { Question as QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import type { Element } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import React from 'react'
 
@@ -6,9 +6,9 @@ import { useTranslations } from 'next-intl'
 import Question from './Question'
 
 interface QuestionListProps {
-  setSelectedQuestions: (questionId: number, questionData: QuestionType) => void
-  selectedQuestions: Record<number, QuestionType>
-  questions?: QuestionType[]
+  setSelectedQuestions: (questionId: number, questionData: Element) => void
+  selectedQuestions: Record<number, Element>
+  questions?: Element[]
   tagfilter?: string[]
   handleTagClick: (value: string, selected?: boolean) => void
   unsetDeletedQuestion: (questionId: number) => void

@@ -1,4 +1,4 @@
-import { QuestionInstance, QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType, QuestionInstance } from '@klicker-uzh/graphql/dist/ops'
 import {
   validateFreeTextResponse,
   validateKprimResponse,
@@ -41,7 +41,7 @@ function SingleQuestion({
     setResponse(questionResponse)
 
     switch (instance.questionData.type) {
-      case QuestionType.Sc:
+      case ElementType.Sc:
         if (validateScResponse(questionResponse)) {
           setInputValid(true)
           break
@@ -49,7 +49,7 @@ function SingleQuestion({
         setInputValid(false)
         break
 
-      case QuestionType.Mc:
+      case ElementType.Mc:
         if (validateMcResponse(questionResponse)) {
           setInputValid(true)
           break
@@ -57,7 +57,7 @@ function SingleQuestion({
         setInputValid(false)
         break
 
-      case QuestionType.Kprim:
+      case ElementType.Kprim:
         if (validateKprimResponse(questionResponse)) {
           setInputValid(true)
           break
@@ -65,7 +65,7 @@ function SingleQuestion({
         setInputValid(false)
         break
 
-      case QuestionType.Numerical:
+      case ElementType.Numerical:
         if (
           validateNumericalResponse({
             response: questionResponse,
@@ -79,7 +79,7 @@ function SingleQuestion({
         setInputValid(false)
         break
 
-      case QuestionType.FreeText:
+      case ElementType.FreeText:
         if (
           validateFreeTextResponse({
             response: questionResponse,

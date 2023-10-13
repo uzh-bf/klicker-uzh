@@ -1,10 +1,14 @@
 import {
-  Question,
-  QuestionDisplayMode,
+  Element,
+  ElementDisplayMode,
+  ElementStackType,
+  ElementType,
   QuestionInstance,
-  QuestionType,
+  SessionBlockStatus,
 } from '@klicker-uzh/prisma'
 
+// ----- AVATAR SETTINGS -----
+// #region
 export type AvatarSettings = {
   skinTone: string
   eyes: string
@@ -17,6 +21,15 @@ export type AvatarSettings = {
   facialHair: string
 }
 
+declare global {
+  namespace PrismaJson {
+    type PrismaAvatarSettings = AvatarSettings
+  }
+}
+// #endregion
+
+// ----- ELEMENT DATA AND INSTANCES -----
+// #region
 export type QuestionResponseChoices = {
   choices: number[]
 }
@@ -27,10 +40,12 @@ export type QuestionResponseValue = {
 
 export type QuestionResponse = QuestionResponseChoices | QuestionResponseValue
 
+// TODO: results should also include the participants count (instead of storing it on the top-level)
 export type QuestionResultsChoices = {
   choices: Record<string, number>
 }
 
+// TODO: to be consistent with choices results, the real results should be nested inside an e.g., values object, and participants should be included as a property
 export type QuestionResultsOpen = {
   [x: string]: {
     count: number
@@ -48,11 +63,17 @@ export type Choice = {
   feedback?: string
 }
 
-export type QuestionOptionsChoices = {
-  choices: Choice[]
+interface BaseElementOptions {
+  hasSampleSolution?: boolean
+  hasAnswerFeedbacks?: boolean
 }
 
-export type QuestionOptionsNumerical = {
+export interface ElementOptionsChoices extends BaseElementOptions {
+  choices: Choice[]
+  displayMode: ElementDisplayMode
+}
+
+export interface ElementOptionsNumerical extends BaseElementOptions {
   unit?: string | null
   accuracy?: number
   placeholder?: string
@@ -66,65 +87,67 @@ export type QuestionOptionsNumerical = {
   }[]
 }
 
-export type QuestionOptionsFreeText = {
+export interface ElementOptionsFreeText extends BaseElementOptions {
   solutions?: string[]
   restrictions?: {
     maxLength?: number | null
   }
 }
 
-export type QuestionOptions =
-  | QuestionOptionsChoices
-  | QuestionOptionsNumerical
-  | QuestionOptionsFreeText
+export type ElementOptions =
+  | ElementOptionsChoices
+  | ElementOptionsNumerical
+  | ElementOptionsFreeText
 
-export interface BaseQuestionData {
+export interface BaseElementData {
+  type: ElementType
+
   id: number
   name: string
-  type: QuestionType
-  displayMode: QuestionDisplayMode
   content: string
   pointsMultiplier: number
-  explanation: string | null
+  explanation?: string | null
+
+  options: object
+
+  // TODO: these legacy props have been moved to options
+  displayMode: ElementDisplayMode
   hasSampleSolution: boolean
   hasAnswerFeedbacks: boolean
-  options: object
 }
 
-export type BaseQuestionDataKeys = (keyof BaseQuestionData)[]
+export type BaseElementDataKeys = (keyof BaseElementData)[]
 
-interface IQuestionData<
-  Type extends QuestionType,
-  Options extends QuestionOptions
-> extends Question {
+interface IElementData<Type extends ElementType, Options extends ElementOptions>
+  extends Element {
   type: Type
   options: Options
 }
 
-export type ChoicesQuestionData = IQuestionData<
+export type ChoicesElementData = IElementData<
   'SC' | 'MC' | 'KPRIM',
-  QuestionOptionsChoices
+  ElementOptionsChoices
 >
-export type FreeTextQuestionData = IQuestionData<
+export type FreeTextElementData = IElementData<
   'FREE_TEXT',
-  QuestionOptionsFreeText
+  ElementOptionsFreeText
 >
-export type NumericalQuestionData = IQuestionData<
+export type NumericalElementData = IElementData<
   'NUMERICAL',
-  QuestionOptionsNumerical
+  ElementOptionsNumerical
 >
 
-export type AllQuestionTypeData =
-  | ChoicesQuestionData
-  | FreeTextQuestionData
-  | NumericalQuestionData
+export type AllElementTypeData =
+  | ChoicesElementData
+  | FreeTextElementData
+  | NumericalElementData
 
 export interface IQuestionInstanceWithResults<
-  Type extends QuestionType,
+  Type extends ElementType,
   Results extends QuestionResults
 > extends QuestionInstance {
   elementType?: Type
-  questionData: AllQuestionTypeData
+  questionData: AllElementTypeData
   results: Results
   statistics?: {
     max?: number
@@ -152,10 +175,49 @@ export type AllQuestionInstanceTypeData =
 
 declare global {
   namespace PrismaJson {
-    type PrismaAvatarSettings = AvatarSettings
     type PrismaQuestionResponse = QuestionResponse
-    type PrismaQuestionOptions = QuestionOptions
+    type PrismaElementOptions = ElementOptions
     type PrismaQuestionResults = QuestionResults
-    type PrismaQuestionData = AllQuestionTypeData
+    type PrismaElementData = AllElementTypeData
   }
 }
+// #endregion
+
+// ----- ELEMENT STACKS -----
+// #region
+export type LiveQuizStackOptions = {
+  timeLimit?: number
+  expiresAt?: Date
+  randomSelection?: number
+  // TODO: by moving it here, we lose the default value, so ensure it is set in backend code correctly
+  execution: number
+  // TODO: rename the enum for consistency
+  status: SessionBlockStatus
+}
+
+export type MicrolearningStackOptions = {}
+
+export type PracticeQuizStackOptions = {}
+
+export type ElementStackOptions =
+  | LiveQuizStackOptions
+  | MicrolearningStackOptions
+  | PracticeQuizStackOptions
+
+interface IElementStackOptions<
+  Type extends ElementStackType,
+  Options extends ElementStackOptions | null
+> {}
+
+export type AllElementStackOptions =
+  | IElementStackOptions<'LIVE_QUIZ', LiveQuizStackOptions>
+  | IElementStackOptions<'PRACTICE_QUIZ', PracticeQuizStackOptions>
+  | IElementStackOptions<'MICROLEARNING', MicrolearningStackOptions>
+  | IElementStackOptions<'GROUP_ACTIVITY', null>
+
+declare global {
+  namespace PrismaJson {
+    type PrismaElementStackOptions = ElementStackOptions
+  }
+}
+// #endregion

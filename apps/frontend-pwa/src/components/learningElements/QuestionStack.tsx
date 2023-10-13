@@ -7,9 +7,9 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   BookmarkQuestionDocument,
+  ElementType,
   GetBookmarksLearningElementDocument,
   QuestionStack,
-  QuestionType,
   ResponseToQuestionInstanceDocument,
   SelfDocument,
   StackElement,
@@ -148,14 +148,14 @@ function QuestionStack({
         const questionType = element.questionInstance?.questionData.type
         setInformationOnly(false)
         if (
-          questionType === QuestionType.Sc ||
-          questionType === QuestionType.Mc
+          questionType === ElementType.Sc ||
+          questionType === ElementType.Mc
         ) {
           return {
             inputValid: { ...acc.inputValid, [element.id]: false },
             responses: { ...acc.responses, [element.id]: [] },
           }
-        } else if (questionType === QuestionType.Kprim) {
+        } else if (questionType === ElementType.Kprim) {
           return {
             inputValid: { ...acc.inputValid, [element.id]: false },
             responses: { ...acc.responses, [element.id]: {} },

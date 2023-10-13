@@ -122,7 +122,7 @@ export function prepareQuestion({
   id: number
   name: string
   content: string
-  type: Prisma.QuestionType
+  type: Prisma.ElementType
   ownerId: string
   choices?: {
     value: string
@@ -180,7 +180,7 @@ export function prepareQuestionInstance({
   resetTimeDays,
   order,
 }: {
-  question: Partial<Prisma.Question>
+  question: Partial<Prisma.Element>
   type: QuestionInstanceType
   pointsMultiplier?: number
   resetTimeDays?: number
@@ -205,9 +205,9 @@ export function prepareQuestionInstance({
   }
 
   switch (question.type) {
-    case Prisma.QuestionType.SC:
-    case Prisma.QuestionType.MC:
-    case Prisma.QuestionType.KPRIM: {
+    case Prisma.ElementType.SC:
+    case Prisma.ElementType.MC:
+    case Prisma.ElementType.KPRIM: {
       const questionOptions = question.options?.valueOf() as {
         choices: {
           ix: number
@@ -231,8 +231,8 @@ export function prepareQuestionInstance({
       }
     }
 
-    case Prisma.QuestionType.NUMERICAL:
-    case Prisma.QuestionType.FREE_TEXT: {
+    case Prisma.ElementType.NUMERICAL:
+    case Prisma.ElementType.FREE_TEXT: {
       return {
         ...common,
         results: {},
@@ -246,7 +246,7 @@ interface BaseQuestionData {
   name: string
   pointsMultiplier: number
   content: string
-  type: Prisma.QuestionType
+  type: Prisma.ElementType
   options?: any
 }
 

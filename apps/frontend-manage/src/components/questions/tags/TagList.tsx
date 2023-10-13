@@ -9,7 +9,7 @@ import {
   faRectangleList as faListSolid,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { QuestionType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -90,7 +90,7 @@ function TagList({
       />
       {questionTypesVisible && (
         <ul className="list-none">
-          {Object.values(QuestionType).map((type) => (
+          {Object.values(ElementType).map((type) => (
             <TagItem
               key={type}
               text={t(`shared.${type}.typeLabel`)}

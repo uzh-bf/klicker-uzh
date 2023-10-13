@@ -57,11 +57,14 @@ input ChoiceInput {
 
 type ChoiceQuestionOptions {
   choices: [Choice!]!
+  displayMode: ElementDisplayMode!
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
 }
 
 type ChoicesQuestionData implements QuestionData {
   content: String!
-  displayMode: QuestionDisplayMode
+  displayMode: ElementDisplayMode
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -69,7 +72,7 @@ type ChoicesQuestionData implements QuestionData {
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int
-  type: QuestionType!
+  type: ElementType!
 }
 
 type ClassAchievementInstance {
@@ -122,6 +125,40 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar Date
 
+type Element {
+  content: String!
+  createdAt: Date!
+  displayMode: ElementDisplayMode!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  isArchived: Boolean!
+  isDeleted: Boolean!
+  name: String!
+  options: Json!
+  pointsMultiplier: Int!
+  questionData: QuestionData!
+  tags: [Tag!]!
+  type: ElementType!
+  updatedAt: Date!
+}
+
+enum ElementDisplayMode {
+  GRID
+  LIST
+}
+
+enum ElementType {
+  CONTENT
+  FLASHCARD
+  FREE_TEXT
+  KPRIM
+  MC
+  NUMERICAL
+  SC
+}
+
 type EvaluationBlock {
   blockIx: Int
   blockStatus: SessionBlockStatus!
@@ -157,7 +194,7 @@ type FileUploadSAS {
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
-  displayMode: QuestionDisplayMode
+  displayMode: ElementDisplayMode
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -165,10 +202,12 @@ type FreeTextQuestionData implements QuestionData {
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int
-  type: QuestionType!
+  type: ElementType!
 }
 
 type FreeTextQuestionOptions {
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   restrictions: FreeTextRestrictions
   solutions: [String!]
 }
@@ -407,7 +446,7 @@ type Mutation {
   deleteLearningElement(id: String!): LearningElement
   deleteMicroSession(id: String!): MicroSession
   deleteParticipantAccount: Boolean
-  deleteQuestion(id: Int!): Question
+  deleteQuestion(id: Int!): Element
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
@@ -429,9 +468,9 @@ type Mutation {
   loginUserToken(email: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateChoicesQuestion(content: String, displayMode: QuestionDisplayMode, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
-  manipulateFreeTextQuestion(content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
-  manipulateNumericalQuestion(content: String, explanation: String, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!], type: QuestionType!): Question
+  manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
+  manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
+  manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -446,7 +485,7 @@ type Mutation {
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
-  toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Question!]
+  toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Element!]
   triggerMigration(token: String!): Boolean
   unpublishMicroSession(id: String!): MicroSession
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
@@ -459,7 +498,7 @@ type Mutation {
 
 type NumericalQuestionData implements QuestionData {
   content: String!
-  displayMode: QuestionDisplayMode
+  displayMode: ElementDisplayMode
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
@@ -467,11 +506,13 @@ type NumericalQuestionData implements QuestionData {
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int
-  type: QuestionType!
+  type: ElementType!
 }
 
 type NumericalQuestionOptions {
   accuracy: Int
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
   placeholder: String
   restrictions: NumericalRestrictions
   solutionRanges: [NumericalSolutionRange!]
@@ -484,6 +525,8 @@ type NumericalRestrictions {
 }
 
 input NumericalRestrictionsInput {
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
   max: Float
   min: Float
 }
@@ -495,10 +538,15 @@ type NumericalSolutionRange {
 
 input OptionsChoicesInput {
   choices: [ChoiceInput!]
+  displayMode: ElementDisplayMode
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
 }
 
 input OptionsFreeTextInput {
   feedback: String
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
   placeholder: String
   restrictions: FreeTextRestrictionsInput
   solutions: [String!]
@@ -507,6 +555,8 @@ input OptionsFreeTextInput {
 input OptionsNumericalInput {
   accuracy: Int
   feedback: String
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
   restrictions: NumericalRestrictionsInput
   solutionRanges: [SolutionRangeInput!]
   unit: String
@@ -616,7 +666,7 @@ type Query {
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
   publicParticipantProfile(participantId: String!): Participant
-  question(id: Int!): Question
+  question(id: Int!): Element
   questionStack(id: Int!): QuestionStack
   runningSessions(shortname: String!): [Session!]
   self: Participant
@@ -630,46 +680,22 @@ type Query {
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User
-  userQuestions: [Question!]
+  userQuestions: [Element!]
   userRunningSessions: [Session!]
   userSessions: [Session!]
   userTags: [Tag!]
 }
 
-type Question {
-  content: String!
-  createdAt: Date!
-  displayMode: QuestionDisplayMode!
-  explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
-  id: Int!
-  isArchived: Boolean!
-  isDeleted: Boolean!
-  name: String!
-  options: Json!
-  pointsMultiplier: Int!
-  questionData: QuestionData!
-  tags: [Tag!]!
-  type: QuestionType!
-  updatedAt: Date!
-}
-
 interface QuestionData {
   content: String!
-  displayMode: QuestionDisplayMode
+  displayMode: ElementDisplayMode
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
   id: Int!
   name: String!
   pointsMultiplier: Int
-  type: QuestionType!
-}
-
-enum QuestionDisplayMode {
-  GRID
-  LIST
+  type: ElementType!
 }
 
 type QuestionFeedback {
@@ -708,14 +734,6 @@ enum QuestionStackType {
   LEARNING_ELEMENT
   LIVE_SESSION
   MICRO_SESSION
-}
-
-enum QuestionType {
-  FREE_TEXT
-  KPRIM
-  MC
-  NUMERICAL
-  SC
 }
 
 input ResponseInput {

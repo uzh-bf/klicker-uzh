@@ -1,13 +1,13 @@
 import {
+  Element,
+  ElementType,
   MicroSessionStatus,
-  Question,
   QuestionInstanceType,
-  QuestionType,
 } from '@klicker-uzh/prisma'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { GraphQLError } from 'graphql'
 import { pick } from 'ramda'
-import { AllQuestionTypeData } from 'src/types/app'
+import { AllElementTypeData } from 'src/types/app'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -18,7 +18,7 @@ export async function getQuestionMap(
   questions: number[],
   ctx: ContextWithUser
 ) {
-  const dbQuestions = await ctx.prisma.question.findMany({
+  const dbQuestions = await ctx.prisma.element.findMany({
     where: {
       id: { in: questions },
       ownerId: ctx.user.sub,
@@ -30,7 +30,7 @@ export async function getQuestionMap(
     throw new GraphQLError('Not all questions could be found')
   }
 
-  return dbQuestions.reduce<Record<number, Question>>(
+  return dbQuestions.reduce<Record<number, Element>>(
     (acc, question) => ({ ...acc, [question.id]: question }),
     {}
   )
@@ -68,9 +68,9 @@ export async function getMicroSessionData(
       return instance
 
     switch (questionData.type) {
-      case QuestionType.SC:
-      case QuestionType.MC:
-      case QuestionType.KPRIM:
+      case ElementType.SC:
+      case ElementType.MC:
+      case ElementType.KPRIM:
         return {
           ...instance,
           questionData: {
@@ -82,10 +82,10 @@ export async function getMicroSessionData(
           },
         }
 
-      case QuestionType.FREE_TEXT:
+      case ElementType.FREE_TEXT:
         return instance
 
-      case QuestionType.NUMERICAL:
+      case ElementType.NUMERICAL:
         return instance
 
       default:
@@ -204,7 +204,7 @@ export async function createMicroSession(
             pointsMultiplier: multiplier * question.pointsMultiplier,
             questionData: question,
             results: prepareInitialInstanceResults(
-              question as AllQuestionTypeData
+              question as AllElementTypeData
             ),
             question: {
               connect: { id: questionId },

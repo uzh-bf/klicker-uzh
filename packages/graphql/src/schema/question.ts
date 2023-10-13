@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import { QuestionData, QuestionDisplayMode, QuestionType } from './questionData'
+import { ElementDisplayMode, ElementType, QuestionData } from './questionData'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
   fields: (t) => ({
@@ -13,6 +13,9 @@ export const ChoiceInput = builder.inputType('ChoiceInput', {
 
 export const OptionsChoicesInput = builder.inputType('OptionsChoicesInput', {
   fields: (t) => ({
+    displayMode: t.field({ required: false, type: ElementDisplayMode }),
+    hasSampleSolution: t.boolean({ required: false }),
+    hasAnswerFeedbacks: t.boolean({ required: false }),
     choices: t.field({
       type: [ChoiceInput],
     }),
@@ -23,6 +26,8 @@ export const NumericalRestrictionsInput = builder.inputType(
   'NumericalRestrictionsInput',
   {
     fields: (t) => ({
+      hasSampleSolution: t.boolean({ required: false }),
+      hasAnswerFeedbacks: t.boolean({ required: false }),
       min: t.float({ required: false }),
       max: t.float({ required: false }),
     }),
@@ -40,6 +45,8 @@ export const OptionsNumericalInput = builder.inputType(
   'OptionsNumericalInput',
   {
     fields: (t) => ({
+      hasSampleSolution: t.boolean({ required: false }),
+      hasAnswerFeedbacks: t.boolean({ required: false }),
       accuracy: t.int({ required: false }),
       unit: t.string({ required: false }),
       restrictions: t.field({
@@ -68,6 +75,8 @@ export const FreeTextRestrictionsInput = builder.inputType(
 
 export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
   fields: (t) => ({
+    hasSampleSolution: t.boolean({ required: false }),
+    hasAnswerFeedbacks: t.boolean({ required: false }),
     placeholder: t.string({ required: false }),
     restrictions: t.field({
       type: FreeTextRestrictionsInput,
@@ -144,12 +153,12 @@ export const InstanceEvaluation = builder
     }),
   })
 
-export const Question = builder.prismaObject('Question', {
+export const Element = builder.prismaObject('Element', {
   fields: (t) => ({
     id: t.exposeInt('id'),
 
     name: t.exposeString('name'),
-    type: t.expose('type', { type: QuestionType }),
+    type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
     explanation: t.exposeString('explanation', { nullable: true }),
 
@@ -160,7 +169,7 @@ export const Question = builder.prismaObject('Question', {
       type: QuestionData,
       resolve: (q) => q,
     }),
-    displayMode: t.expose('displayMode', { type: QuestionDisplayMode }),
+    displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
 
     isArchived: t.exposeBoolean('isArchived'),
     isDeleted: t.exposeBoolean('isDeleted'),

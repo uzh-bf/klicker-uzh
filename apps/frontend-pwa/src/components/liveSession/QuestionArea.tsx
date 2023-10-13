@@ -1,7 +1,4 @@
-import {
-  QuestionDisplayMode,
-  QuestionType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
 import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -18,11 +15,11 @@ import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 interface QuestionAreaProps {
   expiresAt?: Date
   questions: {
-    displayMode?: QuestionDisplayMode
+    displayMode?: ElementDisplayMode
     content: string
     id: string
     name: string
-    type: QuestionType
+    type: ElementType
     options: any
     instanceId: number
   }[]
@@ -149,9 +146,9 @@ function QuestionArea({
   ): void => {
     if (value.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
       handleNewResponse(type, instanceId, value)
-    } else if (QuestionType.FreeText === type) {
+    } else if (ElementType.FreeText === type) {
       handleNewResponse(type, instanceId, value)
-    } else if (QuestionType.Numerical === type) {
+    } else if (ElementType.Numerical === type) {
       handleNewResponse(type, instanceId, String(parseFloat(value)))
     }
   }

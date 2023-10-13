@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useSuspenseQuery } from '@apollo/client'
 import {
   ChangeInitialSettingsDocument,
+  Element,
   GetUserQuestionsDocument,
-  Question,
   ToggleIsArchivedDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -281,10 +281,10 @@ function Index() {
   const [sortBy, setSortBy] = useState('')
 
   const [selectedQuestions, setSelectedQuestions] = useState<
-    Record<number, Question | undefined>
+    Record<number, Element | undefined>
   >({})
 
-  const selectedQuestionData: Record<number, Question> = useMemo(
+  const selectedQuestionData: Record<number, Element> = useMemo(
     () => R.pickBy((value) => typeof value !== 'undefined', selectedQuestions),
     [selectedQuestions]
   )
@@ -582,7 +582,7 @@ function Index() {
                 <QuestionList
                   questions={processedQuestions}
                   selectedQuestions={selectedQuestionData}
-                  setSelectedQuestions={(id: number, data: Question) => {
+                  setSelectedQuestions={(id: number, data: Element) => {
                     setSelectedQuestions((prev) => {
                       return { ...prev, [id]: prev[id] ? undefined : data }
                     })
