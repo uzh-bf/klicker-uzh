@@ -21,12 +21,9 @@ function Flashcard({ content, explanation }: FlashcardProps) {
       )}
     >
       <div
-        className="relative flex items-center justify-center min-h-[300px] border border-gray-300 rounded shadow-lg cursor-pointer"
-        style={{
-          transformStyle: 'preserve-3d',
-          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-          transition: 'transform 0.6s',
-        }}
+        className={`relative flex items-center justify-center min-h-[300px] border border-gray-300 rounded shadow-lg cursor-pointer transform-style-preserve-3d transition-transform-0_6s ${
+          isFlipped ? 'transform-rotateY-180' : 'transform-rotateY-0'
+        }`}
         onClick={handleFlip}
       >
         <FlashcardFront content={content} />
@@ -37,19 +34,13 @@ function Flashcard({ content, explanation }: FlashcardProps) {
 }
 
 const FlashcardFront = ({ content }: { content: string }) => (
-  <div
-    className="absolute flex items-center justify-center w-full h-full p-4"
-    style={{ backfaceVisibility: 'hidden' }}
-  >
+  <div className="absolute flex items-center justify-center w-full h-full p-4 backface-hidden">
     <div className="text-xl font-bold">{content}</div>
   </div>
 )
 
 const FlashcardBack = ({ explanation }: { explanation: string }) => (
-  <div
-    className="absolute flex flex-col items-center justify-center w-full h-full p-4"
-    style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden' }}
-  >
+  <div className="absolute flex flex-col items-center justify-center w-full h-full p-4 transform-rotateY-180 backface-hidden">
     <div className="flex items-center justify-center flex-1 mb-4">
       <div className="text-lg font-semibold">{explanation}</div>
     </div>
