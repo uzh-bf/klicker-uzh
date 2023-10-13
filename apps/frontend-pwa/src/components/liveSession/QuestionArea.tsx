@@ -1,4 +1,4 @@
-import { ElementType, QuestionDisplayMode } from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
 import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -15,7 +15,7 @@ import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 interface QuestionAreaProps {
   expiresAt?: Date
   questions: {
-    displayMode?: QuestionDisplayMode
+    displayMode?: ElementDisplayMode
     content: string
     id: string
     name: string

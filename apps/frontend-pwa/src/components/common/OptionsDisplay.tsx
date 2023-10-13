@@ -2,8 +2,8 @@ import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Choice,
+  ElementDisplayMode,
   ElementType,
-  QuestionDisplayMode,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import FREETextAnswerOptions from '@klicker-uzh/shared-components/src/questions/FREETextAnswerOptions'
@@ -29,7 +29,7 @@ interface ChoiceOptionsProps {
   feedbacks: any
   response?: number[]
   onChange: (ix: number) => void
-  displayMode?: QuestionDisplayMode | null
+  displayMode?: ElementDisplayMode | null
 }
 function ChoiceOptions({
   disabled,
@@ -44,7 +44,7 @@ function ChoiceOptions({
   return (
     <div
       className={twMerge(
-        displayMode === QuestionDisplayMode.Grid
+        displayMode === ElementDisplayMode.Grid
           ? 'grid grid-cols-2 gap-3'
           : isCompact
           ? 'flex flex-row gap-2'
@@ -114,7 +114,7 @@ interface OptionsProps {
   isCompact?: boolean
   isResponseValid: boolean
   onChangeResponse: (value: any) => void
-  displayMode?: QuestionDisplayMode | null
+  displayMode?: ElementDisplayMode | null
 }
 
 export function Options({
@@ -351,7 +351,7 @@ interface OptionsDisplayProps {
   onChangeResponse: (value: any) => void
   onSubmitResponse?: any
   isEvaluation?: boolean
-  displayMode?: QuestionDisplayMode | null
+  displayMode?: ElementDisplayMode | null
 }
 
 function OptionsDisplay({

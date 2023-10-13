@@ -1,13 +1,13 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementType, QuestionDisplayMode } from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface KPAnswerOptionsProps {
-  displayMode?: QuestionDisplayMode
+  displayMode?: ElementDisplayMode
   type: ElementType
   choices: { value: string; correct: boolean; feedback: string }[]
   value?: { [key: number]: boolean }
@@ -25,7 +25,7 @@ export function KPAnswerOptions({
     <div
       className={twMerge(
         'gap-3',
-        displayMode === QuestionDisplayMode.Grid
+        displayMode === ElementDisplayMode.Grid
           ? 'grid grid-cols-2'
           : 'flex flex-col'
       )}

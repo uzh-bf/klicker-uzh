@@ -66,6 +66,43 @@ export async function getSingleQuestion(
   }
 }
 
+interface QuestionOptionsArgs {
+  unit?: string | null
+  accuracy?: number | null
+  placeholder?: string | null
+  restrictions?: {
+    maxLength?: number | null
+    minLength?: number | null
+    pattern?: string | null
+    min?: number | null
+    max?: number | null
+  }
+  feedback?: string
+  solutionRanges?: { min?: number; max?: number }[]
+  solutions?: string[]
+  choices?: {
+    ix: number
+    value: string
+    correct?: boolean
+    feedback?: string
+  }[]
+  displayMode?: DB.ElementDisplayMode | null
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  pointsMultiplier?: number | null
+}
+
+interface ManipulateQuestionArgs {
+  id?: number | null
+  type: DB.ElementType
+  name?: string | null
+  content?: string | null
+  explanation?: string | null
+  options?: QuestionOptionsArgs | null
+  pointsMultiplier?: number | null
+  tags?: string[] | null
+}
+
 export async function manipulateQuestion(
   {
     id,
@@ -74,47 +111,9 @@ export async function manipulateQuestion(
     content,
     explanation,
     options,
-    hasSampleSolution,
-    hasAnswerFeedbacks,
     pointsMultiplier,
     tags,
-    displayMode,
-  }: {
-    id?: number | null
-    type: DB.ElementType
-    name?: string | null
-    content?: string | null
-    explanation?: string | null
-    options?: {
-      unit?: string | null
-      accuracy?: number | null
-      placeholder?: string | null
-      restrictions?: {
-        maxLength?: number | null
-        minLength?: number | null
-        pattern?: string | null
-        min?: number | null
-        max?: number | null
-      }
-      feedback?: string
-      solutionRanges?: { min?: number; max?: number }[]
-      solutions?: string[]
-      choices?: {
-        ix: number
-        value: string
-        correct?: boolean
-        feedback?: string
-      }[]
-      hasSampleSolution?: boolean | null
-      hasAnswerFeedbacks?: boolean | null
-      pointsMultiplier?: number | null
-    } | null
-    hasSampleSolution?: boolean | null
-    hasAnswerFeedbacks?: boolean | null
-    pointsMultiplier?: number | null
-    tags?: string[] | null
-    displayMode?: DB.ElementDisplayMode | null
-  },
+  }: ManipulateQuestionArgs,
   ctx: ContextWithUser
 ) {
   let tagsToDelete: string[] = []
@@ -151,11 +150,20 @@ export async function manipulateQuestion(
       name: name ?? 'Missing Question Title',
       content: content ?? 'Missing Question Content',
       explanation: explanation ?? undefined,
-      hasSampleSolution: hasSampleSolution ?? false,
-      hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
       pointsMultiplier: pointsMultiplier ?? 1,
-      displayMode: displayMode ?? undefined,
-      options: options || {},
+      options: {
+        ...options,
+        displayMode: options?.displayMode ?? DB.ElementDisplayMode.LIST,
+        hasSampleSolution: options?.hasSampleSolution ?? false,
+        hasAnswerFeedbacks: options?.hasAnswerFeedbacks ?? false,
+        accuracy: options?.accuracy ?? undefined,
+        placeholder: options?.placeholder ?? undefined,
+        restrictions: {
+          ...options?.restrictions,
+          min: options?.restrictions?.min ?? undefined,
+          max: options?.restrictions?.max ?? undefined,
+        },
+      },
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -180,11 +188,22 @@ export async function manipulateQuestion(
       name: name ?? undefined,
       content: content ?? undefined,
       explanation: explanation ?? undefined,
-      hasSampleSolution: hasSampleSolution ?? false,
-      hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
       pointsMultiplier: pointsMultiplier ?? 1,
-      options: options ?? undefined,
-      displayMode: displayMode ?? undefined,
+      options: options
+        ? {
+            ...options,
+            displayMode: options?.displayMode ?? DB.ElementDisplayMode.LIST,
+            hasSampleSolution: options?.hasSampleSolution ?? false,
+            hasAnswerFeedbacks: options?.hasAnswerFeedbacks ?? false,
+            accuracy: options?.accuracy ?? undefined,
+            placeholder: options?.placeholder ?? undefined,
+            restrictions: {
+              ...options?.restrictions,
+              min: options?.restrictions?.min ?? undefined,
+              max: options?.restrictions?.max ?? undefined,
+            },
+          }
+        : undefined,
       tags: {
         connectOrCreate: tags
           ?.filter((tag: string) => tag !== '')

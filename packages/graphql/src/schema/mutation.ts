@@ -44,7 +44,7 @@ import {
   ResponseInput,
   Tag,
 } from './question'
-import { ElementType, QuestionDisplayMode } from './questionData'
+import { ElementType } from './questionData'
 import {
   BlockInput,
   ConfusionTimestep,
@@ -729,9 +729,6 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
-          displayMode: t.arg({ required: false, type: QuestionDisplayMode }),
-          hasSampleSolution: t.arg.boolean({ required: false }),
-          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
@@ -752,8 +749,6 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
-          hasSampleSolution: t.arg.boolean({ required: false }),
-          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
@@ -774,8 +769,6 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
-          hasSampleSolution: t.arg.boolean({ required: false }),
-          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
