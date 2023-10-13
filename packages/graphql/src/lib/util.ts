@@ -33,7 +33,9 @@ export function checkCronToken(ctx: Context) {
 }
 
 export function formatDate(dateTime: Date) {
-  let date = dayjs(dateTime).utc().tz(process.env.TZ ?? 'Europe/Zurich')
+  let date = dayjs(dateTime)
+    .utc()
+    .tz(process.env.TZ ?? 'Europe/Zurich')
 
   return {
     date: `${date.format('DD')}.${date.format('MM')}.${date.format('YYYY')}`,

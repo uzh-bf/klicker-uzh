@@ -12,8 +12,8 @@ import { faArchive, faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
-  GetUserQuestionsDocument,
   ElementType,
+  GetUserQuestionsDocument,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
