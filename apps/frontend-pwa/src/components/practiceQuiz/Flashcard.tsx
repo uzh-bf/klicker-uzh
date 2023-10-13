@@ -2,6 +2,8 @@ import { Button } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+// TODO: internationalization of text
+
 interface FlashcardProps {
   content: string
   explanation: string
@@ -11,7 +13,7 @@ function Flashcard({ content, explanation }: FlashcardProps) {
   const [isFlipped, setIsFlipped] = useState(false)
 
   const handleFlip = () => {
-    setIsFlipped(!isFlipped)
+    setIsFlipped((prev) => !prev)
   }
 
   return (
