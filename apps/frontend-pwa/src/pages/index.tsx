@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import Flashcard from '@components/flashcards/Flashcards'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookOpenReader,
@@ -296,10 +295,6 @@ const Index = function () {
         {userInfo && <UserNotification type="info" message={userInfo} />}
         {/* <SurveyPromotion courseId={courses?.[0]?.id} /> */}
       </div>
-      <Flashcard
-        content="This is a question"
-        explanation="This is the explanation"
-      />
     </Layout>
   )
 }

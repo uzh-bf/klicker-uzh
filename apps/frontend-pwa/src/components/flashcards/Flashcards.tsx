@@ -13,8 +13,6 @@ function Flashcard({ content, explanation }: FlashcardProps) {
   const handleFlip = () => {
     setIsFlipped(!isFlipped)
   }
-  const contentt =
-    'This is the content. It is a bit longer, so it should still fit as the box is intended to grow'
 
   return (
     <div
@@ -31,20 +29,14 @@ function Flashcard({ content, explanation }: FlashcardProps) {
         }}
         onClick={handleFlip}
       >
-        <FlashcardFront content={contentt} isFlipped={isFlipped} />
-        <FlashcardBack explanation={explanation} isFlipped={isFlipped} />
+        <FlashcardFront content={content} />
+        <FlashcardBack explanation={explanation} />
       </div>
     </div>
   )
 }
 
-const FlashcardFront = ({
-  content,
-  isFlipped,
-}: {
-  content: string
-  isFlipped: boolean
-}) => (
+const FlashcardFront = ({ content }: { content: string }) => (
   <div
     className="absolute flex items-center justify-center w-full h-full p-4"
     style={{ backfaceVisibility: 'hidden' }}
@@ -53,15 +45,8 @@ const FlashcardFront = ({
   </div>
 )
 
-const FlashcardBack = ({
-  explanation,
-  isFlipped,
-}: {
-  explanation: string
-  isFlipped: boolean
-}) => (
+const FlashcardBack = ({ explanation }: { explanation: string }) => (
   <div
-    // className="absolute flex flex-col w-full h-full p-4"
     className="absolute flex flex-col items-center justify-center w-full h-full p-4"
     style={{ transform: 'rotateY(180deg)', backfaceVisibility: 'hidden' }}
   >
