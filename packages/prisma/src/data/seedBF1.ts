@@ -102,6 +102,8 @@ async function seed(prisma: Prisma.PrismaClient) {
   Für die Berechnung erhaltet ihr den folgenden Tipp:
 
   - Bezieht euch auf die Entwicklung der letzten 2 Jahre und konsultiert die konsolidierte Bilanz in den Geschäftsberichten der Unternehmen.
+
+  ![](https://klickeruzhprodimages.blob.core.windows.net/b7e21ad0-dcf6-4277-9b06-a3eb1d03147c/f177ef8f-e280-4baa-88d8-d446acfe7ee0.png)
   `,
       status: 'PUBLISHED',
       scheduledStartAt: new Date('2023-10-16T13:45:00.000Z'),
