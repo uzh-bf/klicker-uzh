@@ -1881,6 +1881,9 @@ importers:
       '@prisma/client':
         specifier: 5.3.1
         version: 5.3.1(prisma@5.3.1)
+      xml2js:
+        specifier: 0.6.2
+        version: 0.6.2
     devDependencies:
       '@pothos/plugin-prisma':
         specifier: 3.60.0
@@ -1903,6 +1906,9 @@ importers:
       '@types/ramda':
         specifier: ^0.29.3
         version: 0.29.3
+      '@types/xml-js':
+        specifier: ^1.0.0
+        version: 1.0.0
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -1948,6 +1954,9 @@ importers:
       tsup:
         specifier: 7.2.0
         version: 7.2.0(ts-node@10.9.1)(typescript@5.1.6)
+      turndown:
+        specifier: 7.1.2
+        version: 7.1.2
       typescript:
         specifier: 5.1.6
         version: 5.1.6
@@ -2814,6 +2823,7 @@ packages:
   /@azure/identity@3.3.0:
     resolution: {integrity: sha512-gISa/dAAxrWt6F2WiDXZY0y2xY4MLlN2wkNW4cPuq5OgPQKLSkxLc4I2WR04puTfZyQZnpXbAapAMEj1b96fgg==}
     engines: {node: '>=14.0.0'}
+    deprecated: Please upgrade to the latest version of this package to get necessary fixes
     dependencies:
       '@azure/abort-controller': 1.1.0
       '@azure/core-auth': 1.5.0
@@ -11238,6 +11248,13 @@ packages:
     dependencies:
       '@types/node': 18.17.14
 
+  /@types/xml-js@1.0.0:
+    resolution: {integrity: sha512-tRJYQN/uAD8Br9K+pqqzJNd/htIxQaFy6ppfNEWbwsAoWRK3oAxzROCGA39GHT+E3BHLyuBnSB7XKsnJ0s4w2g==}
+    deprecated: This is a stub types definition for xml-js (https://github.com/nashwaan/xml-js). xml-js provides its own type definitions, so you don't need @types/xml-js installed!
+    dependencies:
+      xml-js: 1.6.11
+    dev: true
+
   /@types/yargs-parser@21.0.0:
     resolution: {integrity: sha512-iO9ZQHkZxHn4mSakYV0vFHAVDyEOIJQrV2uZ06HxEPcx+mt8swXoZHIbaaJ2crJYFfErySgktuTZ3BeLz+XmFA==}
 
@@ -15044,6 +15061,10 @@ packages:
     engines: {node: '>= 4'}
     dependencies:
       domelementtype: 2.3.0
+
+  /domino@2.1.6:
+    resolution: {integrity: sha512-3VdM/SXBZX2omc9JF9nOPCtDaYQ67BGp5CoLpIQlO2KCAPETs8TcDHacF26jXadGbvUteZzRTeos2fhID5+ucQ==}
+    dev: true
 
   /domutils@2.8.0:
     resolution: {integrity: sha512-w96Cjofp72M5IIhpjgobBimYEfoPjx1Vx0BSX9P30WBdZW2WIKU0T1Bd0kz2eNZ9ikjKgHbEyKx8BB6H1L3h3A==}
@@ -26265,6 +26286,12 @@ packages:
       turbo-windows-arm64: 1.10.14
     dev: true
 
+  /turndown@7.1.2:
+    resolution: {integrity: sha512-ntI9R7fcUKjqBP6QU8rBK2Ehyt8LAzt3UBT9JR9tgo6GtuKvyUzpayWmeMKJw1DPdXzktvtIT8m2mVXz+bL/Qg==}
+    dependencies:
+      domino: 2.1.6
+    dev: true
+
   /tweetnacl@0.14.5:
     resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
     dev: true
@@ -27643,7 +27670,6 @@ packages:
     hasBin: true
     dependencies:
       sax: 1.2.4
-    dev: false
 
   /xml2js@0.5.0:
     resolution: {integrity: sha512-drPFnkQJik/O+uPKpqSgr22mpuFHqKdbS835iAQrUC73L2F5WkboIRd63ai/2Yg6I1jzifPFKH2NTK+cfglkIA==}
@@ -27651,6 +27677,14 @@ packages:
     dependencies:
       sax: 1.2.4
       xmlbuilder: 11.0.1
+
+  /xml2js@0.6.2:
+    resolution: {integrity: sha512-T4rieHaC1EXcES0Kxxj4JWgaUQHDk+qwHcYOCFHfiwKz7tOVPLq7Hjq9dM1WCMhylqMEfP7hMcOIChvotiZegA==}
+    engines: {node: '>=4.0.0'}
+    dependencies:
+      sax: 1.2.4
+      xmlbuilder: 11.0.1
+    dev: false
 
   /xmlbuilder@11.0.1:
     resolution: {integrity: sha512-fDlsI/kFEx7gLvbecc0/ohLG50fugQp8ryHzMTuW9vSa1GJ0XYWKnhsUx7oie3G98+r56aTQIUB4kht42R3JvA==}

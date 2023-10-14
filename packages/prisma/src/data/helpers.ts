@@ -232,10 +232,14 @@ export function prepareQuestionInstance({
     }
 
     case Prisma.ElementType.NUMERICAL:
-    case Prisma.ElementType.FREE_TEXT: {
+    case Prisma.ElementType.FREE_TEXT:
+    case Prisma.ElementType.CONTENT:
+    case Prisma.ElementType.FLASHCARD: {
       return {
         ...common,
-        results: {},
+        results: {
+          participants: 0,
+        },
       }
     }
   }
@@ -257,6 +261,120 @@ interface StackData {
 }
 
 export async function prepareLearningElement({
+  stacks,
+  ...args
+}: {
+  id: string
+  name: string
+  displayName: string
+  description?: string
+  pointsMultiplier?: number
+  resetTimeDays?: number
+  orderType?: Prisma.OrderType
+  ownerId: string
+  courseId: string
+  stacks: StackData[]
+  status?: Prisma.LearningElementStatus
+}) {
+  return {
+    where: {
+      id: args.id,
+    },
+    create: {
+      id: args.id,
+      name: args.name,
+      displayName: args.displayName,
+      description: args.description,
+      pointsMultiplier: args.pointsMultiplier,
+      resetTimeDays: args.resetTimeDays,
+      status: args.status,
+      orderType: args.orderType,
+      owner: {
+        connect: {
+          id: args.ownerId,
+        },
+      },
+      course: {
+        connect: {
+          id: args.courseId,
+        },
+      },
+      stacks: {
+        create: await Promise.all(
+          stacks.map(async (stack, ix) => ({
+            type: QuestionStackType.LEARNING_ELEMENT,
+            order: ix,
+            displayName: stack.displayName,
+            description: stack.description,
+            elements: {
+              create: stack.elements.map((element, ixInner) => {
+                if (typeof element === 'string') {
+                  return { order: ixInner, mdContent: element }
+                }
+                return {
+                  order: ixInner,
+                  questionInstance: {
+                    create: prepareQuestionInstance({
+                      order: 0,
+                      question: element,
+                      pointsMultiplier: args.pointsMultiplier
+                        ? args.pointsMultiplier * element.pointsMultiplier
+                        : undefined,
+                      resetTimeDays: args.resetTimeDays,
+                      type: QuestionInstanceType.LEARNING_ELEMENT,
+                    }),
+                  },
+                }
+              }),
+            },
+          }))
+        ),
+      },
+    },
+    update: {
+      name: args.name,
+      displayName: args.displayName,
+      description: args.description,
+      pointsMultiplier: args.pointsMultiplier,
+      resetTimeDays: args.resetTimeDays,
+      status: args.status,
+      orderType: args.orderType,
+      stacks: {
+        create: await Promise.all(
+          stacks.map(async (stack, ix) => ({
+            type: QuestionStackType.LEARNING_ELEMENT,
+            order: ix,
+            displayName: stack.displayName,
+            description: stack.description,
+            elements: {
+              create: stack.elements.map((element, ixInner) => {
+                if (typeof element === 'string') {
+                  return { order: ixInner, mdContent: element }
+                }
+                return {
+                  order: ixInner,
+                  questionInstance: {
+                    create: prepareQuestionInstance({
+                      order: 0,
+                      question: element,
+                      pointsMultiplier: args.pointsMultiplier
+                        ? args.pointsMultiplier * element.pointsMultiplier
+                        : undefined,
+                      resetTimeDays: args.resetTimeDays,
+                      type: QuestionInstanceType.LEARNING_ELEMENT,
+                    }),
+                  },
+                }
+              }),
+            },
+          }))
+        ),
+      },
+    },
+  }
+}
+
+export async function preparePracticeQuiz({
   stacks,
   ...args
 }: {
