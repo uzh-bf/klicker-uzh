@@ -4,12 +4,15 @@ import { parseStringPromise } from 'xml2js'
 
 import path from 'path'
 import { fileURLToPath } from 'url'
-import Prisma, { ElementType } from '../../dist'
+import Prisma, { ElementStackType, ElementType } from '../../dist'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
+
+  // TODO: change these IDs for production seeding
+  const USER_ID = USER_ID_TEST
 
   const xmlData = fs.readFileSync(
     path.join(__dirname, 'data/FC_Modul_1.xml'),
@@ -32,8 +35,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
         content: turndown.turndown(card.question[0].text[0].trim()),
         explanation: turndown.turndown(card.answer[0].text[0].trim()),
         type: ElementType.FLASHCARD,
-        options: null,
-        ownerId: USER_ID_TEST,
+        options: {},
       })),
       // ... other practice quiz properties
     }
@@ -41,23 +43,44 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
   const quizInfo = extractQuizInfo(xmlDoc)
 
-  console.log(quizInfo.elements[0])
+  console.log(quizInfo.elements)
 
-  const elementsFC = await Promise.all(
-    quizInfo.elements.map((data) =>
-      prismaClient.element.upsert({
+  const elementsFC = await Promise.allSettled(
+    quizInfo.elements.map(async (data) => {
+      const flashcard = await prismaClient.element.upsert({
         where: {
           originalId: data.originalId,
         },
         create: {
           ...data,
+          owner: {
+            connect: {
+              id: USER_ID,
+            },
+          },
         },
         update: {
           ...data,
+          owner: {
+            connect: {
+              id: USER_ID,
+            },
+          },
         },
       })
-    )
+
+      return flashcard
+    })
   )
+
+  console.log('seeded elements', elementsFC)
+
+  if (elementsFC.some((el) => el.status === 'rejected')) {
+    throw new Error(
+      'Failed to seed some flashcards flashcards and cannot create practice quiz from them'
+    )
+    return null
+  }
 
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
     where: {
@@ -68,27 +91,32 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
       name: quizInfo.title,
       displayName: quizInfo.title,
       description: quizInfo.description,
-      ownerId: USER_ID_TEST,
+      ownerId: USER_ID,
       courseId: COURSE_ID_TEST,
       stacks: {
         create: elementsFC.map((el, ix) => ({
           order: ix,
-          elementStackType: 'PRACTICE_QUIZ',
+          elementStackType: ElementStackType.PRACTICE_QUIZ,
           options: {},
           elements: {
             create: {
               data: [
                 {
                   order: ix,
-                  type: 'PRACTICE_QUIZ',
-                  elementId: el.id,
-                  elementType: 'FLASHCARD',
+                  type: ElementStackType.PRACTICE_QUIZ,
+                  elementType: ElementType.FLASHCARD,
+                  // TODO: pick only relevant properties of the element
                   elementData: el,
                   options: null,
                   results: {},
                   owner: {
                     connect: {
-                      id: USER_ID_TEST,
+                      id: USER_ID,
+                    },
+                  },
+                  element: {
+                    connect: {
+                      id: el.id,
                     },
                   },
                 },
