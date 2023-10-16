@@ -17,6 +17,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
   // TODO: change these IDs for production seeding
   const USER_ID = USER_ID_TEST
+  const COURSE_ID = COURSE_ID_TEST
 
   const xmlData = fs.readFileSync(
     path.join(__dirname, 'data/FC_Modul_1.xml'),
@@ -93,7 +94,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
       displayName: quizInfo.title,
       description: quizInfo.description,
       ownerId: USER_ID,
-      courseId: COURSE_ID_TEST,
+      courseId: COURSE_ID,
       stacks: {
         create: elementsFC.map((el, ix) => ({
           order: ix,
@@ -120,10 +121,41 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
       },
     },
     update: {},
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
   })
 
-  // TODO: attach all element instances from the practice quiz directly to the course
-  // TODO: practice interface shows all of the instances attached to the course
+  console.log('successfully created practice quiz with id:', practiceQuiz.id)
+
+  const elementInstanceIds = practiceQuiz.stacks.flatMap((stack) =>
+    stack.elements.flatMap((instance) => instance.id)
+  )
+
+  // attach all element instances from the practice quiz directly to the course for repetition interface
+  const course = await prismaClient.course.update({
+    where: {
+      id: COURSE_ID,
+    },
+    data: {
+      elementInstances: {
+        connect: elementInstanceIds.map((id) => ({
+          id,
+        })),
+      },
+    },
+  })
+
+  console.log(
+    'successfully attached',
+    elementInstanceIds.length,
+    'element instances to course with id:',
+    course.id
+  )
 
   return elementsFC
 }
