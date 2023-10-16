@@ -1,4 +1,5 @@
-import Prisma, { Element } from '../../dist'
+import Prisma from '../../dist'
+import { Element } from '../client'
 import {
   COURSE_ID_TEST,
   USER_ID_TEST,
@@ -106,6 +107,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     orderBy: { id: 'desc' },
   })
 
+  console.log('questionCount', questionCount?.id)
+
+  // TODO: fix sequence syncing
   await prisma.$executeRawUnsafe(
     `ALTER SEQUENCE "Question_id_seq" RESTART WITH ${
       questionCount?.id ?? -1 + 1

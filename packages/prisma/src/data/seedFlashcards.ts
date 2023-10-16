@@ -4,7 +4,8 @@ import { parseStringPromise } from 'xml2js'
 
 import path from 'path'
 import { fileURLToPath } from 'url'
-import Prisma, { ElementStackType, ElementType } from '../../dist'
+import Prisma from '../../dist'
+import { ElementInstanceType, ElementStackType, ElementType } from '../client'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
@@ -68,7 +69,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
           },
         },
       })
-
+      console.log(`id: ${flashcard.id}, originalId: ${flashcard.originalId}`)
       return flashcard
     })
   )
@@ -77,7 +78,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
   if (elementsFC.some((el) => el.status === 'rejected')) {
     throw new Error(
-      'Failed to seed some flashcards flashcards and cannot create practice quiz from them'
+      'Failed to seed some flashcards and cannot create practice quiz from them'
     )
     return null
   }
@@ -96,17 +97,17 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
       stacks: {
         create: elementsFC.map((el, ix) => ({
           order: ix,
-          elementStackType: ElementStackType.PRACTICE_QUIZ,
+          type: ElementStackType.PRACTICE_QUIZ,
           options: {},
           elements: {
             create: {
               data: [
                 {
                   order: ix,
-                  type: ElementStackType.PRACTICE_QUIZ,
+                  type: ElementInstanceType.PRACTICE_QUIZ,
                   elementType: ElementType.FLASHCARD,
                   // TODO: pick only relevant properties of the element
-                  elementData: el,
+                  elementData: el.value,
                   options: null,
                   results: {},
                   owner: {
@@ -116,7 +117,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
                   },
                   element: {
                     connect: {
-                      id: el.id,
+                      id: el.value.id,
                     },
                   },
                 },
