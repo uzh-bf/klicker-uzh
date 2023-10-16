@@ -119,7 +119,7 @@ export function prepareQuestion({
   options,
   ...args
 }: {
-  id: number
+  originalId: string
   name: string
   content: string
   type: Prisma.ElementType
@@ -151,7 +151,7 @@ export function prepareQuestion({
 
     return {
       where: {
-        id: args.id,
+        originalId: args.originalId,
       },
       create: data,
       update: data,
@@ -166,7 +166,7 @@ export function prepareQuestion({
 
   return {
     where: {
-      id: args.id,
+      originalId: args.originalId,
     },
     create: data,
     update: data,

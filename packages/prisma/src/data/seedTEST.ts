@@ -103,19 +103,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     )
   )) as Element[]
 
-  const questionCount = await prisma.element.findFirst({
-    orderBy: { id: 'desc' },
-  })
-
-  console.log('questionCount', questionCount?.id)
-
-  // TODO: fix sequence syncing
-  await prisma.$executeRawUnsafe(
-    `ALTER SEQUENCE "Question_id_seq" RESTART WITH ${
-      questionCount?.id ?? -1 + 1
-    }`
-  )
-
   const learningElementsTest = await Promise.all(
     DATA_TEST.LEARNING_ELEMENTS.map(async (data) =>
       prisma.learningElement.upsert(
@@ -128,7 +115,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
               ...stack,
               elements: stack.elements.map((element) => {
                 if (typeof element !== 'string') {
-                  return questionsTest.find((q) => q.id === element) as Element
+                  return questionsTest.find(
+                    (q) => parseInt(q.originalId!) === element
+                  ) as Element
                 }
                 return element
               }),
@@ -148,7 +137,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             ...block,
             order: ix,
             questions: questionsTest
-              .filter((q) => block.questions.includes(q.id))
+              .filter((q) => block.questions.includes(parseInt(q.originalId!)))
               .map(async (q) => q),
           })),
           ownerId: USER_ID_TEST,
@@ -167,7 +156,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           courseId: COURSE_ID_TEST,
           status: Prisma.MicroSessionStatus.PUBLISHED,
           questions: questionsTest
-            .filter((q) => data.questions.includes(q.id))
+            .filter((q) => data.questions.includes(parseInt(q.originalId!)))
             .map(async (q) => q),
         })
       )
@@ -210,7 +199,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         connectOrCreate: await Promise.all(
           [0].map(async (qId, ix) => {
             const question = await prisma.element.findUnique({
-              where: { id: qId },
+              where: { originalId: String(qId) },
             })
 
             return {

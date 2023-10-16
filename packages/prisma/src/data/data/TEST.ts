@@ -4,7 +4,7 @@ const { ElementType, SessionStatus, OrderType } = Prisma
 
 export const QUESTIONS = [
   {
-    id: 0,
+    originalId: '0',
     name: 'Testfrage FREE_TEXT',
     content:
       'Beantworte mich korrekt, richtig, oder genau. Ansonsten bekommst du keine Punkte!',
@@ -20,7 +20,7 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 1,
+    originalId: '1',
     name: 'Testfrage MC',
     content: 'Wähle 2 und 3, denn sonst ist es vorbei.',
     explanation: 'MC generische Erklärung, warum diese Frage richtig ist.',
@@ -62,7 +62,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 2,
+    originalId: '2',
     name: 'Testfrage NUMERICAL',
     content: 'Wie viel würdest du in Aktien anlegen? Beni mag 17%.',
     explanation: 'NR generische Erklärung, warum diese Frage richtig ist.',
@@ -91,7 +91,7 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 3,
+    originalId: '3',
     name: 'Multi-Faktor-Modell',
     content: '<br>',
     type: ElementType.KPRIM,
@@ -126,7 +126,7 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 4,
+    originalId: '4',
     name: 'Modul 4 Business Cycle I',
     content:
       'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',

@@ -4,8 +4,11 @@ import { parseStringPromise } from 'xml2js'
 
 import path from 'path'
 import { fileURLToPath } from 'url'
-import Prisma from '../../dist'
-import { ElementInstanceType, ElementStackType, ElementType } from '../client'
+import Prisma, {
+  ElementInstanceType,
+  ElementStackType,
+  ElementType,
+} from '../../dist'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
@@ -69,18 +72,17 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
           },
         },
       })
+      // TODO: remove debugging output
       console.log(`id: ${flashcard.id}, originalId: ${flashcard.originalId}`)
       return flashcard
     })
   )
 
+  // TODO: remove debugging content
   console.log('seeded elements', elementsFC)
 
   if (elementsFC.some((el) => el.status === 'rejected')) {
-    throw new Error(
-      'Failed to seed some flashcards and cannot create practice quiz from them'
-    )
-    return null
+    throw new Error('Failed to seed some flashcard elements')
   }
 
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
