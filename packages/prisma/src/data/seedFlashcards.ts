@@ -47,8 +47,6 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
   const quizInfo = extractQuizInfo(xmlDoc)
 
-  console.log(quizInfo.elements)
-
   const elementsFC = await Promise.allSettled(
     quizInfo.elements.map(async (data) => {
       const flashcard = await prismaClient.element.upsert({
@@ -72,14 +70,14 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
           },
         },
       })
-      // TODO: remove debugging output
-      console.log(`id: ${flashcard.id}, originalId: ${flashcard.originalId}`)
       return flashcard
     })
   )
 
-  // TODO: remove debugging content
-  console.log('seeded elements', elementsFC)
+  console.log(
+    'created elements with value structure and status value: ',
+    elementsFC[0]
+  )
 
   if (elementsFC.some((el) => el.status === 'rejected')) {
     throw new Error('Failed to seed some flashcard elements')
@@ -102,7 +100,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
           type: ElementStackType.PRACTICE_QUIZ,
           options: {},
           elements: {
-            create: {
+            createMany: {
               data: [
                 {
                   order: ix,
@@ -110,18 +108,10 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
                   elementType: ElementType.FLASHCARD,
                   // TODO: pick only relevant properties of the element
                   elementData: el.value,
-                  options: null,
+                  options: {},
                   results: {},
-                  owner: {
-                    connect: {
-                      id: USER_ID,
-                    },
-                  },
-                  element: {
-                    connect: {
-                      id: el.value.id,
-                    },
-                  },
+                  ownerId: el.value.ownerId,
+                  elementId: el.value.id,
                 },
               ],
             },
@@ -131,8 +121,6 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
     },
     update: {},
   })
-
-  console.log(practiceQuiz)
 
   // TODO: attach all element instances from the practice quiz directly to the course
   // TODO: practice interface shows all of the instances attached to the course
