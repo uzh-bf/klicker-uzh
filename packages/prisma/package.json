@@ -8,7 +8,8 @@
     "dist"
   ],
   "dependencies": {
-    "@prisma/client": "5.3.1"
+    "@prisma/client": "5.3.1",
+    "xml2js": "0.6.2"
   },
   "devDependencies": {
     "@pothos/plugin-prisma": "3.60.0",
@@ -18,6 +19,7 @@
     "@types/bcryptjs": "^2.4.2",
     "@types/node": "^18.17.4",
     "@types/ramda": "^0.29.3",
+    "@types/xml-js": "^1.0.0",
     "bcryptjs": "2.4.3",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
@@ -33,6 +35,7 @@
     "size-limit": "8.2.4",
     "ts-node": "10.9.1",
     "tsup": "7.2.0",
+    "turndown": "7.1.2",
     "typescript": "5.1.6",
     "uuidv4": "6.2.13"
   },
@@ -71,6 +74,7 @@
     "prisma:studio:raw": "prisma studio --schema=src/prisma/schema.prisma",
     "seed": "ENV=development doppler run --config dev -- run-s build seed:test",
     "seed:achievements": "ENV=development doppler run --config dev -- ts-node --esm --experimental-specifier-resolution=node src/data/seedAchievements.ts",
+    "seed:flashcards": "ENV=development doppler run --config dev -- ts-node --esm --experimental-specifier-resolution=node src/data/seedFlashcards.ts",
     "seed:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config dev -- ts-node --esm --experimental-specifier-resolution=node src/data/importQuestions.ts",
     "seed:mockExamPoints": "ENV=production doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/parseMockExamPoints.ts",
     "seed:prod": "ENV=production doppler run --config prd -- npm-run-all seed:prod:bf1 seed:prod:ami",

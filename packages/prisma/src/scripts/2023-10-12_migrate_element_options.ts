@@ -14,9 +14,11 @@ async function migrate() {
         data: {
           options: {
             ...elem.options,
-            displayMode: elem.displayMode,
-            hasSampleSolution: elem.hasSampleSolution,
-            hasAnswerFeedbacks: elem.hasAnswerFeedbacks,
+            displayMode: elem.options?.displayMode ?? elem.displayMode,
+            hasSampleSolution:
+              elem.options?.hasSampleSolution ?? elem.hasSampleSolution,
+            hasAnswerFeedbacks:
+              elem.options?.hasAnswerFeedbacks ?? elem.hasAnswerFeedbacks,
           },
         },
       })
