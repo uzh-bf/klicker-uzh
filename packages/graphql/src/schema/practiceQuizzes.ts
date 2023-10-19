@@ -38,7 +38,7 @@ export const ElementInstance = ElementInstanceRef.implement({
 })
 
 export interface IElementStack extends DB.ElementStack {
-  elementInstances?: IElementInstance[] | null
+  elements?: IElementInstance[] | null
 }
 export const ElementStackRef = builder.objectRef<IElementStack>('ElementStack')
 export const ElementStack = ElementStackRef.implement({
@@ -48,7 +48,7 @@ export const ElementStack = ElementStackRef.implement({
     displayName: t.exposeString('displayName', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
     order: t.exposeInt('order', { nullable: true }),
-    elementInstances: t.expose('elementInstances', {
+    elements: t.expose('elements', {
       type: [ElementInstanceRef],
       nullable: true,
     }),

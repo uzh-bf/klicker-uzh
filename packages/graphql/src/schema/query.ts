@@ -7,6 +7,7 @@ import * as ParticipantGroupService from '../services/groups'
 import * as LearningElementService from '../services/learningElements'
 import * as MicroSessionService from '../services/microLearning'
 import * as ParticipantService from '../services/participants'
+import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
@@ -264,6 +265,18 @@ export const Query = builder.queryType({
         type: [LearningElement],
         resolve(_, __, ctx) {
           return CourseService.getUserLearningElements(ctx)
+        },
+      }),
+
+      practiceQuiz: t.field({
+        nullable: true,
+        type: PracticeQuiz,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          // FIXME by fixing type issues in LearningElementService
+          return PracticeQuizService.getPracticeQuizData(args, ctx) as any
         },
       }),
 

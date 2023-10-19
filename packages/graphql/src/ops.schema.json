@@ -1927,7 +1927,7 @@
             "deprecationReason": null
           },
           {
-            "name": "elementInstances",
+            "name": "elements",
             "description": null,
             "args": [],
             "type": {
@@ -11326,6 +11326,35 @@
             "type": {
               "kind": "OBJECT",
               "name": "Session",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "practiceQuiz",
+            "description": null,
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "PracticeQuiz",
               "ofType": null
             },
             "isDeprecated": false,

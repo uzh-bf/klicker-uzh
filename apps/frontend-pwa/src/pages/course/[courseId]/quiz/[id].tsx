@@ -1,8 +1,5 @@
 import { useQuery } from '@apollo/client'
-import {
-  GetLearningElementDocument,
-  LearningElement as LearningElementType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetPracticeQuizDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
@@ -12,7 +9,6 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Layout from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
-import LearningElement from '../../../../components/learningElements/LearningElement'
 
 interface Props {
   courseId: string
@@ -20,14 +16,16 @@ interface Props {
 }
 
 // TODO: complete implementation of free text questions
-function LearningElementPage({ courseId, id }: Props) {
+function PracticeQuizPage({ courseId, id }: Props) {
   const t = useTranslations()
 
   const [currentIx, setCurrentIx] = useState(-1)
 
-  const { loading, error, data } = useQuery(GetLearningElementDocument, {
+  const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
     variables: { id },
   })
+
+  console.log('practiceQuiz: ', data?.practiceQuiz)
 
   if (loading)
     return (
@@ -36,7 +34,7 @@ function LearningElementPage({ courseId, id }: Props) {
       </Layout>
     )
 
-  if (!data?.learningElement) {
+  if (!data?.practiceQuiz) {
     return (
       <Layout>
         <UserNotification
@@ -57,15 +55,15 @@ function LearningElementPage({ courseId, id }: Props) {
 
   return (
     <Layout
-      displayName={data.learningElement.displayName}
-      course={data.learningElement.course ?? undefined}
+      displayName={data.practiceQuiz.displayName}
+      course={data.practiceQuiz.course ?? undefined}
     >
-      <LearningElement
+      {/* <LearningElement
         element={data.learningElement as LearningElementType}
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
         handleNextQuestion={handleNextQuestion}
-      />
+      /> */}
       <Footer
         browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/element/${id}`}
       />
@@ -103,4 +101,4 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   })
 }
 
-export default LearningElementPage
+export default PracticeQuizPage

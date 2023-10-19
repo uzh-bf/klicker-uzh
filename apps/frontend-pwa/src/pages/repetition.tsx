@@ -54,7 +54,7 @@ function Repetition() {
         {practiceQuizzesData?.practiceQuizzes?.map((practiceQuiz) => (
           <Link
             key={practiceQuiz.id}
-            href={`/course/${practiceQuiz.courseId}/element/${practiceQuiz.id}`}
+            href={`/course/${practiceQuiz.courseId}/quiz/${practiceQuiz.id}`}
             legacyBehavior
           >
             <Button

@@ -173,7 +173,7 @@ type ElementInstance {
 type ElementStack {
   description: String
   displayName: String
-  elementInstances: [ElementInstance!]
+  elements: [ElementInstance!]
   id: Int!
   order: Int
   type: ElementStackType!
@@ -727,6 +727,7 @@ type Query {
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
+  practiceQuiz(id: String!): PracticeQuiz
   practiceQuizzes: [PracticeQuiz!]
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element

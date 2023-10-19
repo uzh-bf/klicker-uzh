@@ -1,8 +1,5 @@
 import { useQuery } from '@apollo/client'
-import {
-  GetLearningElementDocument,
-  LearningElement as LearningElementType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { LearningElement as LearningElementType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
@@ -25,7 +22,7 @@ function LearningElementPage({ courseId, id }: Props) {
 
   const [currentIx, setCurrentIx] = useState(-1)
 
-  const { loading, error, data } = useQuery(GetLearningElementDocument, {
+  const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
     variables: { id },
   })
 
