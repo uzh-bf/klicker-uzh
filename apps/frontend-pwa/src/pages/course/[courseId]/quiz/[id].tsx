@@ -19,7 +19,6 @@ interface Props {
   id: string
 }
 
-// TODO: complete implementation of free text questions
 function PracticeQuizPage({ courseId, id }: Props) {
   const t = useTranslations()
 

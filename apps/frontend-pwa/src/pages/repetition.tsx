@@ -17,8 +17,6 @@ function Repetition() {
   const { data: practiceQuizzesData } = useQuery(GetPracticeQuizzesDocument)
   const t = useTranslations()
 
-  console.log('practiceQuizzes: ', practiceQuizzesData?.practiceQuizzes)
-
   return (
     <Layout
       course={{ displayName: 'KlickerUZH' }}

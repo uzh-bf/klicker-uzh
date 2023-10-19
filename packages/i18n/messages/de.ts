@@ -441,6 +441,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       missingParticipation:
         'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
+    practiceQuiz: {
+      studentFlashcardResponse: 'Haben Sie die Antwort gewusst?',
+      flashcardNoResponse: 'Nein',
+      flashcardPartialResponse: 'Teilweise',
+      flashcardYesResponse: 'Ja',
+    },
     microSession: {
       notFound:
         'Unter diesem Link existiert keine Micro-Session oder diese ist noch nicht aktiv.',

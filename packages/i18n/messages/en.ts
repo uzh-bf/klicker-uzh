@@ -442,6 +442,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       missingParticipation:
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
     },
+    practiceQuiz: {
+      studentFlashcardResponse: 'Did you know the answer?',
+      flashcardNoResponse: 'No',
+      flashcardPartialResponse: 'Partially',
+      flashcardYesResponse: 'Yes',
+    },
     microSession: {
       notFound:
         'The corresponding microlearning is either not available or not yet active.',
