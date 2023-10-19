@@ -4,7 +4,6 @@ export async function getPracticeQuizData(
   { id }: { id: string },
   ctx: Context
 ) {
-  console.log('practice quiz id: ', id)
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,

@@ -28,6 +28,7 @@ function PracticeQuizPage({ courseId, id }: Props) {
     variables: { id },
   })
 
+  // TODO: remove logging
   console.log('practiceQuiz: ', data?.practiceQuiz)
 
   if (loading)
