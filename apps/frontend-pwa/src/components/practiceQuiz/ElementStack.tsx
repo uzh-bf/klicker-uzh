@@ -37,16 +37,15 @@ function ElementStack({
   handleNextElement,
 }: ElementStackProps) {
   useEffect(() => {
-    setStudentFeedback(undefined)
+    setStudentGrading(undefined)
   }, [currentStep])
 
   // TODO: enable handling multiple elements in a stack / extend state and submission logic accordingly
   const elementInstance = stack.elements?.[0]
 
-  const [studentFeedback, setStudentFeedback] = useState<
+  const [studentGrading, setStudentGrading] = useState<
     'no' | 'partial' | 'yes' | undefined
   >(undefined)
-  console.log('student feedback: ', studentFeedback)
 
   return (
     <div>
@@ -88,21 +87,21 @@ function ElementStack({
               key={id}
               content={elementInstance.elementData.content}
               explanation={elementInstance.elementData.explanation!}
-              response={studentFeedback}
-              setResponse={setStudentFeedback}
+              response={studentGrading}
+              setResponse={setStudentGrading}
             />
           )}
       </div>
       <Button
         className={{ root: 'float-right mt-4 text-lg' }}
-        disabled={!studentFeedback}
+        disabled={!studentGrading}
         onClick={() => {
           // TODO: adapt these changes depending on the element type
           setStepStatus({
             status: 'manuallyGraded',
             score: null,
           })
-          setStudentFeedback(undefined)
+          setStudentGrading(undefined)
 
           // TODO: save student response here
 

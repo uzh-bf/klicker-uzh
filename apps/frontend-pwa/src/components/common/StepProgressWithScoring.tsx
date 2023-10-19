@@ -29,7 +29,6 @@ function StepProgressWithScoring({
   currentIx,
   setCurrentIx,
 }: StepProgressWithScoringProps) {
-  console.log(items)
   return (
     <StepProgress
       displayOffset={(items.length ?? 0) > 15 ? 3 : undefined}
