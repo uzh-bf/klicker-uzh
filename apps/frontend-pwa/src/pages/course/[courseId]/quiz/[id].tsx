@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { GetPracticeQuizDocument } from '@klicker-uzh/graphql/dist/ops'
+import PracticeQuiz from '@components/practiceQuiz/PracticeQuiz'
+import {
+  GetPracticeQuizDocument,
+  PracticeQuiz as PracticeQuizType,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import { getParticipantToken } from '@lib/token'
@@ -58,12 +62,12 @@ function PracticeQuizPage({ courseId, id }: Props) {
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
     >
-      {/* <LearningElement
-        element={data.learningElement as LearningElementType}
+      <PracticeQuiz
+        quiz={data.practiceQuiz as PracticeQuizType}
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
-        handleNextQuestion={handleNextQuestion}
-      /> */}
+        handleNextElement={handleNextQuestion}
+      />
       <Footer
         browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/element/${id}`}
       />

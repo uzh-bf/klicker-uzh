@@ -45,7 +45,7 @@ function StepProgressWithScoring({
           return {
             className,
             element: (
-              <div className="flex w-full flex-row items-center justify-between px-2">
+              <div className="flex flex-row items-center justify-between w-full px-2">
                 <div>{ix + 1}</div>
 
                 {typeof element.score !== 'undefined' &&

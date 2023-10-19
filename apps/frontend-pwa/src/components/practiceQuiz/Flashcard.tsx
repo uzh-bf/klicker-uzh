@@ -1,3 +1,4 @@
+import DynamicMarkdown from '@components/learningElements/DynamicMarkdown'
 import { Button } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -7,9 +8,16 @@ import { twMerge } from 'tailwind-merge'
 interface FlashcardProps {
   content: string
   explanation: string
+  difficulty: string
+  setDifficulty: (difficulty: string) => void
 }
 
-function Flashcard({ content, explanation }: FlashcardProps) {
+function Flashcard({
+  content,
+  explanation,
+  difficulty,
+  setDifficulty,
+}: FlashcardProps) {
   const [isFlipped, setIsFlipped] = useState(false)
 
   const handleFlip = () => {
@@ -23,52 +31,72 @@ function Flashcard({ content, explanation }: FlashcardProps) {
       )}
     >
       <div
-        className={`relative flex items-center justify-center min-h-[300px] border border-gray-300 rounded shadow-lg cursor-pointer transform-style-preserve-3d transition-transform-0_6s ${
-          isFlipped ? 'transform-rotateY-180' : 'transform-rotateY-0'
+        className={`relative flex flex-col items-center justify-between min-h-[300px] border border-gray-300 rounded shadow-lg cursor-pointer transform-style-preserve-3d transition-transform-0_6s ${
+          isFlipped ? 'transform-rotateY-180' : ''
         }`}
         onClick={handleFlip}
       >
-        <FlashcardFront content={content} />
-        <FlashcardBack explanation={explanation} />
+        {isFlipped ? (
+          <FlashcardBack
+            explanation={explanation}
+            difficulty={difficulty}
+            setDifficulty={setDifficulty}
+          />
+        ) : (
+          <FlashcardFront content={content} />
+        )}
       </div>
     </div>
   )
 }
 
 const FlashcardFront = ({ content }: { content: string }) => (
-  <div className="absolute flex items-center justify-center w-full h-full p-4 backface-hidden">
-    <div className="text-xl font-bold">{content}</div>
+  <div className="flex items-center self-center justify-center w-full h-full p-4 backface-hidden">
+    <DynamicMarkdown content={content} />
   </div>
 )
 
-const FlashcardBack = ({ explanation }: { explanation: string }) => (
-  <div className="absolute flex flex-col items-center justify-center w-full h-full p-4 transform-rotateY-180 backface-hidden">
+interface FlashcardBackProps {
+  explanation: string
+  difficulty: string
+  setDifficulty: (difficulty: string) => void
+}
+
+const FlashcardBack = ({
+  explanation,
+  difficulty,
+  setDifficulty,
+}: FlashcardBackProps) => (
+  <div className="flex flex-col items-center justify-center w-full h-full p-4 transform-rotateY-180 backface-hidden">
     <div className="flex items-center justify-center flex-1 mb-4">
-      <div className="text-lg font-semibold">{explanation}</div>
+      <DynamicMarkdown content={explanation} />
     </div>
     <div className="flex flex-col items-center justify-center flex-shrink-0 w-full pt-8 mt-4 border-t border-gray-300">
       <p className="mb-2 text-sm font-bold">How difficult was the question?</p>
       <div className="flex flex-row mt-2 space-x-2">
         <Button
+          active={difficulty === 'hard'}
           onClick={(e?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
             e?.stopPropagation()
-            console.log('Hard question')
+            setDifficulty('hard')
           }}
         >
           Hard
         </Button>
         <Button
+          active={difficulty === 'okay'}
           onClick={(e?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
             e?.stopPropagation()
-            console.log('Okay question')
+            setDifficulty('okay')
           }}
         >
           Okay
         </Button>
         <Button
+          active={difficulty === 'easy'}
           onClick={(e?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
             e?.stopPropagation()
-            console.log('Easy question')
+            setDifficulty('easy')
           }}
         >
           Easy
