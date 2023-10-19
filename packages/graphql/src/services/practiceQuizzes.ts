@@ -67,6 +67,14 @@ export async function respondToFlashcardInstance(
   { id, courseId, correctness }: RespondToFlashcardInstanceInput,
   ctx: Context
 ) {
+  const existingInstance = await ctx.prisma.elementInstance.findUnique({
+    where: {
+      id,
+    },
+  })
+
+  if (!existingInstance) return null
+
   // 0 = wrong, 1 = partial, 2 = correct
   if (![0, 1, 2].includes(correctness)) {
     return null
@@ -87,6 +95,8 @@ export async function respondToFlashcardInstance(
       },
     },
   })
+
+  let questionResponse
 
   // TODO: think about possibility to fuse these two cases with a single upsert (however, keep in mind that we need to update JSON stuff here)
   if (existingResponse) {
@@ -116,7 +126,7 @@ export async function respondToFlashcardInstance(
     }
 
     // update existing response
-    const questionResponse = await ctx.prisma.questionResponse.update({
+    questionResponse = await ctx.prisma.questionResponse.update({
       where: {
         participantId_elementInstanceId: {
           participantId: ctx.user.sub,
@@ -150,10 +160,6 @@ export async function respondToFlashcardInstance(
         },
       },
     })
-
-    // TODO: fix return type
-    // return questionResponse
-    return null
   } else {
     let response = {
       wrong: 0,
@@ -190,7 +196,7 @@ export async function respondToFlashcardInstance(
     }
 
     // create new response
-    const questionResponse = await ctx.prisma.questionResponse.create({
+    questionResponse = await ctx.prisma.questionResponse.create({
       data: {
         trialsCount: 1,
         response,
@@ -213,9 +219,24 @@ export async function respondToFlashcardInstance(
         },
       },
     })
-
-    // TODO: fix return type
-    // return questionResponse
-    return null
   }
+
+  // update the aggregated data on the element instance
+  await ctx.prisma.elementInstance.update({
+    where: {
+      id,
+    },
+    data: {
+      results: {
+        wrong: existingInstance.results.wrong + (correctness === 0 ? 1 : 0),
+        partial: existingInstance.results.partial + (correctness === 1 ? 1 : 0),
+        correct: existingInstance.results.correct + (correctness === 2 ? 1 : 0),
+        total: existingInstance.results.total + 1,
+      },
+    },
+  })
+
+  // TODO: fix return type
+  // return questionResponse
+  return null
 }
