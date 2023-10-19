@@ -62,6 +62,16 @@ type ChoiceQuestionOptions {
   hasSampleSolution: Boolean!
 }
 
+type ChoicesElementData implements ElementData {
+  content: String!
+  explanation: String
+  id: Int!
+  name: String!
+  options: ChoiceQuestionOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
 type ChoicesQuestionData implements QuestionData {
   content: String!
   displayMode: ElementDisplayMode
@@ -144,9 +154,50 @@ type Element {
   updatedAt: Date!
 }
 
+interface ElementData {
+  content: String!
+  explanation: String
+  id: Int!
+  name: String!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
 enum ElementDisplayMode {
   GRID
   LIST
+}
+
+enum ElementInstaceType {
+  PRACTICE_QUIZ
+}
+
+type ElementInstance {
+  elementData: ElementData!
+  elementType: ElementType!
+  evaluation: InstanceEvaluation
+  id: Int!
+  type: ElementInstanceType!
+}
+
+enum ElementInstanceType {
+  PRACTICE_QUIZ
+}
+
+type ElementStack {
+  description: String
+  displayName: String
+  elements: [ElementInstance!]
+  id: Int!
+  order: Int
+  type: ElementStackType!
+}
+
+enum ElementStackType {
+  GROUP_ACTIVITY
+  LIVE_QUIZ
+  MICROLEARNING
+  PRACTICE_QUIZ
 }
 
 enum ElementType {
@@ -190,6 +241,30 @@ type FileUploadSAS {
   fileName: String!
   uploadHref: String!
   uploadSasURL: String!
+}
+
+type FlashcardElementData implements ElementData {
+  content: String!
+  explanation: String
+  id: Int!
+  name: String!
+  options: FlashcardElementOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
+type FlashcardElementOptions {
+  fake: String!
+}
+
+type FreeTextElementData implements ElementData {
+  content: String!
+  explanation: String
+  id: Int!
+  name: String!
+  options: FreeTextQuestionOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
 }
 
 type FreeTextQuestionData implements QuestionData {
@@ -496,6 +571,16 @@ type Mutation {
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
+type NumericalElementData implements ElementData {
+  content: String!
+  explanation: String
+  id: Int!
+  name: String!
+  options: NumericalQuestionOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
 type NumericalQuestionData implements QuestionData {
   content: String!
   displayMode: ElementDisplayMode
@@ -637,6 +722,31 @@ type Participation {
   subscriptions: [PushSubscription!]
 }
 
+type PracticeQuiz {
+  course: Course
+  courseId: String
+  description: String
+  displayName: String!
+  id: String!
+  name: String!
+  orderType: PracticeQuizOrderType!
+  pointsMultiplier: Int!
+  resetTimeDays: Int!
+  stacks: [ElementStack!]
+  status: PracticeQuizStatus!
+}
+
+enum PracticeQuizOrderType {
+  LAST_RESPONSE
+  SEQUENTIAL
+  SHUFFLED
+}
+
+enum PracticeQuizStatus {
+  DRAFT
+  PUBLISHED
+}
+
 type PushSubscription {
   endpoint: String!
   id: Int!
@@ -665,6 +775,8 @@ type Query {
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
+  practiceQuiz(id: String!): PracticeQuiz
+  practiceQuizzes: [PracticeQuiz!]
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
   questionStack(id: Int!): QuestionStack

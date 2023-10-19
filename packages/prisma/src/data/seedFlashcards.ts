@@ -104,6 +104,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
             createMany: {
               data: [
                 {
+                  // TODO: set originalId to the "id" or "originalId" of the element
                   order: ix,
                   type: ElementInstanceType.PRACTICE_QUIZ,
                   elementType: ElementType.FLASHCARD,

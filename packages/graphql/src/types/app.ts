@@ -124,6 +124,8 @@ interface IElementData<Type extends ElementType, Options extends ElementOptions>
   options: Options
 }
 
+// export type FlashcardElementData = IElementData<'FLASHCARD', null>
+
 export type ChoicesElementData = IElementData<
   'SC' | 'MC' | 'KPRIM',
   ElementOptionsChoices
@@ -141,6 +143,7 @@ export type AllElementTypeData =
   | ChoicesElementData
   | FreeTextElementData
   | NumericalElementData
+// | FlashcardElementData
 
 export interface IQuestionInstanceWithResults<
   Type extends ElementType,

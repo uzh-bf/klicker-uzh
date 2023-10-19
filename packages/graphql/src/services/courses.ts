@@ -499,6 +499,37 @@ export async function getUserLearningElements(ctx: ContextWithUser) {
   )
 }
 
+export async function getUserPracticeQuizzes(ctx: ContextWithUser) {
+  const participantCoursesWithPracticeQuizzes =
+    await ctx.prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+      include: {
+        participations: {
+          include: {
+            course: {
+              include: {
+                practiceQuizzes: {
+                  orderBy: {
+                    displayName: 'asc',
+                  },
+                  // where: {
+                  //   status: PublicationStatus.PUBLISHED,
+                  // },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+  if (!participantCoursesWithPracticeQuizzes) return []
+
+  return participantCoursesWithPracticeQuizzes.participations.flatMap(
+    (participation) => participation.course.practiceQuizzes
+  )
+}
+
 export async function getCourseData(
   { id }: { id: string },
   ctx: ContextWithUser

@@ -6,6 +6,10 @@ export const ElementType = builder.enumType('ElementType', {
   values: Object.values(DB.ElementType),
 })
 
+export const ElementInstanceType = builder.enumType('ElementInstanceType', {
+  values: Object.values(DB.ElementInstanceType),
+})
+
 export const ElementDisplayMode = builder.enumType('ElementDisplayMode', {
   values: Object.values(DB.ElementDisplayMode),
 })
