@@ -1,5 +1,8 @@
 import DynamicMarkdown from '@components/learningElements/DynamicMarkdown'
-import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
+import {
+  IconDefinition,
+  faHandPointer,
+} from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
@@ -22,6 +25,7 @@ function Flashcard({
   response,
   setResponse,
 }: FlashcardProps) {
+  const t = useTranslations()
   const [isFlipped, setIsFlipped] = useState(false)
 
   const handleFlip = () => {
@@ -35,7 +39,7 @@ function Flashcard({
       )}
     >
       <div
-        className={`relative flex flex-col items-center justify-between min-h-[300px] border border-gray-300 rounded-lg shadow-lg cursor-pointer transform-style-preserve-3d transition-transform-0_6s ${
+        className={`flex flex-col p-4 justify-between min-h-[300px] border border-gray-300 rounded-lg shadow-lg cursor-pointer transform-style-preserve-3d transition-transform-0_6s ${
           isFlipped ? 'transform-rotateY-180' : ''
         }`}
         onClick={handleFlip}
@@ -49,15 +53,19 @@ function Flashcard({
         ) : (
           <FlashcardFront content={content} />
         )}
+        {!isFlipped && (
+          <div className="self-end text-sm text-gray-500 flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faHandPointer} />
+            {t('pwa.practiceQuiz.flashcardClick')}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 const FlashcardFront = ({ content }: { content: string }) => (
-  <div className="flex m-auto items-center self-center justify-center w-full h-full p-4 backface-hidden">
-    <DynamicMarkdown content={content} />
-  </div>
+  <DynamicMarkdown content={content} className={{ root: 'm-auto' }} />
 )
 
 interface FlashcardBackProps {
@@ -74,7 +82,7 @@ const FlashcardBack = ({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full p-4 transform-rotateY-180 backface-hidden">
+    <div className="flex flex-col items-center justify-center w-full h-full transform-rotateY-180 backface-hidden">
       <div className="flex items-center justify-center flex-1 mb-4">
         <DynamicMarkdown content={explanation} />
       </div>
