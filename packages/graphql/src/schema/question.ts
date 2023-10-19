@@ -1,6 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import { ElementDisplayMode, ElementType, QuestionData } from './questionData'
+import { ElementData } from './elementData'
+import {
+  ElementDisplayMode,
+  ElementInstanceType,
+  ElementType,
+  QuestionData,
+} from './questionData'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
   fields: (t) => ({
@@ -202,6 +208,30 @@ export const QuestionInstance = QuestionInstanceRef.implement({
     questionData: t.field({
       type: QuestionData,
       resolve: (q) => q.questionData,
+    }),
+  }),
+})
+
+export interface IElementInstance extends DB.ElementInstance {
+  evaluation?: IInstanceEvaluation
+}
+export const ElementInstanceRef =
+  builder.objectRef<IElementInstance>('ElementInstance')
+export const ElementInstance = ElementInstanceRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+
+    type: t.expose('type', { type: ElementInstanceType }),
+    elementType: t.expose('elementType', { type: ElementType }),
+
+    evaluation: t.expose('evaluation', {
+      type: InstanceEvaluation,
+      nullable: true,
+    }),
+
+    elementData: t.field({
+      type: ElementData,
+      resolve: (q) => q.elementData,
     }),
   }),
 })

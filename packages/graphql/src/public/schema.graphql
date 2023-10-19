@@ -62,6 +62,16 @@ type ChoiceQuestionOptions {
   hasSampleSolution: Boolean!
 }
 
+type ChoicesElementData implements ElementData {
+  content: String!
+  explanation: String
+  id: Int!
+  name: String!
+  options: ChoiceQuestionOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
 type ChoicesQuestionData implements QuestionData {
   content: String!
   displayMode: ElementDisplayMode
@@ -149,7 +159,6 @@ interface ElementData {
   explanation: String
   id: Int!
   name: String!
-  options: Json!
   pointsMultiplier: Int!
   type: ElementType!
 }
@@ -166,8 +175,13 @@ enum ElementInstaceType {
 type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
+  evaluation: InstanceEvaluation
   id: Int!
-  type: ElementStackType!
+  type: ElementInstanceType!
+}
+
+enum ElementInstanceType {
+  PRACTICE_QUIZ
 }
 
 type ElementStack {
@@ -227,6 +241,30 @@ type FileUploadSAS {
   fileName: String!
   uploadHref: String!
   uploadSasURL: String!
+}
+
+type FlashcardElementData implements ElementData {
+  content: String!
+  explanation: String
+  id: Int!
+  name: String!
+  options: FlashcardElementOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
+type FlashcardElementOptions {
+  fake: String!
+}
+
+type FreeTextElementData implements ElementData {
+  content: String!
+  explanation: String
+  id: Int!
+  name: String!
+  options: FreeTextQuestionOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
 }
 
 type FreeTextQuestionData implements QuestionData {
@@ -531,6 +569,16 @@ type Mutation {
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
+}
+
+type NumericalElementData implements ElementData {
+  content: String!
+  explanation: String
+  id: Int!
+  name: String!
+  options: NumericalQuestionOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
 }
 
 type NumericalQuestionData implements QuestionData {

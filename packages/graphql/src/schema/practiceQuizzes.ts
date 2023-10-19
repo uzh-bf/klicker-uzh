@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import { CourseRef, ICourse } from './course'
-import { ElementData, ElementType } from './questionData'
+import { ElementInstanceRef, IElementInstance } from './question'
 
 export const PracticeQuizOrderType = builder.enumType('PracticeQuizOrderType', {
   values: Object.values(DB.ElementOrderType),
@@ -17,24 +17,6 @@ export const ElementInstaceType = builder.enumType('ElementInstaceType', {
 
 export const ElementStackType = builder.enumType('ElementStackType', {
   values: Object.values(DB.ElementStackType),
-})
-
-export interface IElementInstance extends DB.ElementInstance {}
-
-export const ElementInstanceRef =
-  builder.objectRef<IElementInstance>('ElementInstance')
-export const ElementInstance = ElementInstanceRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-
-    type: t.expose('type', { type: ElementStackType }),
-    elementType: t.expose('elementType', { type: ElementType }),
-
-    elementData: t.field({
-      type: ElementData,
-      resolve: (q) => q.elementData,
-    }),
-  }),
 })
 
 export interface IElementStack extends DB.ElementStack {

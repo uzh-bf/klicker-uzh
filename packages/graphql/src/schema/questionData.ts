@@ -6,23 +6,12 @@ export const ElementType = builder.enumType('ElementType', {
   values: Object.values(DB.ElementType),
 })
 
-export const ElementDisplayMode = builder.enumType('ElementDisplayMode', {
-  values: Object.values(DB.ElementDisplayMode),
+export const ElementInstanceType = builder.enumType('ElementInstanceType', {
+  values: Object.values(DB.ElementInstanceType),
 })
 
-// ----- ELEMENT DATA INTERFACE -----
-export const ElementDataRef =
-  builder.interfaceRef<BaseElementData>('ElementData')
-export const ElementData = ElementDataRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    name: t.exposeString('name'),
-    type: t.expose('type', { type: ElementType }),
-    content: t.exposeString('content'),
-    explanation: t.exposeString('explanation', { nullable: true }),
-    pointsMultiplier: t.exposeInt('pointsMultiplier'),
-    options: t.expose('options', { type: 'Json' }),
-  }),
+export const ElementDisplayMode = builder.enumType('ElementDisplayMode', {
+  values: Object.values(DB.ElementDisplayMode),
 })
 
 // ----- QUESTION DATA INTERFACE -----
