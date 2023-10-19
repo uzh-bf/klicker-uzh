@@ -20,6 +20,7 @@ import {
   ParticipantWithAchievements,
   Participation,
 } from './participant'
+import { PracticeQuiz } from './practiceQuizzes'
 import { Element, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
 import { MediaFile, User, UserLogin } from './user'
@@ -263,6 +264,14 @@ export const Query = builder.queryType({
         type: [LearningElement],
         resolve(_, __, ctx) {
           return CourseService.getUserLearningElements(ctx)
+        },
+      }),
+
+      practiceQuizzes: asParticipant.field({
+        nullable: true,
+        type: [PracticeQuiz],
+        resolve(_, __, ctx) {
+          return CourseService.getUserPracticeQuizzes(ctx)
         },
       }),
 

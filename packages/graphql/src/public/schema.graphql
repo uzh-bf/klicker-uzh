@@ -144,9 +144,46 @@ type Element {
   updatedAt: Date!
 }
 
+interface ElementData {
+  content: String!
+  explanation: String
+  id: Int!
+  name: String!
+  options: Json!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
 enum ElementDisplayMode {
   GRID
   LIST
+}
+
+enum ElementInstaceType {
+  PRACTICE_QUIZ
+}
+
+type ElementInstance {
+  elementData: ElementData!
+  elementType: ElementType!
+  id: Int!
+  type: ElementStackType!
+}
+
+type ElementStack {
+  description: String
+  displayName: String
+  elementInstances: [ElementInstance!]
+  id: Int!
+  order: Int
+  type: ElementStackType!
+}
+
+enum ElementStackType {
+  GROUP_ACTIVITY
+  LIVE_QUIZ
+  MICROLEARNING
+  PRACTICE_QUIZ
 }
 
 enum ElementType {
@@ -637,6 +674,31 @@ type Participation {
   subscriptions: [PushSubscription!]
 }
 
+type PracticeQuiz {
+  course: Course
+  courseId: String
+  description: String
+  displayName: String!
+  id: String!
+  name: String!
+  orderType: PracticeQuizOrderType!
+  pointsMultiplier: Int!
+  resetTimeDays: Int!
+  stacks: [ElementStack!]
+  status: PracticeQuizStatus!
+}
+
+enum PracticeQuizOrderType {
+  LAST_RESPONSE
+  SEQUENTIAL
+  SHUFFLED
+}
+
+enum PracticeQuizStatus {
+  DRAFT
+  PUBLISHED
+}
+
 type PushSubscription {
   endpoint: String!
   id: Int!
@@ -665,6 +727,7 @@ type Query {
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
+  practiceQuizzes: [PracticeQuiz!]
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
   questionStack(id: Int!): QuestionStack

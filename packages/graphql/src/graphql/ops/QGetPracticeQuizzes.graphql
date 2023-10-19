@@ -1,0 +1,7 @@
+query GetPracticeQuizzes {
+  practiceQuizzes {
+    id
+    displayName
+    courseId
+  }
+}
