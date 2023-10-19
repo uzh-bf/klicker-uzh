@@ -1,11 +1,17 @@
+import { useMutation } from '@apollo/client'
 import DynamicMarkdown from '@components/learningElements/DynamicMarkdown'
-import { ElementStack } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementStack,
+  ElementType,
+  RespondToFlashcardInstanceDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useEffect, useState } from 'react'
 import Flashcard from './Flashcard'
 
 interface ElementStackProps {
   id: number
+  courseId: string
   quizId: string
   stack: ElementStack
   currentStep: number
@@ -29,6 +35,7 @@ export type InstanceStatus =
 
 function ElementStack({
   id,
+  courseId,
   quizId,
   stack,
   currentStep,
@@ -40,12 +47,22 @@ function ElementStack({
     setStudentGrading(undefined)
   }, [currentStep])
 
+  const [respondToFlashcardInstance] = useMutation(
+    RespondToFlashcardInstanceDocument
+  )
+
   // TODO: enable handling multiple elements in a stack / extend state and submission logic accordingly
   const elementInstance = stack.elements?.[0]
 
   const [studentGrading, setStudentGrading] = useState<
     'no' | 'partial' | 'yes' | undefined
   >(undefined)
+
+  const flashcardGradingMap: Record<string, number> = {
+    no: 0,
+    partial: 1,
+    yes: 2,
+  }
 
   return (
     <div>
@@ -95,15 +112,32 @@ function ElementStack({
       <Button
         className={{ root: 'float-right mt-4 text-lg' }}
         disabled={!studentGrading}
-        onClick={() => {
-          // TODO: adapt these changes depending on the element type
-          setStepStatus({
-            status: 'manuallyGraded',
-            score: null,
-          })
-          setStudentGrading(undefined)
+        onClick={async () => {
+          // TODO: loop over all instances in a stack to respond to them or implement backend endpoint, which allows answering multiple instances
+          if (
+            typeof elementInstance !== 'undefined' &&
+            elementInstance.elementType === ElementType.Flashcard &&
+            typeof studentGrading !== 'undefined'
+          ) {
+            setStepStatus({
+              status: 'manuallyGraded',
+              score: null,
+            })
+            setStudentGrading(undefined)
 
-          // TODO: save student response here
+            const value = flashcardGradingMap[studentGrading]
+            const result = await respondToFlashcardInstance({
+              variables: {
+                id: elementInstance.id,
+                courseId: courseId,
+                correctness: value,
+              },
+            })
+            // TODO: somehow react to return value of result
+            console.log(result)
+          }
+
+          // TODO: handle other types of questions / content elements in practice quiz
 
           handleNextElement()
         }}

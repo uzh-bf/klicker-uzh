@@ -56,6 +56,7 @@ function PracticeQuiz({
       {currentStack && (
         <ElementStack
           id={currentStack.id}
+          courseId={quiz.course!.id}
           quizId={quiz.id}
           stack={currentStack}
           currentStep={currentIx + 1}

@@ -10,6 +10,7 @@ import * as MicroLearningService from '../services/microLearning'
 import * as MigrationService from '../services/migration'
 import * as NotificationService from '../services/notifications'
 import * as ParticipantService from '../services/participants'
+import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
@@ -50,6 +51,7 @@ import {
   ConfusionTimestep,
   Feedback,
   FeedbackResponse,
+  QuestionResponse,
   Session,
 } from './session'
 import {
@@ -198,6 +200,22 @@ export const Mutation = builder.mutationType({
         },
         resolve: (_, args, ctx) => {
           return LearningElementService.respondToQuestionInstance(args, ctx)
+        },
+      }),
+
+      respondToFlashcardInstance: t.field({
+        nullable: true,
+        // TODO: update the return type to element response and actually return the correct values from the mutation
+        type: QuestionResponse,
+        args: {
+          id: t.arg.int({ required: true }),
+          courseId: t.arg.string({ required: true }),
+          correctness: t.arg.int({
+            required: true,
+          }),
+        },
+        resolve: (_, args, ctx) => {
+          return PracticeQuizService.respondToFlashcardInstance(args, ctx)
         },
       }),
 

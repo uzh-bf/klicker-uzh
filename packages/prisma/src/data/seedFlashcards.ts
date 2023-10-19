@@ -111,7 +111,12 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
                   // TODO: pick only relevant properties of the element
                   elementData: el.value,
                   options: {},
-                  results: {},
+                  results: {
+                    correct: 0,
+                    partial: 0,
+                    wrong: 0,
+                    total: 0,
+                  },
                   ownerId: el.value.ownerId,
                   elementId: el.value.id,
                 },

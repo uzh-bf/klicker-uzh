@@ -1011,6 +1011,10 @@ model QuestionResponse {
   lastAwardedAt      DateTime?
   lastXpAwardedAt    DateTime?
 
+  correctCount       Int       @default(0)
+  correctCountStreak Int       @default(0)
+  lastCorrectAt      DateTime?
+
   /// [PrismaQuestionResponse]
   response Json
 
@@ -1030,6 +1034,7 @@ model QuestionResponse {
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, questionInstanceId])
+  @@unique([participantId, elementInstanceId])
 }
 
 model QuestionResponseDetail {

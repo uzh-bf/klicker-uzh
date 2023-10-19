@@ -38,7 +38,17 @@ export type QuestionResponseValue = {
   value: string
 }
 
-export type QuestionResponse = QuestionResponseChoices | QuestionResponseValue
+export type QuestionResponseFlashcard = {
+  correct: number
+  partial: number
+  wrong: number
+  total: number
+}
+
+export type QuestionResponse =
+  | QuestionResponseChoices
+  | QuestionResponseValue
+  | QuestionResponseFlashcard
 
 // TODO: results should also include the participants count (instead of storing it on the top-level)
 export type QuestionResultsChoices = {
@@ -176,12 +186,22 @@ export type AllQuestionInstanceTypeData =
   | ChoicesQuestionInstanceData
   | OpenQuestionInstanceData
 
+export type FlashcardInstanceResults = {
+  correct: number
+  partial: number
+  wrong: number
+  total: number
+}
+
+export type ElementInstanceResults = FlashcardInstanceResults
+
 declare global {
   namespace PrismaJson {
     type PrismaQuestionResponse = QuestionResponse
     type PrismaElementOptions = ElementOptions
     type PrismaQuestionResults = QuestionResults
     type PrismaElementData = AllElementTypeData
+    type PrismaElementInstanceResults = ElementInstanceResults
   }
 }
 // #endregion
