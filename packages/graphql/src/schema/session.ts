@@ -224,7 +224,9 @@ export const InstanceResult = InstanceResultRef.implement({
   }),
 })
 
-export const QuestionResponse = builder.prismaObject('QuestionResponse', {
+export const QuestionResponseRef =
+  builder.objectRef<DB.QuestionResponse>('QuestionResponse')
+export const QuestionResponse = QuestionResponseRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
   }),

@@ -205,7 +205,6 @@ export const Mutation = builder.mutationType({
 
       respondToFlashcardInstance: t.field({
         nullable: true,
-        // TODO: update the return type to element response and actually return the correct values from the mutation
         type: QuestionResponse,
         args: {
           id: t.arg.int({ required: true }),
@@ -215,10 +214,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve: (_, args, ctx) => {
-          return PracticeQuizService.respondToFlashcardInstance(
-            args,
-            ctx
-          ) as any
+          return PracticeQuizService.respondToFlashcardInstance(args, ctx)
         },
       }),
 
