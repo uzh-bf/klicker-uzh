@@ -39,6 +39,12 @@ export type QuestionResponseValue = {
 }
 
 export type QuestionResponseFlashcard = {
+  correctness: number
+}
+
+export type AggregatedResponse = AggregatedResponseFlashcard
+
+export type AggregatedResponseFlashcard = {
   correct: number
   partial: number
   wrong: number
@@ -202,6 +208,7 @@ declare global {
     type PrismaQuestionResults = QuestionResults
     type PrismaElementData = AllElementTypeData
     type PrismaElementInstanceResults = ElementInstanceResults
+    type PrismaAggregatedResponse = AggregatedResponse
   }
 }
 // #endregion

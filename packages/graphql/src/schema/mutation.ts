@@ -215,7 +215,10 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve: (_, args, ctx) => {
-          return PracticeQuizService.respondToFlashcardInstance(args, ctx)
+          return PracticeQuizService.respondToFlashcardInstance(
+            args,
+            ctx
+          ) as any
         },
       }),
 

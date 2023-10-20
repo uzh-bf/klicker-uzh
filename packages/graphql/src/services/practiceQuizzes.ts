@@ -1,3 +1,5 @@
+import { UserRole } from '@klicker-uzh/prisma'
+import { AggregatedResponseFlashcard } from 'src/types/app'
 import { Context } from '../lib/context'
 
 export async function getPracticeQuizData(
@@ -13,6 +15,16 @@ export async function getPracticeQuizData(
       stacks: {
         include: {
           elements: {
+            include:
+              ctx.user?.sub && ctx.user?.role === UserRole.PARTICIPANT
+                ? {
+                    responses: {
+                      where: {
+                        participantId: ctx.user?.sub,
+                      },
+                    },
+                  }
+                : undefined,
             orderBy: {
               order: 'asc',
             },
@@ -27,33 +39,30 @@ export async function getPracticeQuizData(
 
   if (!quiz) return null
 
-  //   const elements = quiz.stacks.reduce((acc, stack) => {
-  //     return [...acc, ...stack.elements]
-  //   }, [])
+  if (ctx.user?.sub && ctx.user?.role === UserRole.PARTICIPANT) {
+    // TODO: add time decay as well
+    const orderedStacks = quiz.stacks.sort((a, b) => {
+      const aResponses = a.elements[0].responses
+      const bResponses = b.elements[0].responses
 
-  //   console.log('practice quiz elements backend: ', elements)
+      if (aResponses.length === 0 && bResponses.length === 0) return 0
+      if (aResponses.length === 0) return -1
+      if (bResponses.length === 0) return 1
+      const aResponse = aResponses[0]
+      const bResponse = bResponses[0]
 
-  // TODO: reintroduce ordering
-  // if (element.orderType === OrderType.LAST_RESPONSE) {
-  //   const orderedInstances = R.sort(
-  //     (a, b) => (a.lastResponse ?? 0) - (b.lastResponse ?? 0),
-  //     shuffle(instancesWithoutSolution.instances)
-  //   )
+      if (aResponse.correctCount === bResponse.correctCount) {
+        return aResponse.correctCountStreak - bResponse.correctCountStreak
+      }
 
-  //   return {
-  //     ...element,
-  //     ...instancesWithoutSolution,
-  //     instances: orderedInstances,
-  //   }
-  // }
+      return aResponse.correctCount - bResponse.correctCount
+    })
 
-  // if (element.orderType === OrderType.SHUFFLED) {
-  //   return {
-  //     ...element,
-  //     ...instancesWithoutSolution,
-  //     instances: shuffle(instancesWithoutSolution.instances),
-  //   }
-  // }
+    return {
+      ...quiz,
+      stacks: orderedStacks,
+    }
+  }
   return quiz
 }
 
@@ -96,31 +105,32 @@ export async function respondToFlashcardInstance(
     },
   })
 
-  let questionResponse
+  let questionResponse = null
 
   // TODO: think about possibility to fuse these two cases with a single upsert (however, keep in mind that we need to update JSON stuff here)
   if (existingResponse) {
-    let response
+    let aggregatedResponse =
+      existingResponse.response as AggregatedResponseFlashcard
     switch (correctness) {
       case 0:
-        response = {
-          ...existingResponse.response,
-          wrong: existingResponse.response.wrong + 1,
-          total: existingResponse.response.total + 1,
+        aggregatedResponse = {
+          ...aggregatedResponse,
+          wrong: aggregatedResponse.wrong + 1,
+          total: aggregatedResponse.total + 1,
         }
         break
       case 1:
-        response = {
-          ...existingResponse.response,
-          partial: existingResponse.response.partial + 1,
-          total: existingResponse.response.total + 1,
+        aggregatedResponse = {
+          ...aggregatedResponse,
+          partial: aggregatedResponse.partial + 1,
+          total: aggregatedResponse.total + 1,
         }
         break
       case 2:
-        response = {
-          ...existingResponse.response,
-          correct: existingResponse.response.correct + 1,
-          total: existingResponse.response.total + 1,
+        aggregatedResponse = {
+          ...aggregatedResponse,
+          correct: aggregatedResponse.correct + 1,
+          total: aggregatedResponse.total + 1,
         }
         break
     }
@@ -137,7 +147,10 @@ export async function respondToFlashcardInstance(
         trialsCount: {
           increment: 1,
         },
-        response,
+        response: {
+          correctness,
+        },
+        aggregatedResponses: aggregatedResponse,
         correctCount: {
           increment: correctness === 2 ? 1 : 0,
         },
@@ -163,7 +176,7 @@ export async function respondToFlashcardInstance(
       },
     })
   } else {
-    let response = {
+    let aggregatedResponse = {
       wrong: 0,
       partial: 0,
       correct: 0,
@@ -172,7 +185,7 @@ export async function respondToFlashcardInstance(
 
     switch (correctness) {
       case 0:
-        response = {
+        aggregatedResponse = {
           wrong: 1,
           partial: 0,
           correct: 0,
@@ -180,7 +193,7 @@ export async function respondToFlashcardInstance(
         }
         break
       case 1:
-        response = {
+        aggregatedResponse = {
           wrong: 0,
           partial: 1,
           correct: 0,
@@ -188,7 +201,7 @@ export async function respondToFlashcardInstance(
         }
         break
       case 2:
-        response = {
+        aggregatedResponse = {
           wrong: 0,
           partial: 0,
           correct: 1,
@@ -201,7 +214,10 @@ export async function respondToFlashcardInstance(
     questionResponse = await ctx.prisma.questionResponse.create({
       data: {
         trialsCount: 1,
-        response,
+        response: {
+          correctness,
+        },
+        aggregatedResponses: aggregatedResponse,
         correctCount: correctness === 2 ? 1 : 0,
         correctCountStreak: correctness === 2 ? 1 : 0,
         lastCorrectAt: correctness === 2 ? new Date() : undefined,
@@ -223,6 +239,28 @@ export async function respondToFlashcardInstance(
     })
   }
 
+  ctx.prisma.questionResponseDetail.create({
+    data: {
+      response: {
+        correctness: correctness,
+      },
+      participant: {
+        connect: { id: ctx.user.sub },
+      },
+      questionInstance: {
+        connect: { id },
+      },
+      participation: {
+        connect: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+      },
+    },
+  })
+
   console.log('practiceQuizzes - questionResponse: ', questionResponse)
   // update the aggregated data on the element instance
   await ctx.prisma.elementInstance.update({
@@ -240,6 +278,6 @@ export async function respondToFlashcardInstance(
   })
 
   // TODO: fix return type
-  // return questionResponse
-  return null
+  return questionResponse
+  // return null
 }

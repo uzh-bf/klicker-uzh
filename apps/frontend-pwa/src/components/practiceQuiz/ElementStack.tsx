@@ -6,6 +6,7 @@ import {
   RespondToFlashcardInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2 } from '@uzh-bf/design-system'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Flashcard from './Flashcard'
 
@@ -43,6 +44,7 @@ function ElementStack({
   setStepStatus,
   handleNextElement,
 }: ElementStackProps) {
+  const router = useRouter()
   useEffect(() => {
     setStudentGrading(undefined)
   }, [currentStep])
@@ -134,11 +136,15 @@ function ElementStack({
               },
             })
             // TODO: somehow react to return value of result
-            console.log(result)
+            console.log('respondToFlashcardInstance result: ', result)
           }
 
           // TODO: handle other types of questions / content elements in practice quiz
 
+          if (currentStep === totalSteps) {
+            // redirect to repetition page
+            router.push(`/`)
+          }
           handleNextElement()
         }}
       >

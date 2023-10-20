@@ -1018,6 +1018,9 @@ model QuestionResponse {
   /// [PrismaQuestionResponse]
   response Json
 
+  /// [PrismaAggregatedResponse]
+  aggregatedResponses Json?
+
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
