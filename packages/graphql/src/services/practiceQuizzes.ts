@@ -95,6 +95,21 @@ export async function respondToFlashcardInstance(
     return null
   }
 
+  // update the aggregated data on the element instance
+  await ctx.prisma.elementInstance.update({
+    where: {
+      id,
+    },
+    data: {
+      results: {
+        wrong: existingInstance.results.wrong + (correctness === 0 ? 1 : 0),
+        partial: existingInstance.results.partial + (correctness === 1 ? 1 : 0),
+        correct: existingInstance.results.correct + (correctness === 2 ? 1 : 0),
+        total: existingInstance.results.total + 1,
+      },
+    },
+  })
+
   // find existing question response to this instance by this user
   const existingResponse = await ctx.prisma.questionResponse.findUnique({
     where: {
@@ -105,12 +120,32 @@ export async function respondToFlashcardInstance(
     },
   })
 
-  let questionResponse = null
+  ctx.prisma.questionResponseDetail.create({
+    data: {
+      response: {
+        correctness: correctness,
+      },
+      participant: {
+        connect: { id: ctx.user.sub },
+      },
+      questionInstance: {
+        connect: { id },
+      },
+      participation: {
+        connect: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+      },
+    },
+  })
 
   // TODO: think about possibility to fuse these two cases with a single upsert (however, keep in mind that we need to update JSON stuff here)
   if (existingResponse) {
     let aggregatedResponse =
-      existingResponse.response as AggregatedResponseFlashcard
+      existingResponse.aggregatedResponses as AggregatedResponseFlashcard
     switch (correctness) {
       case 0:
         aggregatedResponse = {
@@ -136,7 +171,7 @@ export async function respondToFlashcardInstance(
     }
 
     // update existing response
-    questionResponse = await ctx.prisma.questionResponse.update({
+    const questionResponse = await ctx.prisma.questionResponse.update({
       where: {
         participantId_elementInstanceId: {
           participantId: ctx.user.sub,
@@ -175,6 +210,8 @@ export async function respondToFlashcardInstance(
         },
       },
     })
+
+    return questionResponse
   } else {
     let aggregatedResponse = {
       wrong: 0,
@@ -211,7 +248,7 @@ export async function respondToFlashcardInstance(
     }
 
     // create new response
-    questionResponse = await ctx.prisma.questionResponse.create({
+    const questionResponse = await ctx.prisma.questionResponse.create({
       data: {
         trialsCount: 1,
         response: {
@@ -237,47 +274,7 @@ export async function respondToFlashcardInstance(
         },
       },
     })
+
+    return questionResponse
   }
-
-  ctx.prisma.questionResponseDetail.create({
-    data: {
-      response: {
-        correctness: correctness,
-      },
-      participant: {
-        connect: { id: ctx.user.sub },
-      },
-      questionInstance: {
-        connect: { id },
-      },
-      participation: {
-        connect: {
-          courseId_participantId: {
-            courseId,
-            participantId: ctx.user.sub,
-          },
-        },
-      },
-    },
-  })
-
-  console.log('practiceQuizzes - questionResponse: ', questionResponse)
-  // update the aggregated data on the element instance
-  await ctx.prisma.elementInstance.update({
-    where: {
-      id,
-    },
-    data: {
-      results: {
-        wrong: existingInstance.results.wrong + (correctness === 0 ? 1 : 0),
-        partial: existingInstance.results.partial + (correctness === 1 ? 1 : 0),
-        correct: existingInstance.results.correct + (correctness === 2 ? 1 : 0),
-        total: existingInstance.results.total + 1,
-      },
-    },
-  })
-
-  // TODO: fix return type
-  return questionResponse
-  // return null
 }
