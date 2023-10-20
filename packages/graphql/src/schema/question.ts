@@ -144,7 +144,8 @@ export const InstanceEvaluation = builder
     }),
   })
 
-export const Question = builder.prismaObject('Question', {
+export const QuestionRef = builder.objectRef<DB.Question>('Question')
+export const Question = QuestionRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
@@ -197,7 +198,8 @@ export const QuestionInstance = QuestionInstanceRef.implement({
   }),
 })
 
-export const Tag = builder.prismaObject('Tag', {
+export const TagRef = builder.objectRef<DB.Tag>('Tag')
+export const Tag = TagRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     name: t.exposeString('name'),

@@ -119,7 +119,8 @@ export const SessionBlock = SessionBlockRef.implement({
   }),
 })
 
-export const Feedback = builder.prismaObject('Feedback', {
+export const FeedbackRef = builder.objectRef<DB.Feedback>('Feedback')
+export const Feedback = FeedbackRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     isPublished: t.exposeBoolean('isPublished'),
@@ -127,13 +128,14 @@ export const Feedback = builder.prismaObject('Feedback', {
     isResolved: t.exposeBoolean('isResolved'),
     content: t.exposeString('content'),
     votes: t.exposeInt('votes'),
-    responses: t.relation('responses'),
     resolvedAt: t.expose('resolvedAt', { type: 'Date', nullable: true }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
 })
 
-export const FeedbackResponse = builder.prismaObject('FeedbackResponse', {
+export const FeedbackResponseRef =
+  builder.objectRef<DB.FeedbackResponse>('FeedbackResponse')
+export const FeedbackResponse = FeedbackResponseRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     content: t.exposeString('content'),
@@ -144,7 +146,9 @@ export const FeedbackResponse = builder.prismaObject('FeedbackResponse', {
   }),
 })
 
-export const ConfusionTimestep = builder.prismaObject('ConfusionTimestep', {
+export const ConfusionTimestepRef =
+  builder.objectRef<DB.ConfusionTimestep>('ConfusionTimestep')
+export const ConfusionTimestep = ConfusionTimestepRef.implement({
   fields: (t) => ({
     speed: t.exposeInt('speed'),
     difficulty: t.exposeInt('difficulty'),

@@ -254,7 +254,7 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           // FIXME by fixing type issues in LearningElementService
-          return LearningElementService.getLearningElementData(args, ctx) as any
+          return LearningElementService.getLearningElementData(args, ctx)
         },
       }),
 
@@ -339,7 +339,7 @@ export const Query = builder.queryType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, __, args, ctx) {
-          return QuestionService.getSingleQuestion(args, ctx) as any
+          return QuestionService.getSingleQuestion(args, ctx)
         },
       }),
 
@@ -361,7 +361,7 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getSessionEvaluation(args, ctx) as any
+          return SessionService.getSessionEvaluation(args, ctx)
         },
       }),
 
@@ -372,7 +372,7 @@ export const Query = builder.queryType({
           sessionId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLeaderboard(args, ctx) as any
+          return SessionService.getLeaderboard(args, ctx)
         },
       }),
 
@@ -406,7 +406,7 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           // FIXME by fixing type issues in CourseService
-          return CourseService.getCourseOverviewData(args, ctx) as any
+          return CourseService.getCourseOverviewData(args, ctx)
         },
       }),
 
