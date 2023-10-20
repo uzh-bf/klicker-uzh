@@ -134,7 +134,9 @@ export async function respondToFlashcardInstance(
         },
       },
       data: {
-        trialsCount: 1,
+        trialsCount: {
+          increment: 1,
+        },
         response,
         correctCount: {
           increment: correctness === 2 ? 1 : 0,
@@ -221,6 +223,7 @@ export async function respondToFlashcardInstance(
     })
   }
 
+  console.log('practiceQuizzes - questionResponse: ', questionResponse)
   // update the aggregated data on the element instance
   await ctx.prisma.elementInstance.update({
     where: {
