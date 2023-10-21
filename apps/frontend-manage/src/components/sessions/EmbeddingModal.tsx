@@ -26,7 +26,11 @@ function LazyHMACLink({
     return ''
   }
 
-  const link = `${process.env.NEXT_PUBLIC_MANAGE_URL}/sessions/${sessionId}/evaluation?${params}&hmac=${sessionHMAC.data?.sessionHMAC}`
+  const link = `${
+    process.env.NEXT_PUBLIC_MANAGE_URL
+  }/sessions/${sessionId}/evaluation?hmac=${sessionHMAC.data?.sessionHMAC}${
+    params ? `&${params}` : ''
+  }`
 
   return (
     <div className="flex flex-row items-center gap-3 px-1.5 py-0.5 mr-2 border border-solid rounded bg-uzh-grey-40">
@@ -70,6 +74,9 @@ function EmbeddingModal({
       <H2 className={{ root: 'mb-4' }}>
         {t('manage.sessions.evaluationLinksEmbedding')}
       </H2>
+      <div className="mb-4">
+        <LazyHMACLink sessionId={sessionId} params={``} />
+      </div>
       <div className="flex flex-col gap-2">
         {questions?.map((question: QuestionInstance, ix: number) => {
           return (
