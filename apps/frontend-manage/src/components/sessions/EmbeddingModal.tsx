@@ -73,18 +73,18 @@ function EmbeddingModal({
       <div className="flex flex-col gap-2">
         {questions?.map((question: QuestionInstance, ix: number) => {
           return (
-            <div key={question.id} className="flex flex-row items-center gap-2">
-              <div className="w-20 font-bold">Frage {ix + 1}:</div>
-              <LazyHMACLink sessionId={sessionId} params={`questionIx=${ix}`} />
-              <p>
+            <div key={question.id}>
+              <div className="font-bold">
+                Frage {ix + 1}:{' '}
                 {question.questionData.name.length > 25
                   ? `${question.questionData.name.substring(0, 25)}...`
                   : question.questionData.name}
-              </p>
+              </div>
+              <LazyHMACLink sessionId={sessionId} params={`questionIx=${ix}`} />
             </div>
           )
         })}
-        <div className="flex flex-row items-center gap-2">
+        <div>
           <div className="font-bold w-30">
             {t('shared.generic.leaderboard')}:
           </div>
