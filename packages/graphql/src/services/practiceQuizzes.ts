@@ -20,7 +20,7 @@ export async function getPracticeQuizData(
                 ? {
                     responses: {
                       where: {
-                        participantId: ctx.user?.sub,
+                        participantId: ctx.user.sub,
                       },
                     },
                   }
