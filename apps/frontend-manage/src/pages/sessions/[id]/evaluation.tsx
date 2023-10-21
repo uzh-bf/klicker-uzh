@@ -86,6 +86,7 @@ function Evaluation() {
   } = useQuery(GetSessionEvaluationDocument, {
     variables: {
       id: router.query.id as string,
+      hmac: router.query.hmac as string,
     },
     pollInterval: 5000,
     skip: !router.query.id,

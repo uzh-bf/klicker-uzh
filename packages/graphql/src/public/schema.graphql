@@ -623,7 +623,8 @@ type Query {
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
   session(id: String!): Session
-  sessionEvaluation(id: String!): SessionEvaluation
+  sessionEvaluation(hmac: String, id: String!): SessionEvaluation
+  sessionHMAC(id: String!): String
   sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
   singleMicroSession(id: String!): MicroSession
   unassignedSessions: [Session!]
