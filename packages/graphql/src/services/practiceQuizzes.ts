@@ -16,7 +16,7 @@ export async function getPracticeQuizData(
         include: {
           elements: {
             include:
-              ctx.user?.sub && ctx.user?.role === UserRole.PARTICIPANT
+              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
                 ? {
                     responses: {
                       where: {
