@@ -1,6 +1,6 @@
 import { UserRole } from '@klicker-uzh/prisma'
-import { AggregatedResponseFlashcard, Correctness } from 'src/types/app'
 import { Context } from '../lib/context'
+import { AggregatedResponseFlashcard, Correctness } from '../types/app'
 
 export async function getPracticeQuizData(
   { id }: { id: string },

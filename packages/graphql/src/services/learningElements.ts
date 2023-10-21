@@ -24,13 +24,13 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { ResponseInput } from 'src/ops'
-import { AllElementTypeData, QuestionResponseChoices } from 'src/types/app'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
   processQuestionData,
 } from '../lib/questions'
+import { AllElementTypeData, QuestionResponseChoices } from '../types/app'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6

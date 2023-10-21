@@ -16,16 +16,16 @@ import schedule from 'node-schedule'
 import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ISession } from 'src/schema/session'
-import {
-  AllQuestionInstanceTypeData,
-  QuestionResultsChoices,
-} from 'src/types/app'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
   processQuestionData,
 } from '../lib/questions'
 import { sendTeamsNotifications } from '../lib/util'
+import {
+  AllQuestionInstanceTypeData,
+  QuestionResultsChoices,
+} from '../types/app'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
