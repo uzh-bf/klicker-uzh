@@ -1,5 +1,5 @@
 import { UserRole } from '@klicker-uzh/prisma'
-import { AggregatedResponseFlashcard } from 'src/types/app'
+import { AggregatedResponseFlashcard, Correctness } from 'src/types/app'
 import { Context } from '../lib/context'
 
 export async function getPracticeQuizData(
@@ -74,7 +74,7 @@ export async function getPracticeQuizData(
 interface RespondToFlashcardInstanceInput {
   id: number
   courseId: string
-  correctness: number
+  correctness: Correctness
 }
 
 export async function respondToFlashcardInstance(
@@ -89,8 +89,12 @@ export async function respondToFlashcardInstance(
 
   if (!existingInstance) return null
 
-  // 0 = wrong, 1 = partial, 2 = correct
-  if (![0, 1, 2].includes(correctness)) {
+  // check if passed correctness value is valid
+  if (
+    ![Correctness.WRONG, Correctness.PARTIAL, Correctness.CORRECT].includes(
+      correctness
+    )
+  ) {
     return null
   }
 
@@ -107,9 +111,8 @@ export async function respondToFlashcardInstance(
     },
     data: {
       results: {
-        wrong: existingInstance.results.wrong + (correctness === 0 ? 1 : 0),
-        partial: existingInstance.results.partial + (correctness === 1 ? 1 : 0),
-        correct: existingInstance.results.correct + (correctness === 2 ? 1 : 0),
+        ...existingInstance.results,
+        [correctness]: existingInstance.results[correctness] + 1,
         total: existingInstance.results.total + 1,
       },
     },
@@ -148,31 +151,14 @@ export async function respondToFlashcardInstance(
   })
 
   // TODO: think about possibility to fuse these two cases with a single upsert (however, keep in mind that we need to update JSON stuff here)
-  if (existingResponse) {
+  if (existingResponse && existingResponse.aggregatedResponses) {
     let aggregatedResponse =
       existingResponse.aggregatedResponses as AggregatedResponseFlashcard
-    switch (correctness) {
-      case 0:
-        aggregatedResponse = {
-          ...aggregatedResponse,
-          wrong: aggregatedResponse.wrong + 1,
-          total: aggregatedResponse.total + 1,
-        }
-        break
-      case 1:
-        aggregatedResponse = {
-          ...aggregatedResponse,
-          partial: aggregatedResponse.partial + 1,
-          total: aggregatedResponse.total + 1,
-        }
-        break
-      case 2:
-        aggregatedResponse = {
-          ...aggregatedResponse,
-          correct: aggregatedResponse.correct + 1,
-          total: aggregatedResponse.total + 1,
-        }
-        break
+
+    aggregatedResponse = {
+      ...existingResponse.aggregatedResponses,
+      [correctness]: aggregatedResponse[correctness] + 1,
+      total: aggregatedResponse.total + 1,
     }
 
     // update existing response
@@ -196,7 +182,7 @@ export async function respondToFlashcardInstance(
         },
         correctCountStreak: {
           increment:
-            correctness === 2 ? 1 : -existingResponse.correctCountStreak,
+            correctness === 2 ? 1 : -existingResponse?.correctCountStreak,
         },
         lastCorrectAt: correctness === 2 ? new Date() : undefined,
         participant: {
@@ -219,37 +205,15 @@ export async function respondToFlashcardInstance(
     return questionResponse
   } else {
     let aggregatedResponse = {
-      wrong: 0,
-      partial: 0,
-      correct: 0,
+      [Correctness.WRONG]: 0,
+      [Correctness.PARTIAL]: 0,
+      [Correctness.CORRECT]: 0,
       total: 0,
     }
 
-    switch (correctness) {
-      case 0:
-        aggregatedResponse = {
-          wrong: 1,
-          partial: 0,
-          correct: 0,
-          total: 1,
-        }
-        break
-      case 1:
-        aggregatedResponse = {
-          wrong: 0,
-          partial: 1,
-          correct: 0,
-          total: 1,
-        }
-        break
-      case 2:
-        aggregatedResponse = {
-          wrong: 0,
-          partial: 0,
-          correct: 1,
-          total: 1,
-        }
-        break
+    aggregatedResponse = {
+      ...aggregatedResponse,
+      [correctness]: 1,
     }
 
     // create new response
