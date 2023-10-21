@@ -15,6 +15,10 @@ ALTER TABLE "Element" ADD COLUMN     "version" INTEGER NOT NULL DEFAULT 1;
 
 -- AlterTable
 ALTER TABLE "QuestionResponse" ADD COLUMN     "elementInstanceId" INTEGER,
+ADD COLUMN     "aggregatedResponses" JSONB,
+ADD COLUMN     "correctCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "correctCountStreak" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "lastCorrectAt" TIMESTAMP(3),
 ALTER COLUMN "questionInstanceId" DROP NOT NULL;
 
 -- AlterTable
@@ -84,6 +88,9 @@ CREATE TABLE "_ElementStackToParticipation" (
     "A" INTEGER NOT NULL,
     "B" INTEGER NOT NULL
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QuestionResponse_participantId_elementInstanceId_key" ON "QuestionResponse"("participantId", "elementInstanceId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ElementInstance_originalId_key" ON "ElementInstance"("originalId");
