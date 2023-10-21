@@ -39,7 +39,7 @@ export async function getPracticeQuizData(
 
   if (!quiz) return null
 
-  if (ctx.user?.sub && ctx.user?.role === UserRole.PARTICIPANT) {
+  if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
     // TODO: add time decay as well
     // TODO: adapt the implementation to multiple instances per stack - resorting inside the stack does probably not make sense
     const orderedStacks = quiz.stacks.sort((a, b) => {
