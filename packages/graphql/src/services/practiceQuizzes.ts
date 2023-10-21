@@ -112,7 +112,7 @@ export async function respondToFlashcardInstance(
     data: {
       results: {
         ...existingInstance.results,
-        [correctness]: existingInstance.results[correctness] + 1,
+        [correctness]: (existingInstance.results[correctness] ?? 0) + 1,
         total: existingInstance.results.total + 1,
       },
     },
@@ -208,7 +208,7 @@ export async function respondToFlashcardInstance(
       [Correctness.WRONG]: 0,
       [Correctness.PARTIAL]: 0,
       [Correctness.CORRECT]: 0,
-      total: 0,
+      total: 1,
     }
 
     aggregatedResponse = {

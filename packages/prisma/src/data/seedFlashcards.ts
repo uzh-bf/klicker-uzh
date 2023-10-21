@@ -112,9 +112,9 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
                   elementData: el.value,
                   options: {},
                   results: {
-                    correct: 0,
-                    partial: 0,
-                    wrong: 0,
+                    0: 0,
+                    1: 0,
+                    2: 0,
                     total: 0,
                   },
                   ownerId: el.value.ownerId,
