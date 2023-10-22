@@ -40,8 +40,6 @@ export async function getPracticeQuizData(
 
   if (!quiz) return null
 
-  console.log(quiz.stacks)
-
   if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
     // TODO: add time decay as well
     // TODO: adapt the implementation to multiple instances per stack - resorting inside the stack does probably not make sense

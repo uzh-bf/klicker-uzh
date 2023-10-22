@@ -136,9 +136,6 @@ function ElementStack({
                 correctness: value,
               },
             })
-
-            // TODO: somehow react to return value of result
-            console.log('respondToFlashcardInstance result: ', result)
           }
 
           // TODO: handle other types of questions / content elements in practice quiz
