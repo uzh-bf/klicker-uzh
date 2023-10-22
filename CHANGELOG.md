@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.3...v3.0.4) (2023-10-22)
+
+
+### Enhancements
+
+* **apps/office-addin:** improve layout and validation of office content add-in, update manifests, remove unneeded dependencies ([#3916](https://github.com/uzh-bf/klicker-uzh/issues/3916)) ([a245b70](https://github.com/uzh-bf/klicker-uzh/commit/a245b70941eaa01c463eca428e25ef08c2850ed7))
+
 ### [3.0.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.2...v3.0.3) (2023-10-22)
 
 
