@@ -122,12 +122,6 @@ function ElementStack({
             elementInstance.elementType === ElementType.Flashcard &&
             typeof studentGrading !== 'undefined'
           ) {
-            setStepStatus({
-              status: 'manuallyGraded',
-              score: null,
-            })
-            setStudentGrading(undefined)
-
             const value = flashcardGradingMap[studentGrading]
             const result = await respondToFlashcardInstance({
               variables: {
@@ -136,6 +130,12 @@ function ElementStack({
                 correctness: value,
               },
             })
+
+            setStepStatus({
+              status: 'manuallyGraded',
+              score: null,
+            })
+            setStudentGrading(undefined)
           }
 
           // TODO: handle other types of questions / content elements in practice quiz
