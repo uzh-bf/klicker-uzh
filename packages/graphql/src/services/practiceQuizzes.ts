@@ -209,6 +209,10 @@ export async function respondToFlashcardInstance(
         },
         lastPartialCorrectAt:
           correctness === Correctness.PARTIAL ? new Date() : undefined,
+        wrongCount: {
+          increment: correctness === Correctness.WRONG ? 1 : 0,
+        },
+        lastWrongAt: correctness === Correctness.WRONG ? new Date() : undefined,
         participant: {
           connect: { id: ctx.user.sub },
         },
@@ -228,18 +232,6 @@ export async function respondToFlashcardInstance(
 
     return questionResponse
   } else {
-    let aggregatedResponse = {
-      [Correctness.WRONG]: 0,
-      [Correctness.PARTIAL]: 0,
-      [Correctness.CORRECT]: 0,
-      total: 1,
-    }
-
-    aggregatedResponse = {
-      ...aggregatedResponse,
-      [correctness]: 1,
-    }
-
     // create new response
     const questionResponse = await ctx.prisma.questionResponse.create({
       data: {
@@ -247,10 +239,22 @@ export async function respondToFlashcardInstance(
         response: {
           correctness,
         },
-        aggregatedResponses: aggregatedResponse,
-        correctCount: correctness === 2 ? 1 : 0,
-        correctCountStreak: correctness === 2 ? 1 : 0,
-        lastCorrectAt: correctness === 2 ? new Date() : undefined,
+        aggregatedResponses: {
+          [Correctness.WRONG]: 0,
+          [Correctness.PARTIAL]: 0,
+          [Correctness.CORRECT]: 0,
+          total: 1,
+          [correctness]: 1,
+        },
+        correctCount: correctness === Correctness.CORRECT ? 1 : 0,
+        correctCountStreak: correctness === Correctness.CORRECT ? 1 : 0,
+        lastCorrectAt:
+          correctness === Correctness.CORRECT ? new Date() : undefined,
+        partialCorrectCount: correctness === Correctness.PARTIAL ? 1 : 0,
+        lastPartialCorrectAt:
+          correctness === Correctness.PARTIAL ? new Date() : undefined,
+        wrongCount: correctness === Correctness.WRONG ? 1 : 0,
+        lastWrongAt: correctness === Correctness.WRONG ? new Date() : undefined,
         participant: {
           connect: { id: ctx.user.sub },
         },
