@@ -935,8 +935,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sich sicher, dass Sie die folgende Live-Session löschen möchten?',
       liveSessionDeletionHint:
         'Das Löschen einer Live-Session ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live-Sessions können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
-      evaluationLinksEmbedding:
-        'Evaluations-Links für die Einbettung in PowerPoint',
+      evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
       noSessions: 'Keine Sessionen gefunden',
       creationExplanation:
         'Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',

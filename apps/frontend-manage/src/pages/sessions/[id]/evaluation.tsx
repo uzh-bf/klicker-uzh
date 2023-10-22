@@ -177,7 +177,14 @@ function Evaluation() {
     }
   }, [router.query.leaderboard])
 
+  useEffect(() => {
+    if (router.query.showSolution === 'true') {
+      setShowSolution(true)
+    }
+  }, [router.query.showSolution])
+
   if (error && !data) return <div>{t('shared.generic.systemError')}</div>
+
   if (loading || !data) return <Loader />
 
   if (!currentInstance.id && selectedInstanceIndex !== -1) {
@@ -203,26 +210,29 @@ function Evaluation() {
           charSet="utf-8"
         ></meta>
       </Head>
-      <div className="z-20 flex-none h-11">
-        <EvaluationControlBar
-          blocks={blocks || []}
-          selectedBlock={selectedBlockIndex}
-          setSelectedBlock={setSelectedBlockIndex}
-          setSelectedInstanceIndex={setSelectedInstanceIndex}
-          selectedInstanceIndex={selectedInstanceIndex}
-          instanceResults={instanceResults}
-          setLeaderboard={setLeaderboard}
-          setFeedbacks={setFeedbacks}
-          setConfusion={setConfusion}
-          showLeaderboard={showLeaderboard}
-          showFeedbacks={showFeedbacks}
-          showConfusion={showConfusion}
-          status={status || ''}
-          feedbacks={feedbacks || []}
-          confusionFeedbacks={confusionFeedbacks || []}
-          isGamificationEnabled={isGamificationEnabled}
-        />
-      </div>
+
+      {router.query.hideControls !== 'true' && (
+        <div className="z-20 flex-none h-11">
+          <EvaluationControlBar
+            blocks={blocks || []}
+            selectedBlock={selectedBlockIndex}
+            setSelectedBlock={setSelectedBlockIndex}
+            setSelectedInstanceIndex={setSelectedInstanceIndex}
+            selectedInstanceIndex={selectedInstanceIndex}
+            instanceResults={instanceResults}
+            setLeaderboard={setLeaderboard}
+            setFeedbacks={setFeedbacks}
+            setConfusion={setConfusion}
+            showLeaderboard={showLeaderboard}
+            showFeedbacks={showFeedbacks}
+            showConfusion={showConfusion}
+            status={status || ''}
+            feedbacks={feedbacks || []}
+            confusionFeedbacks={confusionFeedbacks || []}
+            isGamificationEnabled={isGamificationEnabled}
+          />
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col min-h-0">
         {currentInstance &&
