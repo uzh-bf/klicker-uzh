@@ -1,7 +1,6 @@
 import { H1 } from "@uzh-bf/design-system";
 import React, { useEffect, useState } from "react";
 import { getSlideID } from "../office-utils/powerPointAPI";
-import { Progress } from "./Progress";
 import { URLForm } from "./URLForm";
 
 /* global window*/
@@ -25,8 +24,9 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
     }
   }, [isOfficeInitialized]);
 
+  // HACK: comment for browser-based dev
   if (!isOfficeInitialized) {
-    return <Progress message="Bitte warten Sie, während das KlickerUZH Add-in geladen wird..." />;
+    return <div>Please wait while the KlickerUZH Add-in is loading...</div>;
   }
 
   if (!newlyInserted) {
@@ -36,10 +36,27 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
     }
   }
   return (
-    <div className="m-10">
-      <H1 className={{ root: "text-xl text-red-900" }}>KlickerUZH: PowerPoint Add-in</H1>
-      <img src="assets/logo-filled.png" alt="KlickerUZH Logo" className="my-12 ml-auto mr-auto h-72 w-72"></img>
-      <URLForm slideID={slideID} />
+    <div className="font-sans">
+      <div className="flex flex-row bg-slate-100 p-2 gap-4 items-center">
+        <img src="assets/logo-filled.png" alt="KlickerUZH Logo" className="h-16 w-16"></img>
+        <H1 className={{ root: "" }}>KlickerUZH: Embed Evaluation</H1>
+      </div>
+      <div className="p-4">
+        <div className="flex flex-row gap-4 mb-4">
+          <div className="flex-1">
+            <ol className="list-decimal list-inside">
+              <li>Go to https://manage.klicker.uzh.ch/sessions</li>
+              <li>For the quiz you want to embed, open the "Embed Evaluation" dialog</li>
+              <li>Copy the link of the view to embed (the full evaluation, a specific question, or the leaderboard)</li>
+              <li>Paste the link into the field and click "Embed"</li>
+            </ol>
+          </div>
+          <div className="flex-1">
+            <img src="assets/embed-modal.png" alt="Embed Modal" className="border rounded"></img>
+          </div>
+        </div>
+        <URLForm slideID={slideID} />
+      </div>
     </div>
   );
 }
