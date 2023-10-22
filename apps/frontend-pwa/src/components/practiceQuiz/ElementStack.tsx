@@ -34,6 +34,8 @@ export type InstanceStatus =
   | 'incorrect'
   | 'partial'
 
+export type FlashcardResponseValues = 'wrong' | 'partial' | 'correct'
+
 function ElementStack({
   id,
   courseId,
@@ -58,13 +60,13 @@ function ElementStack({
   const elementInstance = stack.elements?.[0]
 
   const [studentGrading, setStudentGrading] = useState<
-    'no' | 'partial' | 'yes' | undefined
+    FlashcardResponseValues | undefined
   >(undefined)
 
-  const flashcardGradingMap: Record<string, number> = {
-    no: 0,
+  const flashcardGradingMap: Record<FlashcardResponseValues, number> = {
+    wrong: 0,
     partial: 1,
-    yes: 2,
+    correct: 2,
   }
 
   return (

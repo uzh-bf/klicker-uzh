@@ -9,12 +9,13 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { FlashcardResponseValues } from './ElementStack'
 
 interface FlashcardProps {
   content: string
   explanation: string
-  response?: 'no' | 'partial' | 'yes'
-  setResponse: (value: 'no' | 'partial' | 'yes') => void
+  response?: FlashcardResponseValues
+  setResponse: (value: FlashcardResponseValues) => void
 }
 
 function Flashcard({
@@ -81,8 +82,8 @@ function FlashcardFront({
 
 interface FlashcardBackProps {
   explanation: string
-  response?: 'no' | 'partial' | 'yes'
-  setResponse: (value: 'no' | 'partial' | 'yes') => void
+  response?: FlashcardResponseValues
+  setResponse: (value: FlashcardResponseValues) => void
 }
 
 function FlashcardBack({
@@ -103,8 +104,8 @@ function FlashcardBack({
         </p>
         <div className="flex flex-row justify-evenly w-full mt-2 space-x-2">
           <FlashcardButton
-            active={response === 'no'}
-            setResponse={() => setResponse('no')}
+            active={response === 'wrong'}
+            setResponse={() => setResponse('wrong')}
             text={t('pwa.practiceQuiz.flashcardNoResponse')}
             color="bg-red-300"
             activeColor="bg-red-600"
@@ -119,8 +120,8 @@ function FlashcardBack({
             icon={faCheck}
           />
           <FlashcardButton
-            active={response === 'yes'}
-            setResponse={() => setResponse('yes')}
+            active={response === 'correct'}
+            setResponse={() => setResponse('correct')}
             text={t('pwa.practiceQuiz.flashcardYesResponse')}
             color="bg-green-300"
             activeColor="bg-green-600"
