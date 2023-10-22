@@ -1,4 +1,5 @@
 import { UserRole } from '@klicker-uzh/prisma'
+import * as R from 'ramda'
 import { Context } from '../lib/context'
 import { AggregatedResponseFlashcard, Correctness } from '../types/app'
 
@@ -39,10 +40,13 @@ export async function getPracticeQuizData(
 
   if (!quiz) return null
 
+  console.log(quiz.stacks)
+
   if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
     // TODO: add time decay as well
     // TODO: adapt the implementation to multiple instances per stack - resorting inside the stack does probably not make sense
-    const orderedStacks = quiz.stacks.toSorted((a, b) => {
+    // const orderedStacks = quiz.stacks.toSorted((a, b) => { // TODO: use once nodejs 20 is used
+    const orderedStacks = R.sort((a, b) => {
       const aResponses = a.elements[0].responses
       const bResponses = b.elements[0].responses
 
@@ -61,7 +65,7 @@ export async function getPracticeQuizData(
       if (aResponse.lastCorrectAt < bResponse.lastCorrectAt) return -1
       if (aResponse.lastCorrectAt > bResponse.lastCorrectAt) return 1
       return 0
-    })
+    }, quiz.stacks)
 
     return {
       ...quiz,
