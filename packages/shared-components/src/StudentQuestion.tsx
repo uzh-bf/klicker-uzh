@@ -17,6 +17,11 @@ import KPAnswerOptions from './questions/KPAnswerOptions'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
 import { SCAnswerOptions } from './questions/SCAnswerOptions'
 import SessionProgress from './questions/SessionProgress'
+// TODO: merge validation logic in this file with the validateResponse utils
+import {
+  validateKprimResponse,
+  validateMcResponse,
+} from './utils/validateResponse'
 
 export interface StudentQuestionProps {
   activeIndex: number
@@ -87,25 +92,11 @@ export const StudentQuestion = ({
     (type: string): any =>
     (choice: any, selectedValue?: boolean): any =>
     (): void => {
-      const validateChoices = (newValue: any): boolean => {
-        switch (type) {
-          case QuestionType.Sc:
-            return newValue.length === 1
-          case QuestionType.Mc:
-            return newValue.length > 0
-          case QuestionType.Kprim:
-            return (
-              Object.values(newValue).length === 4 &&
-              Object.values(newValue).filter((value) => value === undefined)
-                .length === 0
-            )
-        }
-      }
       if (inputValue && type === QuestionType.Mc) {
         if (typeof inputValue === 'object') {
           setInputState({
             inputEmpty: false,
-            inputValid: validateChoices(inputValue),
+            inputValid: validateMcResponse(inputValue),
             inputValue: [],
           })
         }
@@ -115,7 +106,7 @@ export const StudentQuestion = ({
 
           return setInputState({
             inputEmpty: newInputValue.length === 0,
-            inputValid: validateChoices(newInputValue),
+            inputValid: validateMcResponse(newInputValue),
             inputValue: newInputValue,
           })
         }
@@ -124,7 +115,7 @@ export const StudentQuestion = ({
         const newInputValue = [...inputValue, choice]
         return setInputState({
           inputEmpty: false,
-          inputValid: validateChoices(newInputValue),
+          inputValid: validateMcResponse(newInputValue),
           inputValue: newInputValue,
         })
       }
@@ -137,7 +128,7 @@ export const StudentQuestion = ({
 
         return setInputState({
           inputEmpty: Object.keys(newInputValue).length === 0,
-          inputValid: validateChoices(choice),
+          inputValid: validateKprimResponse(newInputValue),
           inputValue: newInputValue,
         })
       }
@@ -237,13 +228,15 @@ export const StudentQuestion = ({
         onExpire={onExpire}
       />
 
-      <div
-        className={twMerge(
-          'mt-4 border-slate-300 flex-initial min-h-[6rem] bg-primary-10 border rounded leading-6 prose max-w-none prose-p:!m-0 prose-img:!m-0 p-4'
-        )}
-      >
-        <Markdown content={currentQuestion.content} />
-      </div>
+      {currentQuestion.content !== '<br>' && (
+        <div
+          className={twMerge(
+            'mt-4 border-slate-300 flex-initial min-h-[6rem] bg-primary-10 border rounded leading-6 prose max-w-none prose-p:!m-0 prose-img:!m-0 p-4'
+          )}
+        >
+          <Markdown content={currentQuestion.content} />
+        </div>
+      )}
 
       <div className="flex-1 mt-4">
         {typeof currentQuestion.type !== 'undefined' && (

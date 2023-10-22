@@ -91,6 +91,7 @@ function LiveSessionWizard({
                 [
                   QuestionType.Sc,
                   QuestionType.Mc,
+                  QuestionType.Kprim,
                   QuestionType.Numerical,
                   QuestionType.FreeText,
                 ],
