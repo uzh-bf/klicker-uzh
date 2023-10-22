@@ -770,3 +770,18 @@ export async function changeCourseDates(
 
   return course
 }
+
+export async function checkValidCoursePin(
+  { pin }: { pin: number },
+  ctx: Context
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { pinCode: pin },
+  })
+
+  if (!course || course.pinCode !== pin) {
+    return null
+  }
+
+  return course.id
+}

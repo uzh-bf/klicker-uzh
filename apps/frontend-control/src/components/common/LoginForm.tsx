@@ -1,4 +1,8 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
+import Footer from '@klicker-uzh/shared-components/src/Footer'
+import usePWAInstall, {
+  BeforeInstallPromptEvent,
+} from '@klicker-uzh/shared-components/src/hooks/usePWAInstall'
 import {
   Button,
   FormikTextField,
@@ -9,17 +13,7 @@ import {
 import { Form } from 'formik'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import React, { useEffect, useRef, useState } from 'react'
-import Footer from './Footer'
-
-interface BeforeInstallPromptEventReturn {
-  userChoice: string
-  platform: string
-}
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<BeforeInstallPromptEventReturn>
-}
+import { useRef, useState } from 'react'
 
 interface LoginFormProps {
   header: string
@@ -60,20 +54,7 @@ export function LoginForm({
   const [onChrome, setOnChrome] = useState(false)
   const deferredPrompt = useRef<undefined | BeforeInstallPromptEvent>(undefined)
 
-  useEffect(() => {
-    // Check if event is supported
-    if ('onbeforeinstallprompt' in window) {
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault()
-        deferredPrompt.current = e as BeforeInstallPromptEvent
-        setOnChrome(true)
-      })
-    } else {
-      // TODO: resolve this fallback - currently shows install symbol on all mac browsers (also PCs)
-      // We assume users are on iOS (for now)
-      setOniOS(true)
-    }
-  }, [])
+  usePWAInstall({ deferredPrompt, setOnChrome, setOniOS })
 
   const onInstallClick = async () => {
     deferredPrompt.current!.prompt()
@@ -127,9 +108,6 @@ export function LoginForm({
             )}
 
             <div className="flex flex-row justify-between">
-              <div>
-                {/* // TODO: add possibilities to reset password and register new user accounts here */}
-              </div>
               <Button
                 className={{ root: 'mt-2 border-uzh-grey-80' }}
                 type="submit"
