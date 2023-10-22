@@ -74,7 +74,7 @@ CREATE TABLE "PracticeQuiz" (
     "orderType" "ElementOrderType" NOT NULL DEFAULT 'SEQUENTIAL',
     "status" "PublicationStatus" NOT NULL DEFAULT 'DRAFT',
     "ownerId" UUID NOT NULL,
-    "courseId" UUID,
+    "courseId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -139,7 +139,7 @@ ALTER TABLE "ElementStack" ADD CONSTRAINT "ElementStack_practiceQuizId_fkey" FOR
 ALTER TABLE "PracticeQuiz" ADD CONSTRAINT "PracticeQuiz_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PracticeQuiz" ADD CONSTRAINT "PracticeQuiz_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "PracticeQuiz" ADD CONSTRAINT "PracticeQuiz_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "QuestionResponse" ADD CONSTRAINT "QuestionResponse_elementInstanceId_fkey" FOREIGN KEY ("elementInstanceId") REFERENCES "ElementInstance"("id") ON DELETE SET NULL ON UPDATE CASCADE;

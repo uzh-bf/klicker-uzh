@@ -14,7 +14,6 @@ import Flashcard from './Flashcard'
 interface ElementStackProps {
   id: number
   courseId: string
-  quizId: string
   stack: ElementStack
   currentStep: number
   totalSteps: number
@@ -38,7 +37,6 @@ export type InstanceStatus =
 function ElementStack({
   id,
   courseId,
-  quizId,
   stack,
   currentStep,
   totalSteps,
@@ -104,7 +102,7 @@ function ElementStack({
         )}
 
         {elementInstance &&
-          elementInstance.elementData.type === 'FLASHCARD' && (
+          elementInstance.elementData.type === ElementType.Flashcard && (
             <Flashcard
               key={id}
               content={elementInstance.elementData.content}
