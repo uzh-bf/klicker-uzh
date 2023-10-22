@@ -7,7 +7,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import formatResponse from '@lib/formatResponse'
+import formatResponse from '@klicker-uzh/shared-components/src/utils/formatResponse'
 import { H3, Progress } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'

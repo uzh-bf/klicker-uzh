@@ -14,7 +14,7 @@ import {
   validateMcResponse,
   validateNumericalResponse,
   validateScResponse,
-} from '@lib/validateResponse'
+} from '@klicker-uzh/shared-components/src/utils/validateResponse'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { indexBy } from 'ramda'
