@@ -8,7 +8,7 @@ generator client {
 generator pothos {
   provider     = "prisma-pothos-types"
   clientOutput = "@klicker-uzh/prisma"
-  output       = "../client/pothos.d.ts"
+  output       = "../client/pothos.ts"
 }
 
 generator json {

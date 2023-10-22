@@ -1,5 +1,5 @@
-query GetSessionEvaluation($id: String!) {
-  sessionEvaluation(id: $id) {
+query GetSessionEvaluation($id: String!, $hmac: String) {
+  sessionEvaluation(id: $id, hmac: $hmac) {
     id
     displayName
     status
