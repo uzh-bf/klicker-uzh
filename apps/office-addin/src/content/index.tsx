@@ -1,11 +1,8 @@
-import { initializeIcons } from "@fluentui/font-icons-mdl2";
 import React from "react";
 import ReactDOM from "react-dom";
 import App from "./components/App";
 
 declare const document, Office;
-
-initializeIcons();
 
 let isOfficeInitialized = false;
 let newlyInserted = false;
@@ -26,3 +23,6 @@ Office.initialize = function (reason) {
   isOfficeInitialized = true;
   render(App);
 };
+
+// HACK: enable for browser-based dev
+// render(App);
