@@ -44,11 +44,11 @@ function PracticeQuiz({
           displayName={quiz.displayName}
           description={quiz.description ?? undefined}
           numOfQuestions={quiz.stacks?.length ?? undefined}
-          orderType={quiz.orderType}
-          resetTimeDays={quiz.resetTimeDays ?? undefined}
+          // orderType={quiz.orderType}
+          // resetTimeDays={quiz.resetTimeDays ?? undefined}
           // previouslyAnswered={quiz.previouslyAnswered ?? undefined}
           // stacksWithQuestions={quiz.stacksWithQuestions ?? undefined}
-          pointsMultiplier={quiz.pointsMultiplier}
+          // pointsMultiplier={quiz.pointsMultiplier}
           setCurrentIx={setCurrentIx}
         />
       )}
