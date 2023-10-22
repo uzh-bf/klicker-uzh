@@ -93,8 +93,8 @@ function FlashcardBack({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col items-center justify-center w-full flex-1 transform-rotateY-180 backface-hidden">
-      <div className="flex items-center justify-center flex-1">
+    <div className="flex flex-col w-full flex-1 transform-rotateY-180 backface-hidden">
+      <div className="flex flex-1">
         <DynamicMarkdown content={explanation} withProse />
       </div>
       <div className="flex flex-col items-center justify-center gap-1 flex-shrink-0 w-full pt-4 border-t border-gray-300">
