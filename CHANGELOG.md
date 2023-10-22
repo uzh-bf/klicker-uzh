@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.4...v3.0.5) (2023-10-22)
+
+
+### Bug Fixes
+
+* **apps/office-addin:** regenerate tailwind output ([a356c42](https://github.com/uzh-bf/klicker-uzh/commit/a356c42971a30263dc6f79427c51a0257f1c72dd))
+
 ### [3.0.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.3...v3.0.4) (2023-10-22)
 
 
