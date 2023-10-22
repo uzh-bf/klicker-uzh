@@ -180,9 +180,22 @@ export async function respondToFlashcardInstance(
         },
       },
       data: {
-        trialsCount: {
-          increment: 1,
+        participant: {
+          connect: { id: ctx.user.sub },
         },
+        elementInstance: {
+          connect: { id },
+        },
+        participation: {
+          connect: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+        },
+
+        // RESPONSE
         response: {
           correctness,
         },
@@ -191,6 +204,12 @@ export async function respondToFlashcardInstance(
           [correctness]: aggregatedResponse[correctness] + 1,
           total: aggregatedResponse.total + 1,
         },
+
+        trialsCount: {
+          increment: 1,
+        },
+
+        // CORRECT
         correctCount: {
           increment: correctness === Correctness.CORRECT ? 1 : 0,
         },
@@ -202,15 +221,27 @@ export async function respondToFlashcardInstance(
         },
         lastCorrectAt:
           correctness === Correctness.CORRECT ? new Date() : undefined,
+
+        // PARTIALLY CORRECT
         partialCorrectCount: {
           increment: correctness === Correctness.PARTIAL ? 1 : 0,
         },
         lastPartialCorrectAt:
           correctness === Correctness.PARTIAL ? new Date() : undefined,
+
+        // WRONG
         wrongCount: {
           increment: correctness === Correctness.WRONG ? 1 : 0,
         },
         lastWrongAt: correctness === Correctness.WRONG ? new Date() : undefined,
+      },
+    })
+
+    return questionResponse
+  } else {
+    // create new response
+    const questionResponse = await ctx.prisma.questionResponse.create({
+      data: {
         participant: {
           connect: { id: ctx.user.sub },
         },
@@ -225,15 +256,8 @@ export async function respondToFlashcardInstance(
             },
           },
         },
-      },
-    })
 
-    return questionResponse
-  } else {
-    // create new response
-    const questionResponse = await ctx.prisma.questionResponse.create({
-      data: {
-        trialsCount: 1,
+        // RESPONSE
         response: {
           correctness,
         },
@@ -244,29 +268,23 @@ export async function respondToFlashcardInstance(
           total: 1,
           [correctness]: 1,
         },
+
+        trialsCount: 1,
+
+        // CORRECT
         correctCount: correctness === Correctness.CORRECT ? 1 : 0,
         correctCountStreak: correctness === Correctness.CORRECT ? 1 : 0,
         lastCorrectAt:
           correctness === Correctness.CORRECT ? new Date() : undefined,
+
+        // PARTIALLY CORRECT
         partialCorrectCount: correctness === Correctness.PARTIAL ? 1 : 0,
         lastPartialCorrectAt:
           correctness === Correctness.PARTIAL ? new Date() : undefined,
+
+        // WRONG
         wrongCount: correctness === Correctness.WRONG ? 1 : 0,
         lastWrongAt: correctness === Correctness.WRONG ? new Date() : undefined,
-        participant: {
-          connect: { id: ctx.user.sub },
-        },
-        elementInstance: {
-          connect: { id },
-        },
-        participation: {
-          connect: {
-            courseId_participantId: {
-              courseId,
-              participantId: ctx.user.sub,
-            },
-          },
-        },
       },
     })
 
