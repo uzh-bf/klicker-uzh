@@ -31,26 +31,22 @@ function Flashcard({
   }
 
   return (
-    <div
-      className={twMerge(
-        'flex-1 md:max-w-xl md:mx-auto md:mb-4 md:p-8 md:pt-6 w-full'
-      )}
-    >
+    <div className={twMerge('flex-1 md:max-w-xl md:mx-auto md:mb-4 w-full')}>
       <div
-        className={`flex flex-col p-4 justify-between min-h-[300px] border border-gray-300 rounded-lg shadow transform-style-preserve-3d transition-transform-0_6s ${
+        className={`flex flex-col p-4 border border-gray-300 rounded-lg shadow transform-style-preserve-3d transition-transform-0_6s ${
           isFlipped ? 'transform-rotateY-180' : 'cursor-pointer hover:shadow-xl'
         }`}
         onClick={!isFlipped ? handleFlip : () => null}
       >
         <FlashcardFront isFlipped={isFlipped} content={content} />
 
-        <FlashcardBack
-          explanation={explanation}
-          response={response}
-          setResponse={setResponse}
-        />
-
-        {!isFlipped && (
+        {isFlipped ? (
+          <FlashcardBack
+            explanation={explanation}
+            response={response}
+            setResponse={setResponse}
+          />
+        ) : (
           <div className="self-end text-sm text-gray-500 flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faHandPointer} />
             {t('pwa.practiceQuiz.flashcardClick')}
@@ -74,9 +70,9 @@ function FlashcardFront({
       content={content}
       className={{
         root: twMerge(
-          'm-auto text-center py-8',
+          'mx-auto text-center flex-none',
           isFlipped &&
-            'w-full text-center transform-rotateY-180 px-4 py-2 border rounded bg-slate-100 prose-p:mb-0 mb-4'
+            'w-full transform-rotateY-180 px-4 py-2 border rounded bg-slate-100 prose-p:mb-0 mb-4'
         ),
       }}
     />
@@ -97,7 +93,7 @@ function FlashcardBack({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full transform-rotateY-180 backface-hidden">
+    <div className="flex flex-col items-center justify-center w-full flex-1 transform-rotateY-180 backface-hidden">
       <div className="flex items-center justify-center flex-1">
         <DynamicMarkdown content={explanation} withProse />
       </div>

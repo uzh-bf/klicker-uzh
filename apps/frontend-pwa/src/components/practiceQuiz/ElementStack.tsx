@@ -113,7 +113,7 @@ function ElementStack({
           )}
       </div>
       <Button
-        className={{ root: 'float-right mt-4 text-lg' }}
+        className={{ root: 'float-right text-lg mt-4' }}
         disabled={!studentGrading}
         onClick={async () => {
           // TODO: loop over all instances in a stack to respond to them or implement backend endpoint, which allows answering multiple instances
