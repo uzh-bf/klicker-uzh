@@ -19,6 +19,10 @@ ADD COLUMN     "aggregatedResponses" JSONB,
 ADD COLUMN     "correctCount" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN     "correctCountStreak" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN     "lastCorrectAt" TIMESTAMP(3),
+ADD COLUMN     "partialCorrectCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "lastPartialCorrectAt" TIMESTAMP(3),
+ADD COLUMN     "wrongCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "lastWrongAt" TIMESTAMP(3),
 ALTER COLUMN "questionInstanceId" DROP NOT NULL;
 
 -- AlterTable

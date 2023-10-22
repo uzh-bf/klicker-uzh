@@ -1004,7 +1004,8 @@ model LeaderboardEntry {
 model QuestionResponse {
   id Int @id @default(autoincrement())
 
-  trialsCount        Int       @default(0)
+  trialsCount Int @default(0)
+
   totalScore         Float     @default(0)
   totalPointsAwarded Float?    @default(0)
   totalXpAwarded     Float     @default(0)
@@ -1014,6 +1015,12 @@ model QuestionResponse {
   correctCount       Int       @default(0)
   correctCountStreak Int       @default(0)
   lastCorrectAt      DateTime?
+
+  partialCorrectCount  Int       @default(0)
+  lastPartialCorrectAt DateTime?
+
+  wrongCount  Int       @default(0)
+  lastWrongAt DateTime?
 
   /// [PrismaQuestionResponse]
   response Json

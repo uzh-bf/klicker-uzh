@@ -42,7 +42,7 @@ export async function getPracticeQuizData(
   if (ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT) {
     // TODO: add time decay as well
     // TODO: adapt the implementation to multiple instances per stack - resorting inside the stack does probably not make sense
-    const orderedStacks = quiz.stacks.sort((a, b) => {
+    const orderedStacks = quiz.stacks.toSorted((a, b) => {
       const aResponses = a.elements[0].responses
       const bResponses = b.elements[0].responses
 
@@ -98,11 +98,19 @@ export async function respondToFlashcardInstance(
     return null
   }
 
-  // TODO: also handle the case where the participant is logged in, but has no valid participation in the considered course
-  if (!ctx.user?.sub) {
-    // TODO: if user is not logged in, do not check the questionResponse, only save it on the instance / update the instance results
-    return null
-  }
+  const participation = ctx.user?.sub
+    ? await ctx.prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        include: {
+          participant: true,
+        },
+      })
+    : null
 
   // update the aggregated data on the element instance
   await ctx.prisma.elementInstance.update({
@@ -118,6 +126,10 @@ export async function respondToFlashcardInstance(
     },
   })
 
+  if (!ctx.user?.sub || !participation) {
+    return null
+  }
+
   // find existing question response to this instance by this user
   const existingResponse = await ctx.prisma.questionResponse.findUnique({
     where: {
@@ -128,7 +140,7 @@ export async function respondToFlashcardInstance(
     },
   })
 
-  ctx.prisma.questionResponseDetail.create({
+  await ctx.prisma.questionResponseDetail.create({
     data: {
       response: {
         correctness: correctness,
@@ -178,13 +190,21 @@ export async function respondToFlashcardInstance(
         },
         aggregatedResponses: aggregatedResponse,
         correctCount: {
-          increment: correctness === 2 ? 1 : 0,
+          increment: correctness === Correctness.CORRECT ? 1 : 0,
         },
         correctCountStreak: {
           increment:
-            correctness === 2 ? 1 : -existingResponse?.correctCountStreak,
+            correctness === Correctness.CORRECT
+              ? 1
+              : -existingResponse?.correctCountStreak,
         },
-        lastCorrectAt: correctness === 2 ? new Date() : undefined,
+        lastCorrectAt:
+          correctness === Correctness.CORRECT ? new Date() : undefined,
+        partialCorrectCount: {
+          increment: correctness === Correctness.PARTIAL ? 1 : 0,
+        },
+        lastPartialCorrectAt:
+          correctness === Correctness.PARTIAL ? new Date() : undefined,
         participant: {
           connect: { id: ctx.user.sub },
         },
