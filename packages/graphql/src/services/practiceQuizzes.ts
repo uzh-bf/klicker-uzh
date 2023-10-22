@@ -171,12 +171,6 @@ export async function respondToFlashcardInstance(
     let aggregatedResponse =
       existingResponse.aggregatedResponses as AggregatedResponseFlashcard
 
-    aggregatedResponse = {
-      ...existingResponse.aggregatedResponses,
-      [correctness]: aggregatedResponse[correctness] + 1,
-      total: aggregatedResponse.total + 1,
-    }
-
     // update existing response
     const questionResponse = await ctx.prisma.questionResponse.update({
       where: {
@@ -192,7 +186,11 @@ export async function respondToFlashcardInstance(
         response: {
           correctness,
         },
-        aggregatedResponses: aggregatedResponse,
+        aggregatedResponses: {
+          ...existingResponse.aggregatedResponses,
+          [correctness]: aggregatedResponse[correctness] + 1,
+          total: aggregatedResponse.total + 1,
+        },
         correctCount: {
           increment: correctness === Correctness.CORRECT ? 1 : 0,
         },
