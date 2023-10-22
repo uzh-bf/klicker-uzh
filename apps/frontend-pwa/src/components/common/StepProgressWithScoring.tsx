@@ -31,7 +31,7 @@ function StepProgressWithScoring({
 }: StepProgressWithScoringProps) {
   return (
     <StepProgress
-      displayOffset={(items.length ?? 0) > 15 ? 3 : undefined}
+      displayOffset={(items.length ?? 0) > 7 ? 3 : undefined}
       value={currentIx}
       items={items}
       onItemClick={(ix: number) => setCurrentIx(ix)}

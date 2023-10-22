@@ -1,13 +1,14 @@
 import { useMutation } from '@apollo/client'
-import DynamicMarkdown from '@components/learningElements/DynamicMarkdown'
 import {
   ElementStack,
   ElementType,
   RespondToFlashcardInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2 } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import Flashcard from './Flashcard'
 
 interface ElementStackProps {
@@ -44,6 +45,8 @@ function ElementStack({
   setStepStatus,
   handleNextElement,
 }: ElementStackProps) {
+  const t = useTranslations()
+
   const router = useRouter()
   useEffect(() => {
     setStudentGrading(undefined)
@@ -96,7 +99,7 @@ function ElementStack({
 
         {stack.description && (
           <div className="mb-4">
-            <DynamicMarkdown content={stack.description} />
+            <DynamicMarkdown content={stack.description} withProse />
           </div>
         )}
 
@@ -135,6 +138,7 @@ function ElementStack({
                 correctness: value,
               },
             })
+
             // TODO: somehow react to return value of result
             console.log('respondToFlashcardInstance result: ', result)
           }
@@ -148,7 +152,9 @@ function ElementStack({
           handleNextElement()
         }}
       >
-        {currentStep === totalSteps ? 'Finish' : 'Next'}
+        {currentStep === totalSteps
+          ? t('shared.generic.finish')
+          : t('shared.generic.continue')}
       </Button>
     </div>
   )
