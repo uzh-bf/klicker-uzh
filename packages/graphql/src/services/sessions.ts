@@ -3,6 +3,7 @@ import {
   ConfusionTimestep,
   Element,
   ElementType,
+  LiveSession,
   QuestionInstance,
   QuestionInstanceType,
   SessionBlockStatus,
@@ -13,6 +14,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
+import { createHmac } from 'node:crypto'
 import * as R from 'ramda'
 import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ISession } from 'src/schema/session'
@@ -1697,55 +1699,133 @@ function completeQuestionData(instances: AllQuestionInstanceTypeData[]) {
   )
 }
 
-export async function getSessionEvaluation(
+export async function getSessionHMAC(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const session = await ctx.prisma.liveSession.findUnique({
     where: {
       id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      activeBlock: {
-        include: {
-          instances: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      blocks: {
-        orderBy: {
-          order: 'asc',
-        },
-        where: {
-          status: {
-            equals: 'EXECUTED',
-          },
-        },
-        include: {
-          instances: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      feedbacks: {
-        include: {
-          responses: true,
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
-      },
-      confusionFeedbacks: true,
     },
   })
 
   if (!session) return null
+
+  const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+  hmacEncoder.update(session.namespace + session.id)
+  const sessionHmac = hmacEncoder.digest('hex')
+
+  return sessionHmac
+}
+
+export async function getSessionEvaluation(
+  { id, hmac }: { id: string; hmac?: string | null },
+  ctx: Context
+) {
+  let session: LiveSession | null = null
+
+  if (ctx.user?.sub) {
+    session = await ctx.prisma.liveSession.findUnique({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      include: {
+        activeBlock: {
+          include: {
+            instances: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
+        blocks: {
+          orderBy: {
+            order: 'asc',
+          },
+          where: {
+            status: {
+              equals: 'EXECUTED',
+            },
+          },
+          include: {
+            instances: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
+        feedbacks: {
+          include: {
+            responses: true,
+          },
+          orderBy: {
+            updatedAt: 'desc',
+          },
+        },
+        confusionFeedbacks: true,
+      },
+    })
+  } else if (typeof hmac === 'string') {
+    session = await ctx.prisma.liveSession.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        activeBlock: {
+          include: {
+            instances: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
+        blocks: {
+          orderBy: {
+            order: 'asc',
+          },
+          where: {
+            status: {
+              equals: 'EXECUTED',
+            },
+          },
+          include: {
+            instances: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
+        feedbacks: {
+          include: {
+            responses: true,
+          },
+          orderBy: {
+            updatedAt: 'desc',
+          },
+        },
+        confusionFeedbacks: true,
+      },
+    })
+
+    if (!session) return null
+
+    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+    hmacEncoder.update(session.namespace + session.id)
+    const sessionHmac = hmacEncoder.digest('hex')
+
+    // evaluate whether the hashed session.namespace and session.id equals the hmac
+    if (sessionHmac !== hmac) {
+      session = null
+    }
+  }
+
+  if (!session) return null
+
   // if the session is running and a block is active
   // fetch the current results from the execution cache
   let activeInstanceResults: any[] = []

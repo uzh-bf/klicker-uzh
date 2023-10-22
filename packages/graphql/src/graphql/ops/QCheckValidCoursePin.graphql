@@ -1,0 +1,3 @@
+query CheckValidCoursePin($pin: Int!) {
+  checkValidCoursePin(pin: $pin)
+}
