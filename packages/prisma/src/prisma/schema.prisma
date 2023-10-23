@@ -361,10 +361,10 @@ model PracticeQuiz {
 
   stacks ElementStack[]
 
-  owner    User    @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerId  String  @db.Uuid
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  courseId String? @db.Uuid
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId  String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1004,15 +1004,29 @@ model LeaderboardEntry {
 model QuestionResponse {
   id Int @id @default(autoincrement())
 
-  trialsCount        Int       @default(0)
+  trialsCount Int @default(0)
+
   totalScore         Float     @default(0)
   totalPointsAwarded Float?    @default(0)
   totalXpAwarded     Float     @default(0)
   lastAwardedAt      DateTime?
   lastXpAwardedAt    DateTime?
 
+  correctCount       Int       @default(0)
+  correctCountStreak Int       @default(0)
+  lastCorrectAt      DateTime?
+
+  partialCorrectCount  Int       @default(0)
+  lastPartialCorrectAt DateTime?
+
+  wrongCount  Int       @default(0)
+  lastWrongAt DateTime?
+
   /// [PrismaQuestionResponse]
   response Json
+
+  /// [PrismaAggregatedResponse]
+  aggregatedResponses Json?
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
@@ -1030,6 +1044,7 @@ model QuestionResponse {
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, questionInstanceId])
+  @@unique([participantId, elementInstanceId])
 }
 
 model QuestionResponseDetail {

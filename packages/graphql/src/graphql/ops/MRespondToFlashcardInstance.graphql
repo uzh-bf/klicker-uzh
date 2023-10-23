@@ -1,0 +1,13 @@
+mutation RespondToFlashcardInstance(
+  $id: Int!
+  $courseId: String!
+  $correctness: Int!
+) {
+  respondToFlashcardInstance(
+    id: $id
+    courseId: $courseId
+    correctness: $correctness
+  ) {
+    id
+  }
+}

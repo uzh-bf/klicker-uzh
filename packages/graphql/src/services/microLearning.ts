@@ -7,12 +7,12 @@ import {
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { GraphQLError } from 'graphql'
 import { pick } from 'ramda'
-import { AllElementTypeData } from 'src/types/app'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
   processQuestionData,
 } from '../lib/questions'
+import { AllElementTypeData } from '../types/app'
 
 export async function getQuestionMap(
   questions: number[],

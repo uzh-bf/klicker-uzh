@@ -15,6 +15,14 @@ ALTER TABLE "Element" ADD COLUMN     "version" INTEGER NOT NULL DEFAULT 1;
 
 -- AlterTable
 ALTER TABLE "QuestionResponse" ADD COLUMN     "elementInstanceId" INTEGER,
+ADD COLUMN     "aggregatedResponses" JSONB,
+ADD COLUMN     "correctCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "correctCountStreak" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "lastCorrectAt" TIMESTAMP(3),
+ADD COLUMN     "partialCorrectCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "lastPartialCorrectAt" TIMESTAMP(3),
+ADD COLUMN     "wrongCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "lastWrongAt" TIMESTAMP(3),
 ALTER COLUMN "questionInstanceId" DROP NOT NULL;
 
 -- AlterTable
@@ -66,7 +74,7 @@ CREATE TABLE "PracticeQuiz" (
     "orderType" "ElementOrderType" NOT NULL DEFAULT 'SEQUENTIAL',
     "status" "PublicationStatus" NOT NULL DEFAULT 'DRAFT',
     "ownerId" UUID NOT NULL,
-    "courseId" UUID,
+    "courseId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -84,6 +92,9 @@ CREATE TABLE "_ElementStackToParticipation" (
     "A" INTEGER NOT NULL,
     "B" INTEGER NOT NULL
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QuestionResponse_participantId_elementInstanceId_key" ON "QuestionResponse"("participantId", "elementInstanceId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ElementInstance_originalId_key" ON "ElementInstance"("originalId");
@@ -128,7 +139,7 @@ ALTER TABLE "ElementStack" ADD CONSTRAINT "ElementStack_practiceQuizId_fkey" FOR
 ALTER TABLE "PracticeQuiz" ADD CONSTRAINT "PracticeQuiz_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PracticeQuiz" ADD CONSTRAINT "PracticeQuiz_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "PracticeQuiz" ADD CONSTRAINT "PracticeQuiz_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "QuestionResponse" ADD CONSTRAINT "QuestionResponse_elementInstanceId_fkey" FOREIGN KEY ("elementInstanceId") REFERENCES "ElementInstance"("id") ON DELETE SET NULL ON UPDATE CASCADE;

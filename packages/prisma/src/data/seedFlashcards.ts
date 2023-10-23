@@ -11,7 +11,29 @@ import Prisma, {
 } from '../../dist'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
-export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
+const turndown = Turndown()
+
+function extractQuizInfo(doc: typeof xmlDoc) {
+  return {
+    title: doc.box.title[0],
+    description: doc.box.description[0],
+    elements: doc.box.cards[0].card.map((card) => ({
+      originalId: card['$'].id,
+      name: `FC ${card['$'].id}`,
+      content: turndown.turndown(card.question[0].text[0].trim()),
+      explanation: turndown.turndown(card.answer[0].text[0].trim()),
+      type: ElementType.FLASHCARD,
+      options: {},
+    })),
+    // ... other practice quiz properties
+  }
+}
+
+async function seedFlashcardSet(
+  prismaClient: Prisma.PrismaClient,
+  fileName: string,
+  quizId: string
+) {
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
 
@@ -19,32 +41,11 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
   const USER_ID = USER_ID_TEST
   const COURSE_ID = COURSE_ID_TEST
 
-  const xmlData = fs.readFileSync(
-    path.join(__dirname, 'data/FC_Modul_1.xml'),
-    'utf-8'
-  )
+  const xmlData = fs.readFileSync(path.join(__dirname, fileName), 'utf-8')
 
   const xmlDoc = await parseStringPromise(xmlData)
 
   console.log(xmlDoc, xmlDoc.box.cards[0])
-
-  const turndown = Turndown()
-
-  function extractQuizInfo(doc: typeof xmlDoc) {
-    return {
-      title: doc.box.title[0],
-      description: doc.box.description[0],
-      elements: doc.box.cards[0].card.map((card) => ({
-        originalId: card['$'].id,
-        name: `FC ${card['$'].id}`,
-        content: turndown.turndown(card.question[0].text[0].trim()),
-        explanation: turndown.turndown(card.answer[0].text[0].trim()),
-        type: ElementType.FLASHCARD,
-        options: {},
-      })),
-      // ... other practice quiz properties
-    }
-  }
 
   const quizInfo = extractQuizInfo(xmlDoc)
 
@@ -86,10 +87,10 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
     where: {
-      id: 'e0c331b1-b66e-4fc2-b352-ba14c22c294c',
+      id: quizId,
     },
     create: {
-      id: 'e0c331b1-b66e-4fc2-b352-ba14c22c294c',
+      id: quizId,
       name: quizInfo.title,
       displayName: quizInfo.title,
       description: quizInfo.description,
@@ -111,7 +112,12 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
                   // TODO: pick only relevant properties of the element
                   elementData: el.value,
                   options: {},
-                  results: {},
+                  results: {
+                    0: 0,
+                    1: 0,
+                    2: 0,
+                    total: 0,
+                  },
                   ownerId: el.value.ownerId,
                   elementId: el.value.id,
                 },
@@ -159,6 +165,50 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
   )
 
   return elementsFC
+}
+
+export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_1.xml',
+    'e0c331b1-b66e-4fc2-b352-ba14c22c294c'
+  )
+
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_2.xml',
+    '36eba4d8-fa0d-46bc-b916-b53ba56637b8'
+  )
+
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_3.xml',
+    '9bdb2760-e631-4e00-9604-9d807a4f47a2'
+  )
+
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_4.xml',
+    'e0760993-18e1-467a-b84f-591c1b81e727'
+  )
+
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_5.xml',
+    '1c699242-3740-4c05-b853-86e8d824997e'
+  )
+
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_6.xml',
+    '35334e99-331d-481e-bd32-c84cddaf8764'
+  )
+
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_7.xml',
+    'd6a1f040-a78a-43ac-8778-bfc0f5b6e86c'
+  )
 }
 
 // if main module, run this

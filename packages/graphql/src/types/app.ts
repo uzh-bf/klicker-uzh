@@ -38,7 +38,29 @@ export type QuestionResponseValue = {
   value: string
 }
 
-export type QuestionResponse = QuestionResponseChoices | QuestionResponseValue
+export enum Correctness {
+  WRONG = 0,
+  PARTIAL = 1,
+  CORRECT = 2,
+}
+
+export type AggregatedResponseFlashcard = {
+  [Correctness.WRONG]: number
+  [Correctness.PARTIAL]: number
+  [Correctness.CORRECT]: number
+  total: number
+}
+
+export type AggregatedResponse = AggregatedResponseFlashcard
+
+export type QuestionResponseFlashcard = {
+  correctness: Correctness
+}
+
+export type QuestionResponse =
+  | QuestionResponseChoices
+  | QuestionResponseValue
+  | QuestionResponseFlashcard
 
 // TODO: results should also include the participants count (instead of storing it on the top-level)
 export type QuestionResultsChoices = {
@@ -176,12 +198,23 @@ export type AllQuestionInstanceTypeData =
   | ChoicesQuestionInstanceData
   | OpenQuestionInstanceData
 
+export type FlashcardInstanceResults = {
+  [Correctness.WRONG]: number
+  [Correctness.PARTIAL]: number
+  [Correctness.CORRECT]: number
+  total: number
+}
+
+export type ElementInstanceResults = FlashcardInstanceResults
+
 declare global {
   namespace PrismaJson {
     type PrismaQuestionResponse = QuestionResponse
     type PrismaElementOptions = ElementOptions
     type PrismaQuestionResults = QuestionResults
     type PrismaElementData = AllElementTypeData
+    type PrismaElementInstanceResults = ElementInstanceResults
+    type PrismaAggregatedResponse = AggregatedResponse
   }
 }
 // #endregion

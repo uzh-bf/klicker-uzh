@@ -8,7 +8,7 @@ import {
   NumericalQuestionData,
   QuestionResults,
   QuestionResultsChoices,
-} from 'src/types/app'
+} from '../types/app'
 
 const RELEVANT_KEYS: BaseQuestionDataKeys = [
   'id',

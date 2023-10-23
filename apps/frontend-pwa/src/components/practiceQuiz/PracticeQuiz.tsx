@@ -44,11 +44,11 @@ function PracticeQuiz({
           displayName={quiz.displayName}
           description={quiz.description ?? undefined}
           numOfQuestions={quiz.stacks?.length ?? undefined}
-          orderType={quiz.orderType}
-          resetTimeDays={quiz.resetTimeDays ?? undefined}
+          // orderType={quiz.orderType}
+          // resetTimeDays={quiz.resetTimeDays ?? undefined}
           // previouslyAnswered={quiz.previouslyAnswered ?? undefined}
           // stacksWithQuestions={quiz.stacksWithQuestions ?? undefined}
-          pointsMultiplier={quiz.pointsMultiplier}
+          // pointsMultiplier={quiz.pointsMultiplier}
           setCurrentIx={setCurrentIx}
         />
       )}
@@ -56,7 +56,7 @@ function PracticeQuiz({
       {currentStack && (
         <ElementStack
           id={currentStack.id}
-          quizId={quiz.id}
+          courseId={quiz.course.id}
           stack={currentStack}
           currentStep={currentIx + 1}
           totalSteps={quiz.stacks?.length ?? 0}

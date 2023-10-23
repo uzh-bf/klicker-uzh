@@ -1,12 +1,19 @@
-import DynamicMarkdown from '@components/learningElements/DynamicMarkdown'
-import { ElementStack } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation } from '@apollo/client'
+import {
+  ElementStack,
+  ElementType,
+  RespondToFlashcardInstanceDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2 } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import Flashcard from './Flashcard'
 
 interface ElementStackProps {
   id: number
-  quizId: string
+  courseId: string
   stack: ElementStack
   currentStep: number
   totalSteps: number
@@ -27,25 +34,40 @@ export type InstanceStatus =
   | 'incorrect'
   | 'partial'
 
+export type FlashcardResponseValues = 'wrong' | 'partial' | 'correct'
+
 function ElementStack({
   id,
-  quizId,
+  courseId,
   stack,
   currentStep,
   totalSteps,
   setStepStatus,
   handleNextElement,
 }: ElementStackProps) {
+  const t = useTranslations()
+
+  const router = useRouter()
   useEffect(() => {
     setStudentGrading(undefined)
   }, [currentStep])
+
+  const [respondToFlashcardInstance] = useMutation(
+    RespondToFlashcardInstanceDocument
+  )
 
   // TODO: enable handling multiple elements in a stack / extend state and submission logic accordingly
   const elementInstance = stack.elements?.[0]
 
   const [studentGrading, setStudentGrading] = useState<
-    'no' | 'partial' | 'yes' | undefined
+    FlashcardResponseValues | undefined
   >(undefined)
+
+  const flashcardGradingMap: Record<FlashcardResponseValues, number> = {
+    wrong: 0,
+    partial: 1,
+    correct: 2,
+  }
 
   return (
     <div>
@@ -77,12 +99,12 @@ function ElementStack({
 
         {stack.description && (
           <div className="mb-4">
-            <DynamicMarkdown content={stack.description} />
+            <DynamicMarkdown content={stack.description} withProse />
           </div>
         )}
 
         {elementInstance &&
-          elementInstance.elementData.type === 'FLASHCARD' && (
+          elementInstance.elementData.type === ElementType.Flashcard && (
             <Flashcard
               key={id}
               content={elementInstance.elementData.content}
@@ -93,22 +115,43 @@ function ElementStack({
           )}
       </div>
       <Button
-        className={{ root: 'float-right mt-4 text-lg' }}
+        className={{ root: 'float-right text-lg mt-4' }}
         disabled={!studentGrading}
-        onClick={() => {
-          // TODO: adapt these changes depending on the element type
-          setStepStatus({
-            status: 'manuallyGraded',
-            score: null,
-          })
-          setStudentGrading(undefined)
+        onClick={async () => {
+          // TODO: loop over all instances in a stack to respond to them or implement backend endpoint, which allows answering multiple instances
+          if (
+            typeof elementInstance !== 'undefined' &&
+            elementInstance.elementType === ElementType.Flashcard &&
+            typeof studentGrading !== 'undefined'
+          ) {
+            const value = flashcardGradingMap[studentGrading]
+            const result = await respondToFlashcardInstance({
+              variables: {
+                id: elementInstance.id,
+                courseId: courseId,
+                correctness: value,
+              },
+            })
 
-          // TODO: save student response here
+            setStepStatus({
+              status: 'manuallyGraded',
+              score: null,
+            })
+            setStudentGrading(undefined)
+          }
 
+          // TODO: handle other types of questions / content elements in practice quiz
+
+          if (currentStep === totalSteps) {
+            // redirect to repetition page
+            router.push(`/`)
+          }
           handleNextElement()
         }}
       >
-        {currentStep === totalSteps ? 'Finish' : 'Next'}
+        {currentStep === totalSteps
+          ? t('shared.generic.finish')
+          : t('shared.generic.continue')}
       </Button>
     </div>
   )
