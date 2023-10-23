@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.5...v3.0.6) (2023-10-22)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** move imports to shared components ([8a74f30](https://github.com/uzh-bf/klicker-uzh/commit/8a74f3004ec772e24b1e022315a89f67c92f30db))
+
+
+### Enhancements
+
+* allow kprim questions in live quiz ([04de7b8](https://github.com/uzh-bf/klicker-uzh/commit/04de7b87a65d84f8ce2e6f8ada8a3aa60c2d2982))
+
+### [3.0.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.4...v3.0.5) (2023-10-22)
+
+
+### Bug Fixes
+
+* **apps/office-addin:** regenerate tailwind output ([a356c42](https://github.com/uzh-bf/klicker-uzh/commit/a356c42971a30263dc6f79427c51a0257f1c72dd))
+
+### [3.0.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.3...v3.0.4) (2023-10-22)
+
+
+### Enhancements
+
+* **apps/office-addin:** improve layout and validation of office content add-in, update manifests, remove unneeded dependencies ([#3916](https://github.com/uzh-bf/klicker-uzh/issues/3916)) ([a245b70](https://github.com/uzh-bf/klicker-uzh/commit/a245b70941eaa01c463eca428e25ef08c2850ed7))
+
+### [3.0.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.2...v3.0.3) (2023-10-22)
+
+
+### Features
+
+* allow public access to evaluation page using HMAC verified link ([#3915](https://github.com/uzh-bf/klicker-uzh/issues/3915)) ([9fb42c3](https://github.com/uzh-bf/klicker-uzh/commit/9fb42c38852c96c689be58115a2f27f0ee9f941b))
+
 ### [3.0.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.1...v3.0.2) (2023-10-10)
 
 

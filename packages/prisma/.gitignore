@@ -9,3 +9,5 @@ src/data/exported_questions.json
 .env
 
 mockExam.ts
+
+src/data/data/*.xml

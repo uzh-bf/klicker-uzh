@@ -2,6 +2,8 @@ import {
   QuestionDisplayMode,
   QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
+import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
+import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { push } from '@socialgouv/matomo-next'
 import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -9,9 +11,6 @@ import localForage from 'localforage'
 import { useTranslations } from 'next-intl'
 import { without } from 'ramda'
 import React, { useEffect, useState } from 'react'
-
-import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
-import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 
 // TODO: notifications
 
@@ -147,7 +146,15 @@ function QuestionArea({
     type: string,
     instanceId: number
   ): void => {
-    if (value.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
+    if (type === QuestionType.Kprim) {
+      handleNewResponse(
+        type,
+        instanceId,
+        Object.keys(value).flatMap<number[]>((key) =>
+          value[key] === true ? [parseInt(key)] : []
+        )
+      )
+    } else if (value.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
       handleNewResponse(type, instanceId, value)
     } else if (QuestionType.FreeText === type) {
       handleNewResponse(type, instanceId, value)
