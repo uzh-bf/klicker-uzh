@@ -141,6 +141,10 @@ export default {
       language: 'Language',
       english: 'English',
       german: 'German',
+      practicePool: 'Practice',
+      practiceTitle: 'Practice Pool',
+      practiceQuizzes: 'Quizzes',
+      practice: 'Practice Activities',
     },
     contentInput: {
       boldStyle:

@@ -141,6 +141,10 @@ export default {
       language: 'Sprache',
       english: 'Englisch',
       german: 'Deutsch',
+      practicePool: 'Üben',
+      practiceTitle: 'Übungspool',
+      practiceQuizzes: 'Quizzes',
+      practice: 'Übungsaktivitäten',
     },
     contentInput: {
       boldStyle:

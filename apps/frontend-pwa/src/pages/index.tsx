@@ -7,6 +7,7 @@ import {
   faCirclePlus,
   faGraduationCap,
   faLink,
+  faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   MicroSession,
@@ -228,14 +229,14 @@ const Index = function () {
         )}
         <div>
           <H1 className={{ root: 'text-xl mb-2' }}>
-            {t('shared.generic.learningElements')}
+            {t('shared.generic.practice')}
           </H1>
           <div className="flex flex-col gap-2">
-            <LinkButton href="/practice" icon={faGraduationCap}>
-              {t('shared.generic.practice')}
+            <LinkButton href="/practice" icon={faRepeat}>
+              {t('shared.generic.practicePool')}
             </LinkButton>
             <LinkButton href="/repetition" icon={faGraduationCap}>
-              {t('shared.generic.repetition')}
+              {t('shared.generic.practiceQuizzes')}
             </LinkButton>
             <LinkButton href="/bookmarks" icon={faBookmark}>
               {t('pwa.general.myBookmarks')}

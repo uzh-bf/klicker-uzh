@@ -54,7 +54,7 @@ function PracticePool({ courseId }: Props) {
 
   return (
     <Layout
-      displayName="Practice"
+      displayName={t('shared.generic.practiceTitle')}
       course={data.coursePracticeQuiz.course ?? undefined}
     >
       <PracticeQuiz
