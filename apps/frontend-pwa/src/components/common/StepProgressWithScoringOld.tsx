@@ -4,6 +4,7 @@ import {
   faCheck,
   faCheckDouble,
   faInbox,
+  faUserPen,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -13,6 +14,7 @@ const ICON_MAP: Record<string, IconDefinition> = {
   correct: faCheckDouble,
   incorrect: faX,
   partial: faCheck,
+  manuallyGraded: faCheck,
   unanswered: faInbox,
 }
 
@@ -93,6 +95,10 @@ interface ProgressPointsProps {
 const ProgressPoints = ({ score, status }: ProgressPointsProps) => {
   if (typeof score !== 'undefined' && score !== null) {
     return <div>{score}p</div>
+  }
+
+  if (status === 'manuallyGraded') {
+    return <FontAwesomeIcon icon={faUserPen} />
   }
 
   if (status !== 'unanswered') {

@@ -16,6 +16,7 @@ interface FlashcardProps {
   explanation: string
   response?: FlashcardResponseValues
   setResponse: (value: FlashcardResponseValues) => void
+  existingResponse?: FlashcardResponseValues
 }
 
 function Flashcard({
@@ -23,9 +24,10 @@ function Flashcard({
   explanation,
   response,
   setResponse,
+  existingResponse,
 }: FlashcardProps) {
   const t = useTranslations()
-  const [isFlipped, setIsFlipped] = useState(false)
+  const [isFlipped, setIsFlipped] = useState(!!existingResponse ?? false)
 
   const handleFlip = () => {
     setIsFlipped((prev) => !prev)
@@ -46,6 +48,7 @@ function Flashcard({
             explanation={explanation}
             response={response}
             setResponse={setResponse}
+            existingResponse={existingResponse}
           />
         ) : (
           <div className="self-end text-sm text-gray-500 flex flex-row items-center gap-2">
@@ -84,12 +87,14 @@ interface FlashcardBackProps {
   explanation: string
   response?: FlashcardResponseValues
   setResponse: (value: FlashcardResponseValues) => void
+  existingResponse?: FlashcardResponseValues
 }
 
 function FlashcardBack({
   explanation,
   response,
   setResponse,
+  existingResponse,
 }: FlashcardBackProps) {
   const t = useTranslations()
 
@@ -104,28 +109,33 @@ function FlashcardBack({
         </p>
         <div className="flex flex-row justify-evenly w-full mt-2 space-x-2">
           <FlashcardButton
-            active={response === 'wrong'}
-            setResponse={() => setResponse('wrong')}
+            active={
+              response === 'incorrect' || existingResponse === 'incorrect'
+            }
+            setResponse={() => setResponse('incorrect')}
             text={t('pwa.practiceQuiz.flashcardNoResponse')}
             color="bg-red-300"
             activeColor="bg-red-600"
             icon={faX}
+            disabled={!!existingResponse}
           />
           <FlashcardButton
-            active={response === 'partial'}
+            active={response === 'partial' || existingResponse === 'partial'}
             setResponse={() => setResponse('partial')}
             text={t('pwa.practiceQuiz.flashcardPartialResponse')}
             color="bg-orange-300"
             activeColor="bg-orange-600"
             icon={faCheck}
+            disabled={!!existingResponse}
           />
           <FlashcardButton
-            active={response === 'correct'}
+            active={response === 'correct' || existingResponse === 'correct'}
             setResponse={() => setResponse('correct')}
             text={t('pwa.practiceQuiz.flashcardYesResponse')}
             color="bg-green-300"
             activeColor="bg-green-600"
             icon={faCheckDouble}
+            disabled={!!existingResponse}
           />
         </div>
       </div>
@@ -140,6 +150,7 @@ interface FlashcardButtonProps {
   color: string
   activeColor: string
   icon: IconDefinition
+  disabled?: boolean
 }
 
 function FlashcardButton({
@@ -149,14 +160,18 @@ function FlashcardButton({
   color,
   activeColor,
   icon,
+  disabled,
 }: FlashcardButtonProps) {
   return (
     <Button
       basic
+      disabled={disabled}
       className={{
         root: twMerge(
           'w-full justify-center rounded px-3 py-2 hover:shadow hover:brightness-95',
-          active ? `text-white ${activeColor}` : color
+          disabled &&
+            'opacity-70 cursor-not-allowed hover:brightness-100 hover:shadow-none',
+          active ? `text-white opacity-100 ${activeColor}` : color
         ),
       }}
       active={active}
