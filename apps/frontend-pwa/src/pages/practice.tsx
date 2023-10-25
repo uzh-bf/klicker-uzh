@@ -40,6 +40,15 @@ function Practice() {
                   ),
                 }}
                 data={{ cy: 'repetition-element' }}
+                onClick={() => {
+                  // check the localstorage and delete all elements, which contain practiceQuiz.id
+                  const localStorageKeys = Object.keys(localStorage)
+                  localStorageKeys.forEach((key) => {
+                    if (key.includes(participation.course!.id)) {
+                      localStorage.removeItem(key)
+                    }
+                  })
+                }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faBookOpenReader} />
