@@ -150,7 +150,7 @@ export async function respondToFlashcardInstance(
       participant: {
         connect: { id: ctx.user.sub },
       },
-      questionInstance: {
+      elementInstance: {
         connect: { id },
       },
       participation: {
