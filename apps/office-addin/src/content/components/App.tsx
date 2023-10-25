@@ -30,7 +30,8 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
   }
 
   if (!newlyInserted) {
-    const selectedURL = window.localStorage.getItem("selectedURL" + slideID);
+    // const selectedURL = window.localStorage.getItem("selectedURL" + slideID);
+    const selectedURL = Office.context.document.settings.get("selectedURL" + slideID);
     if (selectedURL) {
       window.location.replace(selectedURL);
     }

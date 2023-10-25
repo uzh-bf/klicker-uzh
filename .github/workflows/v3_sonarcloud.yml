@@ -3,8 +3,9 @@ on:
   push:
     branches:
       - v3
+      - 'v3*'
   pull_request:
-    branches: [ "v3" ]
+    branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened]
 jobs:
   sonarcloud:
@@ -13,9 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
