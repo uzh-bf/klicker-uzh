@@ -1,21 +1,52 @@
 import { useQuery } from '@apollo/client'
+import LinkButton from '@components/common/LinkButton'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetLearningElementsDocument,
   GetPracticeQuizzesDocument,
+  LearningElement,
+  PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, UserNotification } from '@uzh-bf/design-system'
+import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
-import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
 
 function Repetition() {
   const { data: learningElementsData } = useQuery(GetLearningElementsDocument)
   const { data: practiceQuizzesData } = useQuery(GetPracticeQuizzesDocument)
   const t = useTranslations()
+
+  //
+  const learningElementsByCourse:
+    | Record<string, LearningElement[]>
+    | undefined = learningElementsData?.learningElements?.reduce(
+    (acc, element) => {
+      return {
+        ...acc,
+        [element.course!.displayName]: [
+          ...(acc[element.course!.displayName] || []),
+          element,
+        ],
+      }
+    },
+    {}
+  )
+
+  const elementsByCourse:
+    | Record<string, (LearningElement | PracticeQuiz)[]>
+    | undefined = practiceQuizzesData?.practiceQuizzes?.reduce(
+    (acc, element) => {
+      return {
+        ...acc,
+        [element.course!.displayName]: [
+          ...(acc?.[element.course!.displayName] || []),
+          element,
+        ],
+      }
+    },
+    learningElementsByCourse
+  )
 
   return (
     <Layout
@@ -26,10 +57,28 @@ function Repetition() {
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.repetition')}
         </H1>
-        {learningElementsData?.learningElements?.map((element) => (
+        {elementsByCourse &&
+          Object.entries(elementsByCourse).map(([key, element]) => (
+            <div key={`list-${key}`}>
+              <div>{key}</div>
+              <div className="flex flex-col gap-2">
+                {element.map((element) => (
+                  <LinkButton
+                    key={element.id}
+                    icon={faBookOpenReader}
+                    href=""
+                    data={{ cy: 'practice-quiz' }}
+                  >
+                    {element.displayName}
+                  </LinkButton>
+                ))}
+              </div>
+            </div>
+          ))}
+        {/* {learningElementsData?.learningElements?.map((element) => (
           <Link
             key={element.id}
-            href={`/course/${element.courseId}/element/${element.id}`}
+            href={`/course/${element.course!.id}/element/${element.id}`}
             legacyBehavior
           >
             <Button
@@ -38,7 +87,7 @@ function Repetition() {
                   'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 sm:hover:bg-uzh-grey-40'
                 ),
               }}
-              data={{ cy: 'repetition-element' }}
+              data={{ cy: 'practice-quiz' }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faBookOpenReader} />
@@ -52,7 +101,7 @@ function Repetition() {
         {practiceQuizzesData?.practiceQuizzes?.map((practiceQuiz) => (
           <Link
             key={practiceQuiz.id}
-            href={`/course/${practiceQuiz.courseId}/quiz/${practiceQuiz.id}`}
+            href={`/course/${practiceQuiz.course!.id}/quiz/${practiceQuiz.id}`}
             legacyBehavior
           >
             <Button
@@ -61,7 +110,7 @@ function Repetition() {
                   'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 sm:hover:bg-uzh-grey-40'
                 ),
               }}
-              data={{ cy: 'repetition-element' }}
+              data={{ cy: 'practice-quiz' }}
               onClick={() => {
                 // check the localstorage and delete all elements, which contain practiceQuiz.id
                 const localStorageKeys = Object.keys(localStorage)
@@ -80,7 +129,7 @@ function Repetition() {
               </Button.Label>
             </Button>
           </Link>
-        ))}
+        ))} */}
         {(!learningElementsData?.learningElements ||
           learningElementsData?.learningElements?.length === 0) &&
           (!practiceQuizzesData?.practiceQuizzes ||

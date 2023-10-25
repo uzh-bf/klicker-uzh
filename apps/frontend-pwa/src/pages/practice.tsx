@@ -39,7 +39,7 @@ function Practice() {
                     'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 sm:hover:bg-uzh-grey-40'
                   ),
                 }}
-                data={{ cy: 'repetition-element' }}
+                data={{ cy: 'practice-quiz' }}
                 onClick={() => {
                   // check the localstorage and delete all elements, which contain practiceQuiz.id
                   const localStorageKeys = Object.keys(localStorage)

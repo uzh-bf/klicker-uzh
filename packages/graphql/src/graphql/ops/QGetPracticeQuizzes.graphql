@@ -2,6 +2,9 @@ query GetPracticeQuizzes {
   practiceQuizzes {
     id
     displayName
-    courseId
+    course {
+      id
+      displayName
+    }
   }
 }

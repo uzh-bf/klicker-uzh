@@ -113,7 +113,7 @@ describe('Different learning element workflows', () => {
       cy.get('[data-cy="submit-login"]').click()
 
       cy.findByText('Repetition').click()
-      cy.get('[data-cy="repetition-element"]')
+      cy.get('[data-cy="practice-quiz"]')
         .contains(learningElementDisplayName)
         .click()
       cy.get('[data-cy="start-learning-element"]').click()
@@ -139,7 +139,7 @@ describe('Different learning element workflows', () => {
       cy.get('[data-cy="submit-login"]').click()
 
       cy.findByText('Repetition').click()
-      cy.get('[data-cy="repetition-element"]')
+      cy.get('[data-cy="practice-quiz"]')
         .contains(learningElementDisplayName)
         .click()
       cy.get('[data-cy="start-learning-element"]').click()
@@ -151,7 +151,7 @@ describe('Different learning element workflows', () => {
       // navigate back to the home menu and then continue the learning element from step 2
       cy.get('[data-cy="mobile-menu-home"]').click()
       cy.findByText('Repetition').click()
-      cy.get('[data-cy="repetition-element"]')
+      cy.get('[data-cy="practice-quiz"]')
         .contains(learningElementDisplayName)
         .click()
       cy.get('[data-cy="learning-element-progress"]').children().eq(1).click()

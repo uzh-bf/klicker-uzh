@@ -2,6 +2,9 @@ query GetLearningElements {
   learningElements {
     id
     displayName
-    courseId
+    course {
+      id
+      displayName
+    }
   }
 }

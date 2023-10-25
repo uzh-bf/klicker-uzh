@@ -3,6 +3,7 @@ import {
   GroupActivityStatus,
   LeaderboardEntry,
   LearningElementStatus,
+  PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
@@ -498,7 +499,13 @@ export async function getUserLearningElements(ctx: ContextWithUser) {
   if (!participantCoursesWithLearningElements) return []
 
   return participantCoursesWithLearningElements.participations.flatMap(
-    (participation) => participation.course.learningElements
+    (participation) =>
+      participation.course.learningElements.map((learningElement) => {
+        return {
+          ...learningElement,
+          course: participation.course,
+        }
+      })
   )
 }
 
@@ -515,9 +522,9 @@ export async function getUserPracticeQuizzes(ctx: ContextWithUser) {
                   orderBy: {
                     displayName: 'asc',
                   },
-                  // where: {
-                  //   status: PublicationStatus.PUBLISHED,
-                  // },
+                  where: {
+                    status: PublicationStatus.PUBLISHED,
+                  },
                 },
               },
             },
@@ -529,7 +536,13 @@ export async function getUserPracticeQuizzes(ctx: ContextWithUser) {
   if (!participantCoursesWithPracticeQuizzes) return []
 
   return participantCoursesWithPracticeQuizzes.participations.flatMap(
-    (participation) => participation.course.practiceQuizzes
+    (participation) =>
+      participation.course.practiceQuizzes.map((practiceQuiz) => {
+        return {
+          ...practiceQuiz,
+          course: participation.course,
+        }
+      })
   )
 }
 
