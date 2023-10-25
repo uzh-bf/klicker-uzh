@@ -3,8 +3,10 @@ import {
   GroupActivityStatus,
   LeaderboardEntry,
   LearningElementStatus,
+  UserRole,
 } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
+import { orderStacks } from 'src/lib/util'
 import { GroupLeaderboardEntry } from 'src/ops'
 import { Context, ContextWithUser } from '../lib/context'
 
@@ -796,13 +798,32 @@ export async function getCoursePracticeQuiz(
     include: {
       elementStacks: {
         include: {
-          elements: true,
+          elements: {
+            include:
+              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+                ? {
+                    responses: {
+                      where: {
+                        participantId: ctx.user.sub,
+                      },
+                    },
+                  }
+                : undefined,
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
         },
       },
     },
   })
 
   if (!course) return null
+
+  const orderedStacks = orderStacks(course.elementStacks)
 
   return {
     id: courseId,
@@ -813,7 +834,7 @@ export async function getCoursePracticeQuiz(
     resetTimeDays: 6,
     orderType: ElementOrderType.SPACED_REPETITION,
     status: LearningElementStatus.PUBLISHED,
-    stacks: course.elementStacks,
+    stacks: orderedStacks.slice(0, 25),
     course,
     courseId,
     ownerId: course.ownerId,
