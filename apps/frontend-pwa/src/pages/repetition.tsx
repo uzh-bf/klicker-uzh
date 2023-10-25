@@ -58,21 +58,26 @@ function Repetition() {
           {t('shared.generic.repetition')}
         </H1>
         {elementsByCourse &&
-          Object.entries(elementsByCourse).map(([key, element]) => (
+          Object.entries(elementsByCourse).map(([key, elements]) => (
             <div key={`list-${key}`}>
               <div>{key}</div>
-              <div className="flex flex-col gap-2">
-                {element.map((element) => (
-                  <LinkButton
-                    key={element.id}
-                    icon={faBookOpenReader}
-                    href=""
-                    data={{ cy: 'practice-quiz' }}
-                  >
-                    {element.displayName}
-                  </LinkButton>
-                ))}
-              </div>
+              {elements.length ? (
+                <div className="flex flex-col gap-2">
+                  {elements.map((element) => (
+                    <LinkButton
+                      key={element.id}
+                      icon={faBookOpenReader}
+                      href=""
+                      data={{ cy: 'practice-quiz' }}
+                    >
+                      {element.displayName}
+                    </LinkButton>
+                  ))}
+                </div>
+              ) : (
+                // TODO: adapt message to more suitable message
+                <div>{t('pwa.learningElement.noRepetition')}</div>
+              )}
             </div>
           ))}
         {/* {learningElementsData?.learningElements?.map((element) => (
@@ -136,6 +141,7 @@ function Repetition() {
             practiceQuizzesData.practiceQuizzes.length === 0) && (
             <UserNotification
               type="info"
+              // TODO: change message to no courses available
               message={t('pwa.learningElement.noRepetition')}
             />
           )}
