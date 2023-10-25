@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.0...v3.1.0-beta.1) (2023-10-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** fix issue with missing local storage for practice pool quiz ([#3924](https://github.com/uzh-bf/klicker-uzh/issues/3924)) ([37d2112](https://github.com/uzh-bf/klicker-uzh/commit/37d21127609f46f1b3bd532b7e9a98a840c1e6fc))
+
 ## [3.1.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.6...v3.1.0-beta.0) (2023-10-25)
 
 
