@@ -1,5 +1,6 @@
 import {
   faClock,
+  faCode,
   faPlay,
   faStop,
   faUpRightFromSquare,
@@ -17,6 +18,7 @@ import { SessionBlock as ISessionBlock } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
+import EmbeddingModal from '../EmbeddingModal'
 import CancelSessionModal from './CancelSessionModal'
 import SessionBlock from './SessionBlock'
 import SessionQRModal from './SessionQRModal'
@@ -76,6 +78,7 @@ function SessionTimeline({
   >('firstBlock')
   const [activeBlockId, setActiveBlockId] = useState(-1)
   const [lastActiveBlockId, setLastActiveBlockId] = useState(-1)
+  const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
 
   const startingTime = runtime.includes('d')
     ? dayjs(startedAt).format('DD.MM HH:mm:ss')
@@ -145,6 +148,24 @@ function SessionTimeline({
 
         <div className="flex flex-row flex-wrap items-end mt-1.5 sm:mt-0 gap-2">
           <div className="flex flex-row flex-wrap w-full gap-2 sm:w-max">
+            <Button
+              onClick={() => setEmbedModalOpen(true)}
+              className={{ root: 'h-10' }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faCode} size="sm" />
+              </Button.Icon>
+              <Button.Label>
+                {t('manage.sessions.embeddingEvaluation')}
+              </Button.Label>
+            </Button>
+            <EmbeddingModal
+              key={sessionId}
+              open={embedModalOpen}
+              onClose={() => setEmbedModalOpen(false)}
+              sessionId={sessionId}
+              questions={blocks?.flatMap((block) => block.instances)}
+            />
             <SessionQRModal sessionId={sessionId} shortname={shortname} />
             <a
               className="flex-1"
