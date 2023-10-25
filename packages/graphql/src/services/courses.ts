@@ -1,4 +1,5 @@
 import {
+  ElementOrderType,
   GroupActivityStatus,
   LeaderboardEntry,
   LearningElementStatus,
@@ -784,4 +785,39 @@ export async function checkValidCoursePin(
   }
 
   return course.id
+}
+
+export async function getCoursePracticeQuiz(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      elementStacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  return {
+    id: courseId,
+    name: course.name,
+    displayName: course.displayName,
+    description: 'Practice Pool for ' + course.displayName,
+    pointsMultiplier: 1,
+    resetTimeDays: 6,
+    orderType: ElementOrderType.SPACED_REPETITION,
+    status: LearningElementStatus.PUBLISHED,
+    stacks: course.elementStacks,
+    course,
+    courseId,
+    ownerId: course.ownerId,
+    createdAt: course.createdAt,
+    updatedAt: course.updatedAt,
+  }
 }

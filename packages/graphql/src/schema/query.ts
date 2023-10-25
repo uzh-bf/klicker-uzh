@@ -519,6 +519,17 @@ export const Query = builder.queryType({
           return CourseService.checkValidCoursePin(args, ctx)
         },
       }),
+
+      coursePracticeQuiz: asParticipant.field({
+        nullable: true,
+        type: PracticeQuiz,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCoursePracticeQuiz(args, ctx)
+        },
+      }),
     }
   },
 })

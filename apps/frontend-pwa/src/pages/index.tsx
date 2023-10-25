@@ -231,6 +231,9 @@ const Index = function () {
             {t('shared.generic.learningElements')}
           </H1>
           <div className="flex flex-col gap-2">
+            <LinkButton href="/practice" icon={faGraduationCap}>
+              {t('shared.generic.practice')}
+            </LinkButton>
             <LinkButton href="/repetition" icon={faGraduationCap}>
               {t('shared.generic.repetition')}
             </LinkButton>

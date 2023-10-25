@@ -1,61 +1,7 @@
-#import "./FElementData.graphql"
+#import "./FPracticeQuizData.graphql"
 
 query GetPracticeQuiz($id: String!) {
   practiceQuiz(id: $id) {
-    id
-    name
-    displayName
-    description
-    pointsMultiplier
-    resetTimeDays
-    orderType
-    # previouslyAnswered
-    # previousScore
-    # previousPointsAwarded
-    # totalTrials
-    # stacksWithQuestions
-    # numOfQuestions
-
-    course {
-      id
-      displayName
-      color
-    }
-
-    stacks {
-      id
-      type
-      displayName
-      description
-      order
-      elements {
-        id
-        type
-        elementType
-        ...ElementData
-        # mdContent
-        # questionInstance {
-        #   id
-        #   pointsMultiplier
-        #   ...QuestionData
-        #   evaluation {
-        #     feedbacks {
-        #       ix
-        #       feedback
-        #       correct
-        #       value
-        #     }
-        #     choices
-        #     answers
-        #     score
-        #     pointsAwarded
-        #     percentile
-        #     newPointsFrom
-        #     xpAwarded
-        #     newXpFrom
-        #   }
-        # }
-      }
-    }
+    ...PracticeQuizData
   }
 }

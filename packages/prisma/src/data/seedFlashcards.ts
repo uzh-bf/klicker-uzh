@@ -139,9 +139,7 @@ async function seedFlashcardSet(
 
   console.log('successfully created practice quiz with id:', practiceQuiz.id)
 
-  const elementInstanceIds = practiceQuiz.stacks.flatMap((stack) =>
-    stack.elements.flatMap((instance) => instance.id)
-  )
+  const elementStackIds = practiceQuiz.stacks.map((stack) => ({ id: stack.id }))
 
   // attach all element instances from the practice quiz directly to the course for repetition interface
   const course = await prismaClient.course.update({
@@ -149,18 +147,16 @@ async function seedFlashcardSet(
       id: COURSE_ID,
     },
     data: {
-      elementInstances: {
-        connect: elementInstanceIds.map((id) => ({
-          id,
-        })),
+      elementStacks: {
+        connect: elementStackIds,
       },
     },
   })
 
   console.log(
     'successfully attached',
-    elementInstanceIds.length,
-    'element instances to course with id:',
+    elementStackIds.length,
+    'element stacks to course with id:',
     course.id
   )
 
