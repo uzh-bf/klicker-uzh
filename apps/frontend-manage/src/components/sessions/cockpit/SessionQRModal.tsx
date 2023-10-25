@@ -55,7 +55,7 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
             width={100}
           />
 
-          <Link passHref href={`/qr/${accountRelativeLink}`} target="_blank">
+          <Link passHref href={`/qr${accountRelativeLink}`} target="_blank">
             <Button
               className={{
                 root: twMerge(
@@ -76,7 +76,7 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
             width={100}
           />
 
-          <Link passHref href={`/qr/${sessionRelativeLink}`} target="_blank">
+          <Link passHref href={`/qr${sessionRelativeLink}`} target="_blank">
             <Button
               className={{
                 root: twMerge(
