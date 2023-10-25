@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.6...v3.1.0-beta.0) (2023-10-25)
+
+
+### Features
+
+* add course-level practice pool and local persistence on progress ([#3918](https://github.com/uzh-bf/klicker-uzh/issues/3918)) ([d28da76](https://github.com/uzh-bf/klicker-uzh/commit/d28da765f9580d8f6cb55a35d86d8595b1516801))
+* **apps/frontend-pwa:** add basic frontend components for flashcard practice elements ([#3911](https://github.com/uzh-bf/klicker-uzh/issues/3911)) ([68e0f39](https://github.com/uzh-bf/klicker-uzh/commit/68e0f39ecf130c1dfed49f73c242495bf63c695e))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add embedding modal on quiz cockpit ([03f6250](https://github.com/uzh-bf/klicker-uzh/commit/03f6250a9dd8415f72910928676aba01eaf8ebd3))
+* **apps/office-addin:** use office settings bag instead of browser storage for persistence ([5987e92](https://github.com/uzh-bf/klicker-uzh/commit/5987e92e25da3cdf09ce4988ff918d1d63720f52))
+* build failure because of pothos prisma types ([3b0179d](https://github.com/uzh-bf/klicker-uzh/commit/3b0179d53b08085fa441a1f7b72cc46f302376a6))
+
+
+### Enhancements
+
+* add backend components to save student responses to flashcard elements ([#3913](https://github.com/uzh-bf/klicker-uzh/issues/3913)) ([a3ad1ff](https://github.com/uzh-bf/klicker-uzh/commit/a3ad1ff24d70cfc042fecd12e664188d18c73a23))
+* **apps/frontend-pwa:** add persistent logic to save practice quiz status in local storage ([#3917](https://github.com/uzh-bf/klicker-uzh/issues/3917)) ([04c7d68](https://github.com/uzh-bf/klicker-uzh/commit/04c7d680ac779aa65fd81d9b29c4d1911de3fc76))
+* extend data model for elements structure ([#3904](https://github.com/uzh-bf/klicker-uzh/issues/3904)) ([4f25788](https://github.com/uzh-bf/klicker-uzh/commit/4f257884806059c157301267ef7c46dbd148558d))
+
+
+### Build and CI
+
+* ensure workflows run on v3* branches and PRs ([78935a5](https://github.com/uzh-bf/klicker-uzh/commit/78935a5efdead539e4a5e6d8b6be6ffc5c6f13ca))
+
+
+### Dependencies
+
+* upgrade nextjs ([5f6e256](https://github.com/uzh-bf/klicker-uzh/commit/5f6e25648c5f3fbdd25d8c004340f1ba224bdfbf))
+
 ### [3.0.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.5...v3.0.6) (2023-10-22)
 
 
