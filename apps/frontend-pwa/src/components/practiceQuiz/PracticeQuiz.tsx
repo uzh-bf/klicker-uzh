@@ -51,7 +51,7 @@ function PracticeQuiz({
       <StepProgressWithScoring
         items={
           quiz.stacks?.map((stack) => {
-            return progressState?.[stack.id]
+            return progressState?.[stack.id] || { status: 'unanswered' }
           }) || []
         }
         currentIx={currentIx}
@@ -63,7 +63,7 @@ function PracticeQuiz({
           displayName={quiz.displayName}
           description={quiz.description ?? undefined}
           numOfQuestions={quiz.stacks?.length ?? undefined}
-          // orderType={quiz.orderType}
+          orderType={quiz.orderType}
           // resetTimeDays={quiz.resetTimeDays ?? undefined}
           // previouslyAnswered={quiz.previouslyAnswered ?? undefined}
           // stacksWithQuestions={quiz.stacksWithQuestions ?? undefined}
