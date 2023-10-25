@@ -24,8 +24,6 @@ function PracticePool({ courseId }: Props) {
     variables: { courseId },
   })
 
-  console.log(data)
-
   if (loading)
     return (
       <Layout>
