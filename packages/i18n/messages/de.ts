@@ -423,6 +423,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       orderLAST_RESPONSE: 'Reihenfolge: zuletzt beantwortete Fragen am Ende',
       orderSHUFFLED: 'Reihenfolge: zufällige Reihenfolge',
       orderSEQUENTIAL: 'Reihenfolge: geordnet in Sequenz',
+      orderSPACED_REPETITION: 'Reihenfolge: Spaced Repetition',
       repetitionDaily: 'Wiederholung: täglich',
       repetitionXDays: 'Wiederholung: alle {days} Tage',
       answeredMinOnce: 'Min. 1x beantwortet: {answered}/{total}',

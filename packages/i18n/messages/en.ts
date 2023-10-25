@@ -424,6 +424,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       orderLAST_RESPONSE: 'Order: last answered questions at the end',
       orderSHUFFLED: 'Order: random order',
       orderSEQUENTIAL: 'Order: ordered in sequence',
+      orderSPACED_REPETITION: 'Order: Spaced repetition',
       repetitionDaily: 'Repetition: daily',
       repetitionXDays: 'Repetition: every {days} days',
       answeredMinOnce: 'Min. answered once: {answered}/{total}',
