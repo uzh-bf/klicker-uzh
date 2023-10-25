@@ -1,9 +1,8 @@
-import ElementOverview from '@components/learningElements/ElementOverview'
 import { PracticeQuiz } from '@klicker-uzh/graphql/dist/ops'
-import * as R from 'ramda'
-import { useState } from 'react'
-import StepProgressWithScoring from 'src/components/common/StepProgressWithScoring'
+import { useLocalStorage } from '@uidotdev/usehooks'
 import { twMerge } from 'tailwind-merge'
+import StepProgressWithScoring from '../common/StepProgressWithScoring'
+import ElementOverview from '../learningElements/ElementOverview'
 import ElementStack, { InstanceStatus } from './ElementStack'
 
 interface PracticeQuizProps {
@@ -20,12 +19,28 @@ function PracticeQuiz({
   handleNextElement,
 }: PracticeQuizProps) {
   const currentStack = quiz.stacks?.[currentIx]
-  const [items, setItems] = useState<
-    {
-      status: InstanceStatus
-      score?: number | null
-    }[]
-  >(R.repeat({ status: 'unanswered' }, quiz.stacks?.length ?? 0))
+
+  const [progressState, setProgressState] = useLocalStorage<
+    Record<
+      string,
+      {
+        status: InstanceStatus
+        score?: number | null
+      }
+    >
+  >(
+    `pq-${quiz.id}`,
+    quiz.stacks?.reduce(
+      (acc, stack) => ({
+        ...acc,
+        [stack.id]: {
+          status: 'unanswered',
+          score: null,
+        },
+      }),
+      {}
+    )
+  )
 
   return (
     <div
@@ -34,7 +49,11 @@ function PracticeQuiz({
       )}
     >
       <StepProgressWithScoring
-        items={items}
+        items={
+          quiz.stacks?.map((stack) => {
+            return progressState?.[stack.id]
+          }) || []
+        }
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
       />
@@ -55,15 +74,15 @@ function PracticeQuiz({
 
       {currentStack && (
         <ElementStack
-          id={currentStack.id}
+          parentId={quiz.id}
           courseId={quiz.course.id}
           stack={currentStack}
           currentStep={currentIx + 1}
           totalSteps={quiz.stacks?.length ?? 0}
           setStepStatus={(value) => {
-            setItems((prev) => {
-              const next = [...prev]
-              next[currentIx] = value
+            setProgressState((prev) => {
+              const next = { ...prev }
+              next[currentStack.id] = value
               return next
             })
           }}

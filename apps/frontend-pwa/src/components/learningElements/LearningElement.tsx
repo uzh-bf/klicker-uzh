@@ -1,8 +1,8 @@
 import { LearningElement } from '@klicker-uzh/graphql/dist/ops'
 import * as R from 'ramda'
 import { useState } from 'react'
-import StepProgressWithScoring from 'src/components/common/StepProgressWithScoring'
 import { twMerge } from 'tailwind-merge'
+import StepProgressWithScoringOld from '../common/StepProgressWithScoringOld'
 import ElementOverview from './ElementOverview'
 import ElementSummary from './ElementSummary'
 import QuestionStack, { ItemStatus } from './QuestionStack'
@@ -34,7 +34,7 @@ function LearningElement({
         'flex-1 space-y-4 md:max-w-6xl md:mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded w-full'
       )}
     >
-      <StepProgressWithScoring
+      <StepProgressWithScoringOld
         items={items}
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
