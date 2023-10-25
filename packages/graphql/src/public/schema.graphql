@@ -168,10 +168,6 @@ enum ElementDisplayMode {
   LIST
 }
 
-enum ElementInstaceType {
-  PRACTICE_QUIZ
-}
-
 type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
@@ -182,6 +178,11 @@ type ElementInstance {
 
 enum ElementInstanceType {
   PRACTICE_QUIZ
+}
+
+enum ElementOrderType {
+  SEQUENTIAL
+  SPACED_REPETITION
 }
 
 type ElementStack {
@@ -730,17 +731,11 @@ type PracticeQuiz {
   displayName: String!
   id: String!
   name: String!
-  orderType: PracticeQuizOrderType!
+  orderType: ElementOrderType!
   pointsMultiplier: Int!
   resetTimeDays: Int!
   stacks: [ElementStack!]
   status: PracticeQuizStatus!
-}
-
-enum PracticeQuizOrderType {
-  LAST_RESPONSE
-  SEQUENTIAL
-  SHUFFLED
 }
 
 enum PracticeQuizStatus {
@@ -762,6 +757,7 @@ type Query {
   controlCourses: [Course!]
   controlSession(id: String!): Session
   course(id: String!): Course
+  coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(id: String!): [Feedback!]
   getBookmarkedQuestions(courseId: String!): [QuestionStack!]
   getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionStack!]

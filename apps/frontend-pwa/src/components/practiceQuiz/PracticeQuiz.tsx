@@ -13,7 +13,7 @@ interface PracticeQuizProps {
 }
 
 function PracticeQuiz({
-  quiz: quiz,
+  quiz,
   currentIx,
   setCurrentIx,
   handleNextElement,

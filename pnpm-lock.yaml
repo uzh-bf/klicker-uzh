@@ -862,6 +862,9 @@ importers:
       '@klicker-uzh/shared-components':
         specifier: workspace:*
         version: link:../../packages/shared-components
+      '@radix-ui/react-collapsible':
+        specifier: 1.0.3
+        version: 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
       '@radix-ui/react-tabs':
         specifier: 1.0.3
         version: 1.0.3(react-dom@18.2.0)(react@18.2.0)

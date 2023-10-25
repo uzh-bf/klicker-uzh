@@ -191,11 +191,6 @@ model Tag {
 
 // ----- ELEMENTS -----
 // #region
-enum ElementOrderType {
-  SEQUENTIAL
-  SHUFFLED
-  LAST_RESPONSE
-}
 
 enum ElementType {
   // TODO: remove old types, to be migrated to new ones
@@ -303,8 +298,6 @@ model ElementInstance {
   elementStackId Int
   owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId        String       @db.Uuid
-  course         Course?      @relation(fields: [courseId], references: [id])
-  courseId       String?      @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -341,6 +334,9 @@ model ElementStack {
   practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id])
   practiceQuizId String?       @db.Uuid
 
+  course   Course? @relation(fields: [courseId], references: [id])
+  courseId String? @db.Uuid
+
   @@unique([type, practiceQuizId, order])
 }
 
@@ -348,6 +344,11 @@ model ElementStack {
 
 // ----- PRACTICE QUIZZES -----
 // #region
+enum ElementOrderType {
+  SEQUENTIAL
+  SPACED_REPETITION
+}
+
 model PracticeQuiz {
   id String @id @default(uuid()) @db.Uuid
 
@@ -356,7 +357,7 @@ model PracticeQuiz {
   description      String?
   pointsMultiplier Int               @default(1)
   resetTimeDays    Int               @default(6)
-  orderType        ElementOrderType  @default(SEQUENTIAL)
+  orderType        ElementOrderType  @default(SPACED_REPETITION)
   status           PublicationStatus @default(DRAFT)
 
   stacks ElementStack[]
@@ -490,7 +491,7 @@ model Course {
   sessions          LiveSession[]
   learningElements  LearningElement[]
   microSessions     MicroSession[]
-  elementInstances  ElementInstance[]
+  elementStacks     ElementStack[]
   practiceQuizzes   PracticeQuiz[]
   groupActivities   GroupActivity[]
   leaderboard       LeaderboardEntry[]

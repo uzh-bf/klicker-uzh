@@ -3,16 +3,12 @@ import builder from '../builder'
 import { CourseRef, ICourse } from './course'
 import { ElementInstanceRef, IElementInstance } from './question'
 
-export const PracticeQuizOrderType = builder.enumType('PracticeQuizOrderType', {
+export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
 })
 
 export const PracticeQuizStatus = builder.enumType('PracticeQuizStatus', {
   values: Object.values(DB.PublicationStatus),
-})
-
-export const ElementInstaceType = builder.enumType('ElementInstaceType', {
-  values: Object.values(DB.ElementInstanceType),
 })
 
 export const ElementStackType = builder.enumType('ElementStackType', {
@@ -50,7 +46,7 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     description: t.exposeString('description', { nullable: true }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     resetTimeDays: t.exposeInt('resetTimeDays'),
-    orderType: t.expose('orderType', { type: PracticeQuizOrderType }),
+    orderType: t.expose('orderType', { type: ElementOrderType }),
     status: t.expose('status', { type: PracticeQuizStatus }),
     stacks: t.expose('stacks', { type: [ElementStackRef], nullable: true }),
     course: t.expose('course', { type: CourseRef, nullable: true }),

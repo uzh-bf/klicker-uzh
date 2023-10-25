@@ -20,6 +20,7 @@
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
+    "@radix-ui/react-collapsible": "1.0.3",
     "@radix-ui/react-tabs": "1.0.3",
     "@socialgouv/matomo-next": "1.6.1",
     "@uidotdev/usehooks": "2.4.1",

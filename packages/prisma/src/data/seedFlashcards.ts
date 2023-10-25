@@ -6,10 +6,13 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import Prisma, {
   ElementInstanceType,
+  ElementOrderType,
   ElementStackType,
   ElementType,
+  PublicationStatus,
 } from '../../dist'
-import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
+import { COURSE_ID_BF1_HS23, USER_ID_BF1_HS23 } from './constants'
+// import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 const turndown = Turndown()
 
@@ -37,9 +40,10 @@ async function seedFlashcardSet(
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
 
-  // TODO: change these IDs for production seeding
-  const USER_ID = USER_ID_TEST
-  const COURSE_ID = COURSE_ID_TEST
+  // const USER_ID = USER_ID_TEST
+  // const COURSE_ID = COURSE_ID_TEST
+  const USER_ID = USER_ID_BF1_HS23
+  const COURSE_ID = COURSE_ID_BF1_HS23
 
   const xmlData = fs.readFileSync(path.join(__dirname, fileName), 'utf-8')
 
@@ -96,6 +100,8 @@ async function seedFlashcardSet(
       description: quizInfo.description,
       ownerId: USER_ID,
       courseId: COURSE_ID,
+      status: PublicationStatus.PUBLISHED,
+      orderType: ElementOrderType.SPACED_REPETITION,
       stacks: {
         create: elementsFC.map((el, ix) => ({
           order: ix,
@@ -139,9 +145,7 @@ async function seedFlashcardSet(
 
   console.log('successfully created practice quiz with id:', practiceQuiz.id)
 
-  const elementInstanceIds = practiceQuiz.stacks.flatMap((stack) =>
-    stack.elements.flatMap((instance) => instance.id)
-  )
+  const elementStackIds = practiceQuiz.stacks.map((stack) => ({ id: stack.id }))
 
   // attach all element instances from the practice quiz directly to the course for repetition interface
   const course = await prismaClient.course.update({
@@ -149,18 +153,16 @@ async function seedFlashcardSet(
       id: COURSE_ID,
     },
     data: {
-      elementInstances: {
-        connect: elementInstanceIds.map((id) => ({
-          id,
-        })),
+      elementStacks: {
+        connect: elementStackIds,
       },
     },
   })
 
   console.log(
     'successfully attached',
-    elementInstanceIds.length,
-    'element instances to course with id:',
+    elementStackIds.length,
+    'element stacks to course with id:',
     course.id
   )
 

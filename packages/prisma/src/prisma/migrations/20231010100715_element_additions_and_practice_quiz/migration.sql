@@ -2,7 +2,7 @@
 CREATE TYPE "PublicationStatus" AS ENUM ('DRAFT', 'PUBLISHED');
 
 -- CreateEnum
-CREATE TYPE "ElementOrderType" AS ENUM ('SEQUENTIAL', 'SHUFFLED', 'LAST_RESPONSE');
+CREATE TYPE "ElementOrderType" AS ENUM ('SEQUENTIAL', 'SPACED_REPETITION');
 
 -- CreateEnum
 CREATE TYPE "ElementInstanceType" AS ENUM ('PRACTICE_QUIZ');
@@ -42,7 +42,6 @@ CREATE TABLE "ElementInstance" (
     "elementId" INTEGER,
     "elementStackId" INTEGER NOT NULL,
     "ownerId" UUID NOT NULL,
-    "courseId" UUID,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -59,6 +58,7 @@ CREATE TABLE "ElementStack" (
     "order" INTEGER,
     "options" JSONB NOT NULL,
     "practiceQuizId" UUID,
+    "courseId" UUID,
 
     CONSTRAINT "ElementStack_pkey" PRIMARY KEY ("id")
 );
@@ -71,7 +71,7 @@ CREATE TABLE "PracticeQuiz" (
     "description" TEXT,
     "pointsMultiplier" INTEGER NOT NULL DEFAULT 1,
     "resetTimeDays" INTEGER NOT NULL DEFAULT 6,
-    "orderType" "ElementOrderType" NOT NULL DEFAULT 'SEQUENTIAL',
+    "orderType" "ElementOrderType" NOT NULL DEFAULT 'SPACED_REPETITION',
     "status" "PublicationStatus" NOT NULL DEFAULT 'DRAFT',
     "ownerId" UUID NOT NULL,
     "courseId" UUID NOT NULL,
@@ -130,7 +130,7 @@ ALTER TABLE "ElementInstance" ADD CONSTRAINT "ElementInstance_elementStackId_fke
 ALTER TABLE "ElementInstance" ADD CONSTRAINT "ElementInstance_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ElementInstance" ADD CONSTRAINT "ElementInstance_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "ElementStack" ADD CONSTRAINT "ElementStack_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ElementStack" ADD CONSTRAINT "ElementStack_practiceQuizId_fkey" FOREIGN KEY ("practiceQuizId") REFERENCES "PracticeQuiz"("id") ON DELETE SET NULL ON UPDATE CASCADE;
