@@ -19,7 +19,7 @@ function LinkButton({ href, children, icon, ...props }: LinkButtonProps) {
         fluid
         className={{
           root: twMerge(
-            'gap-4 px-3 py-1 text-md shadow bg-slate-200 sm:hover:bg-slate-300 border-slate-300',
+            'gap-6 px-4 py-2 text-lg shadow bg-slate-200 sm:hover:bg-slate-300 border-slate-300',
             props.className?.root
           ),
         }}
