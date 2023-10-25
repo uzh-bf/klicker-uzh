@@ -12,6 +12,11 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 
+enum RepetitionElementType {
+  LEARNING_ELEMENT,
+  PRACTICE_QUIZ,
+}
+
 function Repetition() {
   const { data: learningElementsData } = useQuery(GetLearningElementsDocument)
   const { data: practiceQuizzesData } = useQuery(GetPracticeQuizzesDocument)
@@ -19,14 +24,14 @@ function Repetition() {
 
   //
   const learningElementsByCourse:
-    | Record<string, LearningElement[]>
+    | Record<string, [LearningElement, RepetitionElementType][]>
     | undefined = learningElementsData?.learningElements?.reduce(
     (acc, element) => {
       return {
         ...acc,
         [element.course!.displayName]: [
           ...(acc[element.course!.displayName] || []),
-          element,
+          [element, RepetitionElementType.LEARNING_ELEMENT],
         ],
       }
     },
@@ -34,14 +39,14 @@ function Repetition() {
   )
 
   const elementsByCourse:
-    | Record<string, (LearningElement | PracticeQuiz)[]>
+    | Record<string, [LearningElement | PracticeQuiz, RepetitionElementType][]>
     | undefined = practiceQuizzesData?.practiceQuizzes?.reduce(
     (acc, element) => {
       return {
         ...acc,
         [element.course!.displayName]: [
           ...(acc?.[element.course!.displayName] || []),
-          element,
+          [element, RepetitionElementType.PRACTICE_QUIZ],
         ],
       }
     },
@@ -63,11 +68,17 @@ function Repetition() {
               <div>{key}</div>
               {elements.length ? (
                 <div className="flex flex-col gap-2">
-                  {elements.map((element) => (
+                  {elements.map(([element, elementType]) => (
                     <LinkButton
                       key={element.id}
                       icon={faBookOpenReader}
-                      href=""
+                      href={
+                        elementType === RepetitionElementType.LEARNING_ELEMENT
+                          ? `/course/${element.course!.id}/element/${
+                              element.id
+                            }`
+                          : `/course/${element.course!.id}/quiz/${element.id}`
+                      }
                       data={{ cy: 'practice-quiz' }}
                     >
                       {element.displayName}
