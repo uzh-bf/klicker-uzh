@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client'
-import CourseCollapsible from '@components/practiceQuiz/CourseCollapsible'
 import {
   GetLearningElementsDocument,
   GetPracticeQuizzesDocument,
@@ -10,6 +9,9 @@ import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
+import CourseCollapsible, {
+  RepetitionElementType,
+} from '../components/practiceQuiz/CourseCollapsible'
 
 function Repetition() {
   const { data: learningElementsData } = useQuery(GetLearningElementsDocument)
@@ -18,14 +20,14 @@ function Repetition() {
 
   //
   const learningElementsByCourse:
-    | Record<string, LearningElement[]>
+    | Record<string, [LearningElement, RepetitionElementType][]>
     | undefined = learningElementsData?.learningElements?.reduce(
     (acc, element) => {
       return {
         ...acc,
         [element.course!.displayName]: [
           ...(acc[element.course!.displayName] || []),
-          element,
+          [element, RepetitionElementType.LEARNING_ELEMENT],
         ],
       }
     },
@@ -33,14 +35,14 @@ function Repetition() {
   )
 
   const elementsByCourse:
-    | Record<string, (LearningElement | PracticeQuiz)[]>
+    | Record<string, [LearningElement | PracticeQuiz, RepetitionElementType][]>
     | undefined = practiceQuizzesData?.practiceQuizzes?.reduce(
     (acc, element) => {
       return {
         ...acc,
         [element.course!.displayName]: [
           ...(acc?.[element.course!.displayName] || []),
-          element,
+          [element, RepetitionElementType.PRACTICE_QUIZ],
         ],
       }
     },

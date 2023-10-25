@@ -11,9 +11,14 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+export enum RepetitionElementType {
+  LEARNING_ELEMENT,
+  PRACTICE_QUIZ,
+}
+
 interface CourseCollapsibleProps {
   courseName: string
-  elements: (LearningElement | PracticeQuiz)[]
+  elements: [LearningElement | PracticeQuiz, RepetitionElementType][]
 }
 
 function CourseCollapsible({ courseName, elements }: CourseCollapsibleProps) {
@@ -39,23 +44,22 @@ function CourseCollapsible({ courseName, elements }: CourseCollapsibleProps) {
           />
         </RadixCollapsible.Trigger>
         <RadixCollapsible.Content>
-          {elements.length ? (
-            <div className="flex flex-col gap-2">
-              {elements.map((element) => (
-                <LinkButton
-                  key={element.id}
-                  icon={faBookOpenReader}
-                  href=""
-                  data={{ cy: 'practice-quiz' }}
-                >
-                  {element.displayName}
-                </LinkButton>
-              ))}
-            </div>
-          ) : (
-            // TODO: adapt message to more suitable message
-            <div>{t('pwa.learningElement.noRepetition')}</div>
-          )}
+          <div className="flex flex-col gap-2">
+            {elements.map(([element, elementType]) => (
+              <LinkButton
+                key={element.id}
+                icon={faBookOpenReader}
+                href={
+                  elementType === RepetitionElementType.LEARNING_ELEMENT
+                    ? `/course/${element.course!.id}/element/${element.id}`
+                    : `/course/${element.course!.id}/quiz/${element.id}`
+                }
+                data={{ cy: 'practice-quiz' }}
+              >
+                {element.displayName}
+              </LinkButton>
+            ))}
+          </div>
         </RadixCollapsible.Content>
       </RadixCollapsible.Root>
     </div>
