@@ -5,25 +5,28 @@ async function migrate() {
 
   const elements = await prisma.element.findMany({})
 
-  await prisma.$transaction(
-    elements.map((elem) =>
-      prisma.element.update({
-        where: {
-          id: elem.id,
+  // await prisma.$transaction(
+
+  let counter = 1
+  for (const elem of elements) {
+    console.log(counter, elem.id)
+    await prisma.element.update({
+      where: {
+        id: elem.id,
+      },
+      data: {
+        options: {
+          ...elem.options,
+          displayMode: elem.options?.displayMode ?? elem.displayMode,
+          hasSampleSolution:
+            elem.options?.hasSampleSolution ?? elem.hasSampleSolution,
+          hasAnswerFeedbacks:
+            elem.options?.hasAnswerFeedbacks ?? elem.hasAnswerFeedbacks,
         },
-        data: {
-          options: {
-            ...elem.options,
-            displayMode: elem.options?.displayMode ?? elem.displayMode,
-            hasSampleSolution:
-              elem.options?.hasSampleSolution ?? elem.hasSampleSolution,
-            hasAnswerFeedbacks:
-              elem.options?.hasAnswerFeedbacks ?? elem.hasAnswerFeedbacks,
-          },
-        },
-      })
-    )
-  )
+      },
+    })
+    counter++
+  }
 }
 
 migrate()
