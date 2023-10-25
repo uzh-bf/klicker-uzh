@@ -25,13 +25,16 @@ export function URLForm({ slideID }: URLFormProps) {
           .required("Please enter a valid URL according to the steps described"),
       })}
       onSubmit={async (values) => {
-        window.localStorage.setItem("selectedURL" + slideID, values.url);
+        // window.localStorage.setItem("selectedURL" + slideID, values.url);
+        Office.context.document.settings.set("selectedURL" + slideID, values.url);
+        Office.context.document.settings.saveAsync();
         window.location.replace(values.url);
       }}
     >
       <Form className="flex w-full flex-row gap-4">
         <FormikTextField
           required
+          autoComplete="off"
           name="url"
           label="URL"
           tooltip="Enter the embedding URL of the evaluation you want to add to this slide"

@@ -91,6 +91,7 @@ function LiveSessionWizard({
                 [
                   ElementType.Sc,
                   ElementType.Mc,
+                  ElementType.Kprim,
                   ElementType.Numerical,
                   ElementType.FreeText,
                 ],

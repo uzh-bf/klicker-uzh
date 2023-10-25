@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.0.4",
+  "version": "3.0.6",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.8.3",
@@ -30,7 +30,7 @@
     "js-search": "2.0.1",
     "localforage": "1.10.0",
     "lodash": "4.17.21",
-    "next": "13.4.19",
+    "next": "13.5.6",
     "next-intl": "2.19.1",
     "next-pwa": "5.6.0",
     "nookies": "2.5.2",
@@ -71,7 +71,7 @@
     "cross-env": "7.0.3",
     "cssnano": "6.0.1",
     "eslint": "8.45.0",
-    "eslint-config-next": "13.4.19",
+    "eslint-config-next": "13.5.6",
     "postcss": "8.4.27",
     "postcss-import": "15.1.0",
     "prettier": "2.8.8",
