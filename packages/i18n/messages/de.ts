@@ -806,7 +806,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microSessionTypes:
         'Micro-Sessions können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.',
       microSessionCreated: 'Micro-Session <b>{name}</b> erfolgreich erstellt.',
-      microSessionUpdated:
+      microSessionEdited:
         'Micro-Session <b>{name}</b> erfolgreich modifiziert.',
       microSessionDescription:
         'Geben Sie in diesem Schritt den Namen und die Beschreibung der Micro-Session ein.',
