@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
-import LinkButton from '@components/common/LinkButton'
-import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
+import CourseCollapsible from '@components/practiceQuiz/CourseCollapsible'
 import {
   GetLearningElementsDocument,
   GetPracticeQuizzesDocument,
@@ -53,32 +52,17 @@ function Repetition() {
       course={{ displayName: 'KlickerUZH' }}
       displayName={t('pwa.learningElement.repetitionTitle')}
     >
-      <div className="flex flex-col gap-2 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
+      <div className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.repetition')}
         </H1>
         {elementsByCourse &&
           Object.entries(elementsByCourse).map(([key, elements]) => (
-            <div key={`list-${key}`}>
-              <div>{key}</div>
-              {elements.length ? (
-                <div className="flex flex-col gap-2">
-                  {elements.map((element) => (
-                    <LinkButton
-                      key={element.id}
-                      icon={faBookOpenReader}
-                      href=""
-                      data={{ cy: 'practice-quiz' }}
-                    >
-                      {element.displayName}
-                    </LinkButton>
-                  ))}
-                </div>
-              ) : (
-                // TODO: adapt message to more suitable message
-                <div>{t('pwa.learningElement.noRepetition')}</div>
-              )}
-            </div>
+            <CourseCollapsible
+              key={`list-${key}`}
+              courseName={key}
+              elements={elements}
+            />
           ))}
         {/* {learningElementsData?.learningElements?.map((element) => (
           <Link
