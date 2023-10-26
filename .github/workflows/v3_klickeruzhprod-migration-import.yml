@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - 'v3'
-      - 'v3*'
       - 'CI'
     # paths:
     #   - 'apps/func-migration-v3/**'
