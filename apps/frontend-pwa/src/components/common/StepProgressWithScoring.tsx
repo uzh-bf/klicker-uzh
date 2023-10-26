@@ -37,8 +37,9 @@ function StepProgressWithScoring({
   return (
     <div className="flex flex-row w-full gap-1 md:gap-2">
       <StepProgress
-        displayOffset={(items.length ?? 0) > 7 ? 3 : undefined}
-        value={currentIx}
+        displayOffsetLeft={(items.length ?? 0) > 5 ? 3 : undefined}
+        displayOffsetRight={(items.length ?? 0) > 5 ? 1 : undefined}
+        value={currentIx === -1 ? 0 : currentIx}
         items={items}
         onItemClick={(ix: number) => setCurrentIx(ix)}
         data={{ cy: 'learning-element-progress' }}
