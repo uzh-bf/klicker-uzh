@@ -8,10 +8,17 @@ interface LinkButtonProps {
   href: string
   icon?: IconDefinition
   children: string | React.ReactNode
+  onClick?: () => void
   [key: string]: any
 }
 
-function LinkButton({ href, children, icon, ...props }: LinkButtonProps) {
+function LinkButton({
+  href,
+  children,
+  icon,
+  onClick,
+  ...props
+}: LinkButtonProps) {
   return (
     <Link href={href} className="w-full">
       <Button
@@ -23,6 +30,7 @@ function LinkButton({ href, children, icon, ...props }: LinkButtonProps) {
             props.className?.root
           ),
         }}
+        onClick={onClick}
       >
         {icon && (
           <Button.Icon>

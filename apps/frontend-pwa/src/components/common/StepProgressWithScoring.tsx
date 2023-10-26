@@ -4,10 +4,12 @@ import {
   faCheck,
   faCheckDouble,
   faInbox,
+  faRepeat,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { StepItem, StepProgress } from '@uzh-bf/design-system'
+import { Button, StepItem, StepProgress } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 
 const ICON_MAP: Record<string, IconDefinition> = {
   correct: faCheckDouble,
@@ -20,68 +22,91 @@ interface StepProgressWithScoringProps {
   items: StepItem[]
   currentIx: number
   setCurrentIx: (ix: number) => void
+  resetLocalStorage?: () => void
 }
 
 function StepProgressWithScoring({
   items,
   currentIx,
   setCurrentIx,
+  resetLocalStorage,
 }: StepProgressWithScoringProps) {
+  const t = useTranslations()
+
   return (
-    <StepProgress
-      displayOffset={(items.length ?? 0) > 7 ? 3 : undefined}
-      value={currentIx}
-      items={items}
-      onItemClick={(ix: number) => setCurrentIx(ix)}
-      data={{ cy: 'learning-element-progress' }}
-      formatter={({ element, ix }) => {
-        function render({
-          className,
-          element,
-        }: {
-          className: string
-          element: StepItem
-        }) {
-          return {
+    <div className="flex flex-row w-full gap-1 md:gap-2">
+      <StepProgress
+        displayOffset={(items.length ?? 0) > 7 ? 3 : undefined}
+        value={currentIx}
+        items={items}
+        onItemClick={(ix: number) => setCurrentIx(ix)}
+        data={{ cy: 'learning-element-progress' }}
+        className={{ root: 'w-full' }}
+        formatter={({ element, ix }) => {
+          function render({
             className,
-            element: (
-              <div className="flex flex-row items-center justify-between w-full px-2">
-                <div>{ix + 1}</div>
+            element,
+          }: {
+            className: string
+            element: StepItem
+          }) {
+            return {
+              className,
+              element: (
+                <div className="flex flex-row items-center justify-between w-full px-2">
+                  <div>{ix + 1}</div>
 
-                <ProgressPoints score={element.score} status={element.status} />
-                <FontAwesomeIcon icon={ICON_MAP[element.status]} />
-              </div>
-            ),
+                  <ProgressPoints
+                    score={element.score}
+                    status={element.status}
+                  />
+                  <FontAwesomeIcon icon={ICON_MAP[element.status]} />
+                </div>
+              ),
+            }
           }
-        }
 
-        if (element.status === 'correct') {
+          if (element.status === 'correct') {
+            return render({
+              element,
+              className: 'bg-green-600 bg-opacity-60 text-white',
+            })
+          }
+
+          if (element.status === 'incorrect') {
+            return render({
+              element,
+              className: 'bg-red-600 bg-opacity-60 text-white',
+            })
+          }
+
+          if (element.status === 'partial') {
+            return render({
+              element,
+              className: 'bg-uzh-red-100 bg-opacity-60 text-white',
+            })
+          }
+
           return render({
             element,
-            className: 'bg-green-600 bg-opacity-60 text-white',
+            className: '',
           })
-        }
-
-        if (element.status === 'incorrect') {
-          return render({
-            element,
-            className: 'bg-red-600 bg-opacity-60 text-white',
-          })
-        }
-
-        if (element.status === 'partial') {
-          return render({
-            element,
-            className: 'bg-uzh-red-100 bg-opacity-60 text-white',
-          })
-        }
-
-        return render({
-          element,
-          className: '',
-        })
-      }}
-    />
+        }}
+      />
+      {resetLocalStorage && (
+        <Button
+          className={{ root: 'text-sm h-7 flex flex-row' }}
+          onClick={() => {
+            resetLocalStorage()
+          }}
+        >
+          <FontAwesomeIcon icon={faRepeat} />
+          <div className="hidden w-max md:block">
+            {t('pwa.practiceQuiz.resetAnswers')}
+          </div>
+        </Button>
+      )}
+    </div>
   )
 }
 

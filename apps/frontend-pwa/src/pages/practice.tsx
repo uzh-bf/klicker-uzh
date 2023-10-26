@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import { resetPracticeQuizLocalStorage } from '@components/practiceQuiz/PracticeQuiz'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ParticipationsDocument } from '@klicker-uzh/graphql/dist/ops'
@@ -42,12 +43,7 @@ function Practice() {
                 data={{ cy: 'practice-quiz' }}
                 onClick={() => {
                   // check the localstorage and delete all elements, which contain practiceQuiz.id
-                  const localStorageKeys = Object.keys(localStorage)
-                  localStorageKeys.forEach((key) => {
-                    if (key.includes(participation.course!.id)) {
-                      localStorage.removeItem(key)
-                    }
-                  })
+                  resetPracticeQuizLocalStorage(participation.course!.id)
                 }}
               >
                 <Button.Icon>

@@ -459,6 +459,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       flashcardNoResponse: 'Nein',
       flashcardPartialResponse: 'Teilweise',
       flashcardYesResponse: 'Ja',
+      resetAnswers: 'Antworten zurücksetzen',
     },
     microSession: {
       notFound:

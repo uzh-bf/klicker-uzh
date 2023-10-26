@@ -460,6 +460,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       flashcardNoResponse: 'No',
       flashcardPartialResponse: 'Partially',
       flashcardYesResponse: 'Yes',
+      resetAnswers: 'Reset answers',
     },
     microSession: {
       notFound:

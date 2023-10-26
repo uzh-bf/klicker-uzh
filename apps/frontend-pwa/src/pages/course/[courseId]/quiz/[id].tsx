@@ -64,6 +64,7 @@ function PracticeQuizPage({ courseId, id }: Props) {
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
         handleNextElement={handleNextQuestion}
+        showResetLocalStorage
       />
       <Footer
         browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/element/${id}`}
