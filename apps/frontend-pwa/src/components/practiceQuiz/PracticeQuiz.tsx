@@ -5,11 +5,21 @@ import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementOverview from '../learningElements/ElementOverview'
 import ElementStack, { InstanceStatus } from './ElementStack'
 
+export function resetPracticeQuizLocalStorage(id: string) {
+  const localStorageKeys = Object.keys(localStorage)
+  localStorageKeys.forEach((key) => {
+    if (key.includes(id)) {
+      localStorage.removeItem(key)
+    }
+  })
+}
+
 interface PracticeQuizProps {
   quiz: PracticeQuiz
   currentIx: number
   setCurrentIx: (ix: number) => void
   handleNextElement: () => void
+  showResetLocalStorage?: boolean
 }
 
 function PracticeQuiz({
@@ -17,6 +27,7 @@ function PracticeQuiz({
   currentIx,
   setCurrentIx,
   handleNextElement,
+  showResetLocalStorage = false,
 }: PracticeQuizProps) {
   const currentStack = quiz.stacks?.[currentIx]
 
@@ -56,6 +67,14 @@ function PracticeQuiz({
         }
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
+        resetLocalStorage={
+          showResetLocalStorage
+            ? () => {
+                resetPracticeQuizLocalStorage(quiz.id)
+                window.location.reload()
+              }
+            : undefined
+        }
       />
 
       {currentIx === -1 && (
@@ -75,7 +94,7 @@ function PracticeQuiz({
       {currentStack && (
         <ElementStack
           parentId={quiz.id}
-          courseId={quiz.course.id}
+          courseId={quiz.course!.id}
           stack={currentStack}
           currentStep={currentIx + 1}
           totalSteps={quiz.stacks?.length ?? 0}

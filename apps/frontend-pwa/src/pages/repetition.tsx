@@ -66,61 +66,7 @@ function Repetition() {
               elements={elements}
             />
           ))}
-        {/* {learningElementsData?.learningElements?.map((element) => (
-          <Link
-            key={element.id}
-            href={`/course/${element.course!.id}/element/${element.id}`}
-            legacyBehavior
-          >
-            <Button
-              className={{
-                root: twMerge(
-                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 sm:hover:bg-uzh-grey-40'
-                ),
-              }}
-              data={{ cy: 'practice-quiz' }}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faBookOpenReader} />
-              </Button.Icon>
-              <Button.Label className={{ root: 'flex-1 text-left' }}>
-                <div>{element.displayName}</div>
-              </Button.Label>
-            </Button>
-          </Link>
-        ))}
-        {practiceQuizzesData?.practiceQuizzes?.map((practiceQuiz) => (
-          <Link
-            key={practiceQuiz.id}
-            href={`/course/${practiceQuiz.course!.id}/quiz/${practiceQuiz.id}`}
-            legacyBehavior
-          >
-            <Button
-              className={{
-                root: twMerge(
-                  'gap-6 px-4 py-2 text-lg shadow bg-uzh-grey-20 sm:hover:bg-uzh-grey-40'
-                ),
-              }}
-              data={{ cy: 'practice-quiz' }}
-              onClick={() => {
-                // check the localstorage and delete all elements, which contain practiceQuiz.id
-                const localStorageKeys = Object.keys(localStorage)
-                localStorageKeys.forEach((key) => {
-                  if (key.includes(practiceQuiz.id)) {
-                    localStorage.removeItem(key)
-                  }
-                })
-              }}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faBookOpenReader} />
-              </Button.Icon>
-              <Button.Label className={{ root: 'flex-1 text-left' }}>
-                <div>{practiceQuiz.displayName}</div>
-              </Button.Label>
-            </Button>
-          </Link>
-        ))} */}
+
         {(!learningElementsData?.learningElements ||
           learningElementsData?.learningElements?.length === 0) &&
           (!practiceQuizzesData?.practiceQuizzes ||

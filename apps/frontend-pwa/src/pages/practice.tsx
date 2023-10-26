@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
+import { resetPracticeQuizLocalStorage } from '../components/practiceQuiz/PracticeQuiz'
 
 function Practice() {
   const t = useTranslations()
@@ -42,12 +43,7 @@ function Practice() {
                 data={{ cy: 'practice-quiz' }}
                 onClick={() => {
                   // check the localstorage and delete all elements, which contain practiceQuiz.id
-                  const localStorageKeys = Object.keys(localStorage)
-                  localStorageKeys.forEach((key) => {
-                    if (key.includes(participation.course!.id)) {
-                      localStorage.removeItem(key)
-                    }
-                  })
+                  resetPracticeQuizLocalStorage(participation.course!.id)
                 }}
               >
                 <Button.Icon>

@@ -1,4 +1,3 @@
-import LinkButton from '@components/common/LinkButton'
 import {
   faBookOpenReader,
   faChevronDown,
@@ -10,6 +9,8 @@ import * as RadixCollapsible from '@radix-ui/react-collapsible'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import LinkButton from '../common/LinkButton'
+import { resetPracticeQuizLocalStorage } from './PracticeQuiz'
 
 export enum RepetitionElementType {
   LEARNING_ELEMENT,
@@ -55,6 +56,9 @@ function CourseCollapsible({ courseName, elements }: CourseCollapsibleProps) {
                     : `/course/${element.course!.id}/quiz/${element.id}`
                 }
                 data={{ cy: 'practice-quiz' }}
+                onClick={() => {
+                  resetPracticeQuizLocalStorage(element.id)
+                }}
               >
                 {element.displayName}
               </LinkButton>
