@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.1...v3.1.0-beta.2) (2023-10-26)
+
+
+### Bug Fixes
+
+* **apps/func-migration-v3-import:** replace question with element ([bb76c61](https://github.com/uzh-bf/klicker-uzh/commit/bb76c61539072f17817f497466b2475440d979c4))
+
+
+### Build and CI
+
+* do not run migration prod deployment on v3* branches ([8f05016](https://github.com/uzh-bf/klicker-uzh/commit/8f0501619d68ae99da7521e5e0a0d7f27d3d78d7))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** allow to reset local storage on practice quiz manually ([#3925](https://github.com/uzh-bf/klicker-uzh/issues/3925)) ([68fa7de](https://github.com/uzh-bf/klicker-uzh/commit/68fa7de667ba1b39b280218aa3e4c8f3c9b2916d))
+
 ## [3.1.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.0...v3.1.0-beta.1) (2023-10-25)
 
 
