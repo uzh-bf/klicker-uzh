@@ -11,7 +11,6 @@ import Prisma, {
   ElementType,
   PublicationStatus,
 } from '../../dist'
-// import { COURSE_ID_BF1_HS23, USER_ID_BF1_HS23 } from './constants'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 const turndown = Turndown()
