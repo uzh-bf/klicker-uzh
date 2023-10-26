@@ -11,8 +11,7 @@ import Prisma, {
   ElementType,
   PublicationStatus,
 } from '../../dist'
-import { COURSE_ID_BF1_HS23, USER_ID_BF1_HS23 } from './constants'
-// import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
+import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 const turndown = Turndown()
 
@@ -40,10 +39,10 @@ async function seedFlashcardSet(
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
 
-  // const USER_ID = USER_ID_TEST
-  // const COURSE_ID = COURSE_ID_TEST
-  const USER_ID = USER_ID_BF1_HS23
-  const COURSE_ID = COURSE_ID_BF1_HS23
+  const USER_ID = USER_ID_TEST
+  const COURSE_ID = COURSE_ID_TEST
+  // const USER_ID = USER_ID_BF1_HS23
+  // const COURSE_ID = COURSE_ID_BF1_HS23
 
   const xmlData = fs.readFileSync(path.join(__dirname, fileName), 'utf-8')
 
