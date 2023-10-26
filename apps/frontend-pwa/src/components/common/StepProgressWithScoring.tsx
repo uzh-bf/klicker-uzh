@@ -10,6 +10,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, StepItem, StepProgress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 
 const ICON_MAP: Record<string, IconDefinition> = {
   correct: faCheckDouble,
@@ -53,14 +54,25 @@ function StepProgressWithScoring({
             return {
               className,
               element: (
-                <div className="flex flex-row items-center justify-between w-full px-2">
-                  <div>{ix + 1}</div>
+                <div className="flex flex-row justify-center w-full px-0.5 md:px-2">
+                  <div className="flex flex-row justify-between items-center md:w-full">
+                    <div
+                      className={twMerge(element.score && 'hidden md:block')}
+                    >
+                      {ix + 1}
+                    </div>
 
-                  <ProgressPoints
-                    score={element.score}
-                    status={element.status}
-                  />
-                  <FontAwesomeIcon icon={ICON_MAP[element.status]} />
+                    {element.score && (
+                      <ProgressPoints
+                        score={element.score}
+                        status={element.status}
+                      />
+                    )}
+                    <FontAwesomeIcon
+                      icon={ICON_MAP[element.status]}
+                      className="hidden md:block"
+                    />
+                  </div>
                 </div>
               ),
             }
