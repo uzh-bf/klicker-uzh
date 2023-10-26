@@ -56,7 +56,7 @@ function StepProgressWithScoring({
               className,
               element: (
                 <div className="flex flex-row justify-center w-full px-0.5 md:px-2">
-                  <div className="flex flex-row justify-between items-center md:w-full">
+                  <div className="flex flex-row items-center justify-between md:w-full">
                     <div
                       className={twMerge(element.score && 'hidden md:block')}
                     >

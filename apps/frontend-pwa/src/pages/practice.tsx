@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client'
-import { resetPracticeQuizLocalStorage } from '@components/practiceQuiz/PracticeQuiz'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ParticipationsDocument } from '@klicker-uzh/graphql/dist/ops'
@@ -9,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../components/Layout'
+import { resetPracticeQuizLocalStorage } from '../components/practiceQuiz/PracticeQuiz'
 
 function Practice() {
   const t = useTranslations()

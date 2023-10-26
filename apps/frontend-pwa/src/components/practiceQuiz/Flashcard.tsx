@@ -1,4 +1,3 @@
-import DynamicMarkdown from '@components/learningElements/DynamicMarkdown'
 import {
   IconDefinition,
   faHandPointer,
@@ -9,6 +8,7 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import DynamicMarkdown from '../learningElements/DynamicMarkdown'
 import { FlashcardResponseValues } from './ElementStack'
 
 interface FlashcardProps {
@@ -51,7 +51,7 @@ function Flashcard({
             existingResponse={existingResponse}
           />
         ) : (
-          <div className="self-end text-sm text-gray-500 flex flex-row items-center gap-2">
+          <div className="flex flex-row items-center self-end gap-2 text-sm text-gray-500">
             <FontAwesomeIcon icon={faHandPointer} />
             {t('pwa.practiceQuiz.flashcardClick')}
           </div>
@@ -99,15 +99,15 @@ function FlashcardBack({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col w-full flex-1 transform-rotateY-180 backface-hidden">
+    <div className="flex flex-col flex-1 w-full transform-rotateY-180 backface-hidden">
       <div className="flex flex-1">
         <DynamicMarkdown content={explanation} withProse />
       </div>
-      <div className="flex flex-col items-center justify-center gap-1 flex-shrink-0 w-full pt-4 border-t border-gray-300">
+      <div className="flex flex-col items-center justify-center flex-shrink-0 w-full gap-1 pt-4 border-t border-gray-300">
         <p className="font-bold">
           {t('pwa.practiceQuiz.studentFlashcardResponse')}
         </p>
-        <div className="flex flex-row justify-evenly w-full mt-2 space-x-2">
+        <div className="flex flex-row w-full mt-2 space-x-2 justify-evenly">
           <FlashcardButton
             active={
               response === 'incorrect' || existingResponse === 'incorrect'

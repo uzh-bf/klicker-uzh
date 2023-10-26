@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client'
-import PracticeQuiz from '@components/practiceQuiz/PracticeQuiz'
 import { GetCoursePracticeQuizDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
@@ -8,8 +7,9 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import Layout from 'src/components/Layout'
-import Footer from 'src/components/common/Footer'
+import Layout from '../../../components/Layout'
+import Footer from '../../../components/common/Footer'
+import PracticeQuiz from '../../../components/practiceQuiz/PracticeQuiz'
 
 interface Props {
   courseId: string

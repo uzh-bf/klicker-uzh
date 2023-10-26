@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client'
-import PracticeQuiz from '@components/practiceQuiz/PracticeQuiz'
 import {
   GetPracticeQuizDocument,
   PracticeQuiz as PracticeQuizType,
@@ -13,6 +12,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Layout from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
+import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
 
 interface Props {
   courseId: string
