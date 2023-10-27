@@ -36,6 +36,14 @@ export default {
       text: 'Bitte eine Zahl eingeben.',
       richtext: 'Bitte eine <b>Zahl</b> eingeben.',
     },
+    CONTENT: {
+      short: 'CT',
+      typeLabel: 'Inhalt (CT)',
+    },
+    FLASHCARD: {
+      short: 'FC',
+      typeLabel: 'Lernkarte (FC)',
+    },
     login: {
       installButton: 'Jetzt installieren',
     },
@@ -697,7 +705,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
-      questionTypes: 'Fragetypen',
+      elementTypes: 'Elementtypen',
       tags: 'Tags',
       noTagsAvailable: 'Keine Tags verfügbar',
       answerFeedbacks: 'Antwortfeedbacks',
