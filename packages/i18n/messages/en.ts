@@ -36,6 +36,14 @@ export default {
       text: 'Please enter a number.',
       richtext: 'Please enter a <b>number</b>.',
     },
+    CONTENT: {
+      short: 'CT',
+      typeLabel: 'Content (CT)',
+    },
+    FLASHCARD: {
+      short: 'FC',
+      typeLabel: 'Flashcard (FC)',
+    },
     login: {
       installButton: 'Install Now',
     },
@@ -701,7 +709,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
-      questionTypes: 'Question types',
+      elementTypes: 'Element types',
       tags: 'Tags',
       noTagsAvailable: 'No tags available',
       answerFeedbacks: 'Answer feedbacks',

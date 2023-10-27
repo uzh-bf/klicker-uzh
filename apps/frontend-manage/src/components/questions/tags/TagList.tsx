@@ -84,7 +84,7 @@ function TagList({
       </Button>
 
       <TagHeader
-        text={t('manage.questionPool.questionTypes')}
+        text={t('manage.questionPool.elementTypes')}
         state={questionTypesVisible}
         setState={setQuestionTypesVisible}
       />
