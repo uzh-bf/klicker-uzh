@@ -13,23 +13,51 @@ services:
     command: sleep infinity
 
     # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
-    network_mode: service:db
+    network_mode: service:postgres
 
     # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
 
-  db:
-    image: docker.io/library/postgres:latest
-    restart: unless-stopped
+  reverse_proxy_docker:
+    image: docker.io/library/traefik:v2.10
+    command:
+      - --api.insecure=true
+      - --providers.file=true
+      - --providers.file.filename=/etc/traefik/rules.yaml
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+    ports:
+      - 8088:80
+      - 8080:8080
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_DB: postgres
+      - '../util/traefik/rules_devcontainer.yaml:/etc/traefik/rules.yaml'
 
-    # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
-    # (Adding the "ports" property to this file will not forward from a Codespace.)
+  # main database
+  postgres:
+    image: docker.io/library/postgres:15
+    environment:
+      POSTGRES_USER: klicker
+      POSTGRES_PASSWORD: klicker
+      POSTGRES_DB: klicker
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    # redis instance to support session execution
+  redis_exec:
+    image: docker.io/library/redis:7
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
+
+  # redis instance for page caching and rate limiting
+  redis_cache:
+    image: docker.io/library/redis:7
+    ports:
+      - 6380:6379
 
 volumes:
-  postgres-data:
+  postgres_data:
+  redis_data:
