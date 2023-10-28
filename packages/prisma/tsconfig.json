@@ -1,16 +1,10 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
+  "extends": "@tsconfig/node20/tsconfig.json",
   "include": ["src"],
   "compilerOptions": {
     "baseUrl": "."
   },
   "ts-node": {
-    "transpileOnly": true,
-    "moduleTypes": {
-      "src/seed/*": "esm",
-      "src/data/*": "esm",
-      "src/scripts/*": "esm",
-      "src/util.ts": "esm"
-    }
+    "esm": true
   }
 }
