@@ -336,8 +336,10 @@ export const Mutation = builder.mutationType({
         args: {
           subscriptionObject: t.arg({
             type: SubscriptionObjectInput,
-            required: true,
+            required: false,
           }),
+          token: t.arg.string({ required: false }),
+          isNativePlatform: t.arg.boolean({ required: true }),
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -349,7 +351,9 @@ export const Mutation = builder.mutationType({
         nullable: true,
         args: {
           courseId: t.arg.string({ required: true }),
-          endpoint: t.arg.string({ required: true }),
+          endpoint: t.arg.string({ required: false }),
+          token: t.arg.string({ required: false }),
+          isNativePlatform: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return NotificationService.unsubscribeFromPush(args, ctx)

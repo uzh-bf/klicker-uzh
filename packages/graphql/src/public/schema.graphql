@@ -445,11 +445,11 @@ type Mutation {
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startSession(id: String!): Session
   submitGroupActivityDecisions(activityInstanceId: Int!, decisions: [GroupActivityDecisionInput!]!): GroupActivityInstance
-  subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
+  subscribeToPush(courseId: String!, isNativePlatform: Boolean!, subscriptionObject: SubscriptionObjectInput, token: String): Participation
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [Question!]
   triggerMigration(token: String!): Boolean
   unpublishMicroSession(id: String!): MicroSession
-  unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
+  unsubscribeFromPush(courseId: String!, endpoint: String, isNativePlatform: Boolean!, token: String): Boolean
   updateGroupAverageScores: Boolean!
   updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, email: String, isProfilePublic: Boolean, password: String, username: String): Participant
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
@@ -588,8 +588,9 @@ type Participation {
 }
 
 type PushSubscription {
-  endpoint: String!
+  endpoint: String
   id: Int!
+  token: String
 }
 
 type Query {
@@ -840,9 +841,9 @@ input SubscriptionKeysInput {
 }
 
 input SubscriptionObjectInput {
-  endpoint: String!
+  endpoint: String
   expirationTime: Int
-  keys: SubscriptionKeysInput!
+  keys: SubscriptionKeysInput
 }
 
 type TabData {

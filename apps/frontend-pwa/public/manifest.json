@@ -9,7 +9,7 @@
     "minimal-ui",
     "browser"
   ],
-  "scope": "https://pwa.klicker.uzh.ch",
+  "scope": "http://pwa.klicker.com",
   "start_url": "/",
   "name": "KlickerUZH",
   "short_name": "KlickerUZH",

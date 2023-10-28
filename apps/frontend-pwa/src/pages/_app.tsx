@@ -3,7 +3,6 @@ import {
   ActionPerformed,
   PushNotificationSchema,
   PushNotifications,
-  Token,
 } from '@capacitor/push-notifications'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
@@ -36,30 +35,7 @@ function App({ Component, pageProps }: AppProps) {
     }
 
     // if we are on iOS or android, register for push notifications
-    if (
-      Capacitor.getPlatform() === 'ios' ||
-      Capacitor.getPlatform() === 'android'
-    ) {
-      PushNotifications.requestPermissions().then((result) => {
-        if (result.receive === 'granted') {
-          // Register with Apple / Google to receive push via APNS/FCM
-          PushNotifications.register()
-        } else {
-          // Show some error
-          console.error(result)
-        }
-      })
-
-      // On success, we should be able to receive notifications
-      PushNotifications.addListener('registration', (token: Token) => {
-        console.log('Push registration success, token: ' + token.value)
-      })
-
-      // Some issue with our setup and push will not work
-      PushNotifications.addListener('registrationError', (error: any) => {
-        console.log('Error on registration: ' + JSON.stringify(error))
-      })
-
+    if (Capacitor.isNativePlatform()) {
       // Show us the notification payload if the app is open on our device
       PushNotifications.addListener(
         'pushNotificationReceived',

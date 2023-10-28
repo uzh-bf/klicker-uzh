@@ -33,12 +33,34 @@ export function checkCronToken(ctx: Context) {
 }
 
 export function formatDate(dateTime: Date) {
-  let date = dayjs(dateTime).utc().tz(process.env.TZ ?? 'Europe/Zurich')
+  let date = dayjs(dateTime)
+    .utc()
+    .tz(process.env.TZ ?? 'Europe/Zurich')
 
   return {
     date: `${date.format('DD')}.${date.format('MM')}.${date.format('YYYY')}`,
     time: `${date.format('HH')}:${date.format('mm')} (CET)`,
   }
+}
+
+export function sliceIntoChunks(
+  registrationTokens: string[],
+  chunkSize: number
+) {
+  if (registrationTokens.length <= chunkSize) {
+    return [registrationTokens]
+  }
+
+  const chunks = []
+  let index = 0
+  const n = registrationTokens.length
+
+  while (index < n) {
+    chunks.push(registrationTokens.slice(index, index + chunkSize))
+    index += chunkSize
+  }
+
+  return chunks
 }
 
 export async function sendTeamsNotifications(scope: string, text: string) {

@@ -48,11 +48,11 @@ export const SubscriptionObjectInput = builder.inputType(
   'SubscriptionObjectInput',
   {
     fields: (t) => ({
-      endpoint: t.string({ required: true }),
+      endpoint: t.string({ required: false }),
       expirationTime: t.int({ required: false }),
       keys: t.field({
         type: SubscriptionKeysInput,
-        required: true,
+        required: false,
       }),
     }),
   }
@@ -204,7 +204,8 @@ export const PushSubscription = builder.prismaObject('PushSubscription', {
   fields: (t) => ({
     id: t.exposeInt('id'),
 
-    endpoint: t.exposeString('endpoint', { nullable: false }),
+    endpoint: t.exposeString('endpoint', { nullable: true }),
+    token: t.exposeString('token', { nullable: true }),
   }),
 })
 

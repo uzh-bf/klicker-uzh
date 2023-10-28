@@ -26,6 +26,7 @@
     "body-parser": "1.20.2",
     "dayjs": "1.11.9",
     "deepmerge": "4.3.1",
+    "firebase": "10.4.0",
     "formik": "2.4.3",
     "generate-password": "1.7.0",
     "graphql": "16.7.1",

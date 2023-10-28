@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 
-function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
+function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV, ...rest }) {
   return {
     compress: true,
     output: 'standalone',
@@ -60,15 +60,17 @@ function getNextBaseConfig({ S3_HOSTNAME, S3_PATHNAME, NODE_ENV }) {
         },
       ],
     },
+    ...rest,
   }
 }
 
-function getNextPWAConfig({ NODE_ENV }) {
+function getNextPWAConfig({ NODE_ENV, ...rest }) {
   return {
     dest: 'public',
     skipWaiting: true,
     dynamicStartUrlRedirect: true,
     disable: NODE_ENV === 'development',
+    ...rest
   }
 }
 
