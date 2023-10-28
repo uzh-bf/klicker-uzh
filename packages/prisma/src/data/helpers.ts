@@ -1,11 +1,10 @@
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
-import Prisma from '../../dist'
-import {
+import Prisma, {
   QuestionInstanceType,
   QuestionStackType,
   UserLoginScope,
-} from '../client'
+} from '../client/index.js'
 
 export async function prepareUser({
   name,

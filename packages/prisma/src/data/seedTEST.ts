@@ -1,5 +1,4 @@
-import Prisma from '../../dist'
-import { Element } from '../client'
+import Prisma, { Element } from '../client/index.js'
 import {
   COURSE_ID_TEST,
   USER_ID_TEST,
@@ -7,7 +6,7 @@ import {
   USER_ID_TEST3,
   USER_ID_TEST4,
 } from './constants.js'
-import * as DATA_TEST from './data/TEST'
+import * as DATA_TEST from './data/TEST.js'
 import {
   prepareCourse,
   prepareLearningElement,
@@ -18,7 +17,7 @@ import {
   prepareSession,
   prepareUser,
 } from './helpers.js'
-import { seedLevels } from './seedLevels'
+import { seedLevels } from './seedLevels.js'
 
 export const PARTICIPANT_IDS = [
   '6f45065c-667f-4259-818c-c6f6b477eb48',
@@ -35,6 +34,8 @@ export const PARTICIPANT_IDS = [
 
 async function seedTest(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)
+
+  console.log('Starting Seed')
 
   await seedLevels(prisma)
 
@@ -394,11 +395,13 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       update: {},
     })
   })
+
+  console.log('Finished Seed')
 }
 
 const prismaClient = new Prisma.PrismaClient()
 
-seedTest(prismaClient)
+await seedTest(prismaClient)
   .catch((e) => {
     console.error(e)
     process.exit(1)

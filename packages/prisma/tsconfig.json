@@ -3,8 +3,5 @@
   "include": ["src"],
   "compilerOptions": {
     "baseUrl": "."
-  },
-  "ts-node": {
-    "esm": true
   }
 }

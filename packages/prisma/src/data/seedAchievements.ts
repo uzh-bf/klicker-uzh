@@ -1,4 +1,4 @@
-import Prisma from '../../dist'
+import Prisma from '../client/index.js'
 
 async function seedAchievements(prisma: Prisma.PrismaClient) {
   const pilotAchievement = await prisma.achievement.upsert({
@@ -319,7 +319,7 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
 
 const prismaClient = new Prisma.PrismaClient()
 
-seedAchievements(prismaClient)
+await seedAchievements(prismaClient)
   .catch((e) => {
     console.error(e)
     process.exit(1)

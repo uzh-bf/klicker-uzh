@@ -1,7 +1,7 @@
-import Prisma, { Element } from '../../dist'
-import { COURSE_ID_BF2, USER_ID_BF2 } from './constants'
-import * as DATA_BF2 from './data/BF2'
-import { prepareLearningElement } from './helpers'
+import Prisma, { Element } from '../client/index.js'
+import { COURSE_ID_BF2, USER_ID_BF2 } from './constants.js'
+import * as DATA_BF2 from './data/BF2.js'
+import { prepareLearningElement } from './helpers.js'
 // import * as R from 'ramda'
 // import { prepareQuestionInstance } from './helpers.js'
 
@@ -585,7 +585,7 @@ async function seed(prisma: Prisma.PrismaClient) {
 
 const prismaClient = new Prisma.PrismaClient()
 
-seed(prismaClient)
+await seed(prismaClient)
   .catch((e) => {
     console.error(e)
     process.exit(1)

@@ -1,5 +1,5 @@
-import Prisma from '../../dist'
-import { xpForLevel } from '../util'
+import Prisma from '../client/index.js'
+import { xpForLevel } from '../util.js'
 
 export async function seedLevels(prisma: Prisma.PrismaClient) {
   for (let index of [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) {

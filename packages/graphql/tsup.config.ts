@@ -4,6 +4,7 @@ export default defineConfig({
   entry: ['src/index.ts', 'src/ops.ts', 'src/util.ts'],
   clean: false,
   dts: true,
+  format: 'esm',
+  target: 'node20',
   publicDir: 'src/public',
-  target: 'node18',
 })
