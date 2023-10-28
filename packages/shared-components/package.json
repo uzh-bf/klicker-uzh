@@ -9,9 +9,8 @@
     "@tailwindcss/aspect-ratio": "0.4.2",
     "@tailwindcss/forms": "0.5.4",
     "@tailwindcss/typography": "0.5.9",
-    "@tsconfig/node18": "^2.0.1",
-    "@tsconfig/recommended": "^1.0.2",
-    "@types/node": "^18.17.4",
+    "@tsconfig/node20": "^20.1.2",
+    "@types/node": "^20.8.9",
     "@types/ramda": "^0.29.3",
     "@types/react": "^18.2.18",
     "@types/react-dom": "^18.2.7",
@@ -24,7 +23,7 @@
     "prettier-plugin-tailwindcss": "0.4.1",
     "tailwindcss": "3.3.3",
     "tailwindcss-radix": "2.8.0",
-    "typescript": "5.0.4"
+    "typescript": "5.2.2"
   },
   "peerDependencies": {
     "@fortawesome/fontawesome-svg-core": "6.4.2",
