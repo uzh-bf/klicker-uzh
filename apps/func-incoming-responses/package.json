@@ -42,10 +42,9 @@
     "start:test": "func start -p 7072"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
-    "extends": "../../package.json",
-    "node": "18.18.2"
+    "extends": "../../package.json"
   }
 }
