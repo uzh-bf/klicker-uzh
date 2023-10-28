@@ -4,7 +4,7 @@
   "devDependencies": {
     "@cypress/code-coverage": "3.12.1",
     "@testing-library/cypress": "10.0.1",
-    "@types/node": "^18.17.4",
+    "@types/node": "^20.8.9",
     "cypress": "13.2.0",
     "typescript": "5.2.2"
   },
