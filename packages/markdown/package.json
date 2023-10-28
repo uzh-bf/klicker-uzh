@@ -4,6 +4,7 @@
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
   "files": [
     "dist"
   ],
@@ -20,9 +21,8 @@
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
-    "@tsconfig/node18": "^2.0.0",
-    "@tsconfig/recommended": "^1.0.2",
-    "@types/node": "^18.17.4",
+    "@tsconfig/node20": "^20.1.2",
+    "@types/node": "^20.8.9",
     "@types/react": "^18.2.18",
     "@types/react-dom": "^18.2.7",
     "autoprefixer": "10.4.14",
@@ -36,8 +36,8 @@
     "size-limit": "8.2.4",
     "tailwindcss": "3.3.3",
     "tailwindcss-radix": "2.8.0",
-    "tsup": "6.7.0",
-    "typescript": "5.0.4"
+    "tsup": "7.2.0",
+    "typescript": "5.2.2"
   },
   "peerDependencies": {
     "@fortawesome/fontawesome-svg-core": "6.4.2",
@@ -79,6 +79,5 @@
       "path": "dist/index.js",
       "limit": "10 KB"
     }
-  ],
-  "type": "module"
+  ]
 }
