@@ -3,11 +3,5 @@
   "include": ["src", "scripts"],
   "compilerOptions": {
     "module": "ESNext"
-  },
-  "ts-node": {
-    "transpileOnly": true,
-    "moduleTypes": {
-      "scripts/*": "esm"
-    }
   }
 }

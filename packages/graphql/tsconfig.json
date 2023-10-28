@@ -3,8 +3,5 @@
   "include": ["src", "src/types/app.ts"],
   "compilerOptions": {
     "baseUrl": "."
-  },
-  "ts-node": {
-    "transpileOnly": true
   }
 }

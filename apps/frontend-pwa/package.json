@@ -73,7 +73,6 @@
     "prettier-plugin-tailwindcss": "0.4.1",
     "tailwindcss": "3.3.3",
     "tailwindcss-radix": "2.8.0",
-    "ts-node": "10.9.1",
     "typescript": "5.0.4",
     "web-push": "3.6.1"
   },
@@ -85,7 +84,7 @@
     "dev:offline": "cross-env NODE_ENV=development next dev --port 3001",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "generateAvatars": "ts-node --esm src/utils/generateAvatars.ts",
+    "generateAvatars": "bun run src/utils/generateAvatars.ts",
     "lint": "next lint",
     "pushTest": "node src/testPush.js",
     "start": "next start --port 3001",

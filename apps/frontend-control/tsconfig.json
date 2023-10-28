@@ -23,11 +23,5 @@
     }
   },
   "include": ["next-env.d.ts", "src/types/app.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"],
-  "ts-node": {
-    "transpileOnly": true,
-    "moduleTypes": {
-      "src/utils/generateAvatars.ts": "esm"
-    }
-  }
+  "exclude": ["node_modules"]
 }
