@@ -4,20 +4,23 @@ import { GetServerSidePropsContext } from 'next'
 
 interface Args {
   ctx: GetServerSidePropsContext
+  key: string
+  secret: string
 }
 
 export async function extractLtiData({ ctx, key, secret }: Args) {
   const { req, res } = ctx
 
-  const { request, response } = await new Promise((resolve) => {
-    // @ts-ignore
-    bodyParser.urlencoded({ extended: true })(req, res, () => {
+  const { request, response }: { request: any; response: any } =
+    await new Promise((resolve) => {
       // @ts-ignore
-      bodyParser.json()(req, res, () => {
-        resolve({ request: req, response: res })
+      bodyParser.urlencoded({ extended: true })(req, res, () => {
+        // @ts-ignore
+        bodyParser.json()(req, res, () => {
+          resolve({ request: req, response: res })
+        })
       })
     })
-  })
 
   // const hitUrl = 'http://' + request.headers.host + request.url
   const hitUrl = 'http://lti.tools/test/tp.php'
@@ -38,12 +41,12 @@ export async function extractLtiData({ ctx, key, secret }: Args) {
   return signed
 }
 
-const clean_request_body = function (body) {
+const clean_request_body = function (body: any) {
   const out: any[] = []
 
-  const encodeParam = (key, val) => `${key}=${special_encode(val)}`
+  const encodeParam = (key: string, val: any) => `${key}=${special_encode(val)}`
 
-  const cleanParams = function (params) {
+  const cleanParams = function (params: any) {
     if (typeof params !== 'object') {
       return
     }
@@ -68,7 +71,7 @@ const clean_request_body = function (body) {
   return special_encode(out.sort().join('&'))
 }
 
-const special_encode = (string) =>
+const special_encode = (string: string) =>
   encodeURIComponent(string)
     .replace(/[!'()]/g, escape)
     .replace(/\*/g, '%2A')
