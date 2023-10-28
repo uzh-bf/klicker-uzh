@@ -70,7 +70,7 @@
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "tsup --watch",
     "dev:offline": "pnpm run dev",
-    "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node -r dotenv/config ./dist/index.js'",
+    "dev:run": "node -r dotenv/config ./dist/index.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
