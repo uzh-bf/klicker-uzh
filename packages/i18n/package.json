@@ -5,9 +5,8 @@
     "messages/"
   ],
   "devDependencies": {
-    "@tsconfig/node18": "18.2.0",
-    "@tsconfig/recommended": "^1.0.2",
-    "typescript": "5.0.4"
+    "@tsconfig/node20": "^20.1.2",
+    "typescript": "5.2.2"
   },
   "peerDependencies": {
     "next-intl": "2.19.1"
