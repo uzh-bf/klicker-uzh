@@ -18,7 +18,7 @@
     "@tailwindcss/aspect-ratio": "0.4.2",
     "@tailwindcss/forms": "0.5.4",
     "@tailwindcss/typography": "0.5.9",
-    "@types/node": "^18.17.4",
+    "@types/node": "^20.8.9",
     "@types/office-js": "^1.0.256",
     "@types/office-runtime": "^1.0.23",
     "@types/react": "^18.2.18",

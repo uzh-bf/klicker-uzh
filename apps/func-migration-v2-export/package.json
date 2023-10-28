@@ -14,10 +14,9 @@
     "mongodb": "5.7.0"
   },
   "devDependencies": {
-    "@tsconfig/node18": "18.2.0",
-    "@tsconfig/recommended": "^1.0.2",
+    "@tsconfig/node20": "^20.1.2",
     "@types/jsonwebtoken": "^9.0.2",
-    "@types/node": "^18.17.4",
+    "@types/node": "^20.8.9",
     "azure-functions-core-tools": "4.0.5390",
     "cross-env": "7.0.3",
     "eslint": "8.45.0",
