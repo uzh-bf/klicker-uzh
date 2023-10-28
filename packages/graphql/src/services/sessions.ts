@@ -9,7 +9,7 @@ import {
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'

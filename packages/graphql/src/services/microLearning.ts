@@ -4,7 +4,7 @@ import {
   MicroSessionStatus,
   QuestionInstanceType,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import { GraphQLError } from 'graphql'
 import { pick } from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'

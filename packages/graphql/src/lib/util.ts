@@ -1,7 +1,7 @@
 import axios from 'axios'
 import dayjs from 'dayjs'
-import timezone from 'dayjs/plugin/timezone'
-import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone.js'
+import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { Context } from './context'
@@ -58,7 +58,7 @@ export async function sendTeamsNotifications(scope: string, text: string) {
   return null
 }
 
-export { levelFromXp } from '@klicker-uzh/prisma/dist/util'
+export * from '@klicker-uzh/prisma/dist/util.js'
 
 export const orderStacks = R.sort((a: any, b: any) => {
   const aResponses = a.elements[0].responses

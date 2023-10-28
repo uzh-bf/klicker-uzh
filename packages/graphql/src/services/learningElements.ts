@@ -19,7 +19,7 @@ import {
   QuestionStackType,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library.js'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
