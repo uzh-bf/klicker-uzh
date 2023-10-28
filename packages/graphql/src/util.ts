@@ -1,2 +1,2 @@
-export { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'
-export * from './lib/util'
+export { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo.js'
+export * from './lib/util.js'

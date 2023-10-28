@@ -1,4 +1,4 @@
-import builder from '../builder'
+import builder from '../builder.js'
 
 export const Achievement = builder.prismaObject('Achievement', {
   fields: (t) => ({

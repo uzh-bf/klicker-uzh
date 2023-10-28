@@ -1,12 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import { ElementData } from './elementData'
+import builder from '../builder.js'
+import { ElementData } from './elementData.js'
 import {
   ElementDisplayMode,
   ElementInstanceType,
   ElementType,
   QuestionData,
-} from './questionData'
+} from './questionData.js'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
   fields: (t) => ({

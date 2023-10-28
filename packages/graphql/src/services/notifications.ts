@@ -6,8 +6,8 @@ import {
 } from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
 import webpush, { WebPushError } from 'web-push'
-import { Context, ContextWithUser } from '../lib/context'
-import { formatDate } from '../lib/util'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { formatDate } from '../lib/util.js'
 
 interface SubscriptionObjectInput {
   endpoint: string

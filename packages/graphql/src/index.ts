@@ -1,21 +1,21 @@
-export { default as enhanceContext } from './lib/context'
+export { default as enhanceContext } from './lib/context.js'
 
-import builder from './builder'
+import builder from './builder.js'
 
-import './schema/achievement'
-import './schema/course'
-import './schema/groupActivity'
-import './schema/learningElements'
-import './schema/microSession'
-import './schema/participant'
-import './schema/question'
-import './schema/questionData'
-import './schema/session'
-import './schema/user'
+import './schema/achievement.js'
+import './schema/course.js'
+import './schema/groupActivity.js'
+import './schema/learningElements.js'
+import './schema/microSession.js'
+import './schema/participant.js'
+import './schema/question.js'
+import './schema/questionData.js'
+import './schema/session.js'
+import './schema/user.js'
 
-import './schema/mutation'
-import './schema/query'
-import './schema/subscription'
+import './schema/mutation.js'
+import './schema/query.js'
+import './schema/subscription.js'
 
 // TEMPLATE for future directives
 // function upperDirectiveTransformer(schema: any) {

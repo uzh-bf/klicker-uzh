@@ -1,10 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
 
-import builder from '../builder'
-import type { ICourse } from './course'
-import { CourseRef } from './course'
-import type { IQuestionInstance } from './question'
-import { QuestionInstanceRef } from './question'
+import builder from '../builder.js'
+import type { ICourse } from './course.js'
+import { CourseRef } from './course.js'
+import type { IQuestionInstance } from './question.js'
+import { QuestionInstanceRef } from './question.js'
 
 export const LearningElementOrderType = builder.enumType(
   'LearningElementOrderType',

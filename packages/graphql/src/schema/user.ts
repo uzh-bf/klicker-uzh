@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
+import builder from '../builder.js'
 
 export const LocaleType = builder.enumType('LocaleType', {
   values: Object.values(DB.Locale),

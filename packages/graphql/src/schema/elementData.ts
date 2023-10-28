@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import { BaseElementData } from '../types/app'
+import builder from '../builder.js'
+import { BaseElementData } from '../types/app.js'
 import {
   ChoiceQuestionOptions,
   ElementType,
@@ -9,7 +9,7 @@ import {
   IFreeTextQuestionOptions,
   INumericalQuestionOptions,
   NumericalQuestionOptions,
-} from './questionData'
+} from './questionData.js'
 
 // ----- ELEMENT DATA INTERFACE -----
 export const ElementDataRef =

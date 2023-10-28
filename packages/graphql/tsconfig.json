@@ -1,8 +1,14 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["src", "src/types/app.ts"],
+  "extends": "@tsconfig/node20/tsconfig.json",
+  "include": [
+    "src",
+    "src/types/app.ts",
+    "@klicker-uzh/prisma/dist/pothos.d.ts"
+  ],
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
   },
   "ts-node": {
     "transpileOnly": true
