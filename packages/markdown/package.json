@@ -69,7 +69,7 @@
     "size": "size-limit"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
     "extends": "../../package.json"

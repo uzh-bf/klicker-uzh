@@ -92,7 +92,7 @@
     "start:test": "cross-env NODE_ENV=test npm start"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
     "extends": "../../package.json"
