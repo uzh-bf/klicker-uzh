@@ -41,7 +41,6 @@ module.exports = {
         },
       }
       addUtilities(newUtilities)
-
     },
     require('tailwindcss-radix')({
       variantPrefix: 'rdx',

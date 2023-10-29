@@ -1,3 +1,6 @@
+import '@testing-library/cypress/add-commands'
+import { sign } from 'jsonwebtoken'
+
 /// <reference types="cypress" />
 // ***********************************************
 // This example commands.ts shows you how to
@@ -13,26 +16,33 @@
 // -- This is a parent command --
 // Cypress.Commands.add('login', (email, password) => { ... })
 Cypress.Commands.add('loginLecturer', () => {
-  cy.viewport('macbook-16')
-
-  cy.visit(Cypress.env('URL_MANAGE'))
   cy.clearAllCookies()
   cy.clearAllLocalStorage()
 
-  cy.get('[data-cy="delegated-login-button"').then((btn) => {
-    if (btn.is(':disabled')) {
-      cy.get('button[data-cy="tos-checkbox"]').click()
-    }
+  cy.viewport('macbook-16')
+
+  // TODO: move this to a function that is shared with apps/auth
+  const token = sign(
+    {
+      email: 'lecturer@bf.uzh.ch',
+      sub: '76047345-3801-4628-ae7b-adbebcfe8821',
+      role: 'USER',
+      scope: 'ACCOUNT_OWNER',
+      catalystInstitutional: true,
+      catalystIndividual: true,
+    },
+    'abcd'
+  )
+
+  cy.setCookie('next-auth.session-token', token, {
+    domain: '127.0.0.1',
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
   })
 
-  cy.get('[data-cy="delegated-login-button"').should('be.enabled').click()
-
-  cy.get('[data-cy="identifier-field"]').type(
-    Cypress.env('LECTURER_IDENTIFIER')
-  )
-  cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'))
-
-  cy.get(':nth-child(2) > form > button').click()
+  cy.visit(Cypress.env('URL_MANAGE'))
 })
 
 //
@@ -57,4 +67,3 @@ declare global {
     }
   }
 }
-import '@testing-library/cypress/add-commands'

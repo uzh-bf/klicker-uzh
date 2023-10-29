@@ -77,7 +77,7 @@
     "exec:prod": "doppler run --config prd -- ts-node --esm"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
     "extends": "../../package.json"

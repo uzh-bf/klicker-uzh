@@ -14,134 +14,7 @@ env:
   TURBO_REMOTE_ONLY: true
 
 jobs:
-  # build-backend:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v3
-
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v2
-
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v2
-
-  #     - name: Log into registry ${{ env.REGISTRY }}
-  #       uses: docker/login-action@v2
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: Extract Docker metadata
-  #       id: meta
-  #       uses: docker/metadata-action@v4
-  #       with:
-  #         images: ${{ env.REGISTRY }}/${{ github.repository }}/backend-docker
-
-  #     - name: Build and push Docker image
-  #       uses: docker/build-push-action@v3
-  #       with:
-  #         context: apps/backend-docker
-  #         file: apps/backend-docker/Dockerfile
-  #         tags: ${{ env.REGISTRY }}/${{ github.repository }}/backend-docker:cypress
-  #         labels: ${{ steps.meta.outputs.labels }}
-
-  # build-frontend-manage:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v3
-
-  #     - name: Replace .env.production with .env.cypress
-  #       shell: bash
-  #       run: |
-  #         rm apps/frontend-manage/.env.production
-  #         mv apps/frontend-manage/.env.cypress apps/frontend-manage/.env.production
-  #         cp -R packages/shared-components apps/frontend-manage/shared-components
-
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v2
-
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v2
-
-  #     - name: Log into registry ${{ env.REGISTRY }}
-  #       uses: docker/login-action@v2
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: Extract Docker metadata
-  #       id: meta
-  #       uses: docker/metadata-action@v4
-  #       with:
-  #         images: ${{ env.REGISTRY }}/${{ github.repository }}/frontend-manage
-
-  #     - name: Build and push Docker image
-  #       uses: docker/build-push-action@v3
-  #       with:
-  #         context: apps/frontend-manage
-  #         file: apps/frontend-manage/Dockerfile
-  #         tags: ${{ env.REGISTRY }}/${{ github.repository }}/frontend-manage:cypress
-  #         labels: ${{ steps.meta.outputs.labels }}
-
-  # build-frontend-pwa:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v3
-
-  #     - name: Replace .env.production with .env.cypress
-  #       shell: bash
-  #       run: |
-  #         rm apps/frontend-pwa/.env.production
-  #         mv apps/frontend-pwa/.env.cypress apps/frontend-pwa/.env.production
-  #         cp -R packages/shared-components apps/frontend-pwa/shared-components
-
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v2
-
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v2
-
-  #     - name: Log into registry ${{ env.REGISTRY }}
-  #       uses: docker/login-action@v2
-  #       with:
-  #         registry: ${{ env.REGISTRY }}
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: Extract Docker metadata
-  #       id: meta
-  #       uses: docker/metadata-action@v4
-  #       with:
-  #         images: ${{ env.REGISTRY }}/${{ github.repository }}/frontend-pwa
-
-  #     - name: Build and push Docker image
-  #       uses: docker/build-push-action@v3
-  #       with:
-  #         context: apps/frontend-pwa
-  #         file: apps/frontend-pwa/Dockerfile
-  #         tags: ${{ env.REGISTRY }}/${{ github.repository }}/frontend-pwa:cypress
-  #         labels: ${{ steps.meta.outputs.labels }}
-
   cypress-run:
-    # needs:
-    #   - build-backend
-    #   - build-frontend-manage
-    #   - build-frontend-pwa
-
     services:
       postgres:
         image: postgres:15
@@ -175,33 +48,6 @@ jobs:
         ports:
           - 6379:6379
 
-      # sendria:
-      #   image: msztolcman/sendria:v2.2.2.0
-      #   ports:
-      #     - 1025:1025
-      #     - 1080:1080
-      # frontend-manage:
-      #   image: ghcr.io/${{ github.repository }}/frontend-manage:v3.0.0-alpha.70
-      #   credentials:
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
-      #   ports:
-      #     - 3002:3000
-      # frontend-pwa:
-      #   image: ghcr.io/${{ github.repository }}/frontend-pwa:v3.0.0-alpha.70
-      #   credentials:
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
-      #   ports:
-      #     - 3001:3000
-      # backend:
-      #   image: ghcr.io/${{ github.repository }}/backend-docker:v3.0.0-alpha.70
-      #   credentials:
-      #     username: ${{ github.actor }}
-      #     password: ${{ secrets.GITHUB_TOKEN }}
-      #   ports:
-      #     - 3000:3000
-
     runs-on: ubuntu-latest
     # strategy:
     #   fail-fast: false # https://github.com/cypress-io/github-action/issues/48
@@ -213,7 +59,7 @@ jobs:
       - name: Define node version
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -234,7 +80,7 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.6.12
+          version: 8.10.0
           run_install: true
 
       # - name: Install azure-functions-core-tools
@@ -252,6 +98,7 @@ jobs:
       - name: Apply migrations and seed the database
         run: |
           cd packages/prisma
+          pnpm add -g bun@1.0.7
           pnpm run build
           pnpm run prisma:reset:raw -f
           pnpm run seed:test
@@ -260,6 +107,7 @@ jobs:
 
       - name: Start services in the background
         run: pnpm run start:test &
+        # run: pnpm run start:test
 
       - name: Cypress run
         uses: cypress-io/github-action@v5
@@ -267,7 +115,7 @@ jobs:
         with:
           install: false
           wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
-          wait-on-timeout: 240
+          wait-on-timeout: 480
           record: true
           browser: chrome
           working-directory: cypress
