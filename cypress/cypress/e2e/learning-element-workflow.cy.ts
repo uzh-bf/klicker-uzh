@@ -113,7 +113,7 @@ describe('Different learning element workflows', () => {
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
 
-    cy.findByText('Repetition').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get('[data-cy="practice-quiz"]')
       .contains(learningElementDisplayName)
       .click()
@@ -139,7 +139,7 @@ describe('Different learning element workflows', () => {
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
 
-    cy.findByText('Repetition').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get('[data-cy="practice-quiz"]')
       .contains(learningElementDisplayName)
       .click()
@@ -151,7 +151,7 @@ describe('Different learning element workflows', () => {
 
     // navigate back to the home menu and then continue the learning element from step 2
     cy.get('[data-cy="mobile-menu-home"]').click()
-    cy.findByText('Repetition').click()
+    cy.get('[data-cy="quizzes"]').click()
     cy.get('[data-cy="practice-quiz"]')
       .contains(learningElementDisplayName)
       .click()
