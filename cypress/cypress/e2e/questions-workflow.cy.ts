@@ -1,7 +1,9 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create questions', () => {
-  beforeEach(() => {})
+  beforeEach(() => {
+    cy.loginLecturer()
+  })
 
   it('creates a single choice question', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000)
