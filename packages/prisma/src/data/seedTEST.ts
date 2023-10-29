@@ -398,7 +398,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
 const prismaClient = new Prisma.PrismaClient()
 
-seedTest(prismaClient)
+await seedTest(prismaClient)
   .catch((e) => {
     console.error(e)
     process.exit(1)
