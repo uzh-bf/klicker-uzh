@@ -1,11 +1,15 @@
 import {
   Element,
-  ElementDisplayMode,
   ElementStackType,
   ElementType,
   QuestionInstance,
   SessionBlockStatus,
 } from '@klicker-uzh/prisma'
+
+export enum DisplayMode {
+  LIST = 'LIST',
+  GRID = 'GRID',
+}
 
 // ----- AVATAR SETTINGS -----
 // #region
@@ -92,7 +96,7 @@ interface BaseElementOptions {
 
 export interface ElementOptionsChoices extends BaseElementOptions {
   choices: Choice[]
-  displayMode: ElementDisplayMode
+  displayMode: DisplayMode
 }
 
 export interface ElementOptionsNumerical extends BaseElementOptions {
@@ -131,11 +135,6 @@ export interface BaseElementData {
   explanation?: string | null
 
   options: object
-
-  // TODO: these legacy props have been moved to options
-  displayMode: ElementDisplayMode
-  hasSampleSolution: boolean
-  hasAnswerFeedbacks: boolean
 }
 
 export type BaseElementDataKeys = (keyof BaseElementData)[]
