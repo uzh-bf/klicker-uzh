@@ -1927,9 +1927,6 @@ importers:
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
-      bun:
-        specifier: 1.0.7
-        version: 1.0.7
       cross-env:
         specifier: 7.0.3
         version: 7.0.3

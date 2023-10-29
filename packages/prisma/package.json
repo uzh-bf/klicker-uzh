@@ -21,7 +21,6 @@
     "@types/ramda": "^0.29.3",
     "@types/xml-js": "^1.0.0",
     "bcryptjs": "2.4.3",
-    "bun": "1.0.7",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "dotenv-cli": "7.2.1",

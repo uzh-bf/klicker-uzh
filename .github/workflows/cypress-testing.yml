@@ -252,6 +252,7 @@ jobs:
       - name: Apply migrations and seed the database
         run: |
           cd packages/prisma
+          pnpm add -g bun@1.0.7
           pnpm run build
           pnpm run prisma:reset:raw -f
           pnpm run seed:test
