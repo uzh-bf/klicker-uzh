@@ -21,12 +21,13 @@ Cypress.Commands.add('loginLecturer', () => {
 
   cy.viewport('macbook-16')
 
+  // TODO: move this to a function that is shared with apps/auth
   const token = sign(
     {
       email: 'lecturer@bf.uzh.ch',
       sub: '76047345-3801-4628-ae7b-adbebcfe8821',
       role: 'USER',
-      scope: 'FULL_ACCESS',
+      scope: 'ACCOUNT_OWNER',
       catalystInstitutional: true,
       catalystIndividual: true,
     },
