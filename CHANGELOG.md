@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.2...v3.1.0-beta.3) (2023-10-29)
+
+
+### Bug Fixes
+
+* **apps/auth:** add Boolean parsing on sticky state of ToS ([6294b26](https://github.com/uzh-bf/klicker-uzh/commit/6294b2619e86facaf9f3240ef6b94c5d3c4380f7))
+* **apps/frontend-manage:** add missing translations for new types ([#3927](https://github.com/uzh-bf/klicker-uzh/issues/3927)) ([bdda9d9](https://github.com/uzh-bf/klicker-uzh/commit/bdda9d9f29d1249a4bf01ccd39a793489cdbbdcc))
+
+
+### Build and CI
+
+* deploy migration function only on v3.1-dev ([dada3da](https://github.com/uzh-bf/klicker-uzh/commit/dada3da0bde112b6582f35368263ef8af001f5e5))
+
+
+### Dependencies
+
+* upgrade node to new v20 LTS and improve cypress testing stability ([#3929](https://github.com/uzh-bf/klicker-uzh/issues/3929)) ([01a9cf3](https://github.com/uzh-bf/klicker-uzh/commit/01a9cf3eab2b559dedf46d09462e71870654eab0))
+
 ## [3.1.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.1...v3.1.0-beta.2) (2023-10-26)
 
 
