@@ -142,7 +142,7 @@ services:
       APP_SECRET: 'abcd'
       COOKIE_DOMAIN: .klicker.com
       CRON_TOKEN: 'abcd'
-      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
+      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/klicker'
       NODE_ENV: development
       NOTIFICATION_SUPPORT_MAIL: 'noone@klicker.com'
       NOTIFICATION_URL: 'noone@klicker.com'
