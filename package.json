@@ -10,8 +10,7 @@
   "main": "apps/func/dist/index.js",
   "maintainers": [
     "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
-    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>",
-    "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
+    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
@@ -23,7 +22,8 @@
     "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
     "Jonas Gebel <jonas.gebel@bf.uzh.ch>",
     "Florina Vogel <florina.vogel@bf.uzh.ch>",
-    "Valentin Meyer <valentin.meyer@bf.uzh.ch>"
+    "Valentin Meyer <valentin.meyer@bf.uzh.ch>",
+    "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "devDependencies": {
     "@prisma/nextjs-monorepo-workaround-plugin": "5.3.1",
