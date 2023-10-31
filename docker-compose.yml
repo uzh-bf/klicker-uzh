@@ -38,13 +38,19 @@ services:
       context: .
       dockerfile: apps/auth/Dockerfile
       args:
+        COOKIE_DOMAIN: .klicker.com
+        NEXT_PUBLIC_DEFAULT_REDIRECT: http://manage.klicker.com
+        NEXTAUTH_URL: http://auth.klicker.com
         NODE_ENV: development
-        COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://127.0.0.1:7072/api/AddResponse'
-        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
-        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+        # EDUID_CLIENT_ID: uzh_klicker_auth_dev
+        # EDUID_WELL_KNOWN: https://login.test.eduid.ch/.well-known/openid-configuration
+        # NEXT_PUBLIC_EDUID_ID: eduid-test
     environment:
       APP_SECRET: abcd
+      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
+      NODE_ENV: development
+      # EDUID_CLIENT_SECRET: ''
+      # TEAMS_WEBHOOK_URL: ''
     ports:
       - 3001:3000
     networks:
@@ -57,13 +63,21 @@ services:
       context: .
       dockerfile: apps/frontend-pwa/Dockerfile
       args:
-        NODE_ENV: development
-        COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://127.0.0.1:7072/api/AddResponse'
-        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+        COOKIE_DOMAIN: .klicker.com
+        NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://func-responses.klicker.com/api/AddResponse'
         NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+        NEXT_PUBLIC_API_URL: 'http://api.klicker.com/api/graphql'
+        NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/avatars'
+        NEXT_PUBLIC_CONTROL_URL: 'http://control.klicker.com'
+        NEXT_PUBLIC_IMAGE_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/img'
+        NEXT_PUBLIC_MANAGE_URL: 'http://manage.klicker.com'
+        NEXT_PUBLIC_PWA_URL: 'http://pwa.klicker.com'
+        NODE_ENV: development
+        # BLOB_STORAGE_ACCOUNT_URL: ''
+        # NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY: ""
     environment:
       APP_SECRET: abcd
+      NODE_ENV: development
     ports:
       - 3001:3000
     networks:
@@ -76,10 +90,18 @@ services:
       context: .
       dockerfile: apps/frontend-manage/Dockerfile
       args:
-        NODE_ENV: development
-        COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+        COOKIE_DOMAIN: .klicker.com
         NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+        NEXT_PUBLIC_API_URL: 'http://api.klicker.com/api/graphql'
+        NEXT_PUBLIC_AUTH_URL: 'http://auth.klicker.com'
+        NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/avatars'
+        NEXT_PUBLIC_CONTROL_URL: 'http://control.klicker.com'
+        NEXT_PUBLIC_MANAGE_URL: 'http://manage.klicker.com'
+        NEXT_PUBLIC_PWA_URL: 'http://pwa.klicker.com'
+        NODE_ENV: development
+        # BLOB_STORAGE_ACCOUNT_URL: ''
+    environment:
+      NODE_ENV: development
     ports:
       - 3002:3000
     networks:
@@ -92,10 +114,17 @@ services:
       context: .
       dockerfile: apps/frontend-control/Dockerfile
       args:
-        NODE_ENV: development
-        COOKIE_DOMAIN: 127.0.0.1
-        NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3000/api/graphql'
+        COOKIE_DOMAIN: .klicker.com
         NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
+        NEXT_PUBLIC_API_URL: 'http://api.klicker.com/api/graphql'
+        NODE_ENV: development
+        NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/avatars'
+        NEXT_PUBLIC_PWA_URL: 'http://pwa.klicker.com'
+        NEXT_PUBLIC_MANAGE_URL: 'http://manage.klicker.com'
+        NEXT_PUBLIC_CONTROL_URL: 'http://control.klicker.com'
+        # BLOB_STORAGE_ACCOUNT_URL: ''
+    environment:
+      NODE_ENV: development
     ports:
       - 3003:3000
     networks:
@@ -110,14 +139,31 @@ services:
       args:
         NODE_ENV: 'development'
     environment:
-      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
       APP_SECRET: 'abcd'
-      REDIS_HOST: 'redis_exec'
-      REDIS_PORT: 6379
+      COOKIE_DOMAIN: .klicker.com
+      CRON_TOKEN: 'abcd'
+      DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
+      NODE_ENV: development
+      NOTIFICATION_SUPPORT_MAIL: 'noone@klicker.com'
+      NOTIFICATION_URL: 'noone@klicker.com'
       REDIS_CACHE_HOST: 'redis_cache'
+      REDIS_CACHE_PASS: ''
       REDIS_CACHE_PORT: 6379
-      API_DOMAIN: '127.0.0.1'
-      COOKIE_DOMAIN: '127.0.0.1'
+      REDIS_HOST: 'redis_exec'
+      REDIS_PASS: ''
+      REDIS_PORT: 6379
+      # BLOB_STORAGE_ACCESS_KEY: ''
+      # BLOB_STORAGE_ACCOUNT_NAME: ''
+      # LISTMONK_TEMPLATE_MIGRATION_REQUEST: ''
+      # LISTMONK_URL: ''
+      # LISTMONK_USER: ''
+      # MIGRATION_SERVICE_BUS_QUEUE_NAME: ''
+      # NOTIFICATION_SECRET: ''
+      # REDIS_CACHE_TLS: 'true'
+      # REDIS_TLS: 'true'
+      # TEAMS_WEBHOOK_URL: ''
+      # VAPID_PRIVATE_KEY: ''
+      # VAPID_PUBLIC_KEY: ''
     ports:
       - 3000:3000
     networks:
