@@ -3,7 +3,7 @@
   "version": "3.1.0-beta.4",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@uzh-bf/design-system": "2.1.13",
+    "@uzh-bf/design-system": "2.4.2",
     "core-js": "3.30.2",
     "es6-promise": "4.2.8",
     "formik": "2.4.3",
