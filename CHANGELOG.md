@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.4...v3.1.0-beta.5) (2023-11-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that evaluation does not break in case of missing NR responses ([#3936](https://github.com/uzh-bf/klicker-uzh/issues/3936)) ([4d11a0e](https://github.com/uzh-bf/klicker-uzh/commit/4d11a0e20c80fd45bc8d4d6a38c47e9950944fc7))
+* **apps/office-addin:** remove RequestedWidth as it is invalid in the manifest ([ee0fd03](https://github.com/uzh-bf/klicker-uzh/commit/ee0fd0323093ebddb9f1a6d96e4bb4aa68aae653))
+* replace countdown with new implementation to resolve wrong answer submissions ([#3935](https://github.com/uzh-bf/klicker-uzh/issues/3935)) ([e6b5bfb](https://github.com/uzh-bf/klicker-uzh/commit/e6b5bfbee22681fa940f90060703d61cc47fb44e))
+
+
+### Refactors
+
+* **packages/prisma:** update flashcard and achievement seeding scripts to bun ([e279753](https://github.com/uzh-bf/klicker-uzh/commit/e279753b8c7ef85f058b8f79af84a91b288e5f4b))
+
 ## [3.1.0-beta.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.3...v3.1.0-beta.4) (2023-10-29)
 
 ## [3.1.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.2...v3.1.0-beta.3) (2023-10-29)
