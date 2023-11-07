@@ -82,141 +82,308 @@ async function seed(prisma: Prisma.PrismaClient) {
   //   )
 
   // TODO: use these constants for production db seeding
-  //   const USER_ID = USER_ID_BF1
-  //   const COURSE_ID = COURSE_ID_BF1
+  //   const USER_ID = USER_ID_BF1_HS23
+  //   const COURSE_ID = COURSE_ID_BF1_HS23
   const USER_ID = USER_ID_TEST
   const COURSE_ID = COURSE_ID_TEST
 
-  const GROUP_ACTIVITY_ID = 'df84c617-cff6-463f-b0d1-d9da611e34f0'
-  const bf1GroupActivity = await prisma.groupActivity.upsert({
+  // const GROUP_ACTIVITY_ID = 'df84c617-cff6-463f-b0d1-d9da611e34f0'
+  //   const bf1GroupActivity = await prisma.groupActivity.upsert({
+  //     where: {
+  //       id: GROUP_ACTIVITY_ID,
+  //     },
+  //     create: {
+  //       id: GROUP_ACTIVITY_ID,
+  //       name: 'BFI Gruppenquest 1',
+  //       displayName: 'BFI Gruppenquest 1',
+  //       description: `
+  //   Du und deine Finance Friends möchtet euch mit der Finanzierung von Schweizer Unternehmen beschäftigen. Hierfür wählt ihr die Pharmafirmen «Novartis» und «Roche». Um genauere Angaben der jeweiligen Finanzierungsstruktur zu erhalten, setzt ihr euch mit den Geschäftsberichten der beiden Unternehmen auseinander und nutzt die euch zugeteilten Daten.
+
+  //   Für die Berechnung erhaltet ihr den folgenden Tipp:
+
+  //   - Bezieht euch auf die Entwicklung der letzten 2 Jahre und konsultiert die konsolidierte Bilanz in den Geschäftsberichten der Unternehmen.
+
+  //   ![](https://klickeruzhprodimages.blob.core.windows.net/b7e21ad0-dcf6-4277-9b06-a3eb1d03147c/f177ef8f-e280-4baa-88d8-d446acfe7ee0.png)
+  //   `,
+  //       status: 'PUBLISHED',
+  //       scheduledStartAt: new Date('2023-10-16T13:45:00.000Z'),
+  //       scheduledEndAt: new Date('2023-11-03T22:59:00.000Z'),
+  //       parameters: {},
+  //       clues: {
+  //         connectOrCreate: [
+  //           {
+  //             where: {
+  //               groupActivityId_name: {
+  //                 groupActivityId: GROUP_ACTIVITY_ID,
+  //                 name: 'novartis1',
+  //               },
+  //             },
+  //             create: {
+  //               type: 'STRING',
+  //               name: 'novartis1',
+  //               displayName: 'Novartis Tipp 1',
+  //               value: 'Rating (S&P / Fitch): AA-',
+  //             },
+  //           },
+  //           {
+  //             where: {
+  //               groupActivityId_name: {
+  //                 groupActivityId: GROUP_ACTIVITY_ID,
+  //                 name: 'novartis2',
+  //               },
+  //             },
+  //             create: {
+  //               type: 'STRING',
+  //               name: 'novartis2',
+  //               displayName: 'Novartis Tipp 2',
+  //               value: 'ESG Rating (Refinitiv): B-',
+  //             },
+  //           },
+  //           {
+  //             where: {
+  //               groupActivityId_name: {
+  //                 groupActivityId: GROUP_ACTIVITY_ID,
+  //                 name: 'novartis3',
+  //               },
+  //             },
+  //             create: {
+  //               type: 'STRING',
+  //               name: 'novartis3',
+  //               displayName: 'Novartis Tipp 3',
+  //               value: 'Kapitalkosten (WACC) approx.: 2.6%',
+  //             },
+  //           },
+  //           {
+  //             where: {
+  //               groupActivityId_name: {
+  //                 groupActivityId: GROUP_ACTIVITY_ID,
+  //                 name: 'novartis4',
+  //               },
+  //             },
+  //             create: {
+  //               type: 'STRING',
+  //               name: 'novartis4',
+  //               displayName: 'Novartis Tipp 4',
+  //               value:
+  //                 'Geschäftsbericht (S. 77): [Download](https://www.novartis.com/sites/novartis_com/files/novartis-annual-report-2022.pdf)',
+  //             },
+  //           },
+  //           {
+  //             where: {
+  //               groupActivityId_name: {
+  //                 groupActivityId: GROUP_ACTIVITY_ID,
+  //                 name: 'roche1',
+  //               },
+  //             },
+  //             create: {
+  //               type: 'STRING',
+  //               name: 'roche1',
+  //               displayName: 'Roche Tipp 1',
+  //               value: `Rating (S&P / Fitch): AA-; ESG Rating (Refinitiv): A+`,
+  //             },
+  //           },
+  //           {
+  //             where: {
+  //               groupActivityId_name: {
+  //                 groupActivityId: GROUP_ACTIVITY_ID,
+  //                 name: 'roche2',
+  //               },
+  //             },
+  //             create: {
+  //               type: 'STRING',
+  //               name: 'roche2',
+  //               displayName: 'Roche Tipp 2',
+  //               value: 'Kapitalkosten (WACC) approx.: 1.8%',
+  //             },
+  //           },
+  //           {
+  //             where: {
+  //               groupActivityId_name: {
+  //                 groupActivityId: GROUP_ACTIVITY_ID,
+  //                 name: 'roche3',
+  //               },
+  //             },
+  //             create: {
+  //               type: 'STRING',
+  //               name: 'roche3',
+  //               displayName: 'Roche Tipp 3',
+  //               value:
+  //                 'Geschäftsbericht (S. 46): [Download](https://assets.roche.com/f/176343/x/537a274a55/fb22e.pdf)',
+  //             },
+  //           },
+  //         ],
+  //       },
+  //       instances: {
+  //         connectOrCreate: await Promise.all(
+  //           [6178, 6179, 6180, 6181, 6182].map(async (qId, ix) => {
+  //             const question = await prisma.question.findUnique({
+  //               where: { id: qId },
+  //             })
+
+  //             return {
+  //               where: {
+  //                 type_groupActivityId_order: {
+  //                   type: 'GROUP_ACTIVITY',
+  //                   groupActivityId: GROUP_ACTIVITY_ID,
+  //                   order: ix,
+  //                 },
+  //               },
+  //               create: prepareQuestionInstance({
+  //                 question,
+  //                 type: 'GROUP_ACTIVITY',
+  //                 order: ix,
+  //               }),
+  //             }
+  //           })
+  //         ),
+  //       },
+  //       owner: {
+  //         connect: {
+  //           id: USER_ID,
+  //         },
+  //       },
+  //       course: {
+  //         connect: {
+  //           id: COURSE_ID,
+  //         },
+  //       },
+  //     },
+  //     update: {},
+  //   })
+
+  const GROUP_ACTIVITY_ID2 = 'd63dbdbd-f99b-4359-917e-d3ad4248e5f7'
+  const bf1GroupActivity2 = await prisma.groupActivity.upsert({
     where: {
-      id: GROUP_ACTIVITY_ID,
+      id: GROUP_ACTIVITY_ID2,
     },
     create: {
-      id: GROUP_ACTIVITY_ID,
-      name: 'BFI Gruppenquest 1',
-      displayName: 'BFI Gruppenquest 1',
+      id: GROUP_ACTIVITY_ID2,
+      name: 'BFI Gruppenquest 2: Unternehmensbewertung',
+      displayName: 'BFI Gruppenquest 2: Unternehmensbewertung',
       description: `
-  Du und deine Finance Friends möchtet euch mit der Finanzierung von Schweizer Unternehmen beschäftigen. Hierfür wählt ihr die Pharmafirmen «Novartis» und «Roche». Um genauere Angaben der jeweiligen Finanzierungsstruktur zu erhalten, setzt ihr euch mit den Geschäftsberichten der beiden Unternehmen auseinander und nutzt die euch zugeteilten Daten.
+  Du und deine Kolleg:innen arbeiten gemeinsam in einem Corporate Finance Büro - der WeValYou AG. Am Montag kommt Herr S. Räfli auf euch zu und beauftragt euch, im Rahmen des potenziellen Kaufs der **Schindler AG**, ihren Unternehmenswert anhand verschiedener Berechnungsmethoden zu bestimmen.
 
-  Für die Berechnung erhaltet ihr den folgenden Tipp:
+  Er bringt eine grosse Box an Unterlagen mit. Leider aber fällt die Box auf den Boden, ein Windstoss kommt und die Unterlagen fliegen wild umher. Jede:r von euch schafft es, einige Blätter zu sammeln und hält nun also unterschiedliche Angaben zur Schindler AG in der Hand. Sprecht euch untereinander ab, um alle Daten zusammenzutragen. 
 
-  - Bezieht euch auf die Entwicklung der letzten 2 Jahre und konsultiert die konsolidierte Bilanz in den Geschäftsberichten der Unternehmen.
+  Für die Aufgaben gibt euch Herr S. Räfli noch die folgenden Tipps:
 
-  ![](https://klickeruzhprodimages.blob.core.windows.net/b7e21ad0-dcf6-4277-9b06-a3eb1d03147c/f177ef8f-e280-4baa-88d8-d446acfe7ee0.png)
+  - Berechnet den Unternehmenswert jeweils per 31.12.2022.
+  
+  - Die erhaltenen Daten sind alle per Ende 2022.
+
+  ![](https://klickeruzhprodimages.blob.core.windows.net/b7e21ad0-dcf6-4277-9b06-a3eb1d03147c/3d6d1889-b2ff-4a98-90a1-9b119968a82d.png)
   `,
       status: 'PUBLISHED',
-      scheduledStartAt: new Date('2023-10-16T13:45:00.000Z'),
-      scheduledEndAt: new Date('2023-11-03T22:59:00.000Z'),
+      scheduledStartAt: new Date('2023-11-08T17:00:00.000Z'),
+      scheduledEndAt: new Date('2023-11-24T22:59:00.000Z'),
       parameters: {},
       clues: {
         connectOrCreate: [
           {
             where: {
               groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'novartis1',
+                groupActivityId: GROUP_ACTIVITY_ID2,
+                name: 'eigenkapitalrendite',
               },
             },
             create: {
               type: 'STRING',
-              name: 'novartis1',
-              displayName: 'Novartis Tipp 1',
-              value: 'Rating (S&P / Fitch): AA-',
+              name: 'eigenkapitalrendite',
+              displayName: 'Eigenkapitalrendite',
+              value: 'Wert: 9%',
             },
           },
           {
             where: {
               groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'novartis2',
+                groupActivityId: GROUP_ACTIVITY_ID2,
+                name: 'fremdkapitalkosten',
               },
             },
             create: {
               type: 'STRING',
-              name: 'novartis2',
-              displayName: 'Novartis Tipp 2',
-              value: 'ESG Rating (Refinitiv): B-',
+              name: 'fremdkapitalkosten',
+              displayName: 'Fremdkapitalkosten',
+              value: 'Wert: 5%',
             },
           },
           {
             where: {
               groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'novartis3',
+                groupActivityId: GROUP_ACTIVITY_ID2,
+                name: 'fremdkapital',
               },
             },
             create: {
               type: 'STRING',
-              name: 'novartis3',
-              displayName: 'Novartis Tipp 3',
-              value: 'Kapitalkosten (WACC) approx.: 2.6%',
+              name: 'fremdkapital',
+              displayName: 'Fremdkapital',
+              value: 'Wert: 7363 Mio. CHF',
             },
           },
           {
             where: {
               groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'novartis4',
+                groupActivityId: GROUP_ACTIVITY_ID2,
+                name: 'eigenkapital',
               },
             },
             create: {
               type: 'STRING',
-              name: 'novartis4',
-              displayName: 'Novartis Tipp 4',
-              value:
-                'Geschäftsbericht (S. 77): [Download](https://www.novartis.com/sites/novartis_com/files/novartis-annual-report-2022.pdf)',
+              name: 'eigenkapital',
+              displayName: 'Eigenkapital',
+              value: 'Wert: 4445 Mio. CHF',
             },
           },
           {
             where: {
               groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'roche1',
+                groupActivityId: GROUP_ACTIVITY_ID2,
+                name: 'aktien',
               },
             },
             create: {
               type: 'STRING',
-              name: 'roche1',
-              displayName: 'Roche Tipp 1',
-              value: `Rating (S&P / Fitch): AA-; ESG Rating (Refinitiv): A+`,
+              name: 'aktien',
+              displayName: 'Anzahl Aktien',
+              value: 'Wert: 67077452',
             },
           },
           {
             where: {
               groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'roche2',
+                groupActivityId: GROUP_ACTIVITY_ID2,
+                name: 'aktienkurs',
               },
             },
             create: {
               type: 'STRING',
-              name: 'roche2',
-              displayName: 'Roche Tipp 2',
-              value: 'Kapitalkosten (WACC) approx.: 1.8%',
+              name: 'aktienkurs',
+              displayName: 'Aktienkurs Ende 2022',
+              value: 'Wert: 173.9 CHF',
             },
           },
           {
             where: {
               groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'roche3',
+                groupActivityId: GROUP_ACTIVITY_ID2,
+                name: 'reingewinn',
               },
             },
             create: {
               type: 'STRING',
-              name: 'roche3',
-              displayName: 'Roche Tipp 3',
-              value:
-                'Geschäftsbericht (S. 46): [Download](https://assets.roche.com/f/176343/x/537a274a55/fb22e.pdf)',
+              name: 'reingewinn',
+              displayName: 'Reingewinn',
+              value: 'Wert: 659 Mio. CHF',
             },
           },
         ],
       },
       instances: {
         connectOrCreate: await Promise.all(
-          [6178, 6179, 6180, 6181, 6182].map(async (qId, ix) => {
-            const question = await prisma.question.findUnique({
+          // TODO: change question ids to production question ids
+          [6, 7, 8, 9, 10, 11].map(async (qId, ix) => {
+            const question = await prisma.element.findUnique({
               where: { id: qId },
             })
 
@@ -224,7 +391,7 @@ async function seed(prisma: Prisma.PrismaClient) {
               where: {
                 type_groupActivityId_order: {
                   type: 'GROUP_ACTIVITY',
-                  groupActivityId: GROUP_ACTIVITY_ID,
+                  groupActivityId: GROUP_ACTIVITY_ID2,
                   order: ix,
                 },
               },
@@ -254,7 +421,7 @@ async function seed(prisma: Prisma.PrismaClient) {
 
 const prismaClient = new Prisma.PrismaClient()
 
-seed(prismaClient)
+await seed(prismaClient)
   .catch((e) => {
     console.error(e)
     process.exit(1)
