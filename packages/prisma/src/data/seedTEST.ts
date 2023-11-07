@@ -1,4 +1,5 @@
-import Prisma, { Question } from '../../dist'
+import Prisma from '../../dist'
+import { Element } from '../client'
 import {
   COURSE_ID_TEST,
   USER_ID_TEST,
@@ -98,19 +99,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   const questionsTest = (await Promise.all(
     DATA_TEST.QUESTIONS.map((data) =>
-      prisma.question.upsert(
-        prepareQuestion({ ownerId: USER_ID_TEST, ...data })
-      )
+      prisma.element.upsert(prepareQuestion({ ownerId: USER_ID_TEST, ...data }))
     )
-  )) as Question[]
-
-  const questionCount = await prisma.question.findFirst({
-    orderBy: { id: 'desc' },
-  })
-
-  await prisma.$executeRawUnsafe(
-    `ALTER SEQUENCE "Question_id_seq" RESTART WITH ${questionCount.id + 1}`
-  )
+  )) as Element[]
 
   const learningElementsTest = await Promise.all(
     DATA_TEST.LEARNING_ELEMENTS.map(async (data) =>
@@ -124,7 +115,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
               ...stack,
               elements: stack.elements.map((element) => {
                 if (typeof element !== 'string') {
-                  return questionsTest.find((q) => q.id === element) as Question
+                  return questionsTest.find(
+                    (q) => parseInt(q.originalId!) === element
+                  ) as Element
                 }
                 return element
               }),
@@ -144,7 +137,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             ...block,
             order: ix,
             questions: questionsTest
-              .filter((q) => block.questions.includes(q.id))
+              .filter((q) => block.questions.includes(parseInt(q.originalId!)))
               .map(async (q) => q),
           })),
           ownerId: USER_ID_TEST,
@@ -163,7 +156,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           courseId: COURSE_ID_TEST,
           status: Prisma.MicroSessionStatus.PUBLISHED,
           questions: questionsTest
-            .filter((q) => data.questions.includes(q.id))
+            .filter((q) => data.questions.includes(parseInt(q.originalId!)))
             .map(async (q) => q),
         })
       )
@@ -205,8 +198,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       instances: {
         connectOrCreate: await Promise.all(
           [0].map(async (qId, ix) => {
-            const question = await prisma.question.findUnique({
-              where: { id: qId },
+            const question = await prisma.element.findUnique({
+              where: { originalId: String(qId) },
             })
 
             return {
@@ -405,7 +398,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
 const prismaClient = new Prisma.PrismaClient()
 
-seedTest(prismaClient)
+await seedTest(prismaClient)
   .catch((e) => {
     console.error(e)
     process.exit(1)

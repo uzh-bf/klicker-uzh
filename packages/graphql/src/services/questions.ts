@@ -8,7 +8,7 @@ import * as DB from '@klicker-uzh/prisma'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
-import { Question, Tag } from 'src/ops'
+import { Element, Tag } from 'src/ops'
 import { ContextWithUser } from '../lib/context'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
@@ -20,6 +20,15 @@ export async function getUserQuestions(ctx: ContextWithUser) {
       questions: {
         where: {
           isDeleted: false,
+          type: {
+            in: [
+              DB.ElementType.SC,
+              DB.ElementType.MC,
+              DB.ElementType.KPRIM,
+              DB.ElementType.FREE_TEXT,
+              DB.ElementType.NUMERICAL,
+            ],
+          },
         },
         orderBy: [
           {
@@ -44,7 +53,7 @@ export async function getSingleQuestion(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
-  const question = await ctx.prisma.question.findUnique({
+  const question = await ctx.prisma.element.findUnique({
     where: {
       id,
       ownerId: ctx.user.sub,
@@ -66,6 +75,43 @@ export async function getSingleQuestion(
   }
 }
 
+interface QuestionOptionsArgs {
+  unit?: string | null
+  accuracy?: number | null
+  placeholder?: string | null
+  restrictions?: {
+    maxLength?: number | null
+    minLength?: number | null
+    pattern?: string | null
+    min?: number | null
+    max?: number | null
+  }
+  feedback?: string
+  solutionRanges?: { min?: number; max?: number }[]
+  solutions?: string[]
+  choices?: {
+    ix: number
+    value: string
+    correct?: boolean
+    feedback?: string
+  }[]
+  displayMode?: DB.ElementDisplayMode | null
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  pointsMultiplier?: number | null
+}
+
+interface ManipulateQuestionArgs {
+  id?: number | null
+  type: DB.ElementType
+  name?: string | null
+  content?: string | null
+  explanation?: string | null
+  options?: QuestionOptionsArgs | null
+  pointsMultiplier?: number | null
+  tags?: string[] | null
+}
+
 export async function manipulateQuestion(
   {
     id,
@@ -74,51 +120,16 @@ export async function manipulateQuestion(
     content,
     explanation,
     options,
-    hasSampleSolution,
-    hasAnswerFeedbacks,
     pointsMultiplier,
     tags,
-    displayMode,
-  }: {
-    id?: number | null
-    type: DB.QuestionType
-    name?: string | null
-    content?: string | null
-    explanation?: string | null
-    options?: {
-      unit?: string | null
-      accuracy?: number | null
-      placeholder?: string | null
-      restrictions?: {
-        maxLength?: number | null
-        minLength?: number | null
-        pattern?: string | null
-        min?: number | null
-        max?: number | null
-      }
-      feedback?: string
-      solutionRanges?: { min?: number; max?: number }[]
-      solutions?: string[]
-      choices?: {
-        ix: number
-        value: string
-        correct?: boolean
-        feedback?: string
-      }[]
-    } | null
-    hasSampleSolution?: boolean | null
-    hasAnswerFeedbacks?: boolean | null
-    pointsMultiplier?: number | null
-    tags?: string[] | null
-    displayMode?: DB.QuestionDisplayMode | null
-  },
+  }: ManipulateQuestionArgs,
   ctx: ContextWithUser
 ) {
   let tagsToDelete: string[] = []
 
   const questionPrev =
     typeof id !== 'undefined' && id !== null
-      ? await ctx.prisma.question.findUnique({
+      ? await ctx.prisma.element.findUnique({
           where: {
             id: id,
             ownerId: ctx.user.sub,
@@ -139,7 +150,7 @@ export async function manipulateQuestion(
       .map((tag) => tag.name)
   }
 
-  const question = await ctx.prisma.question.upsert({
+  const question = await ctx.prisma.element.upsert({
     where: {
       id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
@@ -148,11 +159,20 @@ export async function manipulateQuestion(
       name: name ?? 'Missing Question Title',
       content: content ?? 'Missing Question Content',
       explanation: explanation ?? undefined,
-      hasSampleSolution: hasSampleSolution ?? false,
-      hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
       pointsMultiplier: pointsMultiplier ?? 1,
-      displayMode: displayMode ?? undefined,
-      options: options || {},
+      options: {
+        ...options,
+        displayMode: options?.displayMode ?? DB.ElementDisplayMode.LIST,
+        hasSampleSolution: options?.hasSampleSolution ?? false,
+        hasAnswerFeedbacks: options?.hasAnswerFeedbacks ?? false,
+        accuracy: options?.accuracy ?? undefined,
+        placeholder: options?.placeholder ?? undefined,
+        restrictions: {
+          ...options?.restrictions,
+          min: options?.restrictions?.min ?? undefined,
+          max: options?.restrictions?.max ?? undefined,
+        },
+      },
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -177,11 +197,22 @@ export async function manipulateQuestion(
       name: name ?? undefined,
       content: content ?? undefined,
       explanation: explanation ?? undefined,
-      hasSampleSolution: hasSampleSolution ?? false,
-      hasAnswerFeedbacks: hasAnswerFeedbacks ?? false,
       pointsMultiplier: pointsMultiplier ?? 1,
-      options: options ?? undefined,
-      displayMode: displayMode ?? undefined,
+      options: options
+        ? {
+            ...options,
+            displayMode: options?.displayMode ?? DB.ElementDisplayMode.LIST,
+            hasSampleSolution: options?.hasSampleSolution ?? false,
+            hasAnswerFeedbacks: options?.hasAnswerFeedbacks ?? false,
+            accuracy: options?.accuracy ?? undefined,
+            placeholder: options?.placeholder ?? undefined,
+            restrictions: {
+              ...options?.restrictions,
+              min: options?.restrictions?.min ?? undefined,
+              max: options?.restrictions?.max ?? undefined,
+            },
+          }
+        : undefined,
       tags: {
         connectOrCreate: tags
           ?.filter((tag: string) => tag !== '')
@@ -217,7 +248,7 @@ export async function manipulateQuestion(
 
   // TODO: fix invalidation of cache
   ctx.emitter.emit('invalidate', {
-    typename: 'Question',
+    typename: 'Element',
     id: question.id,
   })
 
@@ -231,7 +262,7 @@ export async function deleteQuestion(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
-  const question = await ctx.prisma.question.update({
+  const question = await ctx.prisma.element.update({
     where: {
       id: id,
       ownerId: ctx.user.sub,
@@ -242,7 +273,7 @@ export async function deleteQuestion(
   })
 
   // TODO: Once migration deadline is over, rework approach and delete question for real
-  // const question = await ctx.prisma.question.delete({
+  // const question = await ctx.prisma.element.delete({
   //   where: {
   //     id: id,
   //     ownerId: ctx.user.sub,
@@ -250,7 +281,7 @@ export async function deleteQuestion(
   // })
 
   // ctx.emitter.emit('invalidate', {
-  //   typename: 'Question',
+  //   typename: 'Element',
   //   id: question.id,
   // })
 
@@ -325,8 +356,8 @@ export async function updateTagOrdering(
 export async function toggleIsArchived(
   { questionIds, isArchived }: { questionIds: number[]; isArchived: boolean },
   ctx: ContextWithUser
-): Promise<Partial<Question>[]> {
-  await ctx.prisma.question.updateMany({
+): Promise<Partial<Element>[]> {
+  await ctx.prisma.element.updateMany({
     where: {
       id: {
         in: questionIds,

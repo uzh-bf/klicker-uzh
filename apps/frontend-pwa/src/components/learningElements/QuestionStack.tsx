@@ -7,14 +7,14 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   BookmarkQuestionDocument,
+  ElementType,
   GetBookmarksLearningElementDocument,
   QuestionStack,
-  QuestionType,
   ResponseToQuestionInstanceDocument,
   SelfDocument,
   StackElement,
 } from '@klicker-uzh/graphql/dist/ops'
-import formatResponse from '@lib/formatResponse'
+import formatResponse from '@klicker-uzh/shared-components/src/utils/formatResponse'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -148,14 +148,14 @@ function QuestionStack({
         const questionType = element.questionInstance?.questionData.type
         setInformationOnly(false)
         if (
-          questionType === QuestionType.Sc ||
-          questionType === QuestionType.Mc
+          questionType === ElementType.Sc ||
+          questionType === ElementType.Mc
         ) {
           return {
             inputValid: { ...acc.inputValid, [element.id]: false },
             responses: { ...acc.responses, [element.id]: [] },
           }
-        } else if (questionType === QuestionType.Kprim) {
+        } else if (questionType === ElementType.Kprim) {
           return {
             inputValid: { ...acc.inputValid, [element.id]: false },
             responses: { ...acc.responses, [element.id]: {} },

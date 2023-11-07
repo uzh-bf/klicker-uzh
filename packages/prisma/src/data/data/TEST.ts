@@ -1,18 +1,18 @@
 import Prisma from '../../../dist'
 import { LearningElementStatus } from '../../client'
-const { QuestionType, SessionStatus, OrderType } = Prisma
+const { ElementType, SessionStatus, OrderType } = Prisma
 
 export const QUESTIONS = [
   {
-    id: 0,
+    originalId: '0',
     name: 'Testfrage FREE_TEXT',
     content:
       'Beantworte mich korrekt, richtig, oder genau. Ansonsten bekommst du keine Punkte!',
     explanation: 'FT generische Erklärung, warum diese Frage richtig ist.',
-    type: QuestionType.FREE_TEXT,
-    hasSampleSolution: true,
-    hasAnswerFeedbacks: false,
+    type: ElementType.FREE_TEXT,
     options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: false,
       restrictions: {
         maxLength: 100,
       },
@@ -20,13 +20,15 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 1,
+    originalId: '1',
     name: 'Testfrage MC',
     content: 'Wähle 2 und 3, denn sonst ist es vorbei.',
     explanation: 'MC generische Erklärung, warum diese Frage richtig ist.',
-    type: QuestionType.MC,
-    hasSampleSolution: true,
-    hasAnswerFeedbacks: true,
+    type: ElementType.MC,
+    options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: true,
+    },
     choices: [
       {
         feedback:
@@ -62,14 +64,14 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 2,
+    originalId: '2',
     name: 'Testfrage NUMERICAL',
     content: 'Wie viel würdest du in Aktien anlegen? Beni mag 17%.',
     explanation: 'NR generische Erklärung, warum diese Frage richtig ist.',
-    type: QuestionType.NUMERICAL,
-    hasSampleSolution: true,
-    hasAnswerFeedbacks: false,
+    type: ElementType.NUMERICAL,
     options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: false,
       restrictions: {
         min: 0,
         max: 100,
@@ -91,12 +93,14 @@ export const QUESTIONS = [
     },
   },
   {
-    id: 3,
+    originalId: '3',
     name: 'Multi-Faktor-Modell',
     content: '<br>',
-    type: QuestionType.KPRIM,
-    hasSampleSolution: true,
-    hasAnswerFeedbacks: true,
+    type: ElementType.KPRIM,
+    options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: true,
+    },
     explanation: 'KPRIM generische Erklärung, warum diese Frage richtig ist.',
     choices: [
       {
@@ -126,14 +130,16 @@ export const QUESTIONS = [
     ],
   },
   {
-    id: 4,
+    originalId: '4',
     name: 'Modul 4 Business Cycle I',
     content:
       'Aktien von Unternehmen aus zyklischen Industriezweigen haben tendenziell Beta-Werte...',
-    type: QuestionType.SC,
-    hasSampleSolution: true,
-    hasAnswerFeedbacks: true,
+    type: ElementType.SC,
     pointsMultiplier: 2,
+    options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: true,
+    },
     explanation: 'SC generische Erklärung, warum diese Frage richtig ist.',
     choices: [
       {

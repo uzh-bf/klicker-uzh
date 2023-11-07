@@ -1,9 +1,9 @@
 import {
+  ElementType,
   InstanceEvaluation,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
 import Histogram from '@klicker-uzh/shared-components/src/Histogram'
-import { QuestionType } from '@type/app'
 import { Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
@@ -24,7 +24,7 @@ function EvaluationDisplay({
   const t = useTranslations()
 
   switch (questionType) {
-    case QuestionType.SC: {
+    case ElementType.Sc: {
       const sum = Object.values(
         evaluation.choices as Record<string, number>
       ).reduce((acc, choice) => acc + choice, 0)
@@ -63,8 +63,8 @@ function EvaluationDisplay({
       )
     }
 
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
+    case ElementType.Mc:
+    case ElementType.Kprim: {
       const sum = Object.values(
         evaluation.choices as Record<string, number>
       ).reduce((acc, choice) => acc + choice, 0)
@@ -105,7 +105,7 @@ function EvaluationDisplay({
       )
     }
 
-    case QuestionType.FREE_TEXT:
+    case ElementType.FreeText:
       const answers = Object.entries(
         evaluation.answers as Record<string, number>
       ).reduce(
@@ -135,7 +135,7 @@ function EvaluationDisplay({
         </div>
       )
 
-    case QuestionType.NUMERICAL:
+    case ElementType.Numerical:
       const results = Object.entries(
         evaluation.answers as Record<string, number>
       ).reduce(

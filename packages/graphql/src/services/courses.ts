@@ -1,11 +1,15 @@
 import {
+  ElementOrderType,
   GroupActivityStatus,
   LeaderboardEntry,
   LearningElementStatus,
+  PublicationStatus,
+  UserRole,
 } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import { GroupLeaderboardEntry } from 'src/ops'
 import { Context, ContextWithUser } from '../lib/context'
+import { orderStacks } from '../lib/util'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -495,7 +499,50 @@ export async function getUserLearningElements(ctx: ContextWithUser) {
   if (!participantCoursesWithLearningElements) return []
 
   return participantCoursesWithLearningElements.participations.flatMap(
-    (participation) => participation.course.learningElements
+    (participation) =>
+      participation.course.learningElements.map((learningElement) => {
+        return {
+          ...learningElement,
+          course: participation.course,
+        }
+      })
+  )
+}
+
+export async function getUserPracticeQuizzes(ctx: ContextWithUser) {
+  const participantCoursesWithPracticeQuizzes =
+    await ctx.prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+      include: {
+        participations: {
+          include: {
+            course: {
+              include: {
+                practiceQuizzes: {
+                  orderBy: {
+                    displayName: 'asc',
+                  },
+                  where: {
+                    status: PublicationStatus.PUBLISHED,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+  if (!participantCoursesWithPracticeQuizzes) return []
+
+  return participantCoursesWithPracticeQuizzes.participations.flatMap(
+    (participation) =>
+      participation.course.practiceQuizzes.map((practiceQuiz) => {
+        return {
+          ...practiceQuiz,
+          course: participation.course,
+        }
+      })
   )
 }
 
@@ -753,4 +800,58 @@ export async function checkValidCoursePin(
   }
 
   return course.id
+}
+
+export async function getCoursePracticeQuiz(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      elementStacks: {
+        include: {
+          elements: {
+            include:
+              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+                ? {
+                    responses: {
+                      where: {
+                        participantId: ctx.user.sub,
+                      },
+                    },
+                  }
+                : undefined,
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  const orderedStacks = orderStacks(course.elementStacks)
+
+  return {
+    id: courseId,
+    name: course.name,
+    displayName: course.displayName,
+    description: 'Practice Pool for ' + course.displayName,
+    pointsMultiplier: 1,
+    resetTimeDays: 6,
+    orderType: ElementOrderType.SPACED_REPETITION,
+    status: LearningElementStatus.PUBLISHED,
+    stacks: orderedStacks.slice(0, 25),
+    course,
+    courseId,
+    ownerId: course.ownerId,
+    createdAt: course.createdAt,
+    updatedAt: course.updatedAt,
+  }
 }

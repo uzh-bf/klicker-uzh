@@ -10,6 +10,7 @@ import * as MicroLearningService from '../services/microLearning'
 import * as MigrationService from '../services/migration'
 import * as NotificationService from '../services/notifications'
 import * as ParticipantService from '../services/participants'
+import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course } from './course'
@@ -36,20 +37,21 @@ import {
   SubscriptionObjectInput,
 } from './participant'
 import {
+  Element,
   OptionsChoicesInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
-  Question,
   QuestionInstance,
   ResponseInput,
   Tag,
 } from './question'
-import { QuestionDisplayMode, QuestionType } from './questionData'
+import { ElementType } from './questionData'
 import {
   BlockInput,
   ConfusionTimestep,
   Feedback,
   FeedbackResponse,
+  QuestionResponse,
   Session,
 } from './session'
 import {
@@ -198,6 +200,21 @@ export const Mutation = builder.mutationType({
         },
         resolve: (_, args, ctx) => {
           return LearningElementService.respondToQuestionInstance(args, ctx)
+        },
+      }),
+
+      respondToFlashcardInstance: t.field({
+        nullable: true,
+        type: QuestionResponse,
+        args: {
+          id: t.arg.int({ required: true }),
+          courseId: t.arg.string({ required: true }),
+          correctness: t.arg.int({
+            required: true,
+          }),
+        },
+        resolve: (_, args, ctx) => {
+          return PracticeQuizService.respondToFlashcardInstance(args, ctx)
         },
       }),
 
@@ -528,7 +545,7 @@ export const Mutation = builder.mutationType({
 
       deleteQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: true }),
         },
@@ -722,16 +739,13 @@ export const Mutation = builder.mutationType({
 
       manipulateChoicesQuestion: t.withAuth(asUserFullAccess).prismaField({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
-          displayMode: t.arg({ required: false, type: QuestionDisplayMode }),
-          hasSampleSolution: t.arg.boolean({ required: false }),
-          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
@@ -745,15 +759,13 @@ export const Mutation = builder.mutationType({
 
       manipulateNumericalQuestion: t.withAuth(asUserFullAccess).prismaField({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
-          hasSampleSolution: t.arg.boolean({ required: false }),
-          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
@@ -767,15 +779,13 @@ export const Mutation = builder.mutationType({
 
       manipulateFreeTextQuestion: t.withAuth(asUserFullAccess).prismaField({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: QuestionType }),
+          type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
-          hasSampleSolution: t.arg.boolean({ required: false }),
-          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
@@ -824,7 +834,7 @@ export const Mutation = builder.mutationType({
 
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: [Question],
+        type: [Element],
         args: {
           questionIds: t.arg.intList({ required: true }),
           isArchived: t.arg.boolean({ required: true }),

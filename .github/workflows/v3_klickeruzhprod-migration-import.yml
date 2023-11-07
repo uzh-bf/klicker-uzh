@@ -3,8 +3,9 @@ name: Build and deploy func-migration-v3-import to Azure Function App (Productio
 on:
   push:
     branches:
-      - 'v3'
-      - 'CI'
+      # - 'v3'
+      - 'v3.1-dev'
+      # - 'CI'
     # paths:
     #   - 'apps/func-migration-v3/**'
     #   - '.github/workflows/v3_klickeruzhprod-migration-import**'
@@ -12,7 +13,7 @@ on:
 
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-migration-v3-import'
-  NODE_VERSION: '18.x' # set this to the node version to use (supports 8.x, 10.x, 12.x)
+  NODE_VERSION: '20.9.0' # set this to the node version to use (supports 8.x, 10.x, 12.x)
 
 jobs:
   build-and-deploy:
@@ -28,7 +29,7 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.6.12
+          version: 8.10.0
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash

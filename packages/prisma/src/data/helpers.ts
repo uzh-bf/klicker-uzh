@@ -119,18 +119,16 @@ export function prepareQuestion({
   options,
   ...args
 }: {
-  id: number
+  originalId: string
   name: string
   content: string
-  type: Prisma.QuestionType
+  type: Prisma.ElementType
   ownerId: string
   choices?: {
     value: string
     feedback?: string
     correct?: boolean
   }[]
-  hasSampleSolution?: boolean
-  hasAnswerFeedbacks?: boolean
   options?: any
 }) {
   if (choices) {
@@ -145,13 +143,14 @@ export function prepareQuestion({
       ...args,
       content,
       options: {
+        ...options,
         choices: preparedChoices,
       },
     }
 
     return {
       where: {
-        id: args.id,
+        originalId: args.originalId,
       },
       create: data,
       update: data,
@@ -166,7 +165,7 @@ export function prepareQuestion({
 
   return {
     where: {
-      id: args.id,
+      originalId: args.originalId,
     },
     create: data,
     update: data,
@@ -180,7 +179,7 @@ export function prepareQuestionInstance({
   resetTimeDays,
   order,
 }: {
-  question: Partial<Prisma.Question>
+  question: Partial<Prisma.Element>
   type: QuestionInstanceType
   pointsMultiplier?: number
   resetTimeDays?: number
@@ -205,9 +204,9 @@ export function prepareQuestionInstance({
   }
 
   switch (question.type) {
-    case Prisma.QuestionType.SC:
-    case Prisma.QuestionType.MC:
-    case Prisma.QuestionType.KPRIM: {
+    case Prisma.ElementType.SC:
+    case Prisma.ElementType.MC:
+    case Prisma.ElementType.KPRIM: {
       const questionOptions = question.options?.valueOf() as {
         choices: {
           ix: number
@@ -231,11 +230,15 @@ export function prepareQuestionInstance({
       }
     }
 
-    case Prisma.QuestionType.NUMERICAL:
-    case Prisma.QuestionType.FREE_TEXT: {
+    case Prisma.ElementType.NUMERICAL:
+    case Prisma.ElementType.FREE_TEXT:
+    case Prisma.ElementType.CONTENT:
+    case Prisma.ElementType.FLASHCARD: {
       return {
         ...common,
-        results: {},
+        results: {
+          participants: 0,
+        },
       }
     }
   }
@@ -246,7 +249,7 @@ interface BaseQuestionData {
   name: string
   pointsMultiplier: number
   content: string
-  type: Prisma.QuestionType
+  type: Prisma.ElementType
   options?: any
 }
 
@@ -257,6 +260,120 @@ interface StackData {
 }
 
 export async function prepareLearningElement({
+  stacks,
+  ...args
+}: {
+  id: string
+  name: string
+  displayName: string
+  description?: string
+  pointsMultiplier?: number
+  resetTimeDays?: number
+  orderType?: Prisma.OrderType
+  ownerId: string
+  courseId: string
+  stacks: StackData[]
+  status?: Prisma.LearningElementStatus
+}) {
+  return {
+    where: {
+      id: args.id,
+    },
+    create: {
+      id: args.id,
+      name: args.name,
+      displayName: args.displayName,
+      description: args.description,
+      pointsMultiplier: args.pointsMultiplier,
+      resetTimeDays: args.resetTimeDays,
+      status: args.status,
+      orderType: args.orderType,
+      owner: {
+        connect: {
+          id: args.ownerId,
+        },
+      },
+      course: {
+        connect: {
+          id: args.courseId,
+        },
+      },
+      stacks: {
+        create: await Promise.all(
+          stacks.map(async (stack, ix) => ({
+            type: QuestionStackType.LEARNING_ELEMENT,
+            order: ix,
+            displayName: stack.displayName,
+            description: stack.description,
+            elements: {
+              create: stack.elements.map((element, ixInner) => {
+                if (typeof element === 'string') {
+                  return { order: ixInner, mdContent: element }
+                }
+                return {
+                  order: ixInner,
+                  questionInstance: {
+                    create: prepareQuestionInstance({
+                      order: 0,
+                      question: element,
+                      pointsMultiplier: args.pointsMultiplier
+                        ? args.pointsMultiplier * element.pointsMultiplier
+                        : undefined,
+                      resetTimeDays: args.resetTimeDays,
+                      type: QuestionInstanceType.LEARNING_ELEMENT,
+                    }),
+                  },
+                }
+              }),
+            },
+          }))
+        ),
+      },
+    },
+    update: {
+      name: args.name,
+      displayName: args.displayName,
+      description: args.description,
+      pointsMultiplier: args.pointsMultiplier,
+      resetTimeDays: args.resetTimeDays,
+      status: args.status,
+      orderType: args.orderType,
+      stacks: {
+        create: await Promise.all(
+          stacks.map(async (stack, ix) => ({
+            type: QuestionStackType.LEARNING_ELEMENT,
+            order: ix,
+            displayName: stack.displayName,
+            description: stack.description,
+            elements: {
+              create: stack.elements.map((element, ixInner) => {
+                if (typeof element === 'string') {
+                  return { order: ixInner, mdContent: element }
+                }
+                return {
+                  order: ixInner,
+                  questionInstance: {
+                    create: prepareQuestionInstance({
+                      order: 0,
+                      question: element,
+                      pointsMultiplier: args.pointsMultiplier
+                        ? args.pointsMultiplier * element.pointsMultiplier
+                        : undefined,
+                      resetTimeDays: args.resetTimeDays,
+                      type: QuestionInstanceType.LEARNING_ELEMENT,
+                    }),
+                  },
+                }
+              }),
+            },
+          }))
+        ),
+      },
+    },
+  }
+}
+
+export async function preparePracticeQuiz({
   stacks,
   ...args
 }: {

@@ -36,6 +36,14 @@ export default {
       text: 'Please enter a number.',
       richtext: 'Please enter a <b>number</b>.',
     },
+    CONTENT: {
+      short: 'CT',
+      typeLabel: 'Content (CT)',
+    },
+    FLASHCARD: {
+      short: 'FC',
+      typeLabel: 'Flashcard (FC)',
+    },
     login: {
       installButton: 'Install Now',
     },
@@ -141,6 +149,10 @@ export default {
       language: 'Language',
       english: 'English',
       german: 'German',
+      practicePool: 'Practice',
+      practiceTitle: 'Practice Pool',
+      practiceQuizzes: 'Quizzes',
+      practice: 'Practice Activities',
     },
     contentInput: {
       boldStyle:
@@ -420,6 +432,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       orderLAST_RESPONSE: 'Order: last answered questions at the end',
       orderSHUFFLED: 'Order: random order',
       orderSEQUENTIAL: 'Order: ordered in sequence',
+      orderSPACED_REPETITION: 'Order: Spaced repetition',
       repetitionDaily: 'Repetition: daily',
       repetitionXDays: 'Repetition: every {days} days',
       answeredMinOnce: 'Min. answered once: {answered}/{total}',
@@ -448,6 +461,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
       missingParticipation:
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
+    },
+    practiceQuiz: {
+      flashcardClick: 'Click to turn card',
+      studentFlashcardResponse: 'Did you know the answer?',
+      flashcardNoResponse: 'No',
+      flashcardPartialResponse: 'Partially',
+      flashcardYesResponse: 'Yes',
+      resetAnswers: 'Reset answers',
     },
     microSession: {
       notFound:
@@ -688,7 +709,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
-      questionTypes: 'Question types',
+      elementTypes: 'Element types',
       tags: 'Tags',
       noTagsAvailable: 'No tags available',
       answerFeedbacks: 'Answer feedbacks',
@@ -931,7 +952,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to delete the following live quiz?',
       liveSessionDeletionHint:
         'Deleting a live quiz is only possible as long as it has not been started. Deleted live quizzes cannot be restored at a later date.',
-      evaluationLinksEmbedding: 'Evaluation links for embedding in PowerPoint',
+      evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noSessions: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
@@ -1040,6 +1061,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       wordCloud: 'Word Cloud',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
+      noStatistics:
+        'Because of missing answers, no statistics are available yet.',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

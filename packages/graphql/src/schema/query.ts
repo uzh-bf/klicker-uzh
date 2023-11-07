@@ -7,6 +7,7 @@ import * as ParticipantGroupService from '../services/groups'
 import * as LearningElementService from '../services/learningElements'
 import * as MicroSessionService from '../services/microLearning'
 import * as ParticipantService from '../services/participants'
+import * as PracticeQuizService from '../services/practiceQuizzes'
 import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
@@ -20,7 +21,8 @@ import {
   ParticipantWithAchievements,
   Participation,
 } from './participant'
-import { Question, Tag } from './question'
+import { PracticeQuiz } from './practiceQuizzes'
+import { Element, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
 import { MediaFile, User, UserLogin } from './user'
 
@@ -159,7 +161,7 @@ export const Query = builder.queryType({
 
       userQuestions: asUser.prismaField({
         nullable: true,
-        type: [Question],
+        type: [Element],
         resolve(_, __, ___, ctx) {
           return QuestionService.getUserQuestions(ctx)
         },
@@ -266,6 +268,26 @@ export const Query = builder.queryType({
         },
       }),
 
+      practiceQuiz: t.field({
+        nullable: true,
+        type: PracticeQuiz,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          // FIXME by fixing type issues in LearningElementService
+          return PracticeQuizService.getPracticeQuizData(args, ctx) as any
+        },
+      }),
+
+      practiceQuizzes: asParticipant.field({
+        nullable: true,
+        type: [PracticeQuiz],
+        resolve(_, __, ctx) {
+          return CourseService.getUserPracticeQuizzes(ctx)
+        },
+      }),
+
       microSession: t.field({
         nullable: true,
         type: MicroSession,
@@ -274,6 +296,29 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return MicroSessionService.getSingleMicroSession(args, ctx)
+        },
+      }),
+
+      sessionEvaluation: t.field({
+        nullable: true,
+        type: SessionEvaluation,
+        args: {
+          id: t.arg.string({ required: true }),
+          hmac: t.arg.string(),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.getSessionEvaluation(args, ctx) as any
+        },
+      }),
+
+      session: t.field({
+        nullable: true,
+        type: Session,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.getRunningSession(args, ctx)
         },
       }),
 
@@ -288,14 +333,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      session: t.field({
+      sessionHMAC: asUser.field({
         nullable: true,
-        type: Session,
+        type: 'String',
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getRunningSession(args, ctx)
+          return SessionService.getSessionHMAC(args, ctx)
         },
       }),
 
@@ -334,7 +379,7 @@ export const Query = builder.queryType({
 
       question: asUser.prismaField({
         nullable: true,
-        type: Question,
+        type: Element,
         args: {
           id: t.arg.int({ required: true }),
         },
@@ -351,17 +396,6 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return MicroSessionService.getSingleMicroSession(args, ctx)
-        },
-      }),
-
-      sessionEvaluation: asUser.field({
-        nullable: true,
-        type: SessionEvaluation,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SessionService.getSessionEvaluation(args, ctx) as any
         },
       }),
 
@@ -483,6 +517,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return CourseService.checkValidCoursePin(args, ctx)
+        },
+      }),
+
+      coursePracticeQuiz: asParticipant.field({
+        nullable: true,
+        type: PracticeQuiz,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCoursePracticeQuiz(args, ctx)
         },
       }),
     }

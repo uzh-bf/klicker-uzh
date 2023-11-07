@@ -2,8 +2,8 @@ import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Choice,
-  QuestionDisplayMode,
-  QuestionType,
+  ElementDisplayMode,
+  ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import FREETextAnswerOptions from '@klicker-uzh/shared-components/src/questions/FREETextAnswerOptions'
@@ -14,7 +14,7 @@ import {
   validateMcResponse,
   validateNumericalResponse,
   validateScResponse,
-} from '@lib/validateResponse'
+} from '@klicker-uzh/shared-components/src/utils/validateResponse'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { indexBy } from 'ramda'
@@ -29,7 +29,7 @@ interface ChoiceOptionsProps {
   feedbacks: any
   response?: number[]
   onChange: (ix: number) => void
-  displayMode?: QuestionDisplayMode | null
+  displayMode?: ElementDisplayMode | null
 }
 function ChoiceOptions({
   disabled,
@@ -44,7 +44,7 @@ function ChoiceOptions({
   return (
     <div
       className={twMerge(
-        displayMode === QuestionDisplayMode.Grid
+        displayMode === ElementDisplayMode.Grid
           ? 'grid grid-cols-2 gap-3'
           : isCompact
           ? 'flex flex-row gap-2'
@@ -106,7 +106,7 @@ function ChoiceOptions({
 interface OptionsProps {
   disabled?: boolean
   options: any
-  questionType: QuestionType
+  questionType: ElementType
   isEvaluation?: boolean
   feedbacks: any
   response: any
@@ -114,7 +114,7 @@ interface OptionsProps {
   isCompact?: boolean
   isResponseValid: boolean
   onChangeResponse: (value: any) => void
-  displayMode?: QuestionDisplayMode | null
+  displayMode?: ElementDisplayMode | null
 }
 
 export function Options({
@@ -133,12 +133,12 @@ export function Options({
   const t = useTranslations()
 
   switch (questionType) {
-    case QuestionType.Sc: {
+    case ElementType.Sc: {
       return (
         <div>
           {typeof withGuidance !== 'undefined' && withGuidance && (
             <div className="mb-4 italic">
-              {t.rich(`shared.${QuestionType.Sc}.richtext`, {
+              {t.rich(`shared.${ElementType.Sc}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}
             </div>
@@ -157,12 +157,12 @@ export function Options({
       )
     }
 
-    case QuestionType.Mc: {
+    case ElementType.Mc: {
       return (
         <div>
           {typeof withGuidance !== 'undefined' && withGuidance && (
             <div className="mb-4 italic">
-              {t.rich(`shared.${QuestionType.Mc}.richtext`, {
+              {t.rich(`shared.${ElementType.Mc}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}
             </div>
@@ -190,12 +190,12 @@ export function Options({
       )
     }
 
-    case QuestionType.Kprim: {
+    case ElementType.Kprim: {
       return (
         <div>
           {typeof withGuidance !== 'undefined' && withGuidance && (
             <div className="mb-4 italic">
-              {t.rich(`shared.${QuestionType.Kprim}.richtext`, {
+              {t.rich(`shared.${ElementType.Kprim}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}
             </div>
@@ -288,12 +288,12 @@ export function Options({
       )
     }
 
-    case QuestionType.Numerical: {
+    case ElementType.Numerical: {
       return (
         <div>
           {typeof withGuidance !== 'undefined' && withGuidance && (
             <div className="mb-2 italic">
-              {t.rich(`shared.${QuestionType.Numerical}.richtext`, {
+              {t.rich(`shared.${ElementType.Numerical}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}{' '}
               {typeof options.accuracy === 'number' &&
@@ -320,12 +320,12 @@ export function Options({
       )
     }
 
-    case QuestionType.FreeText:
+    case ElementType.FreeText:
       return (
         <div>
           {typeof withGuidance !== 'undefined' && withGuidance && (
             <div className="mb-4 italic">
-              {t.rich(`shared.${QuestionType.FreeText}.richtext`, {
+              {t.rich(`shared.${ElementType.FreeText}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}
             </div>
@@ -344,14 +344,14 @@ export function Options({
 }
 
 interface OptionsDisplayProps {
-  questionType: QuestionType
+  questionType: ElementType
   evaluation: any
   options: any
   response: any
   onChangeResponse: (value: any) => void
   onSubmitResponse?: any
   isEvaluation?: boolean
-  displayMode?: QuestionDisplayMode | null
+  displayMode?: ElementDisplayMode | null
 }
 
 function OptionsDisplay({
@@ -397,19 +397,19 @@ function OptionsDisplay({
             disabled={
               !(
                 isEvaluation ||
-                (questionType === QuestionType.Sc &&
+                (questionType === ElementType.Sc &&
                   validateScResponse(response)) ||
-                (questionType === QuestionType.Mc &&
+                (questionType === ElementType.Mc &&
                   validateMcResponse(response)) ||
-                (questionType === QuestionType.Kprim &&
+                (questionType === ElementType.Kprim &&
                   validateKprimResponse(response)) ||
-                (questionType === QuestionType.Numerical &&
+                (questionType === ElementType.Numerical &&
                   validateNumericalResponse({
                     response,
                     min: options?.restrictions?.min,
                     max: options?.restrictions?.max,
                   })) ||
-                (questionType === QuestionType.FreeText &&
+                (questionType === ElementType.FreeText &&
                   validateFreeTextResponse({
                     response,
                     maxLength: options.restrictions?.maxLength,

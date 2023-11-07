@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.0.2",
+  "version": "3.1.0-beta.5",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,7 +8,8 @@
     "dist"
   ],
   "dependencies": {
-    "@prisma/client": "5.3.1"
+    "@prisma/client": "5.3.1",
+    "xml2js": "0.6.2"
   },
   "devDependencies": {
     "@pothos/plugin-prisma": "3.60.0",
@@ -18,6 +19,7 @@
     "@types/bcryptjs": "^2.4.2",
     "@types/node": "^18.17.4",
     "@types/ramda": "^0.29.3",
+    "@types/xml-js": "^1.0.0",
     "bcryptjs": "2.4.3",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
@@ -33,6 +35,7 @@
     "size-limit": "8.2.4",
     "ts-node": "10.9.1",
     "tsup": "7.2.0",
+    "turndown": "7.1.2",
     "typescript": "5.1.6",
     "uuidv4": "6.2.13"
   },
@@ -46,8 +49,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "generate": "prisma generate --schema=src/prisma/schema.prisma",
-    "migrate:learningElements": "ENV=development doppler run --config dev -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/migrateLearningElements.ts",
-    "migrate:learningElements:prod": "ENV=development doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/migrateLearningElements.ts",
     "prisma:deploy": "doppler run --config dev -- pnpm run prisma:deploy:raw",
     "prisma:deploy:prod": "doppler run --config prd -- pnpm run prisma:deploy:raw",
     "prisma:deploy:qa": "doppler run --config stg -- pnpm run prisma:deploy:raw",
@@ -69,8 +70,11 @@
     "prisma:studio:prod": "doppler run --config prd -- pnpm run prisma:studio:raw",
     "prisma:studio:qa": "doppler run --config stg -- pnpm run prisma:studio:raw",
     "prisma:studio:raw": "prisma studio --schema=src/prisma/schema.prisma",
+    "script": "ENV=development doppler run --config dev -- bun run",
+    "script:prod": "ENV=production doppler run --config prd -- bun run",
     "seed": "ENV=development doppler run --config dev -- run-s build seed:test",
-    "seed:achievements": "ENV=development doppler run --config dev -- ts-node --esm --experimental-specifier-resolution=node src/data/seedAchievements.ts",
+    "seed:achievements": "ENV=development bun run src/data/seedAchievements.ts",
+    "seed:flashcards": "ENV=development bun run src/data/seedFlashcards.ts",
     "seed:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config dev -- ts-node --esm --experimental-specifier-resolution=node src/data/importQuestions.ts",
     "seed:mockExamPoints": "ENV=production doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/scripts/parseMockExamPoints.ts",
     "seed:prod": "ENV=production doppler run --config prd -- npm-run-all seed:prod:bf1 seed:prod:ami",
@@ -78,6 +82,7 @@
     "seed:prod:ami": "pnpm run seed:qa:ami",
     "seed:prod:bf1": "ENV=development doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedBF1.ts",
     "seed:prod:bf2": "ENV=development doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedBF2.ts",
+    "seed:prod:flashcards": "ENV=development doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedFlashcards.ts",
     "seed:prod:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/importQuestions.ts",
     "seed:prod:levels": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedLevels.ts",
     "seed:prod:summerSchool": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedSummerSchool.ts",
@@ -85,12 +90,12 @@
     "seed:qa": "ENV=development doppler run --config stg -- npm-run-all seed:qa:test",
     "seed:qa:bf1": "ENV=development doppler run --config stg -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedBF1.ts",
     "seed:qa:test": "ts-node --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
-    "seed:test": "ENV=development ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
-    "seed:bf1": "ENV=development doppler run --config dev -- ts-node --esm --experimental-specifier-resolution=node src/data/seedBF1.ts",
+    "seed:bf1": "ENV=development bun run src/data/seedBF1.ts",
+    "seed:test": "ENV=development bun run src/data/seedTEST.ts",
     "size": "size-limit"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
     "extends": "../../package.json"

@@ -1,4 +1,4 @@
-import { Question, QuestionType } from '@klicker-uzh/prisma'
+import { Element, ElementType } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import {
   AllQuestionTypeData,
@@ -8,7 +8,7 @@ import {
   NumericalQuestionData,
   QuestionResults,
   QuestionResultsChoices,
-} from 'src/types/app'
+} from '../types/app'
 
 const RELEVANT_KEYS: BaseQuestionDataKeys = [
   'id',
@@ -23,20 +23,36 @@ const RELEVANT_KEYS: BaseQuestionDataKeys = [
   'options',
 ]
 
-export function processQuestionData(question: Question) {
+export function processQuestionData(question: Element) {
   const extractRelevantKeys = R.pick(RELEVANT_KEYS)
 
   switch (question.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM:
-      return { ...extractRelevantKeys(question) } as ChoicesQuestionData
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM:
+      // TODO: remove the extra keys, once the questionData options are compatible
+      return {
+        ...extractRelevantKeys(question),
+        displayMode: question.options.displayMode,
+        hasSampleSolution: question.options.hasSampleSolution,
+        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
+      } as ChoicesQuestionData
 
-    case QuestionType.NUMERICAL:
-      return { ...extractRelevantKeys(question) } as NumericalQuestionData
+    case ElementType.NUMERICAL:
+      // TODO: remove the extra keys, once the questionData options are compatible
+      return {
+        ...extractRelevantKeys(question),
+        hasSampleSolution: question.options.hasSampleSolution,
+        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
+      } as NumericalQuestionData
 
-    case QuestionType.FREE_TEXT:
-      return { ...extractRelevantKeys(question) } as FreeTextQuestionData
+    case ElementType.FREE_TEXT:
+      // TODO: remove the extra keys, once the questionData options are compatible
+      return {
+        ...extractRelevantKeys(question),
+        hasSampleSolution: question.options.hasSampleSolution,
+        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
+      } as FreeTextQuestionData
 
     default:
       throw new Error('Unknown question type')
@@ -47,9 +63,9 @@ export function prepareInitialInstanceResults(
   questionData: AllQuestionTypeData
 ): QuestionResults {
   switch (questionData.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
       const choices = questionData.options.choices.reduce(
         (acc, _, ix) => ({ ...acc, [ix]: 0 }),
         {}
@@ -57,8 +73,8 @@ export function prepareInitialInstanceResults(
       return { choices } as QuestionResultsChoices
     }
 
-    case QuestionType.NUMERICAL:
-    case QuestionType.FREE_TEXT: {
+    case ElementType.NUMERICAL:
+    case ElementType.FREE_TEXT: {
       return {}
     }
 

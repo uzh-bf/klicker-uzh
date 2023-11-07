@@ -12,8 +12,8 @@ import { faArchive, faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
+  ElementType,
   GetUserQuestionsDocument,
-  QuestionType,
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
@@ -30,7 +30,7 @@ interface Props {
   tags?: Tag[]
   handleTagClick: (value: string, selected?: boolean) => void
   title: string
-  type: QuestionType
+  type: ElementType
   content: string
   onCheck: () => void
   unsetDeletedQuestion: (questionId: number) => void

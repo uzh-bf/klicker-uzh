@@ -2,6 +2,129 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.4...v3.1.0-beta.5) (2023-11-01)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that evaluation does not break in case of missing NR responses ([#3936](https://github.com/uzh-bf/klicker-uzh/issues/3936)) ([4d11a0e](https://github.com/uzh-bf/klicker-uzh/commit/4d11a0e20c80fd45bc8d4d6a38c47e9950944fc7))
+* **apps/office-addin:** remove RequestedWidth as it is invalid in the manifest ([ee0fd03](https://github.com/uzh-bf/klicker-uzh/commit/ee0fd0323093ebddb9f1a6d96e4bb4aa68aae653))
+* replace countdown with new implementation to resolve wrong answer submissions ([#3935](https://github.com/uzh-bf/klicker-uzh/issues/3935)) ([e6b5bfb](https://github.com/uzh-bf/klicker-uzh/commit/e6b5bfbee22681fa940f90060703d61cc47fb44e))
+
+
+### Refactors
+
+* **packages/prisma:** update flashcard and achievement seeding scripts to bun ([e279753](https://github.com/uzh-bf/klicker-uzh/commit/e279753b8c7ef85f058b8f79af84a91b288e5f4b))
+
+## [3.1.0-beta.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.3...v3.1.0-beta.4) (2023-10-29)
+
+## [3.1.0-beta.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.2...v3.1.0-beta.3) (2023-10-29)
+
+
+### Bug Fixes
+
+* **apps/auth:** add Boolean parsing on sticky state of ToS ([6294b26](https://github.com/uzh-bf/klicker-uzh/commit/6294b2619e86facaf9f3240ef6b94c5d3c4380f7))
+* **apps/frontend-manage:** add missing translations for new types ([#3927](https://github.com/uzh-bf/klicker-uzh/issues/3927)) ([bdda9d9](https://github.com/uzh-bf/klicker-uzh/commit/bdda9d9f29d1249a4bf01ccd39a793489cdbbdcc))
+
+
+### Build and CI
+
+* deploy migration function only on v3.1-dev ([dada3da](https://github.com/uzh-bf/klicker-uzh/commit/dada3da0bde112b6582f35368263ef8af001f5e5))
+
+
+### Dependencies
+
+* upgrade node to new v20 LTS and improve cypress testing stability ([#3929](https://github.com/uzh-bf/klicker-uzh/issues/3929)) ([01a9cf3](https://github.com/uzh-bf/klicker-uzh/commit/01a9cf3eab2b559dedf46d09462e71870654eab0))
+
+## [3.1.0-beta.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.1...v3.1.0-beta.2) (2023-10-26)
+
+
+### Bug Fixes
+
+* **apps/func-migration-v3-import:** replace question with element ([bb76c61](https://github.com/uzh-bf/klicker-uzh/commit/bb76c61539072f17817f497466b2475440d979c4))
+
+
+### Build and CI
+
+* do not run migration prod deployment on v3* branches ([8f05016](https://github.com/uzh-bf/klicker-uzh/commit/8f0501619d68ae99da7521e5e0a0d7f27d3d78d7))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** allow to reset local storage on practice quiz manually ([#3925](https://github.com/uzh-bf/klicker-uzh/issues/3925)) ([68fa7de](https://github.com/uzh-bf/klicker-uzh/commit/68fa7de667ba1b39b280218aa3e4c8f3c9b2916d))
+
+## [3.1.0-beta.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.0...v3.1.0-beta.1) (2023-10-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** fix issue with missing local storage for practice pool quiz ([#3924](https://github.com/uzh-bf/klicker-uzh/issues/3924)) ([37d2112](https://github.com/uzh-bf/klicker-uzh/commit/37d21127609f46f1b3bd532b7e9a98a840c1e6fc))
+
+## [3.1.0-beta.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.6...v3.1.0-beta.0) (2023-10-25)
+
+
+### Features
+
+* add course-level practice pool and local persistence on progress ([#3918](https://github.com/uzh-bf/klicker-uzh/issues/3918)) ([d28da76](https://github.com/uzh-bf/klicker-uzh/commit/d28da765f9580d8f6cb55a35d86d8595b1516801))
+* **apps/frontend-pwa:** add basic frontend components for flashcard practice elements ([#3911](https://github.com/uzh-bf/klicker-uzh/issues/3911)) ([68e0f39](https://github.com/uzh-bf/klicker-uzh/commit/68e0f39ecf130c1dfed49f73c242495bf63c695e))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add embedding modal on quiz cockpit ([03f6250](https://github.com/uzh-bf/klicker-uzh/commit/03f6250a9dd8415f72910928676aba01eaf8ebd3))
+* **apps/office-addin:** use office settings bag instead of browser storage for persistence ([5987e92](https://github.com/uzh-bf/klicker-uzh/commit/5987e92e25da3cdf09ce4988ff918d1d63720f52))
+* build failure because of pothos prisma types ([3b0179d](https://github.com/uzh-bf/klicker-uzh/commit/3b0179d53b08085fa441a1f7b72cc46f302376a6))
+
+
+### Enhancements
+
+* add backend components to save student responses to flashcard elements ([#3913](https://github.com/uzh-bf/klicker-uzh/issues/3913)) ([a3ad1ff](https://github.com/uzh-bf/klicker-uzh/commit/a3ad1ff24d70cfc042fecd12e664188d18c73a23))
+* **apps/frontend-pwa:** add persistent logic to save practice quiz status in local storage ([#3917](https://github.com/uzh-bf/klicker-uzh/issues/3917)) ([04c7d68](https://github.com/uzh-bf/klicker-uzh/commit/04c7d680ac779aa65fd81d9b29c4d1911de3fc76))
+* extend data model for elements structure ([#3904](https://github.com/uzh-bf/klicker-uzh/issues/3904)) ([4f25788](https://github.com/uzh-bf/klicker-uzh/commit/4f257884806059c157301267ef7c46dbd148558d))
+
+
+### Build and CI
+
+* ensure workflows run on v3* branches and PRs ([78935a5](https://github.com/uzh-bf/klicker-uzh/commit/78935a5efdead539e4a5e6d8b6be6ffc5c6f13ca))
+
+
+### Dependencies
+
+* upgrade nextjs ([5f6e256](https://github.com/uzh-bf/klicker-uzh/commit/5f6e25648c5f3fbdd25d8c004340f1ba224bdfbf))
+
+### [3.0.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.5...v3.0.6) (2023-10-22)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** move imports to shared components ([8a74f30](https://github.com/uzh-bf/klicker-uzh/commit/8a74f3004ec772e24b1e022315a89f67c92f30db))
+
+
+### Enhancements
+
+* allow kprim questions in live quiz ([04de7b8](https://github.com/uzh-bf/klicker-uzh/commit/04de7b87a65d84f8ce2e6f8ada8a3aa60c2d2982))
+
+### [3.0.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.4...v3.0.5) (2023-10-22)
+
+
+### Bug Fixes
+
+* **apps/office-addin:** regenerate tailwind output ([a356c42](https://github.com/uzh-bf/klicker-uzh/commit/a356c42971a30263dc6f79427c51a0257f1c72dd))
+
+### [3.0.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.3...v3.0.4) (2023-10-22)
+
+
+### Enhancements
+
+* **apps/office-addin:** improve layout and validation of office content add-in, update manifests, remove unneeded dependencies ([#3916](https://github.com/uzh-bf/klicker-uzh/issues/3916)) ([a245b70](https://github.com/uzh-bf/klicker-uzh/commit/a245b70941eaa01c463eca428e25ef08c2850ed7))
+
+### [3.0.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.2...v3.0.3) (2023-10-22)
+
+
+### Features
+
+* allow public access to evaluation page using HMAC verified link ([#3915](https://github.com/uzh-bf/klicker-uzh/issues/3915)) ([9fb42c3](https://github.com/uzh-bf/klicker-uzh/commit/9fb42c38852c96c689be58115a2f27f0ee9f941b))
+
 ### [3.0.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.1...v3.0.2) (2023-10-10)
 
 
