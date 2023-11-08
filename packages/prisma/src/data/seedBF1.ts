@@ -382,7 +382,7 @@ async function seed(prisma: Prisma.PrismaClient) {
       instances: {
         connectOrCreate: await Promise.all(
           // TODO: change question ids to production question ids
-          [6, 7, 8, 9, 10, 11].map(async (qId, ix) => {
+          [8782, 8783, 8784, 8785, 8786, 8787].map(async (qId, ix) => {
             const question = await prisma.element.findUnique({
               where: { id: qId },
             })
