@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faArrowsRotate, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementDisplayMode,
@@ -10,6 +10,7 @@ import {
   ManipulateChoicesQuestionDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
+  UpdateQuestionInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -17,10 +18,12 @@ import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
+  Checkbox,
   FormikNumberField,
   FormikSelectField,
   FormikTextField,
   H3,
+  H4,
   Label,
   Modal,
   Select,
@@ -64,6 +67,7 @@ function QuestionEditModal({
 }: QuestionEditModalProps): React.ReactElement {
   const isDuplication = mode === QuestionEditMode.DUPLICATE
   const t = useTranslations()
+  const [updateInstances, setUpdateInstances] = useState(false)
 
   // TODO: ensure that every validation schema change is also reflected in an adaption of the error messages
   const questionManipulationSchema = Yup.object().shape({
@@ -242,6 +246,7 @@ function QuestionEditModal({
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
+  const [updateQuestionInstances] = useMutation(UpdateQuestionInstancesDocument)
 
   const DROPDOWN_OPTIONS = [
     {
@@ -269,10 +274,7 @@ function QuestionEditModal({
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
       const common = {
-        type:
-          mode === QuestionEditMode.CREATE
-            ? ElementType.Sc
-            : dataQuestion?.question?.type,
+        type: ElementType.Sc,
         name: '',
         content: '',
         explanation: '',
@@ -386,11 +388,14 @@ function QuestionEditModal({
             hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           },
         }
+
+        let resultChoices, resultNumerical, resultFreeText
+
         switch (common.type) {
           case ElementType.Sc:
           case ElementType.Mc:
           case ElementType.Kprim:
-            await manipulateChoicesQuestion({
+            resultChoices = await manipulateChoicesQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -414,7 +419,7 @@ function QuestionEditModal({
             })
             break
           case ElementType.Numerical:
-            await manipulateNUMERICALQuestion({
+            resultNumerical = await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -453,7 +458,7 @@ function QuestionEditModal({
             })
             break
           case ElementType.FreeText:
-            await manipulateFreeTextQuestion({
+            resultFreeText = await manipulateFreeTextQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -477,6 +482,28 @@ function QuestionEditModal({
           default:
             break
         }
+
+        if (mode === QuestionEditMode.EDIT && updateInstances) {
+          let questionId
+          if (resultChoices?.data) {
+            questionId = resultChoices.data?.manipulateChoicesQuestion?.id
+          } else if (resultNumerical?.data) {
+            questionId = resultNumerical.data?.manipulateNumericalQuestion?.id
+          } else if (resultFreeText?.data) {
+            questionId = resultFreeText.data?.manipulateFreeTextQuestion?.id
+          }
+
+          if (questionId !== null && typeof questionId !== 'undefined') {
+            const { data: instanceResult } = await updateQuestionInstances({
+              variables: { questionId: questionId },
+            })
+          } else {
+            console.log(
+              'Question instances were not updated, because updating of questions was not successful'
+            )
+          }
+        }
+
         handleSetIsOpen(false)
       }}
     >
@@ -1319,6 +1346,26 @@ function QuestionEditModal({
                         )}
                     </ul>
                   </UserNotification>
+                )}
+                {mode === QuestionEditMode.EDIT && (
+                  <div className="p-2 mt-3 border border-solid">
+                    <div className="flex flex-row items-center gap-3">
+                      <FontAwesomeIcon
+                        icon={faArrowsRotate}
+                        className="ml-0.5"
+                      />
+                      <H4>{t('manage.questionForms.updateInstances')}</H4>
+                    </div>
+                    <div className="flex flex-row items-center gap-3">
+                      <Checkbox
+                        checked={updateInstances}
+                        onCheck={() => setUpdateInstances(!updateInstances)}
+                      />
+                      <div>
+                        {t('manage.questionForms.updateInstancesExplanation')}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
               <div className="flex-1 max-w-sm">

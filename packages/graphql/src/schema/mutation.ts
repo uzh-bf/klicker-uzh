@@ -797,6 +797,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      updateQuestionInstances: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: [QuestionInstance],
+        args: {
+          questionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.updateQuestionInstances(args, ctx)
+        },
+      }),
+
       createCourse: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
