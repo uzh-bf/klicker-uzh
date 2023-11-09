@@ -472,28 +472,38 @@ export async function startGroupActivity(
 
       const shuffledClues = shuffle(activityInstance.clues)
 
-      let remainingClues = groupActivity.clues.length
-      let remainingMembers = groupMemberCount
-      let startIx = 0
+      const clueAssignments = group.participants.reduce<any>(
+        (acc, participant) => {
+          const numOfClues = Math.ceil(
+            acc.remainingClues / acc.remainingMembers
+          )
+          const endIx = acc.startIx + numOfClues
+          const clues = shuffledClues.slice(acc.startIx, endIx)
 
-      const clueAssignments = group.participants.flatMap((participant) => {
-        const numOfClues = Math.ceil(remainingClues / remainingMembers)
-        const endIx = startIx + numOfClues
-        const clues = shuffledClues.slice(startIx, endIx)
-
-        remainingClues -= numOfClues
-        remainingMembers -= 1
-        startIx = endIx
-
-        return clues.map((clue) => ({
-          groupActivityClueInstance: {
-            connect: { id: clue.id },
-          },
-          participant: {
-            connect: { id: participant.id },
-          },
-        }))
-      })
+          return {
+            remainingClues: acc.remainingClues - numOfClues,
+            remainingMembers: acc.remainingMembers - 1,
+            startIx: endIx,
+            clues: [
+              ...acc.clues,
+              ...clues.map((clue) => ({
+                groupActivityClueInstance: {
+                  connect: { id: clue.id },
+                },
+                participant: {
+                  connect: { id: participant.id },
+                },
+              })),
+            ],
+          }
+        },
+        {
+          remainingClues: groupActivity.clues.length,
+          remainingMembers: groupMemberCount,
+          startIx: 0,
+          clues: [],
+        }
+      )
 
       const updatedActivityInstance = await prisma.groupActivityInstance.update(
         {
