@@ -594,6 +594,8 @@ type PushSubscription {
 
 type Query {
   basicCourseInformation(courseId: String!): Course
+  checkUsernameAvailability(username: String!): Boolean!
+  checkValidCoursePin(pin: Int!): String
   cockpitSession(id: String!): Session
   controlCourse(id: String!): Course
   controlCourses: [Course!]
@@ -621,7 +623,8 @@ type Query {
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
   session(id: String!): Session
-  sessionEvaluation(id: String!): SessionEvaluation
+  sessionEvaluation(hmac: String, id: String!): SessionEvaluation
+  sessionHMAC(id: String!): String
   sessionLeaderboard(sessionId: String!): [LeaderboardEntry!]
   singleMicroSession(id: String!): MicroSession
   unassignedSessions: [Session!]

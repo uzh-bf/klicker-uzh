@@ -242,6 +242,7 @@ Your data will never be shared with other parties beside the above and will neve
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in the KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
+      usernameAvailability: 'This username is already taken.',
     },
     studentDocs: {
       pageList: `
@@ -357,6 +358,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Install the KlickerUZH app on your phone to receive push notifications when new learning content is available.',
       installIOS:
         "Open the Share dialog and click 'Add to Home Screen' to install the KlickerUZH app on your phone.",
+      createAccountJoin: 'Create Account & Join Course',
+      existingParticipantAccount:
+        'Should you already have a KlickerUZH participant account, please use the login to sign in. You can join a new course after logging in. Otherwise, you can create a KlickerUZH account here as part of your course.',
+      joinCourseTooltip:
+        'Enter the PIN of your course here to create a new account and join the course. You can obtain the PIN from your lecturer.',
+      signup: 'Sign up',
+      coursePinInvalid: 'The entered course PIN is invalid.',
     },
     courses: {
       courseInformation: 'Course Information',
@@ -923,7 +931,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to delete the following live quiz?',
       liveSessionDeletionHint:
         'Deleting a live quiz is only possible as long as it has not been started. Deleted live quizzes cannot be restored at a later date.',
-      evaluationLinksEmbedding: 'Evaluation links for embedding in PowerPoint',
+      evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noSessions: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',

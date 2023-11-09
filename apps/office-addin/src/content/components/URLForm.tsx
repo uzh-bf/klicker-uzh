@@ -1,6 +1,7 @@
 import { Button, FormikTextField } from "@uzh-bf/design-system";
 import { Form, Formik } from "formik";
 import React from "react";
+import * as yup from "yup";
 
 /* global window*/
 
@@ -14,21 +15,33 @@ export function URLForm({ slideID }: URLFormProps) {
       initialValues={{
         url: "",
       }}
+      validationSchema={yup.object({
+        url: yup
+          .string()
+          .matches(
+            /https:\/\/manage\.klicker\.uzh\.ch\/sessions\/.{36}\/evaluation\?hmac=.{64}.*/,
+            "Please enter a valid URL according to the steps described"
+          )
+          .required("Please enter a valid URL according to the steps described"),
+      })}
       onSubmit={async (values) => {
-        window.localStorage.setItem("selectedURL" + slideID, values.url);
+        // window.localStorage.setItem("selectedURL" + slideID, values.url);
+        Office.context.document.settings.set("selectedURL" + slideID, values.url);
+        Office.context.document.settings.saveAsync();
         window.location.replace(values.url);
       }}
     >
-      <Form className="flex w-full flex-row">
+      <Form className="flex w-full flex-row gap-4">
         <FormikTextField
           required
+          autoComplete="off"
           name="url"
           label="URL"
-          tooltip="Die URL der KlickerUZH Auswertungs-Seite (evaluation page), die Sie hier einbetten möchten"
-          className={{ root: "w-3/4 flex-row", input: "mr-8" }}
-          placeholder="https://manage.klicker.uzh.ch/sessions/12345-12345/evaluation"
+          tooltip="Enter the embedding URL of the evaluation you want to add to this slide"
+          className={{ root: "w-full" }}
+          placeholder="https://manage.klicker.uzh.ch/sessions/12345/evaluation?hmac=xyz"
         />
-        <Button type="submit">einbetten</Button>
+        <Button type="submit">Embed</Button>
       </Form>
     </Formik>
   );

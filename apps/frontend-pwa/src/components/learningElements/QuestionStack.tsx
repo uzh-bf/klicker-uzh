@@ -14,7 +14,7 @@ import {
   SelfDocument,
   StackElement,
 } from '@klicker-uzh/graphql/dist/ops'
-import formatResponse from '@lib/formatResponse'
+import formatResponse from '@klicker-uzh/shared-components/src/utils/formatResponse'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'

@@ -2,6 +2,7 @@
   "recommendations": [
     "aaron-bond.better-comments",
     "austenc.tailwind-docs",
+    "azurite.azurite",
     "bradlc.vscode-tailwindcss",
     "christian-kohler.npm-intellisense",
     "christian-kohler.path-intellisense",
@@ -14,7 +15,6 @@
     "graphql.vscode-graphql-syntax",
     "graphql.vscode-graphql",
     "jakewilson.vscode-placeholder-images",
-    "jetpack-io.devbox",
     "mikestead.dotenv",
     "mjmlio.vscode-mjml",
     "ms-azuretools.vscode-azurefunctions",
@@ -23,9 +23,8 @@
     "ms-vsliveshare.vsliveshare",
     "netcorext.uuid-generator",
     "prisma.prisma",
-    // "wix.glean",
+    "stivo.tailwind-fold",
     "wix.vscode-import-cost",
-    "yzhang.markdown-all-in-one",
-    "stivo.tailwind-fold"
+    "yzhang.markdown-all-in-one"
   ]
 }

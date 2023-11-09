@@ -267,6 +267,15 @@ export async function createParticipantAccount(
         signedLtiData,
         process.env.APP_SECRET as string
       ) as { email: string; sub: string }
+      // check if the username is already taken by another user
+      const existingUser = await ctx.prisma.participant.findUnique({
+        where: { username },
+      })
+
+      if (existingUser) {
+        // another user already uses the requested username, returning old user
+        return null
+      }
 
       const account = await ctx.prisma.participantAccount.create({
         data: {
@@ -336,7 +345,9 @@ export async function createParticipantAccount(
     console.error(e)
     await sendTeamsNotifications(
       'graphql/createParticipantAccount',
-      `Failed to create participant account: ${email}`
+      `Failed to create participant account: ${email} with error: ${
+        e || 'missing'
+      }`
     )
     return null
   }
@@ -389,6 +400,19 @@ export async function getUserLogins(ctx: ContextWithUser) {
   })
 
   return logins
+}
+
+export async function checkUsernameAvailability(
+  { username }: { username: string },
+  ctx: Context
+) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: { username },
+  })
+
+  if (!participant || participant.id === ctx.user?.sub) return true
+
+  return false
 }
 
 interface UserLoginProps {

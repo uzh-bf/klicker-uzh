@@ -277,14 +277,15 @@ export const Query = builder.queryType({
         },
       }),
 
-      participantGroups: asAuthenticated.field({
+      sessionEvaluation: t.field({
         nullable: true,
-        type: [ParticipantGroup],
+        type: SessionEvaluation,
         args: {
-          courseId: t.arg.string({ required: true }),
+          id: t.arg.string({ required: true }),
+          hmac: t.arg.string(),
         },
         resolve(_, args, ctx) {
-          return ParticipantGroupService.getParticipantGroups(args, ctx)
+          return SessionService.getSessionEvaluation(args, ctx) as any
         },
       }),
 
@@ -296,6 +297,28 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return SessionService.getRunningSession(args, ctx)
+        },
+      }),
+
+      participantGroups: asAuthenticated.field({
+        nullable: true,
+        type: [ParticipantGroup],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantGroupService.getParticipantGroups(args, ctx)
+        },
+      }),
+
+      sessionHMAC: asUser.field({
+        nullable: true,
+        type: 'String',
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SessionService.getSessionHMAC(args, ctx)
         },
       }),
 
@@ -351,17 +374,6 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return MicroSessionService.getSingleMicroSession(args, ctx)
-        },
-      }),
-
-      sessionEvaluation: asUser.field({
-        nullable: true,
-        type: SessionEvaluation,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SessionService.getSessionEvaluation(args, ctx) as any
         },
       }),
 
@@ -461,6 +473,28 @@ export const Query = builder.queryType({
         type: [UserLogin],
         resolve(_, __, ctx) {
           return AccountService.getUserLogins(ctx)
+        },
+      }),
+
+      checkUsernameAvailability: t.field({
+        nullable: false,
+        type: 'Boolean',
+        args: {
+          username: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.checkUsernameAvailability(args, ctx)
+        },
+      }),
+
+      checkValidCoursePin: t.field({
+        nullable: true,
+        type: 'String',
+        args: {
+          pin: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.checkValidCoursePin(args, ctx)
         },
       }),
     }

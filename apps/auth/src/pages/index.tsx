@@ -47,7 +47,7 @@ function SignInOutButton() {
 
   const { value: tosChecked, setValue: setTosChecked } = useStickyState(
     'tos-agreement',
-    ''
+    'false'
   )
 
   if (session) {
@@ -75,12 +75,12 @@ function SignInOutButton() {
             })}
           </div>
         }
-        onCheck={() => setTosChecked(!tosChecked)}
-        checked={tosChecked}
+        onCheck={() => setTosChecked(!Boolean(tosChecked))}
+        checked={Boolean(tosChecked)}
       />
 
       <Button
-        disabled={!tosChecked}
+        disabled={!Boolean(tosChecked)}
         data={{ cy: 'eduid-login-button' }}
         className={{ root: 'p-4 disabled:opacity-50' }}
         onClick={() =>
@@ -104,7 +104,7 @@ function SignInOutButton() {
         className={{
           root: 'disabled:opacity-50 justify-center italic',
         }}
-        disabled={!tosChecked}
+        disabled={!Boolean(tosChecked)}
         data={{ cy: 'delegated-login-button' }}
         onClick={() =>
           signIn('delegation', {
