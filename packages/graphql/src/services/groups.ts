@@ -472,14 +472,18 @@ export async function startGroupActivity(
 
       const shuffledClues = shuffle(activityInstance.clues)
 
-      const cluesPerMember = Math.ceil(
-        groupActivity.clues.length / groupMemberCount
-      )
+      let remainingClues = groupActivity.clues.length
+      let remainingMembers = groupMemberCount
+      let startIx = 0
 
-      const clueAssignments = group.participants.flatMap((participant, ix) => {
-        const start = ix * cluesPerMember
-        const end = start + cluesPerMember
-        const clues = shuffledClues.slice(start, end)
+      const clueAssignments = group.participants.flatMap((participant) => {
+        const numOfClues = Math.ceil(remainingClues / remainingMembers)
+        const endIx = startIx + numOfClues
+        const clues = shuffledClues.slice(startIx, endIx)
+
+        remainingClues -= numOfClues
+        remainingMembers -= 1
+        startIx = endIx
 
         return clues.map((clue) => ({
           groupActivityClueInstance: {
