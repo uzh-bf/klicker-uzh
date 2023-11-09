@@ -291,6 +291,20 @@ async function seedTest(prisma: Prisma.PrismaClient) {
               value: 'Schweiz',
             },
           },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond9',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond9',
+              displayName: 'Bond 9',
+              value: 'Schweiz',
+            },
+          },
         ],
       },
       instances: {

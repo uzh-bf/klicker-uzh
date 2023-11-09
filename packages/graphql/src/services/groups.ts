@@ -472,7 +472,12 @@ export async function startGroupActivity(
 
       const shuffledClues = shuffle(activityInstance.clues)
 
-      const clueAssignments = group.participants.reduce<any>(
+      const clueAssignments = group.participants.reduce<{
+        remainingClues: number
+        remainingMembers: number
+        startIx: number
+        clues: any[]
+      }>(
         (acc, participant) => {
           const numOfClues = Math.ceil(
             acc.remainingClues / acc.remainingMembers
@@ -510,7 +515,7 @@ export async function startGroupActivity(
           where: { id: activityInstance.id },
           data: {
             clueInstanceAssignment: {
-              create: clueAssignments,
+              create: clueAssignments.clues,
             },
           },
           include: {
