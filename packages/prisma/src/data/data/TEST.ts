@@ -28,6 +28,7 @@ export const QUESTIONS = [
     options: {
       hasSampleSolution: true,
       hasAnswerFeedbacks: true,
+      displayMode: 'LIST',
     },
     choices: [
       {
@@ -100,6 +101,7 @@ export const QUESTIONS = [
     options: {
       hasSampleSolution: true,
       hasAnswerFeedbacks: true,
+      displayMode: 'LIST',
     },
     explanation: 'KPRIM generische Erklärung, warum diese Frage richtig ist.',
     choices: [
@@ -139,6 +141,7 @@ export const QUESTIONS = [
     options: {
       hasSampleSolution: true,
       hasAnswerFeedbacks: true,
+      displayMode: 'LIST',
     },
     explanation: 'SC generische Erklärung, warum diese Frage richtig ist.',
     choices: [
