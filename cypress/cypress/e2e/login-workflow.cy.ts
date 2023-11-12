@@ -49,7 +49,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     )
     cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'))
 
-    cy.get(':nth-child(2) > form > button').click()
+    cy.get('form > button[type=submit]').click()
 
     cy.get('[data-cy="homepage"]').should('exist')
 
