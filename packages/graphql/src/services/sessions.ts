@@ -32,10 +32,10 @@ import {
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
 
-// TODO: update achievement IDs after seeding
-const FIRST_ACHIEVEMENT_ID = 11
-const SECOND_ACHIEVEMENT_ID = 12
-const THIRD_ACHIEVEMENT_ID = 13
+// FIXME: move to config file or environment variable?
+const FIRST_ACHIEVEMENT_ID = 5
+const SECOND_ACHIEVEMENT_ID = 6
+const THIRD_ACHIEVEMENT_ID = 7
 
 async function getQuestionMap(
   blocks: BlockArgs[],

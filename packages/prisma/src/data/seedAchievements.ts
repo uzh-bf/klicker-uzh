@@ -266,7 +266,7 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
 
 const prismaClient = new Prisma.PrismaClient()
 
-seedAchievements(prismaClient)
+await seedAchievements(prismaClient)
   .catch((e) => {
     console.error(e)
     process.exit(1)
