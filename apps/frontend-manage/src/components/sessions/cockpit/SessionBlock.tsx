@@ -70,7 +70,7 @@ function SessionBlock({
           <FontAwesomeIcon icon={ICON_MAP[block.status]} />
         </div>
         <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
-        {untilExpiration && (
+        {block.expiresAt && untilExpiration && untilExpiration !== -2 && (
           <CycleCountdown
             key={`${block.expiresAt}-${block.status}`}
             size="sm"
