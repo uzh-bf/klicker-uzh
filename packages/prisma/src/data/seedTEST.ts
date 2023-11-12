@@ -425,11 +425,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       id: 9,
       name: 'Teamgeist',
       description: 'Du hast einen Gruppentask absolviert.',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/teamgeist.svg',
+      icon: '/achievements/Teamgeist.svg',
       type: 'PARTICIPANT',
     },
     update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/teamgeist.svg',
+      icon: '/achievements/Teamgeist.svg',
     },
   })
 
@@ -508,9 +508,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const goldMedalAchievement = await prisma.achievement.upsert({
-    where: { id: 11 },
+    where: { id: 5 },
     create: {
-      id: 11,
+      id: 5,
       name: 'Champion',
       description: 'Du hast einen ersten Platz in einer Live-Session erreicht.',
       icon: '/achievements/Champ.svg',
@@ -526,9 +526,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const silverMedalAchievement = await prisma.achievement.upsert({
-    where: { id: 12 },
+    where: { id: 6 },
     create: {
-      id: 12,
+      id: 6,
       name: 'Vize-Champion',
       description:
         'Du hast einen zweiten Platz in einer Live-Session erreicht.',
@@ -545,9 +545,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const bronzeMedalAchievement = await prisma.achievement.upsert({
-    where: { id: 13 },
+    where: { id: 7 },
     create: {
-      id: 13,
+      id: 7,
       name: 'Vize-Vize-Champion',
       description:
         'Du hast einen dritten Platz in einer Live-Session erreicht.',
