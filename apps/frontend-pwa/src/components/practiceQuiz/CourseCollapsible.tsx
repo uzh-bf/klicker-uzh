@@ -5,6 +5,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import * as RadixCollapsible from '@radix-ui/react-collapsible'
+import { useLocalStorage } from '@uidotdev/usehooks'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from '../common/LinkButton'
@@ -26,13 +27,20 @@ function CourseCollapsible({
   courseName,
   elements,
 }: CourseCollapsibleProps) {
-  const [open, setOpen] = useState(true)
+  const [stackStorage, setStackStorage] = useLocalStorage<boolean>(
+    `replist-collapse-${courseId}`,
+    true
+  )
+  const [open, setOpen] = useState(stackStorage || false)
 
   return (
     <div>
       <RadixCollapsible.Root
         open={open}
-        onOpenChange={() => setOpen((prev) => !prev)}
+        onOpenChange={() => {
+          setOpen((prev) => !prev)
+          setStackStorage((prev) => !prev)
+        }}
       >
         <RadixCollapsible.Trigger
           className={twMerge(
