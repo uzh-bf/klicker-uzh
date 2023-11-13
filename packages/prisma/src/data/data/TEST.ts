@@ -329,22 +329,22 @@ Mehr bla bla...
   },
 ]
 
-export const AchievementIds: Record<string, number> = {
-  Explorer: 2,
-  'Busy Bee': 3,
-  Champion: 5,
-  'Vice-Champion': 6,
-  'Vice-Vice-Champion': 7,
-  'Dream Team': 8,
-  'Team Spirit': 9,
-  Unerschrocken: 10,
-  'Creative Mastermind': 11,
-  Entertainer: 12,
-  'Future Proof': 13,
-  Happiness: 14,
-  'Presentation Wizard': 15,
-  'Shooting Star': 16,
-  Speedy: 17,
+export enum AchievementIds {
+  Explorer = 2,
+  'Busy Bee' = 3,
+  Champion = 5,
+  'Vice-Champion' = 6,
+  'Vice-Vice-Champion' = 7,
+  'Dream Team' = 8,
+  'Team Spirit' = 9,
+  Unerschrocken = 10,
+  'Creative Mastermind' = 11,
+  Entertainer = 12,
+  'Future Proof' = 13,
+  Happiness = 14,
+  'Presentation Wizard' = 15,
+  'Shooting Star' = 16,
+  Speedy = 17,
 }
 
 // import the questions from below and add them to the array

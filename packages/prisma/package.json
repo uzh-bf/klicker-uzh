@@ -72,7 +72,7 @@
     "prisma:studio:raw": "prisma studio --schema=src/prisma/schema.prisma",
     "script": "ENV=development doppler run --config dev -- bun run",
     "script:prod": "ENV=production doppler run --config prd -- bun run",
-    "seed": "ENV=development doppler run --config dev -- run-s build seed:achievements seed:test",
+    "seed": "ENV=development doppler run --config dev -- run-s build seed:test",
     "seed:achievements": "ENV=development doppler run --config dev bun run src/data/seedAchievements.ts",
     "seed:prod:achievements": "ENV=production doppler run --config prd -- bun run src/data/seedAchievements.ts",
     "seed:flashcards": "ENV=development bun run src/data/seedFlashcards.ts",

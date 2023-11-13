@@ -18,6 +18,7 @@ import {
   prepareSession,
   prepareUser,
 } from './helpers.js'
+import { seedAchievements } from './seedAchievements'
 import { seedLevels } from './seedLevels'
 
 export const PARTICIPANT_IDS = [
@@ -37,6 +38,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)
 
   await seedLevels(prisma)
+  await seedAchievements(prisma)
 
   const standardUser = await prisma.user.upsert(
     await prepareUser({

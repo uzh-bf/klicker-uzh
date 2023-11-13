@@ -1,7 +1,7 @@
 import Prisma from '../../dist'
 import * as DATA_TEST from './data/TEST'
 
-async function seedAchievements(prisma: Prisma.PrismaClient) {
+export async function seedAchievements(prisma: Prisma.PrismaClient) {
   const achievements = await Promise.all(
     DATA_TEST.Achievements.map(async (achievement) => {
       await prisma.achievement.upsert({
@@ -31,13 +31,13 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
   )
 }
 
-const prismaClient = new Prisma.PrismaClient()
+// const prismaClient = new Prisma.PrismaClient()
 
-await seedAchievements(prismaClient)
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prismaClient.$disconnect()
-  })
+// await seedAchievements(prismaClient)
+//   .catch((e) => {
+//     console.error(e)
+//     process.exit(1)
+//   })
+//   .finally(async () => {
+//     await prismaClient.$disconnect()
+//   })
