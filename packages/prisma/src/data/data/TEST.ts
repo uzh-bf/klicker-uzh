@@ -1,5 +1,5 @@
 import Prisma from '../../../dist'
-import { LearningElementStatus } from '../../client'
+import { AchievementType, LearningElementStatus } from '../../client'
 const { ElementType, SessionStatus, OrderType } = Prisma
 
 export const QUESTIONS = [
@@ -326,5 +326,214 @@ Diese Woche lernen wir...
 Mehr bla bla...
 `,
     questions: [0, 1, 2, 3, 4],
+  },
+]
+
+export enum AchievementIds {
+  Explorer = 2,
+  'Busy Bee' = 3,
+  Champion = 5,
+  'Vice-Champion' = 6,
+  'Vice-Vice-Champion' = 7,
+  'Dream Team' = 8,
+  'Team Spirit' = 9,
+  Unerschrocken = 10,
+  'Creative Mastermind' = 11,
+  Entertainer = 12,
+  'Future Proof' = 13,
+  Happiness = 14,
+  'Presentation Wizard' = 15,
+  'Shooting Star' = 16,
+  Speedy = 17,
+}
+
+// import the questions from below and add them to the array
+export const Achievements: {
+  id: number
+  nameDE: string
+  nameEN: string
+  descriptionDE: string
+  descriptionEN: string
+  icon: string
+  type: AchievementType
+  rewardedPoints?: number
+  rewardedXP?: number
+}[] = [
+  // pilot achievement
+  {
+    id: AchievementIds.Explorer,
+    nameDE: 'Explorer',
+    nameEN: 'Explorer',
+    descriptionDE:
+      'Du warst Teil des KlickerUZH im ersten Semester. Dankeschön!',
+    descriptionEN:
+      'You were part of KlickerUZH in the first semester. Thank you!',
+    icon: '/achievements/Erkunden.svg',
+    type: 'PARTICIPANT',
+  },
+  // solved everything achievement
+  {
+    id: AchievementIds['Busy Bee'],
+    nameDE: 'Busy Bee',
+    nameEN: 'Busy Bee',
+    descriptionDE:
+      'Du hast alle verfügbaren Microlearnings und Lernelemente gelöst.',
+    descriptionEN:
+      'You have solved all available microlearnings and practice quizzes.',
+    icon: '/achievements/Fleisspreis.svg',
+    type: 'PARTICIPANT',
+  },
+  // gold medal achievement
+  {
+    id: AchievementIds.Champion,
+    nameDE: 'Champion',
+    nameEN: 'Champion',
+    descriptionDE: 'Du hast einen ersten Platz in einer Live-Session erreicht.',
+    descriptionEN: 'You have reached first place in a live session.',
+    icon: '/achievements/Champ.svg',
+    rewardedPoints: 100,
+    rewardedXP: 200,
+    type: 'PARTICIPANT',
+  },
+  // silver medal achievement
+  {
+    id: AchievementIds['Vice-Champion'],
+    nameDE: 'Vize-Champion',
+    nameEN: 'Vice-Champion',
+    descriptionDE:
+      'Du hast einen zweiten Platz in einer Live-Session erreicht.',
+    descriptionEN: 'You have reached second place in a live session.',
+    icon: '/achievements/VizeChamp.svg',
+    rewardedPoints: 50,
+    rewardedXP: 100,
+    type: 'PARTICIPANT',
+  },
+  // bronze medal achievement
+  {
+    id: AchievementIds['Vice-Vice-Champion'],
+    nameDE: 'Vize-Vize-Champion',
+    nameEN: 'Vice-Vice-Champion',
+    descriptionDE:
+      'Du hast einen dritten Platz in einer Live-Session erreicht.',
+    descriptionEN: 'You have reached third place in a live session.',
+    icon: '/achievements/VizevizeChamp.svg',
+    rewardedPoints: 25,
+    rewardedXP: 50,
+    type: 'PARTICIPANT',
+  },
+  // TODO: re-introduce this price
+  // last place achievement
+  // {
+  //   id: 4,
+  //   nameDE: 'Trostpreis',
+  //   nameEN: 'Consolation Prize',
+  //   descriptionDE: 'Dabei sein ist alles (letzer Platz in einer Live-Session).',
+  //   descriptionEN: 'Being there is everything (last place in a live session).',
+  //   icon: '/achievements/Trostpreis.svg',
+  //   type: 'PARTICIPANT',
+  // },
+  // group task passed achievement
+  {
+    id: AchievementIds['Dream Team'],
+    nameDE: 'Dream Team',
+    nameEN: 'Dream Team',
+    descriptionDE:
+      'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
+    descriptionEN:
+      'You have reached more than half of the points in the group task.',
+    icon: '/achievements/Dreamteam.svg',
+    type: 'PARTICIPANT',
+  },
+  // group task done achievement
+  {
+    id: AchievementIds['Team Spirit'],
+    nameDE: 'Teamgeist',
+    nameEN: 'Team Spirit',
+    descriptionDE: 'Du hast einen Gruppentask absolviert.',
+    descriptionEN: 'You have completed a group task.',
+    icon: '/achievements/Teamgeist.svg',
+    type: 'PARTICIPANT',
+  },
+  // few questions achievement
+  {
+    id: AchievementIds.Unerschrocken,
+    nameDE: 'Unerschrocken',
+    nameEN: 'Fearless',
+    descriptionDE:
+      'Du hast eine Woche vor Ende der Vorlesung noch keine 6 Fragen beantwortet.',
+    descriptionEN:
+      'You have not answered 6 questions yet one week before the end of the lecture.',
+    icon: '/achievements/Unerschrocken.svg',
+    type: 'PARTICIPANT',
+  },
+  // creative achievement
+  {
+    id: AchievementIds['Creative Mastermind'],
+    nameDE: 'Creative Mastermind',
+    nameEN: 'Creative Mastermind',
+    descriptionDE: 'Du hast ein eigenes Lernelement erstellt.',
+    descriptionEN: 'You have created your own learning element.',
+    icon: '/achievements/CreativeMastermind.svg',
+    type: 'PARTICIPANT',
+  },
+  // entertainer achievement
+  {
+    id: AchievementIds.Entertainer,
+    nameDE: 'Entertainer',
+    nameEN: 'Entertainer',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/Entertainer.svg',
+    type: 'PARTICIPANT',
+  },
+  // future proof achievement
+  {
+    id: AchievementIds['Future Proof'],
+    nameDE: 'Future Proof',
+    nameEN: 'Future Proof',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/FutureProof.svg',
+    type: 'PARTICIPANT',
+  },
+  // happiness achievement
+  {
+    id: AchievementIds.Happiness,
+    nameDE: 'Happiness',
+    nameEN: 'Happiness',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/Happiness.svg',
+    type: 'PARTICIPANT',
+  },
+  // presentation achievement
+  {
+    id: AchievementIds['Presentation Wizard'],
+    nameDE: 'Presentation Wizard',
+    nameEN: 'Presentation Wizard',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/PresentationWizard.svg',
+    type: 'PARTICIPANT',
+  },
+  // shooting star achievement
+  {
+    id: AchievementIds['Shooting Star'],
+    nameDE: 'Shooting Star',
+    nameEN: 'Shooting Star',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/ShootingStar.svg',
+    type: 'PARTICIPANT',
+  },
+  // speedy achievement
+  {
+    id: AchievementIds.Speedy,
+    nameDE: 'Speedy',
+    nameEN: 'Speedy',
+    descriptionDE: '',
+    descriptionEN: '',
+    icon: '/achievements/Speedy.svg',
+    type: 'PARTICIPANT',
   },
 ]
