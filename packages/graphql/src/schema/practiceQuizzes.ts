@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import { CourseRef, ICourse } from './course'
-import { ElementInstanceRef, IElementInstance } from './question'
+import builder from '../builder.js'
+import { CourseRef, ICourse } from './course.js'
+import { ElementInstanceRef, IElementInstance } from './question.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),

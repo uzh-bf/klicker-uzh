@@ -7,9 +7,9 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
-import { GroupLeaderboardEntry } from 'src/ops'
-import { Context, ContextWithUser } from '../lib/context'
-import { orderStacks } from '../lib/util'
+import { GroupLeaderboardEntry } from 'src/ops.js'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { orderStacks } from '../lib/util.js'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },

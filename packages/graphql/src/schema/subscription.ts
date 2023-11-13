@@ -1,7 +1,7 @@
 import { filter, pipe } from 'graphql-yoga'
 
-import builder from '../builder'
-import { Feedback, SessionBlock } from './session'
+import builder from '../builder.js'
+import { Feedback, SessionBlock } from './session.js'
 
 export const Subscription = builder.subscriptionType({
   fields(t) {

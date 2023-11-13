@@ -1,7 +1,7 @@
 import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
-import type Redis from 'ioredis'
+import { RedisClient } from 'ioredis/built/connectors/SentinelConnector/types.js'
 import type { EventEmitter } from 'node:events'
 
 interface BaseContext {
@@ -11,7 +11,7 @@ interface BaseContext {
 
 export interface Context extends BaseContext {
   prisma: PrismaClient
-  redisExec: Redis
+  redisExec: RedisClient
   pubSub: PubSub<any>
   emitter: EventEmitter
   user?: {

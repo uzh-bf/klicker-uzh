@@ -1,7 +1,7 @@
 import { UserRole } from '@klicker-uzh/prisma'
-import { Context } from '../lib/context'
-import { orderStacks } from '../lib/util'
-import { AggregatedResponseFlashcard, Correctness } from '../types/app'
+import { Context } from '../lib/context.js'
+import { orderStacks } from '../lib/util.js'
+import { AggregatedResponseFlashcard, Correctness } from '../types/app.js'
 
 export async function getPracticeQuizData(
   { id }: { id: string },

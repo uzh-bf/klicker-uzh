@@ -2,8 +2,8 @@ import { LeaderboardType } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import { pickRandom, round } from 'mathjs'
 import * as R from 'ramda'
-import { Context, ContextWithUser } from '../lib/context'
-import { shuffle } from '../lib/util'
+import { Context, ContextWithUser } from '../lib/context.js'
+import { shuffle } from '../lib/util.js'
 interface CreateParticipantGroupArgs {
   courseId: string
   name: string
