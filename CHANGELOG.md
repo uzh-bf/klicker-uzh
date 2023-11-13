@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.6...v3.1.0-beta.7) (2023-11-13)
+
+
+### Bug Fixes
+
+* **packages/prisma:** naming of Shootingstar.svg ([a68083a](https://github.com/uzh-bf/klicker-uzh/commit/a68083aa66fdb829feb581138a0127bfd1f8bdb6))
+
+
+### Enhancements
+
+* add bilingual achievement support ([#3946](https://github.com/uzh-bf/klicker-uzh/issues/3946)) ([171ca25](https://github.com/uzh-bf/klicker-uzh/commit/171ca2599c51bd030f17f88eec251401425515f6))
+* **packages/prisma:** add seeding script for group activity results ([#3947](https://github.com/uzh-bf/klicker-uzh/issues/3947)) ([d519c72](https://github.com/uzh-bf/klicker-uzh/commit/d519c722f012496b5de29a62120ec8b354537ddf))
+
 ## [3.1.0-beta.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.5...v3.1.0-beta.6) (2023-11-13)
 
 
