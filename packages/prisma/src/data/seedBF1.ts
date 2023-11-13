@@ -421,94 +421,94 @@ Für die Berechnung erhaltet ihr den folgenden Tipp:
   //   update: {},
   // })
 
-  const GROUP_ACTIVITY_INSTANCE_RESULTS: Record<
-    number,
-    { points: number; maxPoints: number; message: string }
-  > = {
-    1: {
-      points: 1,
-      maxPoints: 1,
-      message: 'Message would go here...',
-    },
-  }
+  // const GROUP_ACTIVITY_INSTANCE_RESULTS: Record<
+  //   number,
+  //   { points: number; maxPoints: number; message: string }
+  // > = {
+  //   1: {
+  //     points: 1,
+  //     maxPoints: 1,
+  //     message: 'Message would go here...',
+  //   },
+  // }
 
-  const groupActivityInstances1 = await prisma.groupActivityInstance.findMany({
-    // check if id is in  Object.keys(GROUP_ACTIVITY_INSTANCE_RESULTS_TEST)
-    where: {
-      id: {
-        // TODO: replace this by production group activity instance ids
-        in: [1],
-      },
-    },
-    include: {
-      group: {
-        include: {
-          participants: true,
-        },
-      },
-    },
-  })
+  // const groupActivityInstances1 = await prisma.groupActivityInstance.findMany({
+  //   // check if id is in  Object.keys(GROUP_ACTIVITY_INSTANCE_RESULTS_TEST)
+  //   where: {
+  //     id: {
+  //       // TODO: replace this by production group activity instance ids
+  //       in: [1],
+  //     },
+  //   },
+  //   include: {
+  //     group: {
+  //       include: {
+  //         participants: true,
+  //       },
+  //     },
+  //   },
+  // })
 
-  let promises = []
-  for (const [key, value] of Object.entries(GROUP_ACTIVITY_INSTANCE_RESULTS)) {
-    promises.push(
-      prisma.groupActivityInstance.update({
-        where: {
-          id: parseInt(key),
-        },
-        data: {
-          results: value,
-        },
-      })
-    )
-  }
+  // let promises = []
+  // for (const [key, value] of Object.entries(GROUP_ACTIVITY_INSTANCE_RESULTS)) {
+  //   promises.push(
+  //     prisma.groupActivityInstance.update({
+  //       where: {
+  //         id: parseInt(key),
+  //       },
+  //       data: {
+  //         results: value,
+  //       },
+  //     })
+  //   )
+  // }
 
-  // create a map between participants and achievements
-  const participantAchievementMap = groupActivityInstances1.reduce<
-    Record<string, number[]>
-  >((acc, instance) => {
-    const { points, maxPoints } = GROUP_ACTIVITY_INSTANCE_RESULTS[instance.id]
+  // // create a map between participants and achievements
+  // const participantAchievementMap = groupActivityInstances1.reduce<
+  //   Record<string, number[]>
+  // >((acc, instance) => {
+  //   const { points, maxPoints } = GROUP_ACTIVITY_INSTANCE_RESULTS[instance.id]
 
-    instance.group.participants.forEach((participant) => {
-      acc[participant.id] = [9]
-      if (points / maxPoints >= 0.5) {
-        acc[participant.id].push(8)
-      }
-    })
+  //   instance.group.participants.forEach((participant) => {
+  //     acc[participant.id] = [9]
+  //     if (points / maxPoints >= 0.5) {
+  //       acc[participant.id].push(8)
+  //     }
+  //   })
 
-    return acc
-  }, {})
+  //   return acc
+  // }, {})
 
-  // achieve the instances for the participants and add this to the promises
-  Object.entries(participantAchievementMap).forEach(
-    ([participantId, achievementIds]) => {
-      achievementIds.forEach((id) => {
-        promises.push(
-          prisma.participantAchievementInstance.upsert({
-            where: {
-              participantId_achievementId: {
-                participantId: participantId,
-                achievementId: id,
-              },
-            },
-            create: {
-              participantId: participantId,
-              achievementId: id,
-              achievedAt: new Date(),
-              achievedCount: 1,
-            },
-            update: {
-              achievedCount: {
-                increment: 1,
-              },
-            },
-          })
-        )
-      })
-    }
-  )
+  // // achieve the instances for the participants and add this to the promises
+  // Object.entries(participantAchievementMap).forEach(
+  //   ([participantId, achievementIds]) => {
+  //     achievementIds.forEach((id) => {
+  //       promises.push(
+  //         prisma.participantAchievementInstance.upsert({
+  //           where: {
+  //             participantId_achievementId: {
+  //               participantId: participantId,
+  //               achievementId: id,
+  //             },
+  //           },
+  //           create: {
+  //             participantId: participantId,
+  //             achievementId: id,
+  //             achievedAt: new Date(),
+  //             achievedCount: 1,
+  //           },
+  //           update: {
+  //             achievedCount: {
+  //               increment: 1,
+  //             },
+  //           },
+  //         })
+  //       )
+  //     })
+  //   }
+  // )
 
-  await prisma.$transaction(promises)
+  // await prisma.$transaction(promises)
 }
 
 const prismaClient = new Prisma.PrismaClient()
