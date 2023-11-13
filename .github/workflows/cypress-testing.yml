@@ -1,9 +1,9 @@
 name: Klicker automated testing with cypress
 on:
   push:
-    branches: ['v3', 'v3*']
+    branches: ["v3", "v3*"]
   pull_request:
-    branches: ['v3', 'v3*']
+    branches: ["v3", "v3*"]
     types: [opened, synchronize, reopened]
   # workflow_dispatch:
 
@@ -110,15 +110,16 @@ jobs:
         # run: pnpm run start:test
 
       - name: Cypress run
-        uses: cypress-io/github-action@v5
+        uses: cypress-io/github-action@v6
         timeout-minutes: 20
         with:
           install: false
-          wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
+          wait-on: "http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010"
           wait-on-timeout: 480
           record: true
           browser: chrome
           working-directory: cypress
+          parallel: true
         env:
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
