@@ -8,7 +8,8 @@ async function seed(prisma: Prisma.PrismaClient) {
     1: {
       points: 150, // 50 per question
       maxPoints: 200, // 50 per question
-      message: '[Feedback als PDF](LINK TO PDF)',
+      message:
+        '[Feedback als PDF](https://sos-ch-dk-2.exo.io/klicker-prod/pdf/demo_pdf.pdf)',
     },
   }
 
