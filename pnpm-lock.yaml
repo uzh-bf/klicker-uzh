@@ -1507,7 +1507,7 @@ importers:
         version: 3.10.2(graphql@16.7.1)
       '@pothos/plugin-prisma':
         specifier: 3.60.0
-        version: 3.60.0(@pothos/core@3.38.0)(@prisma/client@5.5.2)(graphql@16.7.1)(typescript@5.2.2)
+        version: 3.60.0(@pothos/core@3.38.0)(@prisma/client@5.5.2)(graphql@16.7.1)(typescript@5.1.6)
       '@pothos/plugin-scope-auth':
         specifier: 3.20.0
         version: 3.20.0(@pothos/core@3.38.0)(graphql@16.7.1)
@@ -1590,6 +1590,9 @@ importers:
       '@parcel/watcher':
         specifier: 2.2.0
         version: 2.2.0
+      '@tsconfig/node18':
+        specifier: ^2.0.1
+        version: 2.0.1
       '@tsconfig/node20':
         specifier: ^20.1.2
         version: 20.1.2
@@ -1649,13 +1652,13 @@ importers:
         version: 2.8.8
       prettier-plugin-organize-imports:
         specifier: 3.2.3
-        version: 3.2.3(prettier@2.8.8)(typescript@5.2.2)
+        version: 3.2.3(prettier@2.8.8)(typescript@5.1.6)
       tsup:
         specifier: 7.2.0
-        version: 7.2.0(postcss@8.4.27)(typescript@5.2.2)
+        version: 7.2.0(postcss@8.4.27)(typescript@5.1.6)
       typescript:
-        specifier: 5.2.2
-        version: 5.2.2
+        specifier: 5.1.6
+        version: 5.1.6
       web-push:
         specifier: 3.6.1
         version: 3.6.1
@@ -8613,6 +8616,24 @@ packages:
       graphql: 16.7.1
     dev: false
 
+  /@pothos/plugin-prisma@3.60.0(@pothos/core@3.38.0)(@prisma/client@5.5.2)(graphql@16.7.1)(typescript@5.1.6):
+    resolution: {integrity: sha512-IVy5NJjJzVZM4KQiEB/4Q75+CMi8tEkbJ4v2MKKTgYBKgR9GJatjtOtoCbzag4GPK1Ko13VwpPH07Q9LFePtKw==}
+    hasBin: true
+    peerDependencies:
+      '@pothos/core': '*'
+      '@prisma/client': '*'
+      graphql: '>=15.1.0'
+      typescript: '>=4.7.2'
+    dependencies:
+      '@pothos/core': 3.38.0(graphql@16.7.1)
+      '@prisma/client': 5.5.2(prisma@5.5.2)
+      '@prisma/generator-helper': 5.2.0
+      graphql: 16.7.1
+      typescript: 5.1.6
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
   /@pothos/plugin-prisma@3.60.0(@pothos/core@3.38.0)(@prisma/client@5.5.2)(graphql@16.7.1)(typescript@5.2.2):
     resolution: {integrity: sha512-IVy5NJjJzVZM4KQiEB/4Q75+CMi8tEkbJ4v2MKKTgYBKgR9GJatjtOtoCbzag4GPK1Ko13VwpPH07Q9LFePtKw==}
     hasBin: true
@@ -8629,6 +8650,7 @@ packages:
       typescript: 5.2.2
     transitivePeerDependencies:
       - supports-color
+    dev: true
 
   /@pothos/plugin-scope-auth@3.20.0(@pothos/core@3.38.0)(graphql@16.7.1):
     resolution: {integrity: sha512-yaAWScp6ob5uG9Ob8YMTTga8DECANx5HW9q/bz4r66RifO/ZNEr1szXl6WpuyhqhGdasvTpzoYakVrYgs8J8wQ==}
@@ -10490,6 +10512,10 @@ packages:
 
   /@tsconfig/node16@1.0.4:
     resolution: {integrity: sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA==}
+
+  /@tsconfig/node18@2.0.1:
+    resolution: {integrity: sha512-UqdfvuJK0SArA2CxhKWwwAWfnVSXiYe63bVpMutc27vpngCntGUZQETO24pEJ46zU6XM+7SpqYoMgcO3bM11Ew==}
+    dev: true
 
   /@tsconfig/node20@20.1.2:
     resolution: {integrity: sha512-madaWq2k+LYMEhmcp0fs+OGaLFk0OenpHa4gmI4VEmCKX4PJntQ6fnnGADVFrVkBj0wIdAlQnK/MrlYTHsa1gQ==}
@@ -26835,6 +26861,7 @@ packages:
     resolution: {integrity: sha512-mI4WrpHsbCIcwT9cF4FZvr80QUeKvsUsUvKDoR+X/7XHQH98xYD8YHZg7ANtz2GtZt/CBq2QJ0thkGJMHfqc1w==}
     engines: {node: '>=14.17'}
     hasBin: true
+    dev: true
 
   /ua-parser-js@1.0.35:
     resolution: {integrity: sha512-fKnGuqmTBnIE+/KXSzCn4db8RTigUzw1AN0DmdU6hJovUTbYJKyqj+8Mt1c4VfRDnOVJnENmfYkIPZ946UrSAA==}

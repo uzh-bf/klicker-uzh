@@ -1,5 +1,5 @@
 {
-  "extends": "@tsconfig/node20/tsconfig.json",
+  "extends": "@tsconfig/node18/tsconfig.json",
   "include": [
     "src",
     "src/types/app.ts",
@@ -7,8 +7,8 @@
   ],
   "compilerOptions": {
     "baseUrl": ".",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    // "module": "ESNext",
+    // "moduleResolution": "bundler",
   },
   "ts-node": {
     "transpileOnly": true
