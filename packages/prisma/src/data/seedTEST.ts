@@ -17,12 +17,8 @@ import {
   prepareSession,
   prepareUser,
 } from './helpers.js'
-<<<<<<< HEAD
-import { seedLevels } from './seedLevels.js'
-=======
 import { seedAchievements } from './seedAchievements'
 import { seedLevels } from './seedLevels'
->>>>>>> aa53b496a283c41a72e4c9a73e03fc76166fa97e
 
 export const PARTICIPANT_IDS = [
   '6f45065c-667f-4259-818c-c6f6b477eb48',
