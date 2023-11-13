@@ -3,9 +3,16 @@ import {
   ElementDisplayMode,
   ElementStackType,
   ElementType,
+  Prisma,
+  PrismaClient,
   QuestionInstance,
   SessionBlockStatus,
 } from '@klicker-uzh/prisma'
+
+export type PrismaMigrationClient = Omit<
+  PrismaClient<Prisma.PrismaClientOptions, never>,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>
 
 // ----- AVATAR SETTINGS -----
 // #region

@@ -83,7 +83,7 @@ type ChoicesQuestionData implements QuestionData {
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
@@ -283,7 +283,7 @@ type FreeTextQuestionData implements QuestionData {
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
@@ -601,7 +601,7 @@ type NumericalQuestionData implements QuestionData {
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
@@ -815,7 +815,7 @@ interface QuestionData {
   id: ID!
   name: String!
   pointsMultiplier: Int
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 

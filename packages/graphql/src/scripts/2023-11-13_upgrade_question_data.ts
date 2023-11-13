@@ -1,8 +1,6 @@
-import { PrismaClient } from '../client'
+import { PrismaMigrationClient } from 'src/types/app'
 
-async function migrate() {
-  const prisma = new PrismaClient()
-
+export async function execute(prisma: PrismaMigrationClient) {
   let counter = 1
 
   const questionInstances = await prisma.questionInstance.findMany({})
@@ -53,5 +51,3 @@ async function migrate() {
     counter++
   }
 }
-
-await migrate()

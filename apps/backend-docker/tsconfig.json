@@ -2,7 +2,8 @@
   "extends": "@tsconfig/node20/tsconfig.json",
   "include": [
     "src",
-    "scripts"
+    "scripts",
+    "../../packages/graphql/src/scripts/2023-11-13_upgrade_question_data.ts"
   ],
   "compilerOptions": {},
   "ts-node": {

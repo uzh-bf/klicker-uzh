@@ -1,29 +1,23 @@
 // ref: https://github.com/prisma/prisma/discussions/10854
 
-import { Prisma, PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '@klicker-uzh/prisma'
+import { execute } from './scripts/2023-11-13_upgrade_question_data'
+import { PrismaMigrationClient } from './types/app'
 
 interface Migration {
   id: string
-  migrate: (
-    tx: Omit<
-      PrismaClient<Prisma.PrismaClientOptions, never>,
-      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-    >
-  ) => Promise<void>
+  migrate: (tx: PrismaMigrationClient) => Promise<void>
 }
 
 const migrations: Migration[] = [
   {
-    id: '<migration-id>',
-    migrate: async (tx) => {
-      console.log('test migration script')
-    },
+    id: '2023-11-13_upgrade_question_data',
+    migrate: execute,
   },
 ]
 
 export async function migrate(prisma: PrismaClient) {
   for (const { id, migrate } of migrations) {
-    console.log(id)
     const migration = await prisma.migration.findFirst({ where: { id } })
     if (migration === null) {
       console.log(`Migrating ${id}`)
