@@ -224,7 +224,7 @@ function CourseOverview({ courseId }: Props) {
                     {participant?.id && !participation?.isActive && (
                       <div className="space-y-4">
                         <Podium leaderboard={[]} />
-                        <div className="max-w-none p-2 bg-slate-100 rounded border-slate-300 border text-slate-600 text-sm">
+                        <div className="p-2 text-sm border rounded max-w-none bg-slate-100 border-slate-300 text-slate-600">
                           <Markdown
                             withProse
                             withLinkButtons={false}
@@ -393,12 +393,14 @@ function CourseOverview({ courseId }: Props) {
 
                   <div className="flex flex-row flex-wrap gap-4">
                     <div className="flex flex-col flex-1">
-                      {!participation?.isActive && (
-                        <UserNotification
-                          type="warning"
-                          message={t('pwa.groupActivity.joinLeaderboard')}
-                        />
-                      )}
+                      <div className="mb-2">
+                        {!participation?.isActive && (
+                          <UserNotification
+                            type="warning"
+                            message={t('pwa.groupActivity.joinLeaderboard')}
+                          />
+                        )}
+                      </div>
                       <Leaderboard
                         courseName={course.displayName}
                         leaderboard={group.participants}

@@ -442,6 +442,8 @@ export const Achievements: {
     descriptionEN:
       'You have reached more than half of the points in the group task.',
     icon: '/achievements/Dreamteam.svg',
+    rewardedPoints: 500,
+    rewardedXP: 500,
     type: 'PARTICIPANT',
   },
   // group task done achievement
@@ -452,6 +454,8 @@ export const Achievements: {
     descriptionDE: 'Du hast einen Gruppentask absolviert.',
     descriptionEN: 'You have completed a group task.',
     icon: '/achievements/Teamgeist.svg',
+    rewardedPoints: 0,
+    rewardedXP: 100,
     type: 'PARTICIPANT',
   },
   // few questions achievement
