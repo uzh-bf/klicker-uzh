@@ -9,6 +9,10 @@ interface LinkButtonProps {
   icon?: IconDefinition
   children: string | React.ReactNode
   onClick?: () => void
+  data?: { cy?: string; test?: string }
+  className?: {
+    root?: string
+  }
   [key: string]: any
 }
 
@@ -17,6 +21,8 @@ function LinkButton({
   children,
   icon,
   onClick,
+  data,
+  className,
   ...props
 }: LinkButtonProps) {
   return (
@@ -26,11 +32,12 @@ function LinkButton({
         fluid
         className={{
           root: twMerge(
-            'gap-6 px-4 py-2 text-lg shadow bg-slate-200 sm:hover:bg-slate-300 border-slate-300',
-            props.className?.root
+            'gap-5 px-4 py-2 text-lg shadow bg-slate-200 sm:hover:bg-slate-300 border-slate-300',
+            className?.root
           ),
         }}
         onClick={onClick}
+        data={data}
       >
         {icon && (
           <Button.Icon>
