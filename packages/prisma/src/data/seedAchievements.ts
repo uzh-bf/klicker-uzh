@@ -45,15 +45,15 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       description: 'Du hast einen ersten Platz in einer Live-Session erreicht.',
       icon: '/achievements/Champ.svg',
       type: 'PARTICIPANT',
-      rewardedPoints: 200,
-      rewardedXP: 100,
+      rewardedPoints: 100,
+      rewardedXP: 200,
     },
     update: {
       name: 'Champion',
       description: 'Du hast einen ersten Platz in einer Live-Session erreicht.',
       icon: '/achievements/Champ.svg',
-      rewardedPoints: 200,
-      rewardedXP: 100,
+      rewardedPoints: 100,
+      rewardedXP: 200,
     },
   })
 
@@ -66,7 +66,7 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
         'Du hast einen zweiten Platz in einer Live-Session erreicht.',
       icon: '/achievements/VizeChamp.svg',
       type: 'PARTICIPANT',
-      rewardedPoints: 100,
+      rewardedPoints: 50,
       rewardedXP: 100,
     },
     update: {
@@ -74,7 +74,7 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       description:
         'Du hast einen zweiten Platz in einer Live-Session erreicht.',
       icon: '/achievements/VizeChamp.svg',
-      rewardedPoints: 100,
+      rewardedPoints: 50,
       rewardedXP: 100,
     },
   })
@@ -88,16 +88,16 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
         'Du hast einen dritten Platz in einer Live-Session erreicht.',
       icon: '/achievements/VizevizeChamp.svg',
       type: 'PARTICIPANT',
-      rewardedPoints: 50,
-      rewardedXP: 100,
+      rewardedPoints: 25,
+      rewardedXP: 50,
     },
     update: {
       name: 'Vize-Vize-Champion',
       description:
         'Du hast einen dritten Platz in einer Live-Session erreicht.',
       icon: '/achievements/VizevizeChamp.svg',
-      rewardedPoints: 50,
-      rewardedXP: 100,
+      rewardedPoints: 25,
+      rewardedXP: 50,
     },
   })
 
