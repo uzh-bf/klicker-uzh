@@ -5,23 +5,14 @@ import isEmail from 'validator/lib/isEmail'
 import { Context, ContextWithUser } from '../lib/context'
 
 interface UpdateParticipantProfileArgs {
-  password?: string | null
-  username?: string | null
-  email?: string | null
-  isProfilePublic?: boolean | null
-  avatar?: string | null
-  avatarSettings?: any
+  password: string | null
+  username: string | null
+  email: string | null
+  isProfilePublic: boolean | null
 }
 
 export async function updateParticipantProfile(
-  {
-    password,
-    username,
-    avatar,
-    avatarSettings,
-    email,
-    isProfilePublic,
-  }: UpdateParticipantProfileArgs,
+  { password, username, email, isProfilePublic }: UpdateParticipantProfileArgs,
   ctx: ContextWithUser
 ) {
   if (typeof username === 'string') {
@@ -57,8 +48,6 @@ export async function updateParticipantProfile(
             typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
           password: hashedPassword,
           username: username ?? undefined,
-          avatar: avatar ?? undefined,
-          avatarSettings: avatarSettings ?? undefined,
         },
       })
     } else {
@@ -73,6 +62,24 @@ export async function updateParticipantProfile(
         typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
       email: email ?? undefined,
       username: username ?? undefined,
+    },
+  })
+
+  return participant
+}
+
+interface UpdateParticipantAvatarArgs {
+  avatar: string | null
+  avatarSettings: any
+}
+
+export async function updateParticipantAvatar(
+  { avatar, avatarSettings }: UpdateParticipantAvatarArgs,
+  ctx: ContextWithUser
+) {
+  const participant = await ctx.prisma.participant.update({
+    where: { id: ctx.user.sub },
+    data: {
       avatar: avatar ?? undefined,
       avatarSettings: avatarSettings ?? undefined,
     },
