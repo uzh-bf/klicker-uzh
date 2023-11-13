@@ -1,13 +1,14 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["src", "scripts"],
-  "compilerOptions": {
-    "module": "ESNext"
-  },
+  "extends": "@tsconfig/node20/tsconfig.json",
+  "include": [
+    "src",
+    "scripts"
+  ],
+  "compilerOptions": {},
   "ts-node": {
     "transpileOnly": true,
     "moduleTypes": {
-      "scripts/*": "esm"
+      "*": "esm"
     }
   }
 }

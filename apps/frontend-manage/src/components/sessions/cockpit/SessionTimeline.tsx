@@ -159,13 +159,15 @@ function SessionTimeline({
                 {t('manage.sessions.embeddingEvaluation')}
               </Button.Label>
             </Button>
-            <EmbeddingModal
-              key={sessionId}
-              open={embedModalOpen}
-              onClose={() => setEmbedModalOpen(false)}
-              sessionId={sessionId}
-              questions={blocks?.flatMap((block) => block.instances)}
-            />
+            {!isFeedbackSession && (
+              <EmbeddingModal
+                key={sessionId}
+                open={embedModalOpen}
+                onClose={() => setEmbedModalOpen(false)}
+                sessionId={sessionId}
+                questions={blocks.flatMap((block) => block.instances ?? [])}
+              />
+            )}
             <SessionQRModal sessionId={sessionId} shortname={shortname} />
             <a
               className="flex-1"

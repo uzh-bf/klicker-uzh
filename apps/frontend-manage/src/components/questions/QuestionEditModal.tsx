@@ -389,13 +389,11 @@ function QuestionEditModal({
           },
         }
 
-        let resultChoices, resultNumerical, resultFreeText
-
         switch (common.type) {
           case ElementType.Sc:
           case ElementType.Mc:
-          case ElementType.Kprim:
-            resultChoices = await manipulateChoicesQuestion({
+          case ElementType.Kprim: {
+            const result = await manipulateChoicesQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -417,9 +415,11 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateChoicesQuestion?.id) return
             break
-          case ElementType.Numerical:
-            resultNumerical = await manipulateNUMERICALQuestion({
+          }
+          case ElementType.Numerical: {
+            const result = await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -456,9 +456,11 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateChoicesQuestion?.id) return
             break
-          case ElementType.FreeText:
-            resultFreeText = await manipulateFreeTextQuestion({
+          }
+          case ElementType.FreeText: {
+            const result = await manipulateFreeTextQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -478,29 +480,19 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateFreeTextQuestion?.id) return
             break
+          }
+
           default:
             break
         }
 
         if (mode === QuestionEditMode.EDIT && updateInstances) {
-          let questionId
-          if (resultChoices?.data) {
-            questionId = resultChoices.data?.manipulateChoicesQuestion?.id
-          } else if (resultNumerical?.data) {
-            questionId = resultNumerical.data?.manipulateNumericalQuestion?.id
-          } else if (resultFreeText?.data) {
-            questionId = resultFreeText.data?.manipulateFreeTextQuestion?.id
-          }
-
           if (questionId !== null && typeof questionId !== 'undefined') {
             const { data: instanceResult } = await updateQuestionInstances({
               variables: { questionId: questionId },
             })
-          } else {
-            console.log(
-              'Question instances were not updated, because updating of questions was not successful'
-            )
           }
         }
 

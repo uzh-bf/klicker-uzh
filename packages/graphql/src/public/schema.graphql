@@ -65,10 +65,11 @@ type ChoiceQuestionOptions {
 type ChoicesElementData implements ElementData {
   content: String!
   explanation: String
-  id: Int!
+  id: ID!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
+  questionId: Int!
   type: ElementType!
 }
 
@@ -78,10 +79,11 @@ type ChoicesQuestionData implements QuestionData {
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
-  id: Int!
+  id: ID!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int
+  questionId: Int!
   type: ElementType!
 }
 
@@ -157,9 +159,10 @@ type Element {
 interface ElementData {
   content: String!
   explanation: String
-  id: Int!
+  id: ID!
   name: String!
   pointsMultiplier: Int!
+  questionId: Int!
   type: ElementType!
 }
 
@@ -247,10 +250,11 @@ type FileUploadSAS {
 type FlashcardElementData implements ElementData {
   content: String!
   explanation: String
-  id: Int!
+  id: ID!
   name: String!
   options: FlashcardElementOptions!
   pointsMultiplier: Int!
+  questionId: Int!
   type: ElementType!
 }
 
@@ -261,10 +265,11 @@ type FlashcardElementOptions {
 type FreeTextElementData implements ElementData {
   content: String!
   explanation: String
-  id: Int!
+  id: ID!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
+  questionId: Int!
   type: ElementType!
 }
 
@@ -274,10 +279,11 @@ type FreeTextQuestionData implements QuestionData {
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
-  id: Int!
+  id: ID!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int
+  questionId: Int!
   type: ElementType!
 }
 
@@ -577,10 +583,11 @@ type Mutation {
 type NumericalElementData implements ElementData {
   content: String!
   explanation: String
-  id: Int!
+  id: ID!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
+  questionId: Int!
   type: ElementType!
 }
 
@@ -590,10 +597,11 @@ type NumericalQuestionData implements QuestionData {
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
-  id: Int!
+  id: ID!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int
+  questionId: Int!
   type: ElementType!
 }
 
@@ -804,9 +812,10 @@ interface QuestionData {
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
-  id: Int!
+  id: ID!
   name: String!
   pointsMultiplier: Int
+  questionId: Int!
   type: ElementType!
 }
 

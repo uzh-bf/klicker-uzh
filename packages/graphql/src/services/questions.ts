@@ -75,7 +75,11 @@ export async function getSingleQuestion(
 
   return {
     ...question,
-    questionData: question,
+    questionData: {
+      ...question,
+      id: `${question.id}-v${question.version}`,
+      questionId: question.id,
+    },
   }
 }
 
@@ -202,6 +206,9 @@ export async function manipulateQuestion(
       content: content ?? undefined,
       explanation: explanation ?? undefined,
       pointsMultiplier: pointsMultiplier ?? 1,
+      version: {
+        increment: 1,
+      },
       options: options
         ? {
             ...options,
@@ -258,7 +265,11 @@ export async function manipulateQuestion(
 
   return {
     ...question,
-    questionData: question,
+    questionData: {
+      ...question,
+      id: `${question.id}-v${question.version}`,
+      questionId: question.id,
+    },
   }
 }
 

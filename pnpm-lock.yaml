@@ -226,6 +226,9 @@ importers:
       '@tsconfig/node18':
         specifier: ^2.0.0
         version: 2.0.1
+      '@tsconfig/node20':
+        specifier: ^20.1.2
+        version: 20.1.2
       '@tsconfig/recommended':
         specifier: ^1.0.2
         version: 1.0.2
@@ -259,6 +262,9 @@ importers:
       '@types/ramda':
         specifier: ^0.29.3
         version: 0.29.3
+      '@types/ws':
+        specifier: ^8.5.9
+        version: 8.5.9
       '@uzh-bf/design-system':
         specifier: 2.4.2
         version: 2.4.2(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
@@ -2962,6 +2968,7 @@ packages:
   /@azure/msal-browser@2.38.3:
     resolution: {integrity: sha512-2WuLFnWWPR1IdvhhysT18cBbkXx1z0YIchVss5AwVA95g7CU5CpT3d+5BcgVGNXDXbUU7/5p0xYHV99V5z8C/A==}
     engines: {node: '>=0.8.0'}
+    deprecated: A newer major version of this library is available. Please upgrade to the latest available version.
     dependencies:
       '@azure/msal-common': 13.3.1
     dev: true
@@ -2979,6 +2986,7 @@ packages:
   /@azure/msal-node@1.18.4:
     resolution: {integrity: sha512-Kc/dRvhZ9Q4+1FSfsTFDME/v6+R2Y1fuMty/TfwqE5p9GTPw08BPbKgeWinE8JRHRp+LemjQbUZsn4Q4l6Lszg==}
     engines: {node: 10 || 12 || 14 || 16 || 18}
+    deprecated: A newer major version of this library is available. Please upgrade to the latest available version.
     dependencies:
       '@azure/msal-common': 13.3.1
       jsonwebtoken: 9.0.1
@@ -10533,6 +10541,10 @@ packages:
     resolution: {integrity: sha512-UqdfvuJK0SArA2CxhKWwwAWfnVSXiYe63bVpMutc27vpngCntGUZQETO24pEJ46zU6XM+7SpqYoMgcO3bM11Ew==}
     dev: true
 
+  /@tsconfig/node20@20.1.2:
+    resolution: {integrity: sha512-madaWq2k+LYMEhmcp0fs+OGaLFk0OenpHa4gmI4VEmCKX4PJntQ6fnnGADVFrVkBj0wIdAlQnK/MrlYTHsa1gQ==}
+    dev: true
+
   /@tsconfig/recommended@1.0.2:
     resolution: {integrity: sha512-dbHBtbWBOjq0/otpopAE02NT2Cm05Qe2JsEKeCf/wjSYbI2hz8nCqnpnOJWHATgjDz4fd3dchs3Wy1gQGjfN6w==}
     dev: true
@@ -11394,6 +11406,12 @@ packages:
     resolution: {integrity: sha512-lwhs8hktwxSjf9UaZ9tG5M03PGogvFaH8gUgLNbN9HKIg0dvv6q+gkSuJ8HN4/VbyxkuLzCjlN7GquQ0gUJfIg==}
     dependencies:
       '@types/node': 18.18.7
+
+  /@types/ws@8.5.9:
+    resolution: {integrity: sha512-jbdrY0a8lxfdTp/+r7Z4CkycbOFN8WX+IOchLJr3juT/xzbJ8URyTVSJ/hvNdadTgM1mnedb47n+Y31GsFnQlg==}
+    dependencies:
+      '@types/node': 18.18.7
+    dev: true
 
   /@types/xml-js@1.0.0:
     resolution: {integrity: sha512-tRJYQN/uAD8Br9K+pqqzJNd/htIxQaFy6ppfNEWbwsAoWRK3oAxzROCGA39GHT+E3BHLyuBnSB7XKsnJ0s4w2g==}

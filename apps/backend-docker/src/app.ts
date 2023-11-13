@@ -4,13 +4,16 @@ import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
-import persistedOperations from '@klicker-uzh/graphql/dist/server.json'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express, { Request } from 'express'
 import { createYoga } from 'graphql-yoga'
+import { createRequire } from 'node:module'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
+
+const require = createRequire(import.meta.url)
+const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
 
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const armor = new EnvelopArmor({

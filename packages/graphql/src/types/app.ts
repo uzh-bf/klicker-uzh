@@ -124,7 +124,8 @@ export type ElementOptions =
 export interface BaseElementData {
   type: ElementType
 
-  id: number
+  id: string
+  questionId: number
   name: string
   content: string
   pointsMultiplier: number
@@ -141,9 +142,11 @@ export interface BaseElementData {
 export type BaseElementDataKeys = (keyof BaseElementData)[]
 
 interface IElementData<Type extends ElementType, Options extends ElementOptions>
-  extends Element {
+  extends Omit<Element, 'id'> {
   type: Type
   options: Options
+  id: string
+  questionId: number
 }
 
 // export type FlashcardElementData = IElementData<'FLASHCARD', null>
