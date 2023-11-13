@@ -55,6 +55,7 @@ export async function updateParticipantProfile(
         data: {
           isProfilePublic:
             typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
+          email,
           password: hashedPassword,
           username: username ?? undefined,
           avatar: avatar ?? undefined,
