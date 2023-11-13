@@ -408,7 +408,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     DATA_TEST.AchievementIds['Busy Bee'],
     DATA_TEST.AchievementIds['Dream Team'],
     DATA_TEST.AchievementIds['Team Spirit'],
-    DATA_TEST.AchievementIds.Unerschrocken,
+    DATA_TEST.AchievementIds.Fearless,
   ].map(async (achievementId) => {
     await prisma.participantAchievementInstance.upsert({
       where: {
