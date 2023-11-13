@@ -1,10 +1,9 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.1.0-beta.2",
+  "version": "3.1.0-beta.7",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
   "files": [
     "dist"
   ],
@@ -37,6 +36,8 @@
     "uuidv4": "6.2.13"
   },
   "scripts": {
+    "//migrate:learningElements": "cross-env ENV=development doppler run --config dev -- bun run src/scripts/migrateLearningElements.ts",
+    "//migrate:learningElements:prod": "cross-env ENV=development doppler run --config prd -- bun run src/scripts/migrateLearningElements.ts",
     "build": "run-s generate build:ts build:copy",
     "build:copy": "node src/copy.cjs",
     "build:ts": "cross-env NODE_ENV=production tsup",
@@ -45,8 +46,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "generate": "prisma generate --schema=src/prisma/schema.prisma",
-    "//migrate:learningElements": "cross-env ENV=development doppler run --config dev -- bun run src/scripts/migrateLearningElements.ts",
-    "//migrate:learningElements:prod": "cross-env ENV=development doppler run --config prd -- bun run src/scripts/migrateLearningElements.ts",
     "migrate:script": "cross-env ENV=development doppler run --config dev -- bun run",
     "migrate:script:prod": "cross-env ENV=development doppler run --config prd -- bun run",
     "prisma:deploy": "doppler run --config dev -- pnpm run prisma:deploy:raw",
@@ -70,9 +69,12 @@
     "prisma:studio:prod": "doppler run --config prd -- pnpm run prisma:studio:raw",
     "prisma:studio:qa": "doppler run --config stg -- pnpm run prisma:studio:raw",
     "prisma:studio:raw": "prisma studio --schema=src/prisma/schema.prisma",
+    "script": "ENV=development doppler run --config dev -- bun run",
+    "script:prod": "ENV=production doppler run --config prd -- bun run",
     "seed": "cross-env ENV=development doppler run --config dev -- run-s build seed:test",
     "seed:achievements": "cross-env ENV=development doppler run --config dev -- bun run src/data/seedAchievements.ts",
     "seed:flashcards": "cross-env ENV=development doppler run --config dev -- bun run src/data/seedFlashcards.ts",
+    "seed:groupActivityResults": "ENV=development doppler run --config dev -- bun run src/data/seedGroupActivityResults.ts",
     "seed:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config dev -- bun run src/data/importQuestions.ts",
     "seed:mockExamPoints": "cross-env ENV=production doppler run --config prd -- bun run src/scripts/parseMockExamPoints.ts",
     "seed:prod": "cross-env ENV=production doppler run --config prd -- npm-run-all seed:prod:bf1 seed:prod:ami",
@@ -88,7 +90,8 @@
     "seed:qa": "cross-env ENV=development doppler run --config stg -- npm-run-all seed:qa:test",
     "seed:qa:bf1": "cross-env ENV=development doppler run --config stg -- bun run src/data/seedBF1.ts",
     "seed:qa:test": "bun run src/data/seedTEST.ts",
-    "seed:test": "cross-env ENV=development doppler run --config dev -- bun run src/data/seedTEST.ts"
+    "seed:test": "cross-env ENV=development doppler run --config dev -- bun run src/data/seedTEST.ts",
+    "size": "size-limit"
   },
   "engines": {
     "node": "=20"
@@ -98,5 +101,6 @@
   },
   "prisma": {
     "seed": "pnpm run seed"
-  }
+  },
+  "type": "module"
 }

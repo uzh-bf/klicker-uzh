@@ -1,7 +1,7 @@
 import { faClock, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { SessionBlockStatus } from '@klicker-uzh/graphql/dist/ops'
-import { Countdown, UserNotification } from '@uzh-bf/design-system'
+import { CycleCountdown, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
@@ -25,13 +25,24 @@ interface SessionBlockProps {
 
 function SessionBlock({ block, active = false }: SessionBlockProps) {
   const t = useTranslations()
-  const untilExpiration = useMemo(
-    () =>
-      block?.expiresAt
-        ? dayjs(block.expiresAt).add(20, 'second').diff(dayjs(), 'second')
-        : block?.timeLimit,
-    [block?.expiresAt, block?.timeLimit]
-  )
+
+  // compute the time until expiration in seconds + 20 seconds buffer from now
+  const untilExpiration = useMemo(() => {
+    if (!block) return -1
+    if (block.status === SessionBlockStatus.Executed) {
+      return -1
+    }
+    return block.expiresAt
+      ? dayjs(block.expiresAt).add(20, 'second').diff(dayjs(), 'second')
+      : block.timeLimit
+  }, [block])
+
+  // compute the expiration time as a date
+  const expirationTime = useMemo(() => {
+    const time = new Date()
+    time.setSeconds(time.getSeconds() + (untilExpiration ?? 0))
+    return time
+  }, [untilExpiration])
 
   if (!block)
     return (
@@ -58,17 +69,24 @@ function SessionBlock({ block, active = false }: SessionBlockProps) {
           {t('control.session.blockN', { number: block.order + 1 })}
         </div>
         <div className="flex flex-row items-center gap-2">
-          {untilExpiration && (
-            <Countdown
-              isStatic={!block.expiresAt}
-              countdownDuration={
+          {block.expiresAt && untilExpiration && (
+            <CycleCountdown
+              key={`${block.expiresAt}-${block.status}`}
+              overrideSize={15}
+              isStatic={
+                !block.expiresAt || block.status === SessionBlockStatus.Executed
+              }
+              expiresAt={expirationTime}
+              strokeWidthRem={0.2}
+              totalDuration={
                 block.status !== SessionBlockStatus.Executed
                   ? untilExpiration
                   : 0
               }
-              size={25}
-              strokeWidth={3}
-              className={{ root: 'text-xs' }}
+              terminalPercentage={100}
+              className={{
+                root: 'h-7 w-7',
+              }}
             />
           )}
           {block.status === SessionBlockStatus.Scheduled && (

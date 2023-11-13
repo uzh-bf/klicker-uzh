@@ -1,5 +1,4 @@
-import { Button, Countdown, Progress } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
+import { Button, CycleCountdown, Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
@@ -23,19 +22,16 @@ export function SessionProgress({
   onExpire,
 }: SessionProgressProps): React.ReactElement {
   const t = useTranslations()
-  const untilExpiration = expiresAt
-    ? dayjs(expiresAt).diff(dayjs(), 'second')
-    : 1000
 
   return (
-    <div className="flex flex-row gap-2 mb-1">
+    <div className="flex flex-row items-center gap-2 mb-1">
       {expiresAt && timeLimit && (
         <div className="flex-initial">
-          <Countdown
-            countdownDuration={
-              untilExpiration > timeLimit ? timeLimit : untilExpiration
-            }
+          <CycleCountdown
+            expiresAt={expiresAt}
+            totalDuration={timeLimit}
             onExpire={onExpire}
+            overrideSize={25}
           />
         </div>
       )}

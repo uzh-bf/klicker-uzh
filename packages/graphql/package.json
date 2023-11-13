@@ -1,10 +1,9 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.1.0-beta.2",
+  "version": "3.1.0-beta.7",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
   "files": [
     "dist"
   ],
@@ -86,5 +85,6 @@
   },
   "volta": {
     "extends": "../../package.json"
-  }
+  },
+  "type": "module"
 }

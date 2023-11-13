@@ -4,8 +4,10 @@
   "devDependencies": {
     "@cypress/code-coverage": "3.12.1",
     "@testing-library/cypress": "10.0.1",
+    "@types/jsonwebtoken": "^8.0.0",
     "@types/node": "^20.8.9",
     "cypress": "13.2.0",
+    "jsonwebtoken": "8.5.1",
     "typescript": "5.2.2"
   },
   "scripts": {

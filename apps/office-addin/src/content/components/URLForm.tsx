@@ -5,6 +5,8 @@ import * as yup from "yup";
 
 /* global window*/
 
+declare const Office;
+
 export interface URLFormProps {
   slideID: string;
 }

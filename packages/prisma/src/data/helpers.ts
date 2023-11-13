@@ -128,8 +128,6 @@ export function prepareQuestion({
     feedback?: string
     correct?: boolean
   }[]
-  hasSampleSolution?: boolean
-  hasAnswerFeedbacks?: boolean
   options?: any
 }) {
   if (choices) {
@@ -144,6 +142,7 @@ export function prepareQuestion({
       ...args,
       content,
       options: {
+        ...options,
         choices: preparedChoices,
       },
     }
