@@ -1,7 +1,7 @@
 import { MicroSessionStatus, SessionStatus } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
-import isEmail from 'validator/lib/isEmail'
+import isEmail from 'validator/lib/isEmail.js'
 import { Context, ContextWithUser } from '../lib/context'
 
 interface UpdateParticipantProfileArgs {

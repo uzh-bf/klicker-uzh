@@ -5,4 +5,5 @@ export default defineConfig({
   clean: true,
   format: 'esm',
   dts: true,
+  target: 'node20',
 })

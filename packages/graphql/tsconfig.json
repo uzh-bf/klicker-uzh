@@ -1,7 +1,21 @@
 {
-  "extends": "@tsconfig/node18/tsconfig.json",
-  "include": ["src", "src/types/app.ts"],
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Node 18",
+  "_version": "2.0.0",
+  "include": [
+    "src"
+  ],
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
+    "lib": [
+      "es2023"
+    ],
+    "module": "Node16",
+    "target": "es2022",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node"
   }
 }

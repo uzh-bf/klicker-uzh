@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import { levelFromXp } from '../lib/util'
+import { levelFromXp } from '../lib/util.js'
 import { Achievement, ParticipantAchievementInstance } from './achievement'
 import type {
   ICourse,

@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/node'
 import '@sentry/tracing'
 import { createPubSub } from 'graphql-yoga'
 import Redis from 'ioredis'
-import prepareApp from './app'
+import prepareApp from './app.js'
 
 import { Cache, createInMemoryCache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'

@@ -1,0 +1,29 @@
+meta {
+  name: Login (PWA)
+  type: graphql
+  seq: 1
+}
+
+post {
+  url: http://localhost:3000/api/graphql
+  body: graphql
+  auth: none
+}
+
+headers {
+  x-graphql-yoga-csrf: abcd
+}
+
+body:graphql {
+  mutation LoginParticipant($username: String!, $password: String!) {
+    loginParticipant(username: $username, password: $password)
+  }
+  
+}
+
+body:graphql:vars {
+  {
+    "username": "testuser1",
+    "password": "abcd"
+  }
+}
