@@ -88,7 +88,7 @@ jobs:
 
       - name: Prepare .env and local.settings.json files
         run: |
-          mv apps/backend-docker/.env.template apps/backend-docker/.env
+          mv apps/backend-docker/.env.cypress apps/backend-docker/.env
           echo "$FUNC_RESPONSES_SETTINGS" > apps/func-incoming-responses/local.settings.json
           echo "$FUNC_RESPONSE_PROCESSOR_SETTINGS" > apps/func-response-processor/local.settings.json
         env:
