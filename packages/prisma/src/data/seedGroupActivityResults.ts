@@ -6,8 +6,8 @@ async function seed(prisma: Prisma.PrismaClient) {
     { points: number; maxPoints: number; message: string }
   > = {
     1: {
-      points: 1, // 50 per question
-      maxPoints: 1, // 50 per question
+      points: 150, // 50 per question
+      maxPoints: 200, // 50 per question
       message: '[Feedback als PDF](LINK TO PDF)',
     },
   }
@@ -34,7 +34,8 @@ async function seedResults(
   { instanceId, result }: SeedResultsArgs,
   prisma: Prisma.PrismaClient
 ) {
-  const groupActivityInstances1 = await prisma.groupActivityInstance.findMany({
+  // TODO: adapt ids to values from ids object
+  const groupActivityInstance = await prisma.groupActivityInstance.findFirst({
     where: {
       id: instanceId,
     },
@@ -42,10 +43,23 @@ async function seedResults(
       group: {
         include: {
           participants: true,
+          course: true,
         },
       },
     },
   })
+
+  if (!groupActivityInstance) {
+    throw new Error(`No group activity instance found for id ${instanceId}`)
+  }
+
+  const courseId = groupActivityInstance.group.courseId
+
+  if (!courseId) {
+    throw new Error(
+      `No course id found for group activity instance ${instanceId}`
+    )
+  }
 
   let promises = []
   promises.push(
@@ -55,31 +69,113 @@ async function seedResults(
       },
       data: {
         results: result,
+        group: {
+          update: {
+            groupActivityScore: {
+              increment: result.points,
+            },
+          },
+        },
       },
     })
   )
 
-  // create a map between participants and achievements
-  const participantAchievementMap = groupActivityInstances1.reduce<
-    Record<string, number[]>
-  >((acc, instance) => {
-    const { points, maxPoints } = result
+  // create a map between participants and achievement ids
+  const participantAchievementMap =
+    groupActivityInstance.group.participants.reduce<Record<string, number[]>>(
+      (acc, participant) => {
+        acc[participant.id] = [9]
+        if (result.points / result.maxPoints >= 0.5) {
+          acc[participant.id].push(8)
+        }
+        return acc
+      },
+      {}
+    )
 
-    instance.group.participants.forEach((participant) => {
-      acc[participant.id] = [9]
-      if (points / maxPoints >= 0.5) {
-        acc[participant.id].push(8)
-      }
+  // get achievements with the ids used above and map the ids to the points and experience points
+  const participationAchievement = await prisma.achievement.findUnique({
+    where: {
+      id: 9,
+    },
+  })
+  const passedAchievement = await prisma.achievement.findUnique({
+    where: {
+      id: 8,
+    },
+  })
+
+  if (!participationAchievement || !passedAchievement) {
+    throw new Error('Achievements not found')
+  }
+
+  // award experience points to the participants
+  const participantIds = Object.keys(participantAchievementMap)
+  promises.push(
+    ...participantIds.map((participantId) =>
+      prisma.participant.update({
+        where: {
+          id: participantId,
+        },
+        data: {
+          xp: {
+            increment:
+              (participationAchievement.rewardedXP ?? 0) +
+              (result.points / result.maxPoints >= 0.5 ? 1 : 0) *
+                (passedAchievement.rewardedXP ?? 0),
+          },
+        },
+      })
+    )
+  )
+
+  // update participation with achievement points on the course leaderboard
+  const leaderboardParticipantIds = await Promise.allSettled(
+    participantIds.map(async (participantId) => {
+      return prisma.leaderboardEntry.findUniqueOrThrow({
+        where: {
+          type_participantId_courseId: {
+            type: 'COURSE',
+            participantId,
+            courseId: courseId,
+          },
+        },
+      })
     })
+  ).then((result) =>
+    result.flatMap((result) => {
+      if (result.status === 'fulfilled') return result.value.participantId
+      return []
+    })
+  )
 
-    return acc
-  }, {})
+  promises.push(
+    ...leaderboardParticipantIds.map((participantId) =>
+      prisma.leaderboardEntry.update({
+        where: {
+          type_participantId_courseId: {
+            type: 'COURSE',
+            participantId,
+            courseId: courseId,
+          },
+        },
+        data: {
+          score: {
+            increment:
+              (participationAchievement.rewardedPoints ?? 0) +
+              (result.points / result.maxPoints >= 0.5 ? 1 : 0) *
+                (passedAchievement.rewardedPoints ?? 0),
+          },
+        },
+      })
+    )
+  )
 
-  // achieve the instances for the participants and add this to the promises
+  // award achievements to participants
   Object.entries(participantAchievementMap).forEach(
     ([participantId, achievementIds]) => {
-      achievementIds.forEach((id) => {
-        promises.push(
+      promises.push(
+        ...achievementIds.map((id) =>
           prisma.participantAchievementInstance.upsert({
             where: {
               participantId_achievementId: {
@@ -100,7 +196,7 @@ async function seedResults(
             },
           })
         )
-      })
+      )
     }
   )
 
