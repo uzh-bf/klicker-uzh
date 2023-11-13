@@ -127,6 +127,7 @@ type Course {
   numOfParticipants: Int
   owner: User
   pinCode: Int
+  practiceQuizzes: [PracticeQuiz!]
   sessions: [Session!]
   startDate: Date!
   updatedAt: Date!
@@ -766,9 +767,9 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   getParticipation(courseId: String!): Participation
+  getPracticeQuizList: [Course!]
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   learningElement(id: String!): LearningElement
-  learningElements: [LearningElement!]
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
@@ -776,7 +777,6 @@ type Query {
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
   practiceQuiz(id: String!): PracticeQuiz
-  practiceQuizzes: [PracticeQuiz!]
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
   questionStack(id: Int!): QuestionStack
