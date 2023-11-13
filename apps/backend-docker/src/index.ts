@@ -16,6 +16,8 @@ import { WebSocketServer } from 'ws'
 
 const emitter = new EventEmitter()
 
+const prisma = new PrismaClient()
+
 if (process.env.SENTRY_DSN) {
   Sentry.init({
     debug: !!process.env.DEBUG,
@@ -86,7 +88,7 @@ emitter.on('invalidate', (resource) => {
 const pubSub = createPubSub({ eventTarget })
 
 ;(async () => {
-  const prisma = await migrate(new PrismaClient())
+  await migrate(prisma)
 
   const { app, yogaApp } = prepareApp({
     prisma,

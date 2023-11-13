@@ -28,5 +28,4 @@ export async function migrate(prisma: PrismaClient) {
       console.log(`Migrated ${id}`)
     }
   }
-  return prisma
 }
