@@ -124,6 +124,8 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       description:
         'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
       icon: '/achievements/Dreamteam.svg',
+      rewardedPoints: 500,
+      rewardedXP: 500,
       type: 'PARTICIPANT',
     },
     update: {
@@ -131,6 +133,8 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       description:
         'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
       icon: '/achievements/Dreamteam.svg',
+      rewardedPoints: 500,
+      rewardedXP: 500,
     },
   })
 
@@ -141,12 +145,16 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
       name: 'Teamgeist',
       description: 'Du hast einen Gruppentask absolviert.',
       icon: '/achievements/Teamgeist.svg',
+      rewardedPoints: 0,
+      rewardedXP: 100,
       type: 'PARTICIPANT',
     },
     update: {
       name: 'Teamgeist',
       description: 'Du hast einen Gruppentask absolviert.',
       icon: '/achievements/Teamgeist.svg',
+      rewardedPoints: 0,
+      rewardedXP: 100,
     },
   })
 
