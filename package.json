@@ -34,8 +34,6 @@
     "yaml": "2.3.2"
   },
   "scripts": {
-    "release": "standard-version",
-    "release:dry": "standard-version --dry-run",
     "build": "turbo run build",
     "check": "turbo run check --parallel --continue",
     "dev": "doppler run --config dev -- turbo run dev",
@@ -52,10 +50,12 @@
     "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
     "prisma:studio": "pnpm run --filter @klicker-uzh/prisma prisma:studio",
     "publish": "turbo run publish",
+    "release": "standard-version",
     "release:alpha": "standard-version --prerelease alpha --no-verify",
     "release:alpha:dry": "standard-version --dry-run --prerelease alpha",
     "release:beta": "standard-version --prerelease beta --no-verify",
     "release:beta:dry": "standard-version --dry-run --prerelease beta",
+    "release:dry": "standard-version --dry-run",
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
     "start": "turbo run start",

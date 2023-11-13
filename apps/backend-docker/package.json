@@ -68,11 +68,11 @@
     "dev:build": "tsup --watch",
     "dev:offline": "pnpm run dev",
     "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node -r dotenv/config ./dist/index.js'",
+    "exec:prod": "doppler run --config prd -- bun run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "nyc --silent npm start",
-    "exec:prod": "doppler run --config prd -- bun run"
+    "start:test": "nyc --silent npm start"
   },
   "engines": {
     "node": "=20"
