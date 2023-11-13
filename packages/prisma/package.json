@@ -65,7 +65,7 @@
     "prisma:reset:seed": "doppler run --config dev -- prisma migrate reset --schema=src/prisma/schema.prisma",
     "prisma:resetCypress": "pnpm run prisma:reset:raw",
     "prisma:resolve:prod": "doppler run --config prd -- prisma migrate resolve --schema=src/prisma/schema.prisma",
-    "prisma:setup": "run-s prisma:reset prisma:push seed seed:achievements",
+    "prisma:setup": "run-s prisma:reset prisma:push seed",
     "prisma:studio": "doppler run --config dev -- pnpm run prisma:studio:raw",
     "prisma:studio:prod": "doppler run --config prd -- pnpm run prisma:studio:raw",
     "prisma:studio:qa": "doppler run --config stg -- pnpm run prisma:studio:raw",
