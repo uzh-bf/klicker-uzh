@@ -1,7 +1,9 @@
 {
   "extends": "@tsconfig/node20/tsconfig.json",
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
   }
 }

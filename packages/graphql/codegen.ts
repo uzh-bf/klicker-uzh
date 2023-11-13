@@ -4,6 +4,7 @@ import { schema } from './src/index'
 
 const config: CodegenConfig = {
   schema: printSchema(schema),
+  emitLegacyCommonJSImports: false,
   // schema: 'src/graphql/schema.graphql',
   documents: ['src/graphql/ops/**/*.graphql'],
   generates: {

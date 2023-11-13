@@ -4,7 +4,7 @@ import timezone from 'dayjs/plugin/timezone.js'
 import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
-import { Context } from './context'
+import { Context } from './context.js'
 
 export { levelFromXp, xpForLevel } from '@klicker-uzh/prisma/dist/util.js'
 export { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo.js'
