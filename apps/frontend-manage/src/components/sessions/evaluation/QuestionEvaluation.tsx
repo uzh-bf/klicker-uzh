@@ -4,6 +4,7 @@ import {
   CHART_COLORS,
   STATISTICS_ORDER,
 } from '@klicker-uzh/shared-components/src/constants'
+import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -92,7 +93,7 @@ function QuestionEvaluation({
 
                     return (
                       <div key={`${currentInstance.blockIx}-${innerIndex}`}>
-                        <div className="flex flex-row justify-between items-center leading-5">
+                        <div className="flex flex-row items-center justify-between leading-5">
                           <div
                             // TODO: possibly use single color for answer options to highlight correct one? or some other approach to distinguish better
                             style={{
@@ -111,7 +112,7 @@ function QuestionEvaluation({
                           >
                             {String.fromCharCode(65 + innerIndex)}
                           </div>
-                          <div className="whitespace-nowrap text-right">
+                          <div className="text-right whitespace-nowrap">
                             {Math.round(100 * correctFraction)} %
                           </div>
                         </div>
@@ -152,35 +153,41 @@ function QuestionEvaluation({
               <div className="mt-4 font-bold">
                 {t('manage.evaluation.statistics')}:
               </div>
-              {Object.entries(currentInstance.statistics)
-                .slice(1)
-                .sort(
-                  (a, b) =>
-                    STATISTICS_ORDER.indexOf(a[0]) -
-                    STATISTICS_ORDER.indexOf(b[0])
-                )
-                .map((statistic) => {
-                  const statisticName = statistic[0]
-                  return (
-                    <Statistic
-                      key={statisticName}
-                      statisticName={statisticName}
-                      value={statistic[1]}
-                      hasCheckbox={
-                        !(statisticName === 'min' || statisticName === 'max')
-                      }
-                      chartType={chartType}
-                      checked={statisticStates[statisticName]}
-                      onCheck={() => {
-                        setStatisticStates({
-                          ...statisticStates,
-                          [statisticName]: !statisticStates[statisticName],
-                        })
-                      }}
-                      size={textSize.size}
-                    />
+              {currentInstance.statistics ? (
+                Object.entries(currentInstance.statistics)
+                  .slice(1)
+                  .sort(
+                    (a, b) =>
+                      STATISTICS_ORDER.indexOf(a[0]) -
+                      STATISTICS_ORDER.indexOf(b[0])
                   )
-                })}
+                  .map((statistic) => {
+                    const statisticName = statistic[0]
+                    return (
+                      <Statistic
+                        key={statisticName}
+                        statisticName={statisticName}
+                        value={statistic[1]}
+                        hasCheckbox={
+                          !(statisticName === 'min' || statisticName === 'max')
+                        }
+                        chartType={chartType}
+                        checked={statisticStates[statisticName]}
+                        onCheck={() => {
+                          setStatisticStates({
+                            ...statisticStates,
+                            [statisticName]: !statisticStates[statisticName],
+                          })
+                        }}
+                        size={textSize.size}
+                      />
+                    )
+                  })
+              ) : (
+                <UserNotification type="info">
+                  {t('manage.evaluation.noStatistics')}
+                </UserNotification>
+              )}
               {showSolution &&
                 currentInstance.questionData.options.solutionRanges && (
                   <div>

@@ -232,13 +232,25 @@ const Index = function () {
             {t('shared.generic.practice')}
           </H1>
           <div className="flex flex-col gap-2">
-            <LinkButton href="/practice" icon={faRepeat}>
+            <LinkButton
+              data={{ cy: 'practice-pool' }}
+              href="/practice"
+              icon={faRepeat}
+            >
               {t('shared.generic.practicePool')}
             </LinkButton>
-            <LinkButton href="/repetition" icon={faGraduationCap}>
+            <LinkButton
+              data={{ cy: 'quizzes' }}
+              href="/repetition"
+              icon={faGraduationCap}
+            >
               {t('shared.generic.practiceQuizzes')}
             </LinkButton>
-            <LinkButton href="/bookmarks" icon={faBookmark}>
+            <LinkButton
+              data={{ cy: 'bookmarks' }}
+              href="/bookmarks"
+              icon={faBookmark}
+            >
               {t('pwa.general.myBookmarks')}
             </LinkButton>
           </div>

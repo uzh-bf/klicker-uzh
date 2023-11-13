@@ -1065,6 +1065,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       wordCloud: 'Word Cloud',
       histogram: 'Histogramm',
       barChart: 'Balkendiagramm',
+      noStatistics:
+        'Bisher sind aufgrund fehlender Antworten noch keine Statistiken verfügbar.',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',
