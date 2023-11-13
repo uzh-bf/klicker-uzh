@@ -87,9 +87,7 @@ emitter.on('invalidate', (resource) => {
 
 const pubSub = createPubSub({ eventTarget })
 
-;(async () => {
-  await migrate(prisma)
-
+migrate(prisma).then(() => {
   const { app, yogaApp } = prepareApp({
     prisma,
     redisCache,
@@ -148,4 +146,4 @@ const pubSub = createPubSub({ eventTarget })
       wsServer
     )
   })
-})()
+})
