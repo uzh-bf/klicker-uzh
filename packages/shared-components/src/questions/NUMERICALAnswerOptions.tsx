@@ -68,7 +68,7 @@ export function NUMERICALAnswerOptions({
           }}
         />
         {unit && (
-          <div className="flex flex-col items-center justify-center px-4 text-white rounded-r bg-slate-600">
+          <div className="flex flex-col items-center justify-center px-4 text-white rounded-r bg-slate-600 min-w-max">
             {unit}
           </div>
         )}

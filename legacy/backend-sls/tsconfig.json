@@ -3,11 +3,5 @@
   "include": ["prisma", "GraphQL"],
   "compilerOptions": {
     "module": "ESNext"
-  },
-  "ts-node": {
-    "transpileOnly": true,
-    "moduleTypes": {
-      "test/integration.test.ts": "esm"
-    }
   }
 }

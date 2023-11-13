@@ -10,7 +10,7 @@ import Prisma, {
   ElementStackType,
   ElementType,
   PublicationStatus,
-} from '../../dist'
+} from '../client/index.js'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 const turndown = Turndown()
@@ -214,7 +214,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
 // if main module, run this
 const prismaClient = new Prisma.PrismaClient()
-seedFlashcards(prismaClient)
+await seedFlashcards(prismaClient)
   .then((res) => {
     console.log('res', res)
   })

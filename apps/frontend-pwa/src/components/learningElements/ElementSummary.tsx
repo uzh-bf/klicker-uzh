@@ -1,11 +1,11 @@
 import { useQuery } from '@apollo/client'
+import { levelFromXp } from '@klicker-uzh/graphql/dist/lib/util'
 import {
   GetParticipationDocument,
   QuestionStack,
   SelfDocument,
   StackElement,
 } from '@klicker-uzh/graphql/dist/ops'
-import { levelFromXp } from '@klicker-uzh/graphql/dist/util'
 import { H3, Progress, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'

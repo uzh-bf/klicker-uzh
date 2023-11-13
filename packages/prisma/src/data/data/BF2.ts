@@ -1,4 +1,4 @@
-import Prisma from '../../../dist'
+import Prisma from '../../client/index.js'
 const { ElementType, SessionStatus, OrderType } = Prisma
 
 export const LEARNING_ELEMENTS = [

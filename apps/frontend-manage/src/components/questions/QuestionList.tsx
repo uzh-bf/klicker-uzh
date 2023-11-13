@@ -50,8 +50,8 @@ function QuestionList({
           title={question.name}
           type={question.type}
           content={question.content}
-          hasAnswerFeedbacks={question.hasAnswerFeedbacks}
-          hasSampleSolution={question.hasSampleSolution}
+          hasAnswerFeedbacks={question.options.hasAnswerFeedbacks}
+          hasSampleSolution={question.options.hasSampleSolution}
           onCheck={() => setSelectedQuestions(question.id, question)}
           unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}

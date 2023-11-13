@@ -1,5 +1,5 @@
-import Prisma from '../../dist'
-import { prepareCourse, prepareUser } from './helpers'
+import Prisma from '../client/index.js'
+import { prepareCourse, prepareUser } from './helpers.js'
 
 async function seedUser(prisma: Prisma.PrismaClient) {
   const user = await prisma.user.upsert(
@@ -24,7 +24,7 @@ async function seedUser(prisma: Prisma.PrismaClient) {
 
 const prismaClient = new Prisma.PrismaClient()
 
-seedUser(prismaClient)
+await seedUser(prismaClient)
   .catch((e) => {
     console.error(e)
     process.exit(1)

@@ -6,6 +6,9 @@ import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { Context } from './context.js'
 
+export { levelFromXp, xpForLevel } from '@klicker-uzh/prisma/dist/util.js'
+export { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo.js'
+
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
@@ -57,8 +60,6 @@ export async function sendTeamsNotifications(scope: string, text: string) {
 
   return null
 }
-
-export { levelFromXp } from '@klicker-uzh/prisma/dist/util.js'
 
 export const orderStacks = R.sort((a: any, b: any) => {
   const aResponses = a.elements[0].responses

@@ -17,8 +17,5 @@
     "pretty": true
   },
   "compileOnSave": false,
-  "buildOnSave": false,
-  "ts-node": {
-    "files": true
-  }
+  "buildOnSave": false
 }

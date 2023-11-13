@@ -16,7 +16,23 @@
         "description": null,
         "fields": [
           {
-            "name": "description",
+            "name": "descriptionDE",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "descriptionEN",
             "description": null,
             "args": [],
             "type": {
@@ -76,7 +92,23 @@
             "deprecationReason": null
           },
           {
-            "name": "name",
+            "name": "nameDE",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "nameEN",
             "description": null,
             "args": [],
             "type": {

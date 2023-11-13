@@ -4,8 +4,10 @@ export const Achievement = builder.prismaObject('Achievement', {
   fields: (t) => ({
     id: t.exposeInt('id'),
 
-    name: t.exposeString('name'),
-    description: t.exposeString('description'),
+    nameDE: t.exposeString('nameDE'),
+    nameEN: t.exposeString('nameEN'),
+    descriptionDE: t.exposeString('descriptionDE'),
+    descriptionEN: t.exposeString('descriptionEN'),
     icon: t.exposeString('icon'),
     iconColor: t.exposeString('iconColor', { nullable: true }),
   }),

@@ -282,7 +282,6 @@ function QuestionEditModal({
       }
 
       const commonOptions = {
-        displayMode: ElementDisplayMode.List,
         hasSampleSolution: false,
         hasAnswerFeedbacks: false,
       }
@@ -295,6 +294,7 @@ function QuestionEditModal({
             ...common,
             options: {
               ...commonOptions,
+              displayMode: ElementDisplayMode.List,
               choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
             },
           }
@@ -382,7 +382,6 @@ function QuestionEditModal({
           tags: values.tags,
           pointsMultiplier: parseInt(values.pointsMultiplier),
           options: {
-            displayMode: values.displayMode || ElementDisplayMode.List,
             hasSampleSolution: values.hasSampleSolution,
             hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           },
@@ -397,6 +396,7 @@ function QuestionEditModal({
                 id: isDuplication ? undefined : questionId,
                 options: {
                   ...common.options,
+                  displayMode: values.displayMode || ElementDisplayMode.List,
                   choices: values.options?.choices.map((choice: any) => {
                     return {
                       ix: choice.ix,

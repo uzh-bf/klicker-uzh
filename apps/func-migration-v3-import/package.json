@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/func-migration-v3-import",
-  "version": "3.1.0-beta.2",
+  "version": "3.1.0-beta.7",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
@@ -28,14 +28,13 @@
     "prettier": "2.8.8",
     "prettier-plugin-organize-imports": "3.2.3",
     "prisma": "5.5.2",
-    "ts-node": "10.9.1",
     "tsup": "7.2.0",
     "typescript": "5.1.6"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
     "check": "tsc --noEmit",
-    "dev:copy": "ts-node src/copy.ts",
+    "dev:copy": "bun run src/copy.ts",
     "dev:func": "func start -p 7075 --verbose --javascript",
     "dev:function": "run-p dev:func dev:ts",
     "dev:migration": "run-s dev:copy dev:function",

@@ -1,9 +1,10 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.1.0-beta.2",
+  "version": "3.1.0-beta.7",
   "license": "AGPL-3.0",
-  "main": "dist/index.js",
+  "main": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "type": "module",
   "files": [
     "dist"
   ],
@@ -46,7 +47,8 @@
     "@types/passport": "^1.0.10",
     "@types/passport-jwt": "^3.0.6",
     "@types/ramda": "^0.29.3",
-    "@uzh-bf/design-system": "2.1.13",
+    "@types/ws": "^8.5.8",
+    "@uzh-bf/design-system": "2.4.2",
     "axios": "1.4.0",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
@@ -57,23 +59,23 @@
     "npm-run-all": "4.1.5",
     "nyc": "15.1.0",
     "prisma": "5.5.2",
-    "ts-node": "10.9.1",
-    "tsup": "6.7.0",
-    "typescript": "5.0.4"
+    "tsup": "7.2.0",
+    "typescript": "5.2.2"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
+    "//dev": "bun run --hot src/index.ts",
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "tsup --watch",
     "dev:offline": "pnpm run dev",
     "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node -r dotenv/config ./dist/index.js'",
+    "exec:prod": "doppler run --config prd -- bun run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "nyc --silent npm start",
-    "exec:prod": "doppler run --config prd -- ts-node --esm"
+    "start:test": "nyc --silent npm start"
   },
   "engines": {
     "node": "=20"

@@ -1,5 +1,4 @@
 import * as DB from '@klicker-uzh/prisma'
-import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
@@ -64,7 +63,7 @@ export async function loginUserToken(
     {
       sub: user.id,
       role: user.role,
-      scope: UserLoginScope.SESSION_EXEC,
+      scope: DB.UserLoginScope.SESSION_EXEC,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,
@@ -97,7 +96,7 @@ export function createParticipantToken(participantId: string) {
   return JWT.sign(
     {
       sub: participantId,
-      role: UserRole.PARTICIPANT,
+      role: DB.UserRole.PARTICIPANT,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,
@@ -183,7 +182,7 @@ export async function getLoginToken(ctx: ContextWithUser) {
 }
 
 interface ChangeUserLocaleArgs {
-  locale: Locale
+  locale: DB.Locale
 }
 
 export async function changeUserLocale(
@@ -203,7 +202,7 @@ export async function changeUserLocale(
 }
 
 interface ChangeParticipantLocaleArgs {
-  locale: Locale
+  locale: DB.Locale
 }
 
 export async function changeParticipantLocale(
@@ -418,7 +417,7 @@ export async function checkUsernameAvailability(
 interface UserLoginProps {
   password: string
   name: string
-  scope: UserLoginScope
+  scope: DB.UserLoginScope
 }
 
 export async function createUserLogin(
@@ -432,7 +431,7 @@ export async function createUserLogin(
       name,
       // scope,
       // TODO: allow creation of other access levels once auth is handled granularly
-      scope: UserLoginScope.FULL_ACCESS,
+      scope: DB.UserLoginScope.FULL_ACCESS,
       user: {
         connect: {
           id: ctx.user.sub,
@@ -491,7 +490,7 @@ export async function changeShortname(
 }
 
 export async function changeInitialSettings(
-  { shortname, locale }: { shortname: string; locale: Locale },
+  { shortname, locale }: { shortname: string; locale: DB.Locale },
   ctx: ContextWithUser
 ) {
   const existingUser = await ctx.prisma.user.findFirst({
