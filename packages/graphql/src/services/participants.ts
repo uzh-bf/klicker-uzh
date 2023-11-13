@@ -592,7 +592,11 @@ export async function getPracticeCourses(ctx: ContextWithUser) {
       participantId: ctx.user.sub,
     },
     include: {
-      course: true,
+      course: {
+        include: {
+          elementStacks: true,
+        },
+      },
     },
   })
 
@@ -601,6 +605,7 @@ export async function getPracticeCourses(ctx: ContextWithUser) {
   // sort courses by end date descending
   const courses = participations
     .map((p) => p.course)
+    .filter((c) => c.elementStacks.length > 0)
     .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))
 
   return courses
