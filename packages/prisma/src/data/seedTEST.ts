@@ -425,11 +425,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       id: 9,
       name: 'Teamgeist',
       description: 'Du hast einen Gruppentask absolviert.',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/teamgeist.svg',
+      icon: '/achievements/Teamgeist.svg',
       type: 'PARTICIPANT',
     },
     update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/teamgeist.svg',
+      icon: '/achievements/Teamgeist.svg',
     },
   })
 
