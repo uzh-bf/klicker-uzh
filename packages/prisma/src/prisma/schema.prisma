@@ -1140,10 +1140,10 @@ model Achievement {
 
   name          String? // TODO: remove once migrated to nameDE and nameEN
   description   String? // TODO: remove once migrated to descriptionDE and descriptionEN
-  nameDE        String
-  descriptionDE String
-  nameEN        String
-  descriptionEN String
+  nameDE        String?
+  descriptionDE String?
+  nameEN        String?
+  descriptionEN String?
 
   icon      String
   iconColor String?
