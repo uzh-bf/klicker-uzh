@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.5...v3.1.0-beta.6) (2023-11-13)
+
+
+### Features
+
+* add automatic live session achievement awarding ([#3940](https://github.com/uzh-bf/klicker-uzh/issues/3940)) ([b9edbcf](https://github.com/uzh-bf/klicker-uzh/commit/b9edbcff3f1390a1b5ac5229144208699f7d9f4a))
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** ensure that countdown timer is only shown when timer is set ([#3943](https://github.com/uzh-bf/klicker-uzh/issues/3943)) ([b1183e9](https://github.com/uzh-bf/klicker-uzh/commit/b1183e981b2f00bcde7cbe42ebee67bf80d05bd7))
+* **apps/frontend-pwa:** ensure that unit fields do not contain line breaks ([#3938](https://github.com/uzh-bf/klicker-uzh/issues/3938)) ([732c3ec](https://github.com/uzh-bf/klicker-uzh/commit/732c3eca6c67cac00b6b5e8908e58b91bebbe5ba))
+* **cypress:** do not use nth-child in lecturer login workflow ([39944bb](https://github.com/uzh-bf/klicker-uzh/commit/39944bb1151687fbd519ee27bf401d36483a26ed))
+
+
+### Enhancements
+
+* **packages/graphql:** ensure that group activity clue distribution is more even ([#3939](https://github.com/uzh-bf/klicker-uzh/issues/3939)) ([0b9bc85](https://github.com/uzh-bf/klicker-uzh/commit/0b9bc852657f68a43c34ac7b9867af40c063743e))
+
 ## [3.1.0-beta.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.4...v3.1.0-beta.5) (2023-11-01)
 
 
