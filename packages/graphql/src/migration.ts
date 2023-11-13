@@ -1,8 +1,8 @@
 // ref: https://github.com/prisma/prisma/discussions/10854
 
-import { PrismaClient } from '@klicker-uzh/prisma'
+import type { PrismaClient } from '@klicker-uzh/prisma'
 import { execute } from './scripts/2023-11-13_upgrade_question_data'
-import { PrismaMigrationClient } from './types/app'
+import type { PrismaMigrationClient } from './types/app'
 
 interface Migration {
   id: string
