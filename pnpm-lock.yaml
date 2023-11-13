@@ -274,9 +274,6 @@ importers:
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
-      dotenv:
-        specifier: 16.0.3
-        version: 16.0.3
       eslint:
         specifier: 8.45.0
         version: 8.45.0

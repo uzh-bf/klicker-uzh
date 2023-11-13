@@ -1,6 +1,5 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
-import { migrate } from '@klicker-uzh/graphql/dist/util.js'
 import { PrismaClient } from '@klicker-uzh/prisma'
 import * as Sentry from '@sentry/node'
 import '@sentry/tracing'
@@ -13,6 +12,7 @@ import { createRedisCache } from '@envelop/response-cache-redis'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { EventEmitter } from 'node:events'
 import { WebSocketServer } from 'ws'
+import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
 
