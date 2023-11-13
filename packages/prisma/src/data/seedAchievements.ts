@@ -31,13 +31,13 @@ export async function seedAchievements(prisma: Prisma.PrismaClient) {
   )
 }
 
-// const prismaClient = new Prisma.PrismaClient()
+const prismaClient = new Prisma.PrismaClient()
 
-// await seedAchievements(prismaClient)
-//   .catch((e) => {
-//     console.error(e)
-//     process.exit(1)
-//   })
-//   .finally(async () => {
-//     await prismaClient.$disconnect()
-//   })
+await seedAchievements(prismaClient)
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prismaClient.$disconnect()
+  })
