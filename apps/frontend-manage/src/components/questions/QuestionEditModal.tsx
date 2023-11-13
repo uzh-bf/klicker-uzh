@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faArrowsRotate, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementDisplayMode,
@@ -18,7 +18,6 @@ import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
-  Checkbox,
   FormikNumberField,
   FormikSelectField,
   FormikTextField,
@@ -26,6 +25,7 @@ import {
   H4,
   Label,
   Modal,
+  Prose,
   Select,
   Switch,
   UserNotification,
@@ -1339,26 +1339,6 @@ function QuestionEditModal({
                     </ul>
                   </UserNotification>
                 )}
-                {mode === QuestionEditMode.EDIT && (
-                  <div className="p-2 mt-3 border border-solid">
-                    <div className="flex flex-row items-center gap-3">
-                      <FontAwesomeIcon
-                        icon={faArrowsRotate}
-                        className="ml-0.5"
-                      />
-                      <H4>{t('manage.questionForms.updateInstances')}</H4>
-                    </div>
-                    <div className="flex flex-row items-center gap-3">
-                      <Checkbox
-                        checked={updateInstances}
-                        onCheck={() => setUpdateInstances(!updateInstances)}
-                      />
-                      <div>
-                        {t('manage.questionForms.updateInstancesExplanation')}
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
               <div className="flex-1 max-w-sm">
                 <H3>{t('shared.generic.preview')}</H3>
@@ -1421,6 +1401,28 @@ function QuestionEditModal({
                   )}
               </div>
             </div>
+
+            {mode === QuestionEditMode.EDIT && (
+              <div
+                className={twMerge(
+                  'p-2 mt-3 border border-solid rounded flex flex-row gap-6 items-center',
+                  updateInstances && 'bg-orange-100 border-orange-200'
+                )}
+              >
+                <Switch
+                  checked={updateInstances}
+                  onCheckedChange={() => setUpdateInstances(!updateInstances)}
+                />
+                <div>
+                  <H4 className={{ root: 'm-0' }}>
+                    {t('manage.questionForms.updateInstances')}
+                  </H4>
+                  <Prose className={{ root: 'prose-xs max-w-none' }}>
+                    {t('manage.questionForms.updateInstancesExplanation')}
+                  </Prose>
+                </div>
+              </div>
+            )}
           </Modal>
         )
       }}
