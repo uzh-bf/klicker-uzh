@@ -1,12 +1,3 @@
-/*
-  Warnings:
-
-  - Added the required column `descriptionDE` to the `Achievement` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `descriptionEN` to the `Achievement` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `nameDE` to the `Achievement` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `nameEN` to the `Achievement` table without a default value. This is not possible if the table is not empty.
-
-*/
 -- AlterTable
 ALTER TABLE "Achievement" ADD COLUMN     "descriptionDE" TEXT NOT NULL,
 ADD COLUMN     "descriptionEN" TEXT NOT NULL,
