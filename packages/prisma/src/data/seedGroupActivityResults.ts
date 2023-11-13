@@ -12,12 +12,31 @@ async function seed(prisma: Prisma.PrismaClient) {
     },
   }
 
-  const instanceIds = Object.keys(results).map((id) => parseInt(id))
+  let promises = []
+  for (const [key, value] of Object.entries(results)) {
+    promises.push(
+      ...(await seedResults(
+        { instanceId: parseInt(key), result: value },
+        prisma
+      ))
+    )
+  }
+
+  await prisma.$transaction(promises)
+}
+
+interface SeedResultsArgs {
+  instanceId: number
+  result: { points: number; maxPoints: number; message: string }
+}
+
+async function seedResults(
+  { instanceId, result }: SeedResultsArgs,
+  prisma: Prisma.PrismaClient
+) {
   const groupActivityInstances1 = await prisma.groupActivityInstance.findMany({
     where: {
-      id: {
-        in: instanceIds,
-      },
+      id: instanceId,
     },
     include: {
       group: {
@@ -29,24 +48,22 @@ async function seed(prisma: Prisma.PrismaClient) {
   })
 
   let promises = []
-  for (const [key, value] of Object.entries(results)) {
-    promises.push(
-      prisma.groupActivityInstance.update({
-        where: {
-          id: parseInt(key),
-        },
-        data: {
-          results: value,
-        },
-      })
-    )
-  }
+  promises.push(
+    prisma.groupActivityInstance.update({
+      where: {
+        id: instanceId,
+      },
+      data: {
+        results: result,
+      },
+    })
+  )
 
   // create a map between participants and achievements
   const participantAchievementMap = groupActivityInstances1.reduce<
     Record<string, number[]>
   >((acc, instance) => {
-    const { points, maxPoints } = results[instance.id]
+    const { points, maxPoints } = result
 
     instance.group.participants.forEach((participant) => {
       acc[participant.id] = [9]
@@ -87,7 +104,7 @@ async function seed(prisma: Prisma.PrismaClient) {
     }
   )
 
-  await prisma.$transaction(promises)
+  return promises
 }
 
 const prismaClient = new Prisma.PrismaClient()
