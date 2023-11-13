@@ -3,8 +3,6 @@
   "include": [
     "src",
     "src/types/app.ts",
-    "../../apps/backend-docker/src/migration.ts",
-    "../../apps/backend-docker/scripts/2023-11-13_upgrade_question_data.ts"
   ],
   "compilerOptions": {
     "baseUrl": "."
