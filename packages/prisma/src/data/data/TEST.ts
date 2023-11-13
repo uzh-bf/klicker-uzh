@@ -527,7 +527,7 @@ export const Achievements: {
     nameEN: 'Shooting Star',
     descriptionDE: '',
     descriptionEN: '',
-    icon: '/achievements/ShootingStar.svg',
+    icon: '/achievements/Shootingstar.svg',
     type: 'PARTICIPANT',
   },
   // speedy achievement
