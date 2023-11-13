@@ -1138,10 +1138,15 @@ model Title {
 model Achievement {
   id Int @id @default(autoincrement())
 
-  name        String
-  description String
-  icon        String
-  iconColor   String?
+  name          String? // TODO: remove once migrated to nameDE and nameEN
+  description   String? // TODO: remove once migrated to descriptionDE and descriptionEN
+  nameDE        String
+  descriptionDE String
+  nameEN        String
+  descriptionEN String
+
+  icon      String
+  iconColor String?
 
   rewardedPoints Int?
   rewardedXP     Int?

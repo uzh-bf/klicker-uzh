@@ -374,87 +374,13 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const pilotAchievement = await prisma.achievement.upsert({
-    where: { id: 2 },
-    create: {
-      id: 2,
-      name: 'Explorer',
-      description:
-        'Du warst Teil des KlickerUZH im ersten Semester. Dankeschön!',
-      icon: '/achievements/Erkunden.svg',
-      type: 'PARTICIPANT',
-    },
-    update: {
-      icon: '/achievements/Erkunden.svg',
-    },
-  })
-
-  const solvedEverythingAchievement = await prisma.achievement.upsert({
-    where: { id: 3 },
-    create: {
-      id: 3,
-      name: 'Fleisspreis',
-      description:
-        'Du hast alle verfügbaren Microlearnings und Lernelemente gelöst.',
-      icon: '/achievements/Fleisspreis.svg',
-      type: 'PARTICIPANT',
-    },
-    update: {
-      icon: '/achievements/Fleisspreis.svg',
-    },
-  })
-
-  const groupTaskPassedAchievement = await prisma.achievement.upsert({
-    where: { id: 8 },
-    create: {
-      id: 8,
-      name: 'Dream Team',
-      description:
-        'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
-      icon: '/achievements/Dreamteam.svg',
-      type: 'PARTICIPANT',
-    },
-    update: {
-      icon: '/achievements/Dreamteam.svg',
-    },
-  })
-
-  const groupTaskDoneAchievement = await prisma.achievement.upsert({
-    where: { id: 9 },
-    create: {
-      id: 9,
-      name: 'Teamgeist',
-      description: 'Du hast einen Gruppentask absolviert.',
-      icon: '/achievements/Teamgeist.svg',
-      type: 'PARTICIPANT',
-    },
-    update: {
-      icon: '/achievements/Teamgeist.svg',
-    },
-  })
-
-  const fewQuestionsAchievement = await prisma.achievement.upsert({
-    where: { id: 10 },
-    create: {
-      id: 10,
-      name: 'Unerschrocken',
-      description:
-        'Du hast eine Woche vor Ende der Vorlesung noch keine 6 Fragen beantwortet.',
-      icon: '/achievements/Unerschrocken.svg',
-      type: 'PARTICIPANT',
-    },
-    update: {
-      icon: '/achievements/Unerschrocken.svg',
-    },
-  })
-
-  const awardedPilotAchievements = PARTICIPANT_IDS.map(
-    async (participantId) => {
+  const awardedPilotAchievements = await Promise.all(
+    PARTICIPANT_IDS.map(async (participantId) => {
       await prisma.participantAchievementInstance.upsert({
         where: {
           participantId_achievementId: {
             participantId: participantId,
-            achievementId: pilotAchievement.id,
+            achievementId: DATA_TEST.AchievementIds.Explorer,
           },
         },
         create: {
@@ -465,7 +391,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           },
           achievement: {
             connect: {
-              id: pilotAchievement.id,
+              id: DATA_TEST.AchievementIds.Explorer,
             },
           },
           achievedAt: new Date(),
@@ -473,20 +399,20 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         },
         update: {},
       })
-    }
+    })
   )
 
   const awardedAchievements = [
-    solvedEverythingAchievement,
-    groupTaskPassedAchievement,
-    groupTaskDoneAchievement,
-    fewQuestionsAchievement,
-  ].map(async (achievement) => {
+    DATA_TEST.AchievementIds['Busy Bee'],
+    DATA_TEST.AchievementIds['Dream Team'],
+    DATA_TEST.AchievementIds['Team Spirit'],
+    DATA_TEST.AchievementIds.Unerschrocken,
+  ].map(async (achievementId) => {
     await prisma.participantAchievementInstance.upsert({
       where: {
         participantId_achievementId: {
           participantId: PARTICIPANT_IDS[0],
-          achievementId: achievement.id,
+          achievementId: achievementId,
         },
       },
       create: {
@@ -497,7 +423,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         },
         achievement: {
           connect: {
-            id: achievement.id,
+            id: achievementId,
           },
         },
         achievedAt: new Date(),
