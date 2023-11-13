@@ -506,62 +506,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       update: {},
     })
   })
-
-  const goldMedalAchievement = await prisma.achievement.upsert({
-    where: { id: 5 },
-    create: {
-      id: 5,
-      name: 'Champion',
-      description: 'Du hast einen ersten Platz in einer Live-Session erreicht.',
-      icon: '/achievements/Champ.svg',
-      type: 'PARTICIPANT',
-      rewardedPoints: 200,
-      rewardedXP: 100,
-    },
-    update: {
-      icon: '/achievements/Champ.svg',
-      rewardedPoints: 200,
-      rewardedXP: 100,
-    },
-  })
-
-  const silverMedalAchievement = await prisma.achievement.upsert({
-    where: { id: 6 },
-    create: {
-      id: 6,
-      name: 'Vize-Champion',
-      description:
-        'Du hast einen zweiten Platz in einer Live-Session erreicht.',
-      icon: '/achievements/VizeChamp.svg',
-      type: 'PARTICIPANT',
-      rewardedPoints: 100,
-      rewardedXP: 100,
-    },
-    update: {
-      icon: '/achievements/VizeChamp.svg',
-      rewardedPoints: 100,
-      rewardedXP: 100,
-    },
-  })
-
-  const bronzeMedalAchievement = await prisma.achievement.upsert({
-    where: { id: 7 },
-    create: {
-      id: 7,
-      name: 'Vize-Vize-Champion',
-      description:
-        'Du hast einen dritten Platz in einer Live-Session erreicht.',
-      icon: '/achievements/VizevizeChamp.svg',
-      type: 'PARTICIPANT',
-      rewardedPoints: 50,
-      rewardedXP: 100,
-    },
-    update: {
-      icon: '/achievements/VizevizeChamp.svg',
-      rewardedPoints: 50,
-      rewardedXP: 100,
-    },
-  })
 }
 
 const prismaClient = new Prisma.PrismaClient()
