@@ -2,6 +2,7 @@ import { useTranslations } from 'next-intl'
 import React from 'react'
 
 export interface FREETextAnswerOptionsProps {
+  disabled?: boolean
   placeholder?: string
   maxLength?: number
   onChange: (value: any) => any
@@ -9,6 +10,7 @@ export interface FREETextAnswerOptionsProps {
 }
 
 export function FREETextAnswerOptions({
+  disabled,
   placeholder,
   maxLength,
   onChange,
@@ -19,6 +21,7 @@ export function FREETextAnswerOptions({
   return (
     <div className="flex flex-col gap-2">
       <textarea
+        disabled={disabled}
         className="rounded focus:border focus:border-solid focus:border-primary-80"
         id="responseInput"
         value={value}

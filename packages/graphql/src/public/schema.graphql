@@ -5,11 +5,13 @@ schema {
 }
 
 type Achievement {
-  description: String!
+  descriptionDE: String!
+  descriptionEN: String!
   icon: String!
   iconColor: String
   id: Int!
-  name: String!
+  nameDE: String!
+  nameEN: String!
 }
 
 input AvatarSettingsInput {
