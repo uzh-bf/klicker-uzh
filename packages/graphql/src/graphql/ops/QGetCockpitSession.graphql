@@ -29,6 +29,7 @@ query GetCockpitSession($id: String!) {
         questionData {
           id
           questionId
+          pointsMultiplier
           name
           type
           content
