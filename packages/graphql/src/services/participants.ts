@@ -584,3 +584,24 @@ export async function getParticipantWithAchievements(ctx: ContextWithUser) {
     achievements,
   }
 }
+
+export async function getPracticeCourses(ctx: ContextWithUser) {
+  // fetch participations including courses
+  const participations = await ctx.prisma.participation.findMany({
+    where: {
+      participantId: ctx.user.sub,
+    },
+    include: {
+      course: true,
+    },
+  })
+
+  if (participations.length === 0) return []
+
+  // sort courses by end date descending
+  const courses = participations
+    .map((p) => p.course)
+    .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))
+
+  return courses
+}

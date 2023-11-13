@@ -421,6 +421,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      getPracticeCourses: asParticipant.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return ParticipantService.getPracticeCourses(ctx)
+        },
+      }),
+
       getParticipation: t.field({
         nullable: true,
         type: Participation,

@@ -94,6 +94,7 @@
    "GetParticipantGroups": "ed00e7291d2ce97456fd3d3549fbb0ac68e86573da564d38c6798e9bfb439e4d",
    "GetParticipation": "022c93b46aabd3a5f5376fc5870bb427343c98211d7d38364cee97e5016896a5",
    "GetPinnedFeedbacks": "c518ff6077ec8146c40f030193aa568be1c3ae87223c916975e94400f752e158",
+   "GetPracticeCourses": "2002f1c020618cb9363909a9c4049d69b2a4ac93ab6e4db2e5b15a35222eeb18",
    "GetPracticeQuiz": "34e7c9e87b779cf79be5aa1a008d163b3f5bf4d9a6fa2056d35baec890033aa5",
    "GetPracticeQuizzes": "643f52b69bf5dc2eccf2d8b36d4565a6f696b8faa9e53ced2d468f8eb978e565",
    "GetPublicParticipantProfile": "5732c91f4344a09b5a1e531f9a61a1584ccc529c26199f732ae9a15c21ba1af3",

@@ -766,6 +766,7 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   getParticipation(courseId: String!): Participation
+  getPracticeCourses: [Course!]
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   learningElement(id: String!): LearningElement
   learningElements: [LearningElement!]
