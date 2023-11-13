@@ -1,6 +1,6 @@
-import { PrismaMigrationClient } from 'src/types/app'
+import type { PrismaMigrationClient } from '@klicker-uzh/graphql/src/types/app.js'
 
-export async function execute(prisma: PrismaMigrationClient) {
+export default async function execute(prisma: PrismaMigrationClient) {
   let counter = 1
 
   const questionInstances = await prisma.questionInstance.findMany({})

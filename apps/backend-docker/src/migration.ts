@@ -2,7 +2,7 @@
 
 import type { PrismaMigrationClient } from '@klicker-uzh/graphql/src/types/app.js'
 import type { PrismaClient } from '@klicker-uzh/prisma'
-import { execute } from '../scripts/2023-11-13_upgrade_question_data.js'
+import UpgradeQuestionDataMigration from '../scripts/2023-11-13_upgrade_question_data.js'
 
 interface Migration {
   id: string
@@ -12,7 +12,7 @@ interface Migration {
 const migrations: Migration[] = [
   {
     id: '2023-11-13_upgrade_question_data',
-    migrate: execute,
+    migrate: UpgradeQuestionDataMigration,
   },
 ]
 
