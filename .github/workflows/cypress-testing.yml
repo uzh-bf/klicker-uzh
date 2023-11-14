@@ -117,7 +117,7 @@ jobs:
           wait-on: "http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010"
           wait-on-timeout: 480
           record: true
-          browser: electron
+          browser: chrome
           working-directory: cypress
           parallel: true
         env:
