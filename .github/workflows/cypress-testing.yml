@@ -50,7 +50,7 @@ jobs:
 
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false # https://github.com/cypress-io/github-action/issues/48
+      fail-fast: true
       matrix:
         containers: [1, 2] # Run 2 parallel instances
     steps:
