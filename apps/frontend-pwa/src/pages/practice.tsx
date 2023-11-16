@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import LinkButton from '@components/common/LinkButton'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
-import { ParticipationsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetPracticeCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -10,10 +10,7 @@ import { resetPracticeQuizLocalStorage } from '../components/practiceQuiz/Practi
 
 function Practice() {
   const t = useTranslations()
-
-  const { data, loading } = useQuery(ParticipationsDocument, {
-    fetchPolicy: 'cache-first',
-  })
+  const { data } = useQuery(GetPracticeCoursesDocument)
 
   return (
     <Layout
@@ -24,26 +21,26 @@ function Practice() {
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.practiceTitle')}
         </H1>
-        {data?.participations?.flatMap((participation) => {
-          if (!participation.course) return []
+        {data?.getPracticeCourses?.map((course) => {
           return (
             <LinkButton
-              key={participation.id}
-              href={`/course/${participation.course.id}/practice`}
+              key={course.id}
+              href={`/course/${course.id}/practice`}
               data={{ cy: 'practice-quiz' }}
               icon={faBookOpenReader}
               onClick={() => {
                 // check the localstorage and delete all elements, which contain practiceQuiz.id
-                resetPracticeQuizLocalStorage(participation.course!.id)
+                resetPracticeQuizLocalStorage(course.id)
               }}
               legacyBehavior
             >
-              {participation.course.displayName}
+              {course.displayName}
             </LinkButton>
           )
         })}
 
-        {(!data?.participations || data.participations.length === 0) && (
+        {(!data?.getPracticeCourses ||
+          data.getPracticeCourses.length === 0) && (
           <UserNotification
             type="info"
             message={t('pwa.learningElement.noRepetition')}

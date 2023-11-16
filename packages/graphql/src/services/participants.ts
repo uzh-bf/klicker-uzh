@@ -1,4 +1,8 @@
-import { MicroSessionStatus, SessionStatus } from '@klicker-uzh/prisma'
+import {
+  LearningElementStatus,
+  MicroSessionStatus,
+  SessionStatus,
+} from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
 import isEmail from 'validator/lib/isEmail'
@@ -590,4 +594,67 @@ export async function getParticipantWithAchievements(ctx: ContextWithUser) {
     participant: { ...participant, isSelf: true },
     achievements,
   }
+}
+
+export async function getPracticeCourses(ctx: ContextWithUser) {
+  // fetch participations including courses
+  const participations = await ctx.prisma.participation.findMany({
+    where: {
+      participantId: ctx.user.sub,
+    },
+    include: {
+      course: {
+        include: {
+          elementStacks: true,
+        },
+      },
+    },
+  })
+
+  if (participations.length === 0) return []
+
+  // sort courses by end date descending
+  const courses = participations
+    .map((p) => p.course)
+    .filter((c) => c.elementStacks.length > 0)
+    .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))
+
+  return courses
+}
+
+export async function getPracticeQuizList(ctx: ContextWithUser) {
+  const participations = await ctx.prisma.participation.findMany({
+    where: {
+      participantId: ctx.user.sub,
+    },
+    include: {
+      course: {
+        include: {
+          learningElements: {
+            where: {
+              status: LearningElementStatus.PUBLISHED,
+            },
+          },
+          practiceQuizzes: {
+            where: {
+              status: LearningElementStatus.PUBLISHED,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!participations || participations.length === 0) return []
+
+  const courses = participations
+    .map((p) => p.course)
+    .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))
+    .filter(
+      (course) =>
+        course.practiceQuizzes.length !== 0 ||
+        course.learningElements.length !== 0
+    )
+
+  return courses
 }
