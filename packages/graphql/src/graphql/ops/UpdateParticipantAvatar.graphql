@@ -1,0 +1,9 @@
+mutation UpdateParticipantAvatar(
+  $avatar: String!
+  $avatarSettings: AvatarSettingsInput!
+) {
+  updateParticipantAvatar(avatar: $avatar, avatarSettings: $avatarSettings) {
+    avatar
+    avatarSettings
+  }
+}
