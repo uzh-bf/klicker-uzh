@@ -768,6 +768,7 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   getParticipation(courseId: String!): Participation
+  getPracticeCourses: [Course!]
   getPracticeQuizList: [Course!]
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   learningElement(id: String!): LearningElement
