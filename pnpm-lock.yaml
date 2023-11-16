@@ -81,8 +81,8 @@ importers:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
       sharp:
-        specifier: 0.32.4
-        version: 0.32.4
+        specifier: 0.32.6
+        version: 0.32.6
       tailwind-merge:
         specifier: 1.14.0
         version: 1.14.0
@@ -504,8 +504,8 @@ importers:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
       sharp:
-        specifier: 0.32.4
-        version: 0.32.4
+        specifier: 0.32.6
+        version: 0.32.6
       tailwind-merge:
         specifier: 1.14.0
         version: 1.14.0
@@ -718,8 +718,8 @@ importers:
         specifier: 1.8.6
         version: 1.8.6
       sharp:
-        specifier: 0.32.4
-        version: 0.32.4
+        specifier: 0.32.6
+        version: 0.32.6
       slate:
         specifier: 0.94.1
         version: 0.94.1
@@ -926,8 +926,8 @@ importers:
         specifier: 2.7.2
         version: 2.7.2(prop-types@15.8.1)(react-dom@18.2.0)(react@18.2.0)
       sharp:
-        specifier: 0.32.4
-        version: 0.32.4
+        specifier: 0.32.6
+        version: 0.32.6
       tailwind-merge:
         specifier: 1.14.0
         version: 1.14.0
@@ -2882,6 +2882,7 @@ packages:
   /@azure/msal-browser@2.38.2:
     resolution: {integrity: sha512-71BeIn2we6LIgMplwCSaMq5zAwmalyJR3jFcVOZxNVfQ1saBRwOD+P77nLs5vrRCedVKTq8RMFhIOdpMLNno0A==}
     engines: {node: '>=0.8.0'}
+    deprecated: A newer major version of this library is available. Please upgrade to the latest available version.
     dependencies:
       '@azure/msal-common': 13.3.0
     dev: true
@@ -2899,6 +2900,7 @@ packages:
   /@azure/msal-node@1.18.2:
     resolution: {integrity: sha512-bLbuhF9Q5cgwj9tt8R7EV9MbCwGuFgZiv6Gw0VvHx5AcWHhh2m8hYginGagB4EucxKueFDwZP6aZVAxfuD/lUQ==}
     engines: {node: 10 || 12 || 14 || 16 || 18}
+    deprecated: A newer major version of this library is available. Please upgrade to the latest available version.
     dependencies:
       '@azure/msal-common': 13.3.0
       jsonwebtoken: 9.0.1
@@ -10805,7 +10807,7 @@ packages:
     resolution: {integrity: sha512-pFFVXUIydHlcJP6wJm7sDii5mD/bCmmAY0wQzq+M+uX7bqS95AQqHZWP1iNMKrWVQSuHIzj5qi9BvrtLX2/T4w==}
     dependencies:
       '@types/history': 4.7.11
-      '@types/react': 18.2.18
+      '@types/react': 18.2.21
       '@types/react-router': 5.1.20
     dev: false
 
@@ -10813,7 +10815,7 @@ packages:
     resolution: {integrity: sha512-kpqnYK4wcdm5UaWI3fLcELopqLrHgLqNsdpHauzlQktfkHL3npOSwtj1Uz9oKBAzs7lFtVkV8j83voAz2D8fhw==}
     dependencies:
       '@types/history': 4.7.11
-      '@types/react': 18.2.18
+      '@types/react': 18.2.21
       '@types/react-router': 5.1.20
     dev: false
 
@@ -24483,8 +24485,8 @@ packages:
       tunnel-agent: 0.6.0
     dev: false
 
-  /sharp@0.32.4:
-    resolution: {integrity: sha512-exUnZewqVZC6UXqXuQ8fyJJv0M968feBi04jb9GcUHrWtkRoAKnbJt8IfwT4NJs7FskArbJ14JAFGVuooszoGg==}
+  /sharp@0.32.6:
+    resolution: {integrity: sha512-KyLTWwgcR9Oe4d9HwCwNM2l7+J0dUQwn/yf7S0EnTtb0eVS4RxO0eUSvxPtzT4F3SY+C4K6fqdv/DO27sJ/v/w==}
     engines: {node: '>=14.15.0'}
     requiresBuild: true
     dependencies:
