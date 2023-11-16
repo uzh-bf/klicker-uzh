@@ -503,6 +503,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editProfile: 'Edit profile',
       editProfileFailed:
         'Unfortunately, an error occurred while saving the changes. The username you have chosen may already be taken. Please check your entries and try again.',
+      editProfileSuccess: 'Your profile has been updated successfully.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',

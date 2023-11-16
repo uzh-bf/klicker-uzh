@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ParticipationsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetPracticeCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -12,10 +12,7 @@ import { resetPracticeQuizLocalStorage } from '../components/practiceQuiz/Practi
 
 function Practice() {
   const t = useTranslations()
-
-  const { data, loading } = useQuery(ParticipationsDocument, {
-    fetchPolicy: 'cache-first',
-  })
+  const { data } = useQuery(GetPracticeCoursesDocument)
 
   return (
     <Layout
@@ -26,12 +23,11 @@ function Practice() {
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.practiceTitle')}
         </H1>
-        {data?.participations?.flatMap((participation) => {
-          if (!participation.course) return []
+        {data?.getPracticeCourses?.map((course) => {
           return (
             <Link
-              key={participation.id}
-              href={`/course/${participation.course.id}/practice`}
+              key={course.id}
+              href={`/course/${course.id}/practice`}
               legacyBehavior
             >
               <Button
@@ -43,21 +39,21 @@ function Practice() {
                 data={{ cy: 'practice-quiz' }}
                 onClick={() => {
                   // check the localstorage and delete all elements, which contain practiceQuiz.id
-                  resetPracticeQuizLocalStorage(participation.course!.id)
+                  resetPracticeQuizLocalStorage(course.id)
                 }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faBookOpenReader} />
                 </Button.Icon>
                 <Button.Label className={{ root: 'flex-1 text-left' }}>
-                  <div>{participation.course.displayName}</div>
+                  <div>{course.displayName}</div>
                 </Button.Label>
               </Button>
             </Link>
           )
         })}
-
-        {(!data?.participations || data.participations.length === 0) && (
+        {(!data?.getPracticeCourses ||
+          data.getPracticeCourses.length === 0) && (
           <UserNotification
             type="info"
             message={t('pwa.learningElement.noRepetition')}

@@ -317,21 +317,31 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
-          isProfilePublic: t.arg.boolean({ required: false }),
-          email: t.arg.string({ required: false, validate: { email: true } }),
+          isProfilePublic: t.arg.boolean({ required: true }),
+          email: t.arg.string({ required: true, validate: { email: true } }),
           username: t.arg.string({
-            required: false,
+            required: true,
             validate: { minLength: 5, maxLength: 15 },
           }),
-          avatar: t.arg.string({ required: false }),
-          password: t.arg.string({ required: false }),
-          avatarSettings: t.arg({
-            type: AvatarSettingsInput,
-            required: false,
-          }),
+          password: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
           return ParticipantService.updateParticipantProfile(args, ctx)
+        },
+      }),
+
+      updateParticipantAvatar: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: Participant,
+        args: {
+          avatar: t.arg.string({ required: true }),
+          avatarSettings: t.arg({
+            type: AvatarSettingsInput,
+            required: true,
+          }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.updateParticipantAvatar(args, ctx)
         },
       }),
 
