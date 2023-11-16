@@ -1482,6 +1482,26 @@
             "deprecationReason": null
           },
           {
+            "name": "practiceQuizzes",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "PracticeQuiz",
+                  "ofType": null
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "sessions",
             "description": null,
             "args": [],
@@ -11807,6 +11827,26 @@
             "deprecationReason": null
           },
           {
+            "name": "getPracticeQuizList",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "Course",
+                  "ofType": null
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "groupActivityDetails",
             "description": null,
             "args": [
@@ -11876,26 +11916,6 @@
               "kind": "OBJECT",
               "name": "LearningElement",
               "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "learningElements",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
-                  "name": "LearningElement",
-                  "ofType": null
-                }
-              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -12102,26 +12122,6 @@
               "kind": "OBJECT",
               "name": "PracticeQuiz",
               "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "practiceQuizzes",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
-                  "name": "PracticeQuiz",
-                  "ofType": null
-                }
-              }
             },
             "isDeprecated": false,
             "deprecationReason": null
