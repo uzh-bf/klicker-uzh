@@ -456,7 +456,7 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
-            if (!result.data?.manipulateChoicesQuestion?.id) return
+            if (!result.data?.manipulateNumericalQuestion?.id) return
             break
           }
           case ElementType.FreeText: {
