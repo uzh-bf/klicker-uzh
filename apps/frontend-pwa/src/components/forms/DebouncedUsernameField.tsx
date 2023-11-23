@@ -1,6 +1,4 @@
-import { useLazyQuery } from '@apollo/client'
 import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
-import { CheckUsernameAvailabilityDocument } from '@klicker-uzh/graphql/dist/ops'
 import { FormikTextField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -12,6 +10,7 @@ interface DebouncedUsernameFieldProps {
   valid: boolean | undefined
   setValid: (isAvailable: boolean | undefined) => void
   validateField: () => void
+  checkUsernameAvailable: (username: string) => Promise<boolean>
 }
 
 function DebouncedUsernameField({
@@ -20,12 +19,10 @@ function DebouncedUsernameField({
   valid,
   setValid,
   validateField,
+  checkUsernameAvailable,
 }: DebouncedUsernameFieldProps) {
   const t = useTranslations()
   const [field, meta, helpers] = useField(name)
-  const [checkUsernameAvailable] = useLazyQuery(
-    CheckUsernameAvailabilityDocument
-  )
 
   // validate field when valid value changes
   useEffect(() => {
@@ -35,10 +32,8 @@ function DebouncedUsernameField({
   // check if initial username is valid
   useEffect(() => {
     const check = async () => {
-      const value = await checkUsernameAvailable({
-        variables: { username: field.value },
-      })
-      setValid(value.data?.checkUsernameAvailability)
+      const valid = await checkUsernameAvailable(field.value)
+      setValid(valid)
     }
     check()
   }, [])
@@ -49,10 +44,7 @@ function DebouncedUsernameField({
       clearTimeout(usernameValidationTimeout.current)
       setValid(undefined)
       usernameValidationTimeout.current = setTimeout(async () => {
-        const { data: result } = await checkUsernameAvailable({
-          variables: { username },
-        })
-        const isAvailable = result?.checkUsernameAvailability
+        const isAvailable = await checkUsernameAvailable(username)
         setValid(isAvailable)
         if (!isAvailable) {
           helpers.setError(t('pwa.createAccount.usernameAvailability'))

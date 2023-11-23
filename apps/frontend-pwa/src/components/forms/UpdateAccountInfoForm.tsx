@@ -1,7 +1,8 @@
-import { useMutation } from '@apollo/client'
+import { useLazyQuery, useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  CheckUsernameAvailabilityDocument,
   Participant,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -33,6 +34,10 @@ function UpdateAccountInfoForm({
   const [updateParticipantProfile] = useMutation(
     UpdateParticipantProfileDocument
   )
+  const [checkUsernameAvailable] = useLazyQuery(
+    CheckUsernameAvailabilityDocument
+  )
+
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<
     boolean | undefined
   >(true)
@@ -131,6 +136,12 @@ function UpdateAccountInfoForm({
                     }
                     validateField={async () => {
                       await validateField('username')
+                    }}
+                    checkUsernameAvailable={async (name: string) => {
+                      const { data: result } = await checkUsernameAvailable({
+                        variables: { username: name },
+                      })
+                      return result?.checkUsernameAvailability ?? false
                     }}
                   />
                   <FormikTextField
