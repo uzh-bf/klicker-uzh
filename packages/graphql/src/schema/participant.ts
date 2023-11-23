@@ -1,7 +1,11 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
 import { levelFromXp } from '../lib/util.js'
-import { Achievement, ParticipantAchievementInstance } from './achievement.js'
+import type { IParticipantAchievementInstance } from './achievement.js'
+import {
+  AchievementRef,
+  ParticipantAchievementInstanceRef,
+} from './achievement.js'
 import type {
   ICourse,
   IGroupLeaderboardEntry,
@@ -80,7 +84,7 @@ export interface IParticipant extends DB.Participant {
   rank?: number
   score?: number
   isSelf?: boolean
-  achievements?: DB.ParticipantAchievementInstance[]
+  achievements?: IParticipantAchievementInstance[]
   participantGroups?: IParticipantGroup[]
   level?: number
   levelData?: ILevel
@@ -127,7 +131,7 @@ export const Participant = ParticipantRef.implement({
       nullable: true,
     }),
     achievements: t.expose('achievements', {
-      type: [ParticipantAchievementInstance],
+      type: [ParticipantAchievementInstanceRef],
       nullable: true,
     }),
 
@@ -299,7 +303,7 @@ export const ParticipantWithAchievements =
         type: ParticipantRef,
       }),
       achievements: t.expose('achievements', {
-        type: [Achievement],
+        type: [AchievementRef],
       }),
     }),
   })

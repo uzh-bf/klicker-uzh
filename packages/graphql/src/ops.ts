@@ -26,13 +26,13 @@ export type Scalars = {
 
 export type Achievement = {
   __typename?: 'Achievement';
-  descriptionDE: Scalars['String']['output'];
-  descriptionEN: Scalars['String']['output'];
+  descriptionDE?: Maybe<Scalars['String']['output']>;
+  descriptionEN?: Maybe<Scalars['String']['output']>;
   icon: Scalars['String']['output'];
   iconColor?: Maybe<Scalars['String']['output']>;
   id: Scalars['Int']['output'];
-  nameDE: Scalars['String']['output'];
-  nameEN: Scalars['String']['output'];
+  nameDE?: Maybe<Scalars['String']['output']>;
+  nameEN?: Maybe<Scalars['String']['output']>;
 };
 
 export type AvatarSettingsInput = {
@@ -2597,7 +2597,7 @@ export type GetPublicParticipantProfileQueryVariables = Exact<{
 }>;
 
 
-export type GetPublicParticipantProfileQuery = { __typename?: 'Query', publicParticipantProfile?: { __typename?: 'Participant', id: string, username: string, avatar?: string | null, avatarSettings?: any | null, isProfilePublic?: boolean | null, isSelf?: boolean | null, level?: number | null, xp: number, levelData?: { __typename?: 'Level', id: number, avatar?: string | null, name?: string | null, index: number, requiredXp: number, nextLevel?: { __typename?: 'Level', id: number, index: number, avatar?: string | null, requiredXp: number, name?: string | null } | null } | null, achievements?: Array<{ __typename?: 'ParticipantAchievementInstance', id: number, achievedAt: any, achievedCount: number, achievement: { __typename?: 'Achievement', id: number, nameDE: string, nameEN: string, descriptionDE: string, descriptionEN: string, icon: string, iconColor?: string | null } }> | null } | null };
+export type GetPublicParticipantProfileQuery = { __typename?: 'Query', publicParticipantProfile?: { __typename?: 'Participant', id: string, username: string, avatar?: string | null, avatarSettings?: any | null, isProfilePublic?: boolean | null, isSelf?: boolean | null, level?: number | null, xp: number, levelData?: { __typename?: 'Level', id: number, avatar?: string | null, name?: string | null, index: number, requiredXp: number, nextLevel?: { __typename?: 'Level', id: number, index: number, avatar?: string | null, requiredXp: number, name?: string | null } | null } | null, achievements?: Array<{ __typename?: 'ParticipantAchievementInstance', id: number, achievedAt: any, achievedCount: number, achievement: { __typename?: 'Achievement', id: number, nameDE?: string | null, nameEN?: string | null, descriptionDE?: string | null, descriptionEN?: string | null, icon: string, iconColor?: string | null } }> | null } | null };
 
 export type GetRunningSessionQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -2733,7 +2733,7 @@ export type SelfQuery = { __typename?: 'Query', self?: { __typename?: 'Participa
 export type SelfWithAchievementsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SelfWithAchievementsQuery = { __typename?: 'Query', selfWithAchievements?: { __typename?: 'ParticipantWithAchievements', participant: { __typename?: 'Participant', id: string, username: string, avatar?: string | null, avatarSettings?: any | null, xp: number, level?: number | null, levelData?: { __typename?: 'Level', id: number, index: number, name?: string | null, avatar?: string | null, requiredXp: number, nextLevel?: { __typename?: 'Level', id: number, index: number, requiredXp: number, avatar?: string | null, name?: string | null } | null } | null, achievements?: Array<{ __typename?: 'ParticipantAchievementInstance', id: number, achievedAt: any, achievedCount: number, achievement: { __typename?: 'Achievement', id: number, nameDE: string, nameEN: string, descriptionDE: string, descriptionEN: string, icon: string, iconColor?: string | null } }> | null }, achievements: Array<{ __typename?: 'Achievement', id: number, nameDE: string, nameEN: string, descriptionDE: string, descriptionEN: string, icon: string, iconColor?: string | null }> } | null };
+export type SelfWithAchievementsQuery = { __typename?: 'Query', selfWithAchievements?: { __typename?: 'ParticipantWithAchievements', participant: { __typename?: 'Participant', id: string, username: string, avatar?: string | null, avatarSettings?: any | null, xp: number, level?: number | null, levelData?: { __typename?: 'Level', id: number, index: number, name?: string | null, avatar?: string | null, requiredXp: number, nextLevel?: { __typename?: 'Level', id: number, index: number, requiredXp: number, avatar?: string | null, name?: string | null } | null } | null, achievements?: Array<{ __typename?: 'ParticipantAchievementInstance', id: number, achievedAt: any, achievedCount: number, achievement: { __typename?: 'Achievement', id: number, nameDE?: string | null, nameEN?: string | null, descriptionDE?: string | null, descriptionEN?: string | null, icon: string, iconColor?: string | null } }> | null }, achievements: Array<{ __typename?: 'Achievement', id: number, nameDE?: string | null, nameEN?: string | null, descriptionDE?: string | null, descriptionEN?: string | null, icon: string, iconColor?: string | null }> } | null };
 
 export type UserProfileQueryVariables = Exact<{ [key: string]: never; }>;
 

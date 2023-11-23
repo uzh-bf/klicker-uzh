@@ -9,6 +9,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "module": "ESNext",
-    "moduleResolution": "Bundler"
+    "moduleResolution": "node"
   }
 }

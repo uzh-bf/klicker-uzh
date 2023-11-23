@@ -15,4 +15,10 @@
     "connectionId": "uzh-bf",
     "projectKey": "uzh-bf_klicker-uzh"
   },
+  "terminal.integrated.env.osx": {
+    "PATH": "/Users/rolandschlaefli/.azurelogicapps/dependencies/DotNetSDK:${env:PATH}"
+  },
+  "omnisharp.dotNetCliPaths": [
+    "/Users/rolandschlaefli/.azurelogicapps/dependencies/DotNetSDK"
+  ],
 }
