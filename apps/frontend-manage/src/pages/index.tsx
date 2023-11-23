@@ -158,9 +158,11 @@ function SuspendedFirstLoginModal() {
             setShowGenericError(false)
             setSubmitting(true)
 
+            const trimmedUsername = values.shortname.trim()
+
             const result = await changeInitialSettings({
               variables: {
-                shortname: values.shortname,
+                shortname: trimmedUsername,
                 locale: values.locale,
               },
               refetchQueries: [GetUserQuestionsDocument],
@@ -169,7 +171,7 @@ function SuspendedFirstLoginModal() {
             if (!result) {
               setShowGenericError(true)
             } else if (
-              result.data?.changeInitialSettings?.shortname !== values.shortname
+              result.data?.changeInitialSettings?.shortname !== trimmedUsername
             ) {
               setErrors({
                 shortname: t('manage.settings.shortnameTaken'),
@@ -183,7 +185,7 @@ function SuspendedFirstLoginModal() {
         >
           {({ isValid, isSubmitting }) => (
             <Form>
-              <div className="md:mb-5 mb-1 space-y-4">
+              <div className="mb-1 space-y-4 md:mb-5">
                 <FormikTextField
                   label={t('shared.generic.shortname')}
                   name="shortname"
@@ -211,7 +213,7 @@ function SuspendedFirstLoginModal() {
                 {t('manage.firstLogin.relevantLinks')}
               </div>
 
-              <div className="mb-4 grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4 mb-4">
                 <Link
                   href="https://www.klicker.uzh.ch/getting_started/welcome"
                   target="_blank"
@@ -249,7 +251,7 @@ function SuspendedFirstLoginModal() {
               <Button
                 fluid
                 className={{
-                  root: 'mt-4 w-32 justify-center float-right bg-primary-80 text-white',
+                  root: 'mt-4 w-32 justify-center float-right bg-primary-80 text-white disabled:opacity-50 disabled:cursor-not-allowed',
                 }}
                 disabled={!isValid || isSubmitting}
                 type="submit"
