@@ -9,10 +9,10 @@ import isEmail from 'validator/lib/isEmail'
 import { Context, ContextWithUser } from '../lib/context'
 
 interface UpdateParticipantProfileArgs {
-  password: string | null
+  password?: string | null
   username: string | null
   email: string | null
-  isProfilePublic: boolean | null
+  isProfilePublic?: boolean | null
 }
 
 export async function updateParticipantProfile(

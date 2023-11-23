@@ -84,12 +84,22 @@ function UpdateAccountInfoForm({
       onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
 
+        if (
+          typeof values.username === 'undefined' ||
+          typeof values.email === 'undefined' ||
+          values.email === null
+        ) {
+          setShowError(true)
+          return
+        }
+
         const result = await updateParticipantProfile({
           variables: {
             isProfilePublic: values.isProfilePublic,
-            password: values.password.trim(),
-            username: values.username?.trim() ?? undefined,
-            email: values.email?.trim() ?? undefined,
+            password:
+              values.password === '' ? undefined : values.password.trim(),
+            username: values.username.trim(),
+            email: values.email,
           },
         })
 

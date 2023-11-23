@@ -1,8 +1,8 @@
 mutation UpdateParticipantProfile(
   $username: String!
-  $password: String!
+  $password: String
   $email: String!
-  $isProfilePublic: Boolean!
+  $isProfilePublic: Boolean
 ) {
   updateParticipantProfile(
     username: $username

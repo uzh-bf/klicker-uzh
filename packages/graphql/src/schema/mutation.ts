@@ -317,13 +317,13 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Participant,
         args: {
-          isProfilePublic: t.arg.boolean({ required: true }),
+          isProfilePublic: t.arg.boolean({ required: false }),
           email: t.arg.string({ required: true, validate: { email: true } }),
           username: t.arg.string({
             required: true,
             validate: { minLength: 5, maxLength: 15 },
           }),
-          password: t.arg.string({ required: true }),
+          password: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return ParticipantService.updateParticipantProfile(args, ctx)
