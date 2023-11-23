@@ -88,8 +88,8 @@ function UpdateAccountInfoForm({
           variables: {
             isProfilePublic: values.isProfilePublic,
             password: values.password.trim(),
-            username: values.username?.trim() || '',
-            email: values.email?.trim() || '',
+            username: values.username?.trim() ?? undefined,
+            email: values.email?.trim() ?? undefined,
           },
         })
 
