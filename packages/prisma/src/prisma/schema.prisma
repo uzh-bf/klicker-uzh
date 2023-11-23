@@ -21,6 +21,12 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
+model Migration {
+  id String @id
+
+  createdAt DateTime @default(now())
+}
+
 enum PublicationStatus {
   DRAFT
   // REVIEW
@@ -221,7 +227,6 @@ enum ElementDisplayMode {
 model Element {
   id Int @id @default(autoincrement())
 
-  // TODO: implement the logic for this
   version Int @default(1) // used to track question versions, incremented on each update
 
   originalId String? @unique

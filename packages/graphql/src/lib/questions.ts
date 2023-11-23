@@ -1,16 +1,16 @@
 import { Element, ElementType } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import {
-  AllQuestionTypeData,
-  BaseQuestionDataKeys,
-  ChoicesQuestionData,
-  FreeTextQuestionData,
-  NumericalQuestionData,
+  AllElementTypeData,
+  BaseElementDataKeys,
+  ChoicesElementData,
+  FreeTextElementData,
+  NumericalElementData,
   QuestionResults,
   QuestionResultsChoices,
 } from '../types/app'
 
-const RELEVANT_KEYS: BaseQuestionDataKeys = [
+const RELEVANT_KEYS: BaseElementDataKeys = [
   'id',
   'name',
   'content',
@@ -33,26 +33,32 @@ export function processQuestionData(question: Element) {
       // TODO: remove the extra keys, once the questionData options are compatible
       return {
         ...extractRelevantKeys(question),
+        id: `${question.id}-v${question.version}`,
+        questionId: question.id,
         displayMode: question.options.displayMode,
         hasSampleSolution: question.options.hasSampleSolution,
         hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
-      } as ChoicesQuestionData
+      } as ChoicesElementData
 
     case ElementType.NUMERICAL:
       // TODO: remove the extra keys, once the questionData options are compatible
       return {
         ...extractRelevantKeys(question),
+        id: `${question.id}-v${question.version}`,
+        questionId: question.id,
         hasSampleSolution: question.options.hasSampleSolution,
         hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
-      } as NumericalQuestionData
+      } as NumericalElementData
 
     case ElementType.FREE_TEXT:
       // TODO: remove the extra keys, once the questionData options are compatible
       return {
         ...extractRelevantKeys(question),
+        id: `${question.id}-v${question.version}`,
+        questionId: question.id,
         hasSampleSolution: question.options.hasSampleSolution,
         hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
-      } as FreeTextQuestionData
+      } as FreeTextElementData
 
     default:
       throw new Error('Unknown question type')
@@ -60,7 +66,7 @@ export function processQuestionData(question: Element) {
 }
 
 export function prepareInitialInstanceResults(
-  questionData: AllQuestionTypeData
+  questionData: AllElementTypeData
 ): QuestionResults {
   switch (questionData.type) {
     case ElementType.SC:
