@@ -15,6 +15,7 @@ env:
 
 jobs:
   cypress-run:
+    runs-on: self-hosted
     services:
       postgres:
         image: postgres:15
@@ -47,12 +48,10 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
-
-    runs-on: ubuntu-latest
     # strategy:
     #   fail-fast: false # https://github.com/cypress-io/github-action/issues/48
     #   matrix:
-    #     containers: [1, 2] # Uses 2 parallel instances
+    #     containers: [1, 2, 3, 4] # Run parallel instances
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
 
@@ -110,15 +109,16 @@ jobs:
         # run: pnpm run start:test
 
       - name: Cypress run
-        uses: cypress-io/github-action@v5
+        uses: cypress-io/github-action@v6
         timeout-minutes: 20
         with:
           install: false
           wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
-          wait-on-timeout: 480
+          wait-on-timeout: 1000
           record: true
-          browser: chrome
+          browser: electron
           working-directory: cypress
+          # parallel: true
         env:
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
