@@ -110,7 +110,7 @@ function Settings() {
                     className={{
                       root: 'w-36',
                       label: 'hidden',
-                      input: 'bg-white h-9',
+                      input: 'bg-white h-8',
                       icon: 'bg-transparent',
                     }}
                     name="shortname"

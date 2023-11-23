@@ -200,7 +200,11 @@ function SuspendedFirstLoginModal() {
             <Form>
               <div className="mb-1 space-y-4 md:mb-5">
                 <DebouncedUsernameField
-                  className={{ root: 'w-[250px]' }}
+                  className={{
+                    root: 'w-[250px]',
+                    input: 'bg-white',
+                    icon: 'bg-transparent',
+                  }}
                   name="shortname"
                   label={t('shared.generic.shortname')}
                   labelType="normal"
