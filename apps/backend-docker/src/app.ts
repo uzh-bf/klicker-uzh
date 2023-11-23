@@ -12,6 +12,10 @@ import { createYoga } from 'graphql-yoga'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
 
+declare namespace global {
+  let __coverage__: any
+}
+
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const armor = new EnvelopArmor({
     maxDepth: {
@@ -23,11 +27,11 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const app = express()
 
   /* istanbul ignore next */
-  // if (global.__coverage__) {
-  //   try {
-  //     require('@cypress/code-coverage/middleware/express')(app)
-  //   } catch (e) {}
-  // }
+  if (global.__coverage__) {
+    try {
+      require('@cypress/code-coverage/middleware/express')(app)
+    } catch (e) {}
+  }
 
   app.use(
     cors({
