@@ -2,7 +2,7 @@ import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
 import { FormikTextField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 
 interface DebouncedUsernameFieldProps {
   name: string

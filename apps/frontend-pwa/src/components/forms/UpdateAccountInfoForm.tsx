@@ -6,6 +6,7 @@ import {
   Participant,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import {
   Button,
   FormikSwitchField,
@@ -17,7 +18,6 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as yup from 'yup'
-import DebouncedUsernameField from './DebouncedUsernameField'
 
 interface UpdateAccountInfoFormProps {
   user: Partial<Participant>
