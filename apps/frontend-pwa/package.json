@@ -73,7 +73,7 @@
     "prettier-plugin-tailwindcss": "0.4.1",
     "tailwindcss": "3.3.3",
     "tailwindcss-radix": "2.8.0",
-    "typescript": "5.0.4",
+    "typescript": "5.3.2",
     "web-push": "3.6.1"
   },
   "scripts": {

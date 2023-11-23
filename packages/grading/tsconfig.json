@@ -1,7 +1,10 @@
 {
   "extends": "@tsconfig/node20/tsconfig.json",
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "compilerOptions": {
-    "jsx": "react"
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
   }
 }
