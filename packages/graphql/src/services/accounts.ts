@@ -4,8 +4,6 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import isEmail from 'validator/lib/isEmail'
-import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -25,26 +23,22 @@ const COOKIE_SETTINGS: CookieOptions = {
 }
 
 interface LoginUserTokenArgs {
-  email: string
+  shortname: string
   token: string
 }
 
 export async function loginUserToken(
-  { email, token }: LoginUserTokenArgs,
+  { shortname, token }: LoginUserTokenArgs,
   ctx: Context
 ) {
-  if (!isEmail(email)) return null
-
-  const normalizedEmail = normalizeEmail(email) as string
-
   const user = await ctx.prisma.user.findUnique({
-    where: { email: normalizedEmail },
+    where: { shortname },
   })
 
   if (!user) {
     await sendTeamsNotifications(
       'graphql/loginUserToken',
-      `LOGIN FAILED: User with email ${normalizedEmail} not found.`
+      `LOGIN FAILED: User with shortname ${shortname} not found.`
     )
     return null
   }

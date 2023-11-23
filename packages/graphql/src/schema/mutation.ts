@@ -141,7 +141,7 @@ export const Mutation = builder.mutationType({
       loginUserToken: t.id({
         nullable: true,
         args: {
-          email: t.arg.string({ required: true, validate: { email: true } }),
+          shortname: t.arg.string({ required: true }),
           token: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {

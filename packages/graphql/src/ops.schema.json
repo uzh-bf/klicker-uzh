@@ -8032,7 +8032,7 @@
             "description": null,
             "args": [
               {
-                "name": "email",
+                "name": "shortname",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
