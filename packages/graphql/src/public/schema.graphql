@@ -550,7 +550,7 @@ type Mutation {
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
   loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
-  loginUserToken(email: String!, token: String!): ID
+  loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
   manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element

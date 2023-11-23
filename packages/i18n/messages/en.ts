@@ -1172,7 +1172,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.',
       installIOS:
         "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live sessions directly.",
-      emailRequired: 'Please enter a valid email address',
+      shortnameRequired: 'Please enter your shortname.',
       tokenRequired:
         'Enter a valid token. Please note the validity displayed during token generation.',
       checkToken:
