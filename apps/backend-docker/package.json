@@ -74,7 +74,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "nyc --silent npm start",
+    "--start:test": "nyc --silent npm start",
+    "start:test": "npm start",
     "exec:prod": "doppler run --config prd -- ts-node --esm"
   },
   "engines": {
