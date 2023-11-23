@@ -74,8 +74,9 @@ function DebouncedUsernameField({
             : '',
       }}
       onChange={async (username: string) => {
-        await helpers.setValue(username)
-        debouncedUsernameCheck({ username })
+        const trimmedUsername = username.trim()
+        await helpers.setValue(trimmedUsername)
+        debouncedUsernameCheck({ username: trimmedUsername })
       }}
       icon={
         typeof valid === 'undefined'

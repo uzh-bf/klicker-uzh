@@ -57,9 +57,10 @@ function Settings() {
               initialValues={{ shortname: user?.userProfile?.shortname || '' }}
               onSubmit={async (values, { setErrors, setSubmitting }) => {
                 setSubmitting(true)
+                const trimmedShortname = values.shortname.trim()
 
                 const result = await changeShortname({
-                  variables: { shortname: values.shortname },
+                  variables: { shortname: trimmedShortname },
                 })
 
                 if (!result) {
@@ -67,7 +68,7 @@ function Settings() {
                     shortname: t('shared.generic.systemError'),
                   })
                 } else if (
-                  result.data?.changeShortname?.shortname !== values.shortname
+                  result.data?.changeShortname?.shortname !== trimmedShortname
                 ) {
                   setErrors({
                     shortname: t('manage.settings.shortnameTaken'),
@@ -89,7 +90,7 @@ function Settings() {
               })}
             >
               {({ isSubmitting, isValid, errors }) => (
-                <Form className="flex flex-row items-center gap-1 text-black font-normal">
+                <Form className="flex flex-row items-center gap-1 font-normal text-black">
                   {Object.keys(errors).length > 0 && (
                     <Tooltip
                       tooltip={Object.values(errors)[0]}
@@ -98,7 +99,7 @@ function Settings() {
                     >
                       <FontAwesomeIcon
                         icon={faCircleExclamation}
-                        className="text-red-600 mr-1"
+                        className="mr-1 text-red-600"
                       />
                     </Tooltip>
                   )}
@@ -123,7 +124,7 @@ function Settings() {
               )}
             </Formik>
           ) : (
-            <div className="italic font-normal text-black flex flex-row items-center gap-5">
+            <div className="flex flex-row items-center gap-5 italic font-normal text-black">
               <div>{user?.userProfile?.shortname}</div>
               <FontAwesomeIcon
                 icon={faPencil}
