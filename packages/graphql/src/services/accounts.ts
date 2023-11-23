@@ -402,7 +402,7 @@ export async function getUserLogins(ctx: ContextWithUser) {
   return logins
 }
 
-export async function checkUsernameAvailability(
+export async function checkParticipantNameAvailable(
   { username }: { username: string },
   ctx: Context
 ) {

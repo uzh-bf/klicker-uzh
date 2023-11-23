@@ -75,7 +75,7 @@
    "UpdateTagOrdering": "8d865d09b3ef6613f8a4b2ab1c679442f5920e70c89eb9c9456b68f922f499a5",
    "UpvoteFeedback": "1bb1b9c4d54dd21359cb8b10323958fe15776d603b4ab9d54de7c6bb779cad43",
    "VoteFeedbackResponse": "eca425e3d49e7898281d10de07a8b54068e6f4ce77dc5049bd9f2386395fe459",
-   "CheckUsernameAvailability": "bcce932be95716b62409261aafdb5551e5e076df0024720a2677e414337a79d7",
+   "CheckParticipantNameAvailable": "c5183b985742c2d90b0f0f45d8b18c402cd8535add2f8b0a9194ef50799a1fb7",
    "CheckValidCoursePin": "2126ef90ecc0ffc980dd92bbd62dfa48387a97d210d5edf4f6a1116a41fb0483",
    "GetBasicCourseInformation": "14169116abd9278adb08977b9c153403e6065ab0c3d02a6beb38017e1c8b19d6",
    "GetBookmarkedQuestions": "fb0e763d95d48e4c90505f63a863787615a932b07ee97849bbbeb6ae00b9d358",

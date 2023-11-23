@@ -1,7 +1,7 @@
 import { useLazyQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CheckUsernameAvailabilityDocument } from '@klicker-uzh/graphql/dist/ops'
+import { CheckParticipantNameAvailableDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import {
@@ -33,8 +33,8 @@ function CreateAccountForm({
   handleSubmit,
 }: Props) {
   const t = useTranslations()
-  const [checkUsernameAvailable] = useLazyQuery(
-    CheckUsernameAvailabilityDocument
+  const [checkParticipantNameAvailable] = useLazyQuery(
+    CheckParticipantNameAvailableDocument
   )
 
   const createAccountSchema = yup.object({
@@ -163,10 +163,11 @@ function CreateAccountForm({
                     await validateField('username')
                   }}
                   checkUsernameAvailable={async (name: string) => {
-                    const { data: result } = await checkUsernameAvailable({
-                      variables: { username: name },
-                    })
-                    return result?.checkUsernameAvailability ?? false
+                    const { data: result } =
+                      await checkParticipantNameAvailable({
+                        variables: { username: name },
+                      })
+                    return result?.checkParticipantNameAvailable ?? false
                   }}
                 />
                 <FormikTextField

@@ -11528,7 +11528,7 @@
             "deprecationReason": null
           },
           {
-            "name": "checkUsernameAvailability",
+            "name": "checkParticipantNameAvailable",
             "description": null,
             "args": [
               {

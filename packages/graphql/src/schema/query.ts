@@ -498,14 +498,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkUsernameAvailability: t.field({
+      checkParticipantNameAvailable: t.field({
         nullable: false,
         type: 'Boolean',
         args: {
           username: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.checkUsernameAvailability(args, ctx)
+          return AccountService.checkParticipantNameAvailable(args, ctx)
         },
       }),
 
