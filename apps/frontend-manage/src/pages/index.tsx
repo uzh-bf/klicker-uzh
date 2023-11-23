@@ -1,11 +1,18 @@
-import { useMutation, useQuery, useSuspenseQuery } from '@apollo/client'
+import {
+  useLazyQuery,
+  useMutation,
+  useQuery,
+  useSuspenseQuery,
+} from '@apollo/client'
 import {
   ChangeInitialSettingsDocument,
+  CheckShortnameAvailableDocument,
   Element,
   GetUserQuestionsDocument,
   ToggleIsArchivedDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
 import { Suspense, useEffect, useMemo, useState } from 'react'
@@ -30,7 +37,6 @@ import {
   Button,
   Checkbox,
   FormikSelectField,
-  FormikTextField,
   H1,
   Modal,
   Select,
@@ -109,10 +115,17 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
 function SuspendedFirstLoginModal() {
   const [firstLogin, setFirstLogin] = useState(false)
   const [showGenericError, setShowGenericError] = useState(false)
+  const [isShortnameAvailable, setIsShortnameAvailable] = useState<
+    boolean | undefined
+  >(true)
 
   const { data } = useSuspenseQuery(UserProfileDocument)
   const [changeInitialSettings] = useMutation(ChangeInitialSettingsDocument)
   const t = useTranslations()
+
+  const [checkShortnameAvailable] = useLazyQuery(
+    CheckShortnameAvailableDocument
+  )
 
   useEffect(() => {
     if (data?.userProfile?.firstLogin) {
@@ -183,13 +196,31 @@ function SuspendedFirstLoginModal() {
             setSubmitting(false)
           }}
         >
-          {({ isValid, isSubmitting }) => (
+          {({ isValid, isSubmitting, validateField }) => (
             <Form>
               <div className="mb-1 space-y-4 md:mb-5">
-                <FormikTextField
-                  label={t('shared.generic.shortname')}
+                <DebouncedUsernameField
+                  className={{
+                    root: 'w-[250px]',
+                    input: 'bg-white',
+                    icon: 'bg-transparent',
+                  }}
                   name="shortname"
-                  className={{ root: 'w-[250px]' }}
+                  label={t('shared.generic.shortname')}
+                  labelType="normal"
+                  valid={isShortnameAvailable}
+                  setValid={(shortnameAvailable: boolean | undefined) =>
+                    setIsShortnameAvailable(shortnameAvailable)
+                  }
+                  validateField={async () => {
+                    await validateField('shortname')
+                  }}
+                  checkUsernameAvailable={async (name: string) => {
+                    const { data: result } = await checkShortnameAvailable({
+                      variables: { shortname: name },
+                    })
+                    return result?.checkShortnameAvailable ?? false
+                  }}
                   required
                 />
                 <FormikSelectField

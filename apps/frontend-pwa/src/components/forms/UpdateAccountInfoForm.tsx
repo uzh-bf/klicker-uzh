@@ -1,10 +1,12 @@
-import { useMutation } from '@apollo/client'
+import { useLazyQuery, useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  CheckParticipantNameAvailableDocument,
   Participant,
   UpdateParticipantProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import {
   Button,
   FormikSwitchField,
@@ -16,7 +18,6 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as yup from 'yup'
-import DebouncedUsernameField from './DebouncedUsernameField'
 
 interface UpdateAccountInfoFormProps {
   user: Partial<Participant>
@@ -33,6 +34,10 @@ function UpdateAccountInfoForm({
   const [updateParticipantProfile] = useMutation(
     UpdateParticipantProfileDocument
   )
+  const [checkParticipantNameAvailable] = useLazyQuery(
+    CheckParticipantNameAvailableDocument
+  )
+
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<
     boolean | undefined
   >(true)
@@ -141,6 +146,13 @@ function UpdateAccountInfoForm({
                     }
                     validateField={async () => {
                       await validateField('username')
+                    }}
+                    checkUsernameAvailable={async (name: string) => {
+                      const { data: result } =
+                        await checkParticipantNameAvailable({
+                          variables: { username: name },
+                        })
+                      return result?.checkParticipantNameAvailable ?? false
                     }}
                   />
                   <FormikTextField
