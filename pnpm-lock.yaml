@@ -189,9 +189,9 @@ importers:
       cors:
         specifier: 2.8.5
         version: 2.8.5
-      crypto-es:
-        specifier: 2.1.0
-        version: 2.1.0
+      crypto-js:
+        specifier: 4.2.0
+        version: 4.2.0
       express:
         specifier: 4.18.2
         version: 4.18.2
@@ -14796,6 +14796,10 @@ packages:
 
   /crypto-es@2.1.0:
     resolution: {integrity: sha512-C5Dbuv4QTPGuloy5c5Vv/FZHtmK+lobLAypFfuRaBbwCsk3qbCWWESCH3MUcBsrgXloRNMrzwUAiPg4U6+IaKA==}
+    dev: false
+
+  /crypto-js@4.2.0:
+    resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
     dev: false
 
   /crypto-random-string@2.0.0:

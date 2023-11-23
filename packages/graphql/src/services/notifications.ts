@@ -5,7 +5,7 @@ import {
   PushSubscription,
 } from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
-import webpush from 'web-push'
+// import webpush from 'web-push'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { formatDate } from '../lib/util.js'
 
@@ -97,11 +97,11 @@ export async function sendPushNotifications(ctx: Context) {
     throw new GraphQLError('VAPID keys or support email not available.')
   }
 
-  webpush.setVapidDetails(
-    `mailto:${process.env.NOTIFICATION_SUPPORT_MAIL as String}`,
-    process.env.VAPID_PUBLIC_KEY as string,
-    process.env.VAPID_PRIVATE_KEY as string
-  )
+  // webpush.setVapidDetails(
+  //   `mailto:${process.env.NOTIFICATION_SUPPORT_MAIL as String}`,
+  //   process.env.VAPID_PUBLIC_KEY as string,
+  //   process.env.VAPID_PRIVATE_KEY as string
+  // )
 
   const microSessions = await ctx.prisma.microSession.findMany({
     where: {
@@ -167,46 +167,46 @@ async function sendPushNotificationsToSubscribers(
   for (let sub of microSession.course?.subscriptions ?? []) {
     try {
       const formattedDate = formatDate(microSession.scheduledEndAt)
-      await webpush.sendNotification(
-        {
-          endpoint: sub.endpoint,
-          keys: {
-            auth: sub.auth,
-            p256dh: sub.p256dh,
-          },
-        },
-        JSON.stringify({
-          message: `Microlearning ${microSession.displayName} for ${
-            microSession.course?.displayName ?? ''
-          } is available until ${formattedDate.date} at ${formattedDate.time}.`,
-          title: `KlickerUZH - New Microlearning available for the course ${
-            microSession.course?.name ?? ''
-          }`,
-        })
-      )
+      // await webpush.sendNotification(
+      //   {
+      //     endpoint: sub.endpoint,
+      //     keys: {
+      //       auth: sub.auth,
+      //       p256dh: sub.p256dh,
+      //     },
+      //   },
+      //   JSON.stringify({
+      //     message: `Microlearning ${microSession.displayName} for ${
+      //       microSession.course?.displayName ?? ''
+      //     } is available until ${formattedDate.date} at ${formattedDate.time}.`,
+      //     title: `KlickerUZH - New Microlearning available for the course ${
+      //       microSession.course?.name ?? ''
+      //     }`,
+      //   })
+      // )
     } catch (error) {
       console.error(
         'An error occured while trying to send the push notification: ',
         error
       )
-      if (error instanceof webpush.WebPushError && error.statusCode === 410) {
-        try {
-          // subscription has expired or is no longer valid
-          // remove it from the database
-          await ctx.prisma.pushSubscription.delete({
-            where: {
-              id: sub.id,
-            },
-          })
-        } catch (error) {
-          console.error(
-            'An error occured while trying to remove the expired subscription from the database: ',
-            error
-          )
-        }
-      } else {
-        throw error
-      }
+      // if (error instanceof webpush.WebPushError && error.statusCode === 410) {
+      //   try {
+      //     // subscription has expired or is no longer valid
+      //     // remove it from the database
+      //     await ctx.prisma.pushSubscription.delete({
+      //       where: {
+      //         id: sub.id,
+      //       },
+      //     })
+      //   } catch (error) {
+      //     console.error(
+      //       'An error occured while trying to remove the expired subscription from the database: ',
+      //       error
+      //     )
+      //   }
+      // } else {
+      //   throw error
+      // }
     }
   }
 }

@@ -2,7 +2,7 @@
   "name": "@klicker-uzh/backend-docker",
   "version": "3.1.0-beta.9",
   "license": "AGPL-3.0",
-  "main": "dist/index.mjs",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "files": [
@@ -23,7 +23,7 @@
     "@sentry/tracing": "7.52.1",
     "cookie-parser": "1.4.6",
     "cors": "2.8.5",
-    "crypto-es": "2.1.0",
+    "crypto-js": "4.2.0",
     "express": "4.18.2",
     "graphql": "16.7.1",
     "graphql-ws": "5.13.1",
