@@ -16,6 +16,7 @@ export default function App({
   return (
     <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
       <NextIntlClientProvider
+        timeZone="Europe/Zurich"
         messages={pageProps.messages}
         locale={locale}
         onError={onError}

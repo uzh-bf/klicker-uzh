@@ -34,6 +34,7 @@ function App({ Component, pageProps }: AppProps) {
     <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
       <ApolloProvider client={apolloClient}>
         <NextIntlClientProvider
+          timeZone="Europe/Zurich"
           messages={pageProps.messages}
           locale={locale}
           onError={onError}
