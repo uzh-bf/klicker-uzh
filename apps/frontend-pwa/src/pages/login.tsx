@@ -38,7 +38,10 @@ function Login() {
     setError('')
     try {
       const result: FetchResult = await loginParticipant({
-        variables: { username: values.username, password: values.password },
+        variables: {
+          username: values.username.trim(),
+          password: values.password.trim(),
+        },
         refetchQueries: [SelfDocument],
         awaitRefetchQueries: true,
       })

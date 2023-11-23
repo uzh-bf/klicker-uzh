@@ -2,3 +2,4 @@ node_modules/
 .turbo/
 dist/
 src/client/
+.nyc_output/

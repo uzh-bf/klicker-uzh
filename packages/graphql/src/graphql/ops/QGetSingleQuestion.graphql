@@ -8,6 +8,9 @@ query GetSingleQuestion($id: Int!) {
     pointsMultiplier
 
     questionData {
+      id
+      questionId
+
       ... on ChoicesQuestionData {
         options {
           displayMode

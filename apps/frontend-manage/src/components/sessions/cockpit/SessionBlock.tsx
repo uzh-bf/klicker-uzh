@@ -89,7 +89,7 @@ function SessionBlock({
       {block.instances?.map((instance: QuestionInstance) => (
         <div key={instance.id}>
           <Link
-            href={`/questions/${instance.questionData.id}`}
+            href={`/questions/${instance.questionData.questionId}`}
             className="text-sm sm:hover:text-slate-700"
             target="_blank"
           >
