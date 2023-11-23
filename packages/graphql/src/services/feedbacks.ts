@@ -109,6 +109,7 @@ export async function respondToFeedback(
 
   if (!feedback || feedback.session.ownerId !== ctx.user.sub) return null
 
+  const feedbackPublished = feedback.isPublished
   const updatedFeedback = await ctx.prisma.feedback.update({
     where: { id },
     data: {
@@ -127,7 +128,12 @@ export async function respondToFeedback(
     },
   })
 
-  ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
+  if (!feedbackPublished) {
+    ctx.pubSub.publish('feedbackAdded', updatedFeedback)
+    ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
+  } else {
+    ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
+  }
 
   ctx.emitter.emit('invalidate', {
     typename: 'Session',
