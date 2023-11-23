@@ -225,7 +225,7 @@ importers:
     devDependencies:
       '@cypress/code-coverage':
         specifier: 3.12.1
-        version: 3.12.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.2.0)(webpack@5.83.1)
+        version: 3.12.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.6.0)(webpack@5.83.1)
       '@tsconfig/node18':
         specifier: ^2.0.0
         version: 2.0.1
@@ -1437,10 +1437,10 @@ importers:
     devDependencies:
       '@cypress/code-coverage':
         specifier: 3.12.1
-        version: 3.12.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.2.0)(webpack@5.83.1)
+        version: 3.12.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.6.0)(webpack@5.83.1)
       '@testing-library/cypress':
         specifier: 10.0.1
-        version: 10.0.1(cypress@13.2.0)
+        version: 10.0.1(cypress@13.6.0)
       '@types/jsonwebtoken':
         specifier: ^8.0.0
         version: 8.5.9
@@ -1448,8 +1448,8 @@ importers:
         specifier: ^18.17.4
         version: 18.17.4
       cypress:
-        specifier: 13.2.0
-        version: 13.2.0
+        specifier: 13.6.0
+        version: 13.6.0
       jsonwebtoken:
         specifier: 8.5.1
         version: 8.5.1
@@ -4957,7 +4957,7 @@ packages:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  /@cypress/code-coverage@3.12.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.2.0)(webpack@5.83.1):
+  /@cypress/code-coverage@3.12.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.6.0)(webpack@5.83.1):
     resolution: {integrity: sha512-4gSVkgcTo8NSWrOwLO0NxyvD2apIZFM/2k9sxdmP3eR3ko8tZVYrWfTdfxSXLDSkNnzVh+oXv7utaOLn+yemUg==}
     peerDependencies:
       '@babel/core': ^7.0.1
@@ -4971,7 +4971,7 @@ packages:
       '@cypress/webpack-preprocessor': 5.17.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(webpack@5.83.1)
       babel-loader: 9.1.2(@babel/core@7.21.8)(webpack@5.83.1)
       chalk: 4.1.2
-      cypress: 13.2.0
+      cypress: 13.6.0
       dayjs: 1.11.9
       debug: 4.3.4(supports-color@8.1.1)
       execa: 4.1.0
@@ -10454,7 +10454,7 @@ packages:
       tailwindcss: 3.3.3(ts-node@10.9.1)
     dev: true
 
-  /@testing-library/cypress@10.0.1(cypress@13.2.0):
+  /@testing-library/cypress@10.0.1(cypress@13.6.0):
     resolution: {integrity: sha512-e8uswjTZIBhaIXjzEcrQQ8nHRWHgZH7XBxKuIWxZ/T7FxfWhCR48nFhUX5nfPizjVOKSThEfOSv67jquc1ASkw==}
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
@@ -10462,7 +10462,7 @@ packages:
     dependencies:
       '@babel/runtime': 7.22.11
       '@testing-library/dom': 9.3.1
-      cypress: 13.2.0
+      cypress: 13.6.0
     dev: true
 
   /@testing-library/dom@9.3.1:
@@ -14556,15 +14556,15 @@ packages:
   /csstype@3.1.2:
     resolution: {integrity: sha512-I7K1Uu0MBPzaFKg4nI5Q7Vs2t+3gWWW648spaF+Rg7pI9ds18Ugn+lvg4SHczUdKlHI5LWBXyqfS8+DufyBsgQ==}
 
-  /cypress@13.2.0:
-    resolution: {integrity: sha512-AvDQxBydE771GTq0TR4ZUBvv9m9ffXuB/ueEtpDF/6gOcvFR96amgwSJP16Yhqw6VhmwqspT5nAGzoxxB+D89g==}
+  /cypress@13.6.0:
+    resolution: {integrity: sha512-quIsnFmtj4dBUEJYU4OH0H12bABJpSujvWexC24Ju1gTlKMJbeT6tTO0vh7WNfiBPPjoIXLN+OUqVtiKFs6SGw==}
     engines: {node: ^16.0.0 || ^18.0.0 || >=20.0.0}
     hasBin: true
     requiresBuild: true
     dependencies:
       '@cypress/request': 3.0.0
       '@cypress/xvfb': 1.2.4(supports-color@8.1.1)
-      '@types/node': 18.17.14
+      '@types/node': 18.18.7
       '@types/sinonjs__fake-timers': 8.1.1
       '@types/sizzle': 2.3.3
       arch: 2.2.0
