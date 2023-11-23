@@ -87,7 +87,7 @@ function UpdateAccountInfoForm({
         const result = await updateParticipantProfile({
           variables: {
             isProfilePublic: values.isProfilePublic,
-            password: values.password,
+            password: values.password.trim(),
             username: values.username?.trim() || '',
             email: values.email?.trim() || '',
           },

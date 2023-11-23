@@ -39,7 +39,7 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
             variables: {
               email: values.email.trim(),
               username: values.username.trim(),
-              password: values.password,
+              password: values.password.trim(),
               isProfilePublic: values.isProfilePublic,
               signedLtiData,
             },
