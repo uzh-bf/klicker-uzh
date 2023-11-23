@@ -15,6 +15,7 @@ env:
 
 jobs:
   cypress-run:
+    runs-on: self-hosted
     services:
       postgres:
         image: postgres:15
