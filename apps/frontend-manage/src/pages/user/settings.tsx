@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   faCircleExclamation,
@@ -8,17 +8,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeShortnameDocument,
   ChangeUserLocaleDocument,
+  CheckShortnameAvailableDocument,
   LocaleType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import {
-  Button,
-  FormikTextField,
-  H1,
-  Select,
-  Tooltip,
-} from '@uzh-bf/design-system'
+import { Button, H1, Select, Tooltip } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -35,9 +31,16 @@ function Settings() {
   const router = useRouter()
   const { pathname, asPath, query } = router
 
+  const [isShortnameAvailable, setIsShortnameAvailable] = useState<
+    boolean | undefined
+  >(true)
+
   const { data: user } = useQuery(UserProfileDocument)
   const [changeUserLocale] = useMutation(ChangeUserLocaleDocument)
   const [changeShortname] = useMutation(ChangeShortnameDocument)
+  const [checkShortnameAvailable] = useLazyQuery(
+    CheckShortnameAvailableDocument
+  )
 
   const [editShortname, setEditShortname] = useState(false)
 
@@ -57,9 +60,10 @@ function Settings() {
               initialValues={{ shortname: user?.userProfile?.shortname || '' }}
               onSubmit={async (values, { setErrors, setSubmitting }) => {
                 setSubmitting(true)
+                const trimmedShortname = values.shortname.trim()
 
                 const result = await changeShortname({
-                  variables: { shortname: values.shortname },
+                  variables: { shortname: trimmedShortname },
                 })
 
                 if (!result) {
@@ -67,7 +71,7 @@ function Settings() {
                     shortname: t('shared.generic.systemError'),
                   })
                 } else if (
-                  result.data?.changeShortname?.shortname !== values.shortname
+                  result.data?.changeShortname?.shortname !== trimmedShortname
                 ) {
                   setErrors({
                     shortname: t('manage.settings.shortnameTaken'),
@@ -88,8 +92,8 @@ function Settings() {
                   ),
               })}
             >
-              {({ isSubmitting, isValid, errors }) => (
-                <Form className="flex flex-row items-center gap-1 text-black font-normal">
+              {({ isSubmitting, isValid, errors, validateField }) => (
+                <Form className="flex flex-row items-center gap-1 font-normal text-black">
                   {Object.keys(errors).length > 0 && (
                     <Tooltip
                       tooltip={Object.values(errors)[0]}
@@ -98,16 +102,34 @@ function Settings() {
                     >
                       <FontAwesomeIcon
                         icon={faCircleExclamation}
-                        className="text-red-600 mr-1"
+                        className="mr-1 text-red-600"
                       />
                     </Tooltip>
                   )}
-                  <FormikTextField
-                    name="shortname"
+                  <DebouncedUsernameField
                     className={{
-                      field: 'w-36',
+                      root: 'w-36',
+                      label: 'hidden',
                       input: 'bg-white h-8',
+                      icon: 'bg-transparent',
                     }}
+                    name="shortname"
+                    label={t('shared.generic.shortname')}
+                    labelType="normal"
+                    valid={isShortnameAvailable}
+                    setValid={(shortnameAvailable: boolean | undefined) =>
+                      setIsShortnameAvailable(shortnameAvailable)
+                    }
+                    validateField={async () => {
+                      await validateField('shortname')
+                    }}
+                    checkUsernameAvailable={async (name: string) => {
+                      const { data: result } = await checkShortnameAvailable({
+                        variables: { shortname: name },
+                      })
+                      return result?.checkShortnameAvailable ?? false
+                    }}
+                    required
                     hideError
                   />
                   <Button
@@ -123,7 +145,7 @@ function Settings() {
               )}
             </Formik>
           ) : (
-            <div className="italic font-normal text-black flex flex-row items-center gap-5">
+            <div className="flex flex-row items-center gap-5 italic font-normal text-black">
               <div>{user?.userProfile?.shortname}</div>
               <FontAwesomeIcon
                 icon={faPencil}

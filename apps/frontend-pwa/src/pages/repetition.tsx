@@ -1,10 +1,6 @@
 import { useQuery } from '@apollo/client'
-import {
-  GetLearningElementsDocument,
-  GetPracticeQuizzesDocument,
-  LearningElement,
-  PracticeQuiz,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetPracticeQuizListDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -14,40 +10,43 @@ import CourseCollapsible, {
 } from '../components/practiceQuiz/CourseCollapsible'
 
 function Repetition() {
-  const { data: learningElementsData } = useQuery(GetLearningElementsDocument)
-  const { data: practiceQuizzesData } = useQuery(GetPracticeQuizzesDocument)
   const t = useTranslations()
+  const { data, loading } = useQuery(GetPracticeQuizListDocument)
 
-  //
-  const learningElementsByCourse:
-    | Record<string, [LearningElement, RepetitionElementType][]>
-    | undefined = learningElementsData?.learningElements?.reduce(
-    (acc, element) => {
-      return {
-        ...acc,
-        [element.course!.displayName]: [
-          ...(acc[element.course!.displayName] || []),
-          [element, RepetitionElementType.LEARNING_ELEMENT],
-        ],
-      }
-    },
-    {}
-  )
+  if (loading) {
+    return (
+      <Layout
+        course={{ displayName: 'KlickerUZH' }}
+        displayName={t('pwa.learningElement.repetitionTitle')}
+      >
+        <Loader />
+      </Layout>
+    )
+  }
 
-  const elementsByCourse:
-    | Record<string, [LearningElement | PracticeQuiz, RepetitionElementType][]>
-    | undefined = practiceQuizzesData?.practiceQuizzes?.reduce(
-    (acc, element) => {
-      return {
-        ...acc,
-        [element.course!.displayName]: [
-          ...(acc?.[element.course!.displayName] || []),
-          [element, RepetitionElementType.PRACTICE_QUIZ],
-        ],
-      }
-    },
-    learningElementsByCourse
-  )
+  // reduce the data to a map of course names to a list of elements together with their corresponding type
+  const courses = data?.getPracticeQuizList?.map((course) => {
+    return {
+      id: course.id,
+      displayName: course.displayName,
+      elements: [
+        ...(course.learningElements?.map((element) => {
+          return {
+            id: element.id,
+            displayName: element.displayName,
+            type: RepetitionElementType.LEARNING_ELEMENT,
+          }
+        }) || []),
+        ...(course.practiceQuizzes?.map((element) => {
+          return {
+            id: element.id,
+            displayName: element.displayName,
+            type: RepetitionElementType.PRACTICE_QUIZ,
+          }
+        }) || []),
+      ],
+    }
+  })
 
   return (
     <Layout
@@ -58,25 +57,23 @@ function Repetition() {
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.repetition')}
         </H1>
-        {elementsByCourse &&
-          Object.entries(elementsByCourse).map(([key, elements]) => (
+        {courses?.length &&
+          courses.map((course) => (
             <CourseCollapsible
-              key={`list-${key}`}
-              courseName={key}
-              elements={elements}
+              key={`list-${course.id}`}
+              courseId={course.id}
+              courseName={course.displayName}
+              elements={course.elements}
             />
           ))}
 
-        {(!learningElementsData?.learningElements ||
-          learningElementsData?.learningElements?.length === 0) &&
-          (!practiceQuizzesData?.practiceQuizzes ||
-            practiceQuizzesData.practiceQuizzes.length === 0) && (
-            <UserNotification
-              type="info"
-              // TODO: change message to no courses available
-              message={t('pwa.learningElement.noRepetition')}
-            />
-          )}
+        {courses?.length === 0 && (
+          <UserNotification
+            type="info"
+            // TODO: change message to no courses available
+            message={t('pwa.learningElement.noRepetition')}
+          />
+        )}
       </div>
     </Layout>
   )

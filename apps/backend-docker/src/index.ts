@@ -12,6 +12,7 @@ import { createRedisCache } from '@envelop/response-cache-redis'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { EventEmitter } from 'node:events'
 import { WebSocketServer } from 'ws'
+import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
 
@@ -86,55 +87,63 @@ emitter.on('invalidate', (resource) => {
 
 const pubSub = createPubSub({ eventTarget })
 
-const { app, yogaApp } = prepareApp({
-  prisma,
-  redisCache,
-  redisExec,
-  pubSub,
-  cache,
-  emitter,
-})
-
-const server = app.listen(3000, () => {
-  console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
-
-  const wsServer = new WebSocketServer({
-    server,
-    path: yogaApp.graphqlEndpoint,
+migrate(prisma).then(() => {
+  const { app, yogaApp } = prepareApp({
+    prisma,
+    redisCache,
+    redisExec,
+    pubSub,
+    cache,
+    emitter,
   })
 
-  useServer(
-    {
-      schema,
-      context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
-      execute: (args: any) => args.rootValue.execute(args),
-      subscribe: (args: any) => args.rootValue.subscribe(args),
-      onSubscribe: async (ctx, msg) => {
-        const { schema, execute, subscribe, contextFactory, parse, validate } =
-          yogaApp.getEnveloped({
+  const server = app.listen(3000, () => {
+    console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
+
+    const wsServer = new WebSocketServer({
+      server,
+      path: yogaApp.graphqlEndpoint,
+    })
+
+    useServer(
+      {
+        schema,
+        context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
+        execute: (args: any) => args.rootValue.execute(args),
+        subscribe: (args: any) => args.rootValue.subscribe(args),
+        onSubscribe: async (ctx, msg) => {
+          const {
+            schema,
+            execute,
+            subscribe,
+            contextFactory,
+            parse,
+            validate,
+          } = yogaApp.getEnveloped({
             ...ctx,
             req: ctx.extra.request,
             socket: ctx.extra.socket,
             params: msg.payload,
           })
 
-        const args = {
-          schema,
-          operationName: msg.payload.operationName,
-          document: parse(msg.payload.query),
-          variableValues: msg.payload.variables,
-          contextValue: await contextFactory(),
-          rootValue: {
-            execute,
-            subscribe,
-          },
-        }
+          const args = {
+            schema,
+            operationName: msg.payload.operationName,
+            document: parse(msg.payload.query),
+            variableValues: msg.payload.variables,
+            contextValue: await contextFactory(),
+            rootValue: {
+              execute,
+              subscribe,
+            },
+          }
 
-        const errors = validate(args.schema, args.document)
-        if (errors.length) return errors
-        return args
+          const errors = validate(args.schema, args.document)
+          if (errors.length) return errors
+          return args
+        },
       },
-    },
-    wsServer
-  )
+      wsServer
+    )
+  })
 })

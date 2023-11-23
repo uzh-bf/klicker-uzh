@@ -103,6 +103,7 @@ function App({ Component, pageProps }: AppProps) {
           height: 100%;
           display: flex;
           flex-direction: column;
+          background-color: white;
         }
       `}</style>
     </div>

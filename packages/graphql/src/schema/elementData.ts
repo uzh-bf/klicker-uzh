@@ -16,7 +16,8 @@ export const ElementDataRef =
   builder.interfaceRef<BaseElementData>('ElementData')
 export const ElementData = ElementDataRef.implement({
   fields: (t) => ({
-    id: t.exposeInt('id'),
+    id: t.exposeID('id'),
+    questionId: t.exposeInt('questionId'),
     name: t.exposeString('name'),
     type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),

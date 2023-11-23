@@ -8,6 +8,7 @@ import type { IMicroSession } from './microSession.js'
 import { MicroSessionRef } from './microSession.js'
 import type { IParticipant, IParticipantGroup } from './participant.js'
 import { Participant, ParticipantGroup, Participation } from './participant.js'
+import { IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes'
 import type { ISession } from './session.js'
 import { SessionRef } from './session.js'
 import { UserRef } from './user.js'
@@ -21,6 +22,7 @@ export interface ICourse extends DB.Course {
 
   sessions?: ISession[]
   learningElements?: ILearningElement[]
+  practiceQuizzes?: IPracticeQuiz[]
   microSessions?: IMicroSession[]
   groupActivities?: DB.GroupActivity[]
   leaderboard?: ILeaderboardEntry[]
@@ -85,6 +87,10 @@ export const Course = builder.objectType(CourseRef, {
     }),
     learningElements: t.expose('learningElements', {
       type: [LearningElementRef],
+      nullable: true,
+    }),
+    practiceQuizzes: t.expose('practiceQuizzes', {
+      type: [PracticeQuizRef],
       nullable: true,
     }),
     microSessions: t.expose('microSessions', {

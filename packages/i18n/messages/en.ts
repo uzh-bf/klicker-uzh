@@ -503,6 +503,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editProfile: 'Edit profile',
       editProfileFailed:
         'Unfortunately, an error occurred while saving the changes. The username you have chosen may already be taken. Please check your entries and try again.',
+      editProfileSuccess: 'Your profile has been updated successfully.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',
@@ -781,6 +782,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       uploadImageHeader: 'Upload Media',
       uploadImageDescription:
         'Drag an image here to upload or click to open file explorer.',
+      updateInstances: 'Update question instances in KlickerUZH elements',
+      updateInstancesExplanation:
+        'Use this setting to update the question in all planned quizzes, practice quizzes and microlearnings. The content of questions in running and completed elements will not be updated. Changed multipliers will also be applied to the created instances.',
     },
     sessionForms: {
       sessionName: 'Please enter a name for your quiz.',

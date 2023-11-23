@@ -8,12 +8,19 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express, { Request } from 'express'
 import { createYoga } from 'graphql-yoga'
+import { createRequire } from 'node:module'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
 const persistedOperations = require("@klicker-uzh/graphql/dist/server.json");
+
+const require = createRequire(import.meta.url)
+const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
+declare namespace global {
+  let __coverage__: any
+}
 
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const armor = new EnvelopArmor({

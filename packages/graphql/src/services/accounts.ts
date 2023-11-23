@@ -401,7 +401,7 @@ export async function getUserLogins(ctx: ContextWithUser) {
   return logins
 }
 
-export async function checkUsernameAvailability(
+export async function checkParticipantNameAvailable(
   { username }: { username: string },
   ctx: Context
 ) {
@@ -410,6 +410,19 @@ export async function checkUsernameAvailability(
   })
 
   if (!participant || participant.id === ctx.user?.sub) return true
+
+  return false
+}
+
+export async function checkShortnameAvailable(
+  { shortname }: { shortname: string },
+  ctx: Context
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { shortname: shortname },
+  })
+
+  if (!user || user.id === ctx.user?.sub) return true
 
   return false
 }

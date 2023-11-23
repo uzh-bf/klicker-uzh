@@ -383,7 +383,7 @@ export async function respondToQuestionInstance(
         )
 
       if (previousResponseOutsideTimeframe) {
-        pointsAwarded = score / 2
+        pointsAwarded = score
       } else {
         pointsAwarded = 0
       }

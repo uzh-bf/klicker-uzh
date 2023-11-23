@@ -33,6 +33,8 @@ export function processQuestionData(question: AllElementTypeData) {
       // TODO: remove the extra keys, once the questionData options are compatible
       return {
         ...extractRelevantKeys(question),
+        id: `${question.id}-v${question.version}`,
+        questionId: question.id,
         displayMode: question.options.displayMode,
         hasSampleSolution: question.options.hasSampleSolution,
         hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
@@ -42,6 +44,8 @@ export function processQuestionData(question: AllElementTypeData) {
       // TODO: remove the extra keys, once the questionData options are compatible
       return {
         ...extractRelevantKeys(question),
+        id: `${question.id}-v${question.version}`,
+        questionId: question.id,
         hasSampleSolution: question.options.hasSampleSolution,
         hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
       } as NumericalElementData
@@ -50,6 +54,8 @@ export function processQuestionData(question: AllElementTypeData) {
       // TODO: remove the extra keys, once the questionData options are compatible
       return {
         ...extractRelevantKeys(question),
+        id: `${question.id}-v${question.version}`,
+        questionId: question.id,
         hasSampleSolution: question.options.hasSampleSolution,
         hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
       } as FreeTextElementData

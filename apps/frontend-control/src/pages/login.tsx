@@ -29,7 +29,7 @@ function Login() {
         onSubmit={async (values) => {
           const id = await loginUserToken({
             variables: {
-              email: values.email,
+              email: values.email.trim(),
               token: values.token.replace(/\s/g, ''),
             },
           })

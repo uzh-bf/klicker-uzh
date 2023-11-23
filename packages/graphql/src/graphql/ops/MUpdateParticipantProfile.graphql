@@ -1,14 +1,10 @@
 mutation UpdateParticipantProfile(
-  $avatar: String
-  $avatarSettings: AvatarSettingsInput
-  $username: String
+  $username: String!
   $password: String
-  $email: String
+  $email: String!
   $isProfilePublic: Boolean
 ) {
   updateParticipantProfile(
-    avatar: $avatar
-    avatarSettings: $avatarSettings
     username: $username
     password: $password
     email: $email
@@ -18,7 +14,5 @@ mutation UpdateParticipantProfile(
     username
     email
     isProfilePublic
-    avatar
-    avatarSettings
   }
 }

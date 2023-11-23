@@ -1,0 +1,3 @@
+query CheckParticipantNameAvailable($username: String!) {
+  checkParticipantNameAvailable(username: $username)
+}
