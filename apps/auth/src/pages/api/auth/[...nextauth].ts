@@ -59,43 +59,46 @@ function generateRandomString(length: number) {
   return result
 }
 
-const EduIDProvider: Provider = {
-  id: process.env.NEXT_PUBLIC_EDUID_ID as string,
-  wellKnown: process.env.EDUID_WELL_KNOWN as string,
-  clientId: process.env.EDUID_CLIENT_ID as string,
-  clientSecret: process.env.EDUID_CLIENT_SECRET as string,
+const EduIDProvider: Provider | null =
+  typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
+    ? {
+        id: process.env.NEXT_PUBLIC_EDUID_ID as string,
+        wellKnown: process.env.EDUID_WELL_KNOWN as string,
+        clientId: process.env.EDUID_CLIENT_ID as string,
+        clientSecret: process.env.EDUID_CLIENT_SECRET as string,
 
-  name: 'EduID',
-  type: 'oauth',
-  authorization: {
-    params: {
-      claims: {
-        id_token: {
-          sub: { essential: true },
-          email: { essential: true },
-          swissEduPersonUniqueID: { essential: true },
-          swissEduIDLinkedAffiliation: { essential: false },
+        name: 'EduID',
+        type: 'oauth',
+        authorization: {
+          params: {
+            claims: {
+              id_token: {
+                sub: { essential: true },
+                email: { essential: true },
+                swissEduPersonUniqueID: { essential: true },
+                swissEduIDLinkedAffiliation: { essential: false },
+              },
+            },
+            scope: 'openid email https://login.eduid.ch/authz/User.Read',
+          },
         },
-      },
-      scope: 'openid email https://login.eduid.ch/authz/User.Read',
-    },
-  },
-  idToken: true,
-  checks: ['pkce', 'state'],
+        idToken: true,
+        checks: ['pkce', 'state'],
 
-  profile(profile) {
-    return {
-      id: profile.sub,
-      email: profile.email,
-      shortname: generateRandomString(8),
-      lastLoginAt: new Date(),
-      catalystInstitutional: profile.swissEduIDLinkedAffiliation?.reduce(
-        reduceCatalyst,
-        false
-      ),
-    }
-  },
-}
+        profile(profile) {
+          return {
+            id: profile.sub,
+            email: profile.email,
+            shortname: generateRandomString(8),
+            lastLoginAt: new Date(),
+            catalystInstitutional: profile.swissEduIDLinkedAffiliation?.reduce(
+              reduceCatalyst,
+              false
+            ),
+          }
+        },
+      }
+    : null
 
 const CredentialProvider: Provider = CredentialsProvider({
   name: 'Delegation',
@@ -161,14 +164,19 @@ export const authOptions: NextAuthOptions = {
 
   adapter: PrismaAdapter(prisma),
 
-  providers: [EduIDProvider, CredentialProvider],
+  providers: EduIDProvider
+    ? [EduIDProvider, CredentialProvider]
+    : [CredentialProvider],
+
   session: {
     strategy: 'jwt',
   },
+
   jwt: {
     decode,
     encode,
   },
+
   cookies: {
     sessionToken: {
       name: 'next-auth.session-token',

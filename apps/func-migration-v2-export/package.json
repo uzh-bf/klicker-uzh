@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/func-migration-v2-export",
-  "version": "3.1.0-beta.1",
+  "version": "3.1.0-beta.8",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
@@ -39,7 +39,7 @@
     "start": "func start -p 7074"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
     "extends": "../../package.json"

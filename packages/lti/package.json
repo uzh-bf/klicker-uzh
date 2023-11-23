@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/lti",
-  "version": "3.1.0-beta.1",
+  "version": "3.1.0-beta.8",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,7 +24,7 @@
     "typescript": "5.0.4"
   },
   "peerDependencies": {
-    "@uzh-bf/design-system": "2.1.12",
+    "@uzh-bf/design-system": "2.4.2",
     "next": "14.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"
@@ -39,7 +39,7 @@
     "size": "size-limit"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
     "extends": "../../package.json"

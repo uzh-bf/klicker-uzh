@@ -5,6 +5,8 @@ import { URLForm } from "./URLForm";
 
 /* global window*/
 
+declare const Office;
+
 export interface AppProps {
   title: string;
   isOfficeInitialized: boolean;
@@ -47,9 +49,9 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
           <div className="flex-1">
             <ol className="list-decimal list-inside">
               <li>Go to https://manage.klicker.uzh.ch/sessions</li>
-              <li>For the quiz you want to embed, open the "Embed Evaluation" dialog</li>
+              <li>For the quiz you want to embed, open the &ldquo;Embed Evaluation&rdquo; dialog</li>
               <li>Copy the link of the view to embed (the full evaluation, a specific question, or the leaderboard)</li>
-              <li>Paste the link into the field and click "Embed"</li>
+              <li>Paste the link into the field and click &ldquo;Embed&rdquo;</li>
               <li>Resize the add-in to your preferred size (e.g., to cover the full slide)</li>
             </ol>
           </div>

@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
-import DebouncedUsernameField from '@components/forms/DebouncedUsernameField'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -31,6 +30,7 @@ import { pick } from 'ramda'
 import { useEffect, useState } from 'react'
 import * as yup from 'yup'
 import Layout from '../components/Layout'
+import DebouncedUsernameField from '../components/forms/DebouncedUsernameField'
 
 function EditProfile() {
   const t = useTranslations()
@@ -194,14 +194,14 @@ function EditProfile() {
         {({ values, isSubmitting, isValid, validateField }) => {
           return (
             <Form>
-              <div className="flex flex-col md:w-full md:max-w-5xl md:mx-auto gap-4">
-                <div className="flex flex-col w-full md:flex-row gap-4">
-                  <div className="flex flex-col justify-between flex-1 order-2 gap-3 md:order-1 md:bg-slate-50 md:p-4 rounded">
+              <div className="flex flex-col gap-4 md:w-full md:max-w-5xl md:mx-auto">
+                <div className="flex flex-col w-full gap-4 md:flex-row">
+                  <div className="flex flex-col justify-between flex-1 order-2 gap-3 rounded md:order-1 md:bg-slate-50 md:p-4">
                     <div>
                       <H3 className={{ root: 'border-b mb-0' }}>
                         {t('shared.generic.profile')}
                       </H3>
-                      <div className="space-y-3 mb-2">
+                      <div className="mb-2 space-y-3">
                         <FormikTextField
                           // TODO: as soon as verification mechanism for email is implemented, add check for "isEmailValid" in DB for disabled field as emails with typos cannot be changed currently
                           disabled={
@@ -244,7 +244,7 @@ function EditProfile() {
                           <div className="font-bold">
                             {t('pwa.profile.publicProfile')}
                           </div>
-                          <div className="flex flex-row space-between gap-4">
+                          <div className="flex flex-row gap-4 space-between">
                             <div className="flex flex-col items-center gap-1">
                               <FormikSwitchField name="isProfilePublic" />
                               {values.isProfilePublic
@@ -273,7 +273,7 @@ function EditProfile() {
                     </Button>
                   </div>
 
-                  <div className="flex-1 order-1 md:order-2 md:bg-slate-50 md:p-4 rounded justify-between flex flex-col space-y-4">
+                  <div className="flex flex-col justify-between flex-1 order-1 space-y-4 rounded md:order-2 md:bg-slate-50 md:p-4">
                     <div className="flex-initial space-y-2">
                       <H3 className={{ root: 'border-b mb-0' }}>
                         {t('pwa.profile.deleteProfile')}
@@ -323,13 +323,13 @@ function EditProfile() {
                   </div>
                 </div>
 
-                <div className="md:bg-slate-50 md:p-4 rounded space-y-2">
+                <div className="space-y-2 rounded md:bg-slate-50 md:p-4">
                   <H3 className={{ root: 'border-b' }}>Avatar</H3>
-                  <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+                  <div className="flex flex-col gap-4 md:flex-row md:gap-8">
                     <div className="flex-1">
                       <BigHead
                         // @ts-ignore
-                        className="border-b-4 md:h-48 border-primary-80 w-full"
+                        className="w-full border-b-4 md:h-48 border-primary-80"
                         eyebrows="raised"
                         faceMask={false}
                         lashes={false}
@@ -348,7 +348,7 @@ function EditProfile() {
                         facialHair={values.facialHair}
                       />
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs md:text-sm">
+                    <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-3 md:text-sm">
                       {Object.keys(AVATAR_OPTIONS).map((key) => (
                         <FormikSelectField
                           className={{

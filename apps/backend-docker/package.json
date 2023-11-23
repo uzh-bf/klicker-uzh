@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.1.0-beta.1",
+  "version": "3.1.0-beta.8",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -47,7 +47,7 @@
     "@types/passport": "^1.0.10",
     "@types/passport-jwt": "^3.0.6",
     "@types/ramda": "^0.29.3",
-    "@uzh-bf/design-system": "2.1.12",
+    "@uzh-bf/design-system": "2.4.2",
     "axios": "1.4.0",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
@@ -77,7 +77,7 @@
     "exec:prod": "doppler run --config prd -- ts-node --esm"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
     "extends": "../../package.json"

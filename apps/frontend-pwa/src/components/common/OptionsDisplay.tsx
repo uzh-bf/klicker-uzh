@@ -331,6 +331,7 @@ export function Options({
             </div>
           )}
           <FREETextAnswerOptions
+            disabled={disabled}
             onChange={onChangeResponse}
             maxLength={options.restrictions?.maxLength}
             value={response}
