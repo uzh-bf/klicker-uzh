@@ -18,7 +18,7 @@ export default defineConfig({
     // },
   },
 
-  // e2e: {
+  e2e: {
   //   // includeShadowDom: true,
   //   setupNodeEvents(on, config) {
   //     require('@cypress/code-coverage/task')(on, config)
@@ -31,7 +31,7 @@ export default defineConfig({
   //     }); */
   //     return config
   //   },
-  // },
+  },
 
   retries: {
     runMode: 2,
