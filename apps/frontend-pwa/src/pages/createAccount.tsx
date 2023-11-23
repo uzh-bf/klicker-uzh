@@ -37,8 +37,8 @@ function CreateAccount({ signedLtiData, email, username }: CreateAccountProps) {
 
           const login = await createParticipantAccount({
             variables: {
-              email: values.email,
-              username: values.username,
+              email: values.email.trim(),
+              username: values.username.trim(),
               password: values.password,
               isProfilePublic: values.isProfilePublic,
               signedLtiData,
