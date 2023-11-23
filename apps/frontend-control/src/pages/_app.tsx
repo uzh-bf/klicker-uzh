@@ -5,7 +5,7 @@ import { getMessageFallback, onError } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
-import { NextIntlProvider } from 'next-intl'
+import { NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -32,7 +32,8 @@ function App({ Component, pageProps }: AppProps) {
   return (
     <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
       <ErrorBoundary>
-        <NextIntlProvider
+        <NextIntlClientProvider
+          timeZone="Europe/Zurich"
           messages={pageProps.messages}
           locale={locale}
           getMessageFallback={getMessageFallback}
@@ -41,7 +42,7 @@ function App({ Component, pageProps }: AppProps) {
           <ApolloProvider client={apolloClient}>
             <Component {...pageProps} />
           </ApolloProvider>
-        </NextIntlProvider>
+        </NextIntlClientProvider>
       </ErrorBoundary>
       <style jsx global>{`
         :root {

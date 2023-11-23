@@ -2,6 +2,9 @@
 
 function getNextBaseConfig({ BLOB_STORAGE_ACCOUNT_URL, NODE_ENV }) {
   return {
+    experimental: {
+      esmExternals: 'loose',
+    },
     compress: true,
     output: 'standalone',
     reactStrictMode: true,
