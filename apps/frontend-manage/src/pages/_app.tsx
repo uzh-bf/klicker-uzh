@@ -4,7 +4,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { init } from '@socialgouv/matomo-next'
-import { NextIntlProvider } from 'next-intl'
+import { NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -33,7 +33,7 @@ function App({ Component, pageProps }: AppProps) {
   return (
     <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
       <ApolloProvider client={apolloClient}>
-        <NextIntlProvider
+        <NextIntlClientProvider
           messages={pageProps.messages}
           locale={locale}
           onError={onError}
@@ -42,7 +42,7 @@ function App({ Component, pageProps }: AppProps) {
           <DndProvider backend={HTML5Backend}>
             <Component {...pageProps} />
           </DndProvider>
-        </NextIntlProvider>
+        </NextIntlClientProvider>
       </ApolloProvider>
 
       <style jsx global>{`

@@ -1,10 +1,7 @@
 import dynamic from 'next/dynamic'
 
 const DynamicMarkdown = dynamic(
-  async () => {
-    const { Markdown } = await import('@klicker-uzh/markdown')
-    return Markdown
-  },
+  () => import('@klicker-uzh/markdown').then((pkg) => pkg.Markdown),
   {
     ssr: false,
   }
