@@ -3,7 +3,6 @@ import {
   GroupActivityStatus,
   LeaderboardEntry,
   LearningElementStatus,
-  PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
@@ -470,80 +469,6 @@ export async function getControlCourses(ctx: ContextWithUser) {
   })
 
   return user?.courses ?? []
-}
-
-export async function getUserLearningElements(ctx: ContextWithUser) {
-  const participantCoursesWithLearningElements =
-    await ctx.prisma.participant.findUnique({
-      where: { id: ctx.user.sub },
-      include: {
-        participations: {
-          include: {
-            course: {
-              include: {
-                learningElements: {
-                  orderBy: {
-                    displayName: 'asc',
-                  },
-                  where: {
-                    status: LearningElementStatus.PUBLISHED,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    })
-
-  if (!participantCoursesWithLearningElements) return []
-
-  return participantCoursesWithLearningElements.participations.flatMap(
-    (participation) =>
-      participation.course.learningElements.map((learningElement) => {
-        return {
-          ...learningElement,
-          course: participation.course,
-        }
-      })
-  )
-}
-
-export async function getUserPracticeQuizzes(ctx: ContextWithUser) {
-  const participantCoursesWithPracticeQuizzes =
-    await ctx.prisma.participant.findUnique({
-      where: { id: ctx.user.sub },
-      include: {
-        participations: {
-          include: {
-            course: {
-              include: {
-                practiceQuizzes: {
-                  orderBy: {
-                    displayName: 'asc',
-                  },
-                  where: {
-                    status: PublicationStatus.PUBLISHED,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    })
-
-  if (!participantCoursesWithPracticeQuizzes) return []
-
-  return participantCoursesWithPracticeQuizzes.participations.flatMap(
-    (participation) =>
-      participation.course.practiceQuizzes.map((practiceQuiz) => {
-        return {
-          ...practiceQuiz,
-          course: participation.course,
-        }
-      })
-  )
 }
 
 export async function getCourseData(
