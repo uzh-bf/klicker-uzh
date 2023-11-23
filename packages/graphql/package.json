@@ -19,6 +19,7 @@
     "@pothos/plugin-validation": "3.10.0",
     "axios": "1.4.0",
     "bcryptjs": "2.4.3",
+    "crypto-es": "2.1.0",
     "dayjs": "1.11.9",
     "generate-password": "1.7.0",
     "graphql": "16.7.1",
@@ -54,7 +55,7 @@
     "@types/ramda": "^0.29.3",
     "@types/uuid": "^9.0.2",
     "@types/validator": "^13.9.0",
-    "@types/web-push": "^3.3.2",
+    "@types/web-push": "^3.6.3",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "eslint": "8.45.0",
@@ -66,7 +67,7 @@
     "prettier-plugin-organize-imports": "3.2.3",
     "tsup": "8.0.1",
     "typescript": "5.3.2",
-    "web-push": "3.6.1"
+    "web-push": "3.6.6"
   },
   "scripts": {
     "build": "run-s generate build:ts",

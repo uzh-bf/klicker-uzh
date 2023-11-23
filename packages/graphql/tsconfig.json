@@ -9,6 +9,11 @@
   "compilerOptions": {
     "baseUrl": ".",
     "module": "ESNext",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "paths": {
+      "crypto": [
+        "node_modules/crypto-es"
+      ]
+    }
   }
 }

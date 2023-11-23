@@ -4,5 +4,9 @@
     "src",
     "scripts"
   ],
-  "compilerOptions": {}
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+  }
 }

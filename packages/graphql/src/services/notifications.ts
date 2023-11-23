@@ -5,7 +5,7 @@ import {
   PushSubscription,
 } from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
-import webpush, { WebPushError } from 'web-push'
+import webpush from 'web-push'
 import { Context, ContextWithUser } from '../lib/context.js'
 import { formatDate } from '../lib/util.js'
 
@@ -189,7 +189,7 @@ async function sendPushNotificationsToSubscribers(
         'An error occured while trying to send the push notification: ',
         error
       )
-      if (error instanceof WebPushError && error.statusCode === 410) {
+      if (error instanceof webpush.WebPushError && error.statusCode === 410) {
         try {
           // subscription has expired or is no longer valid
           // remove it from the database

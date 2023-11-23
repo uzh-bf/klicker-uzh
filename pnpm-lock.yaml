@@ -189,6 +189,9 @@ importers:
       cors:
         specifier: 2.8.5
         version: 2.8.5
+      crypto-es:
+        specifier: 2.1.0
+        version: 2.1.0
       express:
         specifier: 4.18.2
         version: 4.18.2
@@ -1526,6 +1529,9 @@ importers:
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
+      crypto-es:
+        specifier: 2.1.0
+        version: 2.1.0
       dayjs:
         specifier: 1.11.9
         version: 1.11.9
@@ -1627,8 +1633,8 @@ importers:
         specifier: ^13.9.0
         version: 13.9.0
       '@types/web-push':
-        specifier: ^3.3.2
-        version: 3.3.2
+        specifier: ^3.6.3
+        version: 3.6.3
       cross-env:
         specifier: 7.0.3
         version: 7.0.3
@@ -1663,8 +1669,8 @@ importers:
         specifier: 5.3.2
         version: 5.3.2
       web-push:
-        specifier: 3.6.1
-        version: 3.6.1
+        specifier: 3.6.6
+        version: 3.6.6
 
   packages/i18n:
     dependencies:
@@ -11714,7 +11720,7 @@ packages:
   /@types/sax@1.2.4:
     resolution: {integrity: sha512-pSAff4IAxJjfAXUG6tFkO7dsSbTmf8CtUpfhhZ5VhkRpC4628tJhh3+V6H1E+/Gs9piSzYKT5yzHO5M4GG9jkw==}
     dependencies:
-      '@types/node': 20.9.4
+      '@types/node': 17.0.45
     dev: false
 
   /@types/scheduler@0.16.3:
@@ -11812,6 +11818,12 @@ packages:
 
   /@types/web-push@3.3.2:
     resolution: {integrity: sha512-JxWGVL/m7mWTIg4mRYO+A6s0jPmBkr4iJr39DqJpRJAc+jrPiEe1/asmkwerzRon8ZZDxaZJpsxpv0Z18Wo9gw==}
+    dependencies:
+      '@types/node': 20.9.4
+    dev: true
+
+  /@types/web-push@3.6.3:
+    resolution: {integrity: sha512-v3oT4mMJsHeJ/rraliZ+7TbZtr5bQQuxcgD7C3/1q/zkAj29c8RE0F9lVZVu3hiQe5Z9fYcBreV7TLnfKR+4mg==}
     dependencies:
       '@types/node': 20.9.4
     dev: true
@@ -13605,7 +13617,7 @@ packages:
     hasBin: true
     dependencies:
       caniuse-lite: 1.0.30001564
-      electron-to-chromium: 1.4.592
+      electron-to-chromium: 1.4.593
       node-releases: 2.0.13
       update-browserslist-db: 1.0.13(browserslist@4.22.1)
     dev: true
@@ -14782,6 +14794,10 @@ packages:
   /crypt@0.0.2:
     resolution: {integrity: sha512-mCxBlsHFYh9C+HVpiEacem8FEBnMXgU9gy4zmNC+SXAZNB/1idgp/aulFJ4FgCi7GPEVbfyng092GqL2k2rmow==}
 
+  /crypto-es@2.1.0:
+    resolution: {integrity: sha512-C5Dbuv4QTPGuloy5c5Vv/FZHtmK+lobLAypFfuRaBbwCsk3qbCWWESCH3MUcBsrgXloRNMrzwUAiPg4U6+IaKA==}
+    dev: false
+
   /crypto-random-string@2.0.0:
     resolution: {integrity: sha512-v1plID3y9r/lPhviJ1wrXpLeyUIGAZ2SHNYTEapm7/8A9nLPoyvVp3RK/EPFqn5kEznyWgYZNsRtYYIWbuG8KA==}
     engines: {node: '>=8'}
@@ -15945,8 +15961,8 @@ packages:
   /electron-to-chromium@1.4.490:
     resolution: {integrity: sha512-6s7NVJz+sATdYnIwhdshx/N/9O6rvMxmhVoDSDFdj6iA45gHR8EQje70+RYsF4GeB+k0IeNSBnP7yG9ZXJFr7A==}
 
-  /electron-to-chromium@1.4.592:
-    resolution: {integrity: sha512-D3NOkROIlF+d5ixnz7pAf3Lu/AuWpd6AYgI9O67GQXMXTcCP1gJQRotOq35eQy5Sb4hez33XH1YdTtILA7Udww==}
+  /electron-to-chromium@1.4.593:
+    resolution: {integrity: sha512-c7+Hhj87zWmdpmjDONbvNKNo24tvmD4mjal1+qqTYTrlF0/sNpAcDlU0Ki84ftA/5yj3BF2QhSGEC0Rky6larg==}
     dev: true
 
   /element-resize-detector@1.2.4:
@@ -18530,6 +18546,16 @@ packages:
 
   /https-proxy-agent@7.0.1:
     resolution: {integrity: sha512-Eun8zV0kcYS1g19r78osiQLEFIRspRUDd9tIfBCTBPBeMieF/EsJNL8VI3xOIdYRDEkjQnqOYPsZ2DsWsVsFwQ==}
+    engines: {node: '>= 14'}
+    dependencies:
+      agent-base: 7.1.0
+      debug: 4.3.4(supports-color@8.1.1)
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
+  /https-proxy-agent@7.0.2:
+    resolution: {integrity: sha512-NmLNjm6ucYwtcUmL7JQC1ZQ57LmHP4lT15FQ8D61nak1rO6DH+fz5qNK2Ap5UN4ZapYICE3/0KodcLYSPsPbaA==}
     engines: {node: '>= 14'}
     dependencies:
       agent-base: 7.1.0
@@ -28050,6 +28076,20 @@ packages:
       jws: 4.0.0
       minimist: 1.2.8
       urlsafe-base64: 1.0.0
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
+  /web-push@3.6.6:
+    resolution: {integrity: sha512-SyteEck9fiCskNmPxs/GFhJsZrIyLfRvjWNmcUwULLJyCU0f1oxo2sWTokXA1mDAq9vxk4e4gVcb/8agq73NkQ==}
+    engines: {node: '>= 16'}
+    hasBin: true
+    dependencies:
+      asn1.js: 5.4.1
+      http_ece: 1.1.0
+      https-proxy-agent: 7.0.2
+      jws: 4.0.0
+      minimist: 1.2.8
     transitivePeerDependencies:
       - supports-color
     dev: true

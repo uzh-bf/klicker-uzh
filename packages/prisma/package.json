@@ -39,7 +39,7 @@
   "scripts": {
     "//migrate:learningElements": "cross-env ENV=development doppler run --config dev -- bun run src/scripts/migrateLearningElements.ts",
     "//migrate:learningElements:prod": "cross-env ENV=development doppler run --config prd -- bun run src/scripts/migrateLearningElements.ts",
-    "build": "run-s generate build:ts build:copy",
+    "build": "run-s generate build:copy",
     "build:copy": "node src/copy.cjs",
     "build:ts": "cross-env NODE_ENV=production tsup",
     "build:watch": "cross-env NODE_ENV=development tsup --watch",
