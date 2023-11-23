@@ -48,8 +48,6 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
-
-    runs-on: ubuntu-latest
     # strategy:
     #   fail-fast: false # https://github.com/cypress-io/github-action/issues/48
     #   matrix:
