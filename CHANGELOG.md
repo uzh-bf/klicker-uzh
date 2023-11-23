@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.8...v3.1.0-beta.9) (2023-11-23)
+
+
+### Features
+
+* allow to change questionData in unpublished elements ([#3941](https://github.com/uzh-bf/klicker-uzh/issues/3941)) ([e67fc56](https://github.com/uzh-bf/klicker-uzh/commit/e67fc56d99e389c6507bd7fcdbddf166c3103f97))
+
+
+### Bug Fixes
+
+* **packages/graphql:** fix feedback subscriptions on student frontend ([#3970](https://github.com/uzh-bf/klicker-uzh/issues/3970)) ([5261636](https://github.com/uzh-bf/klicker-uzh/commit/52616361c6ad4189f8cc5a0c4fc0751b1e14b652))
+* **packages/shared-components:** make sure that participant is only shown once on leaderboard ([#3969](https://github.com/uzh-bf/klicker-uzh/issues/3969)) ([0b51b64](https://github.com/uzh-bf/klicker-uzh/commit/0b51b642f1bcaebf1d3daaf3c624880a968ec2cd))
+* trim usernames and email addresses in all forms and on submission ([#3971](https://github.com/uzh-bf/klicker-uzh/issues/3971)) ([ecf85fa](https://github.com/uzh-bf/klicker-uzh/commit/ecf85fa2369aa349246b15061f922d6f086550d8))
+
+
+### Refactors
+
+* **apps/frontend-pwa:** separate account and avatar changes into separate forms ([#3949](https://github.com/uzh-bf/klicker-uzh/issues/3949)) ([7289097](https://github.com/uzh-bf/klicker-uzh/commit/7289097654cd2e19a9e6a0cd2fb8d8d7a1237a3a))
+* **apps/frontend-pwa:** standardize pwa buttons to link button ([#3953](https://github.com/uzh-bf/klicker-uzh/issues/3953)) ([f6e2868](https://github.com/uzh-bf/klicker-uzh/commit/f6e28686f93a6d59ea6ff875617c852880685c36))
+
+
+### Build and CI
+
+* **test:** upgrade github cypress container ([#3954](https://github.com/uzh-bf/klicker-uzh/issues/3954)) ([e5b8bf3](https://github.com/uzh-bf/klicker-uzh/commit/e5b8bf33e07fd18185356ec95ded96a57374cd09))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add debounced username fields to for lecturer frontend ([#3972](https://github.com/uzh-bf/klicker-uzh/issues/3972)) ([bfd3998](https://github.com/uzh-bf/klicker-uzh/commit/bfd399842c488db27c0937d75fd5f0a287c5c42a))
+* **apps/frontend-pwa:** hide courses without element stacks on practice area ([#3951](https://github.com/uzh-bf/klicker-uzh/issues/3951)) ([5ca75c4](https://github.com/uzh-bf/klicker-uzh/commit/5ca75c4222cef519cbce34beee3984e93824eb9f))
+* ensure that quiz list collapsible state persists across reloads ([#3952](https://github.com/uzh-bf/klicker-uzh/issues/3952)) ([c3c92b8](https://github.com/uzh-bf/klicker-uzh/commit/c3c92b8a9e17652497bd84ece694c060de2bbcf6))
+
 ## [3.1.0-beta.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.7...v3.1.0-beta.8) (2023-11-16)
 
 
