@@ -12,6 +12,10 @@ import { createYoga } from 'graphql-yoga'
 import passport from 'passport'
 import { Strategy as JWTStrategy } from 'passport-jwt'
 
+declare namespace global {
+  let __coverage__: any
+}
+
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const armor = new EnvelopArmor({
     maxDepth: {
