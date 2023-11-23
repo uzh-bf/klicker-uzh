@@ -1,0 +1,3 @@
+query CheckShortnameAvailable($shortname: String!) {
+  checkShortnameAvailable(shortname: $shortname)
+}

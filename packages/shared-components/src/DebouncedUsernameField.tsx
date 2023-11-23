@@ -1,8 +1,9 @@
 import { faCheck, faSpinner, faX } from '@fortawesome/free-solid-svg-icons'
-import { FormikTextField } from '@uzh-bf/design-system'
+import { FormikTextField, TextFieldWithNameProps } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import React, { useCallback, useEffect, useRef } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface DebouncedUsernameFieldProps {
   name: string
@@ -11,6 +12,10 @@ interface DebouncedUsernameFieldProps {
   setValid: (isAvailable: boolean | undefined) => void
   validateField: () => void
   checkUsernameAvailable: (username: string) => Promise<boolean>
+  labelType?: TextFieldWithNameProps['labelType']
+  required?: boolean
+  hideError?: boolean
+  className?: TextFieldWithNameProps['className']
 }
 
 function DebouncedUsernameField({
@@ -20,6 +25,10 @@ function DebouncedUsernameField({
   setValid,
   validateField,
   checkUsernameAvailable,
+  labelType = 'small',
+  required = false,
+  hideError = false,
+  className,
 }: DebouncedUsernameFieldProps) {
   const t = useTranslations()
   const [field, meta, helpers] = useField(name)
@@ -59,19 +68,24 @@ function DebouncedUsernameField({
       value={field.value}
       label={label}
       error={meta.error}
-      labelType="small"
+      labelType={labelType}
       className={{
-        label: 'font-bold text-md text-black',
-        icon:
+        ...className,
+        label: twMerge('font-bold text-md text-black', className?.label),
+        icon: twMerge(
           typeof valid === 'undefined'
             ? 'animate-spin !py-0 bg-transparent'
             : !valid || typeof meta.error !== 'undefined'
             ? 'text-red-600 bg-red-50'
             : 'text-green-600',
-        input:
+          className?.icon
+        ),
+        input: twMerge(
           valid === false || typeof meta.error !== 'undefined'
             ? 'border-red-600 bg-red-50'
             : '',
+          className?.input
+        ),
       }}
       onChange={async (username: string) => {
         const trimmedUsername = username.trim()
@@ -85,6 +99,8 @@ function DebouncedUsernameField({
           ? faX
           : faCheck
       }
+      required={required}
+      hideError={hideError}
     />
   )
 }

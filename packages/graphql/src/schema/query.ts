@@ -509,6 +509,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      checkShortnameAvailable: t.field({
+        nullable: false,
+        type: 'Boolean',
+        args: {
+          shortname: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.checkShortnameAvailable(args, ctx)
+        },
+      }),
+
       checkValidCoursePin: t.field({
         nullable: true,
         type: 'String',

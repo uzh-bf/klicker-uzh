@@ -415,6 +415,19 @@ export async function checkParticipantNameAvailable(
   return false
 }
 
+export async function checkShortnameAvailable(
+  { shortname }: { shortname: string },
+  ctx: Context
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { shortname: shortname },
+  })
+
+  if (!user || user.id === ctx.user?.sub) return true
+
+  return false
+}
+
 interface UserLoginProps {
   password: string
   name: string

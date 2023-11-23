@@ -764,6 +764,7 @@ type PushSubscription {
 type Query {
   basicCourseInformation(courseId: String!): Course
   checkParticipantNameAvailable(username: String!): Boolean!
+  checkShortnameAvailable(shortname: String!): Boolean!
   checkValidCoursePin(pin: Int!): String
   cockpitSession(id: String!): Session
   controlCourse(id: String!): Course
