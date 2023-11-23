@@ -127,6 +127,7 @@ type Course {
   numOfParticipants: Int
   owner: User
   pinCode: Int
+  practiceQuizzes: [PracticeQuiz!]
   sessions: [Session!]
   startDate: Date!
   updatedAt: Date!
@@ -569,7 +570,8 @@ type Mutation {
   unpublishMicroSession(id: String!): MicroSession
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
-  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, email: String, isProfilePublic: Boolean, password: String, username: String): Participant
+  updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
+  updateParticipantProfile(email: String!, isProfilePublic: Boolean!, password: String!, username: String!): Participant
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
@@ -766,9 +768,10 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   getParticipation(courseId: String!): Participation
+  getPracticeCourses: [Course!]
+  getPracticeQuizList: [Course!]
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   learningElement(id: String!): LearningElement
-  learningElements: [LearningElement!]
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
@@ -776,7 +779,6 @@ type Query {
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
   practiceQuiz(id: String!): PracticeQuiz
-  practiceQuizzes: [PracticeQuiz!]
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
   questionStack(id: Int!): QuestionStack

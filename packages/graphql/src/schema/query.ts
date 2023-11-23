@@ -260,14 +260,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      learningElements: asParticipant.field({
-        nullable: true,
-        type: [LearningElement],
-        resolve(_, __, ctx) {
-          return CourseService.getUserLearningElements(ctx)
-        },
-      }),
-
       practiceQuiz: t.field({
         nullable: true,
         type: PracticeQuiz,
@@ -277,14 +269,6 @@ export const Query = builder.queryType({
         resolve(_, args, ctx) {
           // FIXME by fixing type issues in LearningElementService
           return PracticeQuizService.getPracticeQuizData(args, ctx) as any
-        },
-      }),
-
-      practiceQuizzes: asParticipant.field({
-        nullable: true,
-        type: [PracticeQuiz],
-        resolve(_, __, ctx) {
-          return CourseService.getUserPracticeQuizzes(ctx)
         },
       }),
 
@@ -421,6 +405,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      getPracticeCourses: asParticipant.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return ParticipantService.getPracticeCourses(ctx)
+        },
+      }),
+
       getParticipation: t.field({
         nullable: true,
         type: Participation,
@@ -464,6 +456,14 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ParticipantService.getBookmarkedQuestions(args, ctx)
+        },
+      }),
+
+      getPracticeQuizList: asParticipant.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return ParticipantService.getPracticeQuizList(ctx)
         },
       }),
 
