@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.7...v3.1.0-beta.8) (2023-11-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** add background-color: white to all _app.tsx" ([#3955](https://github.com/uzh-bf/klicker-uzh/issues/3955)) ([bc0bc9e](https://github.com/uzh-bf/klicker-uzh/commit/bc0bc9e879feb020b9eef70e5b3efd4e7c6479ef))
+* **packages/graphql:** ensure that participant email is saved on change ([#3948](https://github.com/uzh-bf/klicker-uzh/issues/3948)) ([91518c9](https://github.com/uzh-bf/klicker-uzh/commit/91518c9e45135fe20186e826fdd329be6023bb06))
+
 ## [3.1.0-beta.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.6...v3.1.0-beta.7) (2023-11-13)
 
 

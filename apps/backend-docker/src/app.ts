@@ -14,6 +14,9 @@ import { Strategy as JWTStrategy } from 'passport-jwt'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
+declare namespace global {
+  let __coverage__: any
+}
 
 function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   const armor = new EnvelopArmor({
