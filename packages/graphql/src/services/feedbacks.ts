@@ -302,10 +302,7 @@ export async function deleteFeedback(
     where: { id },
   })
 
-  ctx.pubSub.publish('feedbackRemoved', {
-    id,
-    sessionId: deletedFeedback.sessionId,
-  })
+  ctx.pubSub.publish('feedbackRemoved', deletedFeedback)
 
   ctx.emitter.emit('invalidate', {
     typename: 'Session',
