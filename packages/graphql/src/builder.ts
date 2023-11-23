@@ -80,7 +80,7 @@ const builder = new SchemaBuilder<{
 
       return false
     },
-    catalyst: ctx.user?.catalystInstitutional || ctx.user?.catalystIndividual,
+    catalyst: ctx.user?.catalystInstitutional ?? ctx.user?.catalystIndividual,
   }),
   plugins: [ScopeAuthPlugin, PrismaPlugin, ValidationPlugin, DirectivePlugin],
   useGraphQLToolsUnorderedDirectives: true,
