@@ -214,7 +214,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
 // if main module, run this
 const prismaClient = new Prisma.PrismaClient()
-seedFlashcards(prismaClient)
+await seedFlashcards(prismaClient)
   .then((res) => {
     console.log('res', res)
   })

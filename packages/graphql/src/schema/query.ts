@@ -260,14 +260,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      learningElements: asParticipant.field({
-        nullable: true,
-        type: [LearningElement],
-        resolve(_, __, ctx) {
-          return CourseService.getUserLearningElements(ctx)
-        },
-      }),
-
       practiceQuiz: t.field({
         nullable: true,
         type: PracticeQuiz,
@@ -277,14 +269,6 @@ export const Query = builder.queryType({
         resolve(_, args, ctx) {
           // FIXME by fixing type issues in LearningElementService
           return PracticeQuizService.getPracticeQuizData(args, ctx) as any
-        },
-      }),
-
-      practiceQuizzes: asParticipant.field({
-        nullable: true,
-        type: [PracticeQuiz],
-        resolve(_, __, ctx) {
-          return CourseService.getUserPracticeQuizzes(ctx)
         },
       }),
 
@@ -421,6 +405,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      getPracticeCourses: asParticipant.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return ParticipantService.getPracticeCourses(ctx)
+        },
+      }),
+
       getParticipation: t.field({
         nullable: true,
         type: Participation,
@@ -467,6 +459,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      getPracticeQuizList: asParticipant.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return ParticipantService.getPracticeQuizList(ctx)
+        },
+      }),
+
       getBookmarksLearningElement: t.field({
         nullable: true,
         type: [QuestionStack],
@@ -498,14 +498,25 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkUsernameAvailability: t.field({
+      checkParticipantNameAvailable: t.field({
         nullable: false,
         type: 'Boolean',
         args: {
           username: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.checkUsernameAvailability(args, ctx)
+          return AccountService.checkParticipantNameAvailable(args, ctx)
+        },
+      }),
+
+      checkShortnameAvailable: t.field({
+        nullable: false,
+        type: 'Boolean',
+        args: {
+          shortname: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.checkShortnameAvailable(args, ctx)
         },
       }),
 

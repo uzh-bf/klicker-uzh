@@ -318,20 +318,30 @@ export const Mutation = builder.mutationType({
         type: Participant,
         args: {
           isProfilePublic: t.arg.boolean({ required: false }),
-          email: t.arg.string({ required: false, validate: { email: true } }),
+          email: t.arg.string({ required: true, validate: { email: true } }),
           username: t.arg.string({
-            required: false,
+            required: true,
             validate: { minLength: 5, maxLength: 15 },
           }),
-          avatar: t.arg.string({ required: false }),
           password: t.arg.string({ required: false }),
-          avatarSettings: t.arg({
-            type: AvatarSettingsInput,
-            required: false,
-          }),
         },
         resolve(_, args, ctx) {
           return ParticipantService.updateParticipantProfile(args, ctx)
+        },
+      }),
+
+      updateParticipantAvatar: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: Participant,
+        args: {
+          avatar: t.arg.string({ required: true }),
+          avatarSettings: t.arg({
+            type: AvatarSettingsInput,
+            required: true,
+          }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.updateParticipantAvatar(args, ctx)
         },
       }),
 
@@ -794,6 +804,17 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, __, args, ctx) {
           return QuestionService.manipulateQuestion(args as any, ctx) as any
+        },
+      }),
+
+      updateQuestionInstances: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: [QuestionInstance],
+        args: {
+          questionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.updateQuestionInstances(args, ctx)
         },
       }),
 

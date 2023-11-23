@@ -10,6 +10,7 @@ import {
   ManipulateChoicesQuestionDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
+  UpdateQuestionInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -21,8 +22,10 @@ import {
   FormikSelectField,
   FormikTextField,
   H3,
+  H4,
   Label,
   Modal,
+  Prose,
   Select,
   Switch,
   UserNotification,
@@ -64,6 +67,7 @@ function QuestionEditModal({
 }: QuestionEditModalProps): React.ReactElement {
   const isDuplication = mode === QuestionEditMode.DUPLICATE
   const t = useTranslations()
+  const [updateInstances, setUpdateInstances] = useState(false)
 
   // TODO: ensure that every validation schema change is also reflected in an adaption of the error messages
   const questionManipulationSchema = Yup.object().shape({
@@ -242,6 +246,7 @@ function QuestionEditModal({
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
+  const [updateQuestionInstances] = useMutation(UpdateQuestionInstancesDocument)
 
   const DROPDOWN_OPTIONS = [
     {
@@ -269,10 +274,7 @@ function QuestionEditModal({
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
       const common = {
-        type:
-          mode === QuestionEditMode.CREATE
-            ? ElementType.Sc
-            : dataQuestion?.question?.type,
+        type: ElementType.Sc,
         name: '',
         content: '',
         explanation: '',
@@ -386,11 +388,12 @@ function QuestionEditModal({
             hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           },
         }
+
         switch (common.type) {
           case ElementType.Sc:
           case ElementType.Mc:
-          case ElementType.Kprim:
-            await manipulateChoicesQuestion({
+          case ElementType.Kprim: {
+            const result = await manipulateChoicesQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -412,9 +415,11 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateChoicesQuestion?.id) return
             break
-          case ElementType.Numerical:
-            await manipulateNUMERICALQuestion({
+          }
+          case ElementType.Numerical: {
+            const result = await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -451,9 +456,11 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateNumericalQuestion?.id) return
             break
-          case ElementType.FreeText:
-            await manipulateFreeTextQuestion({
+          }
+          case ElementType.FreeText: {
+            const result = await manipulateFreeTextQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -473,10 +480,22 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateFreeTextQuestion?.id) return
             break
+          }
+
           default:
             break
         }
+
+        if (mode === QuestionEditMode.EDIT && updateInstances) {
+          if (questionId !== null && typeof questionId !== 'undefined') {
+            const { data: instanceResult } = await updateQuestionInstances({
+              variables: { questionId: questionId },
+            })
+          }
+        }
+
         handleSetIsOpen(false)
       }}
     >
@@ -1382,6 +1401,28 @@ function QuestionEditModal({
                   )}
               </div>
             </div>
+
+            {mode === QuestionEditMode.EDIT && (
+              <div
+                className={twMerge(
+                  'p-2 mt-3 border border-solid rounded flex flex-row gap-6 items-center',
+                  updateInstances && 'bg-orange-100 border-orange-200'
+                )}
+              >
+                <Switch
+                  checked={updateInstances}
+                  onCheckedChange={() => setUpdateInstances(!updateInstances)}
+                />
+                <div>
+                  <H4 className={{ root: 'm-0' }}>
+                    {t('manage.questionForms.updateInstances')}
+                  </H4>
+                  <Prose className={{ root: 'prose-xs max-w-none' }}>
+                    {t('manage.questionForms.updateInstancesExplanation')}
+                  </Prose>
+                </div>
+              </div>
+            )}
           </Modal>
         )
       }}
