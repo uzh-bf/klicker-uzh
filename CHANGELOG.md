@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.11...v3.1.0-beta.12) (2023-11-26)
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** filtering with array.filter in migration script ([484afb4](https://github.com/uzh-bf/klicker-uzh/commit/484afb405d273a6c7b03f24b0c622dc0db1223b9))
+
 ## [3.1.0-beta.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.10...v3.1.0-beta.11) (2023-11-26)
 
 
