@@ -78,7 +78,7 @@
     "start": "node -r dotenv/config dist/index.js",
     "--start:test": "nyc --silent npm start",
     "start:test": "npm start",
-    "exec:prod": "doppler run --config prd -- ts-node --esm"
+    "exec:prod": "doppler run --config prd -- bun run"
   },
   "engines": {
     "node": "=20"
