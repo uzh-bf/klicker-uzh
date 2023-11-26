@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.10...v3.1.0-beta.11) (2023-11-26)
+
+
+### Bug Fixes
+
+* add idempotent mode for startup migrations and extend transaction timeouts ([6392842](https://github.com/uzh-bf/klicker-uzh/commit/63928425da632bdae5d1e5a7c0c250a3a047ca32))
+
 ## [3.1.0-beta.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.9...v3.1.0-beta.10) (2023-11-26)
 
 
