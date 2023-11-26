@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.9...v3.1.0-beta.10) (2023-11-26)
+
+
+### Dependencies
+
+* **apps/*:** upgrade next apps to v14 ([#3926](https://github.com/uzh-bf/klicker-uzh/issues/3926)) ([ac0aa34](https://github.com/uzh-bf/klicker-uzh/commit/ac0aa34d2d808764559aa7bc27b0e37fca25c0f5))
+
+
+### Enhancements
+
+* change login to frontend control to be based on shortname and token ([#3976](https://github.com/uzh-bf/klicker-uzh/issues/3976)) ([b59a530](https://github.com/uzh-bf/klicker-uzh/commit/b59a5309247da28d97ea18153d6762771dab65b4))
+
 ## [3.1.0-beta.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.8...v3.1.0-beta.9) (2023-11-23)
 
 
