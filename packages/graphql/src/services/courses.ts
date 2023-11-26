@@ -283,7 +283,9 @@ export async function getCourseOverviewData(
               {
                 ...group,
                 score,
-                rank: ix + 1,
+                isMember: participation.participant.participantGroups.some(
+                  (g) => g.id === group.id
+                ),
               },
             ],
             count: acc.count + 1,
@@ -313,6 +315,10 @@ export async function getCourseOverviewData(
           return { ...entry, rank: ix + 1 }
         return []
       })
+      const filteredGroupEntries = sortedGroupEntries.flatMap((entry, ix) => {
+        if (ix < 10 || entry.isMember) return { ...entry, rank: ix + 1 }
+        return []
+      })
 
       return {
         id: `${courseId}-${participation.participant.id}`,
@@ -325,7 +331,7 @@ export async function getCourseOverviewData(
           averageScore:
             allEntries.count > 0 ? allEntries.sum / allEntries.count : 0,
         },
-        groupLeaderboard: sortedGroupEntries,
+        groupLeaderboard: filteredGroupEntries,
         groupLeaderboardStatistics: {
           participantCount: allGroupEntries.count,
           averageScore:
