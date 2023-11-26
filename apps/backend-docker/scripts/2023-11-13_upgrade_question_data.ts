@@ -3,16 +3,11 @@ import type { PrismaMigrationClient } from '@klicker-uzh/graphql/src/types/app.j
 export default async function execute(prisma: PrismaMigrationClient) {
   let counter = 1
 
-  const questionInstances = await prisma.questionInstance.findMany({
-    where: {
-      questionData: {
-        questionId: {
-          not: null,
-        },
-      },
-    },
-  })
-  for (const elem of questionInstances) {
+  const questionInstances = await prisma.questionInstance.findMany({})
+  const filteredQuestionInstances = questionInstances.filter(
+    (elem) => typeof elem.questionData.questionId === 'undefined'
+  )
+  for (const elem of filteredQuestionInstances) {
     console.log(counter, elem.id)
     await prisma.questionInstance.update({
       where: {
@@ -35,17 +30,11 @@ export default async function execute(prisma: PrismaMigrationClient) {
     counter++
   }
 
-  const elementInstances = await prisma.elementInstance.findMany({
-    where: {
-      questionData: {
-        questionId: {
-          not: null,
-        },
-      },
-    },
-  })
-
-  for (const elem of elementInstances) {
+  const elementInstances = await prisma.elementInstance.findMany({})
+  const filteredElementInstances = elementInstances.filter(
+    (elem) => typeof elem.elementData.questionId === 'undefined'
+  )
+  for (const elem of filteredElementInstances) {
     console.log(counter, elem.id)
     await prisma.elementInstance.update({
       where: {
