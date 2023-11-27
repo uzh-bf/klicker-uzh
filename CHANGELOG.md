@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.13...v3.1.0-beta.14) (2023-11-27)
+
+
+### Bug Fixes
+
+* **apps/frontend-*:** initialize edit wizards with .questionId ([c5eeabd](https://github.com/uzh-bf/klicker-uzh/commit/c5eeabdfc4b485de347337cfe94d31886cf09db3))
+
 ## [3.1.0-beta.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.12...v3.1.0-beta.13) (2023-11-27)
 
 
