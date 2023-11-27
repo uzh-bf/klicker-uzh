@@ -241,7 +241,7 @@ function LiveSessionWizard({
           blocks: initialValues?.blocks?.map((block) => {
             return {
               questionIds: block.instances?.map(
-                (instance) => instance.questionData.id
+                (instance) => instance.questionData.questionId
               ),
               titles: block.instances?.map(
                 (instance) => instance.questionData.name

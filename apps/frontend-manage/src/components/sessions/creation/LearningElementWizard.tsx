@@ -199,7 +199,8 @@ function LearningElementWizard({
                 )
                 .map((stack) => {
                   return {
-                    id: stack.elements![0].questionInstance?.questionData.id,
+                    id: stack.elements![0].questionInstance?.questionData
+                      .questionId,
                     title:
                       stack.elements![0].questionInstance?.questionData.name,
                     hasAnswerFeedbacks: true, // has been checked during previous submission

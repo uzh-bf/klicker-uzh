@@ -186,7 +186,7 @@ function MicroSessionWizard({
           questions:
             initialValues?.instances?.map((instance) => {
               return {
-                id: instance.questionData.id,
+                id: instance.questionData.questionId,
                 title: instance.questionData.name,
                 hasAnswerFeedbacks: instance.questionData.hasAnswerFeedbacks,
                 hasSampleSolution: instance.questionData.hasSampleSolution,
