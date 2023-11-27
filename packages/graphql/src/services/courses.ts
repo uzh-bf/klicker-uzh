@@ -316,8 +316,7 @@ export async function getCourseOverviewData(
         return []
       })
       const filteredGroupEntries = sortedGroupEntries.flatMap((entry, ix) => {
-        if (ix < 10 || entry.isMember) return { ...entry, rank: ix + 1 }
-        return []
+        return { ...entry, rank: ix + 1 }
       })
 
       return {

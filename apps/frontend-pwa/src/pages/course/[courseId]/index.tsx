@@ -217,6 +217,7 @@ function CourseOverview({ courseId }: Props) {
                           rank2: Rank2Img,
                           rank3: Rank3Img,
                         }}
+                        topKOnly={10}
                       />
                     )}
                     {participant?.id && !participation?.isActive && (
