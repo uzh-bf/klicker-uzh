@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.15...v3.1.0-beta.16) (2023-11-27)
+
+
+### Bug Fixes
+
+* **packages/graphql:** revert to OR for catalyst permissions ([98d7e51](https://github.com/uzh-bf/klicker-uzh/commit/98d7e518111f25da0524d2a1028c3e1f773a3e2f))
+
 ## [3.1.0-beta.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.14...v3.1.0-beta.15) (2023-11-27)
 
 
