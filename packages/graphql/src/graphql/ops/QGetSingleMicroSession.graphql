@@ -12,10 +12,7 @@ query GetSingleMicroSession($id: String!) {
     }
     instances {
       id
-      questionData {
-        id
-        name
-      }
+      ...QuestionData
     }
   }
 }
