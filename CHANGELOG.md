@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.12...v3.1.0-beta.13) (2023-11-27)
+
+
+### Bug Fixes
+
+* resolve issues with leaderboard components ([#3978](https://github.com/uzh-bf/klicker-uzh/issues/3978)) ([7f31612](https://github.com/uzh-bf/klicker-uzh/commit/7f316127abfddc7cf8dec7ea9923909fb2ce1164))
+
 ## [3.1.0-beta.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.11...v3.1.0-beta.12) (2023-11-26)
 
 
