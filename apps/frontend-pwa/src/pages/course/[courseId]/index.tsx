@@ -207,9 +207,7 @@ function CourseOverview({ courseId }: Props) {
 
                     {participant?.id && participation?.isActive && (
                       <Leaderboard
-                        courseName={course.displayName}
                         leaderboard={leaderboard || []}
-                        activeParticipation={participation?.isActive}
                         onJoin={joinCourse}
                         onLeave={() => setIsLeaveCourseModalOpen(true)}
                         participant={participant ?? undefined}
@@ -219,6 +217,7 @@ function CourseOverview({ courseId }: Props) {
                           rank2: Rank2Img,
                           rank3: Rank3Img,
                         }}
+                        topKOnly={10}
                       />
                     )}
                     {participant?.id && !participation?.isActive && (
@@ -276,11 +275,13 @@ function CourseOverview({ courseId }: Props) {
                     </H3>
 
                     <Leaderboard
-                      activeParticipation={participation?.isActive}
                       leaderboard={
                         filteredGroupLeaderboard?.map((entry) => ({
+                          id: entry.id,
                           username: entry.name,
                           score: entry.score,
+                          rank: entry.rank,
+                          isMember: entry.isMember ?? false,
                         })) || []
                       }
                       hideAvatars={true}
@@ -430,7 +431,6 @@ function CourseOverview({ courseId }: Props) {
                           rank3: Rank3Img,
                         }}
                       />
-
                       <div className="self-end mt-6 text-sm w-60 text-slate-600">
                         <div className="flex flex-row justify-between">
                           <div>{t('pwa.courses.membersScore')}</div>
