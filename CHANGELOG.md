@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.14...v3.1.0-beta.15) (2023-11-27)
+
+
+### Bug Fixes
+
+* **packages/graphql:** use QuestionData fragment for editing wizard queries ([96c2165](https://github.com/uzh-bf/klicker-uzh/commit/96c216518b5b9e7b352028e513bfee9ca8394009))
+
 ## [3.1.0-beta.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.13...v3.1.0-beta.14) (2023-11-27)
 
 
