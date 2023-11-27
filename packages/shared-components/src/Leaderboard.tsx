@@ -68,13 +68,12 @@ function Leaderboard({
                 ...acc.rankedEntriesAndSelf,
                 { ...entry, isSelf: true },
               ],
-              inTopK:
-                typeof topKOnly !== 'undefined' ? ix <= topKOnly - 1 : false,
+              inTopK: typeof topKOnly !== 'undefined' ? ix < topKOnly : false,
               selfEntry: entry,
             }
           }
 
-          if (typeof topKOnly === 'undefined' || ix <= topKOnly - 1) {
+          if (typeof topKOnly === 'undefined' || ix < topKOnly) {
             return {
               rankedEntriesAndSelf: [...acc.rankedEntriesAndSelf, entry],
               inTopK: acc.inTopK,
@@ -94,7 +93,7 @@ function Leaderboard({
     return rankedEntriesAndSelf.filter(
       (entry: LeaderboardCombinedEntry) => entry.rank <= topKOnly
     )
-  }, [])
+  }, [rankedEntriesAndSelf, topKOnly])
 
   return (
     <div className={twMerge('space-y-4', className?.root)}>
