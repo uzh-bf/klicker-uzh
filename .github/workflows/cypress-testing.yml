@@ -109,7 +109,7 @@ jobs:
           FUNC_RESPONSE_PROCESSOR_SETTINGS: ${{ secrets.FUNC_RESPONSE_PROCESSOR_SETTINGS }}
 
       - name: Build all packages and apps
-        run: pnpm run build
+        run: pnpm run --filter @klicker-uzh/prisma build && pnpm run build
 
       - name: Apply migrations and seed the database
         run: |
