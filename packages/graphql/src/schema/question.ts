@@ -1,11 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
+import { BaseElementData } from 'src/types/app'
 import builder from '../builder'
-import { ElementData } from './elementData'
+import { ElementDataRef } from './elementData'
 import {
   ElementDisplayMode,
   ElementInstanceType,
   ElementType,
-  QuestionData,
+  QuestionDataRef,
 } from './questionData'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
@@ -176,8 +177,8 @@ export const Element = ElementRef.implement({
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
     questionData: t.field({
-      type: QuestionData,
-      resolve: (q) => q,
+      type: QuestionDataRef,
+      resolve: (q) => q as unknown as BaseElementData,
     }),
     displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
 
@@ -213,7 +214,7 @@ export const QuestionInstance = QuestionInstanceRef.implement({
     }),
 
     questionData: t.field({
-      type: QuestionData,
+      type: QuestionDataRef,
       resolve: (q) => q.questionData,
     }),
   }),
@@ -237,7 +238,7 @@ export const ElementInstance = ElementInstanceRef.implement({
     }),
 
     elementData: t.field({
-      type: ElementData,
+      type: ElementDataRef,
       resolve: (q) => q.elementData,
     }),
   }),

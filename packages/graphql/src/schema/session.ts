@@ -3,10 +3,10 @@ import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import { AllElementTypeData, QuestionResults } from '../types/app'
 import type { ICourse } from './course'
-import { Course } from './course'
+import { CourseRef } from './course'
 import type { IQuestionInstance } from './question'
-import { QuestionInstance } from './question'
-import { QuestionData } from './questionData'
+import { QuestionInstanceRef } from './question'
+import { QuestionDataRef } from './questionData'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),
@@ -64,19 +64,19 @@ export const Session = SessionRef.implement({
     numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
 
     activeBlock: t.expose('activeBlock', {
-      type: SessionBlock,
+      type: SessionBlockRef,
       nullable: true,
     }),
     blocks: t.expose('blocks', {
-      type: [SessionBlock],
+      type: [SessionBlockRef],
       nullable: true,
     }),
     feedbacks: t.expose('feedbacks', {
-      type: [Feedback],
+      type: [FeedbackRef],
       nullable: true,
     }),
     confusionFeedbacks: t.expose('confusionFeedbacks', {
-      type: [ConfusionTimestep],
+      type: [ConfusionTimestepRef],
       nullable: true,
     }),
     confusionSummary: t.expose('confusionSummary', {
@@ -84,7 +84,7 @@ export const Session = SessionRef.implement({
       nullable: true,
     }),
     course: t.expose('course', {
-      type: Course,
+      type: CourseRef,
       nullable: true,
     }),
 
@@ -113,7 +113,7 @@ export const SessionBlock = SessionBlockRef.implement({
     execution: t.exposeInt('execution', { nullable: true }),
 
     instances: t.expose('instances', {
-      type: [QuestionInstance],
+      type: [QuestionInstanceRef],
       nullable: true,
     }),
   }),
@@ -132,7 +132,7 @@ export const Feedback = FeedbackRef.implement({
     content: t.exposeString('content'),
     votes: t.exposeInt('votes'),
     responses: t.expose('responses', {
-      type: [FeedbackResponse],
+      type: [FeedbackResponseRef],
       nullable: true,
     }),
     resolvedAt: t.expose('resolvedAt', { type: 'Date', nullable: true }),
@@ -228,7 +228,7 @@ export const InstanceResult = InstanceResultRef.implement({
     status: t.expose('status', { type: SessionBlockStatus }),
 
     questionData: t.field({
-      type: QuestionData,
+      type: QuestionDataRef,
       resolve: (q) => q.questionData,
     }),
     statistics: t.expose('statistics', { type: Statistics, nullable: true }),
@@ -307,15 +307,15 @@ export const SessionEvaluation = SessionEvaluationRef.implement({
       resolve: (evaluation) => evaluation.blocks,
     }),
     instanceResults: t.field({
-      type: [InstanceResult],
+      type: [InstanceResultRef],
       resolve: (evaluation) => evaluation.instanceResults,
     }),
     feedbacks: t.field({
-      type: [Feedback],
+      type: [FeedbackRef],
       resolve: (evaluation) => evaluation.feedbacks,
     }),
     confusionFeedbacks: t.field({
-      type: [ConfusionTimestep],
+      type: [ConfusionTimestepRef],
       resolve: (evaluation) => evaluation.confusionFeedbacks,
     }),
   }),

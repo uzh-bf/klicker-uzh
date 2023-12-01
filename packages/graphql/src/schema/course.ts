@@ -1,13 +1,17 @@
 import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import builder from '../builder'
-import { GroupActivity } from './groupActivity'
+import { GroupActivityRef } from './groupActivity'
 import type { ILearningElement } from './learningElements'
 import { LearningElementRef } from './learningElements'
 import type { IMicroSession } from './microSession'
 import { MicroSessionRef } from './microSession'
 import type { IParticipant, IParticipantGroup } from './participant'
-import { Participant, ParticipantGroup, Participation } from './participant'
+import {
+  ParticipantGroupRef,
+  ParticipantRef,
+  ParticipationRef,
+} from './participant'
 import { IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes'
 import type { ISession } from './session'
 import { SessionRef } from './session'
@@ -98,7 +102,7 @@ export const Course = builder.objectType(CourseRef, {
       nullable: true,
     }),
     groupActivities: t.expose('groupActivities', {
-      type: [GroupActivity],
+      type: [GroupActivityRef],
       nullable: true,
     }),
     leaderboard: t.expose('leaderboard', {
@@ -141,13 +145,13 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
     }),
 
     participant: t.expose('participant', {
-      type: Participant,
+      type: ParticipantRef,
       nullable: true,
     }),
     participantId: t.exposeString('participantId'),
 
     participation: t.expose('participation', {
-      type: Participation,
+      type: ParticipationRef,
     }),
   }),
 })
@@ -200,12 +204,12 @@ export const AwardEntry = AwardEntryRef.implement({
     description: t.exposeString('description'),
 
     participant: t.expose('participant', {
-      type: Participant,
+      type: ParticipantRef,
       nullable: true,
     }),
 
     participantGroup: t.expose('participantGroup', {
-      type: ParticipantGroup,
+      type: ParticipantGroupRef,
       nullable: true,
     }),
   }),

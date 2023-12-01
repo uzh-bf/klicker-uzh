@@ -3,9 +3,9 @@ import builder from '../builder.js'
 import type { ICourse } from './course.js'
 import { Course } from './course.js'
 import type { IParticipant, IParticipantGroup } from './participant.js'
-import { ParticipantGroup, ParticipantRef } from './participant.js'
+import { ParticipantGroupRef, ParticipantRef } from './participant.js'
 import type { IQuestionInstance } from './question.js'
-import { QuestionInstance } from './question.js'
+import { QuestionInstanceRef } from './question.js'
 
 export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),
@@ -147,16 +147,16 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
     }),
 
     activityInstance: t.expose('activityInstance', {
-      type: GroupActivityInstance,
+      type: GroupActivityInstanceRef,
       nullable: true,
     }),
 
     clues: t.expose('clues', {
-      type: [GroupActivityClue],
+      type: [GroupActivityClueRef],
     }),
 
     instances: t.expose('instances', {
-      type: [QuestionInstance],
+      type: [QuestionInstanceRef],
     }),
 
     course: t.expose('course', {
@@ -164,7 +164,7 @@ export const GroupActivityDetails = GroupActivityDetailsRef.implement({
     }),
 
     group: t.expose('group', {
-      type: ParticipantGroup,
+      type: ParticipantGroupRef,
     }),
   }),
 })

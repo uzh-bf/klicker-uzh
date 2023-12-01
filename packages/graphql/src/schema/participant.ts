@@ -1,7 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import { levelFromXp } from '../lib/util'
-import { Achievement, ParticipantAchievementInstance } from './achievement'
+import {
+  AchievementRef,
+  ParticipantAchievementInstanceRef,
+} from './achievement'
 import type {
   ICourse,
   IGroupLeaderboardEntry,
@@ -11,7 +14,7 @@ import type {
 import {
   CourseRef,
   GroupLeaderboardEntry,
-  LeaderboardEntry,
+  LeaderboardEntryRef,
   LeaderboardStatistics,
 } from './course'
 import type { IGroupActivityInstance } from './groupActivity'
@@ -127,7 +130,7 @@ export const Participant = ParticipantRef.implement({
       nullable: true,
     }),
     achievements: t.expose('achievements', {
-      type: [ParticipantAchievementInstance],
+      type: [ParticipantAchievementInstanceRef],
       nullable: true,
     }),
 
@@ -177,7 +180,7 @@ export const Participation = ParticipationRef.implement({
     isActive: t.exposeBoolean('isActive'),
 
     subscriptions: t.expose('subscriptions', {
-      type: [PushSubscription],
+      type: [PushSubscriptionRef],
       nullable: true,
     }),
 
@@ -231,12 +234,12 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
     participantToken: t.exposeString('participantToken', { nullable: true }),
 
     participant: t.expose('participant', {
-      type: Participant,
+      type: ParticipantRef,
       nullable: true,
     }),
 
     participation: t.expose('participation', {
-      type: Participation,
+      type: ParticipationRef,
       nullable: true,
     }),
 
@@ -246,7 +249,7 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
     }),
 
     leaderboard: t.expose('leaderboard', {
-      type: [LeaderboardEntry],
+      type: [LeaderboardEntryRef],
       nullable: true,
     }),
 
@@ -283,7 +286,7 @@ export const LeaveCourseParticipation = LeaveCourseParticipationRef.implement({
     id: t.exposeString('id'),
 
     participation: t.expose('participation', {
-      type: Participation,
+      type: ParticipationRef,
     }),
   }),
 })
@@ -301,7 +304,7 @@ export const ParticipantWithAchievements =
         type: ParticipantRef,
       }),
       achievements: t.expose('achievements', {
-        type: [Achievement],
+        type: [AchievementRef],
       }),
     }),
   })

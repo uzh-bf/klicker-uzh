@@ -89,10 +89,8 @@ export const FlashcardElementOptions = builder
     }),
   })
 
-export interface IFlashcardElementData {}
-
 export interface IFlashcardElementData extends BaseElementData {
-  options: IFlashcardElementData
+  options: IFlashcardElementOptions
 }
 export const FlashcardElementData = builder
   .objectRef<IFlashcardElementData>('FlashcardElementData')
