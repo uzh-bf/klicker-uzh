@@ -651,15 +651,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 - **migration:** where in LiveSession migration ([6b1de6c](https://github.com/uzh-bf/klicker-uzh/commit/6b1de6c225bdceedaf150a59c4f951df3a86be7f))
 
-<<<<<<< HEAD
-
 ### Other
 
 - initialize android app with capacitor js ([2f283f4](https://github.com/uzh-bf/klicker-uzh/commit/2f283f46e2e40ca6c5807f95e3911651a6b8b8a5))
-
-=======
-
-> > > > > > > 0a8176359448df45bd8eacf61f9743c2132976d1
 
 ## [3.0.0-rc.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.0.0-rc.36...v3.0.0-rc.37) (2023-09-04)
 

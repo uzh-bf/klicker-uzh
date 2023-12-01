@@ -159,12 +159,7 @@ export const InstanceEvaluation = builder
     }),
   })
 
-<<<<<<< HEAD
-export const QuestionRef = builder.objectRef<DB.Question>('Question')
-export const Question = QuestionRef.implement({
-=======
 export const Element = builder.prismaObject('Element', {
->>>>>>> a6b6d33ba91a21c76f2c4c77b59e803e9819b3db
   fields: (t) => ({
     id: t.exposeInt('id'),
 
@@ -217,10 +212,6 @@ export const QuestionInstance = QuestionInstanceRef.implement({
   }),
 })
 
-<<<<<<< HEAD
-export const TagRef = builder.objectRef<DB.Tag>('Tag')
-export const Tag = TagRef.implement({
-=======
 export interface IElementInstance extends DB.ElementInstance {
   evaluation?: IInstanceEvaluation
 }
@@ -245,8 +236,8 @@ export const ElementInstance = ElementInstanceRef.implement({
   }),
 })
 
-export const Tag = builder.prismaObject('Tag', {
->>>>>>> a6b6d33ba91a21c76f2c4c77b59e803e9819b3db
+export const TagRef = builder.objectRef<DB.Tag>('Tag')
+export const Tag = TagRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     name: t.exposeString('name'),
