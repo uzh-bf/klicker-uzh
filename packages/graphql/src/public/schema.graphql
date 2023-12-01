@@ -995,9 +995,11 @@ type TabData {
 }
 
 type Tag {
+  createdAt: Date!
   id: Int!
   name: String!
   order: Int!
+  updatedAt: Date!
 }
 
 type Title {
@@ -1022,7 +1024,7 @@ type UserLogin {
   lastLoginAt: Date
   name: String!
   scope: UserLoginScope!
-  user: User!
+  user: User
 }
 
 enum UserLoginScope {

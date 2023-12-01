@@ -244,11 +244,14 @@ export const ElementInstance = ElementInstanceRef.implement({
   }),
 })
 
-export const TagRef = builder.objectRef<DB.Tag>('Tag')
+export interface ITag extends Omit<DB.Tag, 'originalId' | 'ownerId'> {}
+export const TagRef = builder.objectRef<ITag>('Tag')
 export const Tag = TagRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     name: t.exposeString('name'),
     order: t.exposeInt('order'),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })

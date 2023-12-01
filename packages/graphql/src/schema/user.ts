@@ -44,14 +44,14 @@ export const User = UserRef.implement({
 })
 
 export interface IUserLogin extends DB.UserLogin {
-  user: IUser
+  user?: IUser
 }
 export const UserLoginRef = builder.objectRef<IUserLogin>('UserLogin')
 export const UserLogin = UserLoginRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
-    user: t.expose('user', { type: UserRef }),
+    user: t.expose('user', { type: UserRef, nullable: true }),
     scope: t.expose('scope', { type: UserLoginScope }),
     lastLoginAt: t.expose('lastLoginAt', { type: 'Date', nullable: true }),
   }),

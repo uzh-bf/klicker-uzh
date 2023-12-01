@@ -1743,9 +1743,11 @@ export type TabData = {
 
 export type Tag = {
   __typename?: 'Tag';
+  createdAt: Scalars['Date']['output'];
   id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   order: Scalars['Int']['output'];
+  updatedAt: Scalars['Date']['output'];
 };
 
 export type Title = {
@@ -1773,7 +1775,7 @@ export type UserLogin = {
   lastLoginAt?: Maybe<Scalars['Date']['output']>;
   name: Scalars['String']['output'];
   scope: UserLoginScope;
-  user: User;
+  user?: Maybe<User>;
 };
 
 export enum UserLoginScope {
@@ -1984,7 +1986,7 @@ export type CreateUserLoginMutationVariables = Exact<{
 }>;
 
 
-export type CreateUserLoginMutation = { __typename?: 'Mutation', createUserLogin?: { __typename?: 'UserLogin', id: string, name: string, scope: UserLoginScope, user: { __typename?: 'User', id: string, shortname: string } } | null };
+export type CreateUserLoginMutation = { __typename?: 'Mutation', createUserLogin?: { __typename?: 'UserLogin', id: string, name: string, scope: UserLoginScope, user?: { __typename?: 'User', id: string, shortname: string } | null } | null };
 
 export type DeactivateSessionBlockMutationVariables = Exact<{
   sessionId: Scalars['String']['input'];
@@ -2683,7 +2685,7 @@ export type GetUserCoursesQuery = { __typename?: 'Query', userCourses?: Array<{ 
 export type GetUserLoginsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetUserLoginsQuery = { __typename?: 'Query', userLogins?: Array<{ __typename?: 'UserLogin', id: string, name: string, scope: UserLoginScope, lastLoginAt?: any | null, user: { __typename?: 'User', id: string, shortname: string } }> | null };
+export type GetUserLoginsQuery = { __typename?: 'Query', userLogins?: Array<{ __typename?: 'UserLogin', id: string, name: string, scope: UserLoginScope, lastLoginAt?: any | null, user?: { __typename?: 'User', id: string, shortname: string } | null }> | null };
 
 export type GetUserMediaFilesQueryVariables = Exact<{ [key: string]: never; }>;
 
