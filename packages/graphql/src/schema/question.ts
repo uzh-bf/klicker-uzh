@@ -1,11 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
+import { BaseElementData } from 'src/types/app'
 import builder from '../builder'
-import { ElementData } from './elementData'
+import { ElementDataRef } from './elementData'
 import {
   ElementDisplayMode,
   ElementInstanceType,
   ElementType,
-  QuestionData,
+  QuestionDataRef,
 } from './questionData'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
@@ -159,10 +160,15 @@ export const InstanceEvaluation = builder
     }),
   })
 
-export const Element = builder.prismaObject('Element', {
+export interface IElement extends Omit<DB.Element, 'ownerId' | 'originalId'> {
+  tags?: ITag[] | null
+}
+export const ElementRef = builder.objectRef<IElement>('Element')
+export const Element = ElementRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
+    version: t.exposeInt('version'),
     name: t.exposeString('name'),
     type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
@@ -172,8 +178,8 @@ export const Element = builder.prismaObject('Element', {
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
     questionData: t.field({
-      type: QuestionData,
-      resolve: (q) => q,
+      type: QuestionDataRef,
+      resolve: (q) => q as unknown as BaseElementData,
     }),
     displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
 
@@ -186,7 +192,10 @@ export const Element = builder.prismaObject('Element', {
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
 
-    tags: t.relation('tags'),
+    tags: t.expose('tags', {
+      type: [TagRef],
+      nullable: true,
+    }),
   }),
 })
 
@@ -206,8 +215,9 @@ export const QuestionInstance = QuestionInstanceRef.implement({
     }),
 
     questionData: t.field({
-      type: QuestionData,
+      type: QuestionDataRef,
       resolve: (q) => q.questionData,
+      nullable: true,
     }),
   }),
 })
@@ -230,16 +240,20 @@ export const ElementInstance = ElementInstanceRef.implement({
     }),
 
     elementData: t.field({
-      type: ElementData,
+      type: ElementDataRef,
       resolve: (q) => q.elementData,
     }),
   }),
 })
 
-export const Tag = builder.prismaObject('Tag', {
+export interface ITag extends Omit<DB.Tag, 'originalId' | 'ownerId'> {}
+export const TagRef = builder.objectRef<ITag>('Tag')
+export const Tag = TagRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     name: t.exposeString('name'),
     order: t.exposeInt('order'),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })

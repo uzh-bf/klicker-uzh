@@ -104,10 +104,10 @@ export const Query = builder.queryType({
         },
       }),
 
-      userTags: asUser.prismaField({
+      userTags: asUser.field({
         nullable: true,
         type: [Tag],
-        async resolve(_, __, ___, ctx) {
+        async resolve(_, __, ctx) {
           const user = await ctx.prisma.user.findUnique({
             where: { id: ctx.user.sub },
             include: { tags: { orderBy: { order: 'asc' } } },
@@ -134,13 +134,13 @@ export const Query = builder.queryType({
         },
       }),
 
-      feedbacks: t.prismaField({
+      feedbacks: t.field({
         nullable: true,
         type: [Feedback],
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, __, args, ctx) {
+        resolve(_, args, ctx) {
           return FeedbackService.getFeedbacks(args, ctx)
         },
       }),
@@ -159,10 +159,10 @@ export const Query = builder.queryType({
         },
       }),
 
-      userQuestions: asUser.prismaField({
+      userQuestions: asUser.field({
         nullable: true,
         type: [Element],
-        resolve(_, __, ___, ctx) {
+        resolve(_, __, ctx) {
           return QuestionService.getUserQuestions(ctx)
         },
       }),
@@ -233,7 +233,8 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getCockpitSession(args, ctx)
+          // FIXME: subsetting
+          return SessionService.getCockpitSession(args, ctx) as any
         },
       }),
 
@@ -255,8 +256,7 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in LearningElementService
-          return LearningElementService.getLearningElementData(args, ctx) as any
+          return LearningElementService.getLearningElementData(args, ctx)
         },
       }),
 
@@ -267,8 +267,7 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in LearningElementService
-          return PracticeQuizService.getPracticeQuizData(args, ctx) as any
+          return PracticeQuizService.getPracticeQuizData(args, ctx)
         },
       }),
 
@@ -291,6 +290,7 @@ export const Query = builder.queryType({
           hmac: t.arg.string(),
         },
         resolve(_, args, ctx) {
+          // FIXME: subsetting
           return SessionService.getSessionEvaluation(args, ctx) as any
         },
       }),
@@ -361,14 +361,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      question: asUser.prismaField({
+      question: asUser.field({
         nullable: true,
         type: Element,
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve(_, __, args, ctx) {
-          return QuestionService.getSingleQuestion(args, ctx) as any
+        resolve(_, args, ctx) {
+          return QuestionService.getSingleQuestion(args, ctx)
         },
       }),
 
@@ -390,6 +390,7 @@ export const Query = builder.queryType({
           sessionId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // FIXME: seems to not respect nullable property correctly here?
           return SessionService.getLeaderboard(args, ctx) as any
         },
       }),
@@ -431,7 +432,7 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in CourseService
+          // FIXME: getCourseOverviewData has no more type issues, but contains a lot of mappings and subsetting of existing types
           return CourseService.getCourseOverviewData(args, ctx) as any
         },
       }),

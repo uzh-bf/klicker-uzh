@@ -5,13 +5,13 @@ schema {
 }
 
 type Achievement {
-  descriptionDE: String!
-  descriptionEN: String!
+  descriptionDE: String
+  descriptionEN: String
   icon: String!
   iconColor: String
   id: Int!
-  nameDE: String!
-  nameEN: String!
+  nameDE: String
+  nameEN: String
 }
 
 input AvatarSettingsInput {
@@ -154,9 +154,10 @@ type Element {
   options: Json!
   pointsMultiplier: Int!
   questionData: QuestionData!
-  tags: [Tag!]!
+  tags: [Tag!]
   type: ElementType!
   updatedAt: Date!
+  version: Int!
 }
 
 interface ElementData {
@@ -231,7 +232,7 @@ type Feedback {
   isPublished: Boolean!
   isResolved: Boolean!
   resolvedAt: Date
-  responses: [FeedbackResponse!]!
+  responses: [FeedbackResponse!]
   votes: Int!
 }
 
@@ -700,7 +701,7 @@ type ParticipantGroup {
   groupActivityScore: Float!
   id: ID!
   name: String!
-  participants: [Participant!]!
+  participants: [Participant!]
   score: Float
 }
 
@@ -835,7 +836,7 @@ type QuestionInstance {
   evaluation: InstanceEvaluation
   id: Int!
   pointsMultiplier: Int!
-  questionData: QuestionData!
+  questionData: QuestionData
 }
 
 type QuestionResponse {
@@ -995,9 +996,11 @@ type TabData {
 }
 
 type Tag {
+  createdAt: Date!
   id: Int!
   name: String!
   order: Int!
+  updatedAt: Date!
 }
 
 type Title {
@@ -1022,7 +1025,7 @@ type UserLogin {
   lastLoginAt: Date
   name: String!
   scope: UserLoginScope!
-  user: User!
+  user: User
 }
 
 enum UserLoginScope {
