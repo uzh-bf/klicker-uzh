@@ -3,7 +3,6 @@ import {
   ConfusionTimestep,
   Element,
   ElementType,
-  LiveSession,
   QuestionInstance,
   QuestionInstanceType,
   SessionBlockStatus,
@@ -978,7 +977,7 @@ async function processCachedData({
     switch (ixMod) {
       // results
       case 2: {
-        const results = mapObjIndexed((count, responseHash) => {
+        const results = mapObjIndexed((count: number, responseHash: string) => {
           return {
             count: +count,
             value:
@@ -1843,109 +1842,66 @@ export async function getSessionEvaluation(
   { id, hmac }: { id: string; hmac?: string | null },
   ctx: Context
 ) {
-  let session: LiveSession | null = null
+  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac == '') {
+    return null
+  }
 
-  if (ctx.user?.sub) {
-    session = await ctx.prisma.liveSession.findUnique({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
+  let session = await ctx.prisma.liveSession.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user?.sub || undefined,
+    },
+    include: {
+      activeBlock: {
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
       },
-      include: {
-        activeBlock: {
-          include: {
-            instances: {
-              orderBy: {
-                order: 'asc',
-              },
+      blocks: {
+        orderBy: {
+          order: 'asc',
+        },
+        where: {
+          status: {
+            equals: 'EXECUTED',
+          },
+        },
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
             },
           },
         },
-        blocks: {
-          orderBy: {
-            order: 'asc',
-          },
-          where: {
-            status: {
-              equals: 'EXECUTED',
-            },
-          },
-          include: {
-            instances: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-        },
-        feedbacks: {
-          include: {
-            responses: true,
-          },
-          orderBy: {
-            updatedAt: 'desc',
-          },
-        },
-        confusionFeedbacks: true,
       },
-    })
-  } else if (typeof hmac === 'string') {
-    session = await ctx.prisma.liveSession.findUnique({
-      where: {
-        id,
+      feedbacks: {
+        include: {
+          responses: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
       },
-      include: {
-        activeBlock: {
-          include: {
-            instances: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-        },
-        blocks: {
-          orderBy: {
-            order: 'asc',
-          },
-          where: {
-            status: {
-              equals: 'EXECUTED',
-            },
-          },
-          include: {
-            instances: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-        },
-        feedbacks: {
-          include: {
-            responses: true,
-          },
-          orderBy: {
-            updatedAt: 'desc',
-          },
-        },
-        confusionFeedbacks: true,
-      },
-    })
+      confusionFeedbacks: true,
+    },
+  })
 
-    if (!session) return null
+  if (!session) return null
 
+  if (typeof hmac === 'string') {
     const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
     hmacEncoder.update(session.namespace + session.id)
     const sessionHmac = hmacEncoder.digest('hex')
 
     // evaluate whether the hashed session.namespace and session.id equals the hmac
     if (sessionHmac !== hmac) {
-      session = null
+      return null
     }
   }
-
-  if (!session) return null
 
   // if the session is running and a block is active
   // fetch the current results from the execution cache
@@ -1962,6 +1918,7 @@ export async function getSessionEvaluation(
       activeInstanceIds,
     })
 
+    // FIXME: rework processCachedData with a clean return type
     const { instanceResults } = await processCachedData({
       cachedResults,
       activeBlock: session.activeBlock,
@@ -1969,16 +1926,16 @@ export async function getSessionEvaluation(
 
     activeInstanceResults = Object.entries(instanceResults).map(
       ([id, results]) => {
-        const instance = session.activeBlock!.instances.find(
+        const instance = session!.activeBlock!.instances.find(
           (instance) => instance.id === Number(id)
         )
 
         return {
           id: `${instance?.id}-eval`,
-          displayName: session.displayName,
-          blockIx: session.activeBlock!.order,
+          displayName: session!.displayName,
+          blockIx: session!.activeBlock!.order,
           instanceIx: instance?.order,
-          status: session.activeBlock!.status,
+          status: session!.activeBlock!.status,
           questionData: instance?.questionData,
           participants: results.participants,
           results: results.results,
@@ -1995,6 +1952,7 @@ export async function getSessionEvaluation(
   let executedInstanceResults = session.blocks.flatMap((block) =>
     block.instances.map((instance) => ({
       id: `${instance.id}-eval`,
+      displayName: session!.displayName,
       blockIx: block.order,
       instanceIx: instance.order,
       status: block.status,
@@ -2024,7 +1982,7 @@ export async function getSessionEvaluation(
         id: `${instance.id}-eval`,
         questionIx: instance.order,
         name: instance.questionData?.name,
-        status: session.activeBlock?.status,
+        status: session!.activeBlock?.status,
       })),
     }
   }
@@ -2036,6 +1994,7 @@ export async function getSessionEvaluation(
     isGamificationEnabled: session.isGamificationEnabled,
     blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
     instanceResults: [
+      // FIXME: ensure this can be assigned to AllElementTypeData
       ...completeQuestionData(executedInstanceResults),
       ...completeQuestionData(activeInstanceResults),
     ],

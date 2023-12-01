@@ -1,9 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import type { ICourse } from './course'
-import { Course } from './course'
+import { CourseRef } from './course'
 import type { IQuestionInstance } from './question'
-import { QuestionInstance } from './question'
+import { QuestionInstanceRef } from './question'
 
 export interface IMicroSession extends DB.MicroSession {
   numOfInstances?: number
@@ -32,11 +32,11 @@ export const MicroSession = MicroSessionRef.implement({
     numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),
 
     course: t.expose('course', {
-      type: Course,
+      type: CourseRef,
       nullable: true,
     }),
     instances: t.expose('instances', {
-      type: [QuestionInstance],
+      type: [QuestionInstanceRef],
       nullable: true,
     }),
   }),
