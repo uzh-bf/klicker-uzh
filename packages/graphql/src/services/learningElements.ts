@@ -32,6 +32,7 @@ import {
 } from '../lib/questions'
 import {
   AllElementTypeData,
+  AllQuestionInstanceTypeData,
   QuestionResponse,
   QuestionResponseChoices,
 } from '../types/app'
@@ -239,7 +240,9 @@ export async function respondToQuestionInstance(
       }
 
       const questionData = instance?.questionData
-      const results = instance?.results
+
+      // FIXME: ensure the types of this allow assignment of the different element type results
+      const results: AllQuestionInstanceTypeData['results'] = instance?.results
 
       if (!questionData) {
         return {}

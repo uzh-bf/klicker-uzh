@@ -233,7 +233,8 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getCockpitSession(args, ctx)
+          // FIXME: subsetting
+          return SessionService.getCockpitSession(args, ctx) as any
         },
       }),
 
@@ -291,7 +292,8 @@ export const Query = builder.queryType({
           hmac: t.arg.string(),
         },
         resolve(_, args, ctx) {
-          return SessionService.getSessionEvaluation(args, ctx)
+          // FIXME: subsetting
+          return SessionService.getSessionEvaluation(args, ctx) as any
         },
       }),
 
@@ -390,7 +392,8 @@ export const Query = builder.queryType({
           sessionId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getLeaderboard(args, ctx)
+          // FIXME: seems to not respect nullable property correctly here?
+          return SessionService.getLeaderboard(args, ctx) as any
         },
       }),
 
@@ -431,8 +434,8 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in CourseService
-          return CourseService.getCourseOverviewData(args, ctx)
+          // FIXME: getCourseOverviewData has no more type issues, but contains a lot of mappings and subsetting of existing types
+          return CourseService.getCourseOverviewData(args, ctx) as any
         },
       }),
 

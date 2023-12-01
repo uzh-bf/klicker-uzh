@@ -1920,6 +1920,7 @@ export async function getSessionEvaluation(
       activeInstanceIds,
     })
 
+    // FIXME: rework processCachedData with a clean return type
     const { instanceResults } = await processCachedData({
       cachedResults,
       activeBlock: session.activeBlock,
@@ -1953,6 +1954,7 @@ export async function getSessionEvaluation(
   let executedInstanceResults = session.blocks.flatMap((block) =>
     block.instances.map((instance) => ({
       id: `${instance.id}-eval`,
+      displayName: session!.displayName,
       blockIx: block.order,
       instanceIx: instance.order,
       status: block.status,
@@ -1994,6 +1996,7 @@ export async function getSessionEvaluation(
     isGamificationEnabled: session.isGamificationEnabled,
     blocks: activeBlock ? [...executedBlocks, activeBlock] : executedBlocks,
     instanceResults: [
+      // FIXME: ensure this can be assigned to AllElementTypeData
       ...completeQuestionData(executedInstanceResults),
       ...completeQuestionData(activeInstanceResults),
     ],

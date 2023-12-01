@@ -861,7 +861,8 @@ export const Mutation = builder.mutationType({
           isArchived: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.toggleIsArchived(args, ctx)
+          // FIXME: figure out how to return only a partial element or create a new pothos type only for this?
+          return QuestionService.toggleIsArchived(args, ctx) as any
         },
       }),
 

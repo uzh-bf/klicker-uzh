@@ -564,6 +564,7 @@ export async function getCourseData(
     }
   })
 
+  // FIXME: rework typing on this reduce
   const { activeLBEntries, activeSum, activeCount } =
     course?.leaderboard.reduce(
       (acc, entry) => {
