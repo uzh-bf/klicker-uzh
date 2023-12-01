@@ -1,11 +1,18 @@
-import { useMutation, useQuery, useSuspenseQuery } from '@apollo/client'
+import {
+  useLazyQuery,
+  useMutation,
+  useQuery,
+  useSuspenseQuery,
+} from '@apollo/client'
 import {
   ChangeInitialSettingsDocument,
+  CheckShortnameAvailableDocument,
+  Element,
   GetUserQuestionsDocument,
-  Question,
   ToggleIsArchivedDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
 import { Suspense, useEffect, useMemo, useState } from 'react'
@@ -30,7 +37,6 @@ import {
   Button,
   Checkbox,
   FormikSelectField,
-  FormikTextField,
   H1,
   Modal,
   Select,
@@ -109,10 +115,17 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
 function SuspendedFirstLoginModal() {
   const [firstLogin, setFirstLogin] = useState(false)
   const [showGenericError, setShowGenericError] = useState(false)
+  const [isShortnameAvailable, setIsShortnameAvailable] = useState<
+    boolean | undefined
+  >(true)
 
   const { data } = useSuspenseQuery(UserProfileDocument)
   const [changeInitialSettings] = useMutation(ChangeInitialSettingsDocument)
   const t = useTranslations()
+
+  const [checkShortnameAvailable] = useLazyQuery(
+    CheckShortnameAvailableDocument
+  )
 
   useEffect(() => {
     if (data?.userProfile?.firstLogin) {
@@ -158,9 +171,11 @@ function SuspendedFirstLoginModal() {
             setShowGenericError(false)
             setSubmitting(true)
 
+            const trimmedUsername = values.shortname.trim()
+
             const result = await changeInitialSettings({
               variables: {
-                shortname: values.shortname,
+                shortname: trimmedUsername,
                 locale: values.locale,
               },
               refetchQueries: [GetUserQuestionsDocument],
@@ -169,7 +184,7 @@ function SuspendedFirstLoginModal() {
             if (!result) {
               setShowGenericError(true)
             } else if (
-              result.data?.changeInitialSettings?.shortname !== values.shortname
+              result.data?.changeInitialSettings?.shortname !== trimmedUsername
             ) {
               setErrors({
                 shortname: t('manage.settings.shortnameTaken'),
@@ -181,13 +196,31 @@ function SuspendedFirstLoginModal() {
             setSubmitting(false)
           }}
         >
-          {({ isValid, isSubmitting }) => (
+          {({ isValid, isSubmitting, validateField }) => (
             <Form>
-              <div className="md:mb-5 mb-1 space-y-4">
-                <FormikTextField
-                  label={t('shared.generic.shortname')}
+              <div className="mb-1 space-y-4 md:mb-5">
+                <DebouncedUsernameField
+                  className={{
+                    root: 'w-[250px]',
+                    input: 'bg-white',
+                    icon: 'bg-transparent',
+                  }}
                   name="shortname"
-                  className={{ root: 'w-[250px]' }}
+                  label={t('shared.generic.shortname')}
+                  labelType="normal"
+                  valid={isShortnameAvailable}
+                  setValid={(shortnameAvailable: boolean | undefined) =>
+                    setIsShortnameAvailable(shortnameAvailable)
+                  }
+                  validateField={async () => {
+                    await validateField('shortname')
+                  }}
+                  checkUsernameAvailable={async (name: string) => {
+                    const { data: result } = await checkShortnameAvailable({
+                      variables: { shortname: name },
+                    })
+                    return result?.checkShortnameAvailable ?? false
+                  }}
                   required
                 />
                 <FormikSelectField
@@ -211,7 +244,7 @@ function SuspendedFirstLoginModal() {
                 {t('manage.firstLogin.relevantLinks')}
               </div>
 
-              <div className="mb-4 grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4 mb-4">
                 <Link
                   href="https://www.klicker.uzh.ch/getting_started/welcome"
                   target="_blank"
@@ -249,7 +282,7 @@ function SuspendedFirstLoginModal() {
               <Button
                 fluid
                 className={{
-                  root: 'mt-4 w-32 justify-center float-right bg-primary-80 text-white',
+                  root: 'mt-4 w-32 justify-center float-right bg-primary-80 text-white disabled:opacity-50 disabled:cursor-not-allowed',
                 }}
                 disabled={!isValid || isSubmitting}
                 type="submit"
@@ -281,10 +314,10 @@ function Index() {
   const [sortBy, setSortBy] = useState('')
 
   const [selectedQuestions, setSelectedQuestions] = useState<
-    Record<number, Question | undefined>
+    Record<number, Element | undefined>
   >({})
 
-  const selectedQuestionData: Record<number, Question> = useMemo(
+  const selectedQuestionData: Record<number, Element> = useMemo(
     () => R.pickBy((value) => typeof value !== 'undefined', selectedQuestions),
     [selectedQuestions]
   )
@@ -582,7 +615,7 @@ function Index() {
                 <QuestionList
                   questions={processedQuestions}
                   selectedQuestions={selectedQuestionData}
-                  setSelectedQuestions={(id: number, data: Question) => {
+                  setSelectedQuestions={(id: number, data: Element) => {
                     setSelectedQuestions((prev) => {
                       return { ...prev, [id]: prev[id] ? undefined : data }
                     })

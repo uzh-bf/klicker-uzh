@@ -4,8 +4,6 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import isEmail from 'validator/lib/isEmail'
-import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -25,26 +23,22 @@ const COOKIE_SETTINGS: CookieOptions = {
 }
 
 interface LoginUserTokenArgs {
-  email: string
+  shortname: string
   token: string
 }
 
 export async function loginUserToken(
-  { email, token }: LoginUserTokenArgs,
+  { shortname, token }: LoginUserTokenArgs,
   ctx: Context
 ) {
-  if (!isEmail(email)) return null
-
-  const normalizedEmail = normalizeEmail(email) as string
-
   const user = await ctx.prisma.user.findUnique({
-    where: { email: normalizedEmail },
+    where: { shortname },
   })
 
   if (!user) {
     await sendTeamsNotifications(
       'graphql/loginUserToken',
-      `LOGIN FAILED: User with email ${normalizedEmail} not found.`
+      `LOGIN FAILED: User with shortname ${shortname} not found.`
     )
     return null
   }
@@ -402,7 +396,7 @@ export async function getUserLogins(ctx: ContextWithUser) {
   return logins
 }
 
-export async function checkUsernameAvailability(
+export async function checkParticipantNameAvailable(
   { username }: { username: string },
   ctx: Context
 ) {
@@ -411,6 +405,19 @@ export async function checkUsernameAvailability(
   })
 
   if (!participant || participant.id === ctx.user?.sub) return true
+
+  return false
+}
+
+export async function checkShortnameAvailable(
+  { shortname }: { shortname: string },
+  ctx: Context
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { shortname: shortname },
+  })
+
+  if (!user || user.id === ctx.user?.sub) return true
 
   return false
 }
@@ -524,14 +531,16 @@ export async function changeInitialSettings(
 
 async function seedDemoQuestions(ctx: ContextWithUser) {
   // create single choice demo question
-  const questionSC = await ctx.prisma.question.create({
+  const questionSC = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion SC',
-      type: DB.QuestionType.SC,
-      displayMode: DB.QuestionDisplayMode.GRID,
+      type: DB.ElementType.SC,
       content:
         'Which of the following statements is applicable to _KlickerUZH_?',
       options: {
+        displayMode: DB.ElementDisplayMode.GRID,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
         choices: [
           {
             ix: 0,
@@ -562,8 +571,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       explanation:
         'For Single Choice questions, you can specify a correct solution, answer feedbacks and a general explanation. All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images.',
       pointsMultiplier: 1,
-      hasSampleSolution: true,
-      hasAnswerFeedbacks: true,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -591,13 +598,16 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create multiple choice demo question
-  const questionMC = await ctx.prisma.question.create({
+  const questionMC = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion MC',
-      type: DB.QuestionType.MC,
+      type: DB.ElementType.MC,
       content:
         'Which of the following formulas have the form of a Taylor polynomial of some degree $$n$$: $$T_n f(x;a)$$? (multiple answers are possible)',
       options: {
+        displayMode: DB.ElementDisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
         choices: [
           {
             ix: 0,
@@ -632,8 +642,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       explanation:
         'Multiple Choice questions can have multiple correct answers. You can specify answer feedbacks and a general explanation. All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images.',
       pointsMultiplier: 2,
-      hasSampleSolution: true,
-      hasAnswerFeedbacks: true,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -651,13 +659,16 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create KPRIM demo question
-  const questionKPRIM = await ctx.prisma.question.create({
+  const questionKPRIM = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion KPRIM',
-      type: DB.QuestionType.KPRIM,
+      type: DB.ElementType.KPRIM,
       content:
         'Which of the following statements is applicable to _KlickerUZH_? (multiple correct answers possible)',
       options: {
+        displayMode: DB.ElementDisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
         choices: [
           {
             ix: 0,
@@ -690,8 +701,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       explanation:
         'KPRIM questions differ from Multiple Choice questions in that they use a different grading approach and consist of exactly four answer possibilities, which have to be selected to be true or false. You can specify answer feedbacks and a general explanation. All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images.',
       pointsMultiplier: 3,
-      hasSampleSolution: true,
-      hasAnswerFeedbacks: true,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -709,13 +718,15 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create Numerical demo question
-  const questionNR = await ctx.prisma.question.create({
+  const questionNR = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion NR',
-      type: DB.QuestionType.NUMERICAL,
+      type: DB.ElementType.NUMERICAL,
       content:
         'Estimate the length of the **longest** river in the world (answer in kilometres).',
       options: {
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
         unit: 'km',
         accuracy: 0,
         restrictions: { max: 10000, min: 0 },
@@ -724,7 +735,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       explanation:
         'Numerical questions can contain additional restrictions, like minimum and maximum values as well as display units. It is also possible to specify valid ranges, which are considered to be correct for graded and gamified settings, as well as a general explanation. All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images.',
       pointsMultiplier: 4,
-      hasSampleSolution: true,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -742,19 +752,21 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   })
 
   // create Free Text demo question
-  const questionFT = await ctx.prisma.question.create({
+  const questionFT = await ctx.prisma.element.create({
     data: {
       name: 'Demoquestion FT',
-      type: DB.QuestionType.FREE_TEXT,
+      type: DB.ElementType.FREE_TEXT,
       content: 'Describe a main principle of a social market economy.',
       options: {
+        displayMode: DB.ElementDisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
         solutions: ['fair competition', 'private companies', 'balance'],
         restrictions: { maxLength: 150 },
       },
       explanation:
         'Free Text questions can contain additional restrictions, like a maximum length, as well as sample solutions for graded and gamified settings. All of those texts can be formatted using the editor or Markdown and LaTeX syntax and can contain images.',
       pointsMultiplier: 4,
-      hasSampleSolution: true,
       owner: {
         connect: {
           id: ctx.user.sub,

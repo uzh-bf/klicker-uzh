@@ -1,44 +1,51 @@
 import {
   AccessMode,
   ConfusionTimestep,
-  Question,
+  Element,
+  ElementType,
+  LiveSession,
   QuestionInstance,
   QuestionInstanceType,
-  QuestionType,
   SessionBlockStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
-import dayjs from 'dayjs'
-import * as R from 'ramda'
-import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
-import { Context, ContextWithUser } from '../lib/context'
 import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import schedule from 'node-schedule'
+import { createHmac } from 'node:crypto'
+import * as R from 'ramda'
+import { ascend, dissoc, mapObjIndexed, pick, prop, sortWith } from 'ramda'
 import { ISession } from 'src/schema/session'
-import {
-  AllQuestionInstanceTypeData,
-  QuestionResultsChoices,
-} from 'src/types/app'
+import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
   processQuestionData,
 } from '../lib/questions'
 import { sendTeamsNotifications } from '../lib/util'
+import {
+  AllQuestionInstanceTypeData,
+  QuestionResultsChoices,
+} from '../types/app'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
 
+// FIXME: move to config file or environment variable?
+const FIRST_ACHIEVEMENT_ID = 5
+const SECOND_ACHIEVEMENT_ID = 6
+const THIRD_ACHIEVEMENT_ID = 7
+
 async function getQuestionMap(
   blocks: BlockArgs[],
   ctx: ContextWithUser
-): Promise<Record<number, Question>> {
+): Promise<Record<number, Element>> {
   const allQuestionsIds = new Set(
     blocks.reduce<number[]>((acc, block) => [...acc, ...block.questionIds], [])
   )
 
-  const questions = await ctx.prisma.question.findMany({
+  const questions = await ctx.prisma.element.findMany({
     where: {
       id: { in: Array.from(allQuestionsIds) },
       ownerId: ctx.user.sub,
@@ -49,7 +56,7 @@ async function getQuestionMap(
     throw new GraphQLError('Not all questions could be found')
   }
 
-  return questions.reduce<Record<number, Question>>(
+  return questions.reduce<Record<number, Element>>(
     (acc, question) => ({ ...acc, [question.id]: question }),
     {}
   )
@@ -422,6 +429,13 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     },
     include: {
       blocks: {
+        include: {
+          instances: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
         orderBy: {
           id: 'asc',
         },
@@ -454,14 +468,14 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
 
     Object.entries(sessionXP).forEach(([id, xp]) => {
       participants[id] = {
-        xp,
+        xp: parseInt(xp),
       }
     })
 
     Object.entries(sessionLB).forEach(([id, score]) => {
       participants[id] = {
         ...(participants[id] ?? {}),
-        score,
+        score: parseInt(score),
       }
     })
 
@@ -470,7 +484,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     // sessionXP should always be around as soon as there are logged-in participants (check first)
     // sessionLB only for sessions that are compatible with points collection (check second)
     if (sessionXP) {
-      const existingParticipants = (
+      let existingParticipants = (
         await Promise.allSettled(
           Object.entries(participants).map(async ([id, { score, xp }]) => {
             const participant = await ctx.prisma.participant.findUnique({
@@ -503,7 +517,79 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
         return [result.value]
       })
 
+      // track the achievement ids, which should be awarded to the participants
+      let newAchievements: Record<string, number> = {}
+
+      // only award achievements, if the session did contain questions with sample solutions and at least three participants collected points
+      const awardAchievements = session.blocks.some(
+        (block) =>
+          block.instances.some(
+            (instance) =>
+              instance.questionData.options.hasSampleSolution ?? false
+          ) &&
+          existingParticipants.filter(
+            ({ score }) => typeof score !== 'undefined'
+          ).length >= 3
+      )
+
+      // award achievements to the top 3 participants (and all others with equal scores)
+      if (awardAchievements) {
+        const topScores = existingParticipants
+          .filter(({ score }) => typeof score !== 'undefined')
+          .sort((a, b) => Number(b.score) - Number(a.score))
+          .slice(0, 3)
+
+        const firstRankAchievement = await ctx.prisma.achievement.findUnique({
+          where: { id: FIRST_ACHIEVEMENT_ID },
+        })
+        const secondRankAchievement = await ctx.prisma.achievement.findUnique({
+          where: { id: SECOND_ACHIEVEMENT_ID },
+        })
+        const thirdRankAchievement = await ctx.prisma.achievement.findUnique({
+          where: { id: THIRD_ACHIEVEMENT_ID },
+        })
+
+        const goldScore = topScores[0].score
+        const silverScore = topScores[1].score
+        const bronzeScore = topScores[2].score
+
+        // awarding logic (including point and xp updates):
+        // award gold to every participant with gold score
+        // award silver to every participant with silver score, if silver score != gold score
+        // award bronze to every participant with bronze score, if bronze score != silver score
+        existingParticipants = existingParticipants.map((participant) => {
+          if (
+            typeof participant.score === 'undefined' ||
+            typeof participant.xp === 'undefined'
+          ) {
+            return participant
+          }
+
+          if (participant.score === goldScore) {
+            participant.xp += firstRankAchievement!.rewardedXP ?? 0
+            participant.score += firstRankAchievement!.rewardedPoints ?? 0
+            newAchievements[participant.id] = firstRankAchievement!.id
+          }
+          if (participant.score === silverScore && silverScore !== goldScore) {
+            participant.xp += secondRankAchievement!.rewardedXP ?? 0
+            participant.score += secondRankAchievement!.rewardedPoints ?? 0
+            newAchievements[participant.id] = secondRankAchievement!.id
+          }
+          if (
+            participant.score === bronzeScore &&
+            bronzeScore !== silverScore
+          ) {
+            participant.xp += thirdRankAchievement!.rewardedXP ?? 0
+            participant.score += thirdRankAchievement!.rewardedPoints ?? 0
+            newAchievements[participant.id] = thirdRankAchievement!.id
+          }
+
+          return participant
+        })
+      }
+
       console.log(existingParticipants)
+      console.log(newAchievements)
 
       // update xp of existing participants
       promises = promises.concat(
@@ -521,7 +607,7 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
           )
       )
 
-      // if the session is part of a course, update the course leaderboard with the accumulated points
+      // if the session is part of a course, update the course leaderboard with the accumulated points and award achievements
       if (sessionLB && session.courseId) {
         promises = promises.concat(
           existingParticipants
@@ -576,11 +662,48 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
                       },
                     },
                   },
-                  score: parseInt(score),
+                  score: score,
                 },
                 update: {
                   score: {
-                    increment: parseInt(score),
+                    increment: score,
+                  },
+                },
+              })
+            )
+        )
+
+        // award new achievements
+        promises = promises.concat(
+          existingParticipants
+            .filter(({ id }) => typeof newAchievements[id] !== 'undefined')
+            .map(({ id }) =>
+              ctx.prisma.participant.update({
+                where: { id },
+                data: {
+                  achievements: {
+                    upsert: {
+                      where: {
+                        participantId_achievementId: {
+                          participantId: id,
+                          achievementId: newAchievements[id],
+                        },
+                      },
+                      create: {
+                        achievedAt: new Date(),
+                        achievedCount: 1,
+                        achievement: {
+                          connect: {
+                            id: newAchievements[id],
+                          },
+                        },
+                      },
+                      update: {
+                        achievedCount: {
+                          increment: 1,
+                        },
+                      },
+                    },
                   },
                 },
               })
@@ -727,9 +850,9 @@ export async function activateSessionBlock(
     }
 
     switch (questionData.type) {
-      case QuestionType.SC:
-      case QuestionType.MC:
-      case QuestionType.KPRIM: {
+      case ElementType.SC:
+      case ElementType.MC:
+      case ElementType.KPRIM: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
           choiceCount: questionData.options.choices.length,
@@ -747,7 +870,7 @@ export async function activateSessionBlock(
         break
       }
 
-      case QuestionType.NUMERICAL: {
+      case ElementType.NUMERICAL: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: JSON.stringify(questionData.options.solutionRanges),
@@ -758,7 +881,7 @@ export async function activateSessionBlock(
         break
       }
 
-      case QuestionType.FREE_TEXT: {
+      case ElementType.FREE_TEXT: {
         redisMulti.hmset(`s:${session.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: JSON.stringify(questionData.options.solutions),
@@ -1161,8 +1284,8 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
             return instance
 
           switch (questionData.type) {
-            case QuestionType.SC:
-            case QuestionType.MC:
+            case ElementType.SC:
+            case ElementType.MC:
               return {
                 ...instance,
                 questionData: {
@@ -1176,8 +1299,8 @@ export async function getRunningSession({ id }: { id: string }, ctx: Context) {
                 },
               }
 
-            case QuestionType.NUMERICAL:
-            case QuestionType.FREE_TEXT:
+            case ElementType.NUMERICAL:
+            case ElementType.FREE_TEXT:
               return {
                 ...instance,
                 questionData,
@@ -1697,55 +1820,133 @@ function completeQuestionData(instances: AllQuestionInstanceTypeData[]) {
   )
 }
 
-export async function getSessionEvaluation(
+export async function getSessionHMAC(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const session = await ctx.prisma.liveSession.findUnique({
     where: {
       id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      activeBlock: {
-        include: {
-          instances: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      blocks: {
-        orderBy: {
-          order: 'asc',
-        },
-        where: {
-          status: {
-            equals: 'EXECUTED',
-          },
-        },
-        include: {
-          instances: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      feedbacks: {
-        include: {
-          responses: true,
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
-      },
-      confusionFeedbacks: true,
     },
   })
 
   if (!session) return null
+
+  const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+  hmacEncoder.update(session.namespace + session.id)
+  const sessionHmac = hmacEncoder.digest('hex')
+
+  return sessionHmac
+}
+
+export async function getSessionEvaluation(
+  { id, hmac }: { id: string; hmac?: string | null },
+  ctx: Context
+) {
+  let session: LiveSession | null = null
+
+  if (ctx.user?.sub) {
+    session = await ctx.prisma.liveSession.findUnique({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      include: {
+        activeBlock: {
+          include: {
+            instances: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
+        blocks: {
+          orderBy: {
+            order: 'asc',
+          },
+          where: {
+            status: {
+              equals: 'EXECUTED',
+            },
+          },
+          include: {
+            instances: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
+        feedbacks: {
+          include: {
+            responses: true,
+          },
+          orderBy: {
+            updatedAt: 'desc',
+          },
+        },
+        confusionFeedbacks: true,
+      },
+    })
+  } else if (typeof hmac === 'string') {
+    session = await ctx.prisma.liveSession.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        activeBlock: {
+          include: {
+            instances: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
+        blocks: {
+          orderBy: {
+            order: 'asc',
+          },
+          where: {
+            status: {
+              equals: 'EXECUTED',
+            },
+          },
+          include: {
+            instances: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
+        feedbacks: {
+          include: {
+            responses: true,
+          },
+          orderBy: {
+            updatedAt: 'desc',
+          },
+        },
+        confusionFeedbacks: true,
+      },
+    })
+
+    if (!session) return null
+
+    const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
+    hmacEncoder.update(session.namespace + session.id)
+    const sessionHmac = hmacEncoder.digest('hex')
+
+    // evaluate whether the hashed session.namespace and session.id equals the hmac
+    if (sessionHmac !== hmac) {
+      session = null
+    }
+  }
+
+  if (!session) return null
+
   // if the session is running and a block is active
   // fetch the current results from the execution cache
   let activeInstanceResults: any[] = []

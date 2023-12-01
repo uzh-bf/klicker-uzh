@@ -6,8 +6,7 @@ const {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   ...getNextBaseConfig({
-    S3_HOSTNAME: process.env.S3_HOSTNAME,
-    S3_PATHNAME: process.env.S3_PATHNAME,
+    BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL,
   }),
 }
 

@@ -36,6 +36,14 @@ export default {
       text: 'Bitte eine Zahl eingeben.',
       richtext: 'Bitte eine <b>Zahl</b> eingeben.',
     },
+    CONTENT: {
+      short: 'CT',
+      typeLabel: 'Inhalt (CT)',
+    },
+    FLASHCARD: {
+      short: 'FC',
+      typeLabel: 'Lernkarte (FC)',
+    },
     login: {
       installButton: 'Jetzt installieren',
     },
@@ -141,6 +149,10 @@ export default {
       language: 'Sprache',
       english: 'Englisch',
       german: 'Deutsch',
+      practicePool: 'Üben',
+      practiceTitle: 'Übungspool',
+      practiceQuizzes: 'Quizzes',
+      practice: 'Übungsaktivitäten',
     },
     contentInput: {
       boldStyle:
@@ -419,6 +431,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       orderLAST_RESPONSE: 'Reihenfolge: zuletzt beantwortete Fragen am Ende',
       orderSHUFFLED: 'Reihenfolge: zufällige Reihenfolge',
       orderSEQUENTIAL: 'Reihenfolge: geordnet in Sequenz',
+      orderSPACED_REPETITION: 'Reihenfolge: Spaced Repetition',
       repetitionDaily: 'Wiederholung: täglich',
       repetitionXDays: 'Wiederholung: alle {days} Tage',
       answeredMinOnce: 'Min. 1x beantwortet: {answered}/{total}',
@@ -447,6 +460,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
       missingParticipation:
         'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
+    },
+    practiceQuiz: {
+      flashcardClick: 'Klicken Sie, um die Antwort zu sehen',
+      studentFlashcardResponse: 'Haben Sie die Antwort gewusst?',
+      flashcardNoResponse: 'Nein',
+      flashcardPartialResponse: 'Teilweise',
+      flashcardYesResponse: 'Ja',
+      resetAnswers: 'Antworten zurücksetzen',
     },
     microSession: {
       notFound:
@@ -482,6 +503,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       editProfile: 'Profil editieren',
       editProfileFailed:
         'Leider ist beim Speichern der Änderungen ein Fehler aufgetreten. Möglicherweise ist der von Ihnen gewählte Nutzername bereits vergeben. Bitte überprüfen Sie Ihre Eingaben und versuchen es nochmal.',
+      editProfileSuccess: 'Ihr Profil wurde erfolgreich aktualisiert.',
       achievements: 'Errungenschaften',
       myProfile: 'Mein Profil',
       usernameMinLength:
@@ -684,7 +706,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',
-      questionTypes: 'Fragetypen',
+      elementTypes: 'Elementtypen',
       tags: 'Tags',
       noTagsAvailable: 'Keine Tags verfügbar',
       answerFeedbacks: 'Antwortfeedbacks',
@@ -757,6 +779,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       uploadImageHeader: 'Medien hinzufügen',
       uploadImageDescription:
         'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
+      updateInstances: 'Frage-Instanzen in KlickerUZH-Elementen aktualisieren',
+      updateInstancesExplanation:
+        'Nutzen sie diese Einstellung, um die Frage in allen geplanten Quizzes, Übungs-Quizzes und Microlearnings anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Elementen wird nicht aktualisiert. Veränderte Multiplier werden auch auf die erstellten Instanzen angewendet.',
     },
     sessionForms: {
       sessionName: 'Bitte geben Sie einen Namen für Ihre Session ein.',
@@ -795,7 +820,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microSessionTypes:
         'Micro-Sessions können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.',
       microSessionCreated: 'Micro-Session <b>{name}</b> erfolgreich erstellt.',
-      microSessionUpdated:
+      microSessionEdited:
         'Micro-Session <b>{name}</b> erfolgreich modifiziert.',
       microSessionDescription:
         'Geben Sie in diesem Schritt den Namen und die Beschreibung der Micro-Session ein.',
@@ -935,8 +960,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sich sicher, dass Sie die folgende Live-Session löschen möchten?',
       liveSessionDeletionHint:
         'Das Löschen einer Live-Session ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live-Sessions können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
-      evaluationLinksEmbedding:
-        'Evaluations-Links für die Einbettung in PowerPoint',
+      evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
       noSessions: 'Keine Sessionen gefunden',
       creationExplanation:
         'Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
@@ -1045,6 +1069,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       wordCloud: 'Word Cloud',
       histogram: 'Histogramm',
       barChart: 'Balkendiagramm',
+      noStatistics:
+        'Bisher sind aufgrund fehlender Antworten noch keine Statistiken verfügbar.',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',
@@ -1152,7 +1178,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Installieren Sie die KlickerUZH Controller-App auf Ihrem Handy, um Ihre Sessionen während der Vorlesungen direkt vom Handy aus zu steuern.',
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Controller-App auf Ihrem Handy zu installieren und Live-Sessionen direkt zu bedienen.",
-      emailRequired: 'Geben Sie eine gültige E-Mail Adresse ein',
+      shortnameRequired: 'Bitte geben Sie Ihren Kurznamen ein.',
       tokenRequired:
         'Geben Sie einen gültigen Token ein. Bitte beachten Sie die bei der Token Generierung angezeigte Gültigkeit.',
       checkToken:

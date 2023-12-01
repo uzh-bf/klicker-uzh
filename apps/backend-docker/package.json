@@ -1,9 +1,10 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.0.2",
+  "version": "3.1.0-beta.16",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
   "files": [
     "dist"
   ],
@@ -35,7 +36,9 @@
     "ws": "8.13.0"
   },
   "devDependencies": {
+    "@cypress/code-coverage": "3.12.1",
     "@tsconfig/node18": "^2.0.0",
+    "@tsconfig/node20": "^20.1.2",
     "@tsconfig/recommended": "^1.0.2",
     "@types/cookie-parser": "^1.4.3",
     "@types/cors": "^2.8.12",
@@ -47,10 +50,10 @@
     "@types/passport": "^1.0.10",
     "@types/passport-jwt": "^3.0.6",
     "@types/ramda": "^0.29.3",
-    "@uzh-bf/design-system": "2.1.12",
+    "@types/ws": "^8.5.9",
+    "@uzh-bf/design-system": "2.4.2",
     "axios": "1.4.0",
     "cross-env": "7.0.3",
-    "dotenv": "16.0.3",
     "eslint": "8.45.0",
     "ioredis-mock": "8.7.0",
     "jest": "29.5.0",
@@ -59,8 +62,8 @@
     "nyc": "15.1.0",
     "prisma": "5.3.1",
     "ts-node": "10.9.1",
-    "tsup": "6.7.0",
-    "typescript": "5.0.4"
+    "tsup": "7.2.0",
+    "typescript": "5.2.2"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
@@ -69,15 +72,16 @@
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "tsup --watch",
     "dev:offline": "pnpm run dev",
-    "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node -r dotenv/config ./dist/index.js'",
+    "dev:run": "nodemon -w dist/ -w '../../packages/graphql/dist' --exec 'node --env-file=.env ./dist/index.js'",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "nyc --silent npm start",
-    "exec:prod": "doppler run --config prd -- ts-node --esm"
+    "--start:test": "nyc --silent npm start",
+    "start:test": "npm start",
+    "exec:prod": "doppler run --config prd -- bun run"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
     "extends": "../../package.json"

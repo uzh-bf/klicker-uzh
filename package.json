@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.0.2",
+  "version": "3.1.0-beta.16",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -10,8 +10,7 @@
   "main": "apps/func/dist/index.js",
   "maintainers": [
     "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
-    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>",
-    "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
+    "Julius Schlapbach <julius.schlapbach@bf.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
@@ -23,14 +22,15 @@
     "Maximilian Weber <maximilian.weber@bf.uzh.ch>",
     "Jonas Gebel <jonas.gebel@bf.uzh.ch>",
     "Florina Vogel <florina.vogel@bf.uzh.ch>",
-    "Valentin Meyer <valentin.meyer@bf.uzh.ch>"
+    "Valentin Meyer <valentin.meyer@bf.uzh.ch>",
+    "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "devDependencies": {
     "@prisma/nextjs-monorepo-workaround-plugin": "5.3.1",
     "husky": "8.0.3",
     "standard-version": "9.5.0",
     "syncpack": "11.2.1",
-    "turbo": "1.10.14",
+    "turbo": "1.10.16",
     "yaml": "2.3.2"
   },
   "scripts": {
@@ -46,6 +46,7 @@
     "format:check": "turbo run format:check --parallel --continue",
     "lint": "turbo run lint --parallel --continue",
     "prepare": "husky install",
+    "prisma:deploy": "pnpm run --filter @klicker-uzh/prisma prisma:deploy",
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
     "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
@@ -69,11 +70,11 @@
     "test:run": "turbo run test:run"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
-    "node": "18.17.0",
-    "pnpm": "8.6.12"
+    "node": "20.9.0",
+    "pnpm": "8.10.0"
   },
-  "packageManager": "pnpm@8.6.12"
+  "packageManager": "pnpm@8.10.0"
 }

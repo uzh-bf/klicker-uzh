@@ -1,6 +1,7 @@
 fragment QuestionDataWithoutSolutions on QuestionInstance {
   questionData {
     id
+    questionId
     name
     type
     displayMode

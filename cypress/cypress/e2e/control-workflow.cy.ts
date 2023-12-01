@@ -56,7 +56,9 @@ describe('Test functionalities of frontend-control application', () => {
     cy.visit(Cypress.env('URL_CONTROL'))
     cy.viewport('macbook-16')
     cy.get('[data-cy="login-logo"]').should('exist')
-    cy.get('[data-cy="email-field"]').type(Cypress.env('LECTURER_EMAIL'))
+    cy.get('[data-cy="shortname-field"]').type(
+      Cypress.env('LECTURER_IDENTIFIER')
+    )
     cy.get('@token').then((token) => {
       cy.get('[data-cy="token-field"]').type(String(token))
     })

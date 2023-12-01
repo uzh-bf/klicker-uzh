@@ -1,4 +1,4 @@
-import Prisma, { Question } from '../../dist'
+import Prisma, { Element } from '../../dist'
 import { COURSE_ID_BF2, USER_ID_BF2 } from './constants'
 import * as DATA_BF2 from './data/BF2'
 import { prepareLearningElement } from './helpers'
@@ -8,7 +8,7 @@ import { prepareLearningElement } from './helpers'
 async function seed(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)
 
-  const questions = await prisma.question.findMany({
+  const questions = await prisma.element.findMany({
     orderBy: { id: 'desc' },
     where: {
       ownerId: USER_ID_BF2,
@@ -27,7 +27,7 @@ async function seed(prisma: Prisma.PrismaClient) {
               ...stack,
               elements: stack.elements.map((element) => {
                 if (typeof element !== 'string') {
-                  return questions.find((q) => q.id === element) as Question
+                  return questions.find((q) => q.id === element) as Element
                 }
                 return element
               }),

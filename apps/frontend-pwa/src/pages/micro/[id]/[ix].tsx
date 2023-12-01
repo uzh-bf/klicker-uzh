@@ -1,13 +1,13 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  ElementType,
   GetMicroSessionDocument,
-  QuestionType,
   ResponseToQuestionInstanceDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import formatResponse from '@lib/formatResponse'
+import formatResponse from '@klicker-uzh/shared-components/src/utils/formatResponse'
 import { H3, Progress } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -42,11 +42,11 @@ function MicroSessionInstance() {
   useEffect(() => {
     if (questionData?.type) {
       if (
-        questionData.type === QuestionType.Sc ||
-        questionData.type === QuestionType.Mc
+        questionData.type === ElementType.Sc ||
+        questionData.type === ElementType.Mc
       ) {
         setResponse([])
-      } else if (questionData.type === QuestionType.Kprim) {
+      } else if (questionData.type === ElementType.Kprim) {
         setResponse({})
       } else {
         setResponse('')
@@ -131,7 +131,7 @@ function MicroSessionInstance() {
                   onSubmitResponse={
                     isEvaluation ? handleNextQuestion : handleSubmitResponse
                   }
-                  questionType={questionData.type as QuestionType}
+                  questionType={questionData.type as ElementType}
                   options={questionData.options}
                   displayMode={questionData.displayMode}
                 />

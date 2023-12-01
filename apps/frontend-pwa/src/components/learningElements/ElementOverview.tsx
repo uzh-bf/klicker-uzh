@@ -83,22 +83,26 @@ function ElementOverview({
               })}
             </div>
           </div>
-          <div className="flex flex-row items-center gap-2">
-            <FontAwesomeIcon icon={faShuffle} />
-            <div>{t(`pwa.learningElement.order${orderType}`)}</div>
-          </div>
-          <div className="flex flex-row items-center gap-2">
-            <FontAwesomeIcon icon={faRepeat} />
-            {resetTimeDays === 1 ? (
-              <>{t('pwa.learningElement.repetitionDaily')}</>
-            ) : (
-              <>
-                {t('pwa.learningElement.repetitionXDays', {
-                  days: resetTimeDays,
-                })}
-              </>
-            )}
-          </div>
+          {typeof orderType !== 'undefined' && (
+            <div className="flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faShuffle} />
+              <div>{t(`pwa.learningElement.order${orderType}`)}</div>
+            </div>
+          )}
+          {typeof resetTimeDays !== 'undefined' && (
+            <div className="flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faRepeat} />
+              {resetTimeDays === 1 ? (
+                <>{t('pwa.learningElement.repetitionDaily')}</>
+              ) : (
+                <>
+                  {t('pwa.learningElement.repetitionXDays', {
+                    days: resetTimeDays,
+                  })}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 space-y-2">
@@ -113,27 +117,31 @@ function ElementOverview({
           {data.learningElement.previousPointsAwarded}
         </div>
       </div> */}
-          <div className="flex flex-row items-center gap-2">
-            <FontAwesomeIcon icon={faCheck} />
-            <div>
-              {t('pwa.learningElement.answeredMinOnce', {
-                answered: previouslyAnswered,
-                total: stacksWithQuestions,
-              })}
+          {typeof previouslyAnswered !== 'undefined' && (
+            <div className="flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faCheck} />
+              <div>
+                {t('pwa.learningElement.answeredMinOnce', {
+                  answered: previouslyAnswered,
+                  total: stacksWithQuestions,
+                })}
+              </div>
             </div>
-          </div>
+          )}
           {/* <div className="flex flex-row items-center gap-2">
         Anzahl Antworten:{' '}
         <div>{data.learningElement.totalTrials}</div>
       </div> */}
-          <div className="flex flex-row items-center gap-2">
-            <FontAwesomeIcon icon={faTimesCircle} />
-            <div>
-              {t('pwa.learningElement.multiplicatorPoints', {
-                mult: pointsMultiplier,
-              })}
+          {typeof pointsMultiplier !== 'undefined' && (
+            <div className="flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faTimesCircle} />
+              <div>
+                {t('pwa.learningElement.multiplicatorPoints', {
+                  mult: pointsMultiplier,
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

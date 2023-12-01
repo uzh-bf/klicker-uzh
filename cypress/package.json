@@ -4,8 +4,10 @@
   "devDependencies": {
     "@cypress/code-coverage": "3.12.1",
     "@testing-library/cypress": "10.0.1",
+    "@types/jsonwebtoken": "^8.0.0",
     "@types/node": "^18.17.4",
-    "cypress": "13.2.0",
+    "cypress": "13.6.0",
+    "jsonwebtoken": "8.5.1",
     "typescript": "5.2.2"
   },
   "scripts": {
@@ -13,7 +15,7 @@
     "test:run": "cypress run"
   },
   "engines": {
-    "node": "=18"
+    "node": "=20"
   },
   "volta": {
     "extends": "../package.json"

@@ -1,16 +1,16 @@
-import { Question, QuestionType } from '@klicker-uzh/prisma'
+import { Element, ElementType } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import {
-  AllQuestionTypeData,
-  BaseQuestionDataKeys,
-  ChoicesQuestionData,
-  FreeTextQuestionData,
-  NumericalQuestionData,
+  AllElementTypeData,
+  BaseElementDataKeys,
+  ChoicesElementData,
+  FreeTextElementData,
+  NumericalElementData,
   QuestionResults,
   QuestionResultsChoices,
-} from 'src/types/app'
+} from '../types/app'
 
-const RELEVANT_KEYS: BaseQuestionDataKeys = [
+const RELEVANT_KEYS: BaseElementDataKeys = [
   'id',
   'name',
   'content',
@@ -23,20 +23,42 @@ const RELEVANT_KEYS: BaseQuestionDataKeys = [
   'options',
 ]
 
-export function processQuestionData(question: Question) {
+export function processQuestionData(question: Element) {
   const extractRelevantKeys = R.pick(RELEVANT_KEYS)
 
   switch (question.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM:
-      return { ...extractRelevantKeys(question) } as ChoicesQuestionData
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM:
+      // TODO: remove the extra keys, once the questionData options are compatible
+      return {
+        ...extractRelevantKeys(question),
+        id: `${question.id}-v${question.version}`,
+        questionId: question.id,
+        displayMode: question.options.displayMode,
+        hasSampleSolution: question.options.hasSampleSolution,
+        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
+      } as ChoicesElementData
 
-    case QuestionType.NUMERICAL:
-      return { ...extractRelevantKeys(question) } as NumericalQuestionData
+    case ElementType.NUMERICAL:
+      // TODO: remove the extra keys, once the questionData options are compatible
+      return {
+        ...extractRelevantKeys(question),
+        id: `${question.id}-v${question.version}`,
+        questionId: question.id,
+        hasSampleSolution: question.options.hasSampleSolution,
+        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
+      } as NumericalElementData
 
-    case QuestionType.FREE_TEXT:
-      return { ...extractRelevantKeys(question) } as FreeTextQuestionData
+    case ElementType.FREE_TEXT:
+      // TODO: remove the extra keys, once the questionData options are compatible
+      return {
+        ...extractRelevantKeys(question),
+        id: `${question.id}-v${question.version}`,
+        questionId: question.id,
+        hasSampleSolution: question.options.hasSampleSolution,
+        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
+      } as FreeTextElementData
 
     default:
       throw new Error('Unknown question type')
@@ -44,12 +66,12 @@ export function processQuestionData(question: Question) {
 }
 
 export function prepareInitialInstanceResults(
-  questionData: AllQuestionTypeData
+  questionData: AllElementTypeData
 ): QuestionResults {
   switch (questionData.type) {
-    case QuestionType.SC:
-    case QuestionType.MC:
-    case QuestionType.KPRIM: {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
       const choices = questionData.options.choices.reduce(
         (acc, _, ix) => ({ ...acc, [ix]: 0 }),
         {}
@@ -57,8 +79,8 @@ export function prepareInitialInstanceResults(
       return { choices } as QuestionResultsChoices
     }
 
-    case QuestionType.NUMERICAL:
-    case QuestionType.FREE_TEXT: {
+    case ElementType.NUMERICAL:
+    case ElementType.FREE_TEXT: {
       return {}
     }
 

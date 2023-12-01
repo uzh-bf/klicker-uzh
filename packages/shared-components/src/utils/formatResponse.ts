@@ -1,8 +1,8 @@
 import {
   ChoicesQuestionData,
+  ElementType,
   FreeTextQuestionData,
   NumericalQuestionData,
-  QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 
 export default function formatResponse(
@@ -14,11 +14,11 @@ export default function formatResponse(
   response: {} | number[] | string
 ) {
   if (
-    questionData?.type === QuestionType.Sc ||
-    questionData?.type === QuestionType.Mc
+    questionData?.type === ElementType.Sc ||
+    questionData?.type === ElementType.Mc
   ) {
     return { choices: response as number[] }
-  } else if (questionData?.type === QuestionType.Kprim) {
+  } else if (questionData?.type === ElementType.Kprim) {
     return {
       choices: Object.keys(response).flatMap<number[]>((key) =>
         response[key] === true ? [parseInt(key)] : []

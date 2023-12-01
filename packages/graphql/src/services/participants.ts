@@ -1,4 +1,8 @@
-import { MicroSessionStatus, SessionStatus } from '@klicker-uzh/prisma'
+import {
+  LearningElementStatus,
+  MicroSessionStatus,
+  SessionStatus,
+} from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import * as R from 'ramda'
 import isEmail from 'validator/lib/isEmail'
@@ -6,22 +10,13 @@ import { Context, ContextWithUser } from '../lib/context'
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
-  username?: string | null
-  email?: string | null
+  username: string | null
+  email: string | null
   isProfilePublic?: boolean | null
-  avatar?: string | null
-  avatarSettings?: any
 }
 
 export async function updateParticipantProfile(
-  {
-    password,
-    username,
-    avatar,
-    avatarSettings,
-    email,
-    isProfilePublic,
-  }: UpdateParticipantProfileArgs,
+  { password, username, email, isProfilePublic }: UpdateParticipantProfileArgs,
   ctx: ContextWithUser
 ) {
   if (typeof username === 'string') {
@@ -55,10 +50,9 @@ export async function updateParticipantProfile(
         data: {
           isProfilePublic:
             typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
+          email,
           password: hashedPassword,
           username: username ?? undefined,
-          avatar: avatar ?? undefined,
-          avatarSettings: avatarSettings ?? undefined,
         },
       })
     } else {
@@ -73,6 +67,24 @@ export async function updateParticipantProfile(
         typeof isProfilePublic === 'boolean' ? isProfilePublic : undefined,
       email: email ?? undefined,
       username: username ?? undefined,
+    },
+  })
+
+  return participant
+}
+
+interface UpdateParticipantAvatarArgs {
+  avatar: string | null
+  avatarSettings: any
+}
+
+export async function updateParticipantAvatar(
+  { avatar, avatarSettings }: UpdateParticipantAvatarArgs,
+  ctx: ContextWithUser
+) {
+  const participant = await ctx.prisma.participant.update({
+    where: { id: ctx.user.sub },
+    data: {
       avatar: avatar ?? undefined,
       avatarSettings: avatarSettings ?? undefined,
     },
@@ -582,4 +594,67 @@ export async function getParticipantWithAchievements(ctx: ContextWithUser) {
     participant: { ...participant, isSelf: true },
     achievements,
   }
+}
+
+export async function getPracticeCourses(ctx: ContextWithUser) {
+  // fetch participations including courses
+  const participations = await ctx.prisma.participation.findMany({
+    where: {
+      participantId: ctx.user.sub,
+    },
+    include: {
+      course: {
+        include: {
+          elementStacks: true,
+        },
+      },
+    },
+  })
+
+  if (participations.length === 0) return []
+
+  // sort courses by end date descending
+  const courses = participations
+    .map((p) => p.course)
+    .filter((c) => c.elementStacks.length > 0)
+    .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))
+
+  return courses
+}
+
+export async function getPracticeQuizList(ctx: ContextWithUser) {
+  const participations = await ctx.prisma.participation.findMany({
+    where: {
+      participantId: ctx.user.sub,
+    },
+    include: {
+      course: {
+        include: {
+          learningElements: {
+            where: {
+              status: LearningElementStatus.PUBLISHED,
+            },
+          },
+          practiceQuizzes: {
+            where: {
+              status: LearningElementStatus.PUBLISHED,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!participations || participations.length === 0) return []
+
+  const courses = participations
+    .map((p) => p.course)
+    .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))
+    .filter(
+      (course) =>
+        course.practiceQuizzes.length !== 0 ||
+        course.learningElements.length !== 0
+    )
+
+  return courses
 }

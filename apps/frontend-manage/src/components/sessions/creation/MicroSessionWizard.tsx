@@ -2,9 +2,9 @@ import { useMutation } from '@apollo/client'
 import {
   CreateMicroSessionDocument,
   EditMicroSessionDocument,
+  ElementType,
   GetSingleCourseDocument,
   MicroSession,
-  QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FormikDateField,
@@ -83,10 +83,10 @@ function MicroSessionWizard({
             .string()
             .oneOf(
               [
-                QuestionType.Sc,
-                QuestionType.Mc,
-                QuestionType.Kprim,
-                QuestionType.Numerical,
+                ElementType.Sc,
+                ElementType.Mc,
+                ElementType.Kprim,
+                ElementType.Numerical,
               ],
               t('manage.sessionForms.microSessionTypes')
             ),
@@ -186,7 +186,7 @@ function MicroSessionWizard({
           questions:
             initialValues?.instances?.map((instance) => {
               return {
-                id: instance.questionData.id,
+                id: instance.questionData.questionId,
                 title: instance.questionData.name,
                 hasAnswerFeedbacks: instance.questionData.hasAnswerFeedbacks,
                 hasSampleSolution: instance.questionData.hasSampleSolution,

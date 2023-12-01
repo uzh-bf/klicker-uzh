@@ -1,11 +1,14 @@
 import {
+  ElementOrderType,
   GroupActivityStatus,
   LeaderboardEntry,
   LearningElementStatus,
+  UserRole,
 } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import { GroupLeaderboardEntry } from 'src/ops'
 import { Context, ContextWithUser } from '../lib/context'
+import { orderStacks } from '../lib/util'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -280,7 +283,9 @@ export async function getCourseOverviewData(
               {
                 ...group,
                 score,
-                rank: ix + 1,
+                isMember: participation.participant.participantGroups.some(
+                  (g) => g.id === group.id
+                ),
               },
             ],
             count: acc.count + 1,
@@ -310,6 +315,9 @@ export async function getCourseOverviewData(
           return { ...entry, rank: ix + 1 }
         return []
       })
+      const filteredGroupEntries = sortedGroupEntries.flatMap((entry, ix) => {
+        return { ...entry, rank: ix + 1 }
+      })
 
       return {
         id: `${courseId}-${participation.participant.id}`,
@@ -322,7 +330,7 @@ export async function getCourseOverviewData(
           averageScore:
             allEntries.count > 0 ? allEntries.sum / allEntries.count : 0,
         },
-        groupLeaderboard: sortedGroupEntries,
+        groupLeaderboard: filteredGroupEntries,
         groupLeaderboardStatistics: {
           participantCount: allGroupEntries.count,
           averageScore:
@@ -466,37 +474,6 @@ export async function getControlCourses(ctx: ContextWithUser) {
   })
 
   return user?.courses ?? []
-}
-
-export async function getUserLearningElements(ctx: ContextWithUser) {
-  const participantCoursesWithLearningElements =
-    await ctx.prisma.participant.findUnique({
-      where: { id: ctx.user.sub },
-      include: {
-        participations: {
-          include: {
-            course: {
-              include: {
-                learningElements: {
-                  orderBy: {
-                    displayName: 'asc',
-                  },
-                  where: {
-                    status: LearningElementStatus.PUBLISHED,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    })
-
-  if (!participantCoursesWithLearningElements) return []
-
-  return participantCoursesWithLearningElements.participations.flatMap(
-    (participation) => participation.course.learningElements
-  )
 }
 
 export async function getCourseData(
@@ -753,4 +730,58 @@ export async function checkValidCoursePin(
   }
 
   return course.id
+}
+
+export async function getCoursePracticeQuiz(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      elementStacks: {
+        include: {
+          elements: {
+            include:
+              ctx.user?.sub && ctx.user.role === UserRole.PARTICIPANT
+                ? {
+                    responses: {
+                      where: {
+                        participantId: ctx.user.sub,
+                      },
+                    },
+                  }
+                : undefined,
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  const orderedStacks = orderStacks(course.elementStacks)
+
+  return {
+    id: courseId,
+    name: course.name,
+    displayName: course.displayName,
+    description: 'Practice Pool for ' + course.displayName,
+    pointsMultiplier: 1,
+    resetTimeDays: 6,
+    orderType: ElementOrderType.SPACED_REPETITION,
+    status: LearningElementStatus.PUBLISHED,
+    stacks: orderedStacks.slice(0, 25),
+    course,
+    courseId,
+    ownerId: course.ownerId,
+    createdAt: course.createdAt,
+    updatedAt: course.updatedAt,
+  }
 }

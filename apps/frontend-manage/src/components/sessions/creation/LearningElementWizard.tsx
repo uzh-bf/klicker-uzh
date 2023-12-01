@@ -2,10 +2,10 @@ import { useMutation } from '@apollo/client'
 import {
   CreateLearningElementDocument,
   EditLearningElementDocument,
+  ElementType,
   GetSingleCourseDocument,
   LearningElement,
   LearningElementOrderType,
-  QuestionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FormikNumberField,
@@ -83,10 +83,10 @@ function LearningElementWizard({
             .string()
             .oneOf(
               [
-                QuestionType.Sc,
-                QuestionType.Mc,
-                QuestionType.Kprim,
-                QuestionType.Numerical,
+                ElementType.Sc,
+                ElementType.Mc,
+                ElementType.Kprim,
+                ElementType.Numerical,
               ],
               t('manage.sessionForms.learningElementTypes')
             ),
@@ -199,7 +199,8 @@ function LearningElementWizard({
                 )
                 .map((stack) => {
                   return {
-                    id: stack.elements![0].questionInstance?.questionData.id,
+                    id: stack.elements![0].questionInstance?.questionData
+                      .questionId,
                     title:
                       stack.elements![0].questionInstance?.questionData.name,
                     hasAnswerFeedbacks: true, // has been checked during previous submission

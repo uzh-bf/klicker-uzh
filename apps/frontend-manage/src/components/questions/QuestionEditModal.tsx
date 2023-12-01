@@ -2,14 +2,15 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementDisplayMode,
+  ElementType,
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
   GetUserTagsDocument,
   ManipulateChoicesQuestionDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
-  QuestionDisplayMode,
-  QuestionType,
+  UpdateQuestionInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -21,8 +22,10 @@ import {
   FormikSelectField,
   FormikTextField,
   H3,
+  H4,
   Label,
   Modal,
+  Prose,
   Select,
   Switch,
   UserNotification,
@@ -64,13 +67,14 @@ function QuestionEditModal({
 }: QuestionEditModalProps): React.ReactElement {
   const isDuplication = mode === QuestionEditMode.DUPLICATE
   const t = useTranslations()
+  const [updateInstances, setUpdateInstances] = useState(false)
 
   // TODO: ensure that every validation schema change is also reflected in an adaption of the error messages
   const questionManipulationSchema = Yup.object().shape({
     name: Yup.string().required(t('manage.formErrors.questionName')),
     tags: Yup.array().of(Yup.string()),
-    type: Yup.string().oneOf(Object.values(QuestionType)).required(),
-    displayMode: Yup.string().oneOf(Object.values(QuestionDisplayMode)),
+    type: Yup.string().oneOf(Object.values(ElementType)).required(),
+    displayMode: Yup.string().oneOf(Object.values(ElementDisplayMode)),
     content: Yup.string()
       .required(t('manage.formErrors.questionContent'))
       .test({
@@ -242,62 +246,66 @@ function QuestionEditModal({
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
+  const [updateQuestionInstances] = useMutation(UpdateQuestionInstancesDocument)
 
   const DROPDOWN_OPTIONS = [
     {
-      value: QuestionType.Sc,
-      label: t(`shared.${QuestionType.Sc}.typeLabel`),
+      value: ElementType.Sc,
+      label: t(`shared.${ElementType.Sc}.typeLabel`),
     },
     {
-      value: QuestionType.Mc,
-      label: t(`shared.${QuestionType.Mc}.typeLabel`),
+      value: ElementType.Mc,
+      label: t(`shared.${ElementType.Mc}.typeLabel`),
     },
     {
-      value: QuestionType.Kprim,
-      label: t(`shared.${QuestionType.Kprim}.typeLabel`),
+      value: ElementType.Kprim,
+      label: t(`shared.${ElementType.Kprim}.typeLabel`),
     },
     {
-      value: QuestionType.Numerical,
-      label: t(`shared.${QuestionType.Numerical}.typeLabel`),
+      value: ElementType.Numerical,
+      label: t(`shared.${ElementType.Numerical}.typeLabel`),
     },
     {
-      value: QuestionType.FreeText,
-      label: t(`shared.${QuestionType.FreeText}.typeLabel`),
+      value: ElementType.FreeText,
+      label: t(`shared.${ElementType.FreeText}.typeLabel`),
     },
   ]
 
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
       const common = {
-        type:
-          mode === QuestionEditMode.CREATE
-            ? QuestionType.Sc
-            : dataQuestion?.question?.type,
-        displayMode: QuestionDisplayMode.List,
+        type: ElementType.Sc,
         name: '',
         content: '',
         explanation: '',
         tags: [],
-        hasSampleSolution: false,
-        hasAnswerFeedbacks: false,
+
         pointsMultiplier: '1',
       }
 
+      const commonOptions = {
+        hasSampleSolution: false,
+        hasAnswerFeedbacks: false,
+      }
+
       switch (common.type) {
-        case QuestionType.Sc:
-        case QuestionType.Mc:
-        case QuestionType.Kprim:
+        case ElementType.Sc:
+        case ElementType.Mc:
+        case ElementType.Kprim:
           return {
             ...common,
             options: {
+              ...commonOptions,
+              displayMode: ElementDisplayMode.List,
               choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
             },
           }
 
-        case QuestionType.Numerical:
+        case ElementType.Numerical:
           return {
             ...common,
             options: {
+              ...commonOptions,
               accuracy: undefined,
               unit: '',
               restrictions: { min: undefined, max: undefined },
@@ -305,10 +313,11 @@ function QuestionEditModal({
             },
           }
 
-        case QuestionType.FreeText:
+        case ElementType.FreeText:
           return {
             ...common,
             options: {
+              ...commonOptions,
               placeholder: '',
               restrictions: { maxLength: undefined },
               solutions: [],
@@ -331,7 +340,14 @@ function QuestionEditModal({
           pointsMultiplier: String(dataQuestion.question.pointsMultiplier),
           explanation: dataQuestion.question.explanation ?? '',
           displayMode:
-            dataQuestion.question.displayMode ?? QuestionDisplayMode.List,
+            dataQuestion.question.questionData.options.displayMode ??
+            ElementDisplayMode.List,
+          hasSampleSolution:
+            dataQuestion.question.questionData.options.hasSampleSolution ??
+            false,
+          hasAnswerFeedbacks:
+            dataQuestion.question.questionData.options.hasAnswerFeedbacks ??
+            false,
           tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
           options: dataQuestion.question.questionData.options,
         }
@@ -365,21 +381,25 @@ function QuestionEditModal({
             values.explanation !== ''
               ? values.explanation
               : null,
-          hasSampleSolution: values.hasSampleSolution,
-          hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           tags: values.tags,
-          displayMode: values.displayMode,
           pointsMultiplier: parseInt(values.pointsMultiplier),
+          options: {
+            hasSampleSolution: values.hasSampleSolution,
+            hasAnswerFeedbacks: values.hasAnswerFeedbacks,
+          },
         }
+
         switch (common.type) {
-          case QuestionType.Sc:
-          case QuestionType.Mc:
-          case QuestionType.Kprim:
-            await manipulateChoicesQuestion({
+          case ElementType.Sc:
+          case ElementType.Mc:
+          case ElementType.Kprim: {
+            const result = await manipulateChoicesQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
                 options: {
+                  ...common.options,
+                  displayMode: values.displayMode || ElementDisplayMode.List,
                   choices: values.options?.choices.map((choice: any) => {
                     return {
                       ix: choice.ix,
@@ -395,13 +415,16 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateChoicesQuestion?.id) return
             break
-          case QuestionType.Numerical:
-            await manipulateNUMERICALQuestion({
+          }
+          case ElementType.Numerical: {
+            const result = await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
                 options: {
+                  ...common.options,
                   unit: values.options?.unit,
                   accuracy: parseInt(values.options?.accuracy),
                   restrictions: {
@@ -433,13 +456,16 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateNumericalQuestion?.id) return
             break
-          case QuestionType.FreeText:
-            await manipulateFreeTextQuestion({
+          }
+          case ElementType.FreeText: {
+            const result = await manipulateFreeTextQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
                 options: {
+                  ...common.options,
                   placeholder: values.options?.placeholder,
                   restrictions: {
                     maxLength: parseInt(
@@ -454,10 +480,22 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateFreeTextQuestion?.id) return
             break
+          }
+
           default:
             break
         }
+
+        if (mode === QuestionEditMode.EDIT && updateInstances) {
+          if (questionId !== null && typeof questionId !== 'undefined') {
+            const { data: instanceResult } = await updateQuestionInstances({
+              variables: { questionId: questionId },
+            })
+          }
+        }
+
         handleSetIsOpen(false)
       }}
     >
@@ -759,12 +797,10 @@ function QuestionEditModal({
                         }}
                       />
                     )}
-                    {[QuestionType.Sc, QuestionType.Mc].includes(
-                      values.type
-                    ) && (
+                    {[ElementType.Sc, ElementType.Mc].includes(values.type) && (
                       <FormikSelectField
                         name="displayMode"
-                        items={Object.values(QuestionDisplayMode).map(
+                        items={Object.values(ElementDisplayMode).map(
                           (mode) => ({
                             value: mode,
                             label: t(`manage.questionForms.${mode}Display`),
@@ -960,13 +996,13 @@ function QuestionEditModal({
                               className={{
                                 root: twMerge(
                                   'font-bold border border-solid border-uzh-grey-100',
-                                  values.type === QuestionType.Kprim &&
+                                  values.type === ElementType.Kprim &&
                                     values.options.choices.length >= 4 &&
                                     'opacity-50 cursor-not-allowed'
                                 ),
                               }}
                               disabled={
-                                values.type === QuestionType.Kprim &&
+                                values.type === ElementType.Kprim &&
                                 values.options.choices.length >= 4
                               }
                               onClick={() =>
@@ -993,7 +1029,7 @@ function QuestionEditModal({
                     </FieldArray>
                   )}
 
-                  {values.type === QuestionType.Numerical && (
+                  {values.type === ElementType.Numerical && (
                     <div>
                       <div className="w-full">
                         <div className="flex flex-row items-center gap-2 mb-2">
@@ -1131,7 +1167,7 @@ function QuestionEditModal({
                     </div>
                   )}
 
-                  {values.type === QuestionType.FreeText && (
+                  {values.type === ElementType.FreeText && (
                     <div className="flex flex-col">
                       <div className="flex flex-row items-center mb-4">
                         <div className="mr-2 font-bold">
@@ -1365,6 +1401,28 @@ function QuestionEditModal({
                   )}
               </div>
             </div>
+
+            {mode === QuestionEditMode.EDIT && (
+              <div
+                className={twMerge(
+                  'p-2 mt-3 border border-solid rounded flex flex-row gap-6 items-center',
+                  updateInstances && 'bg-orange-100 border-orange-200'
+                )}
+              >
+                <Switch
+                  checked={updateInstances}
+                  onCheckedChange={() => setUpdateInstances(!updateInstances)}
+                />
+                <div>
+                  <H4 className={{ root: 'm-0' }}>
+                    {t('manage.questionForms.updateInstances')}
+                  </H4>
+                  <Prose className={{ root: 'prose-xs max-w-none' }}>
+                    {t('manage.questionForms.updateInstancesExplanation')}
+                  </Prose>
+                </div>
+              </div>
+            )}
           </Modal>
         )
       }}

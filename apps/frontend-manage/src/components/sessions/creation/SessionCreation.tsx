@@ -1,13 +1,13 @@
 import { useQuery } from '@apollo/client'
 import {
   Course,
+  Element,
   GetLearningElementDocument,
   GetSingleLiveSessionDocument,
   GetSingleMicroSessionDocument,
   GetUserCoursesDocument,
   LearningElement,
   MicroSession,
-  Question,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -23,7 +23,7 @@ interface SessionCreationProps {
   sessionId?: string
   editMode?: string
   duplicationMode?: string
-  selection: Record<number, Question>
+  selection: Record<number, Element>
   resetSelection: () => void
 }
 

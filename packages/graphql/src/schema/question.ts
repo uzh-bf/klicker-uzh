@@ -1,6 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import { QuestionData, QuestionDisplayMode, QuestionType } from './questionData'
+import { ElementData } from './elementData'
+import {
+  ElementDisplayMode,
+  ElementInstanceType,
+  ElementType,
+  QuestionData,
+} from './questionData'
 
 export const ChoiceInput = builder.inputType('ChoiceInput', {
   fields: (t) => ({
@@ -13,6 +19,9 @@ export const ChoiceInput = builder.inputType('ChoiceInput', {
 
 export const OptionsChoicesInput = builder.inputType('OptionsChoicesInput', {
   fields: (t) => ({
+    displayMode: t.field({ required: false, type: ElementDisplayMode }),
+    hasSampleSolution: t.boolean({ required: false }),
+    hasAnswerFeedbacks: t.boolean({ required: false }),
     choices: t.field({
       type: [ChoiceInput],
     }),
@@ -23,6 +32,8 @@ export const NumericalRestrictionsInput = builder.inputType(
   'NumericalRestrictionsInput',
   {
     fields: (t) => ({
+      hasSampleSolution: t.boolean({ required: false }),
+      hasAnswerFeedbacks: t.boolean({ required: false }),
       min: t.float({ required: false }),
       max: t.float({ required: false }),
     }),
@@ -40,6 +51,8 @@ export const OptionsNumericalInput = builder.inputType(
   'OptionsNumericalInput',
   {
     fields: (t) => ({
+      hasSampleSolution: t.boolean({ required: false }),
+      hasAnswerFeedbacks: t.boolean({ required: false }),
       accuracy: t.int({ required: false }),
       unit: t.string({ required: false }),
       restrictions: t.field({
@@ -68,6 +81,8 @@ export const FreeTextRestrictionsInput = builder.inputType(
 
 export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
   fields: (t) => ({
+    hasSampleSolution: t.boolean({ required: false }),
+    hasAnswerFeedbacks: t.boolean({ required: false }),
     placeholder: t.string({ required: false }),
     restrictions: t.field({
       type: FreeTextRestrictionsInput,
@@ -144,13 +159,17 @@ export const InstanceEvaluation = builder
     }),
   })
 
+<<<<<<< HEAD
 export const QuestionRef = builder.objectRef<DB.Question>('Question')
 export const Question = QuestionRef.implement({
+=======
+export const Element = builder.prismaObject('Element', {
+>>>>>>> a6b6d33ba91a21c76f2c4c77b59e803e9819b3db
   fields: (t) => ({
     id: t.exposeInt('id'),
 
     name: t.exposeString('name'),
-    type: t.expose('type', { type: QuestionType }),
+    type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
     explanation: t.exposeString('explanation', { nullable: true }),
 
@@ -161,7 +180,7 @@ export const Question = QuestionRef.implement({
       type: QuestionData,
       resolve: (q) => q,
     }),
-    displayMode: t.expose('displayMode', { type: QuestionDisplayMode }),
+    displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
 
     isArchived: t.exposeBoolean('isArchived'),
     isDeleted: t.exposeBoolean('isDeleted'),
@@ -198,8 +217,36 @@ export const QuestionInstance = QuestionInstanceRef.implement({
   }),
 })
 
+<<<<<<< HEAD
 export const TagRef = builder.objectRef<DB.Tag>('Tag')
 export const Tag = TagRef.implement({
+=======
+export interface IElementInstance extends DB.ElementInstance {
+  evaluation?: IInstanceEvaluation
+}
+export const ElementInstanceRef =
+  builder.objectRef<IElementInstance>('ElementInstance')
+export const ElementInstance = ElementInstanceRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+
+    type: t.expose('type', { type: ElementInstanceType }),
+    elementType: t.expose('elementType', { type: ElementType }),
+
+    evaluation: t.expose('evaluation', {
+      type: InstanceEvaluation,
+      nullable: true,
+    }),
+
+    elementData: t.field({
+      type: ElementData,
+      resolve: (q) => q.elementData,
+    }),
+  }),
+})
+
+export const Tag = builder.prismaObject('Tag', {
+>>>>>>> a6b6d33ba91a21c76f2c4c77b59e803e9819b3db
   fields: (t) => ({
     id: t.exposeInt('id'),
     name: t.exposeString('name'),

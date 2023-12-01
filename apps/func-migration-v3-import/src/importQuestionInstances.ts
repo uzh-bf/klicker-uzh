@@ -17,7 +17,7 @@ export const importQuestionInstances = async (
 ) => {
   try {
     let mappedQuestionInstancesIds: Record<string, number> = {}
-    const questions = await prisma.question.findMany({
+    const questions = await prisma.element.findMany({
       where: {
         id: {
           in: Object.values(mappedQuestionIds),
@@ -172,7 +172,7 @@ export const importQuestionInstances = async (
               newQuestionInstance.id
 
             if (questionInstance.questionData.id) {
-              await prisma.question.update({
+              await prisma.element.update({
                 where: {
                   id: questionInstance.questionData.id,
                 },

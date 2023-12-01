@@ -31,7 +31,25 @@ describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   it('signs in into lecturer account', () => {
-    cy.loginLecturer()
+    cy.visit(Cypress.env('URL_MANAGE'))
+
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+
+    cy.get('[data-cy="delegated-login-button"').then((btn) => {
+      if (btn.is(':disabled')) {
+        cy.get('button[data-cy="tos-checkbox"]').click()
+      }
+    })
+
+    cy.get('[data-cy="delegated-login-button"').should('be.enabled').click()
+
+    cy.get('[data-cy="identifier-field"]').type(
+      Cypress.env('LECTURER_IDENTIFIER')
+    )
+    cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'))
+
+    cy.get('form > button[type=submit]').click()
 
     cy.get('[data-cy="homepage"]').should('exist')
 
