@@ -3,6 +3,7 @@ import builder from '../builder'
 import { levelFromXp } from '../lib/util'
 import {
   AchievementRef,
+  IParticipantAchievementInstance,
   ParticipantAchievementInstanceRef,
 } from './achievement'
 import type {
@@ -83,7 +84,7 @@ export interface IParticipant extends DB.Participant {
   rank?: number
   score?: number
   isSelf?: boolean
-  achievements?: DB.ParticipantAchievementInstance[]
+  achievements?: IParticipantAchievementInstance[]
   participantGroups?: IParticipantGroup[]
   level?: number
   levelData?: ILevel
