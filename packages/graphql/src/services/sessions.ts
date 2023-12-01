@@ -1899,11 +1899,9 @@ export async function getSessionEvaluation(
 
     // evaluate whether the hashed session.namespace and session.id equals the hmac
     if (sessionHmac !== hmac) {
-      session = null
+      return null
     }
   }
-
-  if (!session) return null
 
   // if the session is running and a block is active
   // fetch the current results from the execution cache
