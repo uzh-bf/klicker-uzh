@@ -12,6 +12,7 @@ import {
   Label,
   Modal,
 } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -75,14 +76,22 @@ function CourseCreationModal({
         }}
         onSubmit={async (values, { setSubmitting }) => {
           try {
+            // convert dates to UTC
+            const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
+              .utc()
+              .toISOString()
+            const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
+              .utc()
+              .toISOString()
+
             const result = await createCourse({
               variables: {
                 name: values.name,
                 displayName: values.displayName,
                 description: values.description,
                 color: values.color,
-                startDate: values.startDate + 'T00:00:00.000Z',
-                endDate: values.endDate + 'T23:59:59.999Z',
+                startDate: startDateUTC,
+                endDate: endDateUTC,
                 isGamificationEnabled: values.isGamificationEnabled,
               },
               refetchQueries: [

@@ -402,6 +402,10 @@ export async function createCourse(
   // TODO: ensure that PINs are unique
   const randomPin = Math.floor(Math.random() * 900000000 + 100000000)
 
+  // convert times from local time to UTC
+  // startDate.setHours(startDate.getHours() - startDate.getTimezoneOffset() / 60)
+  // endDate.setHours(endDate.getHours() - endDate.getTimezoneOffset() / 60)
+
   const course = await ctx.prisma.course.create({
     data: {
       name: name,

@@ -66,6 +66,7 @@ function CourseDescription({
               onChange={(newValue: string) =>
                 setFieldValue('description', newValue)
               }
+              data_cy="course-description-input"
             />
 
             <div className="flex flex-row justify-between mt-1">
@@ -78,6 +79,7 @@ function CourseDescription({
                 }}
                 type="submit"
                 disabled={isSubmitting || !isValid}
+                data={{ cy: 'course-description-submit' }}
               >
                 <Button.Icon className={{ root: 'mr-1' }}>
                   <FontAwesomeIcon icon={faSave} />
