@@ -36,7 +36,7 @@
   "scripts": {
     "release": "standard-version",
     "release:dry": "standard-version --dry-run",
-    "build": "turbo run build",
+    "build": "turbo run build --cache-dir=.turbo",
     "check": "turbo run check --parallel --continue",
     "dev": "doppler run --config dev -- turbo run dev",
     "dev:docs": "doppler run --config dev -- turbo run dev:docs",
