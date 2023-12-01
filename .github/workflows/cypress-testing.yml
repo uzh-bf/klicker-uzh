@@ -61,26 +61,37 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
 
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8.10.0
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.pnpm
             .turbo
-            ${{ github.workspace }}/apps/auth/.next/cache
-            ${{ github.workspace }}/apps/frontend-pwa/.next/cache
-            ${{ github.workspace }}/apps/frontend-manage/.next/cache
-            ${{ github.workspace }}/apps/frontend-control/.next/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-
 
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8.10.0
-          run_install: true
-
       - name: Install bun
         run: pnpm add -g bun@1.0.7
+
+      - name: Install dependencies
+        run: pnpm install
 
       # - name: Install azure-functions-core-tools
       #   run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
