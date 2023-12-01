@@ -69,6 +69,12 @@ describe('Test course creation and editing functionalities', () => {
     //   .type('New description')
     // cy.get('[data-cy="course-description-submit"]').click()
 
+    // check out course join modal
+    cy.get('[data-cy="course-join-button"]').click()
+    cy.get('[data-cy="course-join-modal"]').should('exist')
+    cy.get('[data-cy="course-join-modal"]').should('contain', 'QR Code')
+    cy.get('[data-cy="course-join-modal-close"]').click()
+
     // check course color and change it to green
     cy.get('[data-cy="course-color-trigger"]').click()
     cy.get('[data-cy="course-color-hex-input"]').should('have.value', 'FF0000')

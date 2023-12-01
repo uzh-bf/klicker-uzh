@@ -81,8 +81,6 @@ function CourseOverviewPage() {
     [SessionStatus.Completed]: 3,
   }
 
-  console.log(course.endDate)
-
   return (
     <Layout>
       <div className="w-full mb-4">
@@ -100,6 +98,9 @@ function CourseOverviewPage() {
               relativeLink={`/course/${course.id}/join?pin=${course.pinCode}`}
               triggerText={t('manage.course.joinCourse')}
               className={{ modal: 'w-[40rem]' }}
+              dataTrigger={{ cy: 'course-join-button' }}
+              dataModal={{ cy: 'course-join-modal' }}
+              dataCloseButton={{ cy: 'course-join-modal-close' }}
             >
               <H2>{t('manage.course.joinCourse')}</H2>
               <Link
