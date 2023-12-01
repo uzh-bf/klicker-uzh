@@ -160,14 +160,15 @@ export const InstanceEvaluation = builder
     }),
   })
 
-export interface IElement extends DB.Element {
-  tags?: DB.Tag[]
+export interface IElement extends Omit<DB.Element, 'ownerId' | 'originalId'> {
+  tags?: ITag[] | null
 }
 export const ElementRef = builder.objectRef<IElement>('Element')
 export const Element = ElementRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
+    version: t.exposeInt('version'),
     name: t.exposeString('name'),
     type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
@@ -216,6 +217,7 @@ export const QuestionInstance = QuestionInstanceRef.implement({
     questionData: t.field({
       type: QuestionDataRef,
       resolve: (q) => q.questionData,
+      nullable: true,
     }),
   }),
 })

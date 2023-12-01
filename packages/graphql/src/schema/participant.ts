@@ -3,6 +3,7 @@ import builder from '../builder'
 import { levelFromXp } from '../lib/util'
 import {
   AchievementRef,
+  IAchievement,
   IParticipantAchievementInstance,
   ParticipantAchievementInstanceRef,
 } from './achievement'
@@ -145,7 +146,7 @@ export const Participant = ParticipantRef.implement({
 
 export interface IParticipantGroup extends DB.ParticipantGroup {
   score?: number
-  participants: IParticipant[]
+  participants?: IParticipant[]
 }
 export const ParticipantGroupRef =
   builder.objectRef<IParticipantGroup>('ParticipantGroup')
@@ -155,6 +156,7 @@ export const ParticipantGroup = ParticipantGroupRef.implement({
 
     participants: t.expose('participants', {
       type: [ParticipantRef],
+      nullable: true,
     }),
 
     name: t.exposeString('name'),
@@ -294,7 +296,7 @@ export const LeaveCourseParticipation = LeaveCourseParticipationRef.implement({
 
 export interface IParticipantWithAchievements {
   participant: IParticipant
-  achievements: DB.Achievement[]
+  achievements: IAchievement[]
 }
 export const ParticipantWithAchievementsRef =
   builder.objectRef<IParticipantWithAchievements>('ParticipantWithAchievements')

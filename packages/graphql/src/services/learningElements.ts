@@ -30,7 +30,11 @@ import {
   prepareInitialInstanceResults,
   processQuestionData,
 } from '../lib/questions'
-import { AllElementTypeData, QuestionResponseChoices } from '../types/app'
+import {
+  AllElementTypeData,
+  QuestionResponse,
+  QuestionResponseChoices,
+} from '../types/app'
 
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
@@ -276,9 +280,9 @@ export async function respondToQuestionInstance(
           if (
             isNaN(parsedValue) ||
             (typeof questionData.options.restrictions?.min === 'number' &&
-              parsedValue < questionData.options.restrictions!.min) ||
-            (typeof questionData.options.restrictions!.max === 'number' &&
-              parsedValue > questionData.options.restrictions!.max)
+              parsedValue < questionData.options.restrictions.min) ||
+            (typeof questionData.options.restrictions?.max === 'number' &&
+              parsedValue > questionData.options.restrictions.max)
           ) {
             return {}
           }
@@ -447,7 +451,7 @@ export async function respondToQuestionInstance(
           trialsCount: 1,
           lastAwardedAt,
           lastXpAwardedAt,
-          response,
+          response: response as QuestionResponse,
           participant: {
             connect: { id: ctx.user.sub },
           },
@@ -464,7 +468,7 @@ export async function respondToQuestionInstance(
           },
         },
         update: {
-          response,
+          response: response as QuestionResponse,
           lastAwardedAt,
           lastXpAwardedAt,
           trialsCount: {
@@ -489,7 +493,7 @@ export async function respondToQuestionInstance(
           score,
           pointsAwarded,
           xpAwarded,
-          response,
+          response: response as QuestionResponse,
           participant: {
             connect: { id: ctx.user.sub },
           },

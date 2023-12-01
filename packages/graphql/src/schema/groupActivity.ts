@@ -23,8 +23,9 @@ export const GroupActivityDecisionInput = builder.inputType(
   }
 )
 
+export interface IGroupActivity extends DB.GroupActivity {}
 export const GroupActivityRef =
-  builder.objectRef<DB.GroupActivity>('GroupActivity')
+  builder.objectRef<IGroupActivity>('GroupActivity')
 export const GroupActivity = GroupActivityRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),

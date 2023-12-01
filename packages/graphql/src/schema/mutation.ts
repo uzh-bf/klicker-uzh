@@ -747,7 +747,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      manipulateChoicesQuestion: t.withAuth(asUserFullAccess).prismaField({
+      manipulateChoicesQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
         args: {
@@ -762,12 +762,12 @@ export const Mutation = builder.mutationType({
             type: OptionsChoicesInput,
           }),
         },
-        resolve(_, __, args, ctx) {
+        resolve(_, args, ctx) {
           return QuestionService.manipulateQuestion(args, ctx)
         },
       }),
 
-      manipulateNumericalQuestion: t.withAuth(asUserFullAccess).prismaField({
+      manipulateNumericalQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
         args: {
@@ -782,12 +782,12 @@ export const Mutation = builder.mutationType({
             type: OptionsNumericalInput,
           }),
         },
-        resolve(_, __, args, ctx) {
+        resolve(_, args, ctx) {
           return QuestionService.manipulateQuestion(args, ctx)
         },
       }),
 
-      manipulateFreeTextQuestion: t.withAuth(asUserFullAccess).prismaField({
+      manipulateFreeTextQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
         args: {
@@ -802,7 +802,7 @@ export const Mutation = builder.mutationType({
             type: OptionsFreeTextInput,
           }),
         },
-        resolve(_, __, args, ctx) {
+        resolve(_, args, ctx) {
           return QuestionService.manipulateQuestion(args, ctx)
         },
       }),

@@ -31,9 +31,9 @@ export const BlockInput = builder.inputType('BlockInput', {
 export interface ISession extends DB.LiveSession {
   numOfBlocks?: number
   numOfQuestions?: number
-  activeBlock?: DB.SessionBlock | null
-  blocks?: DB.SessionBlock[]
-  feedbacks?: DB.Feedback[]
+  activeBlock?: ISessionBlock | null
+  blocks?: ISessionBlock[]
+  feedbacks?: IFeedback[]
   confusionFeedbacks?: DB.ConfusionTimestep[]
   confusionSummary?: IConfusionSummary
   course?: ICourse | null
@@ -288,7 +288,7 @@ export interface ISessionEvaluation {
   isGamificationEnabled: boolean
   blocks: IEvaluationBlock[]
   instanceResults: IInstanceResult[]
-  feedbacks: DB.Feedback[]
+  feedbacks: IFeedback[]
   confusionFeedbacks: DB.ConfusionTimestep[]
 }
 export const SessionEvaluationRef =

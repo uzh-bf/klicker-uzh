@@ -104,10 +104,10 @@ export const Query = builder.queryType({
         },
       }),
 
-      userTags: asUser.prismaField({
+      userTags: asUser.field({
         nullable: true,
         type: [Tag],
-        async resolve(_, __, ___, ctx) {
+        async resolve(_, __, ctx) {
           const user = await ctx.prisma.user.findUnique({
             where: { id: ctx.user.sub },
             include: { tags: { orderBy: { order: 'asc' } } },
@@ -134,13 +134,13 @@ export const Query = builder.queryType({
         },
       }),
 
-      feedbacks: t.prismaField({
+      feedbacks: t.field({
         nullable: true,
         type: [Feedback],
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, __, args, ctx) {
+        resolve(_, args, ctx) {
           return FeedbackService.getFeedbacks(args, ctx)
         },
       }),
@@ -159,10 +159,10 @@ export const Query = builder.queryType({
         },
       }),
 
-      userQuestions: asUser.prismaField({
+      userQuestions: asUser.field({
         nullable: true,
         type: [Element],
-        resolve(_, __, ___, ctx) {
+        resolve(_, __, ctx) {
           return QuestionService.getUserQuestions(ctx)
         },
       }),
@@ -361,13 +361,13 @@ export const Query = builder.queryType({
         },
       }),
 
-      question: asUser.prismaField({
+      question: asUser.field({
         nullable: true,
         type: Element,
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve(_, __, args, ctx) {
+        resolve(_, args, ctx) {
           return QuestionService.getSingleQuestion(args, ctx)
         },
       }),

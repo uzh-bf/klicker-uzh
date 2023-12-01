@@ -1,12 +1,16 @@
 import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import builder from '../builder'
-import { GroupActivityRef } from './groupActivity'
+import { GroupActivityRef, IGroupActivity } from './groupActivity'
 import type { ILearningElement } from './learningElements'
 import { LearningElementRef } from './learningElements'
 import type { IMicroSession } from './microSession'
 import { MicroSessionRef } from './microSession'
-import type { IParticipant, IParticipantGroup } from './participant'
+import type {
+  IParticipant,
+  IParticipantGroup,
+  IParticipation,
+} from './participant'
 import {
   ParticipantGroupRef,
   ParticipantRef,
@@ -15,7 +19,7 @@ import {
 import { IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes'
 import type { ISession } from './session'
 import { SessionRef } from './session'
-import { UserRef } from './user'
+import { IUser, UserRef } from './user'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -28,10 +32,10 @@ export interface ICourse extends DB.Course {
   learningElements?: ILearningElement[]
   practiceQuizzes?: IPracticeQuiz[]
   microSessions?: IMicroSession[]
-  groupActivities?: DB.GroupActivity[]
+  groupActivities?: IGroupActivity[]
   leaderboard?: ILeaderboardEntry[]
-  awards?: DB.AwardEntry[]
-  owner?: DB.User
+  awards?: IAwardEntry[]
+  owner?: IUser
 }
 export const CourseRef = builder.objectRef<ICourse>('Course')
 export const Course = builder.objectType(CourseRef, {
@@ -127,7 +131,7 @@ export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   lastBlockOrder: number
   isSelf?: boolean
   participant: IParticipant
-  participation: DB.Participation
+  participation: IParticipation
 }
 export const LeaderboardEntryRef =
   builder.objectRef<ILeaderboardEntry>('LeaderboardEntry')
@@ -189,8 +193,8 @@ export const GroupLeaderboardEntry = builder
   })
 
 export interface IAwardEntry extends DB.AwardEntry {
-  participant?: IParticipant
-  participantGroup?: IParticipantGroup
+  participant?: IParticipant | null
+  participantGroup?: IParticipantGroup | null
 }
 export const AwardEntryRef = builder.objectRef<IAwardEntry>('AwardEntry')
 export const AwardEntry = AwardEntryRef.implement({

@@ -8,7 +8,7 @@ import * as DB from '@klicker-uzh/prisma'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
-import { Element, Tag } from 'src/ops'
+import { Tag } from 'src/ops'
 import { ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -93,16 +93,18 @@ interface QuestionOptionsArgs {
     pattern?: string | null
     min?: number | null
     max?: number | null
-  }
-  feedback?: string
-  solutionRanges?: { min?: number; max?: number }[]
-  solutions?: string[]
-  choices?: {
-    ix: number
-    value: string
-    correct?: boolean
-    feedback?: string
-  }[]
+  } | null
+  feedback?: string | null
+  solutionRanges?: { min?: number | null; max?: number | null }[] | null
+  solutions?: string[] | null
+  choices?:
+    | {
+        ix: number
+        value: string
+        correct?: boolean | null
+        feedback?: string | null
+      }[]
+    | null
   displayMode?: DB.ElementDisplayMode | null
   hasSampleSolution?: boolean | null
   hasAnswerFeedbacks?: boolean | null
@@ -180,6 +182,8 @@ export async function manipulateQuestion(
           min: options?.restrictions?.min ?? undefined,
           max: options?.restrictions?.max ?? undefined,
         },
+        solutionRanges: options?.solutionRanges ?? undefined,
+        solutions: options?.solutions ?? undefined,
       },
       owner: {
         connect: {
@@ -222,6 +226,8 @@ export async function manipulateQuestion(
               min: options?.restrictions?.min ?? undefined,
               max: options?.restrictions?.max ?? undefined,
             },
+            solutionRanges: options?.solutionRanges ?? undefined,
+            solutions: options?.solutions ?? undefined,
           }
         : undefined,
       tags: {
@@ -371,7 +377,7 @@ export async function updateTagOrdering(
 export async function toggleIsArchived(
   { questionIds, isArchived }: { questionIds: number[]; isArchived: boolean },
   ctx: ContextWithUser
-): Promise<Partial<Element>[]> {
+) {
   await ctx.prisma.element.updateMany({
     where: {
       id: {

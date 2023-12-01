@@ -157,6 +157,7 @@ type Element {
   tags: [Tag!]
   type: ElementType!
   updatedAt: Date!
+  version: Int!
 }
 
 interface ElementData {
@@ -700,7 +701,7 @@ type ParticipantGroup {
   groupActivityScore: Float!
   id: ID!
   name: String!
-  participants: [Participant!]!
+  participants: [Participant!]
   score: Float
 }
 
@@ -835,7 +836,7 @@ type QuestionInstance {
   evaluation: InstanceEvaluation
   id: Int!
   pointsMultiplier: Int!
-  questionData: QuestionData!
+  questionData: QuestionData
 }
 
 type QuestionResponse {
