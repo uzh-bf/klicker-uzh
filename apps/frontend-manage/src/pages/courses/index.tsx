@@ -43,13 +43,15 @@ function CourseSelectionPage() {
                     key={course.id}
                     onClick={() => router.push(`/courses/${course.id}`)}
                     icon={faPeopleGroup}
-                    label={course.displayName}
+                    label={course.name}
+                    data={{ cy: `course-list-button-${course.name}` }}
                   />
                 ))}
                 <CourseListButton
                   onClick={() => showCreateCourseModal(true)}
                   icon={faPlusCircle}
                   label={t('manage.courseList.createNewCourse')}
+                  data={{ cy: 'course-list-button-new-course' }}
                 />
               </div>
             </div>
