@@ -256,7 +256,6 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in LearningElementService
           return LearningElementService.getLearningElementData(args, ctx)
         },
       }),
@@ -268,7 +267,6 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in LearningElementService
           return PracticeQuizService.getPracticeQuizData(args, ctx)
         },
       }),
