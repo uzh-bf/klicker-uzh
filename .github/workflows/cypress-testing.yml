@@ -46,10 +46,10 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
-    strategy:
-      fail-fast: false # https://github.com/cypress-io/github-action/issues/48
-      matrix:
-        containers: [1, 2] # Run parallel instances
+    # strategy:
+    #   fail-fast: false # https://github.com/cypress-io/github-action/issues/48
+    #   matrix:
+    #     containers: [1, 2] # Run parallel instances
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
 
@@ -133,9 +133,9 @@ jobs:
           wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
           wait-on-timeout: 300
           record: true
-          browser: electron
+          browser: chrome
           working-directory: cypress
-          parallel: true
+          # parallel: true
         env:
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
