@@ -200,7 +200,9 @@ export const Participation = ParticipationRef.implement({
   }),
 })
 
-export const PushSubscription = builder.prismaObject('PushSubscription', {
+export const PushSubscriptionRef =
+  builder.objectRef<DB.PushSubscription>('PushSubscription')
+export const PushSubscription = PushSubscriptionRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 

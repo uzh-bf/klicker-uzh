@@ -1,11 +1,11 @@
 import * as DB from '@klicker-uzh/prisma'
-import builder from '../builder'
-import type { ICourse } from './course'
-import { Course } from './course'
-import type { IParticipant, IParticipantGroup } from './participant'
-import { ParticipantGroup, ParticipantRef } from './participant'
-import type { IQuestionInstance } from './question'
-import { QuestionInstance } from './question'
+import builder from '../builder.js'
+import type { ICourse } from './course.js'
+import { Course } from './course.js'
+import type { IParticipant, IParticipantGroup } from './participant.js'
+import { ParticipantGroup, ParticipantRef } from './participant.js'
+import type { IQuestionInstance } from './question.js'
+import { QuestionInstance } from './question.js'
 
 export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),
@@ -23,7 +23,9 @@ export const GroupActivityDecisionInput = builder.inputType(
   }
 )
 
-export const GroupActivity = builder.prismaObject('GroupActivity', {
+export const GroupActivityRef =
+  builder.objectRef<DB.GroupActivity>('GroupActivity')
+export const GroupActivity = GroupActivityRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
@@ -57,7 +59,9 @@ export const GroupActivityInstance = GroupActivityInstanceRef.implement({
   }),
 })
 
-export const GroupActivityClue = builder.prismaObject('GroupActivityClue', {
+export const GroupActivityClueRef =
+  builder.objectRef<DB.GroupActivityClue>('GroupActivityClue')
+export const GroupActivityClue = GroupActivityClueRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
@@ -90,23 +94,24 @@ export const GroupActivityClueInstance = GroupActivityClueInstanceRef.implement(
   }
 )
 
-export const GroupActivityClueAssignment = builder.prismaObject(
-  'GroupActivityClueAssignment',
-  {
+export const GroupActivityClueAssignmentRef =
+  builder.objectRef<DB.GroupActivityClueAssignment>(
+    'GroupActivityClueAssignment'
+  )
+export const GroupActivityClueAssignment =
+  GroupActivityClueAssignmentRef.implement({
     fields: (t) => ({
       id: t.exposeInt('id'),
     }),
-  }
-)
+  })
 
-export const GroupActivityParameter = builder.prismaObject(
-  'GroupActivityParameter',
-  {
-    fields: (t) => ({
-      id: t.exposeInt('id'),
-    }),
-  }
-)
+export const GroupActivityParameterRef =
+  builder.objectRef<DB.GroupActivityParameter>('GroupActivityParameter')
+export const GroupActivityParameter = GroupActivityParameterRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+  }),
+})
 
 export interface IGroupActivityDetails {
   id: string

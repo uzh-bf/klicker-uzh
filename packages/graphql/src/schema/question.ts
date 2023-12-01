@@ -159,7 +159,11 @@ export const InstanceEvaluation = builder
     }),
   })
 
-export const Element = builder.prismaObject('Element', {
+export interface IElement extends DB.Element {
+  tags?: DB.Tag[]
+}
+export const ElementRef = builder.objectRef<IElement>('Element')
+export const Element = ElementRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
@@ -186,7 +190,10 @@ export const Element = builder.prismaObject('Element', {
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
 
-    tags: t.relation('tags'),
+    tags: t.expose('tags', {
+      type: [TagRef],
+      nullable: true,
+    }),
   }),
 })
 

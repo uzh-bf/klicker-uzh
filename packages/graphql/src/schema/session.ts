@@ -119,7 +119,10 @@ export const SessionBlock = SessionBlockRef.implement({
   }),
 })
 
-export const FeedbackRef = builder.objectRef<DB.Feedback>('Feedback')
+export interface IFeedback extends DB.Feedback {
+  responses?: DB.FeedbackResponse[]
+}
+export const FeedbackRef = builder.objectRef<IFeedback>('Feedback')
 export const Feedback = FeedbackRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
@@ -128,6 +131,10 @@ export const Feedback = FeedbackRef.implement({
     isResolved: t.exposeBoolean('isResolved'),
     content: t.exposeString('content'),
     votes: t.exposeInt('votes'),
+    responses: t.expose('responses', {
+      type: [FeedbackResponse],
+      nullable: true,
+    }),
     resolvedAt: t.expose('resolvedAt', { type: 'Date', nullable: true }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
@@ -236,14 +243,13 @@ export const QuestionResponse = QuestionResponseRef.implement({
   }),
 })
 
-export const QuestionResponseDetail = builder.prismaObject(
-  'QuestionResponseDetail',
-  {
-    fields: (t) => ({
-      id: t.exposeInt('id'),
-    }),
-  }
-)
+export const QuestionResponseDetailRef =
+  builder.objectRef<DB.QuestionResponseDetail>('QuestionResponseDetail')
+export const QuestionResponseDetail = QuestionResponseDetailRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+  }),
+})
 
 export interface ITabData {
   id: string
