@@ -77,6 +77,7 @@
     "analyze": "size-limit --why",
     "build": "run-s generate build:ts",
     "build:ts": "cross-env NODE_ENV=production tsup --dts",
+    "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
     "dev:graphql": "doppler run --config dev -- graphql-codegen --config codegen.ts --watch 'src/**.graphql' --watch 'src/**.ts'",

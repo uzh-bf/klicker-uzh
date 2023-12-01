@@ -30,6 +30,7 @@
   "scripts": {
     "analyze": "size-limit --why",
     "build": "cross-env NODE_ENV=production tsup",
+    "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "cross-env NODE_ENV=development tsup --watch",
     "dev:offline": "pnpm run dev",

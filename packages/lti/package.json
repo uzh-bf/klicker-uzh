@@ -33,6 +33,7 @@
     "analyze": "size-limit --why",
     "build": "cross-env NODE_ENV=production tsup",
     "build:watch": "cross-env NODE_ENV=development tsup --watch",
+    "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
