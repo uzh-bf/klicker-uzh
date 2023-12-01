@@ -82,6 +82,9 @@ jobs:
           version: 8.10.0
           run_install: true
 
+      - name: Install bun
+        run: pnpm add -g bun@1.0.7
+
       # - name: Install azure-functions-core-tools
       #   run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
 
@@ -94,11 +97,12 @@ jobs:
           FUNC_RESPONSES_SETTINGS: ${{ secrets.FUNC_RESPONSES_SETTINGS }}
           FUNC_RESPONSE_PROCESSOR_SETTINGS: ${{ secrets.FUNC_RESPONSE_PROCESSOR_SETTINGS }}
 
+      - name: Build all packages and apps
+        run: pnpm run build
+
       - name: Apply migrations and seed the database
         run: |
           cd packages/prisma
-          pnpm add -g bun@1.0.7
-          pnpm run build
           pnpm run prisma:reset:raw -f
           pnpm run seed:test
         env:
