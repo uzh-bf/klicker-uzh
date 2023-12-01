@@ -1,7 +1,7 @@
 describe('Test course creation and editing functionalities', () => {
   const randomNumber = Math.round(Math.random() * 1000)
-  const name = 'Testkurs ' + randomNumber
-  const displayName = 'Testkurs Display ' + randomNumber
+  const name = 'New Course ' + randomNumber
+  const displayName = 'New Course Display ' + randomNumber
   const description = 'Lorem ipsum dolor sit amet ... '
 
   it('Test the creation of a new course', () => {
