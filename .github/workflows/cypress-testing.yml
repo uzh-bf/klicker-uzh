@@ -49,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false # https://github.com/cypress-io/github-action/issues/48
       matrix:
-        containers: [1, 2, 3, 4] # Run parallel instances
+        containers: [1, 2] # Run parallel instances
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
 
