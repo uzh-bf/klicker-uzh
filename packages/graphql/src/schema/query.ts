@@ -268,7 +268,7 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           // FIXME by fixing type issues in LearningElementService
-          return PracticeQuizService.getPracticeQuizData(args, ctx) as any
+          return PracticeQuizService.getPracticeQuizData(args, ctx)
         },
       }),
 
@@ -291,7 +291,7 @@ export const Query = builder.queryType({
           hmac: t.arg.string(),
         },
         resolve(_, args, ctx) {
-          return SessionService.getSessionEvaluation(args, ctx) as any
+          return SessionService.getSessionEvaluation(args, ctx)
         },
       }),
 
