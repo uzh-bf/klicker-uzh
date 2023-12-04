@@ -85,7 +85,7 @@ function CourseOverviewPage() {
     <Layout>
       <div className="w-full mb-4">
         <div className="flex flex-row items-center justify-between">
-          <H1>
+          <H1 data={{ cy: 'course-name-with-pin' }}>
             {t('manage.course.nameWithPin', {
               name: course.name,
               pin: String(course.pinCode)
@@ -98,6 +98,9 @@ function CourseOverviewPage() {
               relativeLink={`/course/${course.id}/join?pin=${course.pinCode}`}
               triggerText={t('manage.course.joinCourse')}
               className={{ modal: 'w-[40rem]' }}
+              dataTrigger={{ cy: 'course-join-button' }}
+              dataModal={{ cy: 'course-join-modal' }}
+              dataCloseButton={{ cy: 'course-join-modal-close' }}
             >
               <H2>{t('manage.course.joinCourse')}</H2>
               <Link
@@ -138,10 +141,12 @@ function CourseOverviewPage() {
                 className={{
                   root: 'w-full p-2 rounded prose-p:mt-0 prose-headings:mt-0',
                 }}
+                data={{ cy: 'course-description' }}
               />
               <Button
                 onClick={() => setDescriptionEditMode(true)}
                 className={{ root: 'h-10' }}
+                data={{ cy: 'course-description-edit-button' }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faPencil} />
@@ -175,6 +180,9 @@ function CourseOverviewPage() {
               }
               abortText={t('shared.generic.cancel')}
               submitText={t('shared.generic.save')}
+              dataTrigger={{ cy: 'course-color-trigger' }}
+              dataHexInput={{ cy: 'course-color-hex-input' }}
+              dataSubmit={{ cy: 'course-color-submit' }}
             />
           </div>
           <DateChanger
@@ -198,6 +206,8 @@ function CourseOverviewPage() {
                 setDateToastError(true)
               }
             }}
+            data={{ cy: 'course-start-date' }}
+            dataButton={{ cy: 'course-start-date-button' }}
           />
           <DateChanger
             label={`${t('shared.generic.endDate')}:`}
@@ -220,6 +230,8 @@ function CourseOverviewPage() {
                 setDateToastError(true)
               }
             }}
+            data={{ cy: 'course-end-date' }}
+            dataButton={{ cy: 'course-end-date-button' }}
           />
           <Toast
             duration={4000}
@@ -338,7 +350,7 @@ function CourseOverviewPage() {
           </div>
         </div>
         {data?.course?.isGamificationEnabled && (
-          <div className="w-full md:w-1/3 md:pl-2 border-l">
+          <div className="w-full border-l md:w-1/3 md:pl-2">
             <H3>{t('manage.course.courseLeaderboard')}</H3>
             <Leaderboard
               className={{ root: 'max-h-[31rem] overflow-y-scroll' }}

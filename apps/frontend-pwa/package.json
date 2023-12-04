@@ -24,7 +24,7 @@
     "@radix-ui/react-tabs": "1.0.3",
     "@socialgouv/matomo-next": "1.6.1",
     "@uidotdev/usehooks": "2.4.1",
-    "@uzh-bf/design-system": "2.4.2",
+    "@uzh-bf/design-system": "2.4.6",
     "body-parser": "1.20.2",
     "dayjs": "1.11.9",
     "deepmerge": "4.3.1",
@@ -89,7 +89,7 @@
     "lint": "next lint",
     "pushTest": "node src/testPush.js",
     "start": "next start --port 3001",
-    "start:test": "cross-env NODE_ENV=test npm start"
+    "start:test": "cross-env NODE_ENV=test pnpm start"
   },
   "engines": {
     "node": "=20"

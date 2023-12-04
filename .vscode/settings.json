@@ -7,7 +7,9 @@
   "debug.internalConsoleOptions": "neverOpen",
   "azureFunctions.preDeployTask": "npm prune (serverless)",
   "azureFunctions.projectSubpath": "apps/func-migration-v2-export",
-  "githubPullRequests.ignoredPullRequestBranches": ["v3"],
+  "githubPullRequests.ignoredPullRequestBranches": [
+    "v3"
+  ],
   "editor.formatOnSave": true,
   "sonarlint.connectedMode.project": {
     "connectionId": "uzh-bf",
@@ -16,5 +18,11 @@
   "azureFunctions.templateFilter": "Verified",
   "files.associations": {
     "plyconfig.json": "jsonc"
-  }
+  },
+  "terminal.integrated.env.osx": {
+    "PATH": "/Users/rolandschlaefli/.azurelogicapps/dependencies/DotNetSDK:${env:PATH}"
+  },
+  "omnisharp.dotNetCliPaths": [
+    "/Users/rolandschlaefli/.azurelogicapps/dependencies/DotNetSDK"
+  ]
 }

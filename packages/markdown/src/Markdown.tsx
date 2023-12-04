@@ -37,6 +37,10 @@ export interface MarkdownProps {
   withModal?: boolean
   withLinkButtons?: boolean
   withProse?: boolean
+  data?: {
+    cy?: string
+    test?: string
+  }
 }
 
 function Markdown({
@@ -46,6 +50,7 @@ function Markdown({
   withModal = true,
   withLinkButtons = true,
   withProse = false,
+  data,
 }: MarkdownProps): React.ReactElement {
   const parsedContent = useMemo(() => {
     if (content?.length <= 2) {
@@ -155,6 +160,7 @@ function Markdown({
         className={{
           root: twMerge('max-w-none prose-p:mt-0', className?.root),
         }}
+        data={data}
       >
         {parsedContent}
       </Prose>
