@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.16...v3.1.0-beta.17) (2023-12-05)
+
+
+### Refactors
+
+* **packages/graphql:** improve typing and consistency in pothos schema and services ([#3914](https://github.com/uzh-bf/klicker-uzh/issues/3914)) ([1f815dc](https://github.com/uzh-bf/klicker-uzh/commit/1f815dc665b7d87c1db7d0e098d9367b6870019e))
+
+
+### Enhancements
+
+* **cypress:** extend test suite and improve CI caching ([#3979](https://github.com/uzh-bf/klicker-uzh/issues/3979)) ([915af47](https://github.com/uzh-bf/klicker-uzh/commit/915af47e4e8e7e43cba34f7c56555c07c76dfff6))
+
 ## [3.1.0-beta.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.15...v3.1.0-beta.16) (2023-11-27)
 
 
