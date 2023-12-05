@@ -86,6 +86,7 @@
     "seed:prod:bf2": "ENV=development doppler run --config prd -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedBF2.ts",
     "seed:prod:groupActivityResults": "ENV=development doppler run --config prd bun run src/data/seedGroupActivityResults.ts",
     "seed:prod:flashcards": "ENV=development doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedFlashcards.ts",
+    "seed:prod:repetitionPool": "ENV=development doppler run --config prd -- bun run src/data/seedRepetitionPool.ts",
     "seed:prod:importQuestions": "cp ../../legacy/db/exported_questions.json ./src/data/exported_questions.json && ENV=development doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/importQuestions.ts",
     "seed:prod:levels": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedLevels.ts",
     "seed:prod:summerSchool": "ENV=production doppler run --config prd -- ts-node --esm --experimental-specifier-resolution=node src/data/seedSummerSchool.ts",
