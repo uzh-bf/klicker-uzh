@@ -49,6 +49,7 @@ function CourseElement({
           ),
         }}
         href={disabled ? '' : `/course/${course.id}`}
+        data={{ cy: `course-button-${course.displayName}` }}
       >
         <div>
           <div>{course.displayName}</div>

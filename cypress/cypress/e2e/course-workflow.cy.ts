@@ -1,8 +1,11 @@
+import messages from '../../../packages/i18n/messages/en'
+
 describe('Test course creation and editing functionalities', () => {
   const randomNumber = Math.round(Math.random() * 1000)
   const name = 'New Course ' + randomNumber
   const displayName = 'New Course Display ' + randomNumber
   const description = 'Lorem ipsum dolor sit amet ... '
+  const testCourseName = 'Testkurs'
 
   it('Test the creation of a new course', () => {
     // log into frontend-manage
@@ -95,5 +98,33 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="course-end-date"]').type('2025-02-01')
     // click outside to submit
     cy.get('[data-cy="course-name-with-pin"]').click()
+  })
+
+  it('Test the course overview on the student side', () => {
+    // log into the student frontend
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.viewport('iphone-x')
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+    cy.wait(1000)
+
+    // check for the existince of the test course
+    // TODO: find out why the button is not found by text
+    // cy.findByText(testCourseName).should('exist').click()
+    cy.get(`[data-cy="course-button-${testCourseName}"]`).click()
+    // TODO: find out why find by text does not work here
+    // cy.findByText(messages.shared.generic.leaderboard).should('exist')
+    cy.get('[data-cy="student-course-leaderboard-tab"]').should('exist')
+
+    // check if the leaderboards exist
+    cy.findByText(messages.pwa.courses.individualLeaderboard).should('exist')
+    cy.findByText(messages.pwa.courses.groupLeaderboard).should('exist')
   })
 })

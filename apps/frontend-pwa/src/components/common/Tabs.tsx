@@ -6,10 +6,14 @@ interface TabProps {
   key: string
   value: string
   label: string
+  data?: {
+    cy?: string
+    test?: string
+  }
   className?: string
 }
 
-export function Tab({ key, value, label, className }: TabProps) {
+export function Tab({ key, value, label, data, className }: TabProps) {
   return (
     <TabsPrimitive.Trigger
       key={`tab-trigger-${key}`}
@@ -25,6 +29,8 @@ export function Tab({ key, value, label, className }: TabProps) {
         'focus:z-10 focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75',
         className
       )}
+      data-cy={data?.cy}
+      data-test={data?.test}
     >
       <span className={twMerge('text-sm font-medium', 'text-gray-700')}>
         {label}
