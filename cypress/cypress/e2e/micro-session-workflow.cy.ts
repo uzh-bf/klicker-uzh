@@ -89,10 +89,7 @@ describe('Different micro-session workflows', () => {
 
     // publish a micro-session
     cy.findByText(microSessionName)
-      .parentsUntil('[data-cy="micro-session"]')
-      .siblings()
-      .children()
-      .get('[data-cy="publish-micro-session"]')
+    cy.get(`[data-cy="publish-micro-session-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
     cy.get('[data-cy="verify-publish-action"]').click()
@@ -141,7 +138,7 @@ describe('Different micro-session workflows', () => {
     cy.viewport('macbook-16')
   })
 
-  it('creates and publishes a future micro session that should not be visible to students', () => {
+  it('creates and publishes a future micro session that should not be visible to students and tests unpublishing it', () => {
     const randomNumber = Math.round(Math.random() * 1000)
     const questionTitle = 'A Single Choice with solution' + randomNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
@@ -221,10 +218,7 @@ describe('Different micro-session workflows', () => {
 
     // publish a micro-session
     cy.findByText(microSessionName)
-      .parentsUntil('[data-cy="micro-session"]')
-      .siblings()
-      .children()
-      .get('[data-cy="publish-micro-session"]')
+    cy.get(`[data-cy="publish-micro-session-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
     cy.get('[data-cy="verify-publish-action"]').click()
@@ -246,6 +240,19 @@ describe('Different micro-session workflows', () => {
     cy.contains('[data-cy="micro-learnings"]', microSessionDisplayName).should(
       'not.exist'
     )
+
+    // switch back to the lecturer and unpublish the micro session
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText('Testkurs').click()
+    cy.findByText(microSessionName)
+    cy.get(`[data-cy="unpublish-micro-session-${microSessionName}"]`)
+      .contains(messages.manage.course.unpublishMicroSession)
+      .click()
+    cy.findByText(microSessionName)
+      .parentsUntil('[data-cy="micro-session"]')
+      .contains(messages.shared.generic.draft)
   })
 
   it('creates and publishes a past micro session that should not be visible to students', () => {
@@ -328,10 +335,7 @@ describe('Different micro-session workflows', () => {
 
     // publish a micro-session
     cy.findByText(microSessionName)
-      .parentsUntil('[data-cy="micro-session"]')
-      .siblings()
-      .children()
-      .get('[data-cy="publish-micro-session"]')
+    cy.get(`[data-cy="publish-micro-session-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
     cy.get('[data-cy="verify-publish-action"]').click()

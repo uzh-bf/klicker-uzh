@@ -152,7 +152,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           basic
           className={{ root: 'text-primary' }}
           onClick={() => setPublishModal(true)}
-          data={{ cy: 'publish-micro-session' }}
+          data={{ cy: `publish-micro-session-${microSession.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
@@ -179,6 +179,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           basic
           className={{ root: 'text-primary' }}
           onClick={async () => await unpublishMicroSession()}
+          data={{ cy: `unpublish-micro-session-${microSession.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
