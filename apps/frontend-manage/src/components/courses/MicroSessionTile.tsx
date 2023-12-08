@@ -139,6 +139,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
               },
             })
           }
+          data={{ cy: `edit-micro-session-${microSession.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faPencil} />

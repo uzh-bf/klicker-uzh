@@ -112,6 +112,7 @@ function Evaluation() {
                 })
                 router.replace('/')
               }}
+              data={{ cy: 'finish-micro-session' }}
             >
               {t('shared.generic.finish')}
             </Button>
