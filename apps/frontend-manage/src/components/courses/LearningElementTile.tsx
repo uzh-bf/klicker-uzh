@@ -63,7 +63,10 @@ function LearningElementTile({
             />
           )}
         </div>
-        <div className="mb-1 italic">
+        <div
+          className="mb-1 italic"
+          data-cy={`learning-element-num-of-questions-${learningElement.name}`}
+        >
           {t('manage.course.nQuestions', {
             number: learningElement.numOfQuestions || '0',
           })}
@@ -109,6 +112,7 @@ function LearningElementTile({
                 },
               })
             }
+            data={{ cy: `edit-learning-element-${learningElement.name}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faPencil} />
