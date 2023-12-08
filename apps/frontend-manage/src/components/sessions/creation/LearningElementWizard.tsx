@@ -211,7 +211,7 @@ function LearningElementWizard({
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)
             : '1',
-          courseId: initialValues?.courseId || courses?.[0]?.value,
+          courseId: initialValues?.course?.id || courses?.[0]?.value,
           order:
             initialValues?.orderType || LearningElementOrderType.Sequential,
           resetTimeDays: initialValues?.resetTimeDays || '6',
