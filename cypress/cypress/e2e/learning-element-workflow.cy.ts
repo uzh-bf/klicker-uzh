@@ -101,9 +101,9 @@ describe('Different learning element workflows', () => {
 
     // publish learning element
     cy.findByText(learningElementName)
-      .parentsUntil('[data-cy="learning-element"]')
-      .find('[data-cy="publish-learning-element"]')
-      .click()
+    cy.get(
+      `[data-cy="publish-learning-element-${learningElementName}"]`
+    ).click()
     cy.get('[data-cy="verify-publish-action"]').click()
     cy.findByText(learningElementName)
       .parentsUntil('[data-cy="learning-element"]')

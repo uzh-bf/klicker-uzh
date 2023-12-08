@@ -124,7 +124,7 @@ function LearningElementTile({
             basic
             className={{ root: 'text-primary' }}
             onClick={() => setPublishModal(true)}
-            data={{ cy: 'publish-learning-element' }}
+            data={{ cy: `publish-learning-element-${learningElement.name}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
