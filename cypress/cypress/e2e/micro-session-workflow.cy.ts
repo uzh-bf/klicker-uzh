@@ -5,6 +5,9 @@ describe('Different micro-session workflows', () => {
     cy.loginLecturer()
   })
 
+  // get current year
+  const currentYear = new Date().getFullYear()
+
   it('creates and publishes a micro session that should be visible to students', () => {
     const randomNumber = Math.round(Math.random() * 1000)
     const questionTitle = 'A Single Choice with solution' + randomNumber
@@ -50,8 +53,12 @@ describe('Different micro-session workflows', () => {
       .parent()
       .click()
     cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
-    cy.get('[data-cy="select-start-date"]').click().type('2023-01-01T18:00')
-    cy.get('[data-cy="select-end-date"]').click().type('2023-12-31T18:00')
+    cy.get('[data-cy="select-start-date"]')
+      .click()
+      .type(`${currentYear}-01-01T18:00`)
+    cy.get('[data-cy="select-end-date"]')
+      .click()
+      .type(`${currentYear}-12-31T18:00`)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
@@ -89,10 +96,7 @@ describe('Different micro-session workflows', () => {
 
     // publish a micro-session
     cy.findByText(microSessionName)
-      .parentsUntil('[data-cy="micro-session"]')
-      .siblings()
-      .children()
-      .get('[data-cy="publish-micro-session"]')
+    cy.get(`[data-cy="publish-micro-session-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
     cy.get('[data-cy="verify-publish-action"]').click()
@@ -141,7 +145,7 @@ describe('Different micro-session workflows', () => {
     cy.viewport('macbook-16')
   })
 
-  it('creates and publishes a future micro session that should not be visible to students', () => {
+  it('creates and publishes a future micro session that should not be visible to students and tests unpublishing it', () => {
     const randomNumber = Math.round(Math.random() * 1000)
     const questionTitle = 'A Single Choice with solution' + randomNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
@@ -184,8 +188,12 @@ describe('Different micro-session workflows', () => {
       .parent()
       .click()
     cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
-    cy.get('[data-cy="select-start-date"]').click().type('2024-01-01T18:00')
-    cy.get('[data-cy="select-end-date"]').click().type('2024-12-31T18:00')
+    cy.get('[data-cy="select-start-date"]')
+      .click()
+      .type(`${currentYear + 1}-01-01T18:00`)
+    cy.get('[data-cy="select-end-date"]')
+      .click()
+      .type(`${currentYear + 1}-12-31T18:00`)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
@@ -221,10 +229,7 @@ describe('Different micro-session workflows', () => {
 
     // publish a micro-session
     cy.findByText(microSessionName)
-      .parentsUntil('[data-cy="micro-session"]')
-      .siblings()
-      .children()
-      .get('[data-cy="publish-micro-session"]')
+    cy.get(`[data-cy="publish-micro-session-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
     cy.get('[data-cy="verify-publish-action"]').click()
@@ -246,6 +251,19 @@ describe('Different micro-session workflows', () => {
     cy.contains('[data-cy="micro-learnings"]', microSessionDisplayName).should(
       'not.exist'
     )
+
+    // switch back to the lecturer and unpublish the micro session
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText('Testkurs').click()
+    cy.findByText(microSessionName)
+    cy.get(`[data-cy="unpublish-micro-session-${microSessionName}"]`)
+      .contains(messages.manage.course.unpublishMicroSession)
+      .click()
+    cy.findByText(microSessionName)
+      .parentsUntil('[data-cy="micro-session"]')
+      .contains(messages.shared.generic.draft)
   })
 
   it('creates and publishes a past micro session that should not be visible to students', () => {
@@ -291,8 +309,12 @@ describe('Different micro-session workflows', () => {
       .parent()
       .click()
     cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
-    cy.get('[data-cy="select-start-date"]').click().type('2021-01-01T18:00')
-    cy.get('[data-cy="select-end-date"]').click().type('2021-12-31T18:00')
+    cy.get('[data-cy="select-start-date"]')
+      .click()
+      .type(`${currentYear - 1}-01-01T18:00`)
+    cy.get('[data-cy="select-end-date"]')
+      .click()
+      .type(`${currentYear - 1}-12-31T18:00`)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
@@ -328,10 +350,7 @@ describe('Different micro-session workflows', () => {
 
     // publish a micro-session
     cy.findByText(microSessionName)
-      .parentsUntil('[data-cy="micro-session"]')
-      .siblings()
-      .children()
-      .get('[data-cy="publish-micro-session"]')
+    cy.get(`[data-cy="publish-micro-session-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
     cy.get('[data-cy="verify-publish-action"]').click()
@@ -353,5 +372,224 @@ describe('Different micro-session workflows', () => {
     cy.contains('[data-cy="micro-learnings"]', microSessionDisplayName).should(
       'not.exist'
     )
+  })
+
+  it('creates and edits a micro session, which should then be accessible by students', () => {
+    const randomNumber = Math.round(Math.random() * 1000)
+    const questionTitle = 'A Single Choice with solution' + randomNumber
+    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
+    const microSessionName = 'Test Micro-Session ' + randomNumber
+    const microSessionDisplayName = 'Displayed Name ' + randomNumber
+    const description = 'This is the official descriptioin of ' + randomNumber
+
+    // set up question
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="set-correctness"]').click({ force: true })
+    cy.get('[data-cy="add-new-answer"]').click({ force: true })
+    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    // create a micro-session
+    cy.get('[data-cy="create-micro-session"]').click()
+
+    // step 1
+    cy.get('[data-cy="insert-micro-session-name"]')
+      .click()
+      .type(microSessionName)
+    cy.get('[data-cy="insert-micro-session-display-name"]')
+      .click()
+      .type(microSessionDisplayName)
+    cy.get('[data-cy="insert-micro-session-description"]')
+      .click()
+      .type(description)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // step 2
+    cy.get('[data-cy="select-course"]')
+      .click()
+      .siblings()
+      .eq(0)
+      .findByText('Testkurs')
+      // .parent()
+      .click()
+    cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
+    cy.get('[data-cy="select-start-date"]')
+      .click()
+      .type(`${currentYear + 1}-01-01T18:00`)
+    cy.get('[data-cy="select-end-date"]')
+      .click()
+      .type(`${currentYear + 1}-12-31T18:00`)
+    cy.get('[data-cy="select-multiplier"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.multiplier1)
+    cy.get('[data-cy="select-multiplier"]')
+      .click()
+      .siblings()
+      .eq(0)
+      .findByText(messages.manage.sessionForms.multiplier2)
+      .parent()
+      .click()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.sessionForms.multiplier2
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // step 3
+    const dataTransfer = new DataTransfer()
+    cy.get('[data-cy="question-block"]')
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      dataTransfer,
+    })
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="micro-session"]').contains(microSessionName)
+    cy.findByText(microSessionName)
+      .parentsUntil('[data-cy="micro-session"]')
+      .contains(messages.shared.generic.draft)
+
+    // publish a micro-session
+    cy.findByText(microSessionName)
+    cy.get(`[data-cy="publish-micro-session-${microSessionName}"]`)
+      .contains(messages.manage.course.publishMicroSession)
+      .click()
+    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.findByText(microSessionName)
+      .parentsUntil('[data-cy="micro-session"]')
+      .contains(messages.shared.generic.published)
+
+    // sign in as student
+    cy.clearAllCookies()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+
+    cy.contains('[data-cy="micro-learnings"]', microSessionDisplayName).should(
+      'not.exist'
+    )
+
+    // switch back to the lecturer and unpublish the micro session
+    cy.clearAllCookies()
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText('Testkurs').click()
+    cy.findByText(microSessionName)
+    cy.get(`[data-cy="unpublish-micro-session-${microSessionName}"]`)
+      .contains(messages.manage.course.unpublishMicroSession)
+      .click()
+    cy.findByText(microSessionName)
+      .parentsUntil('[data-cy="micro-session"]')
+      .contains(messages.shared.generic.draft)
+
+    // edit the micro session
+    cy.findByText(microSessionName)
+    cy.get(`[data-cy="edit-micro-session-${microSessionName}"]`).click()
+    cy.findByText('Edit ' + messages.shared.generic.microSessions).should(
+      'exist'
+    )
+
+    // check if the first page of the edit form are shown correctly
+    cy.get('[data-cy="insert-micro-session-name"]')
+      .click()
+      .should('have.value', microSessionName)
+    cy.get('[data-cy="insert-micro-session-display-name"]')
+      .click()
+      .should('have.value', microSessionDisplayName)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // check if correct values are in the form and rename it
+    cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
+    cy.get('[data-cy="select-start-date"]')
+      .click()
+      .should('have.value', `${currentYear + 1}-01-01T18:00`)
+      .type(`${currentYear}-01-01T18:00`)
+    cy.get('[data-cy="select-end-date"]')
+      .click()
+      .should('have.value', `${currentYear + 1}-12-31T18:00`)
+      .type(`${currentYear}-12-31T18:00`)
+    cy.get('[data-cy="select-multiplier"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.multiplier2)
+    cy.get('[data-cy="select-multiplier"]')
+      .click()
+      .siblings()
+      .eq(0)
+      .findByText(messages.manage.sessionForms.multiplier4)
+      .parent()
+      .click()
+    cy.get('[data-cy="select-multiplier"]').contains(
+      messages.manage.sessionForms.multiplier4
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // add another question to the microlearning
+    const dataTransfer2 = new DataTransfer()
+    cy.get('[data-cy="question-block"]')
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer2,
+      })
+    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      dataTransfer2,
+    })
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // go to microlearning list and check if it exists in draft state
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="micro-session"]').contains(microSessionName)
+    cy.findByText(microSessionName)
+      .parentsUntil('[data-cy="micro-session"]')
+      .contains(messages.shared.generic.draft)
+
+    // publish the microlearning
+    cy.findByText(microSessionName)
+    cy.get(`[data-cy="publish-micro-session-${microSessionName}"]`)
+      .contains(messages.manage.course.publishMicroSession)
+      .click()
+    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.findByText(microSessionName)
+      .parentsUntil('[data-cy="micro-session"]')
+      .contains(messages.shared.generic.published)
+
+    // sign in as student on a laptop and respond to both
+    cy.clearAllCookies()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('[data-cy="username-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_USERNAME'))
+    cy.get('[data-cy="password-field"]')
+      .click()
+      .type(Cypress.env('STUDENT_PASSWORD'))
+    cy.get('[data-cy="submit-login"]').click()
+
+    cy.contains('[data-cy="micro-learnings"]', microSessionDisplayName).should(
+      'exist'
+    )
+    cy.findByText(microSessionDisplayName).click()
+    cy.get('[data-cy="start-micro-session"]').click()
+    cy.get('[data-cy="choice-option"]').eq(0).click()
+    cy.wait(500)
+    cy.get('[data-cy="send-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="choice-option"]').eq(0).click()
+    cy.get('[data-cy="send-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="send-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="finish-micro-session"]').click()
   })
 })

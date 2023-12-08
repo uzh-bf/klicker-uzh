@@ -152,6 +152,7 @@ function CourseOverview({ courseId }: Props) {
                 key="leaderboard"
                 value="global"
                 label={t('shared.generic.leaderboard')}
+                data={{ cy: 'student-course-leaderboard-tab' }}
               />
             )}
 
