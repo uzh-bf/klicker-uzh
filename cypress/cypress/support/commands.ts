@@ -45,6 +45,93 @@ Cypress.Commands.add('loginLecturer', () => {
   cy.visit(Cypress.env('URL_MANAGE'))
 })
 
+Cypress.Commands.add('loginFreeUser', () => {
+  cy.clearAllCookies()
+  cy.clearAllLocalStorage()
+
+  cy.viewport('macbook-16')
+
+  const token = sign(
+    {
+      email: 'free@bf.uzh.ch',
+      sub: '76047345-3801-4628-ae7b-adbebcfe8822',
+      role: 'USER',
+      scope: 'ACCOUNT_OWNER',
+      catalystInstitutional: false,
+      catalystIndividual: false,
+    },
+    'abcd'
+  )
+
+  cy.setCookie('next-auth.session-token', token, {
+    domain: '127.0.0.1',
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
+  })
+
+  cy.visit(Cypress.env('URL_MANAGE'))
+})
+
+Cypress.Commands.add('loginIndividualCatalyst', () => {
+  cy.clearAllCookies()
+  cy.clearAllLocalStorage()
+
+  cy.viewport('macbook-16')
+
+  const token = sign(
+    {
+      email: 'pro1@bf.uzh.ch',
+      sub: '76047345-3801-4628-ae7b-adbebcfe8823',
+      role: 'USER',
+      scope: 'ACCOUNT_OWNER',
+      catalystInstitutional: false,
+      catalystIndividual: true,
+    },
+    'abcd'
+  )
+
+  cy.setCookie('next-auth.session-token', token, {
+    domain: '127.0.0.1',
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
+  })
+
+  cy.visit(Cypress.env('URL_MANAGE'))
+})
+
+Cypress.Commands.add('loginInstitutionalCatalyst', () => {
+  cy.clearAllCookies()
+  cy.clearAllLocalStorage()
+
+  cy.viewport('macbook-16')
+
+  const token = sign(
+    {
+      email: 'pro2@bf.uzh.ch',
+      sub: '76047345-3801-4628-ae7b-adbebcfe8824',
+      role: 'USER',
+      scope: 'ACCOUNT_OWNER',
+      catalystInstitutional: true,
+      catalystIndividual: false,
+    },
+    'abcd'
+  )
+
+  cy.setCookie('next-auth.session-token', token, {
+    domain: '127.0.0.1',
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
+  })
+
+  cy.visit(Cypress.env('URL_MANAGE'))
+})
+
 //
 // -- This is a child command --
 // Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
@@ -61,6 +148,9 @@ declare global {
   namespace Cypress {
     interface Chainable {
       loginLecturer(): Chainable<void>
+      loginFreeUser(): Chainable<void>
+      loginIndividualCatalyst(): Chainable<void>
+      loginInstitutionalCatalyst(): Chainable<void>
       // drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
