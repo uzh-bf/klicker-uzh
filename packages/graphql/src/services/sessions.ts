@@ -2026,89 +2026,102 @@ export async function cancelSession(
 
   if (!session) return null
 
-  if (session.status !== SessionStatus.RUNNING) {
-    throw new Error('Session is not running')
-  }
+  try {
+    if (session.status !== SessionStatus.RUNNING) {
+      throw new Error('Session is not running')
+    }
 
-  const leaderboardEntries = session.blocks.flatMap(
-    (block) => block.leaderboard
-  )
-  const instances = session.blocks.flatMap((block) => block.instances)
+    const leaderboardEntries = session.blocks.flatMap(
+      (block) => block.leaderboard
+    )
+    const instances = session.blocks.flatMap((block) => block.instances)
 
-  const [updatedSession] = await ctx.prisma.$transaction([
-    ctx.prisma.liveSession.update({
-      where: { id },
-      data: {
-        status: SessionStatus.PREPARED,
-        startedAt: null,
-        pinCode: null,
-        activeBlock: {
-          disconnect: true,
-        },
-        leaderboard: {
-          deleteMany: {},
-        },
-        feedbacks: {
-          deleteMany: {},
-        },
-        confusionFeedbacks: {
-          deleteMany: {},
-        },
-        blocks: {
-          updateMany: {
-            where: {
-              status: {
-                in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
-              },
-            },
-            data: {
-              status: SessionBlockStatus.SCHEDULED,
-              expiresAt: null,
-              execution: {
-                increment: 1,
-              },
-            },
-          },
-        },
-      },
-      include: {
-        activeBlock: true,
-        blocks: {
-          include: {
-            instances: true,
-            leaderboard: true,
-            activeInSession: true,
-          },
-        },
-      },
-    }),
-
-    ctx.prisma.leaderboardEntry.deleteMany({
-      where: {
-        id: {
-          in: leaderboardEntries.map((entry) => entry.id),
-        },
-      },
-    }),
-
-    ...instances.map((instance) =>
-      ctx.prisma.questionInstance.update({
-        where: {
-          id: instance.id,
-        },
+    const [updatedSession] = await ctx.prisma.$transaction([
+      ctx.prisma.liveSession.update({
+        where: { id },
         data: {
-          participants: 0,
-          results: prepareInitialInstanceResults(instance.questionData),
+          status: SessionStatus.PREPARED,
+          startedAt: null,
+          pinCode: null,
+          activeBlock: {
+            disconnect: true,
+          },
+          leaderboard: {
+            deleteMany: {},
+          },
+          feedbacks: {
+            deleteMany: {},
+          },
+          confusionFeedbacks: {
+            deleteMany: {},
+          },
+          blocks: {
+            updateMany: {
+              where: {
+                status: {
+                  in: [SessionBlockStatus.EXECUTED, SessionBlockStatus.ACTIVE],
+                },
+              },
+              data: {
+                status: SessionBlockStatus.SCHEDULED,
+                expiresAt: null,
+                execution: {
+                  increment: 1,
+                },
+              },
+            },
+          },
         },
-      })
-    ),
-  ])
+        include: {
+          activeBlock: true,
+          blocks: {
+            include: {
+              instances: true,
+              leaderboard: true,
+              activeInSession: true,
+            },
+          },
+        },
+      }),
 
-  ctx.redisExec.unlink(`s:${id}:meta`)
-  ctx.redisExec.unlink(`s:${id}:lb`)
-  ctx.redisExec.unlink(`s:${id}:xp`)
+      ctx.prisma.leaderboardEntry.deleteMany({
+        where: {
+          id: {
+            in: leaderboardEntries.map((entry) => entry.id),
+          },
+        },
+      }),
 
-  return updatedSession as ISession
+      ...instances.map((instance) =>
+        ctx.prisma.questionInstance.update({
+          where: {
+            id: instance.id,
+          },
+          data: {
+            participants: 0,
+            results: prepareInitialInstanceResults(instance.questionData),
+          },
+        })
+      ),
+    ])
+
+    ctx.redisExec.unlink(`s:${id}:meta`)
+    ctx.redisExec.unlink(`s:${id}:lb`)
+    ctx.redisExec.unlink(`s:${id}:xp`)
+
+    await sendTeamsNotifications(
+      'graphql/cancelSession',
+      `CANCEL Session ${session.name} with id ${session.id}.`
+    )
+
+    return updatedSession as ISession
+  } catch (error) {
+    await sendTeamsNotifications(
+      'graphql/cancelSession',
+      `ERROR - failed to cancel session ${session.name} with id ${session.id}: ${error}`
+    )
+    throw error
+  }
 }
 
 export async function deleteSession(
