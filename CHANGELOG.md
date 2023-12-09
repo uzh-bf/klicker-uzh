@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.18...v3.1.0-beta.19) (2023-12-09)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that correct courses is loaded on learning element edit form initialization ([#3982](https://github.com/uzh-bf/klicker-uzh/issues/3982)) ([ac5e76c](https://github.com/uzh-bf/klicker-uzh/commit/ac5e76ce032bc04f7d92c4e23ca20956ae00bb98))
+
+
+### Enhancements
+
+* **test:** extend test suite for better code base coverage ([#3981](https://github.com/uzh-bf/klicker-uzh/issues/3981)) ([6681db4](https://github.com/uzh-bf/klicker-uzh/commit/6681db4a2a4fa29c9625ee5a1f83188240dc8ea6))
+
 ## [3.1.0-beta.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.16...v3.1.0-beta.18) (2023-12-05)
 
 
