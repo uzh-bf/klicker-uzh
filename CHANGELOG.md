@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.19...v3.1.0-beta.20) (2023-12-11)
+
+
+### Bug Fixes
+
+* **apps/func-migration-v3-import:** ensure questionData uses computed question id and embeds questionId ([f7074aa](https://github.com/uzh-bf/klicker-uzh/commit/f7074aa970d32e75f5baf179a2dfe35325c6b2cb))
+
 ## [3.1.0-beta.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.18...v3.1.0-beta.19) (2023-12-09)
 
 
