@@ -70,10 +70,12 @@ export const importQuestionInstances = async (
             )
 
             if (question) {
+              questionId = question.id
               questionData = {
                 ...question,
+                id: `${questionId}-v1`,
+                questionId,
               }
-              questionId = question?.id
             }
 
             if (
