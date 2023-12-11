@@ -1,4 +1,5 @@
 import type { PrismaMigrationClient } from '@klicker-uzh/graphql/src/types/app.js'
+// import { PrismaClient } from '@klicker-uzh/prisma'
 
 export default async function execute(prisma: PrismaMigrationClient) {
   let counter = 1
@@ -57,3 +58,7 @@ export default async function execute(prisma: PrismaMigrationClient) {
     counter++
   }
 }
+
+// const prisma = new PrismaClient()
+
+// await execute(prisma)
