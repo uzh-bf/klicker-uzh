@@ -26,7 +26,7 @@ export default function App({
         </SessionProvider>
       </NextIntlProvider>
 
-      <style jsx global>{`
+      <style>{`
         :root {
           --source-sans-pro: ${sourceSansPro.variable};
           --theme-font-primary: ${sourceSansPro.variable};
