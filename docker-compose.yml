@@ -39,8 +39,8 @@ services:
       dockerfile: apps/auth/Dockerfile
       args:
         COOKIE_DOMAIN: .klicker.com
-        NEXT_PUBLIC_DEFAULT_REDIRECT: http://manage.klicker.com
-        NEXTAUTH_URL: http://auth.klicker.com
+        NEXT_PUBLIC_DEFAULT_REDIRECT: http://86.119.41.141:3002
+        NEXTAUTH_URL: http://86.119.41.141:3010
         NODE_ENV: development
         # EDUID_CLIENT_ID: uzh_klicker_auth_dev
         # EDUID_WELL_KNOWN: https://login.test.eduid.ch/.well-known/openid-configuration
@@ -66,12 +66,12 @@ services:
         COOKIE_DOMAIN: .klicker.com
         NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://func-responses.klicker.com/api/AddResponse'
         NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-        NEXT_PUBLIC_API_URL: 'http://api.klicker.com/api/graphql'
+        NEXT_PUBLIC_API_URL: 'http://86.119.41.141:3000/api/graphql'
         NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/avatars'
-        NEXT_PUBLIC_CONTROL_URL: 'http://control.klicker.com'
+        NEXT_PUBLIC_CONTROL_URL: 'http://86.119.41.141:3003'
         NEXT_PUBLIC_IMAGE_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/img'
-        NEXT_PUBLIC_MANAGE_URL: 'http://manage.klicker.com'
-        NEXT_PUBLIC_PWA_URL: 'http://pwa.klicker.com'
+        NEXT_PUBLIC_MANAGE_URL: 'http://86.119.41.141:3002'
+        NEXT_PUBLIC_PWA_URL: 'http://86.119.41.141:3001'
         NODE_ENV: development
         # BLOB_STORAGE_ACCOUNT_URL: ''
         # NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY: ""
@@ -92,12 +92,12 @@ services:
       args:
         COOKIE_DOMAIN: .klicker.com
         NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-        NEXT_PUBLIC_API_URL: 'http://api.klicker.com/api/graphql'
-        NEXT_PUBLIC_AUTH_URL: 'http://auth.klicker.com'
+        NEXT_PUBLIC_API_URL: 'http://86.119.41.141:3000/api/graphql'
+        NEXT_PUBLIC_AUTH_URL: 'http://86.119.41.141:3010'
         NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/avatars'
-        NEXT_PUBLIC_CONTROL_URL: 'http://control.klicker.com'
-        NEXT_PUBLIC_MANAGE_URL: 'http://manage.klicker.com'
-        NEXT_PUBLIC_PWA_URL: 'http://pwa.klicker.com'
+        NEXT_PUBLIC_CONTROL_URL: 'http://86.119.41.141:3003'
+        NEXT_PUBLIC_MANAGE_URL: 'http://86.119.41.141:3002
+        NEXT_PUBLIC_PWA_URL: 'http://86.119.41.141:3001'
         NODE_ENV: development
         # BLOB_STORAGE_ACCOUNT_URL: ''
     environment:
@@ -116,12 +116,12 @@ services:
       args:
         COOKIE_DOMAIN: .klicker.com
         NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-        NEXT_PUBLIC_API_URL: 'http://api.klicker.com/api/graphql'
+        NEXT_PUBLIC_API_URL: 'http://86.119.41.141:3000/api/graphql'
         NODE_ENV: development
         NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/avatars'
-        NEXT_PUBLIC_PWA_URL: 'http://pwa.klicker.com'
-        NEXT_PUBLIC_MANAGE_URL: 'http://manage.klicker.com'
-        NEXT_PUBLIC_CONTROL_URL: 'http://control.klicker.com'
+        NEXT_PUBLIC_PWA_URL: 'http://86.119.41.141:3001'
+        NEXT_PUBLIC_MANAGE_URL: 'http://86.119.41.141:3002'
+        NEXT_PUBLIC_CONTROL_URL: 'http://86.119.41.141:3003'
         # BLOB_STORAGE_ACCOUNT_URL: ''
     environment:
       NODE_ENV: development
