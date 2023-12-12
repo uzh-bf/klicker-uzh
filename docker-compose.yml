@@ -96,7 +96,7 @@ services:
         NEXT_PUBLIC_AUTH_URL: 'http://86.119.41.141:3010'
         NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/avatars'
         NEXT_PUBLIC_CONTROL_URL: 'http://86.119.41.141:3003'
-        NEXT_PUBLIC_MANAGE_URL: 'http://86.119.41.141:3002
+        NEXT_PUBLIC_MANAGE_URL: 'http://86.119.41.141:3002'
         NEXT_PUBLIC_PWA_URL: 'http://86.119.41.141:3001'
         NODE_ENV: development
         # BLOB_STORAGE_ACCOUNT_URL: ''
