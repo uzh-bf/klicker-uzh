@@ -414,6 +414,7 @@ type LeaderboardEntry {
   id: Int!
   isSelf: Boolean
   lastBlockOrder: Int!
+  level: Int
   participant: Participant
   participantId: String!
   participation: Participation!

@@ -8,7 +8,7 @@ import {
 import * as R from 'ramda'
 import { GroupLeaderboardEntry } from 'src/ops'
 import { Context, ContextWithUser } from '../lib/context'
-import { orderStacks } from '../lib/util'
+import { levelFromXp, orderStacks } from '../lib/util'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -256,6 +256,7 @@ export async function getCourseOverviewData(
                     ? entry.participant.avatar
                     : null,
                 participantId: entry.participant.id,
+                level: levelFromXp(entry.participant.xp),
                 isSelf: ctx.user?.sub === entry.participant.id,
               },
             ],
