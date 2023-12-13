@@ -918,8 +918,8 @@ model ParticipantGroup {
   name String
   code Int
 
-  groupActivityScore Float @default(0)
-  averageMemberScore Float @default(0)
+  groupActivityScore Int @default(0)
+  averageMemberScore Int @default(0)
 
   participants    Participant[]
   groupActivities GroupActivityInstance[]

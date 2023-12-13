@@ -162,8 +162,8 @@ export const ParticipantGroup = ParticipantGroupRef.implement({
     name: t.exposeString('name'),
     code: t.exposeInt('code'),
 
-    averageMemberScore: t.exposeFloat('averageMemberScore'),
-    groupActivityScore: t.exposeFloat('groupActivityScore'),
+    averageMemberScore: t.exposeInt('averageMemberScore'),
+    groupActivityScore: t.exposeInt('groupActivityScore'),
     score: t.exposeFloat('score', { nullable: true }),
   }),
 })
