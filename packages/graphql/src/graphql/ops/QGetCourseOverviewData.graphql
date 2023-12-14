@@ -57,6 +57,7 @@ query GetCourseOverviewData($courseId: String!) {
       score
       isSelf
       rank
+      level
     }
     leaderboardStatistics {
       participantCount

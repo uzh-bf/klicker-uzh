@@ -54,6 +54,9 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
     scope: Yup.string().required(t('manage.settings.scopeRequired')),
   })
 
+  // TODO: allow selection of other scopes once auth is ready on granular level
+  const availableScopes: UserLoginScope[] = [UserLoginScope.FullAccess]
+
   return (
     <div className="mb-5">
       <div className="flex flex-col gap-1">
@@ -78,7 +81,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
               </div>
             </div>
             <div className="flex flex-row gap-0.5">
-              <div className="text-neutral-500 text-sm mr-2 mt-auto">
+              <div className="mt-auto mr-2 text-sm text-neutral-500">
                 {login.lastLoginAt
                   ? t('manage.settings.lastUsed', {
                       date: dayjs(login.lastLoginAt).format('DD.MM.YYYY'),
@@ -131,7 +134,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
             return (
               <Form>
                 <div className="flex flex-col md:flex-row gap-1.5 md:gap-0">
-                  <div className="flex flex-row items-center gap-3 w-1/2">
+                  <div className="flex flex-row items-center w-1/2 gap-3">
                     <Label
                       label={t('shared.generic.shortname')}
                       tooltip={t('manage.settings.shortnameTooltip')}
@@ -140,7 +143,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     />
                     <div>{shortname}</div>
                   </div>
-                  <div className="flex flex-row w-full md:w-1/2 items-center justify-between w-1/2">
+                  <div className="flex flex-row items-center justify-between w-full md:w-1/2">
                     <div className="flex flex-row items-center gap-3">
                       <Label
                         label={t('shared.generic.password')}
@@ -206,8 +209,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     //   value: scope,
                     //   label: t(`manage.settings.${scope}`),
                     // }))}
-                    // TODO: allow selection of other scopes once auth is ready on granular level
-                    items={['FULL_ACCESS'].map((scope) => ({
+                    items={availableScopes.map((scope) => ({
                       value: scope,
                       label: t(`manage.settings.${scope}`),
                     }))}

@@ -186,7 +186,6 @@ function LiveSessionWizard({
       }
 
       if (success) {
-        router.push('/')
         setIsWizardCompleted(true)
       }
     } catch (error) {
@@ -226,6 +225,7 @@ function LiveSessionWizard({
                 })
                 router.push(`/sessions/${data?.createSession?.id}/cockpit`)
               }}
+              className={{ root: 'space-x-1' }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faPlay} />
