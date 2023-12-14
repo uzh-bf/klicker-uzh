@@ -12,6 +12,7 @@ export interface LeaderboardCombinedEntry {
   avatar?: string | null
   score: number
   rank: number
+  level?: number
   isSelf?: boolean | null
 }
 
@@ -118,6 +119,7 @@ function Leaderboard({
               withAvatar={!hideAvatars}
               points={entry.score}
               rank={entry.rank}
+              level={entry.level}
               onJoinCourse={onJoin}
               onLeaveCourse={onLeave}
               onClick={
@@ -134,6 +136,7 @@ function Leaderboard({
               avatar={entry.avatar}
               withAvatar={!hideAvatars}
               points={entry.score}
+              level={entry.level}
               onClick={
                 onParticipantClick && typeof entry.participantId !== 'undefined'
                   ? () => onParticipantClick(entry.participantId!, false)
@@ -152,6 +155,7 @@ function Leaderboard({
             withAvatar={!hideAvatars}
             points={selfEntry.score}
             rank={selfEntry.rank}
+            level={selfEntry.level}
             onJoinCourse={onJoin}
             onLeaveCourse={onLeave}
           />

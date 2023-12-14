@@ -10,6 +10,10 @@
   bottom: 0px
 }
 
+.right-0 {
+  right: 0px
+}
+
 .order-1 {
   order: 1
 }
@@ -42,6 +46,10 @@
 
 .\!mr-0 {
   margin-right: 0px !important
+}
+
+.-mb-1 {
+  margin-bottom: -0.25rem
 }
 
 .mb-1 {
@@ -104,6 +112,10 @@
   height: 2.5rem
 }
 
+.h-3 {
+  height: 0.75rem
+}
+
 .h-\[1px\] {
   height: 1px
 }
@@ -122,10 +134,6 @@
 
 .h-\[calc\(100\%-4rem\)\] {
   height: calc(100% - 4rem)
-}
-
-.h-full {
-  height: 100%
 }
 
 .min-h-\[2\.5rem\] {
@@ -307,6 +315,11 @@
   border-color: rgb(163 173 183 / var(--tw-border-opacity))
 }
 
+.border-uzh-grey-80 {
+  --tw-border-opacity: 1;
+  border-color: rgb(181 189 197 / var(--tw-border-opacity))
+}
+
 .bg-gray-100 {
   --tw-bg-opacity: 1;
   background-color: rgb(243 244 246 / var(--tw-bg-opacity))
@@ -481,6 +494,11 @@
 .text-red-700 {
   --tw-text-opacity: 1;
   color: rgb(185 28 28 / var(--tw-text-opacity))
+}
+
+.text-slate-600 {
+  --tw-text-opacity: 1;
+  color: rgb(71 85 105 / var(--tw-text-opacity))
 }
 
 .text-slate-700 {
