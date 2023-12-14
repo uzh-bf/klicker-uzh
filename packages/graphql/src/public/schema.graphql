@@ -809,6 +809,7 @@ type Query {
   userProfile: User
   userQuestions: [Element!]
   userRunningSessions: [Session!]
+  userScope: UserLoginScope
   userSessions: [Session!]
   userTags: [Tag!]
 }

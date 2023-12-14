@@ -9,7 +9,9 @@ import {
   ChangeShortnameDocument,
   ChangeUserLocaleDocument,
   CheckShortnameAvailableDocument,
+  GetUserScopeDocument,
   LocaleType,
+  UserLoginScope,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
@@ -36,6 +38,7 @@ function Settings() {
   >(true)
 
   const { data: user } = useQuery(UserProfileDocument)
+  const { data: scope } = useQuery(GetUserScopeDocument)
   const [changeUserLocale] = useMutation(ChangeUserLocaleDocument)
   const [changeShortname] = useMutation(ChangeShortnameDocument)
   const [checkShortnameAvailable] = useLazyQuery(
@@ -181,11 +184,16 @@ function Settings() {
           />
         </SimpleSetting>
 
-        <Setting title={t('auth.delegatedAccess')}>
-          <Suspense fallback={<Loader />}>
-            <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />
-          </Suspense>
-        </Setting>
+        {typeof scope?.userScope !== 'undefined' &&
+          scope.userScope === UserLoginScope.AccountOwner && (
+            <Setting title={t('auth.delegatedAccess')}>
+              <Suspense fallback={<Loader />}>
+                <DelegatedAccessSettings
+                  shortname={user?.userProfile?.shortname}
+                />
+              </Suspense>
+            </Setting>
+          )}
       </div>
     </Layout>
   )
