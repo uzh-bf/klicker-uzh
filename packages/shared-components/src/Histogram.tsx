@@ -3,13 +3,14 @@ import {
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
 import { maxBy, minBy, round, sumBy } from 'lodash'
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 // TODO: replace lodash with ramda
 import { NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import {
   Bar,
   BarChart,
+  Brush,
   CartesianGrid,
   ReferenceArea,
   ReferenceLine,
@@ -58,6 +59,8 @@ function Histogram({
 }: HistogramProps): React.ReactElement {
   const t = useTranslations()
   const [numBins, setNumBins] = useState('20')
+  const [startNum, setStartNum] = useState<number | undefined>(undefined)
+  const [endNum, setEndNum] = useState<number | undefined>(undefined)
 
   const binCount = useMemo(() => {
     const binCount = parseInt(numBins)
@@ -71,6 +74,21 @@ function Histogram({
 
   const questionData = data.questionData as NumericalQuestionData
 
+  const triggerTimeout = useRef<any>()
+  const debouncedTriggerChange = useCallback(
+    (range: { startIndex: number; endIndex: number }) => {
+      console.log(range)
+      clearTimeout(triggerTimeout.current)
+
+      triggerTimeout.current = setTimeout(async () => {
+        setStartNum(processedData.data[range.startIndex].value)
+        setEndNum(processedData.data[range.endIndex].value)
+        console.log('trigger')
+      }, 1000)
+    },
+    []
+  )
+
   const processedData = useMemo(() => {
     const mappedData = Object.values(
       data.results as Record<string, { count: number; value: string }>
@@ -80,15 +98,20 @@ function Histogram({
     }))
 
     const min: number =
-      questionData.options.restrictions &&
+      questionData.options.restrictions != null &&
+      typeof questionData.options.restrictions !== 'undefined' &&
       typeof questionData.options.restrictions['min'] === 'number'
         ? questionData.options.restrictions['min']
         : (minBy(mappedData, 'value')?.value || 0) - 10
     const max: number =
-      questionData.options.restrictions &&
+      questionData.options.restrictions != null &&
+      typeof questionData.options.restrictions !== 'undefined' &&
       typeof questionData.options.restrictions['max'] === 'number'
         ? questionData.options.restrictions['max']
         : (maxBy(mappedData, 'value')?.value || 0) + 10
+
+    // TODO - to recompute correct bins, use startNum and endNum here to compute new data, but do not modify min and max, which are required to specify the domain
+    // ! current issue: recomputing the data will cause the rechart to rerender and the brush to reset to full width (either at the full min-max of the domain or towards the new minNum / maxNum depending on the code settings)
 
     let dataArray = Array.from({ length: binCount }, (_, i) => ({
       value: min + (max - min) * (i / binCount) + (max - min) / (2 * binCount),
@@ -119,7 +142,15 @@ function Histogram({
     })
 
     return { data: dataArray, domain: { min: min, max: max } }
-  }, [data.results, binCount, questionData.options.restrictions])
+  }, [
+    data.results,
+    binCount,
+    questionData.options.restrictions,
+    startNum,
+    endNum,
+  ])
+
+  console.log(processedData)
 
   return (
     <div className={twMerge('h-[calc(100%-4rem)] mt-1', className?.root)}>
@@ -136,7 +167,7 @@ function Histogram({
           <XAxis
             dataKey="value"
             type="number"
-            domain={[processedData.domain.min, processedData.domain.max]}
+            // domain={[processedData.domain.min, processedData.domain.max]}
           />
           <YAxis
             domain={[
@@ -170,6 +201,17 @@ function Histogram({
             }}
           />
           <Bar dataKey="count" fill="rgb(19, 149, 186)" />
+          <Brush
+            domain={[processedData.domain.min, processedData.domain.max]}
+            dataKey="value"
+            type="number"
+            stroke="#8884d8"
+            height={30}
+            data={processedData.data}
+            onChange={(range: { startIndex: number; endIndex: number }) =>
+              debouncedTriggerChange(range)
+            }
+          />
           {reference && (
             <ReferenceLine
               isFront
