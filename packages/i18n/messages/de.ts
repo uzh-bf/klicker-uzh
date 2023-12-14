@@ -187,7 +187,7 @@ export default {
         'Bisher wurden im Rahmen dieser Session noch keine Punkte gesammelt. Sobald sich dies ändert, werden hier Podium und Rangliste angezeigt.',
     },
     error: {
-      404: '404 Seite nicht gefunden',
+      '404': '404 Seite nicht gefunden',
       pwaWithoutUser:
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Sie können sich <login>anmelden</login>, um eine Übersicht aller Klicker-Elemente Ihrer Kurse zu sehen.',
       pwaWithUser:
