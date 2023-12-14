@@ -187,7 +187,7 @@ export default {
         'No points have been collected in this quiz so far. As soon as this changes, podium and leaderboard will be displayed here.',
     },
     error: {
-      404: '404 Page not found',
+      '404': '404 Page not found',
       pwaWithoutUser:
         'Sorry, the page you requested does not exist. You can <login>sign in</login> to see an overview of all KlickerUZH elements your courses offer.',
       pwaWithUser:

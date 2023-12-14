@@ -369,7 +369,7 @@ function CourseOverview({ courseId }: Props) {
                               <div>
                                 {award.participantGroup
                                   ? `🥳  ${award.participantGroup.name}  🥳`
-                                  : t('pwa.course.open')}
+                                  : t('pwa.courses.open')}
                               </div>
                             </div>
                             <div>{award.description}</div>
