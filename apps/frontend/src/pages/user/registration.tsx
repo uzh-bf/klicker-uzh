@@ -58,55 +58,13 @@ function Registration(): React.ReactElement {
               </Message>
 
               <Message info>
-                <FormattedMessage
-                  defaultMessage="Already have an account? {loginLink}"
-                  id="user.registration.loginInfo"
-                  values={{
-                    loginLink: (
-                      <Link href="/user/login">
-                        <a>
-                          <FormattedMessage defaultMessage="Login here." id="user.registration.loginInfoLink" />
-                        </a>
-                      </Link>
-                    ),
-                  }}
-                />
+              <p>A new version of KlickerUZH (v3) has been released and is accessible through <a href="www.klicker.uzh.ch">www.klicker.uzh.ch</a>. This version (v2) of KlickerUZH will be shut down on 31.12.2023 and new registrations have been disabled. A data migration allows you to transfer all of your content from v2 to v3. More information on KlickerUZH v3 can be found in our <a href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-information/79">community post</a>.</p>
+              <p>Already have an account? <Link href="/user/login">
+                <a>
+                  <FormattedMessage defaultMessage="Login here." id="user.registration.loginInfoLink" />
+                </a>
+              </Link></p>
               </Message>
-
-              <RegistrationForm
-                loading={loading}
-                onSubmit={async (
-                  { email, password, shortname, institution, useCase },
-                  { setSubmitting, setFieldError }
-                ): Promise<void> => {
-                  try {
-                    await register({
-                      variables: {
-                        email,
-                        institution,
-                        password,
-                        shortname,
-                        useCase,
-                      },
-                    })
-                    push(['trackEvent', 'User', 'Signed Up'])
-                  } catch ({ message }) {
-                    if (message === Errors.SHORTNAME_NOT_AVAILABLE) {
-                      setFieldError('shortname', 'NOT_AVAILABLE')
-                      push(['trackEvent', 'Error', 'Shortname Not Available'])
-                    }
-
-                    if (message === Errors.EMAIL_NOT_AVAILABLE) {
-                      setFieldError('email', 'NOT_AVAILABLE')
-                      push(['trackEvent', 'Error', 'Email Not Available'])
-                    }
-
-                    setSubmitting(false)
-                  }
-                }}
-              />
-
-              {error && <div className="font-bold text-red-800">Registration failed ({error.message})</div>}
             </>
           )
         })()}
