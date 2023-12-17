@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.12](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.11...v1.8.12) (2023-12-17)
+
+
+### Other
+
+* less replicas for legacy version ([0cad4b1](https://github.com/uzh-bf/klicker-uzh/commit/0cad4b1db87c05c34fb51cd25e0a0a282c31c2a8))
+* update index page ([493a321](https://github.com/uzh-bf/klicker-uzh/commit/493a32118bc987e443a2ee4842cfc86a8c4e72bf))
+
 ### [1.8.11](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.10...v1.8.11) (2023-09-17)
 
 
