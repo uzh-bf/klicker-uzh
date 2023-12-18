@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.21...v3.1.0-beta.22) (2023-12-18)
+
+
+### Bug Fixes
+
+* **apps/auth:** add NEXT_PUBLIC_AUTH_URL for discourse redirect ([0379fe0](https://github.com/uzh-bf/klicker-uzh/commit/0379fe0e3480c61229f068258c8eaac6d4908971))
+
 ## [3.1.0-beta.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.20...v3.1.0-beta.21) (2023-12-18)
 
 
