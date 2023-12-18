@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.20...v3.1.0-beta.21) (2023-12-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that block time limits are always shown ([#3986](https://github.com/uzh-bf/klicker-uzh/issues/3986)) ([66fc6c9](https://github.com/uzh-bf/klicker-uzh/commit/66fc6c9ead4d444d7b052747a57669d3cad378a8))
+* **apps/frontend-manage:** fix texts after completion of form editing ([#3988](https://github.com/uzh-bf/klicker-uzh/issues/3988)) ([4e0933b](https://github.com/uzh-bf/klicker-uzh/commit/4e0933b43c1739e3a35d301f5dbbf8a29853599c))
+* ensure that all internationalization strings exist, all keys are correct and linting works ([#3985](https://github.com/uzh-bf/klicker-uzh/issues/3985)) ([c83374f](https://github.com/uzh-bf/klicker-uzh/commit/c83374f1e16ddeee7a5cb1bd9afb2bf34964a8df))
+
+
+### Enhancements
+
+* **apps/auth:** add endpoint for EduID authentication on community.klicker.uzh.ch ([#3994](https://github.com/uzh-bf/klicker-uzh/issues/3994)) ([0c1727e](https://github.com/uzh-bf/klicker-uzh/commit/0c1727e31e115bfdad5c2d5ed753f19fbefd164d))
+* **apps/frontend-manage:** introduce sorting and new icons for element type filters ([#3989](https://github.com/uzh-bf/klicker-uzh/issues/3989)) ([652751c](https://github.com/uzh-bf/klicker-uzh/commit/652751cae1a5211378e06967fec86d7861b72189))
+* **bruno:** add bruno for REST/GraphQL testing ([#3983](https://github.com/uzh-bf/klicker-uzh/issues/3983)) ([ee9b618](https://github.com/uzh-bf/klicker-uzh/commit/ee9b618461a81c57b59783a328bf08e16092123d))
+* show participant level on course leaderboard ([#3987](https://github.com/uzh-bf/klicker-uzh/issues/3987)) ([84dff60](https://github.com/uzh-bf/klicker-uzh/commit/84dff60584af1db57326f1b09549c60374c0ba3b))
+
 ## [3.1.0-beta.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.19...v3.1.0-beta.20) (2023-12-11)
 
 
