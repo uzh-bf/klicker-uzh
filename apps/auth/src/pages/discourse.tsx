@@ -11,7 +11,9 @@ export default function Discourse() {
     ) {
       location.replace(
         `/api/auth/signin?callbackUrl=${encodeURIComponent(
-          'http://auth.klicker.com/discourse_handoff?sso=' +
+          `${
+            process.env.NODE_ENV === 'production' ? 'https://' : 'http://'
+          }auth${process.env.COOKIE_DOMAIN}/discourse_handoff?sso=` +
             router.query.sso +
             '&sig=' +
             router.query.sig
