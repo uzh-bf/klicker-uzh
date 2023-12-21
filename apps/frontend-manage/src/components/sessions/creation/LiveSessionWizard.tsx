@@ -386,6 +386,13 @@ function StepTwo(props: StepProps) {
     }
   }, [values.isGamificationEnabled])
 
+  const preparedCourses = props.courses?.map((course) => {
+    return {
+      ...course,
+      data: { cy: `select-course-${course.label}` },
+    }
+  })
+
   return (
     <div className="flex flex-row gap-16">
       {props.courses && (
@@ -406,12 +413,7 @@ function StepTwo(props: StepProps) {
                     )}`,
                   },
                 },
-                ...props.courses?.map((course) => {
-                  return {
-                    ...course,
-                    data: { cy: `select-course-${course.label}` },
-                  }
-                }),
+                ...(preparedCourses || []),
               ]}
               hideError
               data={{ cy: 'select-course' }}
