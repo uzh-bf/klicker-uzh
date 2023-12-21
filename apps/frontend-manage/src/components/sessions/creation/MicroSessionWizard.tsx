@@ -315,7 +315,14 @@ function StepTwo(props: StepProps) {
       <div className="flex flex-row items-center gap-4 text-left">
         <FormikSelectField
           name="courseId"
-          items={props.courses || []}
+          items={
+            props.courses?.map((course) => {
+              return {
+                ...course,
+                data: { cy: `select-course-${course.label}` },
+              }
+            }) || []
+          }
           required
           tooltip={t('manage.sessionForms.microSessionCourse')}
           label={t('shared.generic.course')}

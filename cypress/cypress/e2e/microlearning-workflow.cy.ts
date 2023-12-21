@@ -15,6 +15,7 @@ describe('Different microlearning workflows', () => {
     const microSessionName = 'Test Micro-Session ' + randomNumber
     const microSessionDisplayName = 'Displayed Name ' + randomNumber
     const description = 'This is the official descriptioin of ' + randomNumber
+    const courseName = 'Testkurs'
 
     // set up question
     cy.get('[data-cy="create-question"]').click()
@@ -45,14 +46,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    cy.get('[data-cy="select-course"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText('Testkurs')
-      .parent()
-      .click()
-    cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .type(`${currentYear}-01-01T18:00`)
@@ -154,6 +150,7 @@ describe('Different microlearning workflows', () => {
     const microSessionName = 'Test Micro-Session ' + randomNumber
     const microSessionDisplayName = 'Displayed Name ' + randomNumber
     const description = 'This is the official descriptioin of ' + randomNumber
+    const courseName = 'Testkurs'
 
     // set up question
     cy.get('[data-cy="create-question"]').click()
@@ -182,14 +179,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    cy.get('[data-cy="select-course"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText('Testkurs')
-      .parent()
-      .click()
-    cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .type(`${currentYear + 1}-01-01T18:00`)
@@ -260,7 +252,7 @@ describe('Different microlearning workflows', () => {
     cy.clearAllCookies()
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText('Testkurs').click()
+    cy.findByText(courseName).click()
     cy.findByText(microSessionName)
     cy.get(`[data-cy="unpublish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.unpublishMicroSession)
@@ -277,6 +269,7 @@ describe('Different microlearning workflows', () => {
     const microSessionName = 'Test Micro-Session ' + randomNumber
     const microSessionDisplayName = 'Displayed Name ' + randomNumber
     const description = 'This is the official descriptioin of ' + randomNumber
+    const courseName = 'Testkurs'
 
     // set up question
     cy.get('[data-cy="create-question"]').click()
@@ -305,14 +298,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    cy.get('[data-cy="select-course"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText('Testkurs')
-      .parent()
-      .click()
-    cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .type(`${currentYear - 1}-01-01T18:00`)
@@ -387,6 +375,7 @@ describe('Different microlearning workflows', () => {
     const microSessionName = 'Test Micro-Session ' + randomNumber
     const microSessionDisplayName = 'Displayed Name ' + randomNumber
     const description = 'This is the official descriptioin of ' + randomNumber
+    const courseName = 'Testkurs'
 
     // set up question
     cy.get('[data-cy="create-question"]').click()
@@ -415,14 +404,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    cy.get('[data-cy="select-course"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText('Testkurs')
-      // .parent()
-      .click()
-    cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .type(`${currentYear + 1}-01-01T18:00`)
@@ -493,7 +477,7 @@ describe('Different microlearning workflows', () => {
     cy.clearAllCookies()
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText('Testkurs').click()
+    cy.findByText(courseName).click()
     cy.findByText(microSessionName)
     cy.get(`[data-cy="unpublish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.unpublishMicroSession)
@@ -519,7 +503,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if correct values are in the form and rename it
-    cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .should('have.value', `${currentYear + 1}-01-01T18:00`)

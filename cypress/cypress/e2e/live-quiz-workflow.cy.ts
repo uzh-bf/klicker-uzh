@@ -116,6 +116,7 @@ describe('Different live-quiz workflows', () => {
     const sessionName = 'Test Session ' + randomNumber
     const questionTitle = 'A Single Choice ' + randomNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
+    const courseName = 'Testkurs'
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').click().type(questionTitle)
@@ -135,14 +136,9 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(messages.manage.sessionForms.liveSessionNoCourse)
-    cy.get('[data-cy="select-course"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText('Testkurs')
-      .parent()
-      .click()
-    cy.get('[data-cy="select-course"]').contains('Testkurs')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(courseName)
     cy.get('[data-cy="set-gamification"]').should('not.be.checked')
     cy.get('[data-cy="set-gamification"]').click()
     cy.get('[data-cy="select-multiplier"]')

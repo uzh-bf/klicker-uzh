@@ -325,7 +325,14 @@ function StepTwo(props: StepProps) {
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
           name="courseId"
-          items={props.courses || [{ label: '', value: '' }]}
+          items={
+            props.courses?.map((course) => {
+              return {
+                ...course,
+                data: { cy: `select-course-${course.label}` },
+              }
+            }) || [{ label: '', value: '' }]
+          }
           required
           tooltip={t('manage.sessionForms.learningElementSelectCourse')}
           label={t('shared.generic.course')}

@@ -400,8 +400,18 @@ function StepTwo(props: StepProps) {
                 {
                   label: t('manage.sessionForms.liveSessionNoCourse'),
                   value: '',
+                  data: {
+                    cy: `select-course-${t(
+                      'manage.sessionForms.liveSessionNoCourse'
+                    )}`,
+                  },
                 },
-                ...props.courses,
+                ...props.courses?.map((course) => {
+                  return {
+                    ...course,
+                    data: { cy: `select-course-${course.label}` },
+                  }
+                }),
               ]}
               hideError
               data={{ cy: 'select-course' }}

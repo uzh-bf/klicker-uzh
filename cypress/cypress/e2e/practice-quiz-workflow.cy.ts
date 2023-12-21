@@ -11,6 +11,7 @@ const randomNumber2 = Math.round(Math.random() * 1000)
 const practiceQuizName2 = 'Test Lernelement ' + randomNumber2
 const practiceQuizDisplayName2 = 'Displayed Name ' + randomNumber2
 const description2 = 'This is the official descriptioin of ' + randomNumber2
+const courseName = 'Testkurs'
 
 describe('Different practice quiz workflows', () => {
   beforeEach(() => {
@@ -50,14 +51,9 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    cy.get('[data-cy="select-course"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText('Testkurs')
-      .parent()
-      .click()
-    cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
@@ -201,14 +197,9 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    cy.get('[data-cy="select-course"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText('Testkurs')
-      .parent()
-      .click()
-    cy.get('[data-cy="select-course"]').should('exist').contains('Testkurs')
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
@@ -262,7 +253,7 @@ describe('Different practice quiz workflows', () => {
 
     // go to course overview and look for practice quiz with corresponding title
     cy.get('[data-cy="courses"]').click()
-    cy.findByText('Testkurs').click()
+    cy.findByText(courseName).click()
     cy.findByText(practiceQuizName2)
 
     // start editing the practice quiz
