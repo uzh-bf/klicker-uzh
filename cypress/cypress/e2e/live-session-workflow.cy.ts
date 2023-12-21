@@ -61,6 +61,61 @@ describe('Different live-session workflows', () => {
     cy.contains('[data-cy="session-block"]', sessionTitle)
   })
 
+  it('creates a session, starts it and aborts it and then restarts it', () => {
+    const randomNumber = Math.round(Math.random() * 1000)
+    const questionTitle = 'A Single Choice ' + randomNumber
+    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
+    const sessionTitle = 'Test Session ' + randomNumber
+    const session = 'Displayed Test Session Name ' + randomNumber
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="add-new-answer"]').click({ force: true })
+    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    cy.get('[data-cy="create-live-session"]').click()
+    cy.get('[data-cy="insert-live-session-name"]').type(sessionTitle)
+    cy.get('[data-cy="insert-live-display-name"]').type(session)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    const dataTransfer = new DataTransfer()
+    cy.get('[data-cy="question-block"]')
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      dataTransfer,
+    })
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="load-session-list"]').click()
+    cy.contains('[data-cy="session-block"]', sessionTitle)
+
+    // start session and then abort it
+    cy.findByText(sessionTitle)
+      .parentsUntil('[data-cy="session"]')
+      .find('[data-cy="start-session"]')
+      .click()
+    cy.get('[data-cy="abort-session-cockpit"]').click()
+    cy.get('[data-cy="abort-cancel-session"]').click()
+    cy.get('[data-cy="abort-session-cockpit"]').click()
+    cy.get('[data-cy="confirm-cancel-session"]').click()
+
+    // start session and then skip through the blocks
+    cy.findByText(sessionTitle)
+      .parentsUntil('[data-cy="session"]')
+      .find('[data-cy="start-session"]')
+      .click()
+    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="interaction-first-block"]').click()
+    cy.get('[data-cy="interaction-first-block"]').click()
+  })
+
   it('shows a possible workflow of running a session and answering questions', () => {
     const randomNumber = Math.round(Math.random() * 1000)
     const session = 'Displayed Name ' + randomNumber

@@ -221,7 +221,7 @@ function SessionTimeline({
       </div>
       {!isFeedbackSession && blocks && (
         <>
-          <div className="flex flex-row w-full gap-2 p-4 overflow-auto border border-solid rounded-lg border-uzh-grey-80 mt-2 md:mt-0">
+          <div className="flex flex-row w-full gap-2 p-4 mt-2 overflow-auto border border-solid rounded-lg border-uzh-grey-80 md:mt-0">
             <FontAwesomeIcon
               icon={faPlay}
               size="xl"
@@ -264,6 +264,7 @@ function SessionTimeline({
             <Button
               onClick={() => setCancelSessionModal(true)}
               className={{ root: 'bg-red-800 text-white' }}
+              data={{ cy: 'abort-session-cockpit' }}
             >
               {t('manage.cockpit.abortSession')}
             </Button>
