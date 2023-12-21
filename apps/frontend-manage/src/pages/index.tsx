@@ -75,7 +75,7 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         onClick={() => {
           setCreationMode('liveSession')
         }}
-        data={{ cy: 'create-live-session' }}
+        data={{ cy: 'create-live-quiz' }}
       />
       <CreationButton
         isCatalystRequired

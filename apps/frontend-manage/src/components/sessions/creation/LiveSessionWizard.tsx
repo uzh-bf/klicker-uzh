@@ -338,7 +338,7 @@ function StepOne(_: StepProps) {
           label={t('manage.sessionForms.name')}
           tooltip={t('manage.sessionForms.liveSessionName')}
           className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-live-session-name"
+          data-cy="insert-live-quiz-name"
           shouldValidate={() => true}
         />
         <FormikTextField

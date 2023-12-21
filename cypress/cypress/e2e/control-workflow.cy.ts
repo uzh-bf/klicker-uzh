@@ -19,8 +19,8 @@ describe('Test functionalities of frontend-control application', () => {
     cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
-    cy.get('[data-cy="create-live-session"]').click()
-    cy.get('[data-cy="insert-live-session-name"]').type(sessionTitle)
+    cy.get('[data-cy="create-live-quiz"]').click()
+    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionTitle)
     cy.get('[data-cy="insert-live-display-name"]').type(session)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
