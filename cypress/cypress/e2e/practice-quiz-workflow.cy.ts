@@ -68,13 +68,10 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="select-order"]')
       .should('exist')
       .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
-    cy.get('[data-cy="select-order"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText(messages.manage.sessionForms.learningElementSHUFFLED)
-      .parent()
-      .click()
+    cy.get('[data-cy="select-order"]').click()
+    cy.get(
+      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSHUFFLED}"]`
+    ).click()
     cy.get('[data-cy="select-order"]').contains(
       messages.manage.sessionForms.learningElementSHUFFLED
     )
@@ -211,13 +208,10 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="select-order"]')
       .should('exist')
       .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
-    cy.get('[data-cy="select-order"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText(messages.manage.sessionForms.learningElementSHUFFLED)
-      .parent()
-      .click()
+    cy.get('[data-cy="select-order"]').click()
+    cy.get(
+      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSHUFFLED}"]`
+    ).click()
     cy.get('[data-cy="select-order"]').contains(
       messages.manage.sessionForms.learningElementSHUFFLED
     )
@@ -275,13 +269,10 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="select-order"]')
       .should('exist')
       .contains(messages.manage.sessionForms.learningElementSHUFFLED)
-    cy.get('[data-cy="select-order"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText(messages.manage.sessionForms.learningElementSEQUENTIAL)
-      .parent()
-      .click()
+    cy.get('[data-cy="select-order"]').click()
+    cy.get(
+      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
+    ).click()
     cy.get('[data-cy="select-order"]').contains(
       messages.manage.sessionForms.learningElementSEQUENTIAL
     )

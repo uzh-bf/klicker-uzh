@@ -423,6 +423,11 @@ function StepTwo(props: StepProps) {
             return {
               value: order,
               label: t(`manage.sessionForms.learningElement${order}`),
+              data: {
+                cy: `select-order-${t(
+                  `manage.sessionForms.learningElement${order}`
+                )}`,
+              },
             }
           })}
           required

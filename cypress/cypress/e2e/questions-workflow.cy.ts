@@ -41,11 +41,10 @@ describe('Create questions', () => {
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]')
-      .click()
-      .siblings()
-      .findByText(messages.shared.MC.typeLabel)
-      .click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.MC.typeLabel}"]`
+    ).click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.MC.typeLabel)
@@ -79,11 +78,10 @@ describe('Create questions', () => {
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]')
-      .click()
-      .siblings()
-      .findByText(messages.shared.KPRIM.typeLabel)
-      .click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.KPRIM.typeLabel}"]`
+    ).click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.KPRIM.typeLabel)
@@ -121,11 +119,10 @@ describe('Create questions', () => {
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]')
-      .click()
-      .siblings()
-      .findByText(messages.shared.NUMERICAL.typeLabel)
-      .click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.NUMERICAL.typeLabel}"]`
+    ).click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.NUMERICAL.typeLabel)
@@ -159,11 +156,10 @@ describe('Create questions', () => {
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]')
-      .click()
-      .siblings()
-      .findByText(messages.shared.FREE_TEXT.typeLabel)
-      .click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.FREE_TEXT.typeLabel}"]`
+    ).click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.FREE_TEXT.typeLabel)
