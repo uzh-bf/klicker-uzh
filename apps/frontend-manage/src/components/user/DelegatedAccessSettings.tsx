@@ -6,7 +6,6 @@ import {
   CreateUserLoginDocument,
   DeleteUserLoginDocument,
   GetUserLoginsDocument,
-  GetUserScopeDocument,
   UserLoginScope,
 } from '@klicker-uzh/graphql/dist/ops'
 import { monoSpaceFont } from '@klicker-uzh/shared-components/src/font'
@@ -42,7 +41,7 @@ interface DelegatedAccessSettingsProps {
 function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
   const t = useTranslations()
   const { data: userLogins } = useSuspenseQuery(GetUserLoginsDocument)
-  const { data: scope } = useSuspenseQuery(GetUserScopeDocument)
+  // const { data: scope } = useSuspenseQuery(GetUserScopeDocument)
 
   const [createUserLogin] = useMutation(CreateUserLoginDocument, {
     refetchQueries: [GetUserLoginsDocument],
@@ -54,8 +53,8 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
   const [copiedPassword, setCopiedPassword] = useState(false)
 
   if (
-    typeof scope?.userScope === 'undefined' ||
-    scope.userScope !== UserLoginScope.AccountOwner
+    typeof userLogins?.userScope === 'undefined' ||
+    userLogins.userScope !== UserLoginScope.AccountOwner
   ) {
     return null
   }
