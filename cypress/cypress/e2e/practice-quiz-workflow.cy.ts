@@ -3,21 +3,21 @@ import messages from '../../../packages/i18n/messages/en'
 const randomNumber = Math.round(Math.random() * 1000)
 const questionTitle = 'A Single Choice with solution' + randomNumber
 const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-const learningElementName = 'Test Lernelement ' + randomNumber
-const learningElementDisplayName = 'Displayed Name ' + randomNumber
+const practiceQuizName = 'Test Lernelement ' + randomNumber
+const practiceQuizDisplayName = 'Displayed Name ' + randomNumber
 const description = 'This is the official descriptioin of ' + randomNumber
 
 const randomNumber2 = Math.round(Math.random() * 1000)
-const learningElementName2 = 'Test Lernelement ' + randomNumber2
-const learningElementDisplayName2 = 'Displayed Name ' + randomNumber2
+const practiceQuizName2 = 'Test Lernelement ' + randomNumber2
+const practiceQuizDisplayName2 = 'Displayed Name ' + randomNumber2
 const description2 = 'This is the official descriptioin of ' + randomNumber2
 
-describe('Different learning element workflows', () => {
+describe('Different practice quiz workflows', () => {
   beforeEach(() => {
     cy.loginLecturer()
   })
 
-  it('Test creating and publishing a learning element', () => {
+  it('Test creating and publishing a practice quiz', () => {
     // switch to question pool view
     cy.get('[data-cy="questions"]').click()
 
@@ -32,19 +32,19 @@ describe('Different learning element workflows', () => {
     cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
-    // create learning element
-    cy.get('[data-cy="create-learning-element"]').click()
+    // create practice quiz
+    cy.get('[data-cy="create-practice-quiz"]').click()
     cy.get('[data-cy="cancel-session-creation"]').click()
-    cy.get('[data-cy="create-learning-element"]').click()
+    cy.get('[data-cy="create-practice-quiz"]').click()
 
     // step 1
-    cy.get('[data-cy="insert-learning-element-name"]')
+    cy.get('[data-cy="insert-practice-quiz-name"]')
       .click()
-      .type(learningElementName)
-    cy.get('[data-cy="insert-learning-element-display-name"]')
+      .type(practiceQuizName)
+    cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
-      .type(learningElementDisplayName)
-    cy.get('[data-cy="insert-learning-element-description"]')
+      .type(practiceQuizDisplayName)
+    cy.get('[data-cy="insert-practice-quiz-description"]')
       .click()
       .type(description)
     cy.get('[data-cy="next-or-submit"]').click()
@@ -102,22 +102,22 @@ describe('Different learning element workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
-    cy.get('[data-cy="learning-element"]').contains(learningElementName)
-    cy.findByText(learningElementName)
-      .parentsUntil('[data-cy="learning-element"]')
-      .contains(messages.shared.generic.draft)
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
+      practiceQuizName
+    )
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
+      messages.shared.generic.draft
+    )
 
-    // publish learning element
-    cy.findByText(learningElementName)
-    cy.get(
-      `[data-cy="publish-learning-element-${learningElementName}"]`
-    ).click()
+    // publish practice quiz
+    cy.findByText(practiceQuizName)
+    cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName}"]`).click()
     cy.get('[data-cy="verify-publish-action"]').click()
-    cy.findByText(learningElementName)
-      .parentsUntil('[data-cy="learning-element"]')
-      .contains(messages.shared.generic.published)
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
+      messages.shared.generic.published
+    )
 
-    // sign in as student and answer learning element
+    // sign in as student and answer practice quiz
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
     cy.get('[data-cy="username-field"]')
@@ -130,19 +130,19 @@ describe('Different learning element workflows', () => {
 
     cy.get('[data-cy="quizzes"]').click()
     cy.get('[data-cy="practice-quiz"]')
-      .contains(learningElementDisplayName)
+      .contains(practiceQuizDisplayName)
       .click()
-    cy.get('[data-cy="start-learning-element"]').click()
+    cy.get('[data-cy="start-practice-quiz"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
-    // sign in as student on mobile and answer learning element again
+    // sign in as student on mobile and answer practice quiz again
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
     cy.viewport('iphone-x')
@@ -156,46 +156,46 @@ describe('Different learning element workflows', () => {
 
     cy.get('[data-cy="quizzes"]').click()
     cy.get('[data-cy="practice-quiz"]')
-      .contains(learningElementDisplayName)
+      .contains(practiceQuizDisplayName)
       .click()
-    cy.get('[data-cy="start-learning-element"]').click()
+    cy.get('[data-cy="start-practice-quiz"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
-    // navigate back to the home menu and then continue the learning element from step 2
+    // navigate back to the home menu and then continue the practice quiz from step 2
     cy.get('[data-cy="mobile-menu-home"]').click()
     cy.get('[data-cy="quizzes"]').click()
     cy.get('[data-cy="practice-quiz"]')
-      .contains(learningElementDisplayName)
+      .contains(practiceQuizDisplayName)
       .click()
-    cy.get('[data-cy="learning-element-progress"]').children().eq(1).click()
+    cy.get('[data-cy="practice-quiz-progress"]').children().eq(1).click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.get('[data-cy="mobile-menu-home"]').click()
     cy.viewport('macbook-16')
   })
 
-  it('Test editing an existing learning elements', () => {
+  it('Test editing an existing practice quizs', () => {
     // switch back to question pool view
     cy.get('[data-cy="questions"]').click()
 
-    // create learning element
-    cy.get('[data-cy="create-learning-element"]').click()
+    // create practice quiz
+    cy.get('[data-cy="create-practice-quiz"]').click()
     cy.get('[data-cy="cancel-session-creation"]').click()
-    cy.get('[data-cy="create-learning-element"]').click()
+    cy.get('[data-cy="create-practice-quiz"]').click()
 
     // step 1
-    cy.get('[data-cy="insert-learning-element-name"]')
+    cy.get('[data-cy="insert-practice-quiz-name"]')
       .click()
-      .type(learningElementName2)
-    cy.get('[data-cy="insert-learning-element-display-name"]')
+      .type(practiceQuizName2)
+    cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
-      .type(learningElementDisplayName2)
-    cy.get('[data-cy="insert-learning-element-description"]')
+      .type(practiceQuizDisplayName2)
+    cy.get('[data-cy="insert-practice-quiz-description"]')
       .click()
       .type(description2)
     cy.get('[data-cy="next-or-submit"]').click()
@@ -253,18 +253,20 @@ describe('Different learning element workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
-    cy.get('[data-cy="learning-element"]').contains(learningElementName2)
-    cy.findByText(learningElementName2)
-      .parentsUntil('[data-cy="learning-element"]')
-      .contains(messages.shared.generic.draft)
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
+      practiceQuizName2
+    )
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
+      messages.shared.generic.draft
+    )
 
-    // go to course overview and look for learning element with corresponding title
+    // go to course overview and look for practice quiz with corresponding title
     cy.get('[data-cy="courses"]').click()
     cy.findByText('Testkurs').click()
-    cy.findByText(learningElementName2)
+    cy.findByText(practiceQuizName2)
 
-    // start editing the learning element
-    cy.get(`[data-cy="edit-learning-element-${learningElementName2}"]`).click()
+    // start editing the practice quiz
+    cy.get(`[data-cy="edit-practice-quiz-${practiceQuizName2}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.learningElement).should(
       'exist'
     )
@@ -315,26 +317,26 @@ describe('Different learning element workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
-    cy.get('[data-cy="learning-element"]').contains(learningElementName2)
-    cy.findByText(learningElementName2)
-      .parentsUntil('[data-cy="learning-element"]')
-      .contains(messages.shared.generic.draft)
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
+      practiceQuizName2
+    )
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
+      messages.shared.generic.draft
+    )
 
-    // check if the learning element contains the correct number of questions
+    // check if the practice quiz contains the correct number of questions
     cy.get(
-      `[data-cy="learning-element-num-of-questions-${learningElementName2}"]`
+      `[data-cy="practice-quiz-num-of-questions-${practiceQuizName2}"]`
     ).should('contain', '4 questions')
 
-    // publish learning element
-    cy.get(
-      `[data-cy="publish-learning-element-${learningElementName2}"]`
-    ).click()
+    // publish practice quiz
+    cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName2}"]`).click()
     cy.get('[data-cy="verify-publish-action"]').click()
-    cy.findByText(learningElementName2)
-      .parentsUntil('[data-cy="learning-element"]')
-      .contains(messages.shared.generic.published)
+    cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
+      messages.shared.generic.published
+    )
 
-    // sign in as student and answer learning element
+    // sign in as student and answer practice quiz
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
     cy.get('[data-cy="username-field"]')
@@ -347,24 +349,24 @@ describe('Different learning element workflows', () => {
 
     cy.get('[data-cy="quizzes"]').click()
     cy.get('[data-cy="practice-quiz"]')
-      .contains(learningElementDisplayName2)
+      .contains(practiceQuizDisplayName2)
       .click()
-    cy.get('[data-cy="start-learning-element"]').click()
+    cy.get('[data-cy="start-practice-quiz"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="learning-element-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
   })
 })

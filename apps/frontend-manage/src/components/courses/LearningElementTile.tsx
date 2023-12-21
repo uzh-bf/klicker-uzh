@@ -41,7 +41,7 @@ function LearningElementTile({
   return (
     <div
       className="flex flex-col justify-between p-2 border border-solid rounded w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80"
-      data-cy="learning-element"
+      data-cy={`practice-quiz-${learningElement.name}`}
     >
       <div>
         <div className="flex flex-row justify-between">
@@ -65,7 +65,7 @@ function LearningElementTile({
         </div>
         <div
           className="mb-1 italic"
-          data-cy={`learning-element-num-of-questions-${learningElement.name}`}
+          data-cy={`practice-quiz-num-of-questions-${learningElement.name}`}
         >
           {t('manage.course.nQuestions', {
             number: learningElement.numOfQuestions || '0',
@@ -112,7 +112,7 @@ function LearningElementTile({
                 },
               })
             }
-            data={{ cy: `edit-learning-element-${learningElement.name}` }}
+            data={{ cy: `edit-practice-quiz-${learningElement.name}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faPencil} />
@@ -128,7 +128,7 @@ function LearningElementTile({
             basic
             className={{ root: 'text-primary' }}
             onClick={() => setPublishModal(true)}
-            data={{ cy: `publish-learning-element-${learningElement.name}` }}
+            data={{ cy: `publish-practice-quiz-${learningElement.name}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />

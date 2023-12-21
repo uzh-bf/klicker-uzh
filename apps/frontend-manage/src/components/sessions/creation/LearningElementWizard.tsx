@@ -285,7 +285,7 @@ function StepOne(_: StepProps) {
           label={t('manage.sessionForms.name')}
           tooltip={t('manage.sessionForms.learningElementName')}
           className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-learning-element-name"
+          data-cy="insert-practice-quiz-name"
         />
         <FormikTextField
           required
@@ -294,7 +294,7 @@ function StepOne(_: StepProps) {
           label={t('manage.sessionForms.displayName')}
           tooltip={t('manage.sessionForms.displayNameTooltip')}
           className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-learning-element-display-name"
+          data-cy="insert-practice-quiz-display-name"
         />
       </div>
 
@@ -302,7 +302,7 @@ function StepOne(_: StepProps) {
         label={t('shared.generic.description')}
         tooltip={t('manage.sessionForms.learningElementDescField')}
         fieldName="description"
-        data_cy="insert-learning-element-description"
+        data_cy="insert-practice-quiz-description"
         showToolbarOnFocus={false}
       />
 

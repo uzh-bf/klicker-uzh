@@ -95,7 +95,7 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         onClick={() => {
           setCreationMode('learningElement')
         }}
-        data={{ cy: 'create-learning-element' }}
+        data={{ cy: 'create-practice-quiz' }}
       />
       <CreationButton
         comingSoon

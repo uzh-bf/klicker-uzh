@@ -36,7 +36,7 @@ function StepProgressWithScoring({
       value={currentIx}
       items={items}
       onItemClick={(ix: number) => setCurrentIx(ix)}
-      data={{ cy: 'learning-element-progress' }}
+      data={{ cy: 'practice-quiz-progress' }}
       formatter={({ element, ix }) => {
         function render({
           className,
