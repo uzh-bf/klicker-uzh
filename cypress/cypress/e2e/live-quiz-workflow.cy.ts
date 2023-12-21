@@ -47,7 +47,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     const dataTransfer = new DataTransfer()
-    cy.get('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .contains(questionTitle)
       .trigger('dragstart', {
         dataTransfer,
@@ -83,7 +83,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     const dataTransfer = new DataTransfer()
-    cy.get('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .contains(questionTitle)
       .trigger('dragstart', {
         dataTransfer,
@@ -164,7 +164,7 @@ describe('Different live-quiz workflows', () => {
     // step 3
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
-      cy.get('[data-cy="question-block"]')
+      cy.get(`[data-cy="question-item-${questionTitle}"]`)
         .contains(questionTitle)
         .trigger('dragstart', {
           dataTransfer,
@@ -177,7 +177,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="add-block"]').click()
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
-      cy.get('[data-cy="question-block"]')
+      cy.get(`[data-cy="question-item-${questionTitle}"]`)
         .contains(questionTitle)
         .trigger('dragstart', {
           dataTransfer,

@@ -26,7 +26,7 @@ describe('Test functionalities of frontend-control application', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     const dataTransfer = new DataTransfer()
-    cy.get('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .contains(questionTitle)
       .trigger('dragstart', {
         dataTransfer,

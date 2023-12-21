@@ -18,14 +18,15 @@ describe('Create questions', () => {
     cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
-    cy.contains('[data-cy="question-block"]', question)
-    cy.contains('[data-cy="question-block"]', questionTitle)
-    cy.findByText(messages.shared.SC.short + ' - ' + questionTitle)
-      .parentsUntil('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.SC.short + ' - ' + questionTitle
+    )
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .find('[data-cy="question-title"]')
       .contains(messages.shared.SC.short)
-    cy.findByText(messages.shared.SC.short + ' - ' + questionTitle)
-      .parentsUntil('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .find('[data-cy="edit-question"]')
       .click()
     cy.get('[data-cy="sc-answer-options"]').should('have.length', 2)
@@ -55,14 +56,15 @@ describe('Create questions', () => {
     cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
-    cy.contains('[data-cy="question-block"]', question)
-    cy.contains('[data-cy="question-block"]', questionTitle)
-    cy.findByText(messages.shared.MC.short + ' - ' + questionTitle)
-      .parentsUntil('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.MC.short + ' - ' + questionTitle
+    )
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .find('[data-cy="question-title"]')
       .contains(messages.shared.MC.short)
-    cy.findByText(messages.shared.MC.short + ' - ' + questionTitle)
-      .parentsUntil('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .find('[data-cy="edit-question"]')
       .click()
     cy.get('[data-cy="sc-answer-options"]').should('have.length', 2)
@@ -96,14 +98,15 @@ describe('Create questions', () => {
     cy.get('[data-cy="insert-answer-field"]').eq(3).click().type('60%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
-    cy.contains('[data-cy="question-block"]', questionTitle)
-    cy.contains('[data-cy="question-block"]', question)
-    cy.findByText(messages.shared.KPRIM.short + ' - ' + questionTitle)
-      .parentsUntil('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.KPRIM.short + ' - ' + questionTitle
+    )
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .find('[data-cy="question-title"]')
       .contains(messages.shared.KPRIM.short)
-    cy.findByText(messages.shared.KPRIM.short + ' - ' + questionTitle)
-      .parentsUntil('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .find('[data-cy="edit-question"]')
       .click()
     cy.get('[data-cy="kp-answer-options"]').should('have.length', 4)
@@ -132,14 +135,15 @@ describe('Create questions', () => {
     cy.get('[data-cy="set-numerical-maximum"]').click().type('100')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
-    cy.contains('[data-cy="question-block"]', questionTitle)
-    cy.contains('[data-cy="question-block"]', question)
-    cy.findByText(messages.shared.NUMERICAL.short + ' - ' + questionTitle)
-      .parentsUntil('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.NUMERICAL.short + ' - ' + questionTitle
+    )
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .find('[data-cy="question-title"]')
       .contains(messages.shared.NUMERICAL.short)
-    cy.findByText(messages.shared.NUMERICAL.short + ' - ' + questionTitle)
-      .parentsUntil('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .find('[data-cy="edit-question"]')
       .click()
     cy.get('[data-cy="input-numerical-minimum"]').contains('Min: 0')
@@ -168,14 +172,15 @@ describe('Create questions', () => {
     cy.get('[data-cy="set-free-text-length"]').click().type('100')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
-    cy.contains('[data-cy="question-block"]', questionTitle)
-    cy.contains('[data-cy="question-block"]', question)
-    cy.findByText(messages.shared.FREE_TEXT.short + ' - ' + questionTitle)
-      .parentsUntil('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+      messages.shared.FREE_TEXT.short + ' - ' + questionTitle
+    )
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .find('[data-cy="question-title"]')
       .contains(messages.shared.FREE_TEXT.short)
-    cy.findByText(messages.shared.FREE_TEXT.short + ' - ' + questionTitle)
-      .parentsUntil('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .find('[data-cy="edit-question"]')
       .click()
     cy.get('[data-cy="free-text-response-input"]').should('exist')
@@ -203,17 +208,17 @@ describe('Create questions', () => {
     cy.wait(1000)
 
     // check if duplicated question exists alongside original question
-    cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist')
-    cy.get('[data-cy="question-block"]')
-      .contains(questionTitle + ' (Copy)')
-      .should('exist')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).should('exist')
+    cy.get(`[data-cy="question-item-${questionTitle + ' (Copy)'}"]`).should(
+      'exist'
+    )
 
     // delete the duplicated question
     cy.get(`[data-cy="delete-question-${questionTitle} (Copy)"]`).click()
     cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get('[data-cy="question-block"]').contains(questionTitle).should('exist')
-    cy.get('[data-cy="question-block"]')
-      .contains(questionTitle + ' (Copy)')
-      .should('not.exist')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).should('exist')
+    cy.get(`[data-cy="question-item-${questionTitle + ' (Copy)'}"]`).should(
+      'not.exist'
+    )
   })
 })

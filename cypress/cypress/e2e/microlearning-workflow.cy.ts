@@ -77,7 +77,7 @@ describe('Different microlearning workflows', () => {
     // step 3
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
-      cy.get('[data-cy="question-block"]')
+      cy.get(`[data-cy="question-item-${questionTitle}"]`)
         .contains(questionTitle)
         .trigger('dragstart', {
           dataTransfer,
@@ -213,7 +213,7 @@ describe('Different microlearning workflows', () => {
 
     // step 3
     const dataTransfer = new DataTransfer()
-    cy.get('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .contains(questionTitle)
       .trigger('dragstart', {
         dataTransfer,
@@ -336,7 +336,7 @@ describe('Different microlearning workflows', () => {
 
     // step 3
     const dataTransfer = new DataTransfer()
-    cy.get('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .contains(questionTitle)
       .trigger('dragstart', {
         dataTransfer,
@@ -446,7 +446,7 @@ describe('Different microlearning workflows', () => {
 
     // step 3
     const dataTransfer = new DataTransfer()
-    cy.get('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .contains(questionTitle)
       .trigger('dragstart', {
         dataTransfer,
@@ -545,7 +545,7 @@ describe('Different microlearning workflows', () => {
 
     // add another question to the microlearning
     const dataTransfer2 = new DataTransfer()
-    cy.get('[data-cy="question-block"]')
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
       .contains(questionTitle)
       .trigger('dragstart', {
         dataTransfer2,

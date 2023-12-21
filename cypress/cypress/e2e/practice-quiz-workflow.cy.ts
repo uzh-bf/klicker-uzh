@@ -90,7 +90,7 @@ describe('Different practice quiz workflows', () => {
     // step 3
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
-      cy.get('[data-cy="question-block"]')
+      cy.get(`[data-cy="question-item-${questionTitle}"]`)
         .contains(questionTitle)
         .trigger('dragstart', {
           dataTransfer,
@@ -241,7 +241,7 @@ describe('Different practice quiz workflows', () => {
     // step 3
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
-      cy.get('[data-cy="question-block"]')
+      cy.get(`[data-cy="question-item-${questionTitle}"]`)
         .contains(questionTitle)
         .trigger('dragstart', {
           dataTransfer,
@@ -305,7 +305,7 @@ describe('Different practice quiz workflows', () => {
     // add the question two further times
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
-      cy.get('[data-cy="question-block"]')
+      cy.get(`[data-cy="question-item-${questionTitle}"]`)
         .contains(questionTitle)
         .trigger('dragstart', {
           dataTransfer,
