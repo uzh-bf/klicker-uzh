@@ -424,7 +424,7 @@ export async function deleteMicroSession(
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
       console.log(
-        'The micro-session is already published and cannot be deleted anymore.'
+        'The microlearning is already published and cannot be deleted anymore.'
       )
       return null
     }

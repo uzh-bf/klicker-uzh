@@ -275,7 +275,7 @@ function StepOne(_: StepProps) {
           label={t('manage.sessionForms.name')}
           tooltip={t('manage.sessionForms.microSessionName')}
           className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-micro-session-name"
+          data-cy="insert-microlearning-name"
         />
         <FormikTextField
           required
@@ -284,7 +284,7 @@ function StepOne(_: StepProps) {
           label={t('manage.sessionForms.displayName')}
           tooltip={t('manage.sessionForms.displayNameTooltip')}
           className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-micro-session-display-name"
+          data-cy="insert-microlearning-display-name"
         />
       </div>
 
@@ -292,7 +292,7 @@ function StepOne(_: StepProps) {
         label={t('shared.generic.description')}
         tooltip={t('manage.sessionForms.microSessionDescField')}
         fieldName="description"
-        data_cy="insert-micro-session-description"
+        data_cy="insert-microlearning-description"
         showToolbarOnFocus={false}
       />
 

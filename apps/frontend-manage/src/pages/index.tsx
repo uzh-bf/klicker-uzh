@@ -85,7 +85,7 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         onClick={() => {
           setCreationMode('microSession')
         }}
-        data={{ cy: 'create-micro-session' }}
+        data={{ cy: 'create-microlearning' }}
       />
       <CreationButton
         isCatalystRequired
