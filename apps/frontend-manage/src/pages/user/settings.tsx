@@ -23,7 +23,6 @@ import { Suspense, useState } from 'react'
 import * as Yup from 'yup'
 import Layout from '../../components/Layout'
 import DelegatedAccessSettings from '../../components/user/DelegatedAccessSettings'
-import Setting from '../../components/user/Setting'
 import SimpleSetting from '../../components/user/SimpleSetting'
 
 function Settings() {
@@ -181,11 +180,9 @@ function Settings() {
           />
         </SimpleSetting>
 
-        <Setting title={t('auth.delegatedAccess')}>
-          <Suspense fallback={<Loader />}>
-            <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />
-          </Suspense>
-        </Setting>
+        <Suspense fallback={<Loader />}>
+          <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />
+        </Suspense>
       </div>
     </Layout>
   )
