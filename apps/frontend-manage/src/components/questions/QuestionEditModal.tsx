@@ -640,10 +640,26 @@ function QuestionEditModal({
                         {({ field, meta }: FastFieldProps) => (
                           <Select
                             items={[
-                              { label: 'x1', value: '1' },
-                              { label: 'x2', value: '2' },
-                              { label: 'x3', value: '3' },
-                              { label: 'x4', value: '4' },
+                              {
+                                label: 'x1',
+                                value: '1',
+                                data: { cy: 'select-multiplier-1' },
+                              },
+                              {
+                                label: 'x2',
+                                value: '2',
+                                data: { cy: 'select-multiplier-2' },
+                              },
+                              {
+                                label: 'x3',
+                                value: '3',
+                                data: { cy: 'select-multiplier-3' },
+                              },
+                              {
+                                label: 'x4',
+                                value: '4',
+                                data: { cy: 'select-multiplier-4' },
+                              },
                             ]}
                             onChange={(newValue: string) =>
                               setFieldValue('pointsMultiplier', newValue)

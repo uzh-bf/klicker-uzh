@@ -58,13 +58,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
-    cy.get('[data-cy="select-multiplier"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText(messages.manage.sessionForms.multiplier2)
-      .parent()
-      .click()
+    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.sessionForms.multiplier2
     )
@@ -191,13 +188,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
-    cy.get('[data-cy="select-multiplier"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText(messages.manage.sessionForms.multiplier2)
-      .parent()
-      .click()
+    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.sessionForms.multiplier2
     )
@@ -310,13 +304,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
-    cy.get('[data-cy="select-multiplier"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText(messages.manage.sessionForms.multiplier2)
-      .parent()
-      .click()
+    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.sessionForms.multiplier2
     )
@@ -416,13 +407,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
-    cy.get('[data-cy="select-multiplier"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText(messages.manage.sessionForms.multiplier2)
-      .parent()
-      .click()
+    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.sessionForms.multiplier2
     )
@@ -515,13 +503,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier2)
-    cy.get('[data-cy="select-multiplier"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText(messages.manage.sessionForms.multiplier4)
-      .parent()
-      .click()
+    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier4}"]`
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.sessionForms.multiplier4
     )

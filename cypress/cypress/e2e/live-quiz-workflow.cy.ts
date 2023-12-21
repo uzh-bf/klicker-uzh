@@ -144,13 +144,10 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
-    cy.get('[data-cy="select-multiplier"]')
-      .click()
-      .siblings()
-      .eq(0)
-      .findByText(messages.manage.sessionForms.multiplier2)
-      .parent()
-      .click()
+    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get(
+      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.sessionForms.multiplier2
     )
