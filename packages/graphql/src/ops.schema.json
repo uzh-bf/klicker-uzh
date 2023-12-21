@@ -12750,6 +12750,18 @@
             "deprecationReason": null
           },
           {
+            "name": "userScope",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "ENUM",
+              "name": "UserLoginScope",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "userSessions",
             "description": null,
             "args": [],
