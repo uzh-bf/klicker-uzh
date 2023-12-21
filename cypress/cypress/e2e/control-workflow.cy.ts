@@ -9,7 +9,6 @@ describe('Test functionalities of frontend-control application', () => {
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
     const sessionTitle = 'Test Session ' + randomNumber
     const session = 'Displayed Test Session Name ' + randomNumber
-    const course = 'Testkurs'
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
@@ -52,8 +51,9 @@ describe('Test functionalities of frontend-control application', () => {
       })
 
     // log into the control-frontend application
-    cy.clearAllCookies()
     cy.visit(Cypress.env('URL_CONTROL'))
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
     cy.viewport('macbook-16')
     cy.get('[data-cy="login-logo"]').should('exist')
     cy.get('[data-cy="shortname-field"]').type(
@@ -67,10 +67,7 @@ describe('Test functionalities of frontend-control application', () => {
     cy.get('[data-cy="unassigned-sessions"]').click()
 
     // check ppt links and start the session
-    cy.findByText(sessionTitle).then(($parentDiv) => {
-      const sessionDiv = $parentDiv.parent().parent()
-      cy.wrap(sessionDiv).findByText('PPT').click()
-    })
+    cy.get(`[data-cy="ppt-link-${sessionTitle}"]`).should('exist').click()
     cy.get('[data-cy="close-embedding-modal"]').click()
 
     cy.findByText(sessionTitle).click()
