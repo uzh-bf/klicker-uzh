@@ -148,6 +148,7 @@ const CredentialProvider: Provider = CredentialsProvider({
           id: user.id,
           email: user.email,
           role: user.role,
+          shortname: user.shortname,
           scope: login.scope,
           catalystInstitutional: user.catalystInstitutional,
           catalystIndividual: user.catalystIndividual,
@@ -229,6 +230,7 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, user, account, profile }) {
+      token.shortname = user.shortname
       token.role = UserRole.USER
 
       if (typeof profile?.swissEduPersonUniqueID === 'string') {
@@ -244,13 +246,18 @@ export const authOptions: NextAuthOptions = {
     },
     async redirect({ url, baseUrl }) {
       // allows relative callback URLs
-      if (url.startsWith('/')) return `${baseUrl}${url}`
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+
       // allows callback URLs that end with valid klicker domains
-      else if (
+      if (
         url.includes(process.env.COOKIE_DOMAIN as string) ||
         url.includes('127.0.0.1')
-      )
+      ) {
         return url
+      }
+
       // return the homepage for all other URLs
       return baseUrl
     },
