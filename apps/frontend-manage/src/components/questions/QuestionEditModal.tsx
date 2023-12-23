@@ -252,22 +252,43 @@ function QuestionEditModal({
     {
       value: ElementType.Sc,
       label: t(`shared.${ElementType.Sc}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(`shared.${ElementType.Sc}.typeLabel`)}`,
+      },
     },
     {
       value: ElementType.Mc,
       label: t(`shared.${ElementType.Mc}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(`shared.${ElementType.Mc}.typeLabel`)}`,
+      },
     },
     {
       value: ElementType.Kprim,
       label: t(`shared.${ElementType.Kprim}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Kprim}.typeLabel`
+        )}`,
+      },
     },
     {
       value: ElementType.Numerical,
       label: t(`shared.${ElementType.Numerical}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Numerical}.typeLabel`
+        )}`,
+      },
     },
     {
       value: ElementType.FreeText,
       label: t(`shared.${ElementType.FreeText}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.FreeText}.typeLabel`
+        )}`,
+      },
     },
   ]
 
@@ -640,10 +661,26 @@ function QuestionEditModal({
                         {({ field, meta }: FastFieldProps) => (
                           <Select
                             items={[
-                              { label: 'x1', value: '1' },
-                              { label: 'x2', value: '2' },
-                              { label: 'x3', value: '3' },
-                              { label: 'x4', value: '4' },
+                              {
+                                label: 'x1',
+                                value: '1',
+                                data: { cy: 'select-multiplier-1' },
+                              },
+                              {
+                                label: 'x2',
+                                value: '2',
+                                data: { cy: 'select-multiplier-2' },
+                              },
+                              {
+                                label: 'x3',
+                                value: '3',
+                                data: { cy: 'select-multiplier-3' },
+                              },
+                              {
+                                label: 'x4',
+                                value: '4',
+                                data: { cy: 'select-multiplier-4' },
+                              },
                             ]}
                             onChange={(newValue: string) =>
                               setFieldValue('pointsMultiplier', newValue)

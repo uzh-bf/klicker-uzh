@@ -127,7 +127,7 @@ function Session({ session }: SessionProps) {
                   <Link href={`/sessions/${session.id}/cockpit`} legacyBehavior>
                     <div
                       className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
-                      data-cy="session-cockpit"
+                      data-cy={`session-cockpit-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.lecturerCockpit')}</div>
@@ -153,7 +153,7 @@ function Session({ session }: SessionProps) {
                       await startSession()
                       router.push(`sessions/${session.id}/cockpit`)
                     }}
-                    data={{ cy: 'start-session' }}
+                    data={{ cy: `start-session-${session.name}` }}
                   >
                     <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
                       <FontAwesomeIcon icon={faPlay} size="sm" />

@@ -275,7 +275,7 @@ function StepOne(_: StepProps) {
           label={t('manage.sessionForms.name')}
           tooltip={t('manage.sessionForms.microSessionName')}
           className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-micro-session-name"
+          data-cy="insert-microlearning-name"
         />
         <FormikTextField
           required
@@ -284,7 +284,7 @@ function StepOne(_: StepProps) {
           label={t('manage.sessionForms.displayName')}
           tooltip={t('manage.sessionForms.displayNameTooltip')}
           className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-micro-session-display-name"
+          data-cy="insert-microlearning-display-name"
         />
       </div>
 
@@ -292,7 +292,7 @@ function StepOne(_: StepProps) {
         label={t('shared.generic.description')}
         tooltip={t('manage.sessionForms.microSessionDescField')}
         fieldName="description"
-        data_cy="insert-micro-session-description"
+        data_cy="insert-microlearning-description"
         showToolbarOnFocus={false}
       />
 
@@ -315,7 +315,14 @@ function StepTwo(props: StepProps) {
       <div className="flex flex-row items-center gap-4 text-left">
         <FormikSelectField
           name="courseId"
-          items={props.courses || []}
+          items={
+            props.courses?.map((course) => {
+              return {
+                ...course,
+                data: { cy: `select-course-${course.label}` },
+              }
+            }) || []
+          }
           required
           tooltip={t('manage.sessionForms.microSessionCourse')}
           label={t('shared.generic.course')}
@@ -360,10 +367,34 @@ function StepTwo(props: StepProps) {
           tooltip={t('manage.sessionForms.microSessionMultiplier')}
           required
           items={[
-            { label: t('manage.sessionForms.multiplier1'), value: '1' },
-            { label: t('manage.sessionForms.multiplier2'), value: '2' },
-            { label: t('manage.sessionForms.multiplier3'), value: '3' },
-            { label: t('manage.sessionForms.multiplier4'), value: '4' },
+            {
+              label: t('manage.sessionForms.multiplier1'),
+              value: '1',
+              data: {
+                cy: `select-multiplier-${t('manage.sessionForms.multiplier1')}`,
+              },
+            },
+            {
+              label: t('manage.sessionForms.multiplier2'),
+              value: '2',
+              data: {
+                cy: `select-multiplier-${t('manage.sessionForms.multiplier2')}`,
+              },
+            },
+            {
+              label: t('manage.sessionForms.multiplier3'),
+              value: '3',
+              data: {
+                cy: `select-multiplier-${t('manage.sessionForms.multiplier3')}`,
+              },
+            },
+            {
+              label: t('manage.sessionForms.multiplier4'),
+              value: '4',
+              data: {
+                cy: `select-multiplier-${t('manage.sessionForms.multiplier4')}`,
+              },
+            },
           ]}
           data={{ cy: 'select-multiplier' }}
           className={{ tooltip: 'z-20' }}

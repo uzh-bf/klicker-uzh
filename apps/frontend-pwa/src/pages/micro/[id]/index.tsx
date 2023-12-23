@@ -150,7 +150,7 @@ function MicroSessionIntroduction({ id }: Props) {
             className={{
               root: 'justify-center w-full text-lg md:w-auto md:self-end',
             }}
-            data={{ cy: 'start-micro-session' }}
+            data={{ cy: 'start-microlearning' }}
           >
             {t('shared.generic.begin')}
           </Button>

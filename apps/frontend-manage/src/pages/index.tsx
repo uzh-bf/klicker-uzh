@@ -75,7 +75,7 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         onClick={() => {
           setCreationMode('liveSession')
         }}
-        data={{ cy: 'create-live-session' }}
+        data={{ cy: 'create-live-quiz' }}
       />
       <CreationButton
         isCatalystRequired
@@ -85,7 +85,7 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         onClick={() => {
           setCreationMode('microSession')
         }}
-        data={{ cy: 'create-micro-session' }}
+        data={{ cy: 'create-microlearning' }}
       />
       <CreationButton
         isCatalystRequired
@@ -95,7 +95,7 @@ function SuspendedCreationButtons({ setCreationMode }: Props) {
         onClick={() => {
           setCreationMode('learningElement')
         }}
-        data={{ cy: 'create-learning-element' }}
+        data={{ cy: 'create-practice-quiz' }}
       />
       <CreationButton
         comingSoon
