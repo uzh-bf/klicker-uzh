@@ -131,6 +131,7 @@ function CreateAccountForm({
                 }}
                 type="submit"
                 disabled={!tosChecked || isSubmitting || !isValid}
+                data={{ cy: 'create-profile-button' }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faSave} />

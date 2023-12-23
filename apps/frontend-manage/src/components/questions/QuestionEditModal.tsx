@@ -568,6 +568,7 @@ function QuestionEditModal({
               <Button
                 className={{ root: 'mt-2 border-uzh-grey-80' }}
                 onClick={() => handleSetIsOpen(false)}
+                data={{ cy: 'close-question-modal' }}
               >
                 <Button.Label>{t('shared.generic.close')}</Button.Label>
               </Button>
@@ -963,6 +964,9 @@ function QuestionEditModal({
                                       className={{
                                         root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
                                       }}
+                                      data={{
+                                        cy: `delete-answer-option-ix-${index}`,
+                                      }}
                                     >
                                       <Button.Icon>
                                         <FontAwesomeIcon
@@ -1176,6 +1180,9 @@ function QuestionEditModal({
                                         className={{
                                           root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
                                         }}
+                                        data={{
+                                          cy: `delete-solution-range-ix-${index}`,
+                                        }}
                                       >
                                         {t('shared.generic.delete')}
                                       </Button>
@@ -1193,6 +1200,7 @@ function QuestionEditModal({
                                       max: undefined,
                                     })
                                   }
+                                  data={{ cy: 'add-solution-range' }}
                                 >
                                   {t('manage.questionForms.addSolutionRange')}
                                 </Button>
@@ -1250,6 +1258,9 @@ function QuestionEditModal({
                                       className={{
                                         root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
                                       }}
+                                      data={{
+                                        cy: `delete-solution-ix-${index}`,
+                                      }}
                                     >
                                       {t('shared.generic.delete')}
                                     </Button>
@@ -1262,6 +1273,7 @@ function QuestionEditModal({
                                   root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
                                 }}
                                 onClick={() => push('')}
+                                data={{ cy: 'add-solution-value' }}
                               >
                                 {t('manage.questionForms.addSolution')}
                               </Button>

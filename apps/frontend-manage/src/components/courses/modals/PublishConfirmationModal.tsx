@@ -58,7 +58,10 @@ function PublishConfirmationModal({
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={(): void => setOpen(false)}>
+        <Button
+          onClick={(): void => setOpen(false)}
+          data={{ cy: 'cancel-publish-action' }}
+        >
           {t('shared.generic.cancel')}
         </Button>
       }

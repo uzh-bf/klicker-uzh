@@ -83,6 +83,7 @@ function Header({
                 root: 'block px-1 md:px-2 py-1 rounded hover:bg-primary-20 sm:hover:text-primary',
               }}
               basic
+              data={{ cy: 'course-docs' }}
             >
               <FontAwesomeIcon className="fa-xl" icon={faCircleQuestion} />
             </Button>
@@ -95,6 +96,7 @@ function Header({
             <Button
               className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               onClick={() => router.back()}
+              data={{ cy: 'header-back' }}
             >
               {t('shared.generic.back')}
             </Button>
@@ -102,6 +104,7 @@ function Header({
             <Link href="/">
               <Button
                 className={{ root: 'hidden text-white bg-slate-800 md:block' }}
+                data={{ cy: 'header-home' }}
               >
                 {t('shared.generic.home')}
               </Button>
@@ -109,7 +112,10 @@ function Header({
           ))
         ) : (
           <Link href="/login">
-            <Button className={{ root: 'text-white bg-slate-800' }}>
+            <Button
+              className={{ root: 'text-white bg-slate-800' }}
+              data={{ cy: 'header-login' }}
+            >
               {t('shared.generic.login')}
             </Button>
           </Link>
@@ -120,6 +126,7 @@ function Header({
               className={{
                 root: 'hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block',
               }}
+              data={{ cy: 'header-setup-profile' }}
             >
               {t('pwa.general.setupProfile')}
             </Button>

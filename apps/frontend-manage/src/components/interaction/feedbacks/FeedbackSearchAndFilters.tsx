@@ -175,6 +175,7 @@ function FeedbackSearchAndFilters({
             }}
             onClick={() => window.print()}
             disabled={disabled?.print}
+            data={{ cy: 'print-feedback-channel-button' }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faPrint} />

@@ -60,6 +60,7 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
                       !isValid && 'text-uzh-grey-60 cursor-not-allowed'
                     ),
                   }}
+                  data={{ cy: 'tag-editing-save' }}
                 >
                   {t('shared.generic.ok')}
                 </Button>

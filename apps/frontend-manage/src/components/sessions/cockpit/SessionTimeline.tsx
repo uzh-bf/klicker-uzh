@@ -151,6 +151,7 @@ function SessionTimeline({
             <Button
               onClick={() => setEmbedModalOpen(true)}
               className={{ root: 'h-10' }}
+              data={{ cy: 'embed-evaluation-cockpit' }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faCode} size="sm" />
@@ -175,7 +176,11 @@ function SessionTimeline({
               rel="noopener noreferrer"
               target="_blank"
             >
-              <Button fluid className={{ root: 'h-10' }}>
+              <Button
+                fluid
+                className={{ root: 'h-10' }}
+                data={{ cy: 'audience-view-cockpit' }}
+              >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
@@ -195,6 +200,7 @@ function SessionTimeline({
                 fluid
                 className={{ root: 'h-10' }}
                 disabled={isFeedbackSession}
+                data={{ cy: 'evaluation-results-cockpit' }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
@@ -212,6 +218,7 @@ function SessionTimeline({
                   root: twMerge('bg-uzh-red-100 text-white h-10'),
                 }}
                 onClick={handleEndSession}
+                data={{ cy: 'end-session-cockpit' }}
               >
                 <Button.Label>{t('manage.cockpit.endSession')}</Button.Label>
               </Button>

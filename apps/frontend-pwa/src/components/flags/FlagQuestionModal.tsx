@@ -108,7 +108,11 @@ function FlagQuestionModal({
         }}
         open={open}
         trigger={
-          <Button basic onClick={() => setOpen(true)}>
+          <Button
+            basic
+            onClick={() => setOpen(true)}
+            data={{ cy: 'flag-question-button' }}
+          >
             <Button.Icon>
               <FontAwesomeIcon
                 icon={faWarning}
@@ -153,6 +157,7 @@ function FlagQuestionModal({
                   <Button
                     onClick={() => setOpen(false)}
                     className={{ root: 'order-2 md:order-1' }}
+                    data={{ cy: 'cancel-flag-question' }}
                   >
                     {t('shared.generic.cancel')}
                   </Button>
@@ -162,6 +167,7 @@ function FlagQuestionModal({
                     }}
                     type="submit"
                     disabled={isSubmitting || !isValid}
+                    data={{ cy: 'submit-flag-question' }}
                   >
                     <Button.Icon
                       className={{

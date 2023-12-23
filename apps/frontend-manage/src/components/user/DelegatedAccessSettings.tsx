@@ -106,6 +106,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                   onClick={() =>
                     deleteUserLogin({ variables: { id: login.id } })
                   }
+                  data={{ cy: `delete-delegated-login-${login.name}` }}
                 >
                   <FontAwesomeIcon
                     icon={faTrash}
@@ -193,6 +194,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                                 }
                               )
                           }}
+                          data={{ cy: 'copy-new-delegated-login-password' }}
                         >
                           <FontAwesomeIcon
                             icon={faClipboard}
@@ -206,6 +208,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                               generatePassword.generate(PW_SETTINGS)
                             )
                           }
+                          data={{ cy: 'generate-new-delegated-login-password' }}
                         >
                           <FontAwesomeIcon
                             icon={faArrowsRotate}
@@ -251,6 +254,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       ),
                     }}
                     disabled={!isValid || isSubmitting}
+                    data={{ cy: 'create-delegated-login' }}
                   >
                     {t('manage.settings.createLogin')}
                   </Button>

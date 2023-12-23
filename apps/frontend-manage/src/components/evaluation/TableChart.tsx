@@ -136,6 +136,7 @@ function TableChart({
         <Button
           onClick={() => ref.current?.reset()}
           className={{ root: 'float-right' }}
+          data={{ cy: 'reset-table-chart-sorting' }}
         >
           <Button.Icon className={{ root: 'mr-1.5' }}>
             <FontAwesomeIcon icon={faRepeat} />

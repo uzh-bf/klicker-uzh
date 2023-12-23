@@ -103,6 +103,7 @@ function EvaluationControlBar({
                     'text-uzh-grey-80 cursor-not-allowed'
                 ),
               }}
+              data={{ cy: 'evaluate-previous-question' }}
             >
               <FontAwesomeIcon icon={faArrowLeft} />
             </Button>
@@ -154,6 +155,7 @@ function EvaluationControlBar({
           disabled={
             blocks.length <= 2 * width + 1 || selectedBlock - width <= 0
           }
+          data={{ cy: 'evaluate-previous-block' }}
         >
           <div
             className={twMerge(
@@ -187,6 +189,7 @@ function EvaluationControlBar({
                   `border-solid border-primary-80`
               ),
             }}
+            data={{ cy: `evaluate-block-${tab.value}` }}
           >
             <div className="flex flex-row items-center justify-center w-full gap-2">
               <FontAwesomeIcon
@@ -213,6 +216,7 @@ function EvaluationControlBar({
             blocks.length <= 2 * width + 1 ||
             selectedBlock + width >= blocks.length - 1
           }
+          data={{ cy: 'evaluate-next-block' }}
         >
           <div
             className={twMerge(
@@ -241,6 +245,7 @@ function EvaluationControlBar({
               setSelectedBlock(-1)
               setSelectedInstanceIndex(-1)
             }}
+            data={{ cy: 'evaluation-leaderboard' }}
           >
             <div className="flex flex-row items-center gap-2">
               <div>
@@ -267,6 +272,7 @@ function EvaluationControlBar({
               setSelectedBlock(-1)
               setSelectedInstanceIndex(-1)
             }}
+            data={{ cy: 'evaluation-feedbacks' }}
           >
             <div className="flex flex-row items-center gap-2">
               <div>
@@ -292,6 +298,7 @@ function EvaluationControlBar({
               setSelectedBlock(-1)
               setSelectedInstanceIndex(-1)
             }}
+            data={{ cy: 'evaluation-confusion' }}
           >
             <div className="flex flex-row items-center gap-2">
               <div>

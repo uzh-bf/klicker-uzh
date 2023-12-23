@@ -190,7 +190,12 @@ function UpdateAccountInfoForm({
                 </div>
               </div>
 
-              <Button fluid type="submit" disabled={isSubmitting || !isValid}>
+              <Button
+                fluid
+                type="submit"
+                disabled={isSubmitting || !isValid}
+                data={{ cy: 'save-account-update' }}
+              >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faSave} />
                 </Button.Icon>

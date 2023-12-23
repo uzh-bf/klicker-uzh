@@ -62,6 +62,7 @@ function ElementOverview({
                     }`
                   )
                 }
+                data={{ cy: 'login-to-student-login-collect-points' }}
               >
                 {text}
               </Button>

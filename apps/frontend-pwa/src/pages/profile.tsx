@@ -52,6 +52,7 @@ const Profile = () => {
           <Button
             onClick={() => router.push('/editProfile')}
             className={{ root: 'mt-2' }}
+            data={{ cy: 'edit-profile' }}
           >
             {t('pwa.profile.editProfile')}
           </Button>

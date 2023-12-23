@@ -108,7 +108,7 @@ export function LoginForm({
             }}
           >
             {/* // TODO: move this into login form component / shared-components or similar */}
-            <Form className="w-72 sm:w-96 mx-auto">
+            <Form className="mx-auto w-72 sm:w-96">
               <FormikTextField
                 required
                 label={labelIdentifier}
@@ -140,7 +140,7 @@ export function LoginForm({
                 />
               )}
 
-              <div className="w-full flex flex-row justify-end">
+              <div className="flex flex-row justify-end w-full">
                 <Button
                   className={{
                     root: 'w-full md:w-max mt-3 md:mt-2 border-uzh-grey-80 !justify-center',
@@ -161,6 +161,7 @@ export function LoginForm({
                         root: 'mt-2 w-fit border-uzh-grey-80',
                       }}
                       onClick={onInstallClick}
+                      data={{ cy: 'install-student-pwa' }}
                     >
                       <Button.Label>
                         {t('shared.login.installButton')}

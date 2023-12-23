@@ -39,12 +39,16 @@ function LearningElementDeletionModal({
           className={{
             root: twMerge('bg-red-600 font-bold text-white'),
           }}
+          data={{ cy: 'confirm-delete-practice-quiz' }}
         >
           {t('shared.generic.confirm')}
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={(): void => setOpen(false)}>
+        <Button
+          onClick={(): void => setOpen(false)}
+          data={{ cy: 'cancel-delete-practice-quiz' }}
+        >
           {t('shared.generic.cancel')}
         </Button>
       }

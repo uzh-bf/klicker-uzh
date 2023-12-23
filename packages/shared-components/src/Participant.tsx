@@ -97,6 +97,7 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
             e?.stopPropagation()
             props?.onLeaveCourse?.()
           }}
+          data={{ cy: 'leave-leaderboard' }}
         >
           {t('shared.generic.leave')}
         </Button>
@@ -108,6 +109,7 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
             e?.stopPropagation()
             props.onJoinCourse!()
           }}
+          data={{ cy: 'join-leaderboard' }}
         >
           {t('shared.generic.join')}
         </Button>

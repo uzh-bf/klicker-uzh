@@ -83,6 +83,7 @@ function LearningElementTile({
           className={{
             root: 'flex flex-row items-center gap-1 text-primary',
           }}
+          data={{ cy: `copy-practice-quiz-link-${learningElement.name}` }}
         >
           <FontAwesomeIcon icon={faCopy} size="sm" className="w-4" />
           <div>{t('manage.course.copyAccessLink')}</div>
@@ -93,6 +94,7 @@ function LearningElementTile({
             className={{
               root: 'flex flex-row items-center gap-1 text-primary',
             }}
+            data={{ cy: `open-practice-quiz-${learningElement.name}` }}
           >
             <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
             <div>{t('shared.generic.open')}</div>
@@ -144,6 +146,7 @@ function LearningElementTile({
             basic
             className={{ root: 'text-red-600' }}
             onClick={() => setDeletionModal(true)}
+            data={{ cy: `delete-practice-quiz-${learningElement.name}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />

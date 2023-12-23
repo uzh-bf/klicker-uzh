@@ -44,6 +44,7 @@ function Header({ title }: HeaderProps) {
               ? router.push('https://www.klicker.uzh.ch')
               : console.log('Logout failed')
           }}
+          data={{ cy: 'logout-control-button' }}
         >
           <FontAwesomeIcon icon={faRightFromBracket} />
         </Button>

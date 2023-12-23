@@ -123,6 +123,7 @@ function JoinCourse({
                       }}
                       type="submit"
                       disabled={isSubmitting || !isValid}
+                      data={{ cy: 'join-course' }}
                     >
                       <Button.Label>{t('pwa.general.joinCourse')}</Button.Label>
                     </Button>

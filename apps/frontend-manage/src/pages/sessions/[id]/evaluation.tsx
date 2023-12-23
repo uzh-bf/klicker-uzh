@@ -234,7 +234,7 @@ function Evaluation() {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex flex-col flex-1 min-h-0">
         {currentInstance &&
           !showConfusion &&
           !showFeedbacks &&
@@ -345,6 +345,7 @@ function Evaluation() {
                       className={{
                         root: 'w-8 h-8 flex items-center justify-center',
                       }}
+                      data={{ cy: 'decrease-font-size' }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={faMinus} />
@@ -358,6 +359,7 @@ function Evaluation() {
                       className={{
                         root: 'w-8 h-8 flex items-center justify-center',
                       }}
+                      data={{ cy: 'increase-font-size' }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={faPlus} />

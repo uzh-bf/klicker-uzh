@@ -137,6 +137,7 @@ function Settings() {
                     className={{
                       root: 'h-8 w-8 items-center justify-center shadow-none border-uzh-grey-60',
                     }}
+                    data={{ cy: 'save-shortname' }}
                   >
                     <FontAwesomeIcon icon={faSave} />
                   </Button>
