@@ -151,7 +151,7 @@ function Question({
               root: 'bg-white md:w-36 text-sm md:text-base space-x-2',
             }}
             onClick={(): void => setIsModificationModalOpen(true)}
-            data={{ cy: 'edit-question' }}
+            data={{ cy: `edit-question-${title}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faPencil} />
