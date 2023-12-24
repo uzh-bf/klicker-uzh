@@ -92,10 +92,11 @@ function SessionBlock({
             href={`/questions/${instance.questionData.questionId}`}
             className="text-sm sm:hover:text-slate-700"
             target="_blank"
-            data-cy={`open-embedding-link-session-${instance.id}`}
           >
-            {instance.questionData.name}{' '}
-            <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
+            <span data-cy={`open-embedding-link-session-${instance.id}`}>
+              {instance.questionData.name}{' '}
+              <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
+            </span>
           </Link>
         </div>
       ))}

@@ -133,11 +133,7 @@ function Header({
             </Button>
           </Link>
         )}
-        <Link
-          href={participant ? '/profile' : '/login'}
-          className=""
-          legacyBehavior
-        >
+        <Link href={participant ? '/profile' : '/login'} legacyBehavior>
           <Button
             basic
             className={{ root: 'relative' }}

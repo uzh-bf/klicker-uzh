@@ -46,12 +46,8 @@ function LazyHMACLink({
         className="hover:cursor-pointer"
         onClick={() => navigator?.clipboard?.writeText(link)}
       />
-      <Link
-        href={link}
-        target="_blank"
-        data-cy={`open-embedding-link-session-${sessionId}`}
-      >
-        {link}
+      <Link href={link} target="_blank">
+        <span data-cy={`open-embedding-link-session-${sessionId}`}>{link}</span>
       </Link>
     </div>
   )

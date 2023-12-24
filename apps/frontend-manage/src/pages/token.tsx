@@ -44,9 +44,8 @@ function TokenGeneration() {
               <Link
                 href={process.env.NEXT_PUBLIC_CONTROL_URL || ''}
                 className="text-primary"
-                data-cy="link-to-control-app"
               >
-                {displayLink}
+                <span data-cy="link-to-control-app">{displayLink}</span>
               </Link>
             ),
             displayLink: process.env.NEXT_PUBLIC_CONTROL_URL,

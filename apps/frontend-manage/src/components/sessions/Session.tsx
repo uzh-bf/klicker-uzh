@@ -125,12 +125,11 @@ function Session({ session }: SessionProps) {
                 )}
 
                 {SessionStatus.Running === session.status && (
-                  <Link
-                    href={`/sessions/${session.id}/cockpit`}
-                    data-cy={`session-cockpit-${session.name}`}
-                    legacyBehavior
-                  >
-                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
+                  <Link href={`/sessions/${session.id}/cockpit`} legacyBehavior>
+                    <div
+                      className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
+                      data-cy={`session-cockpit-${session.name}`}
+                    >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.lecturerCockpit')}</div>
                     </div>
@@ -139,10 +138,12 @@ function Session({ session }: SessionProps) {
                 {SessionStatus.Completed === session.status && (
                   <Link
                     href={`/sessions/${session.id}/evaluation`}
-                    data-cy={`session-evaluation-${session.name}`}
                     legacyBehavior
                   >
-                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
+                    <div
+                      className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
+                      data-cy={`session-evaluation-${session.name}`}
+                    >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.sessionEvaluation')}</div>
                     </div>
