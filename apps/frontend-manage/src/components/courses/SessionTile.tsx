@@ -125,7 +125,10 @@ function SessionTile({ session }: SessionTileProps) {
         {session.status === SessionStatus.Running && (
           <div className="flex flex-row items-center gap-2 text-primary">
             <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-4" />
-            <Link href={`/sessions/${session.id}/cockpit`}>
+            <Link
+              href={`/sessions/${session.id}/cockpit`}
+              data-cy={`open-cockpit-session-${session.name}`}
+            >
               {t('manage.course.runningSession')}
             </Link>
           </div>
@@ -138,6 +141,7 @@ function SessionTile({ session }: SessionTileProps) {
               passHref
               target="_blank"
               rel="noopener noreferrer"
+              data-cy={`open-evaluation-session-${session.name}`}
             >
               {t('shared.generic.evaluation')}
             </Link>

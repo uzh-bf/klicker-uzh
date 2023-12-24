@@ -16,6 +16,7 @@ function MissingPage() {
           <Link
             href="/"
             className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
+            data-cy="link-404-home"
           >
             Fragepool
           </Link>{' '}

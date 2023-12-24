@@ -91,6 +91,7 @@ function AudienceInteraction({
                 href={`/sessions/${sessionId}/lecturer`}
                 target="_blank"
                 className="inline-flex items-center gap-1"
+                data-cy={`open-lecturer-overview-session-${sessionName}`}
               >
                 <FontAwesomeIcon icon={faUpRightFromSquare} />
                 {t('manage.cockpit.lecturerView')}
@@ -147,7 +148,7 @@ function AudienceInteraction({
           )}
 
           {isLiveQAEnabled && (
-            <div className="flex flex-col flex-1 p-4 border print:border-0 rounded md:flex-row md:flex-wrap">
+            <div className="flex flex-col flex-1 p-4 border rounded print:border-0 md:flex-row md:flex-wrap">
               <div className="flex-1">
                 <FeedbackChannel
                   feedbacks={feedbacks}

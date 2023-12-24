@@ -39,6 +39,7 @@ function LazyHMACLink({
         className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200"
         href={link}
         target="_blank"
+        data-cy={`open-embedding-link-session-${sessionId}`}
       >
         {link}
       </Link>
