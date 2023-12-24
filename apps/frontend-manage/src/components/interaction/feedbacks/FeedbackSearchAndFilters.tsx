@@ -134,8 +134,10 @@ function FeedbackSearchAndFilters({
                       </span>
                     ),
                     onClick: filter.onChange,
+                    data: { cy: `feedback-channel-filter-${filter.label}` },
                   }
                 })}
+                data={{ cy: 'feedback-channel-mobile-filter-dropdown' }}
               />
             </div>
 
