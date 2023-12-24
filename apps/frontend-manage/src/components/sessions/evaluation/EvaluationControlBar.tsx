@@ -82,6 +82,7 @@ function EvaluationControlBar({
             ? `${question?.name.substring(0, 20)}...`
             : undefined,
         value: String(question?.ix),
+        data: { cy: `evaluate-question-${question?.ix}` },
       }
     })
   }, [blocks, selectedBlock])
@@ -138,6 +139,7 @@ function EvaluationControlBar({
                 trigger: 'shadow-none rounded-none m-0 border-none h-full',
               }}
               value={String(selectedInstanceIndex)}
+              data={{ cy: 'evaluate-question-select' }}
             />
           </div>
         )}

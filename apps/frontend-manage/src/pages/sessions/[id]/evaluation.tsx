@@ -381,10 +381,15 @@ function Evaluation() {
                     items={ACTIVE_CHART_TYPES[
                       currentInstance.questionData.type
                     ].map((item) => {
-                      return { label: t(item.label), value: item.value }
+                      return {
+                        label: t(item.label),
+                        value: item.value,
+                        data: { cy: `change-chart-type-${item.label}` },
+                      }
                     })}
                     value={chartType}
                     onChange={(newValue: string) => setChartType(newValue)}
+                    data={{ cy: 'change-chart-type' }}
                   />
                 </div>
               </div>

@@ -60,8 +60,8 @@ function Header({
           <Select
             value={router.locale}
             items={[
-              { value: 'de', label: 'DE' },
-              { value: 'en', label: 'EN' },
+              { value: 'de', label: 'DE', data: { cy: 'language-de' } },
+              { value: 'en', label: 'EN', data: { cy: 'language-en' } },
             ]}
             onChange={(newValue: string) => {
               changeParticipantLocale({ variables: { locale: newValue } })
@@ -73,6 +73,7 @@ function Header({
               trigger:
                 'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
             }}
+            data={{ cy: 'language-select' }}
             basic
           />
         </div>

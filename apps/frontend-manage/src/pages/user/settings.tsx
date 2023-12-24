@@ -171,13 +171,22 @@ function Settings() {
               })
             }}
             items={[
-              { label: t('shared.generic.english'), value: 'en' },
-              { label: t('shared.generic.german'), value: 'de' },
+              {
+                label: t('shared.generic.english'),
+                value: 'en',
+                data: { cy: 'language-en' },
+              },
+              {
+                label: t('shared.generic.german'),
+                value: 'de',
+                data: { cy: 'language-de' },
+              },
             ]}
             className={{
               content: 'font-normal text-black',
               trigger: 'font-normal text-black',
             }}
+            data={{ cy: 'language-select' }}
           />
         </SimpleSetting>
 
