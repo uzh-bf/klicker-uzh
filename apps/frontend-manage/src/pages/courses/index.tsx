@@ -67,6 +67,7 @@ function CourseSelectionPage() {
                 onClick={() => showCreateCourseModal(true)}
                 icon={faPlusCircle}
                 label={t('manage.courseList.createCourseNow')}
+                data={{ cy: 'course-list-create-first-course' }}
               />
             </div>
           )}

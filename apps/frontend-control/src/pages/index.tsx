@@ -60,6 +60,7 @@ function Index() {
                             })
                             .toString()
                     }
+                    data={{ cy: `course-${course.name}` }}
                   />
                 ))}
             </div>

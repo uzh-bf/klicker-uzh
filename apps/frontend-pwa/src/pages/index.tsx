@@ -217,6 +217,7 @@ const Index = function () {
                   href={session.linkTo || `/session/${session.id}`}
                   key={session.id}
                   icon={session.linkTo ? faLink : faChalkboard}
+                  data={{ cy: `live-session-${session.displayName}` }}
                 >
                   <div className="flex flex-row items-end justify-between md:flex-row">
                     <div>{session.displayName}</div>
@@ -268,9 +269,11 @@ const Index = function () {
                   key={micro.id}
                   disabled={micro.isCompleted}
                   className={{
-                    root:
-                      micro.isCompleted && 'hover:bg-unset cursor-not-allowed',
+                    root: micro.isCompleted
+                      ? 'hover:bg-unset cursor-not-allowed'
+                      : '',
                   }}
+                  data={{ cy: `microlearning-${micro.displayName}` }}
                 >
                   <div>{micro.displayName}</div>
                   <div className="flex flex-row items-end justify-between">
@@ -303,7 +306,11 @@ const Index = function () {
             {oldCourses.map((course) => (
               <CourseElement key={course.id} course={course} />
             ))}
-            <LinkButton icon={faCirclePlus} href="/join">
+            <LinkButton
+              icon={faCirclePlus}
+              href="/join"
+              data={{ cy: 'join-new-course' }}
+            >
               {t('pwa.general.joinCourse')}
             </LinkButton>
           </div>

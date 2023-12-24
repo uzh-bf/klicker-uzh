@@ -42,6 +42,7 @@ function Bookmarks() {
             key={course.id}
             href={`/course/${course.id}/bookmarks`}
             icon={faBookmark}
+            data={{ cy: `bookmarks-course-${course.displayName}` }}
           >
             {course.displayName}
           </LinkButton>
