@@ -226,6 +226,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                         root: 'md:w-1/2 md:pr-5',
                         input: ' bg-white',
                       }}
+                      data={{ cy: 'delegated-login-name' }}
                       required
                     />
                     <FormikSelectField
@@ -238,9 +239,11 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       items={availableScopes.map((scope) => ({
                         value: scope,
                         label: t(`manage.settings.${scope}`),
+                        data: { cy: `delegated-login-scope-${scope}` },
                       }))}
                       label={t('manage.settings.scope')}
                       className={{ root: 'md:w-1/2' }}
+                      data={{ cy: 'delegated-login-scope' }}
                       required
                     />
                   </div>

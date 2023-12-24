@@ -842,8 +842,14 @@ function QuestionEditModal({
                           (mode) => ({
                             value: mode,
                             label: t(`manage.questionForms.${mode}Display`),
+                            data: {
+                              cy: `select-display-mode-${t(
+                                `manage.questionForms.${mode}Display`
+                              )}`,
+                            },
                           })
                         )}
+                        data={{ cy: 'select-display-mode' }}
                       />
                     )}
                   </div>
@@ -1161,6 +1167,9 @@ function QuestionEditModal({
                                         placeholder={t(
                                           'shared.generic.minLong'
                                         )}
+                                        data={{
+                                          cy: `set-solution-range-min-${index}`,
+                                        }}
                                       />
                                       <div className="font-bold">
                                         {t('shared.generic.max')}:{' '}
@@ -1174,6 +1183,9 @@ function QuestionEditModal({
                                         placeholder={t(
                                           'shared.generic.maxLong'
                                         )}
+                                        data={{
+                                          cy: `set-solution-range-max-${index}`,
+                                        }}
                                       />
                                       <Button
                                         onClick={() => remove(index)}

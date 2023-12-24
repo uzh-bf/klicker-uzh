@@ -143,8 +143,10 @@ function AvatarUpdateForm({
                         return {
                           label: t(`pwa.avatar.${value}`),
                           value: value,
+                          data: { cy: `avatar-${key}-${value}` },
                         }
                       })}
+                      data={{ cy: `avatar-${key}-select` }}
                     />
                   ))}
                 </div>

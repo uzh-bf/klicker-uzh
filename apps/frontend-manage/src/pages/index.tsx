@@ -221,6 +221,7 @@ function SuspendedFirstLoginModal() {
                     })
                     return result?.checkShortnameAvailable ?? false
                   }}
+                  data={{ cy: 'first-login-shortname' }}
                   required
                 />
                 <FormikSelectField

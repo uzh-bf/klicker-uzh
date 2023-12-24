@@ -58,8 +58,10 @@ function FormikAvatarEditor() {
                 return {
                   label: t(`pwa.avatar.${value as AVATAR_OPTIONS_VALUE}`),
                   value: value,
+                  data: { cy: `update-avatar-${key}-${value}` },
                 }
               })}
+              data={{ cy: `update-avatar-${key}` }}
             />
           ))}
         </div>

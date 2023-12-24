@@ -227,6 +227,7 @@ function Feedback({
                       disabled={resolved}
                       maxLength={1000}
                       maxLengthLabel={t('shared.generic.characters')}
+                      data={{ cy: `respond-to-feedback-${content}` }}
                     />
                     <Button
                       className={{

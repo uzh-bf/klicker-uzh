@@ -136,6 +136,7 @@ function UpdateAccountInfoForm({
                     label={t('shared.generic.email')}
                     labelType="small"
                     className={{ label: 'font-bold text-md text-black' }}
+                    data={{ cy: 'update-account-email' }}
                   />
                   <DebouncedUsernameField
                     name="username"
@@ -154,6 +155,7 @@ function UpdateAccountInfoForm({
                         })
                       return result?.checkParticipantNameAvailable ?? false
                     }}
+                    data={{ cy: 'update-account-username' }}
                   />
                   <FormikTextField
                     name="password"
@@ -161,6 +163,7 @@ function UpdateAccountInfoForm({
                     labelType="small"
                     className={{ label: 'font-bold text-md text-black' }}
                     type="password"
+                    data={{ cy: 'update-account-password' }}
                   />
                   <FormikTextField
                     name="passwordRepetition"
@@ -168,6 +171,7 @@ function UpdateAccountInfoForm({
                     labelType="small"
                     className={{ label: 'font-bold text-md text-black' }}
                     type="password"
+                    data={{ cy: 'update-account-password-repetition' }}
                   />
                   <div>
                     <div className="font-bold">
@@ -175,7 +179,10 @@ function UpdateAccountInfoForm({
                     </div>
                     <div className="flex flex-row gap-4 space-between">
                       <div className="flex flex-col items-center gap-1">
-                        <FormikSwitchField name="isProfilePublic" />
+                        <FormikSwitchField
+                          name="isProfilePublic"
+                          data={{ cy: 'update-account-toggle-profile-public' }}
+                        />
                         {values.isProfilePublic
                           ? t('shared.generic.yes')
                           : t('shared.generic.no')}

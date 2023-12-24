@@ -399,7 +399,7 @@ function StepTwo(props: StepProps) {
           label={t('shared.generic.repetitionInterval')}
           tooltip={t('manage.sessionForms.learningElementRepetition')}
           className={{
-            input: 'w-20',
+            root: 'w-20',
             tooltip: 'z-20',
           }}
           required

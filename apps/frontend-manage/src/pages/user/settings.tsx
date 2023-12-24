@@ -128,6 +128,7 @@ function Settings() {
                       })
                       return result?.checkShortnameAvailable ?? false
                     }}
+                    data={{ cy: 'shortname-update-field' }}
                     required
                     hideError
                   />
