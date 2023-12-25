@@ -22,7 +22,7 @@ function MissingPage() {
                 href="/"
                 className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
               >
-                {linkText}
+                <span data-cy="404-home-link">{linkText}</span>
               </Link>
             ),
           })}

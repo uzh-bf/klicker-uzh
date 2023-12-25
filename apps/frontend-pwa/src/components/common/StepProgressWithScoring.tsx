@@ -112,6 +112,7 @@ function StepProgressWithScoring({
           onClick={() => {
             resetLocalStorage()
           }}
+          data={{ cy: 'practice-quiz-reset' }}
         >
           <FontAwesomeIcon icon={faRepeat} />
           <div className="hidden w-max md:block">

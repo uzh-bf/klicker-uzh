@@ -303,7 +303,11 @@ function QuestionStack({
             )}
           >
             <div>Bookmark</div>
-            <Button basic onClick={() => bookmarkQuestion()}>
+            <Button
+              basic
+              onClick={() => bookmarkQuestion()}
+              data={{ cy: 'practice-quiz-bookmark' }}
+            >
               {isBookmarked ? (
                 <FontAwesomeIcon
                   className="text-red-600 sm:hover:text-red-500"

@@ -41,7 +41,7 @@ function MicroSessionCreationToast({
                 className="ml-1 text-primary"
                 id="load-course-link"
               >
-                {text}
+                <span data-cy="load-course-overview">{text}</span>
               </Link>
             ),
           })}

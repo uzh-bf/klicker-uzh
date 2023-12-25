@@ -60,7 +60,7 @@ export function QR({
           value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
         />
       </div>
-      <Button onClick={onButtonClick}>
+      <Button onClick={onButtonClick} data={{ cy: 'download-qr-code' }}>
         <Button.Icon>
           <FontAwesomeIcon icon={faDownload} />
         </Button.Icon>

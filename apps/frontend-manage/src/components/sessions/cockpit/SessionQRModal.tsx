@@ -32,6 +32,7 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
         <Button
           className={{ root: 'w-[41%] sm:w-max !mr-0' }}
           onClick={() => setModalOpen(true)}
+          data={{ cy: `qr-modal-trigger-${shortname}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faQrcode} />
@@ -62,6 +63,7 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
                   'text-lg font-bold text-white h-11 bg-primary-80'
                 ),
               }}
+              data={{ cy: `qr-link-${shortname}` }}
             >
               <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
             </Button>
@@ -83,6 +85,7 @@ function SessionQRModal({ sessionId, shortname }: Props): React.ReactElement {
                   'text-lg font-bold text-white h-11 bg-primary-80'
                 ),
               }}
+              data={{ cy: `qr-direct-link-${sessionId}` }}
             >
               <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
             </Button>

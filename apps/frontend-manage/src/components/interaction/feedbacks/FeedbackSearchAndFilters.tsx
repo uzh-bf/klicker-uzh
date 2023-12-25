@@ -134,8 +134,10 @@ function FeedbackSearchAndFilters({
                       </span>
                     ),
                     onClick: filter.onChange,
+                    data: { cy: `feedback-channel-filter-${filter.label}` },
                   }
                 })}
+                data={{ cy: 'feedback-channel-mobile-filter-dropdown' }}
               />
             </div>
 
@@ -175,6 +177,7 @@ function FeedbackSearchAndFilters({
             }}
             onClick={() => window.print()}
             disabled={disabled?.print}
+            data={{ cy: 'print-feedback-channel-button' }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faPrint} />
@@ -187,10 +190,19 @@ function FeedbackSearchAndFilters({
             disabled={disabled?.sorting}
             value={sortBy}
             items={[
-              { value: 'votes', label: t('manage.cockpit.sortByVotes') },
-              { value: 'recency', label: t('manage.cockpit.sortByTime') },
+              {
+                value: 'votes',
+                label: t('manage.cockpit.sortByVotes'),
+                data: { cy: 'sort-by-votes' },
+              },
+              {
+                value: 'recency',
+                label: t('manage.cockpit.sortByTime'),
+                data: { cy: 'sort-by-time' },
+              },
             ]}
             onChange={(newValue: string) => setSortBy(newValue)}
+            data={{ cy: 'sort-feedback-channel-select' }}
           />
         )}
       </div>

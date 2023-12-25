@@ -38,6 +38,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
                 icon={faPlay}
                 label={session.name}
                 className={{ icon: 'mr-1', root: 'flex-1' }}
+                data={{ cy: `start-session-${session.name}` }}
               />
               <Button
                 onClick={() => {
@@ -78,6 +79,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
                   setStartId(session.id)
                   setStartName(session.name)
                 }}
+                data={{ cy: `start-session-${session.name}` }}
               />
               <Button
                 onClick={() => {

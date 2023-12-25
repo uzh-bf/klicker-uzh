@@ -37,6 +37,7 @@ function TagActions({
         className={{
           root: 'disabled:text-uzh-grey-60 sm:hover:text-primary',
         }}
+        data={{ cy: `tag-list-item-${tag.name}-move-up` }}
       >
         <FontAwesomeIcon icon={faArrowUp} className="mr-2" />
       </Button>
@@ -47,6 +48,7 @@ function TagActions({
         className={{
           root: 'disabled:text-uzh-grey-60 sm:hover:text-primary',
         }}
+        data={{ cy: `tag-list-item-${tag.name}-move-down` }}
       >
         <FontAwesomeIcon icon={faArrowDown} className="mr-2" />
       </Button>
@@ -57,6 +59,7 @@ function TagActions({
         className={{
           root: 'disabled:text-uzh-grey-60 sm:hover:text-primary',
         }}
+        data={{ cy: `tag-list-item-${tag.name}-edit` }}
       >
         <FontAwesomeIcon icon={faPencil} className="mr-2" />
       </Button>
@@ -67,6 +70,7 @@ function TagActions({
         className={{
           root: 'sm:hover:text-red-600 disabled:text-uzh-grey-60 disabled:hover:text-none',
         }}
+        data={{ cy: `tag-list-item-${tag.name}-delete` }}
       >
         <FontAwesomeIcon icon={faTrash} className="mr-2" />
       </Button>

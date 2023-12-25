@@ -102,7 +102,7 @@ describe('Different practice quiz workflows', () => {
     // publish practice quiz
     cy.findByText(practiceQuizName)
     cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName}"]`).click()
-    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
       messages.shared.generic.published
     )
@@ -307,7 +307,7 @@ describe('Different practice quiz workflows', () => {
 
     // publish practice quiz
     cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName2}"]`).click()
-    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
       messages.shared.generic.published
     )

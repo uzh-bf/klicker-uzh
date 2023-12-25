@@ -164,6 +164,7 @@ function ElementStack({
           }
           handleNextElement()
         }}
+        data={{ cy: 'practice-quiz-stack-submit' }}
       >
         {currentStep === totalSteps
           ? t('shared.generic.finish')

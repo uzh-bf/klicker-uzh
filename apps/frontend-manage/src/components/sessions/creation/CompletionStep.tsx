@@ -58,6 +58,7 @@ function CompletionStep({
             router.push({ pathname: '/' }, undefined, { shallow: true })
           }}
           className={{ root: 'space-x-1' }}
+          data={{ cy: 'create-new-element' }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faSync} />

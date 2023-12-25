@@ -106,6 +106,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                   onClick={() =>
                     deleteUserLogin({ variables: { id: login.id } })
                   }
+                  data={{ cy: `delete-delegated-login-${login.name}` }}
                 >
                   <FontAwesomeIcon
                     icon={faTrash}
@@ -193,6 +194,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                                 }
                               )
                           }}
+                          data={{ cy: 'copy-new-delegated-login-password' }}
                         >
                           <FontAwesomeIcon
                             icon={faClipboard}
@@ -206,6 +208,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                               generatePassword.generate(PW_SETTINGS)
                             )
                           }
+                          data={{ cy: 'generate-new-delegated-login-password' }}
                         >
                           <FontAwesomeIcon
                             icon={faArrowsRotate}
@@ -223,6 +226,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                         root: 'md:w-1/2 md:pr-5',
                         input: ' bg-white',
                       }}
+                      data={{ cy: 'delegated-login-name' }}
                       required
                     />
                     <FormikSelectField
@@ -235,9 +239,11 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       items={availableScopes.map((scope) => ({
                         value: scope,
                         label: t(`manage.settings.${scope}`),
+                        data: { cy: `delegated-login-scope-${scope}` },
                       }))}
                       label={t('manage.settings.scope')}
                       className={{ root: 'md:w-1/2' }}
+                      data={{ cy: 'delegated-login-scope' }}
                       required
                     />
                   </div>
@@ -251,6 +257,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                       ),
                     }}
                     disabled={!isValid || isSubmitting}
+                    data={{ cy: 'create-delegated-login' }}
                   >
                     {t('manage.settings.createLogin')}
                   </Button>

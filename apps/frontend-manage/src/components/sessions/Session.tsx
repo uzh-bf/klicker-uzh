@@ -103,6 +103,7 @@ function Session({ session }: SessionProps) {
                       className={{
                         root: 'flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary',
                       }}
+                      data={{ cy: `show-embedding-modal-${session.name}` }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={faCode} size="sm" />
@@ -139,7 +140,10 @@ function Session({ session }: SessionProps) {
                     href={`/sessions/${session.id}/evaluation`}
                     legacyBehavior
                   >
-                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
+                    <div
+                      className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
+                      data-cy={`session-evaluation-${session.name}`}
+                    >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.sessionEvaluation')}</div>
                     </div>
@@ -189,6 +193,7 @@ function Session({ session }: SessionProps) {
                     },
                   })
                 }
+                data={{ cy: `duplicate-session-${session.name}` }}
               >
                 <Button.Icon className={{ root: 'text-slate-600' }}>
                   <FontAwesomeIcon icon={faCopy} />
@@ -211,6 +216,7 @@ function Session({ session }: SessionProps) {
                         },
                       })
                     }
+                    data={{ cy: `edit-session-${session.name}` }}
                   >
                     <Button.Icon className={{ root: 'text-slate-600' }}>
                       <FontAwesomeIcon icon={faPencil} />
@@ -224,6 +230,7 @@ function Session({ session }: SessionProps) {
                       root: 'border-red-600 text-sm py-1 px-3',
                     }}
                     onClick={() => setDeletionModal(true)}
+                    data={{ cy: `delete-session-${session.name}` }}
                   >
                     <Button.Icon className={{ root: 'text-red-400' }}>
                       <FontAwesomeIcon icon={faTrash} />

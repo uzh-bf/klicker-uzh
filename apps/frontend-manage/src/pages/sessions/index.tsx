@@ -109,7 +109,7 @@ function SessionList() {
               {t.rich('manage.sessions.creationExplanation', {
                 link: (text) => (
                   <Link href="/" className="text-primary hover:underline">
-                    {text}
+                    <span data-cy="create-first-session">{text}</span>
                   </Link>
                 ),
               })}
