@@ -80,7 +80,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "nyc --silent node -r dotenv/config instrumented/index.js",
+    "start:test": "nyc --silent node -r dotenv/config instrumented/index.ts",
     "exec:prod": "doppler run --config prd -- bun run"
   },
   "engines": {
