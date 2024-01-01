@@ -32,7 +32,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   if (global.__coverage__) {
     try {
       require('@cypress/code-coverage/middleware/express')(app)
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   app.use(

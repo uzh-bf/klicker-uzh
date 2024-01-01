@@ -36,7 +36,7 @@
     "ws": "8.13.0"
   },
   "devDependencies": {
-    "@cypress/code-coverage": "3.12.1",
+    "@cypress/code-coverage": "3.12.16",
     "@tsconfig/node18": "^2.0.0",
     "@tsconfig/node20": "^20.1.2",
     "@tsconfig/recommended": "^1.0.2",
@@ -67,7 +67,8 @@
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup",
-    "build:test": "pnpm run build",
+    "build:test": "run-s build build:instrument",
+    "build:instrument": "nyc instrument --compact=false dist instrumented",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "tsup --watch",
@@ -76,8 +77,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
-    "--start:test": "nyc --silent npm start",
-    "start:test": "pnpm start",
+    "start:test": "nyc --silent node -r dotenv/config instrumented/index.js",
     "exec:prod": "doppler run --config prd -- bun run"
   },
   "engines": {
