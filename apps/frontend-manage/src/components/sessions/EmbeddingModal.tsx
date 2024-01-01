@@ -39,8 +39,10 @@ function LazyHMACLink({
         className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200"
         href={link}
         target="_blank"
+        legacyBehavior
+        passHref
       >
-        <span data-cy={`open-embedding-link-session-${sessionId}`}>{link}</span>
+        <a data-cy={`open-embedding-link-session-${sessionId}`}>{link}</a>
       </Link>
       <Button
         onClick={() => navigator?.clipboard?.writeText(link)}

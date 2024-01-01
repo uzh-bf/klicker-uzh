@@ -21,8 +21,10 @@ function MissingPage() {
               <Link
                 href="/"
                 className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
+                legacyBehavior
+                passHref
               >
-                <span data-cy="404-home-link">{linkText}</span>
+                <a data-cy="404-home-link">{linkText}</a>
               </Link>
             ),
           })}

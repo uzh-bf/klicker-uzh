@@ -25,8 +25,10 @@ function MissingPage() {
                 <Link
                   href="/login"
                   className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
+                  legacyBehavior
+                  passHref
                 >
-                  <span data-cy="404-to-login-link">{text}</span>
+                  <a data-cy="404-to-login-link">{text}</a>
                 </Link>
               ),
             })}
@@ -39,8 +41,10 @@ function MissingPage() {
                 <Link
                   href="/"
                   className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
+                  legacyBehavior
+                  passHref
                 >
-                  <span data-cy="404-to-home-link">{text}</span>
+                  <a data-cy="404-to-home-link">{text}</a>
                 </Link>
               ),
             })}
