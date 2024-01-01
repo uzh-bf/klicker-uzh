@@ -68,7 +68,7 @@
     "typescript": "5.2.2"
   },
   "scripts": {
-    "build": "cross-env NODE_ENV=production build:ts",
+    "build": "cross-env NODE_ENV=production pnpm run build:ts",
     "build:ts": "tsup",
     "build:test": "run-s build:instrument build:ts",
     "build:instrument": "nyc instrument --compact=false src instrumented",
