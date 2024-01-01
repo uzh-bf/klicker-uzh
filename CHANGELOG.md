@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.24...v3.1.0-beta.25) (2024-01-01)
+
+
+### Bug Fixes
+
+* **apps/auth:** ensure discourse API route extracts token data correctly ([25b143e](https://github.com/uzh-bf/klicker-uzh/commit/25b143e80df0837e1a6a3b8242fd5d3cec34ba25))
+
 ## [3.1.0-beta.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.23...v3.1.0-beta.24) (2024-01-01)
 
 
