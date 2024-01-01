@@ -85,7 +85,7 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-start-date"]')
-      .click()
+      .click({ force: true })
       .type(`${currentYear}-01-01T02:00`)
     cy.get('[data-cy="select-end-date"]')
       .click()
