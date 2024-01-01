@@ -1,7 +1,12 @@
 {
   "extends": "@tsconfig/node20/tsconfig.json",
-  "include": ["src", "scripts"],
-  "compilerOptions": {},
+  "include": [
+    "src",
+    "scripts"
+  ],
+  "compilerOptions": {
+    "sourceMap": true
+  },
   "ts-node": {
     "transpileOnly": true,
     "moduleTypes": {
