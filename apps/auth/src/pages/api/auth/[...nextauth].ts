@@ -11,6 +11,8 @@ import { Provider } from 'next-auth/providers/index'
 
 import prisma from 'src/lib/prisma'
 
+export const COOKIE_NAME = 'next-auth.session-token'
+
 interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
   swissEduIDLinkedAffiliation?: string[]
@@ -239,23 +241,21 @@ export const authOptions: NextAuthOptions = {
       return true
     },
 
-    async jwt({ token, user, account, profile }) {
-      // if we are logged in, no changes to the token are required - return it as is
-      if (typeof token !== 'undefined') return token
+    async jwt({ token, user, account, profile, trigger }) {
+      if (typeof user !== 'undefined') {
+        token.shortname = user.shortname
 
-      // if we have just logged in, the JWT needs to be extended by more user data
-      // user will be defined after sign-in
-      token.shortname = user.shortname
-      token.role = UserRole.USER
+        if (typeof profile?.swissEduPersonUniqueID === 'string') {
+          token.scope = UserLoginScope.ACCOUNT_OWNER
+        } else {
+          token.scope = (user as any).scope as UserLoginScope
+        }
 
-      if (typeof profile?.swissEduPersonUniqueID === 'string') {
-        token.scope = UserLoginScope.ACCOUNT_OWNER
-      } else {
-        token.scope = (user as any).scope as UserLoginScope
+        token.catalystInstitutional = user.catalystInstitutional
+        token.catalystIndividual = user.catalystIndividual
+
+        token.role = UserRole.USER
       }
-
-      token.catalystInstitutional = user.catalystInstitutional
-      token.catalystIndividual = user.catalystIndividual
 
       return token
     },
