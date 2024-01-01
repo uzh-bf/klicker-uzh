@@ -119,7 +119,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="submit-login"]').click()
 
     cy.get('[data-cy="quizzes"]').click()
-    cy.get('[data-cy="practice-quiz"]')
+    cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName}"]`)
       .contains(practiceQuizDisplayName)
       .click()
     cy.get('[data-cy="start-practice-quiz"]').click()
@@ -145,7 +145,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="submit-login"]').click()
 
     cy.get('[data-cy="quizzes"]').click()
-    cy.get('[data-cy="practice-quiz"]')
+    cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName}"]`)
       .contains(practiceQuizDisplayName)
       .click()
     cy.get('[data-cy="start-practice-quiz"]').click()
@@ -157,7 +157,7 @@ describe('Different practice quiz workflows', () => {
     // navigate back to the home menu and then continue the practice quiz from step 2
     cy.get('[data-cy="mobile-menu-home"]').click()
     cy.get('[data-cy="quizzes"]').click()
-    cy.get('[data-cy="practice-quiz"]')
+    cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName}"]`)
       .contains(practiceQuizDisplayName)
       .click()
     cy.get('[data-cy="practice-quiz-progress"]').children().eq(1).click()
@@ -324,7 +324,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="submit-login"]').click()
 
     cy.get('[data-cy="quizzes"]').click()
-    cy.get('[data-cy="practice-quiz"]')
+    cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName2}"]`)
       .contains(practiceQuizDisplayName2)
       .click()
     cy.get('[data-cy="start-practice-quiz"]').click()
