@@ -9,42 +9,12 @@ import { useRouter } from 'next/router'
 
 import useStickyState from 'src/hooks/useStickyState'
 
-function PrivacyLink() {
-  const t = useTranslations()
-
-  return (
-    <a
-      className="text-blue-500 underline hover:text-red-500"
-      href={t('auth.privacyUrl')}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {t('auth.privacyPolicy')}
-    </a>
-  )
-}
-
-function ToSLink() {
-  const t = useTranslations()
-
-  return (
-    <a
-      className="text-blue-500 underline hover:text-red-500"
-      href={t('auth.tosUrl')}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {t('auth.termsOfService')}
-    </a>
-  )
-}
-
 function SignInOutButton() {
   const t = useTranslations()
   const router = useRouter()
 
   const { value: tosChecked, setValue: setTosChecked } = useStickyState(
-    'tos-agreement',
+    'tos-agreement-2024',
     'false'
   )
 
@@ -74,17 +44,35 @@ function SignInOutButton() {
         label={
           <div className="text-sm">
             {t.rich('auth.tosAgreement', {
-              privacy: PrivacyLink,
-              tos: ToSLink,
+              privacy: () => (
+                <a
+                  className="text-blue-500 underline hover:text-red-500"
+                  href={t('auth.privacyUrl')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('auth.privacyPolicy')}
+                </a>
+              ),
+              tos: () => (
+                <a
+                  className="text-blue-500 underline hover:text-red-500"
+                  href={t('auth.tosUrl')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('auth.termsOfService')}
+                </a>
+              ),
             })}
           </div>
         }
-        onCheck={() => setTosChecked(!Boolean(tosChecked))}
+        onCheck={() => setTosChecked(!tosChecked)}
         checked={Boolean(tosChecked)}
       />
 
       <Button
-        disabled={!Boolean(tosChecked)}
+        disabled={!tosChecked}
         data={{ cy: 'eduid-login-button' }}
         className={{ root: 'p-4 disabled:opacity-50' }}
         onClick={() =>
@@ -108,7 +96,7 @@ function SignInOutButton() {
         className={{
           root: 'disabled:opacity-50 justify-center italic',
         }}
-        disabled={!Boolean(tosChecked)}
+        disabled={!tosChecked}
         data={{ cy: 'delegated-login-button' }}
         onClick={() =>
           signIn('delegation', {
