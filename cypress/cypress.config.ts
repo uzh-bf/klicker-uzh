@@ -23,13 +23,6 @@ export default defineConfig({
     //   // includeShadowDom: true,
     setupNodeEvents(on, config) {
       require('@cypress/code-coverage/task')(on, config)
-      /* on("task", {
-          async "db:seed"() {
-            // seed database with test data
-            const { data } = await axios.post(`${testDataApiEndpoint}/seed`);
-            return data;
-          },
-        }); */
       return config
     },
   },
