@@ -107,7 +107,13 @@ function CourseOverviewPage() {
                 href={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}
                 target="_blank"
                 className="text-primary"
-              >{`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}</Link>
+                legacyBehavior
+                passHref
+              >
+                <a data-cy="link-to-pwa-course-join-page">
+                  {`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}
+                </a>
+              </Link>
 
               <div className="mt-4">
                 {t.rich('manage.course.requiredPin', {

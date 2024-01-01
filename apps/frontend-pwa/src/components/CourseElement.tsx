@@ -83,6 +83,7 @@ function CourseElement({
             if (disabled) return
             onSubscribeClick(course.isSubscribed, course.id)
           }}
+          data={{ cy: `course-${course.displayName}-subscribe` }}
         >
           {course.isSubscribed ? (
             <FontAwesomeIcon

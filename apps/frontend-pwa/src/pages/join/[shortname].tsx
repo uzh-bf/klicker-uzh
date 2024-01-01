@@ -44,7 +44,11 @@ function Join({ isInactive, shortname }: Props) {
           {data.runningSessions.map((session) => (
             <div className="" key={session.id}>
               <Link href={`/session/${session.id}`}>
-                <Button fluid className={{ root: 'justify-start gap-4' }}>
+                <Button
+                  fluid
+                  className={{ root: 'justify-start gap-4' }}
+                  data={{ cy: `join-session-${session.name}` }}
+                >
                   <Button.Icon>
                     <FontAwesomeIcon icon={faExternalLink} />
                   </Button.Icon>

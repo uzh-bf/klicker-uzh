@@ -15,18 +15,17 @@ export default function App({
 
   return (
     <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
-      <NextIntlClientProvider
-        timeZone="Europe/Zurich"
-        messages={pageProps.messages}
-        locale={locale}
-        onError={onError}
-        getMessageFallback={getMessageFallback}
-      >
-        <SessionProvider session={session}>
+      <SessionProvider session={session}>
+        <NextIntlClientProvider
+          timeZone="Europe/Zurich"
+          messages={pageProps.messages}
+          locale={locale}
+          onError={onError}
+          getMessageFallback={getMessageFallback}
+        >
           <Component {...pageProps} />
-        </SessionProvider>
-      </NextIntlClientProvider>
-
+        </NextIntlClientProvider>
+      </SessionProvider>
       <style jsx global>{`
         :root {
           --source-sans-pro: ${sourceSansPro.variable};

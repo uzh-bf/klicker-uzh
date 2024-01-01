@@ -122,7 +122,7 @@ export async function importTags(
 
     console.log('ordered tags: ', orderedTags)
 
-    return orderedTags
+    return mappedTags
   } catch (error) {
     context.error('Something went wrong while importing tags: ', error)
     await sendTeamsNotifications(

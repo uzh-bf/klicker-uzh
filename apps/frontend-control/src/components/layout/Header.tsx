@@ -21,8 +21,8 @@ function Header({ title }: HeaderProps) {
         <Select
           value={router.locale}
           items={[
-            { value: 'de', label: 'DE' },
-            { value: 'en', label: 'EN' },
+            { value: 'de', label: 'DE', data: { cy: 'language-de' } },
+            { value: 'en', label: 'EN', data: { cy: 'language-en' } },
           ]}
           onChange={(newValue: string) =>
             router.push({ pathname, query }, asPath, {
@@ -33,6 +33,7 @@ function Header({ title }: HeaderProps) {
             trigger:
               'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
           }}
+          data={{ cy: 'language-select' }}
           basic
         />
         <Button
@@ -44,6 +45,7 @@ function Header({ title }: HeaderProps) {
               ? router.push('https://www.klicker.uzh.ch')
               : console.log('Logout failed')
           }}
+          data={{ cy: 'logout-control-button' }}
         >
           <FontAwesomeIcon icon={faRightFromBracket} />
         </Button>

@@ -52,13 +52,16 @@ function PublishConfirmationModal({
           className={{
             root: 'font-bold text-white bg-primary-80',
           }}
-          data={{ cy: 'verify-publish-action' }}
+          data={{ cy: 'confirm-publish-action' }}
         >
           {t('shared.generic.confirm')}
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={(): void => setOpen(false)}>
+        <Button
+          onClick={(): void => setOpen(false)}
+          data={{ cy: 'cancel-publish-action' }}
+        >
           {t('shared.generic.cancel')}
         </Button>
       }

@@ -81,7 +81,10 @@ function Question({
   })
 
   return (
-    <div className="flex gap-1.5 items-center" data-cy="question-block">
+    <div
+      className="flex gap-1.5 items-center"
+      data-cy={`question-item-${title}`}
+    >
       <Checkbox checked={checked} onCheck={onCheck} />
 
       <div
@@ -93,7 +96,7 @@ function Question({
       >
         <div className="flex flex-row flex-1">
           <div className="flex flex-col flex-1 gap-1">
-            <div className="flex flex-row flex-none items-center gap-2 text-lg">
+            <div className="flex flex-row items-center flex-none gap-2 text-lg">
               {isArchived && (
                 <FontAwesomeIcon title="ARCHIVE" icon={faArchive} />
               )}
@@ -120,7 +123,7 @@ function Question({
               </Ellipsis>
             </div>
 
-            <div className="flex flex-col md:flex-row flex-none gap-1 md:gap-4 text-sm text-slate-600">
+            <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-4 text-slate-600">
               <div>
                 {t('shared.generic.createdAt', {
                   date: dayjs(createdAt).format('DD.MM.YYYY HH:mm'),
@@ -142,13 +145,13 @@ function Question({
           </div>
         </div>
 
-        <div className="flex flex-row md:flex-col gap-2">
+        <div className="flex flex-row gap-2 md:flex-col">
           <Button
             className={{
               root: 'bg-white md:w-36 text-sm md:text-base space-x-2',
             }}
             onClick={(): void => setIsModificationModalOpen(true)}
-            data={{ cy: 'edit-question' }}
+            data={{ cy: `edit-question-${title}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faPencil} />
@@ -218,7 +221,7 @@ function Question({
                     },
                     optimisticResponse: {
                       deleteQuestion: {
-                        __typename: 'Question',
+                        __typename: 'Element',
                         id,
                       },
                     },

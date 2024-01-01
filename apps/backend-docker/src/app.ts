@@ -70,16 +70,16 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
                 process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
               )
             ) {
-              return (
-                req.cookies['participant_token'] ||
-                req.cookies['next-auth.session-token']
-              )
+              return req.cookies['participant_token']
+              // TODO: use below to fix preview mode
+              // req.cookies['participant_token'] ||
+              // req.cookies['next-auth.session-token']
             }
 
-            return (
-              req.cookies['participant_token'] ||
-              req.cookies['next-auth.session-token']
-            )
+            return req.cookies['participant_token']
+            // TODO: use below to fix preview mode
+            // req.cookies['participant_token'] ||
+            // req.cookies['next-auth.session-token']
           }
 
           return null

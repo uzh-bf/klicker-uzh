@@ -44,12 +44,16 @@ function CancelSessionModal({
             router.push('/sessions')
           }}
           className={{ root: 'bg-red-600 font-bold text-white' }}
+          data={{ cy: 'confirm-cancel-session' }}
         >
           {t('shared.generic.confirm')}
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={(): void => setIsDeletionModalOpen(false)}>
+        <Button
+          onClick={(): void => setIsDeletionModalOpen(false)}
+          data={{ cy: 'abort-cancel-session' }}
+        >
           {t('shared.generic.cancel')}
         </Button>
       }

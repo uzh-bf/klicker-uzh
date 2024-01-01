@@ -36,6 +36,7 @@ function QuestionTags({
               handleTagClick(tag.name)
             }}
             key={tag.id}
+            data={{ cy: `tag-list-item-${tag.name}` }}
           >
             {tag.name}
           </Button>

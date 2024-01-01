@@ -3,8 +3,7 @@ name: Build and deploy func-migration-v2-export to Azure Function App (Productio
 on:
   push:
     branches:
-      - 'v3'
-      - 'CI'
+      - 'v3.1-dev'
     # paths:
     #   - 'apps/func-migration-v2-export/**'
     #   - '.github/workflows/v3_klickeruzhprod-migration-export**'

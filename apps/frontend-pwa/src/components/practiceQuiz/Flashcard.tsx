@@ -179,6 +179,7 @@ function FlashcardButton({
         e?.stopPropagation()
         setResponse()
       }}
+      data={{ cy: `flashcard-response-${text}` }}
     >
       <FontAwesomeIcon icon={icon} />
       {text}
