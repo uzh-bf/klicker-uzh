@@ -26,7 +26,7 @@ function MissingPage() {
                   href="/login"
                   className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
                 >
-                  {text}
+                  <span data-cy="404-to-login-link">{text}</span>
                 </Link>
               ),
             })}
@@ -40,7 +40,7 @@ function MissingPage() {
                   href="/"
                   className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
                 >
-                  {text}
+                  <span data-cy="404-to-home-link">{text}</span>
                 </Link>
               ),
             })}

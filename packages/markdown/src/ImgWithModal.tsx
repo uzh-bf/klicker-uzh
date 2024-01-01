@@ -51,6 +51,7 @@ function ImgWithModal({
                   root: 'absolute top-2 right-2 text-sm',
                 }}
                 onClick={() => setIsOpen(true)}
+                data={{ cy: `close-image-modal` }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faExpand} />

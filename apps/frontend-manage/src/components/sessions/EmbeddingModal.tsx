@@ -36,13 +36,16 @@ function LazyHMACLink({
   return (
     <div className="flex flex-row items-center gap-3">
       <Link
-        className="px-2 py-1 bg-slate-100 rounded hover:bg-slate-200"
+        className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200"
         href={link}
         target="_blank"
       >
-        {link}
+        <span data-cy={`open-embedding-link-session-${sessionId}`}>{link}</span>
       </Link>
-      <Button onClick={() => navigator?.clipboard?.writeText(link)}>
+      <Button
+        onClick={() => navigator?.clipboard?.writeText(link)}
+        data={{ cy: `copy-embed-link-session-${sessionId}` }}
+      >
         <Button.Icon>
           <FontAwesomeIcon icon={faClipboard} />
         </Button.Icon>
@@ -76,7 +79,9 @@ function EmbeddingModal({
       className={{ content: 'h-2/3' }}
       hideCloseButton
       onPrimaryAction={
-        <Button onClick={onClose}>{t('shared.generic.close')}</Button>
+        <Button onClick={onClose} data={{ cy: 'close-embedding-modal' }}>
+          {t('shared.generic.close')}
+        </Button>
       }
     >
       <div className="mb-4">

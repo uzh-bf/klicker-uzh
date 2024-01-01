@@ -94,7 +94,7 @@ describe('Different microlearning workflows', () => {
     cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
-    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.published
     )
@@ -222,7 +222,7 @@ describe('Different microlearning workflows', () => {
     cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
-    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.published
     )
@@ -338,7 +338,7 @@ describe('Different microlearning workflows', () => {
     cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
-    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.published
     )
@@ -441,7 +441,7 @@ describe('Different microlearning workflows', () => {
     cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
-    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.published
     )
@@ -538,7 +538,7 @@ describe('Different microlearning workflows', () => {
     cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicroSession)
       .click()
-    cy.get('[data-cy="verify-publish-action"]').click()
+    cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.published
     )

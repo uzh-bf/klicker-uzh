@@ -221,6 +221,7 @@ function SuspendedFirstLoginModal() {
                     })
                     return result?.checkShortnameAvailable ?? false
                   }}
+                  data={{ cy: 'first-login-shortname' }}
                   required
                 />
                 <FormikSelectField
@@ -249,13 +250,19 @@ function SuspendedFirstLoginModal() {
                   href="https://www.klicker.uzh.ch/getting_started/welcome"
                   target="_blank"
                 >
-                  <Button fluid>Documentation</Button>
+                  <Button data={{ cy: 'first-login-documentation' }} fluid>
+                    Documentation
+                  </Button>
                 </Link>
                 <Link href="https://community.klicker.uzh.ch" target="_blank">
-                  <Button fluid>Community</Button>
+                  <Button data={{ cy: 'first-login-community' }} fluid>
+                    Community
+                  </Button>
                 </Link>
                 <Link href="https://klicker-uzh.feedbear.com" target="_blank">
-                  <Button fluid>Roadmap</Button>
+                  <Button data={{ cy: 'first-login-roadmap' }} fluid>
+                    Roadmap
+                  </Button>
                 </Link>
               </div>
 
@@ -286,6 +293,7 @@ function SuspendedFirstLoginModal() {
                 }}
                 disabled={!isValid || isSubmitting}
                 type="submit"
+                data={{ cy: 'first-login-save-settings' }}
               >
                 {isSubmitting ? <Loader /> : t('shared.generic.save')}
               </Button>
@@ -531,6 +539,7 @@ function Index() {
                       className={{
                         root: 'h-10 shadow-sm rounded-md',
                       }}
+                      data={{ cy: 'sort-order-question-pool-toggle' }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={sortIcon} />
@@ -543,13 +552,22 @@ function Index() {
                       }}
                       placeholder={t('manage.general.sortBy')}
                       items={[
-                        { value: 'CREATED', label: t('manage.general.date') },
-                        { value: 'TITLE', label: t('manage.general.title') },
+                        {
+                          value: 'CREATED',
+                          label: t('manage.general.date'),
+                          data: { cy: 'sort-by-question-pool-created' },
+                        },
+                        {
+                          value: 'TITLE',
+                          label: t('manage.general.title'),
+                          data: { cy: 'sort-by-question-pool-title' },
+                        },
                       ]}
                       onChange={(newSortBy: string) => {
                         setSortBy(newSortBy)
                         handleSortByChange(newSortBy)
                       }}
+                      data={{ cy: 'sort-by-question-pool' }}
                     />
                   </div>
 
@@ -570,6 +588,7 @@ function Index() {
                             })
                             setSelectedQuestions({})
                           }}
+                          data={{ cy: 'move-to-archive' }}
                         >
                           <FontAwesomeIcon icon={faArchive} />
                         </Button>
@@ -591,6 +610,7 @@ function Index() {
                             })
                             setSelectedQuestions({})
                           }}
+                          data={{ cy: 'restore-from-archive' }}
                         >
                           <FontAwesomeIcon icon={faInbox} />
                         </Button>

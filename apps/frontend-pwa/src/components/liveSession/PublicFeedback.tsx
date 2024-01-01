@@ -147,6 +147,7 @@ function PublicFeedback({
           active={upvotes.upvote}
           className={{ root: 'w-10 h-10' }}
           disabled={feedback.resolvedAt}
+          data={{ cy: 'feedback-upvote' }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faThumbsUp} size="lg" />
@@ -170,6 +171,7 @@ function PublicFeedback({
                     }
                     active={upvotes[response.id] === 1}
                     className={{ root: 'mr-1 w-9 h-9' }}
+                    data={{ cy: 'feedback-response-upvote' }}
                   >
                     <Button.Icon>
                       <FontAwesomeIcon icon={faThumbsUp} size="lg" />
@@ -181,6 +183,7 @@ function PublicFeedback({
                     }
                     active={upvotes[response.id] === -1}
                     className={{ root: 'w-9 h-9' }}
+                    data={{ cy: 'feedback-response-downvote' }}
                   >
                     <Button.Icon>
                       <FontAwesomeIcon icon={faQuestion} size="lg" />

@@ -41,7 +41,9 @@ function LearningElementCreationToast({
                 className="ml-1 text-primary"
                 id="load-course-link"
               >
-                {text}
+                <span data-cy="toast-learning-element-published-go-to-course">
+                  {text}
+                </span>
               </Link>
             ),
           })}

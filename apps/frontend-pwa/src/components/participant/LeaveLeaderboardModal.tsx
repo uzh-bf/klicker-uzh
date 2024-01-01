@@ -20,12 +20,16 @@ function LeaveLeaderboardModal({
         <Button
           onClick={() => onConfirm()}
           className={{ root: 'bg-red-600 font-bold text-white' }}
+          data={{ cy: 'confirm-leave-course-leaderboard' }}
         >
           {t('shared.generic.confirm')}
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={(): void => setIsModalOpen(false)}>
+        <Button
+          onClick={(): void => setIsModalOpen(false)}
+          data={{ cy: 'cancel-leave-course-leaderboard' }}
+        >
           {t('shared.generic.cancel')}
         </Button>
       }

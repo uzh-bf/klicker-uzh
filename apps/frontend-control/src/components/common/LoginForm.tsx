@@ -126,6 +126,7 @@ export function LoginForm({
                       root: 'mt-2 w-fit border-uzh-grey-80',
                     }}
                     onClick={onInstallClick}
+                    data={{ cy: 'install-control-pwa' }}
                   >
                     <Button.Label>
                       {t('shared.login.installButton')}

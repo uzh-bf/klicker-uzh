@@ -91,6 +91,7 @@ function TagList({
           )
         }
         onClick={(): void => handleReset()}
+        data={{ cy: 'reset-question-pool-filters' }}
       >
         <Button.Icon className={{ root: 'mr-1' }}>
           <FontAwesomeIcon icon={faCircleXmark} />
@@ -163,6 +164,7 @@ function TagList({
             root: twMerge(isArchiveActive && 'text-red-600'),
           }}
           onClick={(): void => handleToggleArchive()}
+          data={{ cy: 'toggle-archive-question-pool' }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faArchive} />

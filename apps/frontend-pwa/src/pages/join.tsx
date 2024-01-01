@@ -62,6 +62,7 @@ function JoinPage() {
                   }}
                   type="submit"
                   disabled={isSubmitting || !isValid}
+                  data={{ cy: 'join-course-submit-form' }}
                 >
                   <Button.Label>{t('pwa.general.joinCourse')}</Button.Label>
                 </Button>

@@ -82,6 +82,7 @@ function SessionTile({ session }: SessionTileProps) {
                   query: { sessionId: session.id, editMode: 'liveSession' },
                 })
               }
+              data={{ cy: `edit-live-session-${session.name}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faPencil} />
@@ -101,6 +102,7 @@ function SessionTile({ session }: SessionTileProps) {
                   console.log(error)
                 }
               }}
+              data={{ cy: `start-live-session-${session.name}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faPlay} />
@@ -111,6 +113,7 @@ function SessionTile({ session }: SessionTileProps) {
               basic
               className={{ root: 'text-red-600' }}
               onClick={() => setDeletionModal(true)}
+              data={{ cy: `delete-live-session-${session.name}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faTrashCan} />
@@ -123,7 +126,9 @@ function SessionTile({ session }: SessionTileProps) {
           <div className="flex flex-row items-center gap-2 text-primary">
             <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-4" />
             <Link href={`/sessions/${session.id}/cockpit`}>
-              {t('manage.course.runningSession')}
+              <span data-cy={`open-cockpit-session-${session.name}`}>
+                {t('manage.course.runningSession')}
+              </span>
             </Link>
           </div>
         )}
@@ -136,7 +141,9 @@ function SessionTile({ session }: SessionTileProps) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {t('shared.generic.evaluation')}
+              <span data-cy={`open-evaluation-session-${session.name}`}>
+                {t('shared.generic.evaluation')}
+              </span>
             </Link>
           </div>
         )}

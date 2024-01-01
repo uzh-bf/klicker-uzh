@@ -43,12 +43,16 @@ function TagDeletionModal({
             setIsDeletionModalOpen(false)
           }}
           className={{ root: 'bg-red-600 font-bold text-white' }}
+          data={{ cy: 'confirm-delete-tag' }}
         >
           {t('shared.generic.delete')}
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={(): void => setIsDeletionModalOpen(false)}>
+        <Button
+          onClick={(): void => setIsDeletionModalOpen(false)}
+          data={{ cy: 'cancel-delete-tag' }}
+        >
           {t('shared.generic.cancel')}
         </Button>
       }

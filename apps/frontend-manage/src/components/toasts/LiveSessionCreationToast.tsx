@@ -34,12 +34,8 @@ function LiveSessionCreationToast({
           <FontAwesomeIcon icon={faArrowRight} className="mr-2" />
           {t.rich('manage.toasts.toSessionList', {
             link: (text) => (
-              <Link
-                href="/sessions"
-                className="ml-1 text-primary"
-                data-cy="load-session-list"
-              >
-                {text}
+              <Link href="/sessions" className="ml-1 text-primary">
+                <span data-cy="load-session-list">{text}</span>
               </Link>
             ),
           })}

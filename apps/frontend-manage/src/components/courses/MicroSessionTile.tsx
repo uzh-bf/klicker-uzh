@@ -111,6 +111,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         className={{
           root: twMerge('flex flex-row items-center gap-1 text-primary'),
         }}
+        data={{ cy: `copy-microlearning-link-${microSession.name}` }}
       >
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
         <div>{t('manage.course.copyAccessLink')}</div>
@@ -121,6 +122,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           className={{
             root: 'flex flex-row items-center gap-1 text-primary',
           }}
+          data={{ cy: `open-microlearning-${microSession.name}` }}
         >
           <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
           <div>{t('shared.generic.open')}</div>
@@ -167,6 +169,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           basic
           className={{ root: 'text-red-600' }}
           onClick={() => setDeletionModal(true)}
+          data={{ cy: `delete-microlearning-${microSession.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />

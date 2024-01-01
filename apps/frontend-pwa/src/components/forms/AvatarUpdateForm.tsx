@@ -143,13 +143,20 @@ function AvatarUpdateForm({
                         return {
                           label: t(`pwa.avatar.${value}`),
                           value: value,
+                          data: { cy: `avatar-${key}-${value}` },
                         }
                       })}
+                      data={{ cy: `avatar-${key}-select` }}
                     />
                   ))}
                 </div>
               </div>
-              <Button fluid type="submit" disabled={isSubmitting || !isValid}>
+              <Button
+                fluid
+                type="submit"
+                disabled={isSubmitting || !isValid}
+                data={{ cy: 'save-avatar-update' }}
+              >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faSave} />
                 </Button.Icon>

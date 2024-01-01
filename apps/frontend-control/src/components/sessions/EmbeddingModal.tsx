@@ -47,7 +47,7 @@ function LazyHMACLink({
         onClick={() => navigator?.clipboard?.writeText(link)}
       />
       <Link href={link} target="_blank">
-        {link}
+        <span data-cy={`open-embedding-link-session-${sessionId}`}>{link}</span>
       </Link>
     </div>
   )

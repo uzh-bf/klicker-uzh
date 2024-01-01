@@ -17,7 +17,7 @@ function MissingPage() {
             href="/"
             className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
           >
-            Fragepool
+            <span data-cy="link-404-home">Fragepool</span>
           </Link>{' '}
           zurück oder nutzen sie das Menu zur weiteren Navigation.
         </div>
