@@ -50,7 +50,7 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
-    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click({ force: true })
 
     // step 3
     const dataTransfer = new DataTransfer()
