@@ -148,3 +148,6 @@ jobs:
         with:
           name: code-coverage
           path: cypress/coverage
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
