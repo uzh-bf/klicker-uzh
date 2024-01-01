@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.25...v3.1.0-beta.26) (2024-01-01)
+
+
+### Bug Fixes
+
+* **apps/auth:** fix tos agreeement translation ([201c9be](https://github.com/uzh-bf/klicker-uzh/commit/201c9bed2ea53b54d7f26580b1e31ca51c7e4933))
+* **cypress:** fix dates in microlearning test workflows ([#3999](https://github.com/uzh-bf/klicker-uzh/issues/3999)) ([9be1e71](https://github.com/uzh-bf/klicker-uzh/commit/9be1e71ee568b876c72cf5b69fe9632c58e4a844))
+
 ## [3.1.0-beta.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.24...v3.1.0-beta.25) (2024-01-01)
 
 
