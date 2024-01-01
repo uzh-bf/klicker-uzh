@@ -1,6 +1,6 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import LanguageChanger from '@klicker-uzh/shared-components/src/LanguageChanger'
-import { Button, Checkbox, H1 } from '@uzh-bf/design-system'
+import { Button, Checkbox, H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
@@ -25,7 +25,11 @@ function SignInOutButton() {
   if (session) {
     return (
       <>
-        {t('auth.signedInAs', { username: session?.user?.email })}
+        <UserNotification
+          message={t('auth.signedInAs', { username: session?.user?.email })}
+          type="info"
+          className={{ root: '-mt-4' }}
+        />
         <br />{' '}
         <Button onClick={() => signOut()} data={{ cy: 'auth-logout-button' }}>
           {t('shared.generic.logout')}
