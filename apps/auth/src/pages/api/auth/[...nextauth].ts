@@ -179,6 +179,16 @@ export const authOptions: NextAuthOptions = {
   },
 
   cookies: {
+    // csrfToken: {
+    //   name: 'next-auth.csrf-token',
+    //   options: {
+    //     domain: process.env.COOKIE_DOMAIN,
+    //     // path: '/',
+    //     // httpOnly: true,
+    //     // sameSite: 'lax',
+    //     // secure: process.env.NODE_ENV === 'production',
+    //   },
+    // },
     sessionToken: {
       name: 'next-auth.session-token',
       options: {
@@ -230,6 +240,11 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, user, account, profile }) {
+      // if we are logged in, no changes to the token are required - return it as is
+      if (typeof token !== 'undefined') return token
+
+      // if we have just logged in, the JWT needs to be extended by more user data
+      // user will be defined after sign-in
       token.shortname = user.shortname
       token.role = UserRole.USER
 

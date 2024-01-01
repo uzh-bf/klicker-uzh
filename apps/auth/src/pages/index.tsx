@@ -43,12 +43,14 @@ function SignInOutButton() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { data: session } = useSession()
-
   const { value: tosChecked, setValue: setTosChecked } = useStickyState(
     'tos-agreement',
     'false'
   )
+
+  const { data: session, status } = useSession()
+
+  if (status === 'loading') return null
 
   if (session) {
     return (
