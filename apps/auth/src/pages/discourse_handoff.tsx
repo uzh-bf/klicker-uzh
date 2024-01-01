@@ -19,11 +19,10 @@ export default function DiscourseHandoff() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       })
 
       const json = await data.json()
-
-      console.log(json)
 
       if (data?.status === 200) {
         router.push(json.redirectURL)
