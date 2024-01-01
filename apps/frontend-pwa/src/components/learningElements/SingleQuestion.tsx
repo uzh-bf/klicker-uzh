@@ -106,7 +106,12 @@ function SingleQuestion({
       <div className="flex flex-col gap-4 md:gap-8 md:flex-row">
         <div className="flex-1 basis-2/3">
           <div className="flex flex-row items-center justify-between mb-4 border-b">
-            <H3 className={{ root: 'mb-0' }}>{questionData.name}</H3>
+            <H3
+              className={{ root: 'mb-0' }}
+              data={{ cy: 'question-stack-question-name' }}
+            >
+              {questionData.name}
+            </H3>
             <div className="flex flex-row items-center gap-3">
               {withParticipant && (
                 <FlagQuestionModal
@@ -118,7 +123,7 @@ function SingleQuestion({
             </div>
           </div>
 
-          <div className="pb-2">
+          <div className="pb-2" data-cy="question-stack-question-content">
             <DynamicMarkdown content={questionData.content} />
           </div>
           {instance.evaluation && questionData.explanation && (
