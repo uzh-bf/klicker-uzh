@@ -90,6 +90,7 @@ function MicroSessionIntroduction({ id }: Props) {
                       }`
                     )
                   }
+                  data={{ cy: 'login-to-start-microlearning' }}
                 >
                   {text}
                 </Button>
@@ -106,7 +107,7 @@ function MicroSessionIntroduction({ id }: Props) {
           <DynamicMarkdown content={data.microSession.description} />
         </Prose>
 
-        <div className="grid grid-cols-1 mb-4 md:mb-0 md:grid-cols-2 text-sm gap-y-1">
+        <div className="grid grid-cols-1 mb-4 text-sm md:mb-0 md:grid-cols-2 gap-y-1">
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
@@ -150,7 +151,7 @@ function MicroSessionIntroduction({ id }: Props) {
             className={{
               root: 'justify-center w-full text-lg md:w-auto md:self-end',
             }}
-            data={{ cy: 'start-micro-session' }}
+            data={{ cy: 'start-microlearning' }}
           >
             {t('shared.generic.begin')}
           </Button>

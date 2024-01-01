@@ -63,6 +63,7 @@ function Feedback({
           root: 'w-full text-left flex !pl-4 p-2 border bg-primary-10 border-solid  border-primary',
         }}
         onClick={() => setIsEditingActive((prev) => !prev)}
+        data={{ cy: `open-feedback-${content}` }}
       >
         <div className="flex-1 no-page-break-inside">
           <p className="mt-0">{content}</p>
@@ -116,6 +117,7 @@ function Feedback({
                   setIsBeingDeleted(true)
                 }
               }}
+              data={{ cy: `delete-feedback-${content}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faTrashCan} />
@@ -128,6 +130,7 @@ function Feedback({
                 e?.stopPropagation()
                 setIsEditingActive((prev) => !prev)
               }}
+              data={{ cy: `open-feedback-button-${content}` }}
             >
               {isEditingActive ? (
                 <Button.Icon>
@@ -175,6 +178,7 @@ function Feedback({
                     <Button
                       className={{ root: 'justify-center mr-1 w-9 h-9' }}
                       onClick={() => onDeleteResponse(response.id)}
+                      data={{ cy: `delete-response-${response.content}` }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={faTrashCan} />
@@ -223,6 +227,7 @@ function Feedback({
                       disabled={resolved}
                       maxLength={1000}
                       maxLengthLabel={t('shared.generic.characters')}
+                      data={{ cy: `respond-to-feedback-${content}` }}
                     />
                     <Button
                       className={{
@@ -230,6 +235,7 @@ function Feedback({
                       }}
                       type="submit"
                       disabled={isSubmitting || resolved}
+                      data={{ cy: `respond-to-feedback-${content}` }}
                     >
                       <Button.Icon className={{ root: 'mr-1' }}>
                         <FontAwesomeIcon icon={faPaperPlane} />
@@ -246,6 +252,7 @@ function Feedback({
               className={{ root: 'px-5' }}
               disabled={resolved}
               onClick={() => onPinFeedback(!pinned)}
+              data={{ cy: `pin-feedback-${content}` }}
             >
               <Button.Icon className={{ root: 'mr-1' }}>
                 <FontAwesomeIcon icon={faThumbTack} />
@@ -265,6 +272,7 @@ function Feedback({
                   setIsEditingActive(false)
                 }
               }}
+              data={{ cy: `resolve-feedback-${content}` }}
             >
               {resolved ? (
                 <Button.Icon className={{ root: 'mr-1' }}>
@@ -279,19 +287,6 @@ function Feedback({
                 ? t('manage.cockpit.reopen')
                 : t('manage.cockpit.resolve')}
             </Button>
-            {/* <Button
-              className="px-5 disabled:opacity-60"
-              disabled={resolved || !formik.isValid || !formik.dirty}
-              onClick={() => {
-                formik.submitForm()
-                setIsEditingActive(false)
-              }}
-            >
-              <Button.Icon className="mr-1">
-                <FontAwesomeIcon icon={faPaperPlane} />
-              </Button.Icon>
-              <Button.Label>Respond</Button.Label>
-            </Button> */}
           </div>
         </div>
       </div>

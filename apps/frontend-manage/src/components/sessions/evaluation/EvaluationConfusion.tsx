@@ -267,6 +267,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                         : '',
                     }}
                     placeholder={t('manage.evaluation.minTimestep')}
+                    data={{ cy: 'confusion-graph-timestep-setting' }}
                   />
                   {errors.xInterval && (
                     <div className="float-right text-sm text-red-600 mb-1.5">
@@ -294,6 +295,7 @@ function EvaluationConfusion({ confusionTS }: EvaluationConfusionProps) {
                         : '',
                     }}
                     placeholder={t('manage.evaluation.minWindow')}
+                    data={{ cy: 'confusion-graph-window-setting' }}
                   />
                   {errors.windowLength && (
                     <div className="float-right text-sm text-red-600 mb-1.5">

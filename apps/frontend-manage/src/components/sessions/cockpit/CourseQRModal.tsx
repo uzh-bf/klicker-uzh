@@ -92,6 +92,7 @@ function CourseQRModal({
               className?.button
             ),
           }}
+          data={{ cy: 'present-qr-code-button' }}
         >
           <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
         </Button>

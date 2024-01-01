@@ -40,8 +40,12 @@ function LearningElementCreationToast({
                 href={`/courses/${courseId}`}
                 className="ml-1 text-primary"
                 id="load-course-link"
+                legacyBehavior
+                passHref
               >
-                {text}
+                <a data-cy="toast-learning-element-published-go-to-course">
+                  {text}
+                </a>
               </Link>
             ),
           })}

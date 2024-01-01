@@ -53,7 +53,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   return (
     <div
       className="p-2 border border-solid rounded w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80"
-      data-cy="micro-session"
+      data-cy={`microlearning-${microSession.name}`}
     >
       <div className="flex flex-row items-center justify-between">
         <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
@@ -111,6 +111,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         className={{
           root: twMerge('flex flex-row items-center gap-1 text-primary'),
         }}
+        data={{ cy: `copy-microlearning-link-${microSession.name}` }}
       >
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
         <div>{t('manage.course.copyAccessLink')}</div>
@@ -121,6 +122,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           className={{
             root: 'flex flex-row items-center gap-1 text-primary',
           }}
+          data={{ cy: `open-microlearning-${microSession.name}` }}
         >
           <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
           <div>{t('shared.generic.open')}</div>
@@ -139,7 +141,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
               },
             })
           }
-          data={{ cy: `edit-micro-session-${microSession.name}` }}
+          data={{ cy: `edit-microlearning-${microSession.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faPencil} />
@@ -153,7 +155,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           basic
           className={{ root: 'text-primary' }}
           onClick={() => setPublishModal(true)}
-          data={{ cy: `publish-micro-session-${microSession.name}` }}
+          data={{ cy: `publish-microlearning-${microSession.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
@@ -167,6 +169,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           basic
           className={{ root: 'text-red-600' }}
           onClick={() => setDeletionModal(true)}
+          data={{ cy: `delete-microlearning-${microSession.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
@@ -180,7 +183,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           basic
           className={{ root: 'text-primary' }}
           onClick={async () => await unpublishMicroSession()}
-          data={{ cy: `unpublish-micro-session-${microSession.name}` }}
+          data={{ cy: `unpublish-microlearning-${microSession.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />

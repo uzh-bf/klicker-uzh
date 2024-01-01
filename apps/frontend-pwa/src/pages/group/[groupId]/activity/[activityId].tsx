@@ -216,6 +216,7 @@ function GroupActivityDetails() {
                 loading={startLoading}
                 className={{ root: 'self-end mt-4 text-lg font-bold' }}
                 onClick={() => startGroupActivity()}
+                data={{ cy: 'start-group-activity' }}
               >
                 {t('pwa.groupActivity.startCaps')}
               </Button>
@@ -361,6 +362,7 @@ function GroupActivityDetails() {
                           className={{
                             root: 'self-end mt-4 text-lg font-bold',
                           }}
+                          data={{ cy: 'submit-group-activity' }}
                         >
                           {t('pwa.groupActivity.sendAnswers')}
                         </Button>

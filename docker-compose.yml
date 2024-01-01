@@ -221,8 +221,6 @@ services:
     depends_on:
       listmonk_db:
         condition: service_healthy
-      mailhog:
-        condition: service_healthy
     volumes:
       - ./util/listmonk-config.toml:/listmonk/config.toml
     networks:

@@ -44,6 +44,7 @@ function QuestionBlock({
             disabled={numOfBlocks === 1}
             className={{ root: 'mx-1 disabled:hidden' }}
             onClick={() => move(index, index !== 0 ? index - 1 : index)}
+            data={{ cy: `move-block-${index}-left` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faArrowLeft} />
@@ -56,6 +57,7 @@ function QuestionBlock({
             onClick={() =>
               move(index, index !== numOfBlocks ? index + 1 : index)
             }
+            data={{ cy: `move-block-${index}-right` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faArrowRight} />
@@ -66,6 +68,7 @@ function QuestionBlock({
             className={{
               root: 'w-6 flex justify-center text-white bg-red-500 rounded sm:hover:bg-red-600',
             }}
+            data={{ cy: `remove-block-${index}` }}
           >
             <FontAwesomeIcon icon={faTrash} />
           </Button>

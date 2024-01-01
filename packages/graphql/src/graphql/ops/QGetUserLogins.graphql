@@ -9,4 +9,5 @@ query GetUserLogins {
       shortname
     }
   }
+  userScope
 }

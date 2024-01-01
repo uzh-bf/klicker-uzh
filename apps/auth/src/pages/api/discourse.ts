@@ -1,7 +1,8 @@
+import { UserRole } from '@klicker-uzh/prisma'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getToken } from 'next-auth/jwt'
 import crypto from 'node:crypto'
-import { authOptions } from './auth/[...nextauth]'
+import { COOKIE_NAME, authOptions, decode } from './auth/[...nextauth]'
 
 type ResponseData = {
   redirectURL: string
@@ -9,17 +10,20 @@ type ResponseData = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ResponseData>
+  res: NextApiResponse<ResponseData | {}>
 ) {
-  const session = await getToken({ req, secret: authOptions.secret })
-
-  console.log(session)
+  const session = await getToken({
+    req,
+    decode,
+    cookieName: COOKIE_NAME,
+    secret: authOptions.secret,
+  })
 
   const sso = req.body['sso']
   const sig = req.body['sig']
 
   if (!sso || !sig || !session) {
-    res.status(400)
+    res.status(400).send({})
     return
   }
 
@@ -30,7 +34,7 @@ export default async function handler(
 
   // if the signature is invalid, redirect the user to the login page
   if (signature !== sig) {
-    res.status(400)
+    res.status(400).send({})
     return
   }
 
@@ -50,7 +54,7 @@ export default async function handler(
     userEmail
   )}&external_id=${userId}&username=${encodeURIComponent(userShortname)}`
 
-  if (userRole === 'ADMIN') {
+  if (userRole === UserRole.ADMIN) {
     payload += '&admin=true'
   }
 

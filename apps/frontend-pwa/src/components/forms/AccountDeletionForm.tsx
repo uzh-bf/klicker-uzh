@@ -53,17 +53,24 @@ function AccountDeletionForm() {
                 } catch (e) {}
                 window?.location.reload()
               }}
+              data={{ cy: 'delete-account-command' }}
             >
               {t('shared.generic.confirm')}
             </Button>
           }
           onSecondaryAction={
-            <Button onClick={() => setDeleteModalOpen(false)}>
+            <Button
+              onClick={() => setDeleteModalOpen(false)}
+              data={{ cy: 'cancel-delete-account' }}
+            >
               {t('shared.generic.cancel')}
             </Button>
           }
           trigger={
-            <Button onClick={(): void => setDeleteModalOpen(true)}>
+            <Button
+              onClick={(): void => setDeleteModalOpen(true)}
+              data={{ cy: 'confirm-delete-account' }}
+            >
               {t('shared.generic.delete')}
             </Button>
           }

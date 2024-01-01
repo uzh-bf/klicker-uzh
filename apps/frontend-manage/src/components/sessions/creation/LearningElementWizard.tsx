@@ -285,7 +285,7 @@ function StepOne(_: StepProps) {
           label={t('manage.sessionForms.name')}
           tooltip={t('manage.sessionForms.learningElementName')}
           className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-learning-element-name"
+          data-cy="insert-practice-quiz-name"
         />
         <FormikTextField
           required
@@ -294,7 +294,7 @@ function StepOne(_: StepProps) {
           label={t('manage.sessionForms.displayName')}
           tooltip={t('manage.sessionForms.displayNameTooltip')}
           className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-learning-element-display-name"
+          data-cy="insert-practice-quiz-display-name"
         />
       </div>
 
@@ -302,7 +302,7 @@ function StepOne(_: StepProps) {
         label={t('shared.generic.description')}
         tooltip={t('manage.sessionForms.learningElementDescField')}
         fieldName="description"
-        data_cy="insert-learning-element-description"
+        data_cy="insert-practice-quiz-description"
         showToolbarOnFocus={false}
       />
 
@@ -325,7 +325,14 @@ function StepTwo(props: StepProps) {
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
           name="courseId"
-          items={props.courses || [{ label: '', value: '' }]}
+          items={
+            props.courses?.map((course) => {
+              return {
+                ...course,
+                data: { cy: `select-course-${course.label}` },
+              }
+            }) || [{ label: '', value: '' }]
+          }
           required
           tooltip={t('manage.sessionForms.learningElementSelectCourse')}
           label={t('shared.generic.course')}
@@ -347,10 +354,34 @@ function StepTwo(props: StepProps) {
           name="multiplier"
           placeholder={t('manage.sessionForms.multiplierDefault')}
           items={[
-            { label: t('manage.sessionForms.multiplier1'), value: '1' },
-            { label: t('manage.sessionForms.multiplier2'), value: '2' },
-            { label: t('manage.sessionForms.multiplier3'), value: '3' },
-            { label: t('manage.sessionForms.multiplier4'), value: '4' },
+            {
+              label: t('manage.sessionForms.multiplier1'),
+              value: '1',
+              data: {
+                cy: `select-multiplier-${t('manage.sessionForms.multiplier1')}`,
+              },
+            },
+            {
+              label: t('manage.sessionForms.multiplier2'),
+              value: '2',
+              data: {
+                cy: `select-multiplier-${t('manage.sessionForms.multiplier2')}`,
+              },
+            },
+            {
+              label: t('manage.sessionForms.multiplier3'),
+              value: '3',
+              data: {
+                cy: `select-multiplier-${t('manage.sessionForms.multiplier3')}`,
+              },
+            },
+            {
+              label: t('manage.sessionForms.multiplier4'),
+              value: '4',
+              data: {
+                cy: `select-multiplier-${t('manage.sessionForms.multiplier4')}`,
+              },
+            },
           ]}
           data={{ cy: 'select-multiplier' }}
           className={{ tooltip: 'z-20' }}
@@ -368,7 +399,7 @@ function StepTwo(props: StepProps) {
           label={t('shared.generic.repetitionInterval')}
           tooltip={t('manage.sessionForms.learningElementRepetition')}
           className={{
-            input: 'w-20',
+            root: 'w-20',
             tooltip: 'z-20',
           }}
           required
@@ -392,6 +423,11 @@ function StepTwo(props: StepProps) {
             return {
               value: order,
               label: t(`manage.sessionForms.learningElement${order}`),
+              data: {
+                cy: `select-order-${t(
+                  `manage.sessionForms.learningElement${order}`
+                )}`,
+              },
             }
           })}
           required

@@ -24,7 +24,7 @@ import {
 import { PracticeQuiz } from './practiceQuizzes'
 import { Element, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
-import { MediaFile, User, UserLogin } from './user'
+import { MediaFile, User, UserLogin, UserLoginScope } from './user'
 
 export const Query = builder.queryType({
   fields(t) {
@@ -156,6 +156,14 @@ export const Query = builder.queryType({
           if (!user) return null
 
           return user
+        },
+      }),
+
+      userScope: asUser.field({
+        nullable: true,
+        type: UserLoginScope,
+        resolve(_, __, ctx) {
+          return ctx.user.scope
         },
       }),
 

@@ -73,7 +73,7 @@ function SessionCreationBlock({
 
   return (
     <div key={index} className="flex flex-col md:w-56">
-      <div className="flex flex-row items-center justify-between bg-slate-200 rounded py-1 px-2 text-slate-700">
+      <div className="flex flex-row items-center justify-between px-2 py-1 rounded bg-slate-200 text-slate-700">
         <div data-cy="block-container-header">
           {t('control.session.blockN', { number: index + 1 })}
         </div>
@@ -85,6 +85,7 @@ function SessionCreationBlock({
             }}
             disabled={numOfBlocks === 1}
             onClick={() => move(index, index !== 0 ? index - 1 : index)}
+            data={{ cy: `move-block-${index}-left` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faArrowLeft} />
@@ -99,6 +100,7 @@ function SessionCreationBlock({
             onClick={() =>
               move(index, index !== numOfBlocks ? index + 1 : index)
             }
+            data={{ cy: `move-block-${index}-right` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faArrowRight} />
@@ -111,6 +113,7 @@ function SessionCreationBlock({
             className={{
               root: 'px-1 sm:hover:text-primary hover:bg-primary-20',
             }}
+            data={{ cy: `open-block-${index}-settings` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faGears} />
@@ -170,6 +173,7 @@ function SessionCreationBlock({
                     })
                   }
                 }}
+                data={{ cy: `move-question-${questionIdx}-block-${index}-up` }}
               >
                 <FontAwesomeIcon icon={faArrowUp} />
               </Button>
@@ -202,6 +206,9 @@ function SessionCreationBlock({
                     })
                   }
                 }}
+                data={{
+                  cy: `move-question-${questionIdx}-block-${index}-down`,
+                }}
               >
                 <FontAwesomeIcon icon={faArrowDown} />
               </Button>
@@ -225,6 +232,7 @@ function SessionCreationBlock({
                     .concat(block.types.slice(questionIdx + 1)),
                 })
               }}
+              data={{ cy: `delete-question-${questionIdx}-block-${index}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faTrash} />

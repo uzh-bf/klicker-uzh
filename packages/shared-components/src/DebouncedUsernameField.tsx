@@ -15,6 +15,10 @@ interface DebouncedUsernameFieldProps {
   labelType?: TextFieldWithNameProps['labelType']
   required?: boolean
   hideError?: boolean
+  data?: {
+    cy?: string
+    test?: string
+  }
   className?: TextFieldWithNameProps['className']
 }
 
@@ -28,6 +32,7 @@ function DebouncedUsernameField({
   labelType = 'small',
   required = false,
   hideError = false,
+  data,
   className,
 }: DebouncedUsernameFieldProps) {
   const t = useTranslations()
@@ -101,6 +106,7 @@ function DebouncedUsernameField({
       }
       required={required}
       hideError={hideError}
+      data={data}
     />
   )
 }

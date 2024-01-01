@@ -71,6 +71,7 @@ function EvaluationCollapsible({
             ),
           }}
           onClick={() => setQuestionCollapsed(!questionCollapsed)}
+          data={{ cy: 'toggle-question-collapse-evaluation' }}
         >
           <FontAwesomeIcon
             icon={questionCollapsed ? faChevronDown : faChevronUp}

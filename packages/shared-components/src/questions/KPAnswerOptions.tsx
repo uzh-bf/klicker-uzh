@@ -53,6 +53,7 @@ export function KPAnswerOptions({
               }}
               active={value?.[index] === true}
               onClick={onChange(index, true)}
+              data={{ cy: `toggle-kp-answer-${index}-correct` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faCheck} />
@@ -66,6 +67,7 @@ export function KPAnswerOptions({
               }}
               active={value?.[index] === false}
               onClick={onChange(index, false)}
+              data={{ cy: `toggle-kp-answer-${index}-incorrect` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faX} />

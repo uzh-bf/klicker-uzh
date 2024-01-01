@@ -23,7 +23,6 @@ import { Suspense, useState } from 'react'
 import * as Yup from 'yup'
 import Layout from '../../components/Layout'
 import DelegatedAccessSettings from '../../components/user/DelegatedAccessSettings'
-import Setting from '../../components/user/Setting'
 import SimpleSetting from '../../components/user/SimpleSetting'
 
 function Settings() {
@@ -129,6 +128,7 @@ function Settings() {
                       })
                       return result?.checkShortnameAvailable ?? false
                     }}
+                    data={{ cy: 'shortname-update-field' }}
                     required
                     hideError
                   />
@@ -138,6 +138,7 @@ function Settings() {
                     className={{
                       root: 'h-8 w-8 items-center justify-center shadow-none border-uzh-grey-60',
                     }}
+                    data={{ cy: 'save-shortname' }}
                   >
                     <FontAwesomeIcon icon={faSave} />
                   </Button>
@@ -171,21 +172,28 @@ function Settings() {
               })
             }}
             items={[
-              { label: t('shared.generic.english'), value: 'en' },
-              { label: t('shared.generic.german'), value: 'de' },
+              {
+                label: t('shared.generic.english'),
+                value: 'en',
+                data: { cy: 'language-en' },
+              },
+              {
+                label: t('shared.generic.german'),
+                value: 'de',
+                data: { cy: 'language-de' },
+              },
             ]}
             className={{
               content: 'font-normal text-black',
               trigger: 'font-normal text-black',
             }}
+            data={{ cy: 'language-select' }}
           />
         </SimpleSetting>
 
-        <Setting title={t('auth.delegatedAccess')}>
-          <Suspense fallback={<Loader />}>
-            <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />
-          </Suspense>
-        </Setting>
+        <Suspense fallback={<Loader />}>
+          <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />
+        </Suspense>
       </div>
     </Layout>
   )

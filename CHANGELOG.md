@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.24...v3.1.0-beta.25) (2024-01-01)
+
+
+### Bug Fixes
+
+* **apps/auth:** ensure discourse API route extracts token data correctly ([25b143e](https://github.com/uzh-bf/klicker-uzh/commit/25b143e80df0837e1a6a3b8242fd5d3cec34ba25))
+
+## [3.1.0-beta.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.23...v3.1.0-beta.24) (2024-01-01)
+
+
+### Bug Fixes
+
+* **apps/auth:** ensure token is processed correctly by next-auth on repeated session request ([5bcbae8](https://github.com/uzh-bf/klicker-uzh/commit/5bcbae82183d0e6c7dc8807a0243ceaa2c89899f))
+
+
+### Build and CI
+
+* run migration export deploy on v3.1-dev ([40192d8](https://github.com/uzh-bf/klicker-uzh/commit/40192d84637b0e4a4791269e95e2b4aebb8a2b6a))
+
+
+### Dependencies
+
+* upgrade next and next-auth ([9e213a6](https://github.com/uzh-bf/klicker-uzh/commit/9e213a6967805d8ad4ec518b0bbfd35e0a609888))
+
+## [3.1.0-beta.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.22...v3.1.0-beta.23) (2023-12-29)
+
+
+### Bug Fixes
+
+* **apps/func-migration-v3-import:** fix creation of question instances and linking of imported tags to questions ([f63d29f](https://github.com/uzh-bf/klicker-uzh/commit/f63d29f51aac647a23586e36c80b0df7011a5867))
+
+
+### Enhancements
+
+* **apps/docs:** add catalyst tag to corresponding features on documentation pages ([#3993](https://github.com/uzh-bf/klicker-uzh/issues/3993)) ([7b124c7](https://github.com/uzh-bf/klicker-uzh/commit/7b124c765e89694371c8e48beb87e7bd9f91eaa7))
+* **cypress:** add testing attributes to all buttons, links and other components across all apps ([#3996](https://github.com/uzh-bf/klicker-uzh/issues/3996)) ([b1d609e](https://github.com/uzh-bf/klicker-uzh/commit/b1d609eec3ac339f4b471877c4b98f640c5f55fc))
+* **cypress:** extend test suites and configure cypress studio ([#3995](https://github.com/uzh-bf/klicker-uzh/issues/3995)) ([7c920e0](https://github.com/uzh-bf/klicker-uzh/commit/7c920e065801a6a4b7c163f340fb47e479a8a615))
+* hide delegated access creation when using delegated logins ([#3992](https://github.com/uzh-bf/klicker-uzh/issues/3992)) ([526f65d](https://github.com/uzh-bf/klicker-uzh/commit/526f65dc16d9d1e507f26cd61fa870c6b1678038))
+
 ## [3.1.0-beta.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.21...v3.1.0-beta.22) (2023-12-18)
 
 
