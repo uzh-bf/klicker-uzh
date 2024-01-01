@@ -1,9 +1,6 @@
 {
   "extends": "@tsconfig/node20/tsconfig.json",
-  "include": [
-    "src",
-    "scripts"
-  ],
+  "include": ["src", "scripts"],
   "compilerOptions": {
     "sourceMap": true
   },
