@@ -16,8 +16,10 @@ function MissingPage() {
           <Link
             href="/"
             className="text-uzh-blue-60 sm:hover:text-uzh-blue-100"
+            legacyBehavior
+            passHref
           >
-            <span data-cy="link-404-home">Fragepool</span>
+            <a data-cy="link-404-home">Fragepool</a>
           </Link>{' '}
           zurück oder nutzen sie das Menu zur weiteren Navigation.
         </div>

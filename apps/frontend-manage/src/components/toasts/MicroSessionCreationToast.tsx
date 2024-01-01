@@ -40,8 +40,10 @@ function MicroSessionCreationToast({
                 href={`/courses/${courseId}`}
                 className="ml-1 text-primary"
                 id="load-course-link"
+                legacyBehavior
+                passHref
               >
-                <span data-cy="load-course-overview">{text}</span>
+                <a data-cy="load-course-overview">{text}</a>
               </Link>
             ),
           })}

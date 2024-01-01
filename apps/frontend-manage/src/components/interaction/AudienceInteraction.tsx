@@ -87,14 +87,19 @@ function AudienceInteraction({
           <div className="flex flex-row flex-wrap items-end justify-between print:hidden">
             <H2>{t('manage.cockpit.liveQA')}</H2>
             <div className="flex flex-row flex-wrap items-end gap-4">
-              <Link href={`/sessions/${sessionId}/lecturer`} target="_blank">
-                <div
+              <Link
+                href={`/sessions/${sessionId}/lecturer`}
+                target="_blank"
+                passHref
+                legacyBehavior
+              >
+                <a
                   className="inline-flex items-center gap-1"
                   data-cy={`open-lecturer-overview-session-${sessionName}`}
                 >
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                   {t('manage.cockpit.lecturerView')}
-                </div>
+                </a>
               </Link>
               <Switch
                 checked={isLiveQAEnabled}

@@ -125,28 +125,33 @@ function Session({ session }: SessionProps) {
                 )}
 
                 {SessionStatus.Running === session.status && (
-                  <Link href={`/sessions/${session.id}/cockpit`} legacyBehavior>
-                    <div
+                  <Link
+                    href={`/sessions/${session.id}/cockpit`}
+                    legacyBehavior
+                    passHref
+                  >
+                    <a
                       className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
                       data-cy={`session-cockpit-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.lecturerCockpit')}</div>
-                    </div>
+                    </a>
                   </Link>
                 )}
                 {SessionStatus.Completed === session.status && (
                   <Link
                     href={`/sessions/${session.id}/evaluation`}
                     legacyBehavior
+                    passHref
                   >
-                    <div
+                    <a
                       className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
                       data-cy={`session-evaluation-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.sessionEvaluation')}</div>
-                    </div>
+                    </a>
                   </Link>
                 )}
                 {(SessionStatus.Prepared === session.status ||
