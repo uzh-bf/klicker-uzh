@@ -199,6 +199,7 @@ export default {
   auth: {
     authentication: 'Authentifizierung',
     delegatedAccess: 'Delegierter Zugriff',
+    signedInAs: 'Sie sind bereits eingelogged als {username}',
     tosAgreement:
       'Ich akzeptiere die KlickerUZH <tos></tos> und <privacy></privacy>.',
     termsOfService: 'Nutzungsbedingungen',
