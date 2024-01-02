@@ -697,9 +697,9 @@ type ParticipantAchievementInstance {
 }
 
 type ParticipantGroup {
-  averageMemberScore: Float!
+  averageMemberScore: Int!
   code: Int!
-  groupActivityScore: Float!
+  groupActivityScore: Int!
   id: ID!
   name: String!
   participants: [Participant!]
