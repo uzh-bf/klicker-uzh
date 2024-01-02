@@ -1242,9 +1242,9 @@ export type ParticipantAchievementInstance = {
 
 export type ParticipantGroup = {
   __typename?: 'ParticipantGroup';
-  averageMemberScore: Scalars['Float']['output'];
+  averageMemberScore: Scalars['Int']['output'];
   code: Scalars['Int']['output'];
-  groupActivityScore: Scalars['Float']['output'];
+  groupActivityScore: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   participants?: Maybe<Array<Participant>>;

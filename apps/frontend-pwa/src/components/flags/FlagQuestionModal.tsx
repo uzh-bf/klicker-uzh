@@ -144,6 +144,7 @@ function FlagQuestionModal({
                   placeholder={t('pwa.learningElement.addFeedback')}
                   value={values.feedback}
                   onChange={(e) => setFieldValue('feedback', e.target.value)}
+                  data-cy="flag-question-textarea"
                 />
                 <div className="flex flex-row justify-between w-full mt-1">
                   {errors && (

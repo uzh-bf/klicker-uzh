@@ -142,3 +142,12 @@ jobs:
           DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage
+          path: cypress/coverage
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2

@@ -481,7 +481,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
               },
             ],
           },
-          averageMemberScore: ix * 100 + 500,
+          averageMemberScore: Math.round(ix * 100 + 500),
         },
         update: {
           name: `Gruppe ${ix + 1}`,

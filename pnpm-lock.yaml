@@ -72,8 +72,8 @@ importers:
         specifier: 4.24.5
         version: 4.24.5(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
       next-intl:
-        specifier: 3.1.3
-        version: 3.1.3(next@14.0.4)(react@18.2.0)
+        specifier: 3.4.0
+        version: 3.4.0(next@14.0.4)(react@18.2.0)
       nookies:
         specifier: 2.5.2
         version: 2.5.2
@@ -227,8 +227,11 @@ importers:
         version: 8.13.0
     devDependencies:
       '@cypress/code-coverage':
-        specifier: 3.12.1
-        version: 3.12.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.6.0)(webpack@5.83.1)
+        specifier: 3.12.16
+        version: 3.12.16(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.6.2)(webpack@5.83.1)
+      '@istanbuljs/nyc-config-typescript':
+        specifier: 1.0.2
+        version: 1.0.2(nyc@15.1.0)
       '@tsconfig/node18':
         specifier: ^2.0.0
         version: 2.0.1
@@ -301,6 +304,9 @@ importers:
       prisma:
         specifier: 5.3.1
         version: 5.3.1
+      source-map-support:
+        specifier: 0.5.21
+        version: 0.5.21
       ts-node:
         specifier: 10.9.1
         version: 10.9.1(@types/node@18.17.4)(typescript@5.2.2)
@@ -495,8 +501,8 @@ importers:
         specifier: 14.0.4
         version: 14.0.4(@babel/core@7.21.8)(react-dom@18.2.0)(react@18.2.0)
       next-intl:
-        specifier: 3.1.3
-        version: 3.1.3(next@14.0.4)(react@18.2.0)
+        specifier: 3.4.0
+        version: 3.4.0(next@14.0.4)(react@18.2.0)
       next-pwa:
         specifier: 5.6.0
         version: 5.6.0(@babel/core@7.21.8)(next@14.0.4)(webpack@5.83.1)
@@ -679,8 +685,8 @@ importers:
         specifier: 14.0.4
         version: 14.0.4(@babel/core@7.21.8)(react-dom@18.2.0)(react@18.2.0)
       next-intl:
-        specifier: 3.1.3
-        version: 3.1.3(next@14.0.4)(react@18.2.0)
+        specifier: 3.4.0
+        version: 3.4.0(next@14.0.4)(react@18.2.0)
       next-pwa:
         specifier: 5.6.0
         version: 5.6.0(@babel/core@7.21.8)(next@14.0.4)(webpack@5.83.1)
@@ -917,8 +923,8 @@ importers:
         specifier: 14.0.4
         version: 14.0.4(@babel/core@7.21.8)(react-dom@18.2.0)(react@18.2.0)
       next-intl:
-        specifier: 3.1.3
-        version: 3.1.3(next@14.0.4)(react@18.2.0)
+        specifier: 3.4.0
+        version: 3.4.0(next@14.0.4)(react@18.2.0)
       next-pwa:
         specifier: 5.6.0
         version: 5.6.0(@babel/core@7.21.8)(next@14.0.4)(webpack@5.83.1)
@@ -1442,20 +1448,20 @@ importers:
   cypress:
     devDependencies:
       '@cypress/code-coverage':
-        specifier: 3.12.1
-        version: 3.12.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.6.0)(webpack@5.83.1)
+        specifier: 3.12.16
+        version: 3.12.16(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.6.2)(webpack@5.83.1)
       '@testing-library/cypress':
         specifier: 10.0.1
-        version: 10.0.1(cypress@13.6.0)
+        version: 10.0.1(cypress@13.6.2)
       '@types/jsonwebtoken':
         specifier: ^8.0.0
         version: 8.5.9
       '@types/node':
-        specifier: ^18.17.4
-        version: 18.17.4
+        specifier: ^20.10.6
+        version: 20.10.6
       cypress:
-        specifier: 13.6.0
-        version: 13.6.0
+        specifier: 13.6.2
+        version: 13.6.2
       jsonwebtoken:
         specifier: 8.5.1
         version: 8.5.1
@@ -1617,6 +1623,9 @@ importers:
       '@graphql-typed-document-node/core':
         specifier: 3.2.0
         version: 3.2.0(graphql@16.7.1)
+      '@istanbuljs/nyc-config-typescript':
+        specifier: 1.0.2
+        version: 1.0.2(nyc@15.1.0)
       '@parcel/watcher':
         specifier: 2.2.0
         version: 2.2.0
@@ -1680,6 +1689,9 @@ importers:
       npm-run-all:
         specifier: 4.1.5
         version: 4.1.5
+      nyc:
+        specifier: 15.1.0
+        version: 15.1.0
       prettier:
         specifier: 2.8.8
         version: 2.8.8
@@ -1689,6 +1701,9 @@ importers:
       size-limit:
         specifier: 8.2.4
         version: 8.2.4
+      source-map-support:
+        specifier: 0.5.21
+        version: 0.5.21
       ts-node:
         specifier: 10.9.1
         version: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
@@ -1708,8 +1723,8 @@ importers:
   packages/i18n:
     dependencies:
       next-intl:
-        specifier: 3.1.3
-        version: 3.1.3(next@14.0.4)(react@18.2.0)
+        specifier: 3.4.0
+        version: 3.4.0(next@14.0.4)(react@18.2.0)
     devDependencies:
       '@tsconfig/node18':
         specifier: 18.2.0
@@ -2009,8 +2024,8 @@ importers:
         specifier: 14.0.4
         version: 14.0.4(@babel/core@7.21.8)(react-dom@18.2.0)(react@18.2.0)
       next-intl:
-        specifier: 3.1.3
-        version: 3.1.3(next@14.0.4)(react@18.2.0)
+        specifier: 3.4.0
+        version: 3.4.0(next@14.0.4)(react@18.2.0)
       react:
         specifier: 18.2.0
         version: 18.2.0
@@ -4963,8 +4978,8 @@ packages:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  /@cypress/code-coverage@3.12.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.6.0)(webpack@5.83.1):
-    resolution: {integrity: sha512-4gSVkgcTo8NSWrOwLO0NxyvD2apIZFM/2k9sxdmP3eR3ko8tZVYrWfTdfxSXLDSkNnzVh+oXv7utaOLn+yemUg==}
+  /@cypress/code-coverage@3.12.16(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.6.2)(webpack@5.83.1):
+    resolution: {integrity: sha512-15/zoCVljS4npV/FyYzcDTeCsOMdKxwC5xgMt2oyD1SL0SgvkDzG+YWHOAuPivuGX8y8OqKdCjFROO69FFbeKg==}
     peerDependencies:
       '@babel/core': ^7.0.1
       '@babel/preset-env': ^7.0.0
@@ -4974,15 +4989,15 @@ packages:
     dependencies:
       '@babel/core': 7.21.8
       '@babel/preset-env': 7.23.2(@babel/core@7.21.8)
-      '@cypress/webpack-preprocessor': 5.17.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(webpack@5.83.1)
+      '@cypress/webpack-preprocessor': 6.0.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(webpack@5.83.1)
       babel-loader: 9.1.2(@babel/core@7.21.8)(webpack@5.83.1)
       chalk: 4.1.2
-      cypress: 13.6.0
-      dayjs: 1.11.9
+      cypress: 13.6.2
+      dayjs: 1.11.10
       debug: 4.3.4(supports-color@8.1.1)
       execa: 4.1.0
-      globby: 11.0.4
-      istanbul-lib-coverage: 3.0.0
+      globby: 11.1.0
+      istanbul-lib-coverage: 3.2.0
       js-yaml: 4.1.0
       nyc: 15.1.0
       webpack: 5.83.1(esbuild@0.18.20)
@@ -5014,12 +5029,12 @@ packages:
       uuid: 8.3.2
     dev: true
 
-  /@cypress/webpack-preprocessor@5.17.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(webpack@5.83.1):
-    resolution: {integrity: sha512-FE/e8ikPc8z4EVopJCaior3RGy0jd2q9Xcp5NtiwNG4XnLfEnUFTZlAGwXe75sEh4fNMPrBJW1KIz77PX5vGAw==}
+  /@cypress/webpack-preprocessor@6.0.1(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(webpack@5.83.1):
+    resolution: {integrity: sha512-WVNeFVSnFKxE3WZNRIriduTgqJRpevaiJIPlfqYTTzfXRD7X1Pv4woDE+G4caPV9bJqVKmVFiwzrXMRNeJxpxA==}
     peerDependencies:
       '@babel/core': ^7.0.1
       '@babel/preset-env': ^7.0.0
-      babel-loader: ^8.0.2 || ^9
+      babel-loader: ^8.3 || ^9
       webpack: ^4 || ^5
     dependencies:
       '@babel/core': 7.21.8
@@ -7713,6 +7728,16 @@ packages:
       get-package-type: 0.1.0
       js-yaml: 3.14.1
       resolve-from: 5.0.0
+    dev: true
+
+  /@istanbuljs/nyc-config-typescript@1.0.2(nyc@15.1.0):
+    resolution: {integrity: sha512-iKGIyMoyJuFnJRSVTZ78POIRvNnwZaWIf8vG4ZS3rQq58MMDrqEX2nnzx0R28V2X8JvmKYiqY9FP2hlJsm8A0w==}
+    engines: {node: '>=8'}
+    peerDependencies:
+      nyc: '>=15'
+    dependencies:
+      '@istanbuljs/schema': 0.1.3
+      nyc: 15.1.0
     dev: true
 
   /@istanbuljs/schema@0.1.3:
@@ -10460,7 +10485,7 @@ packages:
       tailwindcss: 3.3.3(ts-node@10.9.1)
     dev: true
 
-  /@testing-library/cypress@10.0.1(cypress@13.6.0):
+  /@testing-library/cypress@10.0.1(cypress@13.6.2):
     resolution: {integrity: sha512-e8uswjTZIBhaIXjzEcrQQ8nHRWHgZH7XBxKuIWxZ/T7FxfWhCR48nFhUX5nfPizjVOKSThEfOSv67jquc1ASkw==}
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
@@ -10468,7 +10493,7 @@ packages:
     dependencies:
       '@babel/runtime': 7.22.11
       '@testing-library/dom': 9.3.1
-      cypress: 13.6.0
+      cypress: 13.6.2
     dev: true
 
   /@testing-library/dom@9.3.1:
@@ -10589,7 +10614,7 @@ packages:
     dependencies:
       '@types/http-cache-semantics': 4.0.3
       '@types/keyv': 3.1.4
-      '@types/node': 18.18.7
+      '@types/node': 20.10.6
       '@types/responselike': 1.0.2
     dev: true
 
@@ -10959,7 +10984,7 @@ packages:
   /@types/jsonwebtoken@8.5.9:
     resolution: {integrity: sha512-272FMnFGzAVMGtu9tkr29hRL6bZj4Zs1KZNeHLnKqAvp06tAIcarTMwOh8/8bz4FmKRcMxZhZNeUAQsNLoiPhg==}
     dependencies:
-      '@types/node': 18.18.7
+      '@types/node': 20.10.6
     dev: true
 
   /@types/jsonwebtoken@9.0.2:
@@ -10979,7 +11004,7 @@ packages:
   /@types/keyv@3.1.4:
     resolution: {integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==}
     dependencies:
-      '@types/node': 18.18.7
+      '@types/node': 20.10.6
     dev: true
 
   /@types/lodash@4.14.196:
@@ -11031,7 +11056,7 @@ packages:
   /@types/node-schedule@2.1.0:
     resolution: {integrity: sha512-NiTwl8YN3v/1YCKrDFSmCTkVxFDylueEqsOFdgF+vPsm+AlyJKGAo5yzX1FiOxPsZiN6/r8gJitYx2EaSuBmmg==}
     dependencies:
-      '@types/node': 18.17.4
+      '@types/node': 18.18.7
     dev: true
 
   /@types/node@17.0.45:
@@ -11045,6 +11070,12 @@ packages:
     resolution: {integrity: sha512-bw+lEsxis6eqJYW8Ql6+yTqkE6RuFtsQPSe5JxXbqYRFQEER5aJA9a5UH9igqDWm3X4iLHIKOHlnAXLM4mi7uQ==}
     dependencies:
       undici-types: 5.26.5
+
+  /@types/node@20.10.6:
+    resolution: {integrity: sha512-Vac8H+NlRNNlAmDfGUP7b5h/KA+AtWIzuXy0E6OyP8f1tCLYAtPvKRRDJjAPqhpCb0t6U2j7/xqAuLEebW2kiw==}
+    dependencies:
+      undici-types: 5.26.5
+    dev: true
 
   /@types/normalize-package-data@2.4.3:
     resolution: {integrity: sha512-ehPtgRgaULsFG8x0NeYJvmyH1hmlfsNLujHe9dQEia/7MAJYdzMSi19JtchUHjmBA6XC/75dK55mzZH+RyieSg==}
@@ -11192,7 +11223,7 @@ packages:
   /@types/responselike@1.0.2:
     resolution: {integrity: sha512-/4YQT5Kp6HxUDb4yhRkm0bJ7TbjvTddqX7PZ5hz6qV3pxSo72f/6YPRo+Mu2DU307tm9IioO69l7uAwn5XNcFA==}
     dependencies:
-      '@types/node': 18.18.7
+      '@types/node': 20.10.6
     dev: true
 
   /@types/retry@0.12.0:
@@ -11410,7 +11441,7 @@ packages:
     resolution: {integrity: sha512-Km7XAtUIduROw7QPgvcft0lIupeG8a8rdKL8RiSyKvlE7dYY31fEn41HVuQsRFDuROA8tA4K2UVL+WdfFmErBA==}
     requiresBuild: true
     dependencies:
-      '@types/node': 18.18.7
+      '@types/node': 20.10.6
     dev: true
     optional: true
 
@@ -14567,8 +14598,8 @@ packages:
   /csstype@3.1.2:
     resolution: {integrity: sha512-I7K1Uu0MBPzaFKg4nI5Q7Vs2t+3gWWW648spaF+Rg7pI9ds18Ugn+lvg4SHczUdKlHI5LWBXyqfS8+DufyBsgQ==}
 
-  /cypress@13.6.0:
-    resolution: {integrity: sha512-quIsnFmtj4dBUEJYU4OH0H12bABJpSujvWexC24Ju1gTlKMJbeT6tTO0vh7WNfiBPPjoIXLN+OUqVtiKFs6SGw==}
+  /cypress@13.6.2:
+    resolution: {integrity: sha512-TW3bGdPU4BrfvMQYv1z3oMqj71YI4AlgJgnrycicmPZAXtvywVFZW9DAToshO65D97rCWfG/kqMFsYB6Kp91gQ==}
     engines: {node: ^16.0.0 || ^18.0.0 || >=20.0.0}
     hasBin: true
     requiresBuild: true
@@ -14888,6 +14919,10 @@ packages:
 
   /dateformat@3.0.3:
     resolution: {integrity: sha512-jyCETtSl3VMZMWeRo7iY1FL19ges1t55hMo5yaam4Jrsm5EPL89UQkoQRyiI+Yf4k8r2ZpdngkV8hr1lIdjb3Q==}
+    dev: true
+
+  /dayjs@1.11.10:
+    resolution: {integrity: sha512-vjAczensTgRcqDERK0SR2XMwsF/tSvnvlv6VcF2GIhg6Sx4yOIt/irsr1RDJsKiIyBzJDpCoXiWWq28MqH2cnQ==}
     dev: true
 
   /dayjs@1.11.9:
@@ -17275,18 +17310,6 @@ packages:
     dependencies:
       define-properties: 1.2.1
 
-  /globby@11.0.4:
-    resolution: {integrity: sha512-9O4MVG9ioZJ08ffbcyVYyLOJLk5JQ688pJ4eMGLpdWLHq/Wr1D9BlriLQyL0E+jbkuePVZXYFj47QM/v093wHg==}
-    engines: {node: '>=10'}
-    dependencies:
-      array-union: 2.1.0
-      dir-glob: 3.0.1
-      fast-glob: 3.3.1
-      ignore: 5.2.4
-      merge2: 1.4.1
-      slash: 3.0.0
-    dev: true
-
   /globby@11.1.0:
     resolution: {integrity: sha512-jhIXaOzy1sb8IyocaruWSn1TjmnBVs8Ayhcy83rmxNJ8q2uWKCAj3CnJY+KpGSXCueAPc0i05kVvVKtP1t9S3g==}
     engines: {node: '>=10'}
@@ -18776,11 +18799,6 @@ packages:
     resolution: {integrity: sha512-Yljz7ffyPbrLpLngrMtZ7NduUgVvi6wG9RJ9IUcyCd59YQ911PBJphODUcbOVbqYfxe1wuYf/LJ8PauMRwsM/g==}
     dev: true
 
-  /istanbul-lib-coverage@3.0.0:
-    resolution: {integrity: sha512-UiUIqxMgRDET6eR+o5HbfRYP1l0hqkWOs7vNxC/mggutCMUIhWMm8gAHb8tHlyfD3/l6rlgNA5cKdDzEAf6hEg==}
-    engines: {node: '>=8'}
-    dev: true
-
   /istanbul-lib-coverage@3.2.0:
     resolution: {integrity: sha512-eOeJ5BHCmHYvQK7xt9GkdHuzuCGS1Y6g9Gvnx3Ym33fz/HpLRYxiS0wHNr+m/MBC8B647Xt608vCDEvhl9c6Mw==}
     engines: {node: '>=8'}
@@ -18988,7 +19006,7 @@ packages:
       pretty-format: 29.6.2
       slash: 3.0.0
       strip-json-comments: 3.1.1
-      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.2.2)
+      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -19029,7 +19047,7 @@ packages:
       pretty-format: 29.6.2
       slash: 3.0.0
       strip-json-comments: 3.1.1
-      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.2.2)
+      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -21250,8 +21268,8 @@ packages:
       uuid: 8.3.2
     dev: false
 
-  /next-intl@3.1.3(next@14.0.4)(react@18.2.0):
-    resolution: {integrity: sha512-pjR6px7qj5i7gNgFMFlk6nX8Y0A2xeoYUYXEMrvg9dg3peRuZYGpcf6r46+paEd2JvvIZSb7WzlUH98nu5S5HQ==}
+  /next-intl@3.4.0(next@14.0.4)(react@18.2.0):
+    resolution: {integrity: sha512-pccnuQq6N6iyPi0Foiajp9JgZp99w7gRxHhBxmtBdjsCmrsik7QflKWq2a/US2kFP734JSsSoY98xK+acjozeQ==}
     peerDependencies:
       next: ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
@@ -21260,7 +21278,7 @@ packages:
       negotiator: 0.6.3
       next: 14.0.4(@babel/core@7.21.8)(react-dom@18.2.0)(react@18.2.0)
       react: 18.2.0
-      use-intl: 3.1.3(react@18.2.0)
+      use-intl: 3.4.0(react@18.2.0)
     dev: false
 
   /next-pwa@5.6.0(@babel/core@7.21.8)(next@14.0.4)(webpack@5.83.1):
@@ -27499,8 +27517,8 @@ packages:
       react: 18.2.0
     dev: false
 
-  /use-intl@3.1.3(react@18.2.0):
-    resolution: {integrity: sha512-rYP1O+RiVef8/iMdZxYp4KIuPszzFQQMzp1y0pMm1VBRdrwWw9YA5j2bEIbjxRk6DaVGW+cpW9mdPe5X2snNvg==}
+  /use-intl@3.4.0(react@18.2.0):
+    resolution: {integrity: sha512-vFwyAm9RDXjQN83wle9LjmE5PB/k0vOU0FetHffjr7/wLW8xlX2tAABxIyG1gy9eS5IYixAezvJXYr8g6fRIXA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
     dependencies:

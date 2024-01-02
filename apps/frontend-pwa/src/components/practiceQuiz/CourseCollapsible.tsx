@@ -65,7 +65,7 @@ function CourseCollapsible({
                     ? `/course/${courseId}/element/${element.id}`
                     : `/course/${courseId}/quiz/${element.id}`
                 }
-                data={{ cy: 'practice-quiz' }}
+                data={{ cy: `practice-quiz-${element.displayName}` }}
                 onClick={() => {
                   resetPracticeQuizLocalStorage(element.id)
                 }}
