@@ -364,5 +364,40 @@ describe('Different live-quiz workflows', () => {
     cy.findByText(sessionName).click()
     cy.findByText(feedbackAnswer).should('exist')
     cy.get(`[data-cy="feedback-response-upvote-${feedbackAnswer}"]`).click()
+
+    // login to lecturer and pin feedback, check lecturer display
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${feedback1}"]`).should('exist').click()
+    cy.get(`[data-cy="pin-feedback-${feedback1}"]`).click()
+    cy.get(`[data-cy="open-lecturer-overview-session-${sessionName}"]`).click()
+    cy.findByText(feedback1).should('exist')
+    cy.findByText(feedback2).should('not.exist')
+
+    // delete feedback response
+    cy.visit(Cypress.env('URL_MANAGE'))
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${feedback2}"]`).should('exist').click()
+    cy.get(`[data-cy="delete-response-${feedbackAnswer}"]`).click()
+    cy.get(`[data-cy="delete-response-${feedbackAnswer}"]`).click()
+
+    // check on student frontend that deleted feedback is no longer visible
+    cy.loginStudent()
+    cy.findByText(sessionName).click()
+    cy.findByText(feedbackAnswer).should('not.exist')
+
+    // delete feedback
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.get(`[data-cy="delete-feedback-${feedback1}"]`).click()
+    cy.get(`[data-cy="delete-feedback-${feedback1}"]`).click()
+
+    // check on student frontend that deleted feedback is no longer visible
+    cy.loginStudent()
+    cy.findByText(sessionName).click()
+    cy.findByText(feedback1).should('not.exist')
   })
 })
