@@ -102,6 +102,7 @@ function AudienceInteraction({
                 </a>
               </Link>
               <Switch
+                data={{ cy: 'toggle-qa' }}
                 checked={isLiveQAEnabled}
                 onCheckedChange={(): void => {
                   changeSessionSettings({
@@ -121,6 +122,7 @@ function AudienceInteraction({
                 label={t('manage.cockpit.activateQA')}
               />
               <Switch
+                data={{ cy: 'toggle-moderation' }}
                 checked={isModerationEnabled}
                 disabled={!isLiveQAEnabled}
                 onCheckedChange={(): void => {
@@ -241,6 +243,7 @@ function AudienceInteraction({
           <div className="flex flex-row flex-wrap items-end justify-between flex-none w-full gap-2">
             <H2>{t('shared.generic.feedback')}</H2>
             <Switch
+              data={{ cy: 'toggle-gamification' }}
               checked={isConfusionFeedbackEnabled}
               onCheckedChange={(): void => {
                 changeSessionSettings({

@@ -235,7 +235,7 @@ function Feedback({
                       }}
                       type="submit"
                       disabled={isSubmitting || resolved}
-                      data={{ cy: `respond-to-feedback-${content}` }}
+                      data={{ cy: `submit-feedback-response-${content}` }}
                     >
                       <Button.Icon className={{ root: 'mr-1' }}>
                         <FontAwesomeIcon icon={faPaperPlane} />
