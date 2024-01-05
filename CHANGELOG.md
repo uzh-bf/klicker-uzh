@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.15](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.14...v1.8.15) (2024-01-05)
+
+
+### Bug Fixes
+
+* login page not named correctly ([2efb961](https://github.com/uzh-bf/klicker-uzh/commit/2efb961ba8f58f0260b5f9030574b6f966a1e8d4))
+
 ### [1.8.14](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.13...v1.8.14) (2024-01-05)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/db",
-  "version": "1.8.14",
+  "version": "1.8.15",
   "main": "index.js",
   "module": "index.js",
   "files": [
