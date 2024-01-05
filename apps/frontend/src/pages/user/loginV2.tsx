@@ -33,11 +33,6 @@ function LoginV2(): React.ReactElement {
     }
   }, [])
 
-  useEffect((): void => {
-    router.prefetch('/questions')
-    router.prefetch('/sessions')
-  }, [])
-
   const [login, { loading, error }] = useMutation(LoginMutation)
 
   return (
