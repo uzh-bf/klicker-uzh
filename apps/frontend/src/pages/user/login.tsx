@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { Button, List, Input, Message } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
 import Image from 'next/image'
-import KlickerLogoSrc from '../../public/KlickerUZH_Gray_Transparent.png'
+import KlickerLogoSrc from '../../../public/KlickerUZH_Gray_Transparent.png'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import Link from 'next/link'
 
