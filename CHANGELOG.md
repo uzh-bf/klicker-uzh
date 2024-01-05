@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.17](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.16...v1.8.17) (2024-01-05)
+
+
+### Bug Fixes
+
+* remove prefetch on V2 login ([a2ed459](https://github.com/uzh-bf/klicker-uzh/commit/a2ed45931d055d47404ab09a92ef0437099b2483))
+
 ### [1.8.16](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.15...v1.8.16) (2024-01-05)
 
 
