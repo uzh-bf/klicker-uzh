@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.16](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.15...v1.8.16) (2024-01-05)
+
+
+### Bug Fixes
+
+* import of logo path ([eada670](https://github.com/uzh-bf/klicker-uzh/commit/eada670de6ee896ccac2efd26b188d0f4524cf97))
+
 ### [1.8.15](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.14...v1.8.15) (2024-01-05)
 
 
