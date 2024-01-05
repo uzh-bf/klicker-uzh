@@ -42,4 +42,4 @@ export async function getStaticProps() {
   }
 }
 
-export default Index
+export default Login
