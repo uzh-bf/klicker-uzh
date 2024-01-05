@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.14](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.13...v1.8.14) (2024-01-05)
+
+
+### Other
+
+* restore old login page with notice from index, redirect to login instead of V2 when unauthorized, disable autoscaling and reduce replicas ([20d951d](https://github.com/uzh-bf/klicker-uzh/commit/20d951d39c3b80a37977dbd9cf90c8c59101dcd0))
+
 ### [1.8.13](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.12...v1.8.13) (2024-01-05)
 
 
