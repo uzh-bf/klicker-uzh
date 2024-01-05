@@ -20,7 +20,7 @@ const messages = defineMessages({
   },
 })
 
-function Login(): React.ReactElement {
+function LoginV2(): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
 
@@ -90,4 +90,4 @@ function Login(): React.ReactElement {
   )
 }
 
-export default Login
+export default LoginV2

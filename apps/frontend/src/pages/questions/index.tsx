@@ -63,7 +63,7 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
 
   const [isSurveyBannerVisible, setIsSurveyBannerVisible, hasSurveyBannerInitialized] = useStickyState(
     true,
-    'klicker-v2-shutdown-notice'
+    'klicker-v2-shutdown'
   )
 
   const [creationMode, setCreationMode] = useState(
@@ -524,13 +524,14 @@ function Index({ featureFlags }: PageWithFeatureFlags): React.ReactElement {
                 className="rounded-none"
                 content={
                   <>
-                    <div className="font-bold">KlickerUZH v2.0 - Shutdown Notice</div>
+                    <div className="font-bold">KlickerUZH v2.0 - End of Life</div>
                     <div>
-                      The new KlickerUZH v3.0 has been released (see{' '}
+                      This version of KlickerUZH (v2) is no longer supported and will be shutdown without further
+                      notice, as the new KlickerUZH v3.0 has been released (see{' '}
                       <a href="https://www.klicker.uzh.ch" rel="noreferrer" target="_blank">
                         www.klicker.uzh.ch
                       </a>
-                      ). This version (v2) of the KlickerUZH will be shut down in two weeks (31.12.2023). A data migration allows you to transfer all of your content from v2 to v3. Refer to our{' '}
+                      ). A data migration allows you to transfer all of your content from v2 to v3. Refer to our{' '}
                       <a
                         href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-information/79"
                         rel="noreferrer"

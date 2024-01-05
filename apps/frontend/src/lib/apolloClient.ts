@@ -77,7 +77,7 @@ export default function createApolloClient() {
           // redirect the user to the login page on errors
           if (isBrowser && message === 'UNAUTHORIZED') {
             Router.push(
-              `/user/loginV2?expired=true&redirect_to=${
+              `/user/login?expired=true&redirect_to=${
                 encodeURIComponent(window?.location?.pathname + (window?.location?.search ?? '')) ?? '/questions'
               }`
             )
