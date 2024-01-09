@@ -16,6 +16,7 @@ module.exports = {
       'tutorials/group_activity',
     ],
     'Tutorials for Participants': [
+      'student_tutorials/student_accounts',
       'student_tutorials/klickeruzh_app',
       'student_tutorials/live_quiz',
       'student_tutorials/practice_quiz',
