@@ -22,6 +22,7 @@ module.exports = {
       'student_tutorials/practice_quiz',
       'student_tutorials/microlearning',
       'student_tutorials/course_leaderboard',
+      'student_tutorials/groups_activities',
     ],
     // Gamification: [
     //   'gamification/overview',
