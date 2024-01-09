@@ -111,7 +111,7 @@ function SessionCreationBlock({
             basic
             onClick={() => setOpenSettings(true)}
             className={{
-              root: 'px-1 sm:hover:text-primary hover:bg-primary-20',
+              root: 'px-1 sm:hover:text-primary ',
             }}
             data={{ cy: `open-block-${index}-settings` }}
           >
@@ -294,7 +294,16 @@ function SessionCreationBlock({
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>
-      <Modal open={openSettings} onClose={() => setOpenSettings(false)}>
+      <Modal
+        open={openSettings}
+        onClose={() => setOpenSettings(false)}
+        title={t('manage.sessionForms.blockSettingsTitle', {
+          blockIx: index + 1,
+        })}
+        className={{
+          content: 'w-full sm:w-3/4 md:w-1/2 !min-h-max !h-max !pb-0',
+        }}
+      >
         <NumberField
           label={t('manage.sessionForms.timeLimit')}
           tooltip={t('manage.sessionForms.timeLimitTooltip', {
@@ -310,6 +319,12 @@ function SessionCreationBlock({
           }}
           placeholder={t('manage.sessionForms.optionalTimeLimit')}
         />
+        <Button
+          className={{ root: 'float-right mt-3 bg-uzh-blue-100 text-white' }}
+          onClick={() => setOpenSettings(false)}
+        >
+          {t('shared.generic.ok')}
+        </Button>
       </Modal>
     </div>
   )
