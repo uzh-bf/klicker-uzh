@@ -18,6 +18,7 @@ module.exports = {
     'Tutorials for Participants': [
       'student_tutorials/klickeruzh_app',
       'student_tutorials/live_quiz',
+      'student_tutorials/practice_quiz',
     ],
     // Gamification: [
     //   'gamification/overview',
