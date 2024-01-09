@@ -677,6 +677,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       languageSettings: 'Language Settings',
       languageTooltip:
         'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
+      confirmDelegatedAcces: 'Confirm delegated login creation',
+      confirmDelegatedAccesTooltip:
+        'Please check your delegated access login credentials. Make sure to copy the password before closing this dialogue, as it cannot be shown again.',
       FULL_ACCESS: 'Full Access',
       SESSION_EXEC: 'Session Execution',
       READ_ONLY: 'Read Only',
