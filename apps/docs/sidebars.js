@@ -21,6 +21,7 @@ module.exports = {
       'student_tutorials/live_quiz',
       'student_tutorials/practice_quiz',
       'student_tutorials/microlearning',
+      'student_tutorials/course_leaderboard',
     ],
     // Gamification: [
     //   'gamification/overview',
