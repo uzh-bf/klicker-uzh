@@ -929,6 +929,7 @@ export const Mutation = builder.mutationType({
         args: {
           shortname: t.arg.string({ required: true }),
           locale: t.arg({ type: LocaleType, required: true }),
+          sendUpdates: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return AccountService.changeInitialSettings(args, ctx)

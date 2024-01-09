@@ -510,7 +510,11 @@ export async function changeEmailSettings(
 }
 
 export async function changeInitialSettings(
-  { shortname, locale }: { shortname: string; locale: Locale },
+  {
+    shortname,
+    locale,
+    sendUpdates,
+  }: { shortname: string; locale: Locale; sendUpdates: boolean },
   ctx: ContextWithUser
 ) {
   const existingUser = await ctx.prisma.user.findFirst({
@@ -534,6 +538,7 @@ export async function changeInitialSettings(
     data: {
       shortname,
       locale,
+      sendProjectUpdates: sendUpdates,
       firstLogin: false,
     },
   })

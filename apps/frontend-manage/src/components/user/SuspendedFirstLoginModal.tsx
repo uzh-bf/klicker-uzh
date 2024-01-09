@@ -13,6 +13,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
   FormikSelectField,
+  FormikSwitchField,
   H1,
   Modal,
   UserNotification,
@@ -75,6 +76,7 @@ function SuspendedFirstLoginModal() {
           initialValues={{
             shortname: data.userProfile.shortname,
             locale: data.userProfile.locale,
+            sendProjectUpdates: data.userProfile.sendProjectUpdates,
           }}
           onSubmit={async (values, { setSubmitting, setErrors }) => {
             setShowGenericError(false)
@@ -86,6 +88,7 @@ function SuspendedFirstLoginModal() {
               variables: {
                 shortname: trimmedUsername,
                 locale: values.locale,
+                sendUpdates: values.sendProjectUpdates,
               },
               refetchQueries: [GetUserQuestionsDocument],
             })
@@ -107,10 +110,10 @@ function SuspendedFirstLoginModal() {
         >
           {({ isValid, isSubmitting, validateField }) => (
             <Form>
-              <div className="mb-1 space-y-4 md:mb-5">
+              <div className="flex flex-col mb-1 space-y-4 md:space-y-0 md:flex-row md:justify-between md:mb-5">
                 <DebouncedUsernameField
                   className={{
-                    root: 'w-[250px]',
+                    root: 'w-[250px] md:w-max',
                     input: 'bg-white',
                     icon: 'bg-transparent',
                   }}
@@ -140,15 +143,22 @@ function SuspendedFirstLoginModal() {
                     { label: t('shared.generic.english'), value: 'en' },
                     { label: t('shared.generic.german'), value: 'de' },
                   ]}
-                  className={{ root: 'w-full md:w-1/2' }}
+                  className={{ root: 'w-full md:w-max' }}
                   required
                 />
-                {showGenericError && (
-                  <UserNotification type="error">
-                    {t('shared.generic.systemError')}
-                  </UserNotification>
-                )}
+                <FormikSwitchField
+                  standardLabel
+                  label={t('manage.settings.emailUpdates')}
+                  tooltip={t('manage.settings.emailUpdatesTooltip')}
+                  name="sendProjectUpdates"
+                  className={{ tooltip: 'max-w-[20rem] md:max-w-[35rem]' }}
+                />
               </div>
+              {showGenericError && (
+                <UserNotification type="error">
+                  {t('shared.generic.systemError')}
+                </UserNotification>
+              )}
 
               <div className="mb-4 prose max-w-none">
                 {t('manage.firstLogin.relevantLinks')}
@@ -190,7 +200,7 @@ function SuspendedFirstLoginModal() {
                 referrerPolicy="no-referrer-when-downgrade"
                 sandbox="allow-downloads allow-forms allow-same-origin allow-scripts allow-top-navigation allow-pointer-lock allow-popups allow-modals allow-orientation-lock allow-popups-to-escape-sandbox allow-presentation allow-top-navigation-by-user-activation"
                 title="KlickerUZH_CoreConcepts_AudioEnhanced"
-              ></iframe>
+              />
 
               <Button
                 fluid
