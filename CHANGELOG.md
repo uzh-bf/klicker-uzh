@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.26...v3.1.0-beta.27) (2024-01-09)
+
+
+### Bug Fixes
+
+* **apps/frontend-auth:** add missing translation for signedInAs ([a14ec83](https://github.com/uzh-bf/klicker-uzh/commit/a14ec8309fdc73af9325ae40a4427d2b5090e778))
+* **apps/frontend-manage:** only show expired timer for session blocks with time limit ([#3997](https://github.com/uzh-bf/klicker-uzh/issues/3997)) ([f986e13](https://github.com/uzh-bf/klicker-uzh/commit/f986e13f6882e22d0e0ccd2780b482da068a6c47))
+
+
+### Enhancements
+
+* **apps/docs:** add description of delegated login mechanism ([#4006](https://github.com/uzh-bf/klicker-uzh/issues/4006)) ([45d5122](https://github.com/uzh-bf/klicker-uzh/commit/45d5122a922514a64240fbc0a3ad91d5970cc268))
+* **apps/docs:** add docs how to start migration from version 2 ([#4007](https://github.com/uzh-bf/klicker-uzh/issues/4007)) ([8e40f63](https://github.com/uzh-bf/klicker-uzh/commit/8e40f632245cd68f6c0aa62d5c21a820e1589d39))
+* **apps/docs:** extend documentation by adding first version of student docs ([#4009](https://github.com/uzh-bf/klicker-uzh/issues/4009)) ([94f9cd0](https://github.com/uzh-bf/klicker-uzh/commit/94f9cd02c390406349eeb456ccddb5e0145d2ae6))
+* **apps/frontend-manage:** add support modal to header on lecturer frontend ([#4003](https://github.com/uzh-bf/klicker-uzh/issues/4003)) ([d1d38aa](https://github.com/uzh-bf/klicker-uzh/commit/d1d38aa0e860bb6935af0fbd3859578e508a76b0))
+* **apps/frontend-manage:** enhance layout of live session block settings ([#4005](https://github.com/uzh-bf/klicker-uzh/issues/4005)) ([f3b9a06](https://github.com/uzh-bf/klicker-uzh/commit/f3b9a06cc71aca02845dbbc0c6abfae70549dfda))
+* **cypress:** add code coverage for apps/backend-docker code through cypress ([#4001](https://github.com/uzh-bf/klicker-uzh/issues/4001)) ([df55ff1](https://github.com/uzh-bf/klicker-uzh/commit/df55ff142411b2ee712769a02a328e5c69f84712))
+* **cypress:** add test to cover question bookmarking and flagging ([#4000](https://github.com/uzh-bf/klicker-uzh/issues/4000)) ([44d051f](https://github.com/uzh-bf/klicker-uzh/commit/44d051ffa98ba65fc355ecde1d587e32818517cc))
+* **cypress:** extend test suite to include q&a channel ([#4002](https://github.com/uzh-bf/klicker-uzh/issues/4002)) ([85a0948](https://github.com/uzh-bf/klicker-uzh/commit/85a0948217e5de9f7d705917f8dc6542776d680d))
+
 ## [3.1.0-beta.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.25...v3.1.0-beta.26) (2024-01-01)
 
 
