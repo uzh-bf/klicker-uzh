@@ -344,7 +344,7 @@ Practice Quiz und Microlearning sind über direkte Links verfügbar, die Sie von
       `,
       appSetupTitle: 'App Installation',
       appSetup: `
-Um von überall auf KlickerUZH zugreifen zu können, gibt es eine KlickerUZH-App. Mit der App können Sie die Lerninhalte Ihrer Kurse (mit KlickerUZH) einfach verwalten und darauf zugreifen, sowie wichtige Elemente zu Ihrer privaten Wiederholungsbibliothek hinzufügen und an den gamifizierten Elementen (Challenge) teilnehmen. Außerdem können Sie (aktuell nur auf Android) die Push-Benachrichtigungen für Microlearning in Ihren Kursen aktivieren.
+Um von überall auf KlickerUZH zugreifen zu können, gibt es eine KlickerUZH-App. Mit der App können Sie die Lerninhalte Ihrer Kurse (mit KlickerUZH) einfach verwalten und darauf zugreifen, sowie wichtige Elemente zu Ihrer privaten Wiederholungsbibliothek hinzufügen und an den gamifizierten Elementen (Challenge) teilnehmen. Außerdem können Sie die Push-Benachrichtigungen für Microlearning in Ihren Kursen aktivieren.
 
 Sie können die KlickerUZH-App wie folgt einrichten:
 
@@ -361,8 +361,8 @@ Nach der Installation sollten Sie die App auf Ihrem Startbildschirm finden und k
 Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie dieser Anleitung, um die App auf Ihrem Startbildschirm hinzuzufügen.
 
 1. Öffnen Sie den folgenden Link auf Ihrem Smartphone: [{pwa_url}/login]({pwa_url}/login)
-2. Es sollte eine Meldung "Zum Homescreen hinzufügen" / "Zum Startbildschirm zufügen" erscheinen - klicken Sie darauf.
-3. Akzeptieren Sie, dass die App installiert wird. Sobald die App installiert ist, sollten Sie zum Log-in weitergeleitet werden. Sie werden auch ein neues KlickerUZH-Symbol auf Ihrem Startbildschirm oder in der App-Schublade finden.
+2. Nutzen Sie den Teilen-Dialog und klicken Sie auf "Zum Homescreen hinzufügen" / "Zum Startbildschirm zufügen".
+3. Akzeptieren Sie, dass die App installiert wird. Sobald die App installiert ist, sollten Sie zum Log-in weitergeleitet werden. Sie werden auch ein neues KlickerUZH-Symbol auf Ihrem Startbildschirm finden.
       `,
     },
     login: {

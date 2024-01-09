@@ -15,10 +15,10 @@ module.exports = {
       'tutorials/practice_quiz',
       'tutorials/group_activity',
     ],
-    // 'Tutorials for Participants': [
-    //   'tutorials/klickeruzh_app',
-    //   'tutorials/push_notifications',
-    // ],
+    'Tutorials for Participants': [
+      'student_tutorials/klickeruzh_app',
+      'student_tutorials/live_quiz',
+    ],
     // Gamification: [
     //   'gamification/overview',
     //   'gamification/experience',
