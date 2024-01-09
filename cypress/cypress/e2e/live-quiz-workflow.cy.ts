@@ -189,34 +189,15 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="interaction-first-block"]').click()
 
     // login student and answer first question
-    cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="username-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
-    cy.wait(1000)
+    cy.loginStudent()
     cy.findByText(session).click()
     cy.findByText('25%').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
     // login student again on mobile, test navigation and answer second question
-    cy.visit(Cypress.env('URL_STUDENT'))
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
     cy.viewport('iphone-x')
-    cy.get('[data-cy="username-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
-    cy.wait(1000)
+    cy.loginStudent()
     cy.findByText(session).click()
     cy.findByText(question).should('exist')
 
@@ -242,24 +223,14 @@ describe('Different live-quiz workflows', () => {
     cy.wait(500)
 
     // login student and answer first question
-    cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT'))
-    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
+    cy.loginStudent()
     cy.findByText(session).click()
     cy.findByText('25%').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
     // repeat student actions on mobile device and answer second question
-    cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT'))
-    cy.viewport('iphone-x')
-    cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]').type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
-    cy.wait(1000)
+    cy.loginStudent()
     cy.findByText(session).click()
     cy.findByText('25%').click()
     cy.get('[data-cy="student-submit-answer"]').click()
@@ -289,5 +260,144 @@ describe('Different live-quiz workflows', () => {
     //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
     //   cy.get('[data-cy="evaluate-next-question"]').click();
     //   cy.get('#bar-chart-block-0').should('have.text', '1'); // TODO doesn't work with data-cy yet (because its a LabelList?) -> id
+  })
+
+  it('creates a live quiz without questions and tests the feedback mechanisms', () => {
+    const courseName = 'Testkurs'
+    const randomNumber = Math.round(Math.random() * 1000)
+    const questionTitle = 'A Single Choice ' + randomNumber
+    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
+    const sessionName = 'Empty live quiz ' + randomNumber
+
+    // create a question
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-answer-field"]').click().type('50%')
+    cy.get('[data-cy="add-new-answer"]').click({ force: true })
+    cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    // create a live session with a single question
+    // TODO - once this is possible, create an empty live session here
+    cy.get('[data-cy="create-live-quiz"]').click()
+    cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
+    cy.get('[data-cy="insert-live-display-name"]').type(sessionName)
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="select-course"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.liveSessionNoCourse)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').contains(courseName)
+    cy.get('[data-cy="set-liveqa-enabled"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get('[data-cy="drop-questions-here"]').trigger('drop', {
+      dataTransfer,
+    })
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="quick-start"]').click()
+
+    // test feedback submission with moderation enabled, does not show up until published
+    const feedback1 = 'Feedback during moderation enabled'
+    cy.loginStudent()
+    cy.clearAllLocalStorage()
+    cy.findByText(sessionName).click()
+
+    cy.get('[data-cy="feedback-input"]').type(feedback1)
+    cy.get('[data-cy="feedback-submit"]').click()
+    cy.findByText(feedback1).should('not.exist')
+
+    // check that feedback is visible to lecturer and switch its status to visible
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${feedback1}"]`).should('exist').click()
+    cy.get(`[data-cy="pin-feedback-${feedback1}"]`).click()
+    cy.get(`[data-cy="pin-feedback-${feedback1}"]`).click()
+    cy.get(`[data-cy="publish-feedback-${feedback1}"]`).click()
+    cy.wait(1000)
+
+    // check if feedback is now visible
+    cy.loginStudent()
+    cy.reload()
+    cy.findByText(sessionName).click()
+    cy.findByText(feedback1).should('exist')
+
+    // login to lecturer and disable moderation
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.get('[data-cy="toggle-moderation"]').click()
+
+    // submit second feedback and check if it is immediately visible
+    const feedback2 = 'Feedback without moderation'
+    cy.loginStudent()
+    cy.findByText(sessionName).click()
+    cy.get('[data-cy="feedback-input"]').type(feedback2)
+    cy.get('[data-cy="feedback-submit"]').click()
+    cy.findByText(feedback2).should('exist')
+
+    // upvote both first and second feedback
+    cy.get(`[data-cy="feedback-upvote-${feedback1}"]`).click()
+    cy.get(`[data-cy="feedback-upvote-${feedback2}"]`).click()
+
+    // login to lecturer and answer second feedback
+    const feedbackAnswer = 'Answer to feedback'
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${feedback2}"]`).should('exist').click()
+    cy.get(`[data-cy="respond-to-feedback-${feedback2}"]`).type(feedbackAnswer)
+    cy.get(`[data-cy="submit-feedback-response-${feedback2}"]`).click()
+
+    // check on student view that feedback answer is visible
+    cy.loginStudent()
+    cy.findByText(sessionName).click()
+    cy.findByText(feedbackAnswer).should('exist')
+    cy.get(`[data-cy="feedback-response-upvote-${feedbackAnswer}"]`).click()
+
+    // login to lecturer and pin feedback, check lecturer display
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${feedback1}"]`).should('exist').click()
+    cy.get(`[data-cy="pin-feedback-${feedback1}"]`).click()
+    cy.get(`[data-cy="open-lecturer-overview-session-${sessionName}"]`).click()
+    cy.findByText(feedback1).should('exist')
+    cy.findByText(feedback2).should('not.exist')
+
+    // delete feedback response
+    cy.visit(Cypress.env('URL_MANAGE'))
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${feedback2}"]`).should('exist').click()
+    cy.get(`[data-cy="delete-response-${feedbackAnswer}"]`).click()
+    cy.get(`[data-cy="delete-response-${feedbackAnswer}"]`).click()
+
+    // check on student frontend that deleted feedback is no longer visible
+    cy.loginStudent()
+    cy.findByText(sessionName).click()
+    cy.findByText(feedbackAnswer).should('not.exist')
+
+    // delete feedback
+    cy.loginLecturer()
+    cy.get('[data-cy="sessions"]').click()
+    cy.get(`[data-cy="session-cockpit-${sessionName}"]`).click()
+    cy.get(`[data-cy="delete-feedback-${feedback1}"]`).click()
+    cy.get(`[data-cy="delete-feedback-${feedback1}"]`).click()
+
+    // check on student frontend that deleted feedback is no longer visible
+    cy.loginStudent()
+    cy.findByText(sessionName).click()
+    cy.findByText(feedback1).should('not.exist')
   })
 })
