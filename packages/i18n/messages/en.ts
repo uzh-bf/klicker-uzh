@@ -344,7 +344,7 @@ Practice quizzes and microlearning are available via direct links that you can r
       `,
       appSetupTitle: 'App Installation',
       appSetup: `
-In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can (on Android) activate the push notifications for microlearning in your courses.
+In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can activate the push notifications for microlearning in your courses.
 
 You can set up the KlickerUZH app as follows:
 
@@ -361,8 +361,8 @@ After installation, you should find the app on your home screen and can log in a
 Since the KlickerUZH app is not yet available on the iOS App Store, follow these instructions to add the app onto your home screen.
 
 1. Open the following link on your smartphone: [{pwa_url}/login]({pwa_url}/login)
-2. A message should appear “Add to Homescreen” / “Zum Startbildschirm zufügen” - click on it.
-3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen or in the app drawer.
+2. Use the share dialogue and click on the button “Add to Homescreen” / “Zum Startbildschirm zufügen”.
+3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen.
       `,
     },
     login: {
