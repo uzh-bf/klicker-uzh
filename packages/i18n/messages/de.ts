@@ -619,6 +619,38 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
     },
+    support: {
+      modalTitle: 'Support KlickerUZH',
+      yourFeedback: 'Ihr Feedback',
+      feedbackText:
+        'Haben Sie Feedback für uns? Haben Sie Probleme bei der Nutzung von KlickerUZH? Bitte geben Sie uns Ihr Feedback, damit wir KlickerUZH für Sie weiter verbessern können.',
+      featureRequest: 'Feature Request',
+      featureRequestDesc: 'Ich möchte ein neues Feature anfragen.',
+      bugReport: 'Bug Report',
+      bugReportDesc: 'Ich möchte einen Fehler oder ein Problem melden.',
+      selfHosting: 'Self-Hosting',
+      selfHostingDesc: 'Ich habe Probleme beim Self-Hosting von KlickerUZH.',
+      furtherResources: 'Weitere Ressourcen',
+      documentationDesc: 'Tutorials, Funktionsdokumentation und Release Notes',
+      faq: 'FAQ',
+      faqDesc: 'Häufig gestellte Fragen',
+      connect: 'Kontakt',
+      community: 'Community',
+      communityDesc: 'Ein Ort für Diskussionen und Fragen rund um KlickerUZH',
+      email: 'E-Mail',
+      emailDesc: 'Kontaktieren Sie uns unter klicker@bf.uzh.ch',
+      aboutProject: 'Über das Projekt',
+      projectUpdates: 'Projekt Updates',
+      projectUpdatesDesc: 'Regelmässige Updates zu unserem Projekt',
+      roadmap: 'Roadmap',
+      roadmapDesc: 'Unsere aktuellen Prioritäten und Pläne für die Zukunft',
+      releaseNotes: 'Release Notes',
+      releaseNotesDesc:
+        'Übersicht über Änderungen in unseren neuesten Releases',
+      openSource: 'Open-Source',
+      githubRepository: 'GitHub Repository',
+      githubRepositoryDesc: 'Quellcode des Open-Source Projekts',
+    },
     login: {
       lecturerLogin: 'Login Dozierende',
       installAndroid:
