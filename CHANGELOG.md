@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.17](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.16...v1.8.17) (2024-01-05)
+
+
+### Bug Fixes
+
+* remove prefetch on V2 login ([a2ed459](https://github.com/uzh-bf/klicker-uzh/commit/a2ed45931d055d47404ab09a92ef0437099b2483))
+
+### [1.8.16](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.15...v1.8.16) (2024-01-05)
+
+
+### Bug Fixes
+
+* import of logo path ([eada670](https://github.com/uzh-bf/klicker-uzh/commit/eada670de6ee896ccac2efd26b188d0f4524cf97))
+
+### [1.8.15](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.14...v1.8.15) (2024-01-05)
+
+
+### Bug Fixes
+
+* login page not named correctly ([2efb961](https://github.com/uzh-bf/klicker-uzh/commit/2efb961ba8f58f0260b5f9030574b6f966a1e8d4))
+
+### [1.8.14](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.13...v1.8.14) (2024-01-05)
+
+
+### Other
+
+* restore old login page with notice from index, redirect to login instead of V2 when unauthorized, disable autoscaling and reduce replicas ([20d951d](https://github.com/uzh-bf/klicker-uzh/commit/20d951d39c3b80a37977dbd9cf90c8c59101dcd0))
+
+### [1.8.13](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.12...v1.8.13) (2024-01-05)
+
+
+### Other
+
+* update index page and move login ([627dfd6](https://github.com/uzh-bf/klicker-uzh/commit/627dfd661f60c22d82d6c741a5f9ec4ca4238060))
+
 ### [1.8.12](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.11...v1.8.12) (2023-12-17)
 
 

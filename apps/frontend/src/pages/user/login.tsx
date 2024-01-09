@@ -1,93 +1,45 @@
-import React, { useEffect, useState } from 'react'
-import Cookies from 'js-cookie'
-import _get from 'lodash/get'
+import React, { useState } from 'react'
 import { useRouter } from 'next/router'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { useMutation } from '@apollo/client'
-import getConfig from 'next/config'
+import { Button, List, Input, Message } from 'semantic-ui-react'
 import { push } from '@socialgouv/matomo-next'
+import Image from 'next/image'
+import KlickerLogoSrc from '../../../public/KlickerUZH_Gray_Transparent.png'
+import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
+import Link from 'next/link'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
-import LoginForm from '../../components/forms/LoginForm'
-import LoginMutation from '../../graphql/mutations/LoginMutation.graphql'
-
-const { publicRuntimeConfig } = getConfig()
-
-const messages = defineMessages({
-  pageTitle: {
-    defaultMessage: 'Login',
-    id: 'user.login.pageTitle',
-  },
-})
 
 function Login(): React.ReactElement {
-  const intl = useIntl()
   const router = useRouter()
 
-  const [decodedRedirectPath, setDecodedRedirectPath] = useState('/questions')
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window?.location?.search)
-    if (urlParams.get('redirect_to')) {
-      setDecodedRedirectPath(decodeURIComponent(urlParams?.get('redirect_to')))
-    }
-  }, [])
-
-  useEffect((): void => {
-    router.prefetch('/questions')
-    router.prefetch('/sessions')
-  }, [])
-
-  const [login, { loading, error }] = useMutation(LoginMutation)
-
   return (
-    <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
-      <div className="p-4 md:w-[600px]">
-        <h1 className="mt-0">
-          <FormattedMessage defaultMessage="Login" id="user.login.title" />
-        </h1>
+    // TODO: internationalization
+    <StaticLayout pageTitle="Klicker">
+      <div className="p-2">
+        <div className="text-center">
+          <Image alt="KlickerUZH Logo" src={KlickerLogoSrc} />
+        </div>
 
-        <>
-          <LoginForm
-            loading={loading}
-            onSubmit={async ({ email, password }): Promise<void> => {
-              // perform the login
-              const loginResult: any = await login({ variables: { email, password } })
+        <p className="italic text-center">Welcome to the open source instant audience response system.</p>
 
-              // save the user id in a cookie
-              if (loginResult.data.login) {
-                Cookies.set('userId', loginResult.data.login, { secure: true })
-              }
-
-              push(['trackEvent', 'User', 'Logged In'])
-
-              // redirect to the specified redirect path (default: question pool)
-              router.push(decodedRedirectPath)
-            }}
-          />
-
-          {publicRuntimeConfig.withAai && (
-            <div className="mt-4 text-right">
-              <a
-                href={`https://aai.klicker.uzh.ch/public?redirect_to=${encodeURIComponent(
-                  encodeURIComponent(decodedRedirectPath)
-                )}`}
-                role="button"
-              >
-                <img alt="AAI Login" src="https://www.switch.ch/aai/design/images/aai_login_button.png" />
-              </a>
-            </div>
-          )}
-
-          {!error && _get(router, 'query.expired') && (
-            <div className="font-bold text-red-800">Login expired. Please login again.</div>
-          )}
-
-          {error && <div className="font-bold text-red-800">Login failed ({error.message})</div>}
-        </>
+        <Message info>
+          <p>
+            A new version of KlickerUZH (v3) has been released and is accessible through{' '}
+            <a href="www.klicker.uzh.ch">www.klicker.uzh.ch</a>. This version (v2) of KlickerUZH has been discontinued.
+            A data migration allows you to transfer all of your content from v2 to v3. More information on KlickerUZH v3
+            can be found in our{' '}
+            <a href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-information/79">community post</a>.
+          </p>
+        </Message>
       </div>
     </StaticLayout>
   )
+}
+
+export async function getStaticProps() {
+  return {
+    props: {},
+  }
 }
 
 export default Login
