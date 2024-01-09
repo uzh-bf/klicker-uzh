@@ -20,6 +20,8 @@ export const User = UserRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     email: t.exposeString('email'),
+    sendProjectUpdates: t.exposeBoolean('sendProjectUpdates'),
+
     shortname: t.exposeString('shortname'),
     locale: t.expose('locale', { type: LocaleType }),
 
