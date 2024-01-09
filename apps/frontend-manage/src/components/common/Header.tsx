@@ -96,7 +96,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
             }
             dropdownWidth="w-[12rem]"
             className={{
-              root: 'h-10 w-10 group',
+              root: 'h-10 w-2 group',
               icon: twMerge(
                 'text-uzh-grey-80',
                 data?.userRunningSessions?.length !== 0 && 'text-green-600'

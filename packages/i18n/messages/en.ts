@@ -623,6 +623,39 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
     },
+    support: {
+      modalTitle: 'Support KlickerUZH',
+      yourFeedback: 'Your Feedback',
+      feedbackText:
+        'Do you have any feedback for us? Are you experiencing issues when using the KlickerUZH? Please provide us with your feedback so we can continue to improve the KlickerUZH for you.',
+      featureRequest: 'Feature Request',
+      featureRequestDesc: 'I would like to request a new feature.',
+      bugReport: 'Bug Report',
+      bugReportDesc: 'I would like to report a bug or issue.',
+      selfHosting: 'Self-Hosting',
+      selfHostingDesc: 'I have problems when self-hosting the KlickerUZH.',
+      furtherResources: 'Further Resources',
+      documentationDesc: 'Tutorials, feature documentation, and release notes',
+      faq: 'FAQ',
+      faqDesc: 'Frequently asked questions',
+      connect: 'Connect with Us',
+      community: 'Community',
+      communityDesc:
+        'A place for discussions and questions regarding the KlickerUZH',
+      email: 'E-Mail',
+      emailDesc: 'Contact us at klicker.support@uzh.ch',
+      aboutProject: 'About the Project',
+      projectUpdates: 'Project Updates',
+      projectUpdatesDesc:
+        'Regular updates regarding the progress of our project',
+      roadmap: 'Roadmap',
+      roadmapDesc: 'Our current priorities and plans for the future',
+      releaseNotes: 'Release Notes',
+      releaseNotesDesc: 'Overview of changes in our latest releases',
+      openSource: 'Open-Source',
+      githubRepository: 'GitHub Repository',
+      githubRepositoryDesc: 'Source code of the open-source project',
+    },
     login: {
       lecturerLogin: 'Login Lecturers',
       installAndroid:

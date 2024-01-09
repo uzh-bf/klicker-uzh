@@ -15,6 +15,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { User } from '@klicker-uzh/graphql/dist/ops'
 import { H2, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import SupportEntry from './SupportEntry'
 
@@ -25,9 +26,11 @@ interface SupportModalProps {
 }
 
 function SupportModal({ open, setOpen, user }: SupportModalProps) {
+  const t = useTranslations()
+
   return (
     <Modal
-      title="Support KlickerUZH"
+      title={t('manage.support.modalTitle')}
       open={open}
       onClose={() => setOpen(false)}
       className={{
@@ -39,31 +42,29 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
       <div className="flex flex-col flex-wrap gap-8 md:gap-16 md:flex-row">
         <div className="flex flex-col justify-between flex-1">
           <div className="order-2 md:order-1">
-            <H2>Your Feedback</H2>
-            <p className="mb-2 prose prose-lg">
-              Do you have any feedback for us? Are you experiencing issues when
-              using the KlickerUZH? Please provide us with your feedback so we
-              can continue to improve the KlickerUZH for you.
+            <H2>{t('manage.support.yourFeedback')}</H2>
+            <p className="mb-4 leading-6 prose">
+              {t('manage.support.feedbackText')}
             </p>
             <div className="flex flex-col gap-2">
               <SupportEntry
                 href="https://klicker-uzh.feedbear.com/boards/feature-requests"
-                subtitle="I would like to request a new feature."
-                title="Feature Request"
+                title={t('manage.support.featureRequest')}
+                subtitle={t('manage.support.featureRequestDesc')}
                 icon={faLightbulb}
                 data={{ cy: 'support-feature-request' }}
               />
               <SupportEntry
                 href="https://klicker-uzh.feedbear.com/boards/bug-reports"
-                subtitle="I would like to report a bug or issue."
-                title="Bug Report"
+                title={t('manage.support.bugReport')}
+                subtitle={t('manage.support.bugReportDesc')}
                 icon={faBug}
                 data={{ cy: 'support-bug-report' }}
               />
               <SupportEntry
                 href="https://klicker-uzh.feedbear.com/boards/self-hosting"
-                subtitle="I have problems when self-hosting the KlickerUZH."
-                title="Self-Hosting"
+                title={t('manage.support.selfHosting')}
+                subtitle={t('manage.support.selfHostingDesc')}
                 icon={faServer}
                 data={{ cy: 'support-self-hosting' }}
               />
@@ -84,67 +85,75 @@ function SupportModal({ open, setOpen, user }: SupportModalProps) {
 
         <div className="flex flex-col justify-between flex-1">
           <div className="flex flex-col gap-2">
-            <H2>Further Resources</H2>
-            <div className="text-gray-600">Documentation</div>
+            <H2>{t('manage.support.furtherResources')}</H2>
+            <div className="text-gray-600">
+              {t('shared.generic.documentation')}
+            </div>
             <SupportEntry
               href="https://www.klicker.uzh.ch/getting_started/welcome"
+              title={t('shared.generic.documentation')}
+              subtitle={t('manage.support.documentationDesc')}
               icon={faBook}
-              subtitle="Tutorials, feature documentation, and release notes"
-              title="Documentation"
               data={{ cy: 'support-documentation' }}
             />
             <SupportEntry
               href="https://www.klicker.uzh.ch/faq"
+              title={t('manage.support.faq')}
+              subtitle={t('manage.support.faqDesc')}
               icon={faQuestion}
-              subtitle="Frequently asked questions"
-              title="FAQ"
               data={{ cy: 'support-faq' }}
             />
-            <div className="mt-4 text-gray-600">Connect with Us</div>
+            <div className="mt-4 text-gray-600">
+              {t('manage.support.connect')}
+            </div>
             <SupportEntry
               href="https://www.klicker.uzh.ch/community"
+              title={t('manage.support.community')}
+              subtitle={t('manage.support.communityDesc')}
               icon={faComments}
-              subtitle="A place for discussions and questions regarding the KlickerUZH"
-              title="Community"
               data={{ cy: 'support-community' }}
             />
             {user?.catalyst ? (
               <SupportEntry
                 href="mailto:klicker.support@uzh.ch"
+                title={t('manage.support.email')}
+                subtitle={t('manage.support.emailDesc')}
                 icon={faEnvelope}
-                subtitle="Contact us at klicker.support@uzh.ch"
-                title="Email"
                 data={{ cy: 'support-email' }}
               />
             ) : null}
-            <div className="mt-4 text-gray-600">About the Project</div>
+            <div className="mt-4 text-gray-600">
+              {t('manage.support.aboutProject')}
+            </div>
             <SupportEntry
               href="https://community.klicker.uzh.ch/tag/project-update"
+              title={t('manage.support.projectUpdates')}
+              subtitle={t('manage.support.projectUpdatesDesc')}
               icon={faInfo}
-              subtitle="Regular updates regarding the progress of our project"
-              title="Project Updates"
               data={{ cy: 'support-project-updates' }}
             />
             <SupportEntry
               href="https://www.klicker.uzh.ch/development"
+              title={t('manage.support.roadmap')}
+              subtitle={t('manage.support.roadmapDesc')}
               icon={faBullseye}
-              subtitle="Our current priorities and plans for the future"
-              title="Roadmap"
               data={{ cy: 'support-roadmap' }}
             />
             <SupportEntry
               href="https://community.klicker.uzh.ch/tag/release"
+              title={t('manage.support.releaseNotes')}
+              subtitle={t('manage.support.releaseNotesDesc')}
               icon={faList}
-              subtitle="Overview of changes in our latest releases"
-              title="Release Notes"
               data={{ cy: 'support-release-notes' }}
             />
-            <div className="mt-4 text-gray-600">Open-Source</div>
+            <div className="mt-4 text-gray-600">
+              {t('manage.support.openSource')}
+            </div>
             <SupportEntry
               href="https://github.com/uzh-bf/klicker-uzh"
+              title={t('manage.support.githubRepository')}
+              subtitle={t('manage.support.githubRepositoryDesc')}
               icon={faGithub}
-              subtitle="Source code of the open-source project"
-              title="Github Repository"
               data={{ cy: 'support-github-repository' }}
             />
           </div>
