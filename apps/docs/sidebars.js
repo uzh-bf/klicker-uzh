@@ -3,7 +3,7 @@ module.exports = {
     'Getting Started': [
       'getting_started/welcome',
       'getting_started/core_concepts',
-      // 'getting_started/migration',
+      'getting_started/migration',
     ],
     'Tutorials for Lecturers': [
       'tutorials/question_management',
