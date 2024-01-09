@@ -643,7 +643,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       communityDesc:
         'A place for discussions and questions regarding the KlickerUZH',
       email: 'E-Mail',
-      emailDesc: 'Contact us at klicker.support@uzh.ch',
+      emailDesc: 'Contact us at klicker@bf.uzh.ch',
       aboutProject: 'About the Project',
       projectUpdates: 'Project Updates',
       projectUpdatesDesc:

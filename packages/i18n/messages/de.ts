@@ -638,7 +638,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       community: 'Community',
       communityDesc: 'Ein Ort für Diskussionen und Fragen rund um KlickerUZH',
       email: 'E-Mail',
-      emailDesc: 'Kontaktieren Sie uns unter klicker.support@uzh.ch',
+      emailDesc: 'Kontaktieren Sie uns unter klicker@bf.uzh.ch',
       aboutProject: 'Über das Projekt',
       projectUpdates: 'Projekt Updates',
       projectUpdatesDesc: 'Regelmässige Updates zu unserem Projekt',
