@@ -912,12 +912,24 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      changeEmailSettings: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: User,
+        args: {
+          projectUpdates: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeEmailSettings(args, ctx)
+        },
+      }),
+
       changeInitialSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
         args: {
           shortname: t.arg.string({ required: true }),
           locale: t.arg({ type: LocaleType, required: true }),
+          sendUpdates: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return AccountService.changeInitialSettings(args, ctx)

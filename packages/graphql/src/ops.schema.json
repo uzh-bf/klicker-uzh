@@ -5768,6 +5768,35 @@
             "deprecationReason": null
           },
           {
+            "name": "changeEmailSettings",
+            "description": null,
+            "args": [
+              {
+                "name": "projectUpdates",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Boolean",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "User",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "changeInitialSettings",
             "description": null,
             "args": [
@@ -5780,6 +5809,22 @@
                   "ofType": {
                     "kind": "ENUM",
                     "name": "LocaleType",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "sendUpdates",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Boolean",
                     "ofType": null
                   }
                 },
@@ -15023,6 +15068,22 @@
                   "name": "MediaFile",
                   "ofType": null
                 }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "sendProjectUpdates",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
               }
             },
             "isDeprecated": false,

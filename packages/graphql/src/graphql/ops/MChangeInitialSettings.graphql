@@ -1,5 +1,13 @@
-mutation ChangeInitialSettings($shortname: String!, $locale: LocaleType!) {
-  changeInitialSettings(shortname: $shortname, locale: $locale) {
+mutation ChangeInitialSettings(
+  $shortname: String!
+  $locale: LocaleType!
+  $sendUpdates: Boolean!
+) {
+  changeInitialSettings(
+    shortname: $shortname
+    locale: $locale
+    sendUpdates: $sendUpdates
+  ) {
     id
     email
     shortname

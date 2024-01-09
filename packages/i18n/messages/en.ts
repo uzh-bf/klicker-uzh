@@ -705,6 +705,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
       shortnameTaken: 'The shortname you have chosen is already taken.',
+      emailUpdates: 'Project Updates via E-Mail',
+      emailUpdatesTooltip:
+        'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
     },
     token: {
       pageName: 'Token Generation',
@@ -843,9 +846,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       enterContentHere: 'Enter your content here...',
       questionsDragDrop: 'Use drag and drop to add your questions here...',
       newQuestion: 'New question',
+      blockSettingsTitle: 'Settings Block {blockIx}',
       timeLimit: 'Time limit',
       optionalTimeLimit: 'Optional time limit',
-      timeLimitTooltip: 'Time limit for block ${blockIx} in seconds',
+      timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
       newBlockSelected: 'Add 1 block with {count} questions',
       pasteSelection: 'Add {count} questions',

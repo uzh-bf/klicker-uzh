@@ -1,0 +1,6 @@
+mutation ChangeEmailSettings($projectUpdates: Boolean!) {
+  changeEmailSettings(projectUpdates: $projectUpdates) {
+    id
+    sendProjectUpdates
+  }
+}
