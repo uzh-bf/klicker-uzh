@@ -60,6 +60,10 @@ function Klicker({ Component, pageProps, locale, messages }) {
 
   useEffect(() => {
     const fetch = async () => {
+      if (router.pathname.includes('loginV2')) {
+        return
+      }
+
       const result = await apolloClient.query({
         query: AccountSummaryQuery,
         networkPolicy: 'cache-first',
