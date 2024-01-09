@@ -707,7 +707,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       shortnameTaken: 'The shortname you have chosen is already taken.',
       emailUpdates: 'E-Mail Updates',
       emailUpdatesTooltip:
-        'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address, more frequent project udpates can be enabled or disabled here.',
+        'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
     },
     token: {
       pageName: 'Token Generation',
