@@ -108,10 +108,11 @@ model User {
 
   originalId String? @unique
 
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
+  name               String?
+  email              String    @unique
+  emailVerified      DateTime?
+  sendProjectUpdates Boolean   @default(true)
+  image              String?
 
   shortname           String    @unique
   lastLoginAt         DateTime?

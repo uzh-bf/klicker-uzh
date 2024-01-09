@@ -2,6 +2,7 @@ query UserProfile {
   userProfile {
     id
     email
+    sendProjectUpdates
     shortname
     locale
     firstLogin

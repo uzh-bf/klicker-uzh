@@ -672,6 +672,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
       shortnameTaken: 'The shortname you have chosen is already taken.',
+      emailUpdates: 'E-mail Updates',
+      emailUpdatesTooltip:
+        'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address, more frequent project udpates can be enabled or disabled here.',
     },
     token: {
       pageName: 'Token Generation',

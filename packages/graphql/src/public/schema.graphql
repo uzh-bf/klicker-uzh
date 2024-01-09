@@ -514,6 +514,7 @@ type Mutation {
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDates(courseId: String!, endDate: Date, startDate: Date): Course
   changeCourseDescription(courseId: String!, input: String!): Course
+  changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, shortname: String!): User
   changeParticipantLocale(locale: LocaleType!): Participant
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
@@ -1019,6 +1020,7 @@ type User {
   loginToken: String
   loginTokenExpiresAt: Date
   mediaFiles: [MediaFile!]
+  sendProjectUpdates: Boolean!
   shortname: String!
 }
 

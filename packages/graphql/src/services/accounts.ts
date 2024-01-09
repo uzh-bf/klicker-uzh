@@ -497,6 +497,18 @@ export async function changeShortname(
   return user
 }
 
+export async function changeEmailSettings(
+  { projectUpdates }: { projectUpdates: boolean },
+  ctx: ContextWithUser
+) {
+  const user = await ctx.prisma.user.update({
+    where: { id: ctx.user.sub },
+    data: { sendProjectUpdates: projectUpdates },
+  })
+
+  return user
+}
+
 export async function changeInitialSettings(
   { shortname, locale }: { shortname: string; locale: Locale },
   ctx: ContextWithUser
