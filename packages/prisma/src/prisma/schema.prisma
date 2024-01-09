@@ -111,7 +111,7 @@ model User {
   name               String?
   email              String    @unique
   emailVerified      DateTime?
-  sendProjectUpdates Boolean   @default(true)
+  sendProjectUpdates Boolean   @default(false)
   image              String?
 
   shortname           String    @unique
