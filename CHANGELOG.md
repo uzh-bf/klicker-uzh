@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.18](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.17...v1.8.18) (2024-01-09)
+
+
+### Bug Fixes
+
+* do not fetch account summary on loginV2 ([0281702](https://github.com/uzh-bf/klicker-uzh/commit/0281702245a8586e67cfc4d0cbedc83b8d6b9f9c))
+
+
+### Other
+
+* lockfile maintenance ([fde8f77](https://github.com/uzh-bf/klicker-uzh/commit/fde8f77d94b0dcd68527b38492136e033cc581c2))
+* update chart version ([7795804](https://github.com/uzh-bf/klicker-uzh/commit/7795804e5b94005cd79ae81cb75c9c114ac2bda5))
+
 ### [1.8.17](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.16...v1.8.17) (2024-01-05)
 
 
