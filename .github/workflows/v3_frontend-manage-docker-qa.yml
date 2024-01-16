@@ -3,6 +3,7 @@ name: Build Docker image for frontend-manage (QA)
 on:
   push:
     branches:
+      - 'switch*'
       - 'v3'
       - 'v3*'
       - 'CI'
