@@ -3,6 +3,8 @@ name: Build Docker image for frontend-control (Production)
 on:
   push:
     tags: ['v*.*.*']
+    branches:
+      - 'switch*'
     paths:
       - 'apps/frontend-control/**'
       - '.github/workflows/v3_frontend-control**'
