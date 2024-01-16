@@ -3,6 +3,8 @@ name: Build Docker image for auth (Production)
 on:
   push:
     tags: ['v*.*.*']
+    branches:
+      - 'switch*'
     paths:
       - 'apps/auth/**'
       - '.github/workflows/v3_auth**'
