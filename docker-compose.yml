@@ -34,16 +34,7 @@ services:
   auth:
     profiles:
       - full
-    build:
-      context: .
-      dockerfile: apps/auth/Dockerfile
-      args:
-        COOKIE_DOMAIN: .klicker.com
-        NEXT_PUBLIC_DEFAULT_REDIRECT: http://manage.klicker.com
-        NEXTAUTH_URL: http://auth.klicker.com
-        # EDUID_CLIENT_ID: uzh_klicker_auth_dev
-        # EDUID_WELL_KNOWN: https://login.test.eduid.ch/.well-known/openid-configuration
-        # NEXT_PUBLIC_EDUID_ID: eduid-test
+    image: ghcr.io/uzh-bf/klicker-uzh/auth:v3.1-dev
     environment:
       APP_SECRET: abcd
       DATABASE_URL: 'postgres://klicker:klicker@postgres:5432/main'
@@ -57,21 +48,7 @@ services:
   frontend_pwa:
     profiles:
       - full
-    build:
-      context: .
-      dockerfile: apps/frontend-pwa/Dockerfile
-      args:
-        COOKIE_DOMAIN: .klicker.com
-        NEXT_PUBLIC_ADD_RESPONSE_URL: 'http://func-responses.klicker.com/api/AddResponse'
-        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-        NEXT_PUBLIC_API_URL: 'http://api.klicker.com/api/graphql'
-        NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/avatars'
-        NEXT_PUBLIC_CONTROL_URL: 'http://control.klicker.com'
-        NEXT_PUBLIC_IMAGE_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/img'
-        NEXT_PUBLIC_MANAGE_URL: 'http://manage.klicker.com'
-        NEXT_PUBLIC_PWA_URL: 'http://pwa.klicker.com'
-        # BLOB_STORAGE_ACCOUNT_URL: ''
-        # NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY: ""
+    image: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa:v3.1-dev
     environment:
       APP_SECRET: abcd
     ports:
@@ -82,19 +59,7 @@ services:
   frontend_manage:
     profiles:
       - full
-    build:
-      context: .
-      dockerfile: apps/frontend-manage/Dockerfile
-      args:
-        COOKIE_DOMAIN: .klicker.com
-        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-        NEXT_PUBLIC_API_URL: 'http://api.klicker.com/api/graphql'
-        NEXT_PUBLIC_AUTH_URL: 'http://auth.klicker.com'
-        NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/avatars'
-        NEXT_PUBLIC_CONTROL_URL: 'http://control.klicker.com'
-        NEXT_PUBLIC_MANAGE_URL: 'http://manage.klicker.com'
-        NEXT_PUBLIC_PWA_URL: 'http://pwa.klicker.com'
-        # BLOB_STORAGE_ACCOUNT_URL: ''
+    image: ghcr.io/uzh-bf/klicker-uzh/frontend-manage:v3.1-dev
     ports:
       - 3002:3000
     networks:
@@ -103,18 +68,7 @@ services:
   frontend_control:
     profiles:
       - full
-    build:
-      context: .
-      dockerfile: apps/frontend-control/Dockerfile
-      args:
-        COOKIE_DOMAIN: .klicker.com
-        NEXT_PUBLIC_API_URL_SSR: 'http://backend:3000/api/graphql'
-        NEXT_PUBLIC_API_URL: 'http://api.klicker.com/api/graphql'
-        NEXT_PUBLIC_AVATAR_BASE_PATH: 'https://sos-ch-dk-2.exo.io/klicker-prod/avatars'
-        NEXT_PUBLIC_PWA_URL: 'http://pwa.klicker.com'
-        NEXT_PUBLIC_MANAGE_URL: 'http://manage.klicker.com'
-        NEXT_PUBLIC_CONTROL_URL: 'http://control.klicker.com'
-        # BLOB_STORAGE_ACCOUNT_URL: ''
+    image: ghcr.io/uzh-bf/klicker-uzh/frontend-control:v3.1-dev
     ports:
       - 3003:3000
     networks:
@@ -123,11 +77,7 @@ services:
   backend:
     profiles:
       - full
-    build:
-      context: .
-      dockerfile: apps/backend-docker/Dockerfile
-      args:
-        NODE_ENV: 'development'
+    image: ghcr.io/uzh-bf/klicker-uzh/backend-docker:v3.1-dev
     environment:
       APP_SECRET: 'abcd'
       COOKIE_DOMAIN: .klicker.com
