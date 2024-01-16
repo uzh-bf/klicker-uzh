@@ -151,6 +151,7 @@ function SessionTimeline({
             <Button
               onClick={() => setEmbedModalOpen(true)}
               className={{ root: 'h-10' }}
+              data={{ cy: 'embed-evaluation-cockpit' }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faCode} size="sm" />
@@ -159,13 +160,15 @@ function SessionTimeline({
                 {t('manage.sessions.embeddingEvaluation')}
               </Button.Label>
             </Button>
-            <EmbeddingModal
-              key={sessionId}
-              open={embedModalOpen}
-              onClose={() => setEmbedModalOpen(false)}
-              sessionId={sessionId}
-              questions={blocks?.flatMap((block) => block.instances)}
-            />
+            {!isFeedbackSession && (
+              <EmbeddingModal
+                key={sessionId}
+                open={embedModalOpen}
+                onClose={() => setEmbedModalOpen(false)}
+                sessionId={sessionId}
+                questions={blocks.flatMap((block) => block.instances ?? [])}
+              />
+            )}
             <SessionQRModal sessionId={sessionId} shortname={shortname} />
             <a
               className="flex-1"
@@ -173,7 +176,11 @@ function SessionTimeline({
               rel="noopener noreferrer"
               target="_blank"
             >
-              <Button fluid className={{ root: 'h-10' }}>
+              <Button
+                fluid
+                className={{ root: 'h-10' }}
+                data={{ cy: 'audience-view-cockpit' }}
+              >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
                 </Button.Icon>
@@ -193,6 +200,7 @@ function SessionTimeline({
                 fluid
                 className={{ root: 'h-10' }}
                 disabled={isFeedbackSession}
+                data={{ cy: 'evaluation-results-cockpit' }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faUpRightFromSquare} />
@@ -210,6 +218,7 @@ function SessionTimeline({
                   root: twMerge('bg-uzh-red-100 text-white h-10'),
                 }}
                 onClick={handleEndSession}
+                data={{ cy: 'end-session-cockpit' }}
               >
                 <Button.Label>{t('manage.cockpit.endSession')}</Button.Label>
               </Button>
@@ -219,7 +228,7 @@ function SessionTimeline({
       </div>
       {!isFeedbackSession && blocks && (
         <>
-          <div className="flex flex-row w-full gap-2 p-4 overflow-auto border border-solid rounded-lg border-uzh-grey-80 mt-2 md:mt-0">
+          <div className="flex flex-row w-full gap-2 p-4 mt-2 overflow-auto border border-solid rounded-lg border-uzh-grey-80 md:mt-0">
             <FontAwesomeIcon
               icon={faPlay}
               size="xl"
@@ -262,6 +271,7 @@ function SessionTimeline({
             <Button
               onClick={() => setCancelSessionModal(true)}
               className={{ root: 'bg-red-800 text-white' }}
+              data={{ cy: 'abort-session-cockpit' }}
             >
               {t('manage.cockpit.abortSession')}
             </Button>

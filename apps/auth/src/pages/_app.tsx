@@ -1,7 +1,7 @@
 import { getMessageFallback, onError } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { SessionProvider } from 'next-auth/react'
-import { NextIntlProvider } from 'next-intl'
+import { NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 
@@ -15,7 +15,8 @@ export default function App({
 
   return (
     <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
-      <NextIntlProvider
+      <NextIntlClientProvider
+        timeZone="Europe/Zurich"
         messages={pageProps.messages}
         locale={locale}
         onError={onError}
@@ -24,8 +25,7 @@ export default function App({
         <SessionProvider session={session}>
           <Component {...pageProps} />
         </SessionProvider>
-      </NextIntlProvider>
-
+      </NextIntlClientProvider>
       <style jsx global>{`
         :root {
           --source-sans-pro: ${sourceSansPro.variable};

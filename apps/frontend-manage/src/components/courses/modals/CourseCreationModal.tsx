@@ -12,6 +12,7 @@ import {
   Label,
   Modal,
 } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -75,14 +76,22 @@ function CourseCreationModal({
         }}
         onSubmit={async (values, { setSubmitting }) => {
           try {
+            // convert dates to UTC
+            const startDateUTC = dayjs(values.startDate + 'T00:00:00.000')
+              .utc()
+              .toISOString()
+            const endDateUTC = dayjs(values.endDate + 'T23:59:59.999')
+              .utc()
+              .toISOString()
+
             const result = await createCourse({
               variables: {
                 name: values.name,
                 displayName: values.displayName,
                 description: values.description,
                 color: values.color,
-                startDate: values.startDate + 'T00:00:00.000Z',
-                endDate: values.endDate + 'T23:59:59.999Z',
+                startDate: startDateUTC,
+                endDate: endDateUTC,
                 isGamificationEnabled: values.isGamificationEnabled,
               },
               refetchQueries: [
@@ -125,6 +134,7 @@ function CourseCreationModal({
                   placeholder={t('manage.courseList.courseName')}
                   tooltip={t('manage.courseList.courseNameTooltip')}
                   className={{ root: 'w-full md:w-1/2' }}
+                  data={{ cy: 'create-course-name' }}
                   required
                 />
                 <FormikTextField
@@ -133,6 +143,7 @@ function CourseCreationModal({
                   placeholder={t('manage.courseList.courseDisplayName')}
                   tooltip={t('manage.courseList.courseDisplayNameTooltip')}
                   className={{ root: 'w-full md:w-1/2' }}
+                  data={{ cy: 'create-course-display-name' }}
                   required
                 />
               </div>
@@ -153,6 +164,7 @@ function CourseCreationModal({
                     setFieldValue('description', newValue)
                   }
                   className={{ editor: 'h-20' }}
+                  data_cy="create-course-description"
                 />
               </div>
 
@@ -161,15 +173,19 @@ function CourseCreationModal({
                   name="startDate"
                   label={t('manage.courseList.startDate')}
                   tooltip={t('manage.courseList.startDateTooltip')}
+                  className={{ dateChanger: { label: 'font-bold' } }}
+                  data={{ cy: 'create-course-start-date' }}
+                  dataButton={{ cy: 'create-course-start-date-button' }}
                   required
-                  className={{ label: 'font-bold' }}
                 />
                 <FormikDateChanger
                   name="endDate"
                   label={t('manage.courseList.endDate')}
                   tooltip={t('manage.courseList.endDateTooltip')}
+                  className={{ dateChanger: { label: 'font-bold' } }}
+                  data={{ cy: 'create-course-end-date' }}
+                  dataButton={{ cy: 'create-course-end-date-button' }}
                   required
-                  className={{ label: 'font-bold' }}
                 />
               </div>
               <div className="flex flex-col gap-2 mt-4 md:gap-8 md:flex-row">
@@ -179,12 +195,16 @@ function CourseCreationModal({
                   position="top"
                   abortText={t('shared.generic.cancel')}
                   submitText={t('shared.generic.confirm')}
+                  dataTrigger={{ cy: 'create-course-color-trigger' }}
+                  dataHexInput={{ cy: 'create-course-color-hex-input' }}
+                  dataSubmit={{ cy: 'create-course-color-submit' }}
                   required
                 />
                 <FormikSwitchField
                   name="isGamificationEnabled"
                   label={t('shared.generic.gamification')}
                   className={{ label: 'font-bold' }}
+                  data={{ cy: 'create-course-gamification' }}
                   standardLabel
                   required
                 />
@@ -204,6 +224,7 @@ function CourseCreationModal({
                   (!isValid || isSubmitting) && 'cursor-not-allowed opacity-50'
                 ),
               }}
+              data={{ cy: 'create-course-submit' }}
             >
               {t('shared.generic.create')}
             </Button>

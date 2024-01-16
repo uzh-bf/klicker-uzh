@@ -72,7 +72,7 @@ function ParticipantProfileModal({
             }
           />
           <div className="grid w-full grid-cols-10 pt-5 justify-items-center">
-            {top10Participants.map((p, index) => (
+            {top10Participants.slice(0, 10).map((p, index) => (
               <div
                 key={index}
                 className={twMerge(
@@ -81,7 +81,7 @@ function ParticipantProfileModal({
                 )}
                 onClick={() => {
                   setCurrentIndex(index)
-                  setSelectedParticipant(top10Participants[index])
+                  setSelectedParticipant(p)
                 }}
               />
             ))}

@@ -51,7 +51,9 @@ function Subscriber({ subscribeToMore, sessionId }) {
         const removedItem = subscriptionData.data.feedbackRemoved
         return {
           ...prev,
-          feedbacks: prev.feedbacks?.filter((item) => item.id !== removedItem),
+          feedbacks: prev.feedbacks?.filter(
+            (item) => item.id !== parseInt(removedItem)
+          ),
         }
       },
     })

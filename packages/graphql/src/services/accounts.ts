@@ -4,8 +4,6 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
-import isEmail from 'validator/lib/isEmail'
-import normalizeEmail from 'validator/lib/normalizeEmail'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -25,26 +23,22 @@ const COOKIE_SETTINGS: CookieOptions = {
 }
 
 interface LoginUserTokenArgs {
-  email: string
+  shortname: string
   token: string
 }
 
 export async function loginUserToken(
-  { email, token }: LoginUserTokenArgs,
+  { shortname, token }: LoginUserTokenArgs,
   ctx: Context
 ) {
-  if (!isEmail(email)) return null
-
-  const normalizedEmail = normalizeEmail(email) as string
-
   const user = await ctx.prisma.user.findUnique({
-    where: { email: normalizedEmail },
+    where: { shortname },
   })
 
   if (!user) {
     await sendTeamsNotifications(
       'graphql/loginUserToken',
-      `LOGIN FAILED: User with email ${normalizedEmail} not found.`
+      `LOGIN FAILED: User with shortname ${shortname} not found.`
     )
     return null
   }
@@ -402,7 +396,7 @@ export async function getUserLogins(ctx: ContextWithUser) {
   return logins
 }
 
-export async function checkUsernameAvailability(
+export async function checkParticipantNameAvailable(
   { username }: { username: string },
   ctx: Context
 ) {
@@ -411,6 +405,19 @@ export async function checkUsernameAvailability(
   })
 
   if (!participant || participant.id === ctx.user?.sub) return true
+
+  return false
+}
+
+export async function checkShortnameAvailable(
+  { shortname }: { shortname: string },
+  ctx: Context
+) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { shortname: shortname },
+  })
+
+  if (!user || user.id === ctx.user?.sub) return true
 
   return false
 }
@@ -490,8 +497,24 @@ export async function changeShortname(
   return user
 }
 
+export async function changeEmailSettings(
+  { projectUpdates }: { projectUpdates: boolean },
+  ctx: ContextWithUser
+) {
+  const user = await ctx.prisma.user.update({
+    where: { id: ctx.user.sub },
+    data: { sendProjectUpdates: projectUpdates },
+  })
+
+  return user
+}
+
 export async function changeInitialSettings(
-  { shortname, locale }: { shortname: string; locale: Locale },
+  {
+    shortname,
+    locale,
+    sendUpdates,
+  }: { shortname: string; locale: Locale; sendUpdates: boolean },
   ctx: ContextWithUser
 ) {
   const existingUser = await ctx.prisma.user.findFirst({
@@ -515,6 +538,7 @@ export async function changeInitialSettings(
     data: {
       shortname,
       locale,
+      sendProjectUpdates: sendUpdates,
       firstLogin: false,
     },
   })

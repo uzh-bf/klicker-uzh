@@ -22,7 +22,7 @@ function SuspendedMediaFiles({ onImageClick }: Props) {
   const { data } = useSuspenseQuery(GetUserMediaFilesDocument)
 
   return (
-    <div className="border-r flex-none w-4/5 p-2">
+    <div className="flex-none w-4/5 p-2 border-r">
       <div className="font-bold">{t('manage.questionForms.mediaLibrary')}</div>
       <div className="grid grid-cols-5 gap-2 overflow-y-auto max-h-64">
         {data.userMediaFiles?.map((file) => (
@@ -30,6 +30,7 @@ function SuspendedMediaFiles({ onImageClick }: Props) {
             className={{ root: 'text-xs flex flex-col overflow-hidden' }}
             key={file.id}
             onClick={() => onImageClick(file.href, file.name)}
+            data={{ cy: `media-file-${file.name}` }}
           >
             <Image src={file.href} width={50} height={50} alt={file.name} />
             <Ellipsis maxLines={1} className={{ root: 'text-xs' }}>

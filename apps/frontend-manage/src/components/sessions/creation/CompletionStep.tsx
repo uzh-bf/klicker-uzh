@@ -3,6 +3,7 @@ import { faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 
 interface CompletionStepProps {
   children?: React.ReactNode
@@ -26,6 +27,7 @@ function CompletionStep({
   setStepNumber,
 }: CompletionStepProps) {
   const t = useTranslations()
+  const router = useRouter()
 
   return (
     <div className="flex flex-col items-center gap-4 p-4">
@@ -38,7 +40,11 @@ function CompletionStep({
       </div>
       <div className="space-x-2">
         {children}
-        <Button onClick={onViewElement} data={{ cy: 'load-session-list' }}>
+        <Button
+          onClick={onViewElement}
+          data={{ cy: 'load-session-list' }}
+          className={{ root: 'space-x-1' }}
+        >
           <Button.Icon>
             <FontAwesomeIcon icon={faEye} />
           </Button.Icon>
@@ -49,7 +55,10 @@ function CompletionStep({
             onRestartForm()
             resetForm()
             setStepNumber(0)
+            router.push({ pathname: '/' }, undefined, { shallow: true })
           }}
+          className={{ root: 'space-x-1' }}
+          data={{ cy: 'create-new-element' }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faSync} />

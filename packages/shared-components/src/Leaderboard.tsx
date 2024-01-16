@@ -1,15 +1,27 @@
-import { LeaderboardEntry, Participant } from '@klicker-uzh/graphql/dist/ops'
+import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ParticipantOther, ParticipantSelf } from './Participant'
 import { Podium } from './Podium'
 
+export interface LeaderboardCombinedEntry {
+  id: string | number
+  participantId?: string
+  isMember?: boolean
+  username: string
+  avatar?: string | null
+  score: number
+  rank: number
+  level?: number
+  isSelf?: boolean | null
+}
+
 interface LeaderboardProps {
-  leaderboard: LeaderboardEntry[]
+  leaderboard: LeaderboardCombinedEntry[]
   onJoin?: () => void
   onLeave?: () => void
   onParticipantClick?: (participantId: string, isSelf: boolean) => void
-  participant?: Participant | null
+  participant?: Partial<Participant> | null
   hidePodium?: boolean
   hideAvatars?: boolean
   className?: {
@@ -24,6 +36,7 @@ interface LeaderboardProps {
     rank2: any
     rank3: any
   }
+  topKOnly?: number
 }
 
 function Leaderboard({
@@ -36,36 +49,52 @@ function Leaderboard({
   hideAvatars,
   className,
   podiumImgSrc,
+  topKOnly,
 }: LeaderboardProps): React.ReactElement {
-  const { top10, inTop10, selfEntry } = useMemo(
+  const { rankedEntriesAndSelf, inTopK, selfEntry } = useMemo(
     () =>
       leaderboard.reduce<{
-        top10: LeaderboardEntry[]
-        inTop10: boolean
-        selfEntry?: LeaderboardEntry
+        rankedEntriesAndSelf: LeaderboardCombinedEntry[]
+        inTopK: boolean
+        selfEntry?: LeaderboardCombinedEntry
       }>(
         (acc, entry, ix) => {
-          if (entry.participantId === participant?.id) {
+          if (
+            entry.isMember ||
+            (typeof entry.participantId !== 'undefined' &&
+              entry.participantId === participant?.id)
+          ) {
             return {
-              top10: [...acc.top10, { ...entry, isSelf: true }],
-              inTop10: ix <= 9,
+              rankedEntriesAndSelf: [
+                ...acc.rankedEntriesAndSelf,
+                { ...entry, isSelf: true },
+              ],
+              inTopK: typeof topKOnly !== 'undefined' ? ix < topKOnly : false,
               selfEntry: entry,
             }
           }
 
-          if (ix <= 9) {
+          if (typeof topKOnly === 'undefined' || ix < topKOnly) {
             return {
-              top10: [...acc.top10, entry],
-              inTop10: acc.inTop10,
+              rankedEntriesAndSelf: [...acc.rankedEntriesAndSelf, entry],
+              inTopK: acc.inTopK,
             }
           }
 
           return acc
         },
-        { top10: [], inTop10: false, selfEntry: undefined }
+        { rankedEntriesAndSelf: [], inTopK: false, selfEntry: undefined }
       ),
     [leaderboard, participant]
   )
+
+  const filteredEntries = useMemo(() => {
+    if (typeof topKOnly === 'undefined') return rankedEntriesAndSelf
+
+    return rankedEntriesAndSelf.filter(
+      (entry: LeaderboardCombinedEntry) => entry.rank <= topKOnly
+    )
+  }, [rankedEntriesAndSelf, topKOnly])
 
   return (
     <div className={twMerge('space-y-4', className?.root)}>
@@ -80,21 +109,22 @@ function Leaderboard({
         />
       )}
       <div className={twMerge('space-y-1', className?.list)}>
-        {top10.map((entry: LeaderboardEntry) =>
+        {filteredEntries.map((entry: LeaderboardCombinedEntry) =>
           entry.isSelf === true ? (
             <ParticipantSelf
               key={entry.id}
-              isActive
+              isActive={entry.isSelf}
               pseudonym={entry.username}
               avatar={entry.avatar}
               withAvatar={!hideAvatars}
               points={entry.score}
               rank={entry.rank}
+              level={entry.level}
               onJoinCourse={onJoin}
               onLeaveCourse={onLeave}
               onClick={
-                onParticipantClick
-                  ? () => onParticipantClick(entry.participantId, true)
+                onParticipantClick && typeof entry.participantId !== 'undefined'
+                  ? () => onParticipantClick(entry.participantId!, true)
                   : undefined
               }
             />
@@ -106,24 +136,28 @@ function Leaderboard({
               avatar={entry.avatar}
               withAvatar={!hideAvatars}
               points={entry.score}
+              level={entry.level}
               onClick={
-                onParticipantClick
-                  ? () => onParticipantClick(entry.participantId, false)
+                onParticipantClick && typeof entry.participantId !== 'undefined'
+                  ? () => onParticipantClick(entry.participantId!, false)
                   : undefined
               }
               className={className?.listItem}
             />
           )
         )}
-        {!inTop10 && selfEntry && (
+        {typeof topKOnly !== 'undefined' && !inTopK && selfEntry && (
           <ParticipantSelf
             key={selfEntry.id}
-            isActive
+            isActive={selfEntry.isSelf ?? false}
             pseudonym={selfEntry.username}
             avatar={selfEntry.avatar}
             withAvatar={!hideAvatars}
             points={selfEntry.score}
             rank={selfEntry.rank}
+            level={selfEntry.level}
+            onJoinCourse={onJoin}
+            onLeaveCourse={onLeave}
           />
         )}
       </div>

@@ -16,6 +16,18 @@ interface QRPopupProps {
     modal?: string
   }
   children?: React.ReactNode
+  dataTrigger?: {
+    cy?: string
+    test?: string
+  }
+  dataModal?: {
+    cy?: string
+    test?: string
+  }
+  dataCloseButton?: {
+    cy?: string
+    test?: string
+  }
 }
 
 interface QRPopupPropsWithLink extends QRPopupProps {
@@ -33,6 +45,9 @@ function CourseQRModal({
   triggerText,
   className,
   children,
+  dataTrigger,
+  dataModal,
+  dataCloseButton,
 }: QRPopupPropsWithLink | QRPopupPropsWithChildren): React.ReactElement {
   const t = useTranslations()
   const [modalOpen, setModalOpen] = useState(false)
@@ -44,6 +59,7 @@ function CourseQRModal({
         <Button
           className={{ root: 'w-[41%] sm:w-max !mr-0' }}
           onClick={() => setModalOpen(true)}
+          data={dataTrigger}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faQrcode} />
@@ -56,6 +72,8 @@ function CourseQRModal({
       className={{
         content: className?.modal,
       }}
+      dataOverlay={dataModal}
+      dataCloseButton={dataCloseButton}
     >
       <div>
         <QR
@@ -74,6 +92,7 @@ function CourseQRModal({
               className?.button
             ),
           }}
+          data={{ cy: 'present-qr-code-button' }}
         >
           <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
         </Button>

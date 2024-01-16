@@ -3,21 +3,27 @@ module.exports = {
     'Getting Started': [
       'getting_started/welcome',
       'getting_started/core_concepts',
-      // 'getting_started/migration',
+      'getting_started/migration',
     ],
     'Tutorials for Lecturers': [
       'tutorials/question_management',
       'tutorials/course_management',
+      'tutorials/delegated_access',
       'tutorials/live_quiz',
       'tutorials/live_qa',
       'tutorials/microlearning',
       'tutorials/practice_quiz',
       'tutorials/group_activity',
     ],
-    // 'Tutorials for Participants': [
-    //   'tutorials/klickeruzh_app',
-    //   'tutorials/push_notifications',
-    // ],
+    'Tutorials for Participants': [
+      'student_tutorials/student_accounts',
+      'student_tutorials/klickeruzh_app',
+      'student_tutorials/live_quiz',
+      'student_tutorials/practice_quiz',
+      'student_tutorials/microlearning',
+      'student_tutorials/course_leaderboard',
+      'student_tutorials/groups_activities',
+    ],
     // Gamification: [
     //   'gamification/overview',
     //   'gamification/experience',

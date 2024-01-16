@@ -38,6 +38,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
                 icon={faPlay}
                 label={session.name}
                 className={{ icon: 'mr-1', root: 'flex-1' }}
+                data={{ cy: `start-session-${session.name}` }}
               />
               <Button
                 onClick={() => {
@@ -47,7 +48,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
                 className={{
                   root: 'h-full p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100',
                 }}
-                data={{ cy: `ppt-links` }}
+                data={{ cy: `ppt-link-${session.name}` }}
               >
                 <Button.Icon className={{ root: 'mr-2' }}>
                   <FontAwesomeIcon icon={faPersonChalkboard} />
@@ -78,6 +79,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
                   setStartId(session.id)
                   setStartName(session.name)
                 }}
+                data={{ cy: `start-session-${session.name}` }}
               />
               <Button
                 onClick={() => {
@@ -87,6 +89,7 @@ function SessionLists({ runningSessions, plannedSessions }: SessionListsProps) {
                 className={{
                   root: 'h-full p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100',
                 }}
+                data={{ cy: `ppt-link-${session.name}` }}
               >
                 <Button.Icon className={{ root: 'mr-2' }}>
                   <FontAwesomeIcon icon={faPersonChalkboard} />

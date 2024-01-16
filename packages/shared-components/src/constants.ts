@@ -51,7 +51,54 @@ export const QUESTION_GROUPS: Record<string, string[]> = {
   WITH_STATISTICS: [ElementType.Numerical],
 }
 
-export const AVATAR_OPTIONS: Record<string, string[]> = {
+export type AVATAR_OPTIONS_KEY =
+  | 'hair'
+  | 'hairColor'
+  | 'eyes'
+  | 'accessory'
+  | 'mouth'
+  | 'facialHair'
+  | 'clothing'
+  | 'clothingColor'
+  | 'skinTone'
+
+export type AVATAR_OPTIONS_VALUE =
+  | 'long'
+  | 'bun'
+  | 'short'
+  | 'buzz'
+  | 'afro'
+  | 'blonde'
+  | 'black'
+  | 'brown'
+  | 'normal'
+  | 'happy'
+  | 'content'
+  | 'squint'
+  | 'heart'
+  | 'wink'
+  | 'none'
+  | 'roundGlasses'
+  | 'tinyGlasses'
+  | 'shades'
+  | 'grin'
+  | 'openSmile'
+  | 'serious'
+  | 'stubble'
+  | 'mediumBeard'
+  | 'shirt'
+  | 'dress'
+  | 'dressShirt'
+  | 'blue'
+  | 'green'
+  | 'red'
+  | 'light'
+  | 'dark'
+
+export const AVATAR_OPTIONS: Record<
+  AVATAR_OPTIONS_KEY,
+  AVATAR_OPTIONS_VALUE[]
+> = {
   hair: ['long', 'bun', 'short', 'buzz', 'afro'],
   hairColor: ['blonde', 'black', 'brown'],
   eyes: ['normal', 'happy', 'content', 'squint', 'heart', 'wink'],

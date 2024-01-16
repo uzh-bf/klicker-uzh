@@ -1,6 +1,9 @@
+import { useLazyQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { CheckParticipantNameAvailableDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import {
   Button,
   Checkbox,
@@ -17,7 +20,6 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import DynamicMarkdown from '../learningElements/DynamicMarkdown'
-import DebouncedUsernameField from './DebouncedUsernameField'
 
 interface Props {
   initialUsername?: string
@@ -31,6 +33,9 @@ function CreateAccountForm({
   handleSubmit,
 }: Props) {
   const t = useTranslations()
+  const [checkParticipantNameAvailable] = useLazyQuery(
+    CheckParticipantNameAvailableDocument
+  )
 
   const createAccountSchema = yup.object({
     email: yup
@@ -126,6 +131,7 @@ function CreateAccountForm({
                 }}
                 type="submit"
                 disabled={!tosChecked || isSubmitting || !isValid}
+                data={{ cy: 'create-profile-button' }}
               >
                 <Button.Icon>
                   <FontAwesomeIcon icon={faSave} />
@@ -146,6 +152,7 @@ function CreateAccountForm({
                   className={{
                     label: 'font-bold text-md text-black',
                   }}
+                  data={{ cy: 'email-field' }}
                 />
                 <DebouncedUsernameField
                   name="username"
@@ -157,6 +164,14 @@ function CreateAccountForm({
                   validateField={async () => {
                     await validateField('username')
                   }}
+                  checkUsernameAvailable={async (name: string) => {
+                    const { data: result } =
+                      await checkParticipantNameAvailable({
+                        variables: { username: name },
+                      })
+                    return result?.checkParticipantNameAvailable ?? false
+                  }}
+                  data={{ cy: 'username-field-account-creation' }}
                 />
                 <FormikTextField
                   name="password"
@@ -166,6 +181,7 @@ function CreateAccountForm({
                     label: 'font-bold text-md text-black',
                   }}
                   type="password"
+                  data={{ cy: 'password-field' }}
                 />
                 <FormikTextField
                   name="passwordRepetition"
@@ -175,6 +191,7 @@ function CreateAccountForm({
                     label: 'font-bold text-md text-black',
                   }}
                   type="password"
+                  data={{ cy: 'password-repetition-field' }}
                 />
 
                 <div>
@@ -183,7 +200,10 @@ function CreateAccountForm({
                   </div>
                   <div className="flex flex-row gap-4 space-between">
                     <div className="flex flex-col items-center gap-1">
-                      <FormikSwitchField name="isProfilePublic" />
+                      <FormikSwitchField
+                        name="isProfilePublic"
+                        data={{ cy: 'toggle-profile-public-setting' }}
+                      />
                       {values.isProfilePublic
                         ? t('shared.generic.yes')
                         : t('shared.generic.no')}

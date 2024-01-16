@@ -73,7 +73,7 @@ function SessionCreationBlock({
 
   return (
     <div key={index} className="flex flex-col md:w-56">
-      <div className="flex flex-row items-center justify-between bg-slate-200 rounded py-1 px-2 text-slate-700">
+      <div className="flex flex-row items-center justify-between px-2 py-1 rounded bg-slate-200 text-slate-700">
         <div data-cy="block-container-header">
           {t('control.session.blockN', { number: index + 1 })}
         </div>
@@ -85,6 +85,7 @@ function SessionCreationBlock({
             }}
             disabled={numOfBlocks === 1}
             onClick={() => move(index, index !== 0 ? index - 1 : index)}
+            data={{ cy: `move-block-${index}-left` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faArrowLeft} />
@@ -99,6 +100,7 @@ function SessionCreationBlock({
             onClick={() =>
               move(index, index !== numOfBlocks ? index + 1 : index)
             }
+            data={{ cy: `move-block-${index}-right` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faArrowRight} />
@@ -109,8 +111,9 @@ function SessionCreationBlock({
             basic
             onClick={() => setOpenSettings(true)}
             className={{
-              root: 'px-1 sm:hover:text-primary hover:bg-primary-20',
+              root: 'px-1 sm:hover:text-primary ',
             }}
+            data={{ cy: `open-block-${index}-settings` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faGears} />
@@ -170,6 +173,7 @@ function SessionCreationBlock({
                     })
                   }
                 }}
+                data={{ cy: `move-question-${questionIdx}-block-${index}-up` }}
               >
                 <FontAwesomeIcon icon={faArrowUp} />
               </Button>
@@ -202,6 +206,9 @@ function SessionCreationBlock({
                     })
                   }
                 }}
+                data={{
+                  cy: `move-question-${questionIdx}-block-${index}-down`,
+                }}
               >
                 <FontAwesomeIcon icon={faArrowDown} />
               </Button>
@@ -225,6 +232,7 @@ function SessionCreationBlock({
                     .concat(block.types.slice(questionIdx + 1)),
                 })
               }}
+              data={{ cy: `delete-question-${questionIdx}-block-${index}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faTrash} />
@@ -286,7 +294,16 @@ function SessionCreationBlock({
       >
         <FontAwesomeIcon icon={faPlus} size="lg" />
       </div>
-      <Modal open={openSettings} onClose={() => setOpenSettings(false)}>
+      <Modal
+        open={openSettings}
+        onClose={() => setOpenSettings(false)}
+        title={t('manage.sessionForms.blockSettingsTitle', {
+          blockIx: index + 1,
+        })}
+        className={{
+          content: 'w-full sm:w-3/4 md:w-1/2 !min-h-max !h-max !pb-0',
+        }}
+      >
         <NumberField
           label={t('manage.sessionForms.timeLimit')}
           tooltip={t('manage.sessionForms.timeLimitTooltip', {
@@ -302,6 +319,12 @@ function SessionCreationBlock({
           }}
           placeholder={t('manage.sessionForms.optionalTimeLimit')}
         />
+        <Button
+          className={{ root: 'float-right mt-3 bg-uzh-blue-100 text-white' }}
+          onClick={() => setOpenSettings(false)}
+        >
+          {t('shared.generic.ok')}
+        </Button>
       </Modal>
     </div>
   )

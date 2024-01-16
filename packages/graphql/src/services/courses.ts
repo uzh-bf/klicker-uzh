@@ -3,13 +3,12 @@ import {
   GroupActivityStatus,
   LeaderboardEntry,
   LearningElementStatus,
-  PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
 import * as R from 'ramda'
 import { GroupLeaderboardEntry } from 'src/ops'
 import { Context, ContextWithUser } from '../lib/context'
-import { orderStacks } from '../lib/util'
+import { levelFromXp, orderStacks } from '../lib/util'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -257,6 +256,7 @@ export async function getCourseOverviewData(
                     ? entry.participant.avatar
                     : null,
                 participantId: entry.participant.id,
+                level: levelFromXp(entry.participant.xp),
                 isSelf: ctx.user?.sub === entry.participant.id,
               },
             ],
@@ -284,7 +284,9 @@ export async function getCourseOverviewData(
               {
                 ...group,
                 score,
-                rank: ix + 1,
+                isMember: participation.participant.participantGroups.some(
+                  (g) => g.id === group.id
+                ),
               },
             ],
             count: acc.count + 1,
@@ -314,6 +316,9 @@ export async function getCourseOverviewData(
           return { ...entry, rank: ix + 1 }
         return []
       })
+      const filteredGroupEntries = sortedGroupEntries.flatMap((entry, ix) => {
+        return { ...entry, rank: ix + 1 }
+      })
 
       return {
         id: `${courseId}-${participation.participant.id}`,
@@ -326,7 +331,7 @@ export async function getCourseOverviewData(
           averageScore:
             allEntries.count > 0 ? allEntries.sum / allEntries.count : 0,
         },
-        groupLeaderboard: sortedGroupEntries,
+        groupLeaderboard: filteredGroupEntries,
         groupLeaderboardStatistics: {
           participantCount: allGroupEntries.count,
           averageScore:
@@ -397,6 +402,10 @@ export async function createCourse(
 ) {
   // TODO: ensure that PINs are unique
   const randomPin = Math.floor(Math.random() * 900000000 + 100000000)
+
+  // convert times from local time to UTC
+  // startDate.setHours(startDate.getHours() - startDate.getTimezoneOffset() / 60)
+  // endDate.setHours(endDate.getHours() - endDate.getTimezoneOffset() / 60)
 
   const course = await ctx.prisma.course.create({
     data: {
@@ -470,80 +479,6 @@ export async function getControlCourses(ctx: ContextWithUser) {
   })
 
   return user?.courses ?? []
-}
-
-export async function getUserLearningElements(ctx: ContextWithUser) {
-  const participantCoursesWithLearningElements =
-    await ctx.prisma.participant.findUnique({
-      where: { id: ctx.user.sub },
-      include: {
-        participations: {
-          include: {
-            course: {
-              include: {
-                learningElements: {
-                  orderBy: {
-                    displayName: 'asc',
-                  },
-                  where: {
-                    status: LearningElementStatus.PUBLISHED,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    })
-
-  if (!participantCoursesWithLearningElements) return []
-
-  return participantCoursesWithLearningElements.participations.flatMap(
-    (participation) =>
-      participation.course.learningElements.map((learningElement) => {
-        return {
-          ...learningElement,
-          course: participation.course,
-        }
-      })
-  )
-}
-
-export async function getUserPracticeQuizzes(ctx: ContextWithUser) {
-  const participantCoursesWithPracticeQuizzes =
-    await ctx.prisma.participant.findUnique({
-      where: { id: ctx.user.sub },
-      include: {
-        participations: {
-          include: {
-            course: {
-              include: {
-                practiceQuizzes: {
-                  orderBy: {
-                    displayName: 'asc',
-                  },
-                  where: {
-                    status: PublicationStatus.PUBLISHED,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    })
-
-  if (!participantCoursesWithPracticeQuizzes) return []
-
-  return participantCoursesWithPracticeQuizzes.participations.flatMap(
-    (participation) =>
-      participation.course.practiceQuizzes.map((practiceQuiz) => {
-        return {
-          ...practiceQuiz,
-          course: participation.course,
-        }
-      })
-  )
 }
 
 export async function getCourseData(
@@ -634,6 +569,7 @@ export async function getCourseData(
     }
   })
 
+  // FIXME: rework typing on this reduce
   const { activeLBEntries, activeSum, activeCount } =
     course?.leaderboard.reduce(
       (acc, entry) => {

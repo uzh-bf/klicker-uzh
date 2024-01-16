@@ -5,13 +5,13 @@ schema {
 }
 
 type Achievement {
-  descriptionDE: String!
-  descriptionEN: String!
+  descriptionDE: String
+  descriptionEN: String
   icon: String!
   iconColor: String
   id: Int!
-  nameDE: String!
-  nameEN: String!
+  nameDE: String
+  nameEN: String
 }
 
 input AvatarSettingsInput {
@@ -67,10 +67,11 @@ type ChoiceQuestionOptions {
 type ChoicesElementData implements ElementData {
   content: String!
   explanation: String
-  id: Int!
+  id: ID!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
+  questionId: Int!
   type: ElementType!
 }
 
@@ -80,10 +81,11 @@ type ChoicesQuestionData implements QuestionData {
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
-  id: Int!
+  id: ID!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int
+  questionId: Int
   type: ElementType!
 }
 
@@ -127,6 +129,7 @@ type Course {
   numOfParticipants: Int
   owner: User
   pinCode: Int
+  practiceQuizzes: [PracticeQuiz!]
   sessions: [Session!]
   startDate: Date!
   updatedAt: Date!
@@ -151,17 +154,19 @@ type Element {
   options: Json!
   pointsMultiplier: Int!
   questionData: QuestionData!
-  tags: [Tag!]!
+  tags: [Tag!]
   type: ElementType!
   updatedAt: Date!
+  version: Int!
 }
 
 interface ElementData {
   content: String!
   explanation: String
-  id: Int!
+  id: ID!
   name: String!
   pointsMultiplier: Int!
+  questionId: Int!
   type: ElementType!
 }
 
@@ -227,7 +232,7 @@ type Feedback {
   isPublished: Boolean!
   isResolved: Boolean!
   resolvedAt: Date
-  responses: [FeedbackResponse!]!
+  responses: [FeedbackResponse!]
   votes: Int!
 }
 
@@ -249,10 +254,11 @@ type FileUploadSAS {
 type FlashcardElementData implements ElementData {
   content: String!
   explanation: String
-  id: Int!
+  id: ID!
   name: String!
   options: FlashcardElementOptions!
   pointsMultiplier: Int!
+  questionId: Int!
   type: ElementType!
 }
 
@@ -263,10 +269,11 @@ type FlashcardElementOptions {
 type FreeTextElementData implements ElementData {
   content: String!
   explanation: String
-  id: Int!
+  id: ID!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
+  questionId: Int!
   type: ElementType!
 }
 
@@ -276,10 +283,11 @@ type FreeTextQuestionData implements QuestionData {
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
-  id: Int!
+  id: ID!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int
+  questionId: Int
   type: ElementType!
 }
 
@@ -406,6 +414,7 @@ type LeaderboardEntry {
   id: Int!
   isSelf: Boolean
   lastBlockOrder: Int!
+  level: Int
   participant: Participant
   participantId: String!
   participation: Participation!
@@ -505,7 +514,8 @@ type Mutation {
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDates(courseId: String!, endDate: Date, startDate: Date): Course
   changeCourseDescription(courseId: String!, input: String!): Course
-  changeInitialSettings(locale: LocaleType!, shortname: String!): User
+  changeEmailSettings(projectUpdates: Boolean!): User
+  changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
   changeParticipantLocale(locale: LocaleType!): Participant
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
   changeShortname(shortname: String!): User
@@ -543,7 +553,7 @@ type Mutation {
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   loginParticipant(password: String!, username: String!): ID
   loginParticipantWithLti(signedLtiData: String!): ParticipantTokenData
-  loginUserToken(email: String!, token: String!): ID
+  loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
   manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
@@ -569,7 +579,9 @@ type Mutation {
   unpublishMicroSession(id: String!): MicroSession
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateGroupAverageScores: Boolean!
-  updateParticipantProfile(avatar: String, avatarSettings: AvatarSettingsInput, email: String, isProfilePublic: Boolean, password: String, username: String): Participant
+  updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
+  updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
+  updateQuestionInstances(questionId: Int!): [QuestionInstance!]
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
@@ -578,10 +590,11 @@ type Mutation {
 type NumericalElementData implements ElementData {
   content: String!
   explanation: String
-  id: Int!
+  id: ID!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
+  questionId: Int!
   type: ElementType!
 }
 
@@ -591,10 +604,11 @@ type NumericalQuestionData implements QuestionData {
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
-  id: Int!
+  id: ID!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int
+  questionId: Int
   type: ElementType!
 }
 
@@ -684,12 +698,12 @@ type ParticipantAchievementInstance {
 }
 
 type ParticipantGroup {
-  averageMemberScore: Float!
+  averageMemberScore: Int!
   code: Int!
-  groupActivityScore: Float!
+  groupActivityScore: Int!
   id: ID!
   name: String!
-  participants: [Participant!]!
+  participants: [Participant!]
   score: Float
 }
 
@@ -752,7 +766,8 @@ type PushSubscription {
 
 type Query {
   basicCourseInformation(courseId: String!): Course
-  checkUsernameAvailability(username: String!): Boolean!
+  checkParticipantNameAvailable(username: String!): Boolean!
+  checkShortnameAvailable(shortname: String!): Boolean!
   checkValidCoursePin(pin: Int!): String
   cockpitSession(id: String!): Session
   controlCourse(id: String!): Course
@@ -766,9 +781,10 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   getParticipation(courseId: String!): Participation
+  getPracticeCourses: [Course!]
+  getPracticeQuizList: [Course!]
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   learningElement(id: String!): LearningElement
-  learningElements: [LearningElement!]
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
@@ -776,7 +792,6 @@ type Query {
   participations(endpoint: String): [Participation!]
   pinnedFeedbacks(id: String!): Session
   practiceQuiz(id: String!): PracticeQuiz
-  practiceQuizzes: [PracticeQuiz!]
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
   questionStack(id: Int!): QuestionStack
@@ -795,6 +810,7 @@ type Query {
   userProfile: User
   userQuestions: [Element!]
   userRunningSessions: [Session!]
+  userScope: UserLoginScope
   userSessions: [Session!]
   userTags: [Tag!]
 }
@@ -805,9 +821,10 @@ interface QuestionData {
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
-  id: Int!
+  id: ID!
   name: String!
   pointsMultiplier: Int
+  questionId: Int
   type: ElementType!
 }
 
@@ -822,7 +839,7 @@ type QuestionInstance {
   evaluation: InstanceEvaluation
   id: Int!
   pointsMultiplier: Int!
-  questionData: QuestionData!
+  questionData: QuestionData
 }
 
 type QuestionResponse {
@@ -982,9 +999,11 @@ type TabData {
 }
 
 type Tag {
+  createdAt: Date!
   id: Int!
   name: String!
   order: Int!
+  updatedAt: Date!
 }
 
 type Title {
@@ -1001,6 +1020,7 @@ type User {
   loginToken: String
   loginTokenExpiresAt: Date
   mediaFiles: [MediaFile!]
+  sendProjectUpdates: Boolean!
   shortname: String!
 }
 
@@ -1009,7 +1029,7 @@ type UserLogin {
   lastLoginAt: Date
   name: String!
   scope: UserLoginScope!
-  user: User!
+  user: User
 }
 
 enum UserLoginScope {

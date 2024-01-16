@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/grading",
-  "version": "3.1.0-beta.8",
+  "version": "3.1.0-beta.27",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,6 +30,7 @@
   "scripts": {
     "analyze": "size-limit --why",
     "build": "cross-env NODE_ENV=production tsup",
+    "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "cross-env NODE_ENV=development tsup --watch",
     "dev:offline": "pnpm run dev",

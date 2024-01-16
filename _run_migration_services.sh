@@ -1,3 +1,3 @@
 #!/bin/sh
 
-podman-compose up listmonk listmonk_db mailhog
+docker compose up listmonk listmonk_db mailhog

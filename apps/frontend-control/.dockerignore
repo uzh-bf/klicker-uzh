@@ -9,6 +9,7 @@ legacy/
 newsletter/
 **/.next/
 **/node_modules/
+**/.turbo/
 util/
 
 Dockerfile

@@ -60,8 +60,8 @@ function Header({
           <Select
             value={router.locale}
             items={[
-              { value: 'de', label: 'DE' },
-              { value: 'en', label: 'EN' },
+              { value: 'de', label: 'DE', data: { cy: 'language-de' } },
+              { value: 'en', label: 'EN', data: { cy: 'language-en' } },
             ]}
             onChange={(newValue: string) => {
               changeParticipantLocale({ variables: { locale: newValue } })
@@ -73,6 +73,7 @@ function Header({
               trigger:
                 'text-white border-b border-solid p-0.5 pb-0 rounded-none sm:hover:bg-transparent sm:hover:text-white',
             }}
+            data={{ cy: 'language-select' }}
             basic
           />
         </div>
@@ -83,6 +84,7 @@ function Header({
                 root: 'block px-1 md:px-2 py-1 rounded hover:bg-primary-20 sm:hover:text-primary',
               }}
               basic
+              data={{ cy: 'course-docs' }}
             >
               <FontAwesomeIcon className="fa-xl" icon={faCircleQuestion} />
             </Button>
@@ -95,6 +97,7 @@ function Header({
             <Button
               className={{ root: 'hidden text-white bg-slate-800 md:block' }}
               onClick={() => router.back()}
+              data={{ cy: 'header-back' }}
             >
               {t('shared.generic.back')}
             </Button>
@@ -102,6 +105,7 @@ function Header({
             <Link href="/">
               <Button
                 className={{ root: 'hidden text-white bg-slate-800 md:block' }}
+                data={{ cy: 'header-home' }}
               >
                 {t('shared.generic.home')}
               </Button>
@@ -109,7 +113,10 @@ function Header({
           ))
         ) : (
           <Link href="/login">
-            <Button className={{ root: 'text-white bg-slate-800' }}>
+            <Button
+              className={{ root: 'text-white bg-slate-800' }}
+              data={{ cy: 'header-login' }}
+            >
               {t('shared.generic.login')}
             </Button>
           </Link>
@@ -120,16 +127,13 @@ function Header({
               className={{
                 root: 'hidden text-white bg-uzh-red-100 border-uzh-red-100 md:block',
               }}
+              data={{ cy: 'header-setup-profile' }}
             >
               {t('pwa.general.setupProfile')}
             </Button>
           </Link>
         )}
-        <Link
-          href={participant ? '/profile' : '/login'}
-          className=""
-          legacyBehavior
-        >
+        <Link href={participant ? '/profile' : '/login'} legacyBehavior>
           <Button
             basic
             className={{ root: 'relative' }}

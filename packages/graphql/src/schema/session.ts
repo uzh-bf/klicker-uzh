@@ -3,10 +3,10 @@ import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import { AllElementTypeData, QuestionResults } from '../types/app'
 import type { ICourse } from './course'
-import { Course } from './course'
+import { CourseRef } from './course'
 import type { IQuestionInstance } from './question'
-import { QuestionInstance } from './question'
-import { QuestionData } from './questionData'
+import { QuestionInstanceRef } from './question'
+import { QuestionDataRef } from './questionData'
 
 export const SessionStatus = builder.enumType('SessionStatus', {
   values: Object.values(DB.SessionStatus),
@@ -31,9 +31,9 @@ export const BlockInput = builder.inputType('BlockInput', {
 export interface ISession extends DB.LiveSession {
   numOfBlocks?: number
   numOfQuestions?: number
-  activeBlock?: DB.SessionBlock | null
-  blocks?: DB.SessionBlock[]
-  feedbacks?: DB.Feedback[]
+  activeBlock?: ISessionBlock | null
+  blocks?: ISessionBlock[]
+  feedbacks?: IFeedback[]
   confusionFeedbacks?: DB.ConfusionTimestep[]
   confusionSummary?: IConfusionSummary
   course?: ICourse | null
@@ -64,19 +64,19 @@ export const Session = SessionRef.implement({
     numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
 
     activeBlock: t.expose('activeBlock', {
-      type: SessionBlock,
+      type: SessionBlockRef,
       nullable: true,
     }),
     blocks: t.expose('blocks', {
-      type: [SessionBlock],
+      type: [SessionBlockRef],
       nullable: true,
     }),
     feedbacks: t.expose('feedbacks', {
-      type: [Feedback],
+      type: [FeedbackRef],
       nullable: true,
     }),
     confusionFeedbacks: t.expose('confusionFeedbacks', {
-      type: [ConfusionTimestep],
+      type: [ConfusionTimestepRef],
       nullable: true,
     }),
     confusionSummary: t.expose('confusionSummary', {
@@ -84,7 +84,7 @@ export const Session = SessionRef.implement({
       nullable: true,
     }),
     course: t.expose('course', {
-      type: Course,
+      type: CourseRef,
       nullable: true,
     }),
 
@@ -113,13 +113,17 @@ export const SessionBlock = SessionBlockRef.implement({
     execution: t.exposeInt('execution', { nullable: true }),
 
     instances: t.expose('instances', {
-      type: [QuestionInstance],
+      type: [QuestionInstanceRef],
       nullable: true,
     }),
   }),
 })
 
-export const Feedback = builder.prismaObject('Feedback', {
+export interface IFeedback extends DB.Feedback {
+  responses?: DB.FeedbackResponse[]
+}
+export const FeedbackRef = builder.objectRef<IFeedback>('Feedback')
+export const Feedback = FeedbackRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     isPublished: t.exposeBoolean('isPublished'),
@@ -127,13 +131,18 @@ export const Feedback = builder.prismaObject('Feedback', {
     isResolved: t.exposeBoolean('isResolved'),
     content: t.exposeString('content'),
     votes: t.exposeInt('votes'),
-    responses: t.relation('responses'),
+    responses: t.expose('responses', {
+      type: [FeedbackResponseRef],
+      nullable: true,
+    }),
     resolvedAt: t.expose('resolvedAt', { type: 'Date', nullable: true }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
   }),
 })
 
-export const FeedbackResponse = builder.prismaObject('FeedbackResponse', {
+export const FeedbackResponseRef =
+  builder.objectRef<DB.FeedbackResponse>('FeedbackResponse')
+export const FeedbackResponse = FeedbackResponseRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     content: t.exposeString('content'),
@@ -144,7 +153,9 @@ export const FeedbackResponse = builder.prismaObject('FeedbackResponse', {
   }),
 })
 
-export const ConfusionTimestep = builder.prismaObject('ConfusionTimestep', {
+export const ConfusionTimestepRef =
+  builder.objectRef<DB.ConfusionTimestep>('ConfusionTimestep')
+export const ConfusionTimestep = ConfusionTimestepRef.implement({
   fields: (t) => ({
     speed: t.exposeInt('speed'),
     difficulty: t.exposeInt('difficulty'),
@@ -217,7 +228,7 @@ export const InstanceResult = InstanceResultRef.implement({
     status: t.expose('status', { type: SessionBlockStatus }),
 
     questionData: t.field({
-      type: QuestionData,
+      type: QuestionDataRef,
       resolve: (q) => q.questionData,
     }),
     statistics: t.expose('statistics', { type: Statistics, nullable: true }),
@@ -232,14 +243,13 @@ export const QuestionResponse = QuestionResponseRef.implement({
   }),
 })
 
-export const QuestionResponseDetail = builder.prismaObject(
-  'QuestionResponseDetail',
-  {
-    fields: (t) => ({
-      id: t.exposeInt('id'),
-    }),
-  }
-)
+export const QuestionResponseDetailRef =
+  builder.objectRef<DB.QuestionResponseDetail>('QuestionResponseDetail')
+export const QuestionResponseDetail = QuestionResponseDetailRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+  }),
+})
 
 export interface ITabData {
   id: string
@@ -278,7 +288,7 @@ export interface ISessionEvaluation {
   isGamificationEnabled: boolean
   blocks: IEvaluationBlock[]
   instanceResults: IInstanceResult[]
-  feedbacks: DB.Feedback[]
+  feedbacks: IFeedback[]
   confusionFeedbacks: DB.ConfusionTimestep[]
 }
 export const SessionEvaluationRef =
@@ -297,15 +307,15 @@ export const SessionEvaluation = SessionEvaluationRef.implement({
       resolve: (evaluation) => evaluation.blocks,
     }),
     instanceResults: t.field({
-      type: [InstanceResult],
+      type: [InstanceResultRef],
       resolve: (evaluation) => evaluation.instanceResults,
     }),
     feedbacks: t.field({
-      type: [Feedback],
+      type: [FeedbackRef],
       resolve: (evaluation) => evaluation.feedbacks,
     }),
     confusionFeedbacks: t.field({
-      type: [ConfusionTimestep],
+      type: [ConfusionTimestepRef],
       resolve: (evaluation) => evaluation.confusionFeedbacks,
     }),
   }),

@@ -51,7 +51,10 @@ function StartModal({
         </Button>
       }
       onSecondaryAction={
-        <Button onClick={() => setStartModalOpen(false)}>
+        <Button
+          onClick={() => setStartModalOpen(false)}
+          data={{ cy: 'cancel-start-session-modal' }}
+        >
           {t('shared.generic.cancel')}
         </Button>
       }

@@ -9,12 +9,11 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-  TURBO_REMOTE_ONLY: true
 
 jobs:
   cypress-run:
+    # runs-on: self-hosted
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:15
@@ -47,12 +46,10 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
-
-    runs-on: ubuntu-latest
     # strategy:
     #   fail-fast: false # https://github.com/cypress-io/github-action/issues/48
     #   matrix:
-    #     containers: [1, 2] # Uses 2 parallel instances
+    #     containers: [1, 2] # Run parallel instances
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
 
@@ -64,24 +61,40 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.pnpm
-            ${{ github.workspace }}/apps/auth/.next/cache
-            ${{ github.workspace }}/apps/frontend-pwa/.next/cache
-            ${{ github.workspace }}/apps/frontend-manage/.next/cache
-            ${{ github.workspace }}/apps/frontend-control/.next/cache
-          # Generate a new cache whenever packages or source files change.
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          # If source files changed but packages didn't, rebuild from a prior cache.
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
-
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.10.0
-          run_install: true
+          version: 8.14.1
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: |
+            ${{ env.STORE_PATH }}
+            ~/.cache/Cypress
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - uses: actions/cache@v3
+        name: Setup turbo cache
+        with:
+          path: |
+            .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - name: Install bun
+        run: pnpm add -g bun@1.0.7
+
+      - name: Install dependencies
+        run: pnpm install
 
       # - name: Install azure-functions-core-tools
       #   run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
@@ -95,11 +108,12 @@ jobs:
           FUNC_RESPONSES_SETTINGS: ${{ secrets.FUNC_RESPONSES_SETTINGS }}
           FUNC_RESPONSE_PROCESSOR_SETTINGS: ${{ secrets.FUNC_RESPONSE_PROCESSOR_SETTINGS }}
 
+      - name: Build all packages and apps
+        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
+
       - name: Apply migrations and seed the database
         run: |
           cd packages/prisma
-          pnpm add -g bun@1.0.7
-          pnpm run build
           pnpm run prisma:reset:raw -f
           pnpm run seed:test
         env:
@@ -107,21 +121,33 @@ jobs:
 
       - name: Start services in the background
         run: pnpm run start:test &
+        env:
+          DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker
         # run: pnpm run start:test
 
       - name: Cypress run
-        uses: cypress-io/github-action@v5
+        uses: cypress-io/github-action@v6
         timeout-minutes: 20
         with:
           install: false
           wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
-          wait-on-timeout: 480
+          wait-on-timeout: 300
           record: true
-          browser: chrome
+          browser: electron
           working-directory: cypress
+          # parallel: true
         env:
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage
+          path: cypress/coverage
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2

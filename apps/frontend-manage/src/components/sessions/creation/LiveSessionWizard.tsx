@@ -186,7 +186,6 @@ function LiveSessionWizard({
       }
 
       if (success) {
-        router.push('/')
         setIsWizardCompleted(true)
       }
     } catch (error) {
@@ -226,6 +225,7 @@ function LiveSessionWizard({
                 })
                 router.push(`/sessions/${data?.createSession?.id}/cockpit`)
               }}
+              className={{ root: 'space-x-1' }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faPlay} />
@@ -241,7 +241,7 @@ function LiveSessionWizard({
           blocks: initialValues?.blocks?.map((block) => {
             return {
               questionIds: block.instances?.map(
-                (instance) => instance.questionData.id
+                (instance) => instance.questionData.questionId
               ),
               titles: block.instances?.map(
                 (instance) => instance.questionData.name
@@ -338,7 +338,7 @@ function StepOne(_: StepProps) {
           label={t('manage.sessionForms.name')}
           tooltip={t('manage.sessionForms.liveSessionName')}
           className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-live-session-name"
+          data-cy="insert-live-quiz-name"
           shouldValidate={() => true}
         />
         <FormikTextField
@@ -386,6 +386,13 @@ function StepTwo(props: StepProps) {
     }
   }, [values.isGamificationEnabled])
 
+  const preparedCourses = props.courses?.map((course) => {
+    return {
+      ...course,
+      data: { cy: `select-course-${course.label}` },
+    }
+  })
+
   return (
     <div className="flex flex-row gap-16">
       {props.courses && (
@@ -400,8 +407,13 @@ function StepTwo(props: StepProps) {
                 {
                   label: t('manage.sessionForms.liveSessionNoCourse'),
                   value: '',
+                  data: {
+                    cy: `select-course-${t(
+                      'manage.sessionForms.liveSessionNoCourse'
+                    )}`,
+                  },
                 },
-                ...props.courses,
+                ...(preparedCourses || []),
               ]}
               hideError
               data={{ cy: 'select-course' }}
@@ -438,10 +450,42 @@ function StepTwo(props: StepProps) {
               tooltip={t('manage.sessionForms.liveSessionMultiplier')}
               placeholder={t('manage.sessionForms.multiplierDefault')}
               items={[
-                { label: t('manage.sessionForms.multiplier1'), value: '1' },
-                { label: t('manage.sessionForms.multiplier2'), value: '2' },
-                { label: t('manage.sessionForms.multiplier3'), value: '3' },
-                { label: t('manage.sessionForms.multiplier4'), value: '4' },
+                {
+                  label: t('manage.sessionForms.multiplier1'),
+                  value: '1',
+                  data: {
+                    cy: `select-multiplier-${t(
+                      'manage.sessionForms.multiplier1'
+                    )}`,
+                  },
+                },
+                {
+                  label: t('manage.sessionForms.multiplier2'),
+                  value: '2',
+                  data: {
+                    cy: `select-multiplier-${t(
+                      'manage.sessionForms.multiplier2'
+                    )}`,
+                  },
+                },
+                {
+                  label: t('manage.sessionForms.multiplier3'),
+                  value: '3',
+                  data: {
+                    cy: `select-multiplier-${t(
+                      'manage.sessionForms.multiplier3'
+                    )}`,
+                  },
+                },
+                {
+                  label: t('manage.sessionForms.multiplier4'),
+                  value: '4',
+                  data: {
+                    cy: `select-multiplier-${t(
+                      'manage.sessionForms.multiplier4'
+                    )}`,
+                  },
+                },
               ]}
               data={{ cy: 'select-multiplier' }}
               className={{ tooltip: 'z-20' }}

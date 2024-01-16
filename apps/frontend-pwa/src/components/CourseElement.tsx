@@ -49,6 +49,7 @@ function CourseElement({
           ),
         }}
         href={disabled ? '' : `/course/${course.id}`}
+        data={{ cy: `course-button-${course.displayName}` }}
       >
         <div>
           <div>{course.displayName}</div>
@@ -82,6 +83,7 @@ function CourseElement({
             if (disabled) return
             onSubscribeClick(course.isSubscribed, course.id)
           }}
+          data={{ cy: `course-${course.displayName}-subscribe` }}
         >
           {course.isSubscribed ? (
             <FontAwesomeIcon

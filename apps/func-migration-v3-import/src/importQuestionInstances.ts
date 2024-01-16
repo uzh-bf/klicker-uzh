@@ -70,10 +70,12 @@ export const importQuestionInstances = async (
             )
 
             if (question) {
+              questionId = question.id
               questionData = {
                 ...question,
+                id: `${questionId}-v1`,
+                questionId,
               }
-              questionId = question?.id
             }
 
             if (
@@ -161,7 +163,7 @@ export const importQuestionInstances = async (
         return []
       })
 
-      await Promise.allSettled(
+      await Promise.all(
         preparedQuestionInstances.map((questionInstance) =>
           prisma.$transaction(async (prisma) => {
             const newQuestionInstance = await prisma.questionInstance.create({
@@ -174,7 +176,7 @@ export const importQuestionInstances = async (
             if (questionInstance.questionData.id) {
               await prisma.element.update({
                 where: {
-                  id: questionInstance.questionData.id,
+                  id: questionInstance.questionData.questionId,
                 },
                 data: {
                   instances: {

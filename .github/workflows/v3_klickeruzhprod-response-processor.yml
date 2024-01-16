@@ -7,7 +7,7 @@ on:
 
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-response-processor'
-  NODE_VERSION: '20.9.0'
+  NODE_VERSION: '20.11.0'
 
 jobs:
   build-and-deploy:
@@ -23,7 +23,7 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.10.0
+          version: 8.14.1
 
       - name: 'Resolve Project Dependencies Using Npm'
         shell: bash

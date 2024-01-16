@@ -7,6 +7,10 @@ interface CourseListButtonProps {
   onClick: () => void
   icon: IconDefinition
   label: string
+  data?: {
+    cy?: string
+    test?: string
+  }
 }
 
 function CourseListButton({
@@ -14,6 +18,7 @@ function CourseListButton({
   onClick,
   icon,
   label,
+  data,
 }: CourseListButtonProps) {
   return (
     <Button
@@ -22,6 +27,7 @@ function CourseListButton({
         root: 'w-full p-2 border border-solid rounded-md bg-uzh-grey-40 border-uzh-grey-100',
       }}
       onClick={onClick}
+      data={data}
     >
       <Button.Icon className={{ root: 'ml-1 mr-3' }}>
         <FontAwesomeIcon icon={icon} />
