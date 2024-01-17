@@ -3,7 +3,7 @@ import JWT from 'jsonwebtoken'
 
 import { ServiceBusClient } from '@azure/service-bus'
 import { ContextWithUser } from 'src/lib/context'
-import { sendTeamsNotifications } from 'src/lib/util'
+import { sendTeamsNotifications } from '../lib/util'
 
 interface RequestMigrationTokenArgs {
   email: string
