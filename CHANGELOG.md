@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.27...v3.1.0-beta.28) (2024-01-17)
+
+
+### Bug Fixes
+
+* import of lib util in migration ([9a4a00a](https://github.com/uzh-bf/klicker-uzh/commit/9a4a00a3307db1d4b85e347f1d0d562dbfc7e5dd))
+
+
+### Dependencies
+
+* upgrade pnpm and turbo versions ([a2931dd](https://github.com/uzh-bf/klicker-uzh/commit/a2931dd1f4269943265b90ccfd2e907e2432d1e1))
+
 ## [3.1.0-beta.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.26...v3.1.0-beta.27) (2024-01-09)
 
 
