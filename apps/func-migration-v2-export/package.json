@@ -10,6 +10,7 @@
   "dependencies": {
     "@azure/functions": "4.1.0",
     "@azure/storage-blob": "12.15.0",
+    "axios": "1.4.0",
     "jsonwebtoken": "9.0.1",
     "mongodb": "5.7.0"
   },
