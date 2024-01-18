@@ -72,6 +72,12 @@ function Join({ shortname }): React.ReactElement {
   })
 
   useEffect(() => {
+    if (shortname === 'snu') {
+      window.location = 'https://pwa.klicker.uzh.ch/join/thens' as any
+    }
+  })
+
+  useEffect(() => {
     // if we need to login before being able to access the session, redirect to the login
     if (error?.graphQLErrors[0]?.message === 'INVALID_PARTICIPANT_LOGIN') {
       const { id, authenticationMode } = error.graphQLErrors[0].extensions
