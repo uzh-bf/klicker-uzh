@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.28...v3.1.0-beta.29) (2024-01-18)
+
+
+### Bug Fixes
+
+* **apps/func-migration-v2-export:** update error messages to reflect export ([ae68328](https://github.com/uzh-bf/klicker-uzh/commit/ae68328b231e63ecba345db71423cd67b9466d87))
+* **apps/func-migration*:** add error logging for export function ([7dd5d59](https://github.com/uzh-bf/klicker-uzh/commit/7dd5d59a078750f6213f682cd54575b1580ebefd))
+
 ## [3.1.0-beta.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.27...v3.1.0-beta.28) (2024-01-17)
 
 
