@@ -107,7 +107,7 @@ const serviceBusTrigger = async function (
     })
 
     await sendTeamsNotifications(
-      'func/migration-v3-import',
+      'func/migration-v2-export',
       `Successful export for user '${messageData.originalEmail}' (${matchingUser.email})`,
       context
     )
@@ -117,8 +117,8 @@ const serviceBusTrigger = async function (
     context.error('Something went wrong while exporting data: ', e)
 
     await sendTeamsNotifications(
-      'func/migration-v3-import',
-      `Import of KlickerV2 data failed. Error: ${e.message}`,
+      'func/migration-v2-export',
+      `Export of KlickerV2 data failed. Error: ${e.message}`,
       context
     )
 
