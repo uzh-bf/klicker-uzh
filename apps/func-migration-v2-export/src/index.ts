@@ -54,7 +54,9 @@ const serviceBusTrigger = async function (
       .toArray()
 
     if (!matchingUsers?.[0]) {
-      throw new Error('No matching user found')
+      throw new Error(
+        `No matching V2 user found for ${messageData.originalEmail}`
+      )
     }
 
     const matchingUser = matchingUsers[0]
