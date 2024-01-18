@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.8.19](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.18...v1.8.19) (2024-01-18)
+
+
+### Other
+
+* **apps/frontend:** redirect snu ([d52a817](https://github.com/uzh-bf/klicker-uzh/commit/d52a81716197c64dd1d825a00ba7148af8310cde))
+
 ### [1.8.18](https://github.com/uzh-bf/klicker-uzh/compare/v1.8.17...v1.8.18) (2024-01-09)
 
 
