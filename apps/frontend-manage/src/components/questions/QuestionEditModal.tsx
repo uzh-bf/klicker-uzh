@@ -378,7 +378,7 @@ function QuestionEditModal({
   // TODO: styling of tooltips - some are too wide
   // TODO: show errors of form validation below fields as for the login form
 
-  if (!question) {
+  if (!question || Object.keys(question).length === 0) {
     return <div></div>
   }
 

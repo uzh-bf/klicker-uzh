@@ -1,4 +1,9 @@
-import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChoicesQuestionData,
+  ElementType,
+  FreeTextQuestionData,
+  NumericalQuestionData,
+} from '@klicker-uzh/graphql/dist/ops'
 import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { push } from '@socialgouv/matomo-next'
@@ -13,15 +18,11 @@ import React, { useEffect, useState } from 'react'
 
 interface QuestionAreaProps {
   expiresAt?: Date
-  questions: {
-    displayMode?: ElementDisplayMode
-    content: string
-    id: string
-    name: string
-    type: ElementType
-    options: any
-    instanceId: number
-  }[]
+  questions: ((
+    | ChoicesQuestionData
+    | NumericalQuestionData
+    | FreeTextQuestionData
+  ) & { instanceId: number })[]
   handleNewResponse: (type: string, instanceId: number, answer: any) => void
   sessionId: string
   execution: number

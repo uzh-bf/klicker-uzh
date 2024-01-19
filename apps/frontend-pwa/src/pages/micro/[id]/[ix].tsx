@@ -80,7 +80,7 @@ function MicroSessionInstance() {
       variables: {
         courseId: data.microSession!.course?.id as string,
         id: currentInstance?.id as number,
-        response: formatResponse(questionData, response),
+        response: formatResponse(questionData ?? undefined, response),
       },
     })
   }
@@ -133,7 +133,6 @@ function MicroSessionInstance() {
                   }
                   questionType={questionData.type as ElementType}
                   options={questionData.options}
-                  displayMode={questionData.displayMode}
                 />
               </div>
 

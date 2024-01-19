@@ -30,8 +30,6 @@ export type ItemStatus = 'unanswered' | 'incorrect' | 'partial' | 'correct'
 interface QuestionStackProps {
   elementId: string
   stack: QuestionStack
-  currentStep: number
-  totalSteps: number
   handleNextQuestion: () => void
   setStepStatus: ({
     status,
@@ -45,8 +43,6 @@ interface QuestionStackProps {
 function QuestionStack({
   elementId,
   stack,
-  currentStep,
-  totalSteps,
   handleNextQuestion,
   setStepStatus,
 }: QuestionStackProps) {
@@ -145,7 +141,7 @@ function QuestionStack({
           setIsEvaluation(false)
         }
 
-        const questionType = element.questionInstance?.questionData.type
+        const questionType = element.questionInstance?.questionData?.type
         setInformationOnly(false)
         if (
           questionType === ElementType.Sc ||
@@ -352,8 +348,6 @@ function QuestionStack({
                   {element.questionInstance && (
                     <SingleQuestion
                       instance={element.questionInstance}
-                      currentStep={currentStep}
-                      totalSteps={totalSteps}
                       response={responses[element.id]}
                       setResponse={(response) =>
                         setResponses((prev) => ({

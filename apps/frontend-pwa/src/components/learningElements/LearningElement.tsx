@@ -1,4 +1,4 @@
-import { LearningElement } from '@klicker-uzh/graphql/dist/ops'
+import { LearningElement as LearningElementType } from '@klicker-uzh/graphql/dist/ops'
 import * as R from 'ramda'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -8,7 +8,7 @@ import ElementSummary from './ElementSummary'
 import QuestionStack, { ItemStatus } from './QuestionStack'
 
 interface LearningElementProps {
-  element: LearningElement
+  element: LearningElementType
   currentIx: number
   setCurrentIx: (ix: number) => void
   handleNextQuestion: () => void
@@ -59,8 +59,6 @@ function LearningElement({
           key={currentStack.id}
           elementId={element.id}
           stack={currentStack}
-          currentStep={currentIx + 1}
-          totalSteps={element.stacksWithQuestions ?? 0}
           handleNextQuestion={handleNextQuestion}
           setStepStatus={(value) =>
             setItems((prev) => {

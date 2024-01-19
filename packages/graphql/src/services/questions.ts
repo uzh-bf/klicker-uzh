@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { Tag } from 'src/ops'
+import { DisplayMode } from 'src/types/app'
 import { ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -172,7 +173,7 @@ export async function manipulateQuestion(
       pointsMultiplier: pointsMultiplier ?? 1,
       options: {
         ...options,
-        displayMode: options?.displayMode ?? DB.ElementDisplayMode.LIST,
+        displayMode: options?.displayMode ?? DisplayMode.LIST,
         hasSampleSolution: options?.hasSampleSolution ?? false,
         hasAnswerFeedbacks: options?.hasAnswerFeedbacks ?? false,
         accuracy: options?.accuracy ?? undefined,
@@ -216,7 +217,7 @@ export async function manipulateQuestion(
       options: options
         ? {
             ...options,
-            displayMode: options?.displayMode ?? DB.ElementDisplayMode.LIST,
+            displayMode: options?.displayMode ?? DisplayMode.LIST,
             hasSampleSolution: options?.hasSampleSolution ?? false,
             hasAnswerFeedbacks: options?.hasAnswerFeedbacks ?? false,
             accuracy: options?.accuracy ?? undefined,
