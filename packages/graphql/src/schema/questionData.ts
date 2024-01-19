@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import { BaseElementData } from '../types/app'
+import { BaseElementData, DisplayMode } from '../types/app'
 
 export const ElementType = builder.enumType('ElementType', {
   values: Object.values(DB.ElementType),
@@ -11,7 +11,7 @@ export const ElementInstanceType = builder.enumType('ElementInstanceType', {
 })
 
 export const ElementDisplayMode = builder.enumType('ElementDisplayMode', {
-  values: Object.values(DB.ElementDisplayMode),
+  values: Object.values(DisplayMode),
 })
 
 // ----- QUESTION DATA INTERFACE -----
@@ -26,12 +26,6 @@ export const QuestionData = QuestionDataRef.implement({
     content: t.exposeString('content'),
     explanation: t.exposeString('explanation', { nullable: true }),
     pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
-    displayMode: t.expose('displayMode', {
-      type: ElementDisplayMode,
-      nullable: true,
-    }),
-    hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
-    hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
   }),
   resolveType(value) {
     switch (value.type) {
@@ -66,7 +60,7 @@ export const Choice = builder.objectRef<IChoice>('Choice').implement({
 })
 
 export interface IChoiceQuestionOptions {
-  displayMode: DB.ElementDisplayMode
+  displayMode: DisplayMode
   hasSampleSolution: boolean
   hasAnswerFeedbacks: boolean
   choices: IChoice[]

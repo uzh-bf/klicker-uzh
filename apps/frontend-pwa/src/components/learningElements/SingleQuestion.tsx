@@ -15,8 +15,6 @@ import DynamicMarkdown from './DynamicMarkdown'
 
 interface SingleQuestionProps {
   instance: QuestionInstance
-  currentStep: number
-  totalSteps: number
   response: any
   setResponse: (response: any) => void
   setInputValid: (valid: boolean) => void
@@ -25,8 +23,6 @@ interface SingleQuestionProps {
 
 function SingleQuestion({
   instance,
-  currentStep,
-  totalSteps,
   response,
   setResponse,
   setInputValid,
@@ -69,8 +65,7 @@ function SingleQuestion({
         if (
           validateNumericalResponse({
             response: questionResponse,
-            min: instance.questionData.options.restrictions.min,
-            max: instance.questionData.options.restrictions.max,
+            options: instance.questionData?.options,
           })
         ) {
           setInputValid(true)
@@ -83,7 +78,7 @@ function SingleQuestion({
         if (
           validateFreeTextResponse({
             response: questionResponse,
-            maxLength: instance.questionData.options.restrictions.maxLength,
+            options: instance.questionData?.options,
           })
         ) {
           setInputValid(true)
@@ -152,7 +147,6 @@ function SingleQuestion({
             onChangeResponse={setQuestionResponse}
             questionType={questionData.type}
             options={questionData.options}
-            displayMode={questionData.displayMode}
           />
         </div>
       </div>

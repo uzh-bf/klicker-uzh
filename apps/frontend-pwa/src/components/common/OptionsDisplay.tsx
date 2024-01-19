@@ -2,8 +2,11 @@ import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Choice,
+  ChoiceQuestionOptions,
   ElementDisplayMode,
   ElementType,
+  FreeTextQuestionOptions,
+  NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import FREETextAnswerOptions from '@klicker-uzh/shared-components/src/questions/FREETextAnswerOptions'
@@ -58,7 +61,7 @@ function ChoiceOptions({
             active={Array.isArray(response) && response?.includes(choice.ix)}
             className={{
               root: twMerge(
-                'px-4 py-3 text-sm shadow-md border-primary-40',
+                'px-4 py-3 text-sm shadow-md border-primary-40 h-full',
                 isEvaluation && 'text-gray-700',
                 (disabled || isEvaluation) &&
                   response?.includes(choice.ix) &&
@@ -105,14 +108,16 @@ function ChoiceOptions({
 
 interface OptionsProps {
   disabled?: boolean
-  options: any
+  options:
+    | ChoiceQuestionOptions
+    | NumericalQuestionOptions
+    | FreeTextQuestionOptions
   questionType: ElementType
   isEvaluation?: boolean
   feedbacks: any
   response: any
   withGuidance?: boolean
   isCompact?: boolean
-  isResponseValid: boolean
   onChangeResponse: (value: any) => void
   displayMode?: ElementDisplayMode | null
 }
@@ -124,16 +129,16 @@ export function Options({
   isEvaluation,
   feedbacks,
   response,
-  isResponseValid = true,
   onChangeResponse,
   withGuidance = true,
   isCompact = false,
-  displayMode,
 }: OptionsProps) {
   const t = useTranslations()
 
   switch (questionType) {
     case ElementType.Sc: {
+      const questionOptions = options as ChoiceQuestionOptions
+
       return (
         <div>
           {typeof withGuidance !== 'undefined' && withGuidance && (
@@ -145,19 +150,21 @@ export function Options({
           )}
           <ChoiceOptions
             disabled={disabled}
-            choices={options.choices}
+            choices={questionOptions.choices}
             isEvaluation={isEvaluation}
             feedbacks={feedbacks}
             response={response}
             onChange={(ix) => onChangeResponse([ix])}
             isCompact={isCompact}
-            displayMode={displayMode}
+            displayMode={questionOptions.displayMode}
           />
         </div>
       )
     }
 
     case ElementType.Mc: {
+      const questionOptions = options as ChoiceQuestionOptions
+
       return (
         <div>
           {typeof withGuidance !== 'undefined' && withGuidance && (
@@ -169,7 +176,7 @@ export function Options({
           )}
           <ChoiceOptions
             disabled={disabled}
-            choices={options.choices}
+            choices={questionOptions.choices}
             isEvaluation={isEvaluation}
             feedbacks={feedbacks}
             response={response}
@@ -184,13 +191,15 @@ export function Options({
               })
             }
             isCompact={isCompact}
-            displayMode={displayMode}
+            displayMode={questionOptions.displayMode}
           />
         </div>
       )
     }
 
     case ElementType.Kprim: {
+      const questionOptions = options as ChoiceQuestionOptions
+
       return (
         <div>
           {typeof withGuidance !== 'undefined' && withGuidance && (
@@ -201,7 +210,7 @@ export function Options({
             </div>
           )}
           <div className="space-y-1">
-            {options.choices.map((choice: Choice) => {
+            {questionOptions.choices.map((choice: Choice) => {
               const correctAnswer =
                 (response?.[choice.ix] && feedbacks?.[choice.ix].correct) ||
                 (!response?.[choice.ix] && !feedbacks?.[choice.ix].correct)
@@ -293,6 +302,23 @@ export function Options({
     }
 
     case ElementType.Numerical: {
+      const questionOptions = options as NumericalQuestionOptions
+      const min_restriction =
+        questionOptions?.restrictions?.min !== null &&
+        typeof questionOptions?.restrictions?.min !== 'undefined'
+          ? questionOptions.restrictions.min
+          : undefined
+      const max_restriction =
+        questionOptions?.restrictions?.max !== null &&
+        typeof questionOptions?.restrictions?.max !== 'undefined'
+          ? questionOptions.restrictions.max
+          : undefined
+      const accuracy =
+        questionOptions.accuracy !== null &&
+        typeof questionOptions.accuracy !== 'undefined'
+          ? questionOptions.accuracy
+          : undefined
+
       return (
         <div>
           {typeof withGuidance !== 'undefined' && withGuidance && (
@@ -300,23 +326,24 @@ export function Options({
               {t.rich(`shared.${ElementType.Numerical}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}{' '}
-              {typeof options.accuracy === 'number' &&
-                t('shared.questions.roundedTo', { accuracy: options.accuracy })}
+              {typeof accuracy === 'number' &&
+                t('shared.questions.roundedTo', {
+                  accuracy: accuracy,
+                })}
             </div>
           )}
           <NUMERICALAnswerOptions
             disabled={disabled || isEvaluation}
-            accuracy={parseInt(options?.accuracy)}
-            placeholder={options?.placeholder}
-            unit={options?.unit}
-            min={parseFloat(options?.restrictions?.min)}
-            max={parseFloat(options?.restrictions?.max)}
+            accuracy={accuracy}
+            placeholder={questionOptions?.placeholder ?? undefined}
+            unit={questionOptions?.unit ?? undefined}
+            min={min_restriction}
+            max={max_restriction}
             value={response}
             onChange={onChangeResponse}
             valid={validateNumericalResponse({
               response,
-              min: parseFloat(options?.restrictions?.min),
-              max: parseFloat(options?.restrictions?.max),
+              options: questionOptions,
             })}
             hidePrecision={typeof withGuidance !== 'undefined' && withGuidance}
           />
@@ -325,6 +352,8 @@ export function Options({
     }
 
     case ElementType.FreeText:
+      const questionOptions = options as FreeTextQuestionOptions
+
       return (
         <div>
           {typeof withGuidance !== 'undefined' && withGuidance && (
@@ -337,7 +366,7 @@ export function Options({
           <FREETextAnswerOptions
             disabled={disabled}
             onChange={onChangeResponse}
-            maxLength={options.restrictions?.maxLength}
+            maxLength={questionOptions.restrictions?.maxLength ?? undefined}
             value={response}
           />
         </div>
@@ -351,12 +380,14 @@ export function Options({
 interface OptionsDisplayProps {
   questionType: ElementType
   evaluation: any
-  options: any
+  options:
+    | ChoiceQuestionOptions
+    | NumericalQuestionOptions
+    | FreeTextQuestionOptions
   response: any
   onChangeResponse: (value: any) => void
   onSubmitResponse?: any
   isEvaluation?: boolean
-  displayMode?: ElementDisplayMode | null
 }
 
 function OptionsDisplay({
@@ -367,7 +398,6 @@ function OptionsDisplay({
   onSubmitResponse,
   questionType,
   options,
-  displayMode,
 }: OptionsDisplayProps) {
   const t = useTranslations()
   const feedbacks = useMemo(() => {
@@ -386,7 +416,6 @@ function OptionsDisplay({
           isEvaluation={isEvaluation}
           options={options}
           onChangeResponse={onChangeResponse}
-          displayMode={displayMode}
         />
       </div>
       {onSubmitResponse && (
@@ -411,13 +440,12 @@ function OptionsDisplay({
                 (questionType === ElementType.Numerical &&
                   validateNumericalResponse({
                     response,
-                    min: options?.restrictions?.min,
-                    max: options?.restrictions?.max,
+                    options: options as NumericalQuestionOptions,
                   })) ||
                 (questionType === ElementType.FreeText &&
                   validateFreeTextResponse({
                     response,
-                    maxLength: options.restrictions?.maxLength,
+                    options: options as FreeTextQuestionOptions,
                   }))
               )
             }

@@ -77,10 +77,7 @@ type ChoicesElementData implements ElementData {
 
 type ChoicesQuestionData implements QuestionData {
   content: String!
-  displayMode: ElementDisplayMode
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: ID!
   name: String!
   options: ChoiceQuestionOptions!
@@ -143,10 +140,7 @@ scalar Date
 type Element {
   content: String!
   createdAt: Date!
-  displayMode: ElementDisplayMode!
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -279,10 +273,7 @@ type FreeTextElementData implements ElementData {
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
-  displayMode: ElementDisplayMode
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: ID!
   name: String!
   options: FreeTextQuestionOptions!
@@ -600,10 +591,7 @@ type NumericalElementData implements ElementData {
 
 type NumericalQuestionData implements QuestionData {
   content: String!
-  displayMode: ElementDisplayMode
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: ID!
   name: String!
   options: NumericalQuestionOptions!
@@ -817,10 +805,7 @@ type Query {
 
 interface QuestionData {
   content: String!
-  displayMode: ElementDisplayMode
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: ID!
   name: String!
   pointsMultiplier: Int

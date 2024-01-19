@@ -4,13 +4,15 @@ fragment QuestionData on QuestionInstance {
     questionId
     name
     type
-    displayMode
     content
     explanation
     pointsMultiplier
 
     ... on ChoicesQuestionData {
       options {
+        hasSampleSolution
+        hasAnswerFeedbacks
+        displayMode
         choices {
           ix
           correct
@@ -22,6 +24,8 @@ fragment QuestionData on QuestionInstance {
 
     ... on NumericalQuestionData {
       options {
+        hasSampleSolution
+        hasAnswerFeedbacks
         accuracy
         placeholder
         unit
@@ -38,6 +42,8 @@ fragment QuestionData on QuestionInstance {
 
     ... on FreeTextQuestionData {
       options {
+        hasSampleSolution
+        hasAnswerFeedbacks
         restrictions {
           maxLength
         }

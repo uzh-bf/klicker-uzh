@@ -219,12 +219,6 @@ enum ElementType {
   // QUESTION_NUMERICAL
 }
 
-// TODO: remove once moved to options
-enum ElementDisplayMode {
-  LIST
-  GRID
-}
-
 model Element {
   id Int @id @default(autoincrement())
 
@@ -240,11 +234,6 @@ model Element {
   explanation String? // markdown content
 
   pointsMultiplier Int @default(1) // currently only relevant for FLASHCARD and QUESTION types
-
-  // TODO: the three properties below are only relevant for questions and can be moved to options Json
-  displayMode        ElementDisplayMode @default(LIST)
-  hasSampleSolution  Boolean            @default(false)
-  hasAnswerFeedbacks Boolean            @default(false)
 
   /// [PrismaElementOptions]
   options Json

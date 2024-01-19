@@ -12,8 +12,8 @@ export interface NUMERICALAnswerOptionsProps {
   unit?: string
   valid: boolean
   value: string | number
-  min: number
-  max: number
+  min?: number
+  max?: number
   onChange: (value: any) => any
   hidePrecision?: boolean
 }

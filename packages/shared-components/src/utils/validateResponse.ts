@@ -1,3 +1,8 @@
+import {
+  FreeTextQuestionOptions,
+  NumericalQuestionOptions,
+} from '@klicker-uzh/graphql/dist/ops'
+
 export function validateScResponse(response?: number[]) {
   return (
     typeof response !== 'undefined' && response !== null && response.length > 0
@@ -21,27 +26,25 @@ export function validateKprimResponse(response?: Record<number, boolean>) {
 
 export function validateNumericalResponse({
   response,
-  min,
-  max,
+  options,
 }: {
   response?: string
-  min?: number
-  max?: number
+  options: NumericalQuestionOptions
 }) {
   if (!response) return false
 
   if (
-    typeof min !== 'undefined' &&
-    min !== null &&
-    parseFloat(response) < min
+    typeof options.restrictions?.min !== 'undefined' &&
+    options.restrictions?.min !== null &&
+    parseFloat(response) < options.restrictions?.min
   ) {
     return false
   }
 
   if (
-    typeof max !== 'undefined' &&
-    max !== null &&
-    parseFloat(response) > max
+    typeof options.restrictions?.max !== 'undefined' &&
+    options.restrictions?.max !== null &&
+    parseFloat(response) > options.restrictions?.max
   ) {
     return false
   }
@@ -55,16 +58,22 @@ export function validateNumericalResponse({
 
 export function validateFreeTextResponse({
   response,
-  maxLength,
+  options,
 }: {
   response?: string
-  maxLength?: number
+  options: FreeTextQuestionOptions
 }) {
-  return (
-    typeof response !== 'undefined' &&
-    response !== null &&
-    response !== '' &&
-    response.length !== 0 &&
-    (maxLength ? response.length <= maxLength : true)
-  )
+  if (!response || response.length == 0) {
+    return false
+  }
+
+  if (
+    typeof options.restrictions?.maxLength !== 'undefined' &&
+    options.restrictions.maxLength !== null &&
+    response.length > options.restrictions.maxLength
+  ) {
+    return false
+  }
+
+  return true
 }
