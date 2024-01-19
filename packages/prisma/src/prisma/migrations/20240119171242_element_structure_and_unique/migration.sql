@@ -2,6 +2,10 @@
   Warnings:
 
   - A unique constraint covering the columns `[groupActivityId]` on the table `ElementStack` will be added. If there are existing duplicate values, this will fail.
+  - A unique constraint covering the columns `[type,microLearningId,order]` on the table `ElementStack` will be added. If there are existing duplicate values, this will fail.
+  - A unique constraint covering the columns `[type,liveQuizId,order]` on the table `ElementStack` will be added. If there are existing duplicate values, this will fail.
+  - A unique constraint covering the columns `[type,groupActivityId,order]` on the table `ElementStack` will be added. If there are existing duplicate values, this will fail.
+  - A unique constraint covering the columns `[type,participantId,liveQuizId]` on the table `LeaderboardEntry` will be added. If there are existing duplicate values, this will fail.
 
 */
 -- CreateEnum
@@ -83,6 +87,18 @@ CREATE UNIQUE INDEX "LiveQuiz_originalId_key" ON "LiveQuiz"("originalId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ElementStack_groupActivityId_key" ON "ElementStack"("groupActivityId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ElementStack_type_microLearningId_order_key" ON "ElementStack"("type", "microLearningId", "order");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ElementStack_type_liveQuizId_order_key" ON "ElementStack"("type", "liveQuizId", "order");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ElementStack_type_groupActivityId_order_key" ON "ElementStack"("type", "groupActivityId", "order");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LeaderboardEntry_type_participantId_liveQuizId_key" ON "LeaderboardEntry"("type", "participantId", "liveQuizId");
 
 -- AddForeignKey
 ALTER TABLE "ElementStack" ADD CONSTRAINT "ElementStack_practiceQuizId_fkey" FOREIGN KEY ("practiceQuizId") REFERENCES "PracticeQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;

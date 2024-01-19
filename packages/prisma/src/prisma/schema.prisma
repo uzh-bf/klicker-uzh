@@ -345,6 +345,9 @@ model ElementStack {
   courseId String? @db.Uuid
 
   @@unique([type, practiceQuizId, order])
+  @@unique([type, microLearningId, order])
+  @@unique([type, liveQuizId, order])
+  @@unique([type, groupActivityId, order])
 }
 
 // #endregion
@@ -1106,6 +1109,7 @@ model LeaderboardEntry {
   @@unique([type, participantId, sessionBlockId])
   @@unique([type, participantId, sessionId])
   @@unique([type, participantId, courseId])
+  @@unique([type, participantId, liveQuizId])
 }
 
 // #endregion
