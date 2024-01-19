@@ -181,13 +181,9 @@ export const Element = ElementRef.implement({
       type: QuestionDataRef,
       resolve: (q) => q as unknown as BaseElementData,
     }),
-    displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
 
     isArchived: t.exposeBoolean('isArchived'),
     isDeleted: t.exposeBoolean('isDeleted'),
-
-    hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
-    hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
 
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),

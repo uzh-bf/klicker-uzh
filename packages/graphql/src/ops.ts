@@ -166,10 +166,7 @@ export type Element = {
   __typename?: 'Element';
   content: Scalars['String']['output'];
   createdAt: Scalars['Date']['output'];
-  displayMode: ElementDisplayMode;
   explanation?: Maybe<Scalars['String']['output']>;
-  hasAnswerFeedbacks: Scalars['Boolean']['output'];
-  hasSampleSolution: Scalars['Boolean']['output'];
   id: Scalars['Int']['output'];
   isArchived: Scalars['Boolean']['output'];
   isDeleted: Scalars['Boolean']['output'];

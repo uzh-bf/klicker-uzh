@@ -140,10 +140,7 @@ scalar Date
 type Element {
   content: String!
   createdAt: Date!
-  displayMode: ElementDisplayMode!
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
