@@ -143,6 +143,8 @@ model User {
   groupActivities   GroupActivity[]
   elementInstances  ElementInstance[]
   practiceQuizzes   PracticeQuiz[]
+  microLearnings    MicroLearning[]
+  liveQuizzes       LiveQuiz[]
 
   firstLogin Boolean @default(true)
 
@@ -326,8 +328,18 @@ model ElementStack {
   elements     ElementInstance[]
   bookmarkedBy Participation[]
 
-  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id])
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
+  liveQuiz         LiveQuiz?  @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId       String?    @db.Uuid
+  activeInLiveQuiz LiveQuiz[] @relation(name: "ActiveElementStack")
+
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String?        @unique @db.Uuid
 
   course   Course? @relation(fields: [courseId], references: [id])
   courseId String? @db.Uuid
@@ -497,6 +509,8 @@ model Course {
   participations    Participation[]
   subscriptions     PushSubscription[]
   participantGroups ParticipantGroup[]
+  microLearnings    MicroLearning[]
+  liveQuizzes       LiveQuiz[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -543,6 +557,7 @@ model SessionBlock {
   @@unique([sessionId, order])
 }
 
+// TODO: delete after migration
 enum SessionStatus {
   PREPARED
   SCHEDULED
@@ -555,6 +570,7 @@ enum AccessMode {
   RESTRICTED
 }
 
+// TODO: delete after migration
 model LiveSession {
   id String @id @default(uuid()) @db.Uuid
 
@@ -581,6 +597,55 @@ model LiveSession {
   activeBlockId Int?
 
   blocks      SessionBlock[]
+  leaderboard LeaderboardEntry[]
+
+  feedbacks Feedback[]
+
+  confusionFeedbacks ConfusionTimestep[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  courseId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum LiveQuizStatus {
+  PREPARED
+  SCHEDULED
+  RUNNING
+  COMPLETED
+}
+
+model LiveQuiz {
+  id String @id @default(uuid()) @db.Uuid
+
+  originalId                 String? @unique
+  isLiveQAEnabled            Boolean @default(false)
+  isConfusionFeedbackEnabled Boolean @default(true)
+  isModerationEnabled        Boolean @default(true)
+  isGamificationEnabled      Boolean @default(false)
+
+  namespace        String    @default(uuid()) @db.Uuid
+  pinCode          Int?
+  name             String
+  displayName      String
+  description      String?
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  // linkTo           String? // TODO: drop this functionality/field?
+  pointsMultiplier Int       @default(1)
+
+  accessMode AccessMode     @default(PUBLIC)
+  status     LiveQuizStatus @default(PREPARED)
+
+  activeStack   ElementStack? @relation(name: "ActiveElementStack", fields: [activeStackId], references: [id])
+  activeStackId Int?
+
+  stacks      ElementStack[]
   leaderboard LeaderboardEntry[]
 
   feedbacks Feedback[]
@@ -638,11 +703,43 @@ model LearningElement {
 
 // ----- MICROLEARNING -----
 // #region
+enum MicroLearningStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model MicroLearning {
+  id String @id @default(uuid()) @db.Uuid
+
+  name             String
+  displayName      String
+  pointsMultiplier Int                 @default(1)
+  description      String?
+  status           MicroLearningStatus @default(DRAFT)
+
+  scheduledStartAt DateTime
+  scheduledEndAt   DateTime
+
+  arePushNotificationsSent Boolean @default(false)
+
+  stacks ElementStack[]
+
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId  String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// TODO - delete after migration
 enum MicroSessionStatus {
   DRAFT
   PUBLISHED
 }
 
+// TODO - delete after migration
 model MicroSession {
   id String @id @default(uuid()) @db.Uuid
 
@@ -744,8 +841,11 @@ model GroupActivity {
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
 
+  // TODO: remove after migration
   questionStack   QuestionStack? @relation(fields: [questionStackId], references: [id])
   questionStackId Int?           @unique
+
+  elementStack ElementStack?
 
   parameters        GroupActivityParameter[]
   clues             GroupActivityClue[]
@@ -813,8 +913,13 @@ model Feedback {
 
   resolvedAt DateTime?
 
-  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String      @db.Uuid
+  // TODO: remove after migration
+  session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionId String?      @db.Uuid
+
+  // TODO - remove optional after migration
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
 
   participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String?      @db.Uuid
@@ -843,8 +948,13 @@ model ConfusionTimestep {
   difficulty Int
   speed      Int
 
-  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  sessionId String      @db.Uuid
+  // TODO: remove after migration
+  session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sessionId String?      @db.Uuid
+
+  // TODO - remove optional after migration
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
 
   createdAt DateTime @default(now())
 }
@@ -979,11 +1089,16 @@ model LeaderboardEntry {
   sessionParticipation   Participation? @relation("SessionLeaderboards", fields: [sessionParticipationId], references: [id])
   sessionParticipationId Int?
 
+  // TODO: remove after migration
   sessionBlock   SessionBlock? @relation(fields: [sessionBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionBlockId Int?
 
+  // TODO: remove after migration
   session   LiveSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   sessionId String?      @db.Uuid
+
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
 
   course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   courseId String? @db.Uuid
