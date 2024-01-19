@@ -1,6 +1,7 @@
 fragment QuestionData on QuestionInstance {
   questionData {
     id
+    questionId
     name
     type
     content

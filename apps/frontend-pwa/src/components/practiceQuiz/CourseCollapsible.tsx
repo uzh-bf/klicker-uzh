@@ -4,9 +4,8 @@ import {
   faChevronUp,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { LearningElement, PracticeQuiz } from '@klicker-uzh/graphql/dist/ops'
 import * as RadixCollapsible from '@radix-ui/react-collapsible'
-import { useTranslations } from 'next-intl'
+import { useLocalStorage } from '@uidotdev/usehooks'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from '../common/LinkButton'
@@ -18,19 +17,30 @@ export enum RepetitionElementType {
 }
 
 interface CourseCollapsibleProps {
+  courseId: string
   courseName: string
-  elements: [LearningElement | PracticeQuiz, RepetitionElementType][]
+  elements: { id: string; displayName: string; type: RepetitionElementType }[]
 }
 
-function CourseCollapsible({ courseName, elements }: CourseCollapsibleProps) {
-  const t = useTranslations()
-  const [open, setOpen] = useState(true)
+function CourseCollapsible({
+  courseId,
+  courseName,
+  elements,
+}: CourseCollapsibleProps) {
+  const [stackStorage, setStackStorage] = useLocalStorage<boolean>(
+    `replist-collapse-${courseId}`,
+    true
+  )
+  const [open, setOpen] = useState(stackStorage || false)
 
   return (
     <div>
       <RadixCollapsible.Root
         open={open}
-        onOpenChange={() => setOpen((prev) => !prev)}
+        onOpenChange={() => {
+          setOpen((prev) => !prev)
+          setStackStorage((prev) => !prev)
+        }}
       >
         <RadixCollapsible.Trigger
           className={twMerge(
@@ -46,16 +56,16 @@ function CourseCollapsible({ courseName, elements }: CourseCollapsibleProps) {
         </RadixCollapsible.Trigger>
         <RadixCollapsible.Content>
           <div className="flex flex-col gap-2">
-            {elements.map(([element, elementType]) => (
+            {elements.map((element) => (
               <LinkButton
                 key={element.id}
                 icon={faBookOpenReader}
                 href={
-                  elementType === RepetitionElementType.LEARNING_ELEMENT
-                    ? `/course/${element.course!.id}/element/${element.id}`
-                    : `/course/${element.course!.id}/quiz/${element.id}`
+                  element.type === RepetitionElementType.LEARNING_ELEMENT
+                    ? `/course/${courseId}/element/${element.id}`
+                    : `/course/${courseId}/quiz/${element.id}`
                 }
-                data={{ cy: 'practice-quiz' }}
+                data={{ cy: `practice-quiz-${element.displayName}` }}
                 onClick={() => {
                   resetPracticeQuizLocalStorage(element.id)
                 }}

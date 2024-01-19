@@ -24,7 +24,7 @@ import {
 import { PracticeQuiz } from './practiceQuizzes'
 import { Element, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
-import { MediaFile, User, UserLogin } from './user'
+import { MediaFile, User, UserLogin, UserLoginScope } from './user'
 
 export const Query = builder.queryType({
   fields(t) {
@@ -104,10 +104,10 @@ export const Query = builder.queryType({
         },
       }),
 
-      userTags: asUser.prismaField({
+      userTags: asUser.field({
         nullable: true,
         type: [Tag],
-        async resolve(_, __, ___, ctx) {
+        async resolve(_, __, ctx) {
           const user = await ctx.prisma.user.findUnique({
             where: { id: ctx.user.sub },
             include: { tags: { orderBy: { order: 'asc' } } },
@@ -134,13 +134,13 @@ export const Query = builder.queryType({
         },
       }),
 
-      feedbacks: t.prismaField({
+      feedbacks: t.field({
         nullable: true,
         type: [Feedback],
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, __, args, ctx) {
+        resolve(_, args, ctx) {
           return FeedbackService.getFeedbacks(args, ctx)
         },
       }),
@@ -159,10 +159,18 @@ export const Query = builder.queryType({
         },
       }),
 
-      userQuestions: asUser.prismaField({
+      userScope: asUser.field({
+        nullable: true,
+        type: UserLoginScope,
+        resolve(_, __, ctx) {
+          return ctx.user.scope
+        },
+      }),
+
+      userQuestions: asUser.field({
         nullable: true,
         type: [Element],
-        resolve(_, __, ___, ctx) {
+        resolve(_, __, ctx) {
           return QuestionService.getUserQuestions(ctx)
         },
       }),
@@ -233,7 +241,8 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SessionService.getCockpitSession(args, ctx)
+          // FIXME: subsetting
+          return SessionService.getCockpitSession(args, ctx) as any
         },
       }),
 
@@ -255,16 +264,7 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in LearningElementService
-          return LearningElementService.getLearningElementData(args, ctx) as any
-        },
-      }),
-
-      learningElements: asParticipant.field({
-        nullable: true,
-        type: [LearningElement],
-        resolve(_, __, ctx) {
-          return CourseService.getUserLearningElements(ctx)
+          return LearningElementService.getLearningElementData(args, ctx)
         },
       }),
 
@@ -275,16 +275,7 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in LearningElementService
-          return PracticeQuizService.getPracticeQuizData(args, ctx) as any
-        },
-      }),
-
-      practiceQuizzes: asParticipant.field({
-        nullable: true,
-        type: [PracticeQuiz],
-        resolve(_, __, ctx) {
-          return CourseService.getUserPracticeQuizzes(ctx)
+          return PracticeQuizService.getPracticeQuizData(args, ctx)
         },
       }),
 
@@ -307,6 +298,7 @@ export const Query = builder.queryType({
           hmac: t.arg.string(),
         },
         resolve(_, args, ctx) {
+          // FIXME: subsetting
           return SessionService.getSessionEvaluation(args, ctx) as any
         },
       }),
@@ -377,14 +369,14 @@ export const Query = builder.queryType({
         },
       }),
 
-      question: asUser.prismaField({
+      question: asUser.field({
         nullable: true,
         type: Element,
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve(_, __, args, ctx) {
-          return QuestionService.getSingleQuestion(args, ctx) as any
+        resolve(_, args, ctx) {
+          return QuestionService.getSingleQuestion(args, ctx)
         },
       }),
 
@@ -406,6 +398,7 @@ export const Query = builder.queryType({
           sessionId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // FIXME: seems to not respect nullable property correctly here?
           return SessionService.getLeaderboard(args, ctx) as any
         },
       }),
@@ -418,6 +411,14 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ParticipantService.getParticipations(args, ctx)
+        },
+      }),
+
+      getPracticeCourses: asParticipant.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return ParticipantService.getPracticeCourses(ctx)
         },
       }),
 
@@ -439,7 +440,7 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          // FIXME by fixing type issues in CourseService
+          // FIXME: getCourseOverviewData has no more type issues, but contains a lot of mappings and subsetting of existing types
           return CourseService.getCourseOverviewData(args, ctx) as any
         },
       }),
@@ -464,6 +465,14 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ParticipantService.getBookmarkedQuestions(args, ctx)
+        },
+      }),
+
+      getPracticeQuizList: asParticipant.field({
+        nullable: true,
+        type: [Course],
+        resolve(_, __, ctx) {
+          return ParticipantService.getPracticeQuizList(ctx)
         },
       }),
 
@@ -498,14 +507,25 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkUsernameAvailability: t.field({
+      checkParticipantNameAvailable: t.field({
         nullable: false,
         type: 'Boolean',
         args: {
           username: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.checkUsernameAvailability(args, ctx)
+          return AccountService.checkParticipantNameAvailable(args, ctx)
+        },
+      }),
+
+      checkShortnameAvailable: t.field({
+        nullable: false,
+        type: 'Boolean',
+        args: {
+          shortname: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.checkShortnameAvailable(args, ctx)
         },
       }),
 

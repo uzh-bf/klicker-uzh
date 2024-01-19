@@ -8,8 +8,12 @@ import * as DB from '@klicker-uzh/prisma'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
-import { Element, Tag } from 'src/ops'
+import { Tag } from 'src/ops'
 import { ContextWithUser } from '../lib/context'
+import {
+  prepareInitialInstanceResults,
+  processQuestionData,
+} from '../lib/questions'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -71,7 +75,11 @@ export async function getSingleQuestion(
 
   return {
     ...question,
-    questionData: question,
+    questionData: {
+      ...question,
+      id: `${question.id}-v${question.version}`,
+      questionId: question.id,
+    },
   }
 }
 
@@ -85,16 +93,18 @@ interface QuestionOptionsArgs {
     pattern?: string | null
     min?: number | null
     max?: number | null
-  }
-  feedback?: string
-  solutionRanges?: { min?: number; max?: number }[]
-  solutions?: string[]
-  choices?: {
-    ix: number
-    value: string
-    correct?: boolean
-    feedback?: string
-  }[]
+  } | null
+  feedback?: string | null
+  solutionRanges?: { min?: number | null; max?: number | null }[] | null
+  solutions?: string[] | null
+  choices?:
+    | {
+        ix: number
+        value: string
+        correct?: boolean | null
+        feedback?: string | null
+      }[]
+    | null
   displayMode?: DB.ElementDisplayMode | null
   hasSampleSolution?: boolean | null
   hasAnswerFeedbacks?: boolean | null
@@ -172,6 +182,8 @@ export async function manipulateQuestion(
           min: options?.restrictions?.min ?? undefined,
           max: options?.restrictions?.max ?? undefined,
         },
+        solutionRanges: options?.solutionRanges ?? undefined,
+        solutions: options?.solutions ?? undefined,
       },
       owner: {
         connect: {
@@ -198,6 +210,9 @@ export async function manipulateQuestion(
       content: content ?? undefined,
       explanation: explanation ?? undefined,
       pointsMultiplier: pointsMultiplier ?? 1,
+      version: {
+        increment: 1,
+      },
       options: options
         ? {
             ...options,
@@ -211,6 +226,8 @@ export async function manipulateQuestion(
               min: options?.restrictions?.min ?? undefined,
               max: options?.restrictions?.max ?? undefined,
             },
+            solutionRanges: options?.solutionRanges ?? undefined,
+            solutions: options?.solutions ?? undefined,
           }
         : undefined,
       tags: {
@@ -254,7 +271,11 @@ export async function manipulateQuestion(
 
   return {
     ...question,
-    questionData: question,
+    questionData: {
+      ...question,
+      id: `${question.id}-v${question.version}`,
+      questionId: question.id,
+    },
   }
 }
 
@@ -356,7 +377,7 @@ export async function updateTagOrdering(
 export async function toggleIsArchived(
   { questionIds, isArchived }: { questionIds: number[]; isArchived: boolean },
   ctx: ContextWithUser
-): Promise<Partial<Element>[]> {
+) {
   await ctx.prisma.element.updateMany({
     where: {
       id: {
@@ -445,4 +466,171 @@ export async function getFileUploadSas(
     containerName: ctx.user.sub,
     fileName: blobName,
   }
+}
+
+export async function updateQuestionInstances(
+  { questionId }: { questionId: number },
+  ctx: ContextWithUser
+) {
+  // fetch the question and return null, if the question does not exist
+  const question = await ctx.prisma.element.findUnique({
+    where: {
+      id: questionId,
+    },
+    include: {
+      instances: {
+        include: {
+          sessionBlock: {
+            include: {
+              session: true,
+            },
+          },
+          stackElement: {
+            include: {
+              stack: {
+                include: {
+                  learningElement: {
+                    where: {
+                      status: DB.LearningElementStatus.DRAFT,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          microSession: {
+            where: {
+              status: DB.MicroSessionStatus.DRAFT,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!question) {
+    return null
+  }
+
+  // get all instances and the corresponding element multipliers
+  const instanceData: {
+    instanceId: number
+    multiplier: number
+    sessionId: string | undefined
+    practiceQuizId: string | undefined
+    microlearningId: string | undefined
+  }[] = {
+    ...question.instances.reduce<
+      {
+        instanceId: number
+        multiplier: number
+        sessionId: string | undefined
+        practiceQuizId: string | undefined
+        microlearningId: string | undefined
+      }[]
+    >((acc, instance) => {
+      if (
+        instance.sessionBlock?.session?.status === DB.SessionStatus.PREPARED ||
+        instance.sessionBlock?.session?.status === DB.SessionStatus.SCHEDULED
+      ) {
+        return [
+          ...acc,
+          {
+            instanceId: instance.id,
+            multiplier: instance.sessionBlock.session.pointsMultiplier,
+            sessionId: instance.sessionBlock.session.id,
+            practiceQuizId: undefined,
+            microlearningId: undefined,
+          },
+        ]
+      } else if (
+        instance.stackElement?.stack?.learningElement?.status ===
+        DB.LearningElementStatus.DRAFT
+      ) {
+        return [
+          ...acc,
+          {
+            instanceId: instance.id,
+            multiplier:
+              instance.stackElement.stack.learningElement.pointsMultiplier,
+            sessionId: undefined,
+            practiceQuizId: instance.stackElement.stack.learningElement.id,
+            microlearningId: undefined,
+          },
+        ]
+      } else if (
+        instance.microSession?.status === DB.MicroSessionStatus.DRAFT
+      ) {
+        return [
+          ...acc,
+          {
+            instanceId: instance.id,
+            multiplier: instance.microSession.pointsMultiplier,
+            sessionId: undefined,
+            practiceQuizId: undefined,
+            microlearningId: instance.microSession.id,
+          },
+        ]
+      }
+      return acc
+    }, []),
+  }
+
+  console.log(instanceData)
+
+  // prepare new question objects
+  const newQuestionData = processQuestionData(question)
+
+  // prepare new results objects
+  const newResults = prepareInitialInstanceResults(newQuestionData)
+
+  const updatedInstances = (
+    await Promise.allSettled(
+      Object.values(instanceData).map(
+        async ({
+          instanceId,
+          multiplier,
+          sessionId,
+          practiceQuizId,
+          microlearningId,
+        }) => {
+          const instance = await ctx.prisma.questionInstance.update({
+            where: { id: instanceId },
+            data: {
+              questionData: newQuestionData,
+              results: newResults,
+              pointsMultiplier: multiplier * question.pointsMultiplier,
+            },
+          })
+
+          if (!instance) return null
+
+          // invalidate cache for the corresponding element
+          if (typeof sessionId !== 'undefined') {
+            ctx.emitter.emit('invalidate', {
+              typename: 'Session',
+              id: sessionId,
+            })
+          } else if (typeof practiceQuizId !== 'undefined') {
+            ctx.emitter.emit('invalidate', {
+              typename: 'LearningElement',
+              id: practiceQuizId,
+            })
+          } else if (typeof microlearningId !== 'undefined') {
+            ctx.emitter.emit('invalidate', {
+              typename: 'MicroSession',
+              id: microlearningId,
+            })
+          }
+
+          return instance
+        }
+      )
+    )
+  ).flatMap((result) => {
+    if (result.status !== 'fulfilled' || !result.value) return []
+    return result.value
+  })
+
+  return updatedInstances
 }

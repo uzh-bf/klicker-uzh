@@ -187,7 +187,7 @@ export default {
         'No points have been collected in this quiz so far. As soon as this changes, podium and leaderboard will be displayed here.',
     },
     error: {
-      404: '404 Page not found',
+      '404': '404 Page not found',
       pwaWithoutUser:
         'Sorry, the page you requested does not exist. You can <login>sign in</login> to see an overview of all KlickerUZH elements your courses offer.',
       pwaWithUser:
@@ -199,7 +199,7 @@ export default {
   auth: {
     authentication: 'Authentication',
     delegatedAccess: 'Delegated Access',
-    signedInAs: 'Signed in as {username}',
+    signedInAs: 'You are already logged in as {username}',
     tosAgreement:
       'I consent to the KlickerUZH <tos></tos> and <privacy></privacy>.',
     termsOfService: 'Terms of Service',
@@ -344,7 +344,7 @@ Practice quizzes and microlearning are available via direct links that you can r
       `,
       appSetupTitle: 'App Installation',
       appSetup: `
-In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can (on Android) activate the push notifications for microlearning in your courses.
+In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can activate the push notifications for microlearning in your courses.
 
 You can set up the KlickerUZH app as follows:
 
@@ -361,8 +361,8 @@ After installation, you should find the app on your home screen and can log in a
 Since the KlickerUZH app is not yet available on the iOS App Store, follow these instructions to add the app onto your home screen.
 
 1. Open the following link on your smartphone: [{pwa_url}/login]({pwa_url}/login)
-2. A message should appear “Add to Homescreen” / “Zum Startbildschirm zufügen” - click on it.
-3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen or in the app drawer.
+2. Use the share dialogue and click on the button “Add to Homescreen” / “Zum Startbildschirm zufügen”.
+3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen.
       `,
     },
     login: {
@@ -503,6 +503,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editProfile: 'Edit profile',
       editProfileFailed:
         'Unfortunately, an error occurred while saving the changes. The username you have chosen may already be taken. Please check your entries and try again.',
+      editProfileSuccess: 'Your profile has been updated successfully.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',
@@ -622,6 +623,39 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
     },
+    support: {
+      modalTitle: 'Support KlickerUZH',
+      yourFeedback: 'Your Feedback',
+      feedbackText:
+        'Do you have any feedback for us? Are you experiencing issues when using the KlickerUZH? Please provide us with your feedback so we can continue to improve the KlickerUZH for you.',
+      featureRequest: 'Feature Request',
+      featureRequestDesc: 'I would like to request a new feature.',
+      bugReport: 'Bug Report',
+      bugReportDesc: 'I would like to report a bug or issue.',
+      selfHosting: 'Self-Hosting',
+      selfHostingDesc: 'I have problems when self-hosting the KlickerUZH.',
+      furtherResources: 'Further Resources',
+      documentationDesc: 'Tutorials, feature documentation, and release notes',
+      faq: 'FAQ',
+      faqDesc: 'Frequently asked questions',
+      connect: 'Connect with Us',
+      community: 'Community',
+      communityDesc:
+        'A place for discussions and questions regarding the KlickerUZH',
+      email: 'E-Mail',
+      emailDesc: 'Contact us at klicker@bf.uzh.ch',
+      aboutProject: 'About the Project',
+      projectUpdates: 'Project Updates',
+      projectUpdatesDesc:
+        'Regular updates regarding the progress of our project',
+      roadmap: 'Roadmap',
+      roadmapDesc: 'Our current priorities and plans for the future',
+      releaseNotes: 'Release Notes',
+      releaseNotesDesc: 'Overview of changes in our latest releases',
+      openSource: 'Open-Source',
+      githubRepository: 'GitHub Repository',
+      githubRepositoryDesc: 'Source code of the open-source project',
+    },
     login: {
       lecturerLogin: 'Login Lecturers',
       installAndroid:
@@ -643,6 +677,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       languageSettings: 'Language Settings',
       languageTooltip:
         'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
+      confirmDelegatedAcces: 'Confirm delegated login creation',
+      confirmDelegatedAccesTooltip:
+        'Please check your delegated access login credentials. Make sure to copy the password before closing this dialogue, as it cannot be shown again.',
       FULL_ACCESS: 'Full Access',
       SESSION_EXEC: 'Session Execution',
       READ_ONLY: 'Read Only',
@@ -671,6 +708,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
       shortnameTaken: 'The shortname you have chosen is already taken.',
+      emailUpdates: 'Project Updates via E-Mail',
+      emailUpdatesTooltip:
+        'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
     },
     token: {
       pageName: 'Token Generation',
@@ -687,18 +727,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pageName: 'Migrate Data from KlickerV2',
       step1Title: 'Step 1: Request Migration Token',
       step1Description:
-        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox.',
+        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
       requestMigrationToken: 'Request Migration Token',
       step2Title: 'Step 2: Insert Migration Link',
       step2Description:
-        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed.',
+        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
       step3Title: 'Step 3: Start Migration',
       step3Description:
-        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete.',
+        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
       startMigration: 'Start Migration',
       step4Title: 'Step 4: Migration Status Notification',
       step4Description:
-        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete.',
+        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
     },
     questionPool: {
       createLiveSession: 'Create live quiz',
@@ -781,6 +821,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       uploadImageHeader: 'Upload Media',
       uploadImageDescription:
         'Drag an image here to upload or click to open file explorer.',
+      updateInstances: 'Update question instances in KlickerUZH elements',
+      updateInstancesExplanation:
+        'Use this setting to update the question in all planned quizzes, practice quizzes and microlearnings. The content of questions in running and completed elements will not be updated. Changed multipliers will also be applied to the created instances.',
     },
     sessionForms: {
       sessionName: 'Please enter a name for your quiz.',
@@ -806,9 +849,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       enterContentHere: 'Enter your content here...',
       questionsDragDrop: 'Use drag and drop to add your questions here...',
       newQuestion: 'New question',
+      blockSettingsTitle: 'Settings Block {blockIx}',
       timeLimit: 'Time limit',
       optionalTimeLimit: 'Optional time limit',
-      timeLimitTooltip: 'Time limit for block ${blockIx} in seconds',
+      timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
       newBlockSelected: 'Add 1 block with {count} questions',
       pasteSelection: 'Add {count} questions',
@@ -1061,6 +1105,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       wordCloud: 'Word Cloud',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
+      noStatistics:
+        'Because of missing answers, no statistics are available yet.',
     },
     lecturer: {
       noDataAvailable: 'No data available...',
@@ -1166,7 +1212,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.',
       installIOS:
         "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live sessions directly.",
-      emailRequired: 'Please enter a valid email address',
+      shortnameRequired: 'Please enter your shortname.',
       tokenRequired:
         'Enter a valid token. Please note the validity displayed during token generation.',
       checkToken:

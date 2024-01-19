@@ -19,7 +19,8 @@ export const QuestionDataRef =
   builder.interfaceRef<BaseElementData>('QuestionData')
 export const QuestionData = QuestionDataRef.implement({
   fields: (t) => ({
-    id: t.exposeInt('id'),
+    id: t.exposeID('id'),
+    questionId: t.exposeInt('questionId', { nullable: true }),
     name: t.exposeString('name'),
     type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
@@ -81,7 +82,7 @@ export interface IChoicesQuestionData extends BaseElementData {
 export const ChoicesQuestionData = builder
   .objectRef<IChoicesQuestionData>('ChoicesQuestionData')
   .implement({
-    interfaces: [QuestionData],
+    interfaces: [QuestionDataRef],
     fields: (t) => ({
       options: t.expose('options', { type: ChoiceQuestionOptions }),
     }),
@@ -149,7 +150,7 @@ export interface INumericalQuestionData extends BaseElementData {
 export const NumericalQuestionData = builder
   .objectRef<INumericalQuestionData>('NumericalQuestionData')
   .implement({
-    interfaces: [QuestionData],
+    interfaces: [QuestionDataRef],
     fields: (t) => ({
       options: t.expose('options', { type: NumericalQuestionOptions }),
     }),
@@ -193,7 +194,7 @@ export interface IFreeTextQuestionData extends BaseElementData {
 export const FreeTextQuestionData = builder
   .objectRef<IFreeTextQuestionData>('FreeTextQuestionData')
   .implement({
-    interfaces: [QuestionData],
+    interfaces: [QuestionDataRef],
     fields: (t) => ({
       options: t.expose('options', { type: FreeTextQuestionOptions }),
     }),

@@ -3,6 +3,7 @@ import JWT from 'jsonwebtoken'
 
 import { ServiceBusClient } from '@azure/service-bus'
 import { ContextWithUser } from 'src/lib/context'
+import { sendTeamsNotifications } from '../lib/util'
 
 interface RequestMigrationTokenArgs {
   email: string
@@ -37,15 +38,10 @@ export async function requestMigrationToken(
 
   console.log(migrationLink)
 
-  if (process.env.TEAMS_WEBHOOK_URL === 'string') {
-    await axios.post(process.env.TEAMS_WEBHOOK_URL, {
-      '@context': 'https://schema.org/extensions',
-      '@type': 'MessageCard',
-      themeColor: '0076D7',
-      title: `Migration Requested`,
-      text: `[${process.env.NODE_ENV}] Migration Requested for ${args.email}, Link: ${migrationLink}`,
-    })
-  }
+  await sendTeamsNotifications(
+    'graphql/migration',
+    `[${process.env.NODE_ENV}] Migration Requested for E-Mail ${args.email} in v2 with Edu-ID ${userData.email} (v3), Link: ${migrationLink}`
+  )
 
   const LISTMONK_AUTH = {
     username: process.env.LISTMONK_USER as string,

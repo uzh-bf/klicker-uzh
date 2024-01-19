@@ -108,7 +108,7 @@ const blobTrigger: StorageBlobHandler = async function (
 
     await sendTeamsNotifications(
       'func/migration-v3-import',
-      `Successful migration for user '${user.email}'`,
+      `Successful import for user '${user.email}'`,
       context
     )
     await sendEmailMigrationNotification(user.email, true, context)
@@ -116,7 +116,7 @@ const blobTrigger: StorageBlobHandler = async function (
     context.error('Something went wrong while importing data: ', e)
     await sendTeamsNotifications(
       'func/migration-v3-import',
-      `Migration of KlickerV2 data failed. Error: ${e.message}`,
+      `Import of KlickerV2 data failed. Error: ${e.message}`,
       context
     )
     await sendEmailMigrationNotification(email, false, context)

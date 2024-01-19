@@ -33,7 +33,7 @@ export function URLForm({ slideID }: URLFormProps) {
         window.location.replace(values.url);
       }}
     >
-      <Form className="flex w-full flex-row gap-4">
+      <Form className="flex flex-row w-full gap-4">
         <FormikTextField
           required
           autoComplete="off"
@@ -42,6 +42,7 @@ export function URLForm({ slideID }: URLFormProps) {
           tooltip="Enter the embedding URL of the evaluation you want to add to this slide"
           className={{ root: "w-full" }}
           placeholder="https://manage.klicker.uzh.ch/sessions/12345/evaluation?hmac=xyz"
+          data={{ cy: "url-form-input" }}
         />
         <Button type="submit">Embed</Button>
       </Form>

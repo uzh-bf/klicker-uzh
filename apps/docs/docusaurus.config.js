@@ -99,7 +99,7 @@ const config = {
     announcementBar: {
       id: 'release_v3',
       content:
-        'KlickerUZH v3.0 has been released. If you are using the KlickerUZH v2.0, please refer to the corresponding <a href="/v2/home">Docs v2.0</a>.',
+        'We are now offering introductory courses through UZH Central IT. For more details see <a target="_blank" href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257">the following page</a>.',
       backgroundColor: '#fafbfc',
       textColor: '#091E42',
       isCloseable: false,
@@ -136,12 +136,7 @@ const config = {
         },
         {
           to: 'getting_started/welcome',
-          label: 'Docs v3',
-          position: 'left',
-        },
-        {
-          to: 'v2/getting_started/welcome',
-          label: 'Docs v2',
+          label: 'Docs',
           position: 'left',
         },
         {
@@ -159,10 +154,10 @@ const config = {
         //   label: 'Knowledge Base',
         //   position: 'left',
         // },
-        {
-          type: 'docsVersionDropdown',
-          position: 'right',
-        },
+        // {
+        //   type: 'docsVersionDropdown',
+        //   position: 'right',
+        // },
         {
           to: 'https://community.klicker.uzh.ch',
           label: 'Community',

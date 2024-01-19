@@ -78,6 +78,7 @@ function Migration({ query }) {
             }}
             onClick={() => toggleStep(setIsStep1Shown)}
             disabled={currentStep !== 1}
+            data={{ cy: 'first-step-migration' }}
           >
             <h2 className="text-xl font-bold">
               {t('manage.migration.step1Title')}
@@ -126,6 +127,7 @@ function Migration({ query }) {
                   }
                 }}
                 disabled={email === ''}
+                data={{ cy: 'migration-old-klicker-email' }}
               >
                 {t('manage.migration.requestMigrationToken')}
               </Button>
@@ -140,6 +142,7 @@ function Migration({ query }) {
             }}
             onClick={() => toggleStep(setIsStep2Shown)}
             disabled={currentStep !== 2}
+            data={{ cy: 'second-step-migration' }}
           >
             <h2 className="text-xl font-bold">
               {t('manage.migration.step2Title')}
@@ -166,6 +169,7 @@ function Migration({ query }) {
             }}
             onClick={() => toggleStep(setIsStep3Shown)}
             disabled={currentStep !== 3}
+            data={{ cy: 'third-step-migration' }}
           >
             <h2 className="text-xl font-bold">
               {t('manage.migration.step3Title')}
@@ -215,6 +219,7 @@ function Migration({ query }) {
                   }
                 }}
                 disabled={!isStep1Completed || !isStep2Completed}
+                data={{ cy: 'start-migration' }}
               >
                 {t('manage.migration.startMigration')}
               </Button>
@@ -227,6 +232,7 @@ function Migration({ query }) {
             className={{ root: twMerge('w-full shadow-sm h-16 bg-gray-50') }}
             onClick={() => toggleStep(setIsStep4Shown)}
             disabled={currentStep !== 4}
+            data={{ cy: 'fourth-step-migration' }}
           >
             <h2 className="text-xl font-bold">
               {t('manage.migration.step4Title')}

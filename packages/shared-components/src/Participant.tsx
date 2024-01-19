@@ -12,6 +12,7 @@ interface ParticipantProps {
   rank?: number | string
   isHighlighted?: boolean
   onClick?: () => void
+  level?: number
   className?: string
 }
 
@@ -25,6 +26,7 @@ function Participant({
   className,
   points,
   rank,
+  level,
 }: PropsWithChildren<ParticipantProps>) {
   const t = useTranslations()
 
@@ -40,9 +42,8 @@ function Participant({
     >
       <div className="flex flex-row items-center flex-1 gap-2">
         {rank && <div className="w-3 ml-1 text-lg font-bold">{rank}</div>}
-
         {withAvatar && (
-          <div className="w-[30px] h-full flex flex-col items-center">
+          <div className="relative w-[30px] flex justify-center">
             <Image
               src={
                 typeof avatar !== 'undefined' && avatar !== null
@@ -53,9 +54,13 @@ function Participant({
               height={avatar ? 25 : 20}
               width={avatar ? 30 : 20}
             />
+            {level && (
+              <div className="absolute bottom-0 right-0 flex items-center justify-center w-3 h-3 -mb-1 text-xs font-bold bg-white border border-solid rounded-full border-uzh-grey-80 text-slate-600">
+                {level}
+              </div>
+            )}
           </div>
         )}
-
         <div className="first:ml-2 text-slate-700">
           {pseudonym ?? t('shared.generic.free')}
         </div>
@@ -92,6 +97,7 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
             e?.stopPropagation()
             props?.onLeaveCourse?.()
           }}
+          data={{ cy: 'leave-leaderboard' }}
         >
           {t('shared.generic.leave')}
         </Button>
@@ -103,6 +109,7 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
             e?.stopPropagation()
             props.onJoinCourse!()
           }}
+          data={{ cy: 'join-leaderboard' }}
         >
           {t('shared.generic.join')}
         </Button>

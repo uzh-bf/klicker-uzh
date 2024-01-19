@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@8.10.0 turbo@1.10.16
+RUN npm i -g --ignore-scripts pnpm@8.14.1 turbo@1.11.3
 
 COPY . .
 
@@ -20,7 +20,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@8.10.0 turbo@1.10.16
+RUN npm i -g --ignore-scripts pnpm@8.14.1 turbo@1.11.3
 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .
@@ -30,8 +30,6 @@ RUN pnpm i --frozen-lockfile
 ARG NODE_ENV="production"
 ARG COOKIE_DOMAIN
 ARG API_DOMAIN
-ARG S3_PATHNAME
-ARG S3_HOSTNAME
 ARG NEXT_PUBLIC_AVATAR_BASE_PATH
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_API_URL_SSR
@@ -40,6 +38,7 @@ ARG NEXT_PUBLIC_MANAGE_URL
 ARG NEXT_PUBLIC_CONTROL_URL
 ARG NEXT_PUBLIC_MATOMO_URL
 ARG NEXT_PUBLIC_MATOMO_ID
+ARG BLOB_STORAGE_ACCOUNT_URL
 
 ENV NEXT_TELEMETRY_DISABLED 1
 

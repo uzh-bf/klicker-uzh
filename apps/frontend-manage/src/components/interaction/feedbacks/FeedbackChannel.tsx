@@ -106,6 +106,7 @@ function FeedbackChannel({
                     onClick={() => {
                       handlePublishFeedback(id, !isPublished)
                     }}
+                    data={{ cy: `publish-feedback-${content}` }}
                   >
                     {isPublished ? (
                       <Button.Icon>

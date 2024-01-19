@@ -1,12 +1,17 @@
 import {
   faCheckCircle,
   faCircleXmark,
+  faComment as faCommentRegular,
   faRectangleList as faListRegular,
+  faCircleQuestion as faQuestionRegular,
 } from '@fortawesome/free-regular-svg-icons'
 import {
+  IconDefinition,
   faArchive,
   faCommentDots,
+  faComment as faCommentSolid,
   faRectangleList as faListSolid,
+  faCircleQuestion as faQuestionSolid,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
@@ -54,6 +59,16 @@ function TagList({
     !compact
   )
 
+  const elementTypeFilters: Record<ElementType, IconDefinition[]> = {
+    FLASHCARD: [faListRegular, faListSolid],
+    CONTENT: [faCommentRegular, faCommentSolid],
+    SC: [faQuestionRegular, faQuestionSolid],
+    MC: [faQuestionRegular, faQuestionSolid],
+    KPRIM: [faQuestionRegular, faQuestionSolid],
+    FREE_TEXT: [faQuestionRegular, faQuestionSolid],
+    NUMERICAL: [faQuestionRegular, faQuestionSolid],
+  }
+
   return (
     <div className="flex flex-col flex-1 h-max max-h-full p-4 md:w-[18rem] border border-uzh-grey-60 border-solid rounded-md text-[0.9rem] overflow-y-auto">
       <Button
@@ -76,6 +91,7 @@ function TagList({
           )
         }
         onClick={(): void => handleReset()}
+        data={{ cy: 'reset-question-pool-filters' }}
       >
         <Button.Icon className={{ root: 'mr-1' }}>
           <FontAwesomeIcon icon={faCircleXmark} />
@@ -90,11 +106,11 @@ function TagList({
       />
       {questionTypesVisible && (
         <ul className="list-none">
-          {Object.values(ElementType).map((type) => (
+          {Object.entries(elementTypeFilters).map(([type, icons]) => (
             <TagItem
               key={type}
-              text={t(`shared.${type}.typeLabel`)}
-              icon={activeType === type ? faListSolid : faListRegular}
+              text={t(`shared.${type as ElementType}.typeLabel`)}
+              icon={activeType === type ? icons[1] : icons[0]}
               active={activeType === type}
               onClick={(): void => handleTagClick(type, true)}
             />
@@ -148,6 +164,7 @@ function TagList({
             root: twMerge(isArchiveActive && 'text-red-600'),
           }}
           onClick={(): void => handleToggleArchive()}
+          data={{ cy: 'toggle-archive-question-pool' }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faArchive} />

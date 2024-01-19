@@ -5,7 +5,10 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LearningElementOrderType,
+  SelfDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -15,7 +18,7 @@ interface ElementOverviewProps {
   displayName: string
   description?: string
   numOfQuestions?: number
-  orderType: string
+  orderType: LearningElementOrderType
   resetTimeDays?: number
   previouslyAnswered?: number
   stacksWithQuestions?: number
@@ -59,6 +62,7 @@ function ElementOverview({
                     }`
                   )
                 }
+                data={{ cy: 'login-to-student-login-collect-points' }}
               >
                 {text}
               </Button>
@@ -148,7 +152,7 @@ function ElementOverview({
       <Button
         className={{ root: 'self-end text-lg' }}
         onClick={() => setCurrentIx(0)}
-        data={{ cy: 'start-learning-element' }}
+        data={{ cy: 'start-practice-quiz' }}
       >
         {t('shared.generic.start')}
       </Button>

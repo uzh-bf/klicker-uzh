@@ -79,7 +79,7 @@ function JoinCourse({
       displayName={t('pwa.general.joinCourse')}
       course={{ displayName: displayName, color: color, id: courseId }}
     >
-      <div className="mx-auto max-w-5xl md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
+      <div className="max-w-5xl mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
         <H2>{t('pwa.joinCourse.title', { name: displayName })}</H2>
 
         {/* if the participant is logged in, a simplified form will be displayed */}
@@ -123,6 +123,7 @@ function JoinCourse({
                       }}
                       type="submit"
                       disabled={isSubmitting || !isValid}
+                      data={{ cy: 'join-course' }}
                     >
                       <Button.Label>{t('pwa.general.joinCourse')}</Button.Label>
                     </Button>
@@ -146,9 +147,9 @@ function JoinCourse({
               handleSubmit={async (values) => {
                 await createParticipantAccount({
                   variables: {
-                    email: values.email,
-                    username: values.username,
-                    password: values.password,
+                    email: values.email.trim(),
+                    username: values.username.trim(),
+                    password: values.password.trim(),
                     isProfilePublic: values.isProfilePublic,
                   },
                 })

@@ -86,7 +86,7 @@ export const Mutation = builder.mutationType({
           speed: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.addConfusionTimestep(args, ctx) as any
+          return FeedbackService.addConfusionTimestep(args, ctx)
         },
       }),
 
@@ -109,7 +109,7 @@ export const Mutation = builder.mutationType({
           content: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.createFeedback(args, ctx) as any
+          return FeedbackService.createFeedback(args, ctx)
         },
       }),
 
@@ -122,7 +122,7 @@ export const Mutation = builder.mutationType({
           incrementDownvote: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.voteFeedbackResponse(args, ctx) as any
+          return FeedbackService.voteFeedbackResponse(args, ctx)
         },
       }),
 
@@ -134,14 +134,14 @@ export const Mutation = builder.mutationType({
           increment: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.upvoteFeedback(args, ctx) as any
+          return FeedbackService.upvoteFeedback(args, ctx)
         },
       }),
 
       loginUserToken: t.id({
         nullable: true,
         args: {
-          email: t.arg.string({ required: true, validate: { email: true } }),
+          shortname: t.arg.string({ required: true }),
           token: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
@@ -318,20 +318,30 @@ export const Mutation = builder.mutationType({
         type: Participant,
         args: {
           isProfilePublic: t.arg.boolean({ required: false }),
-          email: t.arg.string({ required: false, validate: { email: true } }),
+          email: t.arg.string({ required: true, validate: { email: true } }),
           username: t.arg.string({
-            required: false,
+            required: true,
             validate: { minLength: 5, maxLength: 15 },
           }),
-          avatar: t.arg.string({ required: false }),
           password: t.arg.string({ required: false }),
-          avatarSettings: t.arg({
-            type: AvatarSettingsInput,
-            required: false,
-          }),
         },
         resolve(_, args, ctx) {
           return ParticipantService.updateParticipantProfile(args, ctx)
+        },
+      }),
+
+      updateParticipantAvatar: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: Participant,
+        args: {
+          avatar: t.arg.string({ required: true }),
+          avatarSettings: t.arg({
+            type: AvatarSettingsInput,
+            required: true,
+          }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.updateParticipantAvatar(args, ctx)
         },
       }),
 
@@ -471,7 +481,7 @@ export const Mutation = builder.mutationType({
           locale: t.arg({ type: LocaleType, required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.changeUserLocale(args, ctx) as any
+          return AccountService.changeUserLocale(args, ctx)
         },
       }),
 
@@ -517,7 +527,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.deleteTag(args, ctx) as any
+          return QuestionService.deleteTag(args, ctx)
         },
       }),
 
@@ -528,7 +538,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedback(args, ctx) as any
+          return FeedbackService.deleteFeedback(args, ctx)
         },
       }),
 
@@ -539,7 +549,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedbackResponse(args, ctx) as any
+          return FeedbackService.deleteFeedbackResponse(args, ctx)
         },
       }),
 
@@ -550,7 +560,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.deleteQuestion(args, ctx) as any
+          return QuestionService.deleteQuestion(args, ctx)
         },
       }),
 
@@ -562,7 +572,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.editTag(args, ctx) as any
+          return QuestionService.editTag(args, ctx)
         },
       }),
 
@@ -596,7 +606,7 @@ export const Mutation = builder.mutationType({
           isPinned: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.pinFeedback(args, ctx) as any
+          return FeedbackService.pinFeedback(args, ctx)
         },
       }),
 
@@ -608,7 +618,7 @@ export const Mutation = builder.mutationType({
           isPublished: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.publishFeedback(args, ctx) as any
+          return FeedbackService.publishFeedback(args, ctx)
         },
       }),
 
@@ -620,7 +630,7 @@ export const Mutation = builder.mutationType({
           isResolved: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.resolveFeedback(args, ctx) as any
+          return FeedbackService.resolveFeedback(args, ctx)
         },
       }),
 
@@ -632,7 +642,7 @@ export const Mutation = builder.mutationType({
           responseContent: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return FeedbackService.respondToFeedback(args, ctx) as any
+          return FeedbackService.respondToFeedback(args, ctx)
         },
       }),
 
@@ -647,7 +657,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: User,
         resolve(_, __, ctx) {
-          return AccountService.generateLoginToken(ctx) as any
+          return AccountService.generateLoginToken(ctx)
         },
       }),
 
@@ -737,7 +747,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      manipulateChoicesQuestion: t.withAuth(asUserFullAccess).prismaField({
+      manipulateChoicesQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
         args: {
@@ -752,12 +762,12 @@ export const Mutation = builder.mutationType({
             type: OptionsChoicesInput,
           }),
         },
-        resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args as any, ctx) as any
+        resolve(_, args, ctx) {
+          return QuestionService.manipulateQuestion(args, ctx)
         },
       }),
 
-      manipulateNumericalQuestion: t.withAuth(asUserFullAccess).prismaField({
+      manipulateNumericalQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
         args: {
@@ -772,12 +782,12 @@ export const Mutation = builder.mutationType({
             type: OptionsNumericalInput,
           }),
         },
-        resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args as any, ctx) as any
+        resolve(_, args, ctx) {
+          return QuestionService.manipulateQuestion(args, ctx)
         },
       }),
 
-      manipulateFreeTextQuestion: t.withAuth(asUserFullAccess).prismaField({
+      manipulateFreeTextQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
         args: {
@@ -792,8 +802,19 @@ export const Mutation = builder.mutationType({
             type: OptionsFreeTextInput,
           }),
         },
-        resolve(_, __, args, ctx) {
-          return QuestionService.manipulateQuestion(args as any, ctx) as any
+        resolve(_, args, ctx) {
+          return QuestionService.manipulateQuestion(args, ctx)
+        },
+      }),
+
+      updateQuestionInstances: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: [QuestionInstance],
+        args: {
+          questionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.updateQuestionInstances(args, ctx)
         },
       }),
 
@@ -840,7 +861,8 @@ export const Mutation = builder.mutationType({
           isArchived: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.toggleIsArchived(args, ctx)
+          // FIXME: figure out how to return only a partial element or create a new pothos type only for this?
+          return QuestionService.toggleIsArchived(args, ctx) as any
         },
       }),
 
@@ -886,7 +908,18 @@ export const Mutation = builder.mutationType({
           shortname: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.changeShortname(args, ctx) as any
+          return AccountService.changeShortname(args, ctx)
+        },
+      }),
+
+      changeEmailSettings: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: User,
+        args: {
+          projectUpdates: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeEmailSettings(args, ctx)
         },
       }),
 
@@ -896,9 +929,10 @@ export const Mutation = builder.mutationType({
         args: {
           shortname: t.arg.string({ required: true }),
           locale: t.arg({ type: LocaleType, required: true }),
+          sendUpdates: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.changeInitialSettings(args, ctx) as any
+          return AccountService.changeInitialSettings(args, ctx)
         },
       }),
       // #endregion
@@ -1096,7 +1130,7 @@ export const Mutation = builder.mutationType({
           scope: t.arg({ type: UserLoginScope, required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.createUserLogin(args, ctx) as any
+          return AccountService.createUserLogin(args, ctx)
         },
       }),
 
@@ -1107,7 +1141,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return AccountService.deleteUserLogin(args, ctx) as any
+          return AccountService.deleteUserLogin(args, ctx)
         },
       }),
 

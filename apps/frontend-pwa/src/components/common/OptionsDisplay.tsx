@@ -229,6 +229,7 @@ export function Options({
                             return { ...prev, [choice.ix]: true }
                           })
                         }
+                        data={{ cy: `toggle-KPRIM-ix-${choice.value}-correct` }}
                       >
                         <Button.Icon>
                           <FontAwesomeIcon icon={faCheck} />
@@ -250,6 +251,9 @@ export function Options({
                             return { ...prev, [choice.ix]: false }
                           })
                         }
+                        data={{
+                          cy: `toggle-KPRIM-ix-${choice.value}-incorrect`,
+                        }}
                       >
                         <Button.Icon>
                           <FontAwesomeIcon icon={faX} />
@@ -331,6 +335,7 @@ export function Options({
             </div>
           )}
           <FREETextAnswerOptions
+            disabled={disabled}
             onChange={onChangeResponse}
             maxLength={options.restrictions?.maxLength}
             value={response}

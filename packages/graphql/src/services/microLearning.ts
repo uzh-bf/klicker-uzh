@@ -198,13 +198,15 @@ export async function createMicroSession(
         create: questions.map((questionId, ix) => {
           const question = questionMap[questionId]
 
+          const questionData = processQuestionData(question)
+
           return {
             order: ix,
             type: QuestionInstanceType.MICRO_SESSION,
             pointsMultiplier: multiplier * question.pointsMultiplier,
-            questionData: question,
+            questionData,
             results: prepareInitialInstanceResults(
-              question as AllElementTypeData
+              questionData as AllElementTypeData
             ),
             question: {
               connect: { id: questionId },
@@ -422,7 +424,7 @@ export async function deleteMicroSession(
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
       console.log(
-        'The micro-session is already published and cannot be deleted anymore.'
+        'The microlearning is already published and cannot be deleted anymore.'
       )
       return null
     }

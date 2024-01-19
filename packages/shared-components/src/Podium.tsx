@@ -1,7 +1,7 @@
-import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
 import Image from 'next/image'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { LeaderboardCombinedEntry } from './Leaderboard'
 import { ParticipantOther } from './Participant'
 
 const rankHeights: Record<number, string> = {
@@ -93,7 +93,7 @@ function SinglePodium({
 }
 
 interface PodiumProps {
-  leaderboard: Partial<LeaderboardEntry>[]
+  leaderboard: Partial<LeaderboardCombinedEntry>[]
   className?: {
     root?: string
     single?: string

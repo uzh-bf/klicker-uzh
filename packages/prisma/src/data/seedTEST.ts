@@ -18,6 +18,7 @@ import {
   prepareSession,
   prepareUser,
 } from './helpers.js'
+import { seedAchievements } from './seedAchievements'
 import { seedLevels } from './seedLevels'
 
 export const PARTICIPANT_IDS = [
@@ -31,12 +32,41 @@ export const PARTICIPANT_IDS = [
   '46407010-0e7c-4903-9a66-2c8d9d6909b0',
   '84b0ba5d-34bc-45cd-8253-f3e8c340e5ff',
   '05a933a0-b2bc-4551-b7e1-6975140d996d',
+  'bb822996-97d6-41e4-b648-d93057d1b49c',
+  'abf8ddf8-f90d-4d29-af8b-6f007d41dd23',
+  'de19e261-7848-4f4a-8992-e1e5db4b6825',
+  'c9e11f3f-d485-4ed3-bd05-5eefedf4987f',
+  '1b3ebc59-b93c-414d-a69e-cc2783221e28',
+  '1b348636-d665-4618-9ed0-90ddb27a36b0',
+  'e9c2e5da-0954-4970-a7c8-c752cb76b8df',
+  '6283a267-1e66-4429-b7b8-3449d52ca87a',
+  'f99c2387-56b6-407c-9b9a-19eba6bde857',
+  '60f451a4-9005-4f08-90b6-3df7ff648aff',
+  '2d7f7f11-c7ab-4223-acbf-c248c07a2e90',
+  'd9fc5c24-4357-4a8f-ac5b-d56e6b22690d',
+  '7013c323-12c5-45c4-8af4-40474bb08f27',
+  'ef14f3c6-24b1-44eb-a464-63cede2255b3',
+]
+
+export const PARTICIPANT_GROUP_IDS = [
+  '9c4940c1-87ca-47a7-afc4-cd85656df3e7',
+  '4fc5c849-5a2b-437c-a6fd-91daac4e556a',
+  '0de95dcb-1802-47f7-9fb9-01085d1d2281',
+  '6f4ae38f-5866-4d24-8844-cd380998591c',
+  'e91fe13f-4394-496f-b12f-993f9a1a8dba',
+  'ac6a7361-f71e-4fcd-821f-8904954af90f',
+  'f30a99f8-3d66-4f28-8aaf-af64b392de05',
+  'e5ddf45a-89e3-466a-9d17-e60354470925',
+  'fb1c3685-f51e-4585-8444-dbbe2ddb76a4',
+  'f2f843c6-a35e-46d7-9574-902e1d134d6c',
+  'd822a233-c6d4-4cb5-a7b8-4a265d7ffaa0',
 ]
 
 async function seedTest(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)
 
   await seedLevels(prisma)
+  await seedAchievements(prisma)
 
   const standardUser = await prisma.user.upsert(
     await prepareUser({
@@ -193,6 +223,118 @@ async function seedTest(prisma: Prisma.PrismaClient) {
               value: 'Schweiz',
             },
           },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond2',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond2',
+              displayName: 'Bond 2',
+              value: 'Schweiz',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond3',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond3',
+              displayName: 'Bond 3',
+              value: 'Schweiz',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond4',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond4',
+              displayName: 'Bond 4',
+              value: 'Schweiz',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond5',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond5',
+              displayName: 'Bond 5',
+              value: 'Schweiz',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond6',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond6',
+              displayName: 'Bond 6',
+              value: 'Schweiz',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond7',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond7',
+              displayName: 'Bond 7',
+              value: 'Schweiz',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond8',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond8',
+              displayName: 'Bond 8',
+              value: 'Schweiz',
+            },
+          },
+          {
+            where: {
+              groupActivityId_name: {
+                groupActivityId: GROUP_ACTIVITY_ID,
+                name: 'bond9',
+              },
+            },
+            create: {
+              type: 'STRING',
+              name: 'bond9',
+              displayName: 'Bond 9',
+              value: 'Schweiz',
+            },
+          },
         ],
       },
       instances: {
@@ -233,6 +375,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
+  // create participants
   const participantsTesting = await Promise.all(
     PARTICIPANT_IDS.map(async (id, ix) => {
       return prisma.participant.upsert(
@@ -246,6 +389,108 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
+  // create participations for all participants
+  const participations = await Promise.all(
+    PARTICIPANT_IDS.map(async (id, ix) => {
+      return prisma.participation.upsert({
+        where: {
+          courseId_participantId: {
+            courseId: COURSE_ID_TEST,
+            participantId: id,
+          },
+        },
+        create: {
+          isActive: true,
+          course: {
+            connect: {
+              id: COURSE_ID_TEST,
+            },
+          },
+          participant: {
+            connect: {
+              id: id,
+            },
+          },
+        },
+        update: {
+          isActive: true,
+        },
+      })
+    })
+  )
+
+  // create leaderboard entries for the top 15
+  const leaderboardEntries = await Promise.all(
+    PARTICIPANT_IDS.slice(0, 15).map(async (id, ix) => {
+      return prisma.leaderboardEntry.upsert({
+        where: {
+          type_participantId_courseId: {
+            type: 'COURSE',
+            courseId: COURSE_ID_TEST,
+            participantId: id,
+          },
+        },
+        create: {
+          type: 'COURSE',
+          score: ix * 100 + 100,
+          participant: {
+            connect: {
+              id: id,
+            },
+          },
+          course: {
+            connect: {
+              id: COURSE_ID_TEST,
+            },
+          },
+          participation: {
+            connect: {
+              courseId_participantId: {
+                courseId: COURSE_ID_TEST,
+                participantId: id,
+              },
+            },
+          },
+        },
+        update: {},
+      })
+    })
+  )
+
+  // create participant groups
+  const participantGroupsTesting = await Promise.all(
+    PARTICIPANT_GROUP_IDS.map(async (id, ix) => {
+      const code = 100000 + Math.floor(Math.random() * 900000)
+
+      return prisma.participantGroup.upsert({
+        where: {
+          id,
+        },
+        create: {
+          id,
+          name: `Gruppe ${ix + 1}`,
+          code: code,
+          courseId: COURSE_ID_TEST,
+          participants: {
+            connect: [
+              {
+                id: PARTICIPANT_IDS[ix],
+              },
+              {
+                id: PARTICIPANT_IDS[ix + PARTICIPANT_GROUP_IDS.length],
+              },
+            ],
+          },
+          averageMemberScore: Math.round(ix * 100 + 500),
+        },
+        update: {
+          name: `Gruppe ${ix + 1}`,
+          code: code,
+        },
+      })
+    })
+  )
+
   const participantsNoCourse = await Promise.all(
     [
       '908f84d0-fd32-4a99-8a9f-b4793288234d',
@@ -255,94 +500,20 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         await prepareParticipant({
           id,
           password: 'abcd',
-          username: `testuser${ix + 11}`,
+          username: `testuser${ix + PARTICIPANT_IDS.length + 1}`,
           courseIds: [],
         })
       )
     })
   )
 
-  const pilotAchievement = await prisma.achievement.upsert({
-    where: { id: 2 },
-    create: {
-      id: 2,
-      name: 'Explorer',
-      description:
-        'Du warst Teil des KlickerUZH im ersten Semester. Dankeschön!',
-      icon: '/achievements/Erkunden.svg',
-      type: 'PARTICIPANT',
-    },
-    update: {
-      icon: '/achievements/Erkunden.svg',
-    },
-  })
-
-  const solvedEverythingAchievement = await prisma.achievement.upsert({
-    where: { id: 3 },
-    create: {
-      id: 3,
-      name: 'Fleisspreis',
-      description:
-        'Du hast alle verfügbaren Microlearnings und Lernelemente gelöst.',
-      icon: '/achievements/Fleisspreis.svg',
-      type: 'PARTICIPANT',
-    },
-    update: {
-      icon: '/achievements/Fleisspreis.svg',
-    },
-  })
-
-  const groupTaskPassedAchievement = await prisma.achievement.upsert({
-    where: { id: 8 },
-    create: {
-      id: 8,
-      name: 'Dream Team',
-      description:
-        'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
-      icon: '/achievements/Dreamteam.svg',
-      type: 'PARTICIPANT',
-    },
-    update: {
-      icon: '/achievements/Dreamteam.svg',
-    },
-  })
-
-  const groupTaskDoneAchievement = await prisma.achievement.upsert({
-    where: { id: 9 },
-    create: {
-      id: 9,
-      name: 'Teamgeist',
-      description: 'Du hast einen Gruppentask absolviert.',
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/teamgeist.svg',
-      type: 'PARTICIPANT',
-    },
-    update: {
-      icon: 'https://sos-ch-dk-2.exo.io/klicker-prod/achievements/teamgeist.svg',
-    },
-  })
-
-  const fewQuestionsAchievement = await prisma.achievement.upsert({
-    where: { id: 10 },
-    create: {
-      id: 10,
-      name: 'Unerschrocken',
-      description:
-        'Du hast eine Woche vor Ende der Vorlesung noch keine 6 Fragen beantwortet.',
-      icon: '/achievements/Unerschrocken.svg',
-      type: 'PARTICIPANT',
-    },
-    update: {
-      icon: '/achievements/Unerschrocken.svg',
-    },
-  })
-
-  const awardedPilotAchievements = PARTICIPANT_IDS.map(
-    async (participantId) => {
+  const awardedPilotAchievements = await Promise.all(
+    PARTICIPANT_IDS.map(async (participantId) => {
       await prisma.participantAchievementInstance.upsert({
         where: {
           participantId_achievementId: {
             participantId: participantId,
-            achievementId: pilotAchievement.id,
+            achievementId: DATA_TEST.AchievementIds.Explorer,
           },
         },
         create: {
@@ -353,7 +524,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           },
           achievement: {
             connect: {
-              id: pilotAchievement.id,
+              id: DATA_TEST.AchievementIds.Explorer,
             },
           },
           achievedAt: new Date(),
@@ -361,20 +532,20 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         },
         update: {},
       })
-    }
+    })
   )
 
   const awardedAchievements = [
-    solvedEverythingAchievement,
-    groupTaskPassedAchievement,
-    groupTaskDoneAchievement,
-    fewQuestionsAchievement,
-  ].map(async (achievement) => {
+    DATA_TEST.AchievementIds['Busy Bee'],
+    DATA_TEST.AchievementIds['Dream Team'],
+    DATA_TEST.AchievementIds['Team Spirit'],
+    DATA_TEST.AchievementIds.Fearless,
+  ].map(async (achievementId) => {
     await prisma.participantAchievementInstance.upsert({
       where: {
         participantId_achievementId: {
           participantId: PARTICIPANT_IDS[0],
-          achievementId: achievement.id,
+          achievementId: achievementId,
         },
       },
       create: {
@@ -385,7 +556,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         },
         achievement: {
           connect: {
-            id: achievement.id,
+            id: achievementId,
           },
         },
         achievedAt: new Date(),

@@ -5,8 +5,6 @@ async function migrate() {
 
   const elements = await prisma.element.findMany({})
 
-  // await prisma.$transaction(
-
   let counter = 1
   for (const elem of elements) {
     console.log(counter, elem.id)

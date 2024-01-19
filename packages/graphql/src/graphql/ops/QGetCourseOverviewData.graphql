@@ -7,6 +7,9 @@ query GetCourseOverviewData($courseId: String!) {
       username
       xp
       level
+      participantGroups {
+        id
+      }
     }
     participation {
       id
@@ -54,6 +57,7 @@ query GetCourseOverviewData($courseId: String!) {
       score
       isSelf
       rank
+      level
     }
     leaderboardStatistics {
       participantCount
@@ -63,6 +67,8 @@ query GetCourseOverviewData($courseId: String!) {
       id
       name
       score
+      rank
+      isMember
     }
     groupLeaderboardStatistics {
       participantCount
@@ -89,6 +95,7 @@ query GetCourseOverviewData($courseId: String!) {
       score
       isSelf
       level
+      rank
     }
   }
 }

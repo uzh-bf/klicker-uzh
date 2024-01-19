@@ -10,6 +10,7 @@ import {
   ManipulateChoicesQuestionDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
+  UpdateQuestionInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -21,8 +22,10 @@ import {
   FormikSelectField,
   FormikTextField,
   H3,
+  H4,
   Label,
   Modal,
+  Prose,
   Select,
   Switch,
   UserNotification,
@@ -64,6 +67,7 @@ function QuestionEditModal({
 }: QuestionEditModalProps): React.ReactElement {
   const isDuplication = mode === QuestionEditMode.DUPLICATE
   const t = useTranslations()
+  const [updateInstances, setUpdateInstances] = useState(false)
 
   // TODO: ensure that every validation schema change is also reflected in an adaption of the error messages
   const questionManipulationSchema = Yup.object().shape({
@@ -242,37 +246,56 @@ function QuestionEditModal({
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
+  const [updateQuestionInstances] = useMutation(UpdateQuestionInstancesDocument)
 
   const DROPDOWN_OPTIONS = [
     {
       value: ElementType.Sc,
       label: t(`shared.${ElementType.Sc}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(`shared.${ElementType.Sc}.typeLabel`)}`,
+      },
     },
     {
       value: ElementType.Mc,
       label: t(`shared.${ElementType.Mc}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(`shared.${ElementType.Mc}.typeLabel`)}`,
+      },
     },
     {
       value: ElementType.Kprim,
       label: t(`shared.${ElementType.Kprim}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Kprim}.typeLabel`
+        )}`,
+      },
     },
     {
       value: ElementType.Numerical,
       label: t(`shared.${ElementType.Numerical}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Numerical}.typeLabel`
+        )}`,
+      },
     },
     {
       value: ElementType.FreeText,
       label: t(`shared.${ElementType.FreeText}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.FreeText}.typeLabel`
+        )}`,
+      },
     },
   ]
 
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
       const common = {
-        type:
-          mode === QuestionEditMode.CREATE
-            ? ElementType.Sc
-            : dataQuestion?.question?.type,
+        type: ElementType.Sc,
         name: '',
         content: '',
         explanation: '',
@@ -386,11 +409,12 @@ function QuestionEditModal({
             hasAnswerFeedbacks: values.hasAnswerFeedbacks,
           },
         }
+
         switch (common.type) {
           case ElementType.Sc:
           case ElementType.Mc:
-          case ElementType.Kprim:
-            await manipulateChoicesQuestion({
+          case ElementType.Kprim: {
+            const result = await manipulateChoicesQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -412,9 +436,11 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateChoicesQuestion?.id) return
             break
-          case ElementType.Numerical:
-            await manipulateNUMERICALQuestion({
+          }
+          case ElementType.Numerical: {
+            const result = await manipulateNUMERICALQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -451,9 +477,11 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateNumericalQuestion?.id) return
             break
-          case ElementType.FreeText:
-            await manipulateFreeTextQuestion({
+          }
+          case ElementType.FreeText: {
+            const result = await manipulateFreeTextQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -473,10 +501,22 @@ function QuestionEditModal({
                 { query: GetUserTagsDocument },
               ],
             })
+            if (!result.data?.manipulateFreeTextQuestion?.id) return
             break
+          }
+
           default:
             break
         }
+
+        if (mode === QuestionEditMode.EDIT && updateInstances) {
+          if (questionId !== null && typeof questionId !== 'undefined') {
+            const { data: instanceResult } = await updateQuestionInstances({
+              variables: { questionId: questionId },
+            })
+          }
+        }
+
         handleSetIsOpen(false)
       }}
     >
@@ -528,6 +568,7 @@ function QuestionEditModal({
               <Button
                 className={{ root: 'mt-2 border-uzh-grey-80' }}
                 onClick={() => handleSetIsOpen(false)}
+                data={{ cy: 'close-question-modal' }}
               >
                 <Button.Label>{t('shared.generic.close')}</Button.Label>
               </Button>
@@ -621,10 +662,26 @@ function QuestionEditModal({
                         {({ field, meta }: FastFieldProps) => (
                           <Select
                             items={[
-                              { label: 'x1', value: '1' },
-                              { label: 'x2', value: '2' },
-                              { label: 'x3', value: '3' },
-                              { label: 'x4', value: '4' },
+                              {
+                                label: 'x1',
+                                value: '1',
+                                data: { cy: 'select-multiplier-1' },
+                              },
+                              {
+                                label: 'x2',
+                                value: '2',
+                                data: { cy: 'select-multiplier-2' },
+                              },
+                              {
+                                label: 'x3',
+                                value: '3',
+                                data: { cy: 'select-multiplier-3' },
+                              },
+                              {
+                                label: 'x4',
+                                value: '4',
+                                data: { cy: 'select-multiplier-4' },
+                              },
                             ]}
                             onChange={(newValue: string) =>
                               setFieldValue('pointsMultiplier', newValue)
@@ -785,8 +842,14 @@ function QuestionEditModal({
                           (mode) => ({
                             value: mode,
                             label: t(`manage.questionForms.${mode}Display`),
+                            data: {
+                              cy: `select-display-mode-${t(
+                                `manage.questionForms.${mode}Display`
+                              )}`,
+                            },
                           })
                         )}
+                        data={{ cy: 'select-display-mode' }}
                       />
                     )}
                   </div>
@@ -906,6 +969,9 @@ function QuestionEditModal({
                                       }}
                                       className={{
                                         root: 'items-center justify-center w-10 h-10 ml-2 text-white bg-red-600 rounded-md',
+                                      }}
+                                      data={{
+                                        cy: `delete-answer-option-ix-${index}`,
                                       }}
                                     >
                                       <Button.Icon>
@@ -1101,6 +1167,9 @@ function QuestionEditModal({
                                         placeholder={t(
                                           'shared.generic.minLong'
                                         )}
+                                        data={{
+                                          cy: `set-solution-range-min-${index}`,
+                                        }}
                                       />
                                       <div className="font-bold">
                                         {t('shared.generic.max')}:{' '}
@@ -1114,11 +1183,17 @@ function QuestionEditModal({
                                         placeholder={t(
                                           'shared.generic.maxLong'
                                         )}
+                                        data={{
+                                          cy: `set-solution-range-max-${index}`,
+                                        }}
                                       />
                                       <Button
                                         onClick={() => remove(index)}
                                         className={{
                                           root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
+                                        }}
+                                        data={{
+                                          cy: `delete-solution-range-ix-${index}`,
                                         }}
                                       >
                                         {t('shared.generic.delete')}
@@ -1137,6 +1212,7 @@ function QuestionEditModal({
                                       max: undefined,
                                     })
                                   }
+                                  data={{ cy: 'add-solution-range' }}
                                 >
                                   {t('manage.questionForms.addSolutionRange')}
                                 </Button>
@@ -1194,6 +1270,9 @@ function QuestionEditModal({
                                       className={{
                                         root: 'ml-2 text-white bg-red-500 sm:hover:bg-red-600',
                                       }}
+                                      data={{
+                                        cy: `delete-solution-ix-${index}`,
+                                      }}
                                     >
                                       {t('shared.generic.delete')}
                                     </Button>
@@ -1206,6 +1285,7 @@ function QuestionEditModal({
                                   root: 'flex-1 font-bold border border-solid border-uzh-grey-100',
                                 }}
                                 onClick={() => push('')}
+                                data={{ cy: 'add-solution-value' }}
                               >
                                 {t('manage.questionForms.addSolution')}
                               </Button>
@@ -1382,6 +1462,28 @@ function QuestionEditModal({
                   )}
               </div>
             </div>
+
+            {mode === QuestionEditMode.EDIT && (
+              <div
+                className={twMerge(
+                  'p-2 mt-3 border border-solid rounded flex flex-row gap-6 items-center',
+                  updateInstances && 'bg-orange-100 border-orange-200'
+                )}
+              >
+                <Switch
+                  checked={updateInstances}
+                  onCheckedChange={() => setUpdateInstances(!updateInstances)}
+                />
+                <div>
+                  <H4 className={{ root: 'm-0' }}>
+                    {t('manage.questionForms.updateInstances')}
+                  </H4>
+                  <Prose className={{ root: 'prose-xs max-w-none' }}>
+                    {t('manage.questionForms.updateInstancesExplanation')}
+                  </Prose>
+                </div>
+              </div>
+            )}
           </Modal>
         )
       }}

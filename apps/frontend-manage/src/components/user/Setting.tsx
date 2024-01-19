@@ -17,7 +17,7 @@ function SettingHeader({
 }: SettingHeaderProps) {
   const [settingVisible, setSettingVisible] = useState(defaultOpen)
   return (
-    <div className="border-b border-solid border-gray-300">
+    <div className="border-b border-gray-300 border-solid">
       <Button
         basic
         onClick={() => setSettingVisible(!settingVisible)}
@@ -27,6 +27,7 @@ function SettingHeader({
             'font-bold  text-lg text-neutral-500'
           ),
         }}
+        data={{ cy: `collapse-setting-header-${title}` }}
       >
         <div>{title}</div>
         <FontAwesomeIcon icon={settingVisible ? faChevronUp : faChevronDown} />

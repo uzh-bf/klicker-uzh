@@ -2,7 +2,7 @@ generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions"]
   output          = "../client"
-  binaryTargets   = ["native", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x"]
+  binaryTargets   = ["native", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 generator pothos {
@@ -19,6 +19,12 @@ datasource db {
   provider          = "postgres"
   url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model Migration {
+  id String @id
+
+  createdAt DateTime @default(now())
 }
 
 enum PublicationStatus {
@@ -102,10 +108,11 @@ model User {
 
   originalId String? @unique
 
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
+  name               String?
+  email              String    @unique
+  emailVerified      DateTime?
+  sendProjectUpdates Boolean   @default(false)
+  image              String?
 
   shortname           String    @unique
   lastLoginAt         DateTime?
@@ -215,7 +222,6 @@ enum ElementType {
 model Element {
   id Int @id @default(autoincrement())
 
-  // TODO: implement the logic for this
   version Int @default(1) // used to track question versions, incremented on each update
 
   originalId String? @unique
@@ -902,8 +908,8 @@ model ParticipantGroup {
   name String
   code Int
 
-  groupActivityScore Float @default(0)
-  averageMemberScore Float @default(0)
+  groupActivityScore Int @default(0)
+  averageMemberScore Int @default(0)
 
   participants    Participant[]
   groupActivities GroupActivityInstance[]
@@ -1127,10 +1133,15 @@ model Title {
 model Achievement {
   id Int @id @default(autoincrement())
 
-  name        String
-  description String
-  icon        String
-  iconColor   String?
+  name          String? // TODO: remove once migrated to nameDE and nameEN
+  description   String? // TODO: remove once migrated to descriptionDE and descriptionEN
+  nameDE        String?
+  descriptionDE String?
+  nameEN        String?
+  descriptionEN String?
+
+  icon      String
+  iconColor String?
 
   rewardedPoints Int?
   rewardedXP     Int?

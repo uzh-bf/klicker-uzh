@@ -152,6 +152,7 @@ function CourseOverview({ courseId }: Props) {
                 key="leaderboard"
                 value="global"
                 label={t('shared.generic.leaderboard')}
+                data={{ cy: 'student-course-leaderboard-tab' }}
               />
             )}
 
@@ -207,9 +208,7 @@ function CourseOverview({ courseId }: Props) {
 
                     {participant?.id && participation?.isActive && (
                       <Leaderboard
-                        courseName={course.displayName}
                         leaderboard={leaderboard || []}
-                        activeParticipation={participation?.isActive}
                         onJoin={joinCourse}
                         onLeave={() => setIsLeaveCourseModalOpen(true)}
                         participant={participant ?? undefined}
@@ -219,12 +218,13 @@ function CourseOverview({ courseId }: Props) {
                           rank2: Rank2Img,
                           rank3: Rank3Img,
                         }}
+                        topKOnly={10}
                       />
                     )}
                     {participant?.id && !participation?.isActive && (
                       <div className="space-y-4">
                         <Podium leaderboard={[]} />
-                        <div className="max-w-none p-2 bg-slate-100 rounded border-slate-300 border text-slate-600 text-sm">
+                        <div className="p-2 text-sm border rounded max-w-none bg-slate-100 border-slate-300 text-slate-600">
                           <Markdown
                             withProse
                             withLinkButtons={false}
@@ -237,6 +237,7 @@ function CourseOverview({ courseId }: Props) {
                             fluid
                             className={{ root: 'bg-white' }}
                             onClick={() => joinCourse()}
+                            data={{ cy: 'student-course-join-leaderboard' }}
                           >
                             {t.rich('pwa.courses.joinLeaderboardCourse', {
                               name: course.displayName,
@@ -276,11 +277,13 @@ function CourseOverview({ courseId }: Props) {
                     </H3>
 
                     <Leaderboard
-                      activeParticipation={participation?.isActive}
                       leaderboard={
                         filteredGroupLeaderboard?.map((entry) => ({
+                          id: entry.id,
                           username: entry.name,
                           score: entry.score,
+                          rank: entry.rank,
+                          isMember: entry.isMember ?? false,
                         })) || []
                       }
                       hideAvatars={true}
@@ -367,7 +370,7 @@ function CourseOverview({ courseId }: Props) {
                               <div>
                                 {award.participantGroup
                                   ? `🥳  ${award.participantGroup.name}  🥳`
-                                  : t('pwa.course.open')}
+                                  : t('pwa.courses.open')}
                               </div>
                             </div>
                             <div>{award.description}</div>
@@ -393,12 +396,14 @@ function CourseOverview({ courseId }: Props) {
 
                   <div className="flex flex-row flex-wrap gap-4">
                     <div className="flex flex-col flex-1">
-                      {!participation?.isActive && (
-                        <UserNotification
-                          type="warning"
-                          message={t('pwa.groupActivity.joinLeaderboard')}
-                        />
-                      )}
+                      <div className="mb-2">
+                        {!participation?.isActive && (
+                          <UserNotification
+                            type="warning"
+                            message={t('pwa.groupActivity.joinLeaderboard')}
+                          />
+                        )}
+                      </div>
                       <Leaderboard
                         courseName={course.displayName}
                         leaderboard={group.participants}
@@ -428,7 +433,6 @@ function CourseOverview({ courseId }: Props) {
                           rank3: Rank3Img,
                         }}
                       />
-
                       <div className="self-end mt-6 text-sm w-60 text-slate-600">
                         <div className="flex flex-row justify-between">
                           <div>{t('pwa.courses.membersScore')}</div>
@@ -525,6 +529,7 @@ function CourseOverview({ courseId }: Props) {
                                       className={{
                                         root: 'gap-4 text-left text-sm',
                                       }}
+                                      data={{ cy: 'open-group-activity' }}
                                     >
                                       <Button.Icon>
                                         <FontAwesomeIcon
@@ -585,7 +590,12 @@ function CourseOverview({ courseId }: Props) {
                       name="groupName"
                       placeholder={t('pwa.courses.groupName')}
                     />
-                    <Button type="submit">{t('shared.generic.create')}</Button>
+                    <Button
+                      type="submit"
+                      data={{ cy: 'create-new-participant-group' }}
+                    >
+                      {t('shared.generic.create')}
+                    </Button>
                   </div>
                 </Form>
               </Formik>
@@ -618,7 +628,12 @@ function CourseOverview({ courseId }: Props) {
                       name="code"
                       placeholder={t('pwa.courses.code')}
                     />
-                    <Button type="submit">{t('shared.generic.join')}</Button>
+                    <Button
+                      type="submit"
+                      data={{ cy: 'join-participant-group' }}
+                    >
+                      {t('shared.generic.join')}
+                    </Button>
                   </div>
                 </Form>
               </Formik>

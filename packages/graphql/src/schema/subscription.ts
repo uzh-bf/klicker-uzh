@@ -1,7 +1,7 @@
 import { filter, pipe } from 'graphql-yoga'
 
 import builder from '../builder'
-import { Feedback, SessionBlock } from './session'
+import { FeedbackRef, SessionBlockRef } from './session'
 
 export const Subscription = builder.subscriptionType({
   fields(t) {
@@ -22,7 +22,7 @@ export const Subscription = builder.subscriptionType({
     return {
       runningSessionUpdated: t.field({
         nullable: true,
-        type: SessionBlock,
+        type: SessionBlockRef,
         args: {
           sessionId: t.arg.string({ required: true }),
         },
@@ -34,7 +34,7 @@ export const Subscription = builder.subscriptionType({
         resolve: (payload) => payload.block,
       }),
       feedbackCreated: t.field({
-        type: Feedback,
+        type: FeedbackRef,
         args: {
           sessionId: t.arg.string({ required: true }),
         },
@@ -46,7 +46,7 @@ export const Subscription = builder.subscriptionType({
         resolve: (payload) => payload,
       }),
       feedbackAdded: t.field({
-        type: Feedback,
+        type: FeedbackRef,
         args: {
           sessionId: t.arg.string({ required: true }),
         },
@@ -69,7 +69,7 @@ export const Subscription = builder.subscriptionType({
         resolve: (payload) => payload.id,
       }),
       feedbackUpdated: t.field({
-        type: Feedback,
+        type: FeedbackRef,
         args: {
           sessionId: t.arg.string({ required: true }),
         },

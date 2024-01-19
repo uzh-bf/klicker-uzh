@@ -101,6 +101,7 @@ function SessionLeaderboard({
               rank2: Rank2Img,
               rank3: Rank3Img,
             }}
+            topKOnly={10}
           />
         ) : (
           <UserNotification

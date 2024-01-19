@@ -37,9 +37,10 @@ function LiveSessionCreationToast({
               <Link
                 href="/sessions"
                 className="ml-1 text-primary"
-                data-cy="load-session-list"
+                legacyBehavior
+                passHref
               >
-                {text}
+                <a data-cy="load-session-list">{text}</a>
               </Link>
             ),
           })}

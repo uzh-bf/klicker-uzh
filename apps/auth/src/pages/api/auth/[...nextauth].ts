@@ -11,6 +11,8 @@ import { Provider } from 'next-auth/providers/index'
 
 import prisma from 'src/lib/prisma'
 
+export const COOKIE_NAME = 'next-auth.session-token'
+
 interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
   swissEduIDLinkedAffiliation?: string[]
@@ -59,43 +61,46 @@ function generateRandomString(length: number) {
   return result
 }
 
-const EduIDProvider: Provider = {
-  id: process.env.NEXT_PUBLIC_EDUID_ID as string,
-  wellKnown: process.env.EDUID_WELL_KNOWN as string,
-  clientId: process.env.EDUID_CLIENT_ID as string,
-  clientSecret: process.env.EDUID_CLIENT_SECRET as string,
+const EduIDProvider: Provider | null =
+  typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
+    ? {
+        id: process.env.NEXT_PUBLIC_EDUID_ID as string,
+        wellKnown: process.env.EDUID_WELL_KNOWN as string,
+        clientId: process.env.EDUID_CLIENT_ID as string,
+        clientSecret: process.env.EDUID_CLIENT_SECRET as string,
 
-  name: 'EduID',
-  type: 'oauth',
-  authorization: {
-    params: {
-      claims: {
-        id_token: {
-          sub: { essential: true },
-          email: { essential: true },
-          swissEduPersonUniqueID: { essential: true },
-          swissEduIDLinkedAffiliation: { essential: false },
+        name: 'EduID',
+        type: 'oauth',
+        authorization: {
+          params: {
+            claims: {
+              id_token: {
+                sub: { essential: true },
+                email: { essential: true },
+                swissEduPersonUniqueID: { essential: true },
+                swissEduIDLinkedAffiliation: { essential: false },
+              },
+            },
+            scope: 'openid email https://login.eduid.ch/authz/User.Read',
+          },
         },
-      },
-      scope: 'openid email https://login.eduid.ch/authz/User.Read',
-    },
-  },
-  idToken: true,
-  checks: ['pkce', 'state'],
+        idToken: true,
+        checks: ['pkce', 'state'],
 
-  profile(profile) {
-    return {
-      id: profile.sub,
-      email: profile.email,
-      shortname: generateRandomString(8),
-      lastLoginAt: new Date(),
-      catalystInstitutional: profile.swissEduIDLinkedAffiliation?.reduce(
-        reduceCatalyst,
-        false
-      ),
-    }
-  },
-}
+        profile(profile) {
+          return {
+            id: profile.sub,
+            email: profile.email,
+            shortname: generateRandomString(8),
+            lastLoginAt: new Date(),
+            catalystInstitutional: profile.swissEduIDLinkedAffiliation?.reduce(
+              reduceCatalyst,
+              false
+            ),
+          }
+        },
+      }
+    : null
 
 const CredentialProvider: Provider = CredentialsProvider({
   name: 'Delegation',
@@ -145,6 +150,7 @@ const CredentialProvider: Provider = CredentialsProvider({
           id: user.id,
           email: user.email,
           role: user.role,
+          shortname: user.shortname,
           scope: login.scope,
           catalystInstitutional: user.catalystInstitutional,
           catalystIndividual: user.catalystIndividual,
@@ -161,15 +167,30 @@ export const authOptions: NextAuthOptions = {
 
   adapter: PrismaAdapter(prisma),
 
-  providers: [EduIDProvider, CredentialProvider],
+  providers: EduIDProvider
+    ? [EduIDProvider, CredentialProvider]
+    : [CredentialProvider],
+
   session: {
     strategy: 'jwt',
   },
+
   jwt: {
     decode,
     encode,
   },
+
   cookies: {
+    // csrfToken: {
+    //   name: 'next-auth.csrf-token',
+    //   options: {
+    //     domain: process.env.COOKIE_DOMAIN,
+    //     // path: '/',
+    //     // httpOnly: true,
+    //     // sameSite: 'lax',
+    //     // secure: process.env.NODE_ENV === 'production',
+    //   },
+    // },
     sessionToken: {
       name: 'next-auth.session-token',
       options: {
@@ -220,29 +241,38 @@ export const authOptions: NextAuthOptions = {
       return true
     },
 
-    async jwt({ token, user, account, profile }) {
-      token.role = UserRole.USER
+    async jwt({ token, user, account, profile, trigger }) {
+      if (typeof user !== 'undefined') {
+        token.shortname = user.shortname
 
-      if (typeof profile?.swissEduPersonUniqueID === 'string') {
-        token.scope = UserLoginScope.ACCOUNT_OWNER
-      } else {
-        token.scope = (user as any).scope as UserLoginScope
+        if (typeof profile?.swissEduPersonUniqueID === 'string') {
+          token.scope = UserLoginScope.ACCOUNT_OWNER
+        } else {
+          token.scope = (user as any).scope as UserLoginScope
+        }
+
+        token.catalystInstitutional = user.catalystInstitutional
+        token.catalystIndividual = user.catalystIndividual
+
+        token.role = UserRole.USER
       }
-
-      token.catalystInstitutional = user.catalystInstitutional
-      token.catalystIndividual = user.catalystIndividual
 
       return token
     },
     async redirect({ url, baseUrl }) {
       // allows relative callback URLs
-      if (url.startsWith('/')) return `${baseUrl}${url}`
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+
       // allows callback URLs that end with valid klicker domains
-      else if (
+      if (
         url.includes(process.env.COOKIE_DOMAIN as string) ||
         url.includes('127.0.0.1')
-      )
+      ) {
         return url
+      }
+
       // return the homepage for all other URLs
       return baseUrl
     },

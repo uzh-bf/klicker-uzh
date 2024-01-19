@@ -2,6 +2,8 @@ import {
   Element,
   ElementStackType,
   ElementType,
+  Prisma,
+  PrismaClient,
   QuestionInstance,
   SessionBlockStatus,
 } from '@klicker-uzh/prisma'
@@ -10,6 +12,11 @@ export enum DisplayMode {
   LIST = 'LIST',
   GRID = 'GRID',
 }
+
+export type PrismaMigrationClient = Omit<
+  PrismaClient<Prisma.PrismaClientOptions, never>,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>
 
 // ----- AVATAR SETTINGS -----
 // #region
@@ -128,7 +135,8 @@ export type ElementOptions =
 export interface BaseElementData {
   type: ElementType
 
-  id: number
+  id: string
+  questionId: number
   name: string
   content: string
   pointsMultiplier: number
@@ -140,9 +148,11 @@ export interface BaseElementData {
 export type BaseElementDataKeys = (keyof BaseElementData)[]
 
 interface IElementData<Type extends ElementType, Options extends ElementOptions>
-  extends Element {
+  extends Omit<Element, 'id'> {
   type: Type
   options: Options
+  id: string
+  questionId: number
 }
 
 // export type FlashcardElementData = IElementData<'FLASHCARD', null>

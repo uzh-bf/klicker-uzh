@@ -10,10 +10,7 @@ query GetSingleLiveSession($sessionId: String!) {
       timeLimit
       instances {
         id
-        questionData {
-          id
-          name
-        }
+        ...QuestionData
       }
     }
     course {

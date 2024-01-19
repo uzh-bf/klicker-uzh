@@ -1,6 +1,6 @@
 import { LeaderboardType } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
-import { pickRandom, round } from 'mathjs'
+import { pickRandom } from 'mathjs'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 import { shuffle } from '../lib/util'
@@ -258,7 +258,7 @@ export async function updateGroupAverageScores(ctx: Context) {
         // if it has not changed, exit early
         // if the group consists of only one participant, the member score should be zero
         const averageMemberScore =
-          aggregate.count > 1 ? round(aggregate.sum / aggregate.count, 2) : 0
+          aggregate.count > 1 ? Math.round(aggregate.sum / aggregate.count) : 0
 
         if (averageMemberScore === group.averageMemberScore)
           return Promise.resolve()
@@ -472,31 +472,50 @@ export async function startGroupActivity(
 
       const shuffledClues = shuffle(activityInstance.clues)
 
-      const cluesPerMember = Math.ceil(
-        groupActivity.clues.length / groupMemberCount
+      const clueAssignments = group.participants.reduce<{
+        remainingClues: number
+        remainingMembers: number
+        startIx: number
+        clues: any[]
+      }>(
+        (acc, participant) => {
+          const numOfClues = Math.ceil(
+            acc.remainingClues / acc.remainingMembers
+          )
+          const endIx = acc.startIx + numOfClues
+          const clues = shuffledClues.slice(acc.startIx, endIx)
+
+          return {
+            remainingClues: acc.remainingClues - numOfClues,
+            remainingMembers: acc.remainingMembers - 1,
+            startIx: endIx,
+            clues: [
+              ...acc.clues,
+              ...clues.map((clue) => ({
+                groupActivityClueInstance: {
+                  connect: { id: clue.id },
+                },
+                participant: {
+                  connect: { id: participant.id },
+                },
+              })),
+            ],
+          }
+        },
+        {
+          remainingClues: groupActivity.clues.length,
+          remainingMembers: groupMemberCount,
+          startIx: 0,
+          clues: [],
+        }
       )
-
-      const clueAssignments = group.participants.flatMap((participant, ix) => {
-        const start = ix * cluesPerMember
-        const end = start + cluesPerMember
-        const clues = shuffledClues.slice(start, end)
-
-        return clues.map((clue) => ({
-          groupActivityClueInstance: {
-            connect: { id: clue.id },
-          },
-          participant: {
-            connect: { id: participant.id },
-          },
-        }))
-      })
 
       const updatedActivityInstance = await prisma.groupActivityInstance.update(
         {
           where: { id: activityInstance.id },
           data: {
             clueInstanceAssignment: {
-              create: clueAssignments,
+              create: clueAssignments.clues,
             },
           },
           include: {

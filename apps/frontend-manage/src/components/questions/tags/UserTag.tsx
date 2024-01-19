@@ -37,6 +37,7 @@ function UserTag({ tag, handleTagClick, active, onMoveDown, onMoveUp }: Props) {
               className={{
                 root: 'flex-1 sm:hover:text-primary whitespace-nowrap overflow-hidden',
               }}
+              data={{ cy: `user-tag-${tag.name}` }}
             >
               <Tooltip
                 tooltip={tag.name}

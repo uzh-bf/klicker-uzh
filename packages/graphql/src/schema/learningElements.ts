@@ -48,7 +48,7 @@ export const QuestionStack = QuestionStackRef.implement({
     order: t.exposeInt('order', { nullable: true }),
 
     elements: t.expose('elements', {
-      type: [StackElement],
+      type: [StackElementRef],
       nullable: true,
     }),
   }),

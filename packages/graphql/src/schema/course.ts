@@ -1,16 +1,25 @@
 import * as DB from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import builder from '../builder'
-import { GroupActivity } from './groupActivity'
+import { GroupActivityRef, IGroupActivity } from './groupActivity'
 import type { ILearningElement } from './learningElements'
 import { LearningElementRef } from './learningElements'
 import type { IMicroSession } from './microSession'
 import { MicroSessionRef } from './microSession'
-import type { IParticipant, IParticipantGroup } from './participant'
-import { Participant, ParticipantGroup, Participation } from './participant'
+import type {
+  IParticipant,
+  IParticipantGroup,
+  IParticipation,
+} from './participant'
+import {
+  ParticipantGroupRef,
+  ParticipantRef,
+  ParticipationRef,
+} from './participant'
+import { IPracticeQuiz, PracticeQuizRef } from './practiceQuizzes'
 import type { ISession } from './session'
 import { SessionRef } from './session'
-import { UserRef } from './user'
+import { IUser, UserRef } from './user'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -21,11 +30,12 @@ export interface ICourse extends DB.Course {
 
   sessions?: ISession[]
   learningElements?: ILearningElement[]
+  practiceQuizzes?: IPracticeQuiz[]
   microSessions?: IMicroSession[]
-  groupActivities?: DB.GroupActivity[]
+  groupActivities?: IGroupActivity[]
   leaderboard?: ILeaderboardEntry[]
-  awards?: DB.AwardEntry[]
-  owner?: DB.User
+  awards?: IAwardEntry[]
+  owner?: IUser
 }
 export const CourseRef = builder.objectRef<ICourse>('Course')
 export const Course = builder.objectType(CourseRef, {
@@ -87,12 +97,16 @@ export const Course = builder.objectType(CourseRef, {
       type: [LearningElementRef],
       nullable: true,
     }),
+    practiceQuizzes: t.expose('practiceQuizzes', {
+      type: [PracticeQuizRef],
+      nullable: true,
+    }),
     microSessions: t.expose('microSessions', {
       type: [MicroSessionRef],
       nullable: true,
     }),
     groupActivities: t.expose('groupActivities', {
-      type: [GroupActivity],
+      type: [GroupActivityRef],
       nullable: true,
     }),
     leaderboard: t.expose('leaderboard', {
@@ -116,8 +130,9 @@ export interface ILeaderboardEntry extends DB.LeaderboardEntry {
   rank: number
   lastBlockOrder: number
   isSelf?: boolean
+  level?: number
   participant: IParticipant
-  participation: DB.Participation
+  participation: IParticipation
 }
 export const LeaderboardEntryRef =
   builder.objectRef<ILeaderboardEntry>('LeaderboardEntry')
@@ -133,15 +148,18 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
     isSelf: t.exposeBoolean('isSelf', {
       nullable: true,
     }),
+    level: t.exposeInt('level', {
+      nullable: true,
+    }),
 
     participant: t.expose('participant', {
-      type: Participant,
+      type: ParticipantRef,
       nullable: true,
     }),
     participantId: t.exposeString('participantId'),
 
     participation: t.expose('participation', {
-      type: Participation,
+      type: ParticipationRef,
     }),
   }),
 })
@@ -179,8 +197,8 @@ export const GroupLeaderboardEntry = builder
   })
 
 export interface IAwardEntry extends DB.AwardEntry {
-  participant?: IParticipant
-  participantGroup?: IParticipantGroup
+  participant?: IParticipant | null
+  participantGroup?: IParticipantGroup | null
 }
 export const AwardEntryRef = builder.objectRef<IAwardEntry>('AwardEntry')
 export const AwardEntry = AwardEntryRef.implement({
@@ -194,12 +212,12 @@ export const AwardEntry = AwardEntryRef.implement({
     description: t.exposeString('description'),
 
     participant: t.expose('participant', {
-      type: Participant,
+      type: ParticipantRef,
       nullable: true,
     }),
 
     participantGroup: t.expose('participantGroup', {
-      type: ParticipantGroup,
+      type: ParticipantGroupRef,
       nullable: true,
     }),
   }),

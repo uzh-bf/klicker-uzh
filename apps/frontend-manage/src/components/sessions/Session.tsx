@@ -103,6 +103,7 @@ function Session({ session }: SessionProps) {
                       className={{
                         root: 'flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary',
                       }}
+                      data={{ cy: `show-embedding-modal-${session.name}` }}
                     >
                       <Button.Icon>
                         <FontAwesomeIcon icon={faCode} size="sm" />
@@ -124,25 +125,33 @@ function Session({ session }: SessionProps) {
                 )}
 
                 {SessionStatus.Running === session.status && (
-                  <Link href={`/sessions/${session.id}/cockpit`} legacyBehavior>
-                    <div
+                  <Link
+                    href={`/sessions/${session.id}/cockpit`}
+                    legacyBehavior
+                    passHref
+                  >
+                    <a
                       className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
-                      data-cy="session-cockpit"
+                      data-cy={`session-cockpit-${session.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.lecturerCockpit')}</div>
-                    </div>
+                    </a>
                   </Link>
                 )}
                 {SessionStatus.Completed === session.status && (
                   <Link
                     href={`/sessions/${session.id}/evaluation`}
                     legacyBehavior
+                    passHref
                   >
-                    <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
+                    <a
+                      className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary"
+                      data-cy={`session-evaluation-${session.name}`}
+                    >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.sessions.sessionEvaluation')}</div>
-                    </div>
+                    </a>
                   </Link>
                 )}
                 {(SessionStatus.Prepared === session.status ||
@@ -153,7 +162,7 @@ function Session({ session }: SessionProps) {
                       await startSession()
                       router.push(`sessions/${session.id}/cockpit`)
                     }}
-                    data={{ cy: 'start-session' }}
+                    data={{ cy: `start-session-${session.name}` }}
                   >
                     <div className="flex flex-row items-center gap-2 text-sm cursor-pointer sm:hover:text-primary">
                       <FontAwesomeIcon icon={faPlay} size="sm" />
@@ -189,6 +198,7 @@ function Session({ session }: SessionProps) {
                     },
                   })
                 }
+                data={{ cy: `duplicate-session-${session.name}` }}
               >
                 <Button.Icon className={{ root: 'text-slate-600' }}>
                   <FontAwesomeIcon icon={faCopy} />
@@ -211,6 +221,7 @@ function Session({ session }: SessionProps) {
                         },
                       })
                     }
+                    data={{ cy: `edit-session-${session.name}` }}
                   >
                     <Button.Icon className={{ root: 'text-slate-600' }}>
                       <FontAwesomeIcon icon={faPencil} />
@@ -224,6 +235,7 @@ function Session({ session }: SessionProps) {
                       root: 'border-red-600 text-sm py-1 px-3',
                     }}
                     onClick={() => setDeletionModal(true)}
+                    data={{ cy: `delete-session-${session.name}` }}
                   >
                     <Button.Icon className={{ root: 'text-red-400' }}>
                       <FontAwesomeIcon icon={faTrash} />
