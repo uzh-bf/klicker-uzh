@@ -133,6 +133,101 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     )
   )) as Element[]
 
+  // ----- ELEMENT STACK SEED -----
+  // const microLearningTestWithStacks = await prisma.microLearning.upsert({
+  //   where: {
+  //     id: 'f9d2c9f0-2e1c-4c1b-9c4c-6a1d2f7f0f2b',
+  //   },
+  //   create: {
+  //     id: 'f9d2c9f0-2e1c-4c1b-9c4c-6a1d2f7f0f2b',
+  //     name: 'Test Microlearning',
+  //     displayName: 'Test Microlearning',
+  //     description: 'Test Microlearning',
+  //     ownerId: USER_ID_TEST,
+  //     courseId: COURSE_ID_TEST,
+  //     status: Prisma.MicroLearningStatus.PUBLISHED,
+  //     scheduledEndAt: new Date('2025-03-17T11:00:00.000Z'),
+  //     scheduledStartAt: new Date('2020-03-10T11:00:00.000Z'),
+  //     stacks: {
+  //       create: [
+  //         {
+  //           type: 'MICROLEARNING',
+  //           options: {},
+  //           elements: {
+  //             create: [
+  //               {
+  //                 elementId: 1,
+  //               },
+  //             ],
+  //           },
+  //         },
+  //       ],
+  //     },
+  //   },
+  //   update: {},
+  // })
+
+  // const liveQuizTestWithStacks = await prisma.liveQuiz.upsert({
+  //   where: {
+  //     id: 'f98c4633-085d-4681-8e4c-dc03772c2aa0',
+  //   },
+  //   create: {
+  //     id: 'f98c4633-085d-4681-8e4c-dc03772c2aa0',
+  //     name: 'Test Live Quiz',
+  //     displayName: 'Test Live Quiz',
+  //     description: 'Test Live Quiz',
+  //     ownerId: USER_ID_TEST,
+  //     courseId: COURSE_ID_TEST,
+  //     status: Prisma.LiveQuizStatus.PREPARED,
+  //     stacks: {
+  //       create: [
+  //         {
+  //           type: 'LIVE_QUIZ',
+  //           options: {},
+  //           elements: {
+  //             create: [
+  //               {
+  //                 elementId: 1,
+  //               },
+  //             ],
+  //           },
+  //         },
+  //       ],
+  //     },
+  //   },
+  //   update: {},
+  // })
+
+  // const groupActivityTestWithStacks = await prisma.groupActivity.upsert({
+  //   where: {
+  //     id: 'b1556e4b-3856-4b4a-87eb-70817e97e16a',
+  //   },
+  //   create: {
+  //     id: 'b1556e4b-3856-4b4a-87eb-70817e97e16a',
+  //     name: 'Test Group Activity',
+  //     displayName: 'Test Group Activity',
+  //     description: 'Test Group Activity',
+  //     ownerId: USER_ID_TEST,
+  //     courseId: COURSE_ID_TEST,
+  //     status: Prisma.GroupActivityStatus.PUBLISHED,
+  //     elementStack: {
+  //       create: {
+  //         type: 'GROUP_ACTIVITY',
+  //         options: {},
+  //         elements: {
+  //           create: [
+  //             {
+  //               elementId: 1,
+  //             },
+  //           ],
+  //         },
+  //       },
+  //     },
+  //   },
+  //   update: {},
+  // })
+
+  // ----- LEGACY SEED -----
   const learningElementsTest = await Promise.all(
     DATA_TEST.LEARNING_ELEMENTS.map(async (data) =>
       prisma.learningElement.upsert(
