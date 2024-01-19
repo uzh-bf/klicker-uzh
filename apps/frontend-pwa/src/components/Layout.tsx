@@ -31,11 +31,7 @@ function Layout({
   setActiveMobilePage,
   className,
 }: LayoutProps) {
-  const {
-    loading: loadingParticipant,
-    error: errorParticipant,
-    data: dataParticipant,
-  } = useQuery(SelfDocument)
+  const { data: dataParticipant } = useQuery(SelfDocument)
 
   const pageInFrame =
     global?.window &&
