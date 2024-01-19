@@ -1063,7 +1063,7 @@ function QuestionEditModal({
                                     : 0,
                                   value: '<br>',
                                   correct: false,
-                                  explanation: '<br>',
+                                  feedback: '',
                                 })
                               }
                               data={{ cy: 'add-new-answer' }}
