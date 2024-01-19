@@ -96,17 +96,17 @@ export type Choice = {
   feedback?: string
 }
 
-interface BaseElementOptions {
+interface BaseQuestionOptions {
   hasSampleSolution?: boolean
   hasAnswerFeedbacks?: boolean
 }
 
-export interface ElementOptionsChoices extends BaseElementOptions {
+export interface ElementOptionsChoices extends BaseQuestionOptions {
   choices: Choice[]
   displayMode: DisplayMode
 }
 
-export interface ElementOptionsNumerical extends BaseElementOptions {
+export interface ElementOptionsNumerical extends BaseQuestionOptions {
   unit?: string | null
   accuracy?: number
   placeholder?: string
@@ -120,7 +120,7 @@ export interface ElementOptionsNumerical extends BaseElementOptions {
   }[]
 }
 
-export interface ElementOptionsFreeText extends BaseElementOptions {
+export interface ElementOptionsFreeText extends BaseQuestionOptions {
   solutions?: string[]
   restrictions?: {
     maxLength?: number | null

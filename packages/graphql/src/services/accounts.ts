@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
+import { DisplayMode } from 'src/types/app'
 import { Context, ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
@@ -555,7 +556,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       content:
         'Which of the following statements is applicable to _KlickerUZH_?',
       options: {
-        displayMode: DB.ElementDisplayMode.GRID,
+        displayMode: DisplayMode.GRID,
         hasSampleSolution: true,
         hasAnswerFeedbacks: true,
         choices: [
@@ -622,7 +623,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       content:
         'Which of the following formulas have the form of a Taylor polynomial of some degree $$n$$: $$T_n f(x;a)$$? (multiple answers are possible)',
       options: {
-        displayMode: DB.ElementDisplayMode.LIST,
+        displayMode: DisplayMode.LIST,
         hasSampleSolution: true,
         hasAnswerFeedbacks: true,
         choices: [
@@ -683,7 +684,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       content:
         'Which of the following statements is applicable to _KlickerUZH_? (multiple correct answers possible)',
       options: {
-        displayMode: DB.ElementDisplayMode.LIST,
+        displayMode: DisplayMode.LIST,
         hasSampleSolution: true,
         hasAnswerFeedbacks: true,
         choices: [
@@ -775,7 +776,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       type: DB.ElementType.FREE_TEXT,
       content: 'Describe a main principle of a social market economy.',
       options: {
-        displayMode: DB.ElementDisplayMode.LIST,
+        displayMode: DisplayMode.LIST,
         hasSampleSolution: true,
         hasAnswerFeedbacks: false,
         solutions: ['fair competition', 'private companies', 'balance'],
