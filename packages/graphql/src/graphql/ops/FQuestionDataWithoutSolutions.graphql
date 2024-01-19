@@ -11,8 +11,6 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
     ... on ChoicesQuestionData {
       options {
         displayMode
-        hasSampleSolution
-        hasAnswerFeedbacks
         choices {
           ix
           value
@@ -22,8 +20,6 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
 
     ... on NumericalQuestionData {
       options {
-        hasSampleSolution
-        hasAnswerFeedbacks
         unit
         accuracy
         placeholder
@@ -36,8 +32,6 @@ fragment QuestionDataWithoutSolutions on QuestionInstance {
 
     ... on FreeTextQuestionData {
       options {
-        hasSampleSolution
-        hasAnswerFeedbacks
         restrictions {
           maxLength
         }
