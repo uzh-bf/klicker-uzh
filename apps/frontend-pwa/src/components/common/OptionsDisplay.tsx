@@ -61,7 +61,7 @@ function ChoiceOptions({
             active={Array.isArray(response) && response?.includes(choice.ix)}
             className={{
               root: twMerge(
-                'px-4 py-3 text-sm shadow-md border-primary-40',
+                'px-4 py-3 text-sm shadow-md border-primary-40 h-full',
                 isEvaluation && 'text-gray-700',
                 (disabled || isEvaluation) &&
                   response?.includes(choice.ix) &&

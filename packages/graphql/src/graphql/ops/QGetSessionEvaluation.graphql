@@ -29,6 +29,8 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
 
         ... on ChoicesQuestionData {
           options {
+            hasSampleSolution
+            hasAnswerFeedbacks
             choices {
               ix
               correct
@@ -40,6 +42,8 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
 
         ... on NumericalQuestionData {
           options {
+            hasSampleSolution
+            hasAnswerFeedbacks
             restrictions {
               min
               max
@@ -53,6 +57,8 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
 
         ... on FreeTextQuestionData {
           options {
+            hasSampleSolution
+            hasAnswerFeedbacks
             restrictions {
               maxLength
             }
