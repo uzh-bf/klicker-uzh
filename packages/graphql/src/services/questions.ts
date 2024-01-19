@@ -9,12 +9,12 @@ import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { Tag } from 'src/ops'
-import { DisplayMode } from 'src/types/app'
 import { ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
   processQuestionData,
 } from '../lib/questions'
+import { DisplayMode } from '../types/app'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -106,7 +106,7 @@ interface QuestionOptionsArgs {
         feedback?: string | null
       }[]
     | null
-  displayMode?: DB.ElementDisplayMode | null
+  displayMode?: DisplayMode | null
   hasSampleSolution?: boolean | null
   hasAnswerFeedbacks?: boolean | null
   pointsMultiplier?: number | null
