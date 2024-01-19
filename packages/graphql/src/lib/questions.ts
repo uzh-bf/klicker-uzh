@@ -16,9 +16,6 @@ const RELEVANT_KEYS: BaseElementDataKeys = [
   'content',
   'explanation',
   'pointsMultiplier',
-  'displayMode',
-  'hasSampleSolution',
-  'hasAnswerFeedbacks',
   'type',
   'options',
 ]
@@ -30,34 +27,24 @@ export function processQuestionData(question: Element) {
     case ElementType.SC:
     case ElementType.MC:
     case ElementType.KPRIM:
-      // TODO: remove the extra keys, once the questionData options are compatible
       return {
         ...extractRelevantKeys(question),
         id: `${question.id}-v${question.version}`,
         questionId: question.id,
-        displayMode: question.options.displayMode,
-        hasSampleSolution: question.options.hasSampleSolution,
-        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
       } as ChoicesElementData
 
     case ElementType.NUMERICAL:
-      // TODO: remove the extra keys, once the questionData options are compatible
       return {
         ...extractRelevantKeys(question),
         id: `${question.id}-v${question.version}`,
         questionId: question.id,
-        hasSampleSolution: question.options.hasSampleSolution,
-        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
       } as NumericalElementData
 
     case ElementType.FREE_TEXT:
-      // TODO: remove the extra keys, once the questionData options are compatible
       return {
         ...extractRelevantKeys(question),
         id: `${question.id}-v${question.version}`,
         questionId: question.id,
-        hasSampleSolution: question.options.hasSampleSolution,
-        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
       } as FreeTextElementData
 
     default:
