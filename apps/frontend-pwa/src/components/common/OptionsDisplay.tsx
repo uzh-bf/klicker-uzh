@@ -326,9 +326,9 @@ export function Options({
               {t.rich(`shared.${ElementType.Numerical}.richtext`, {
                 b: (text) => <span className="font-bold">{text}</span>,
               })}{' '}
-              {typeof questionOptions.accuracy === 'number' &&
+              {typeof accuracy === 'number' &&
                 t('shared.questions.roundedTo', {
-                  accuracy: questionOptions.accuracy,
+                  accuracy: accuracy,
                 })}
             </div>
           )}
