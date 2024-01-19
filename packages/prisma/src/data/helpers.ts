@@ -3,7 +3,6 @@ import * as R from 'ramda'
 import Prisma from '../../dist'
 import {
   Element,
-  ElementType,
   QuestionInstanceType,
   QuestionStackType,
   UserLoginScope,
@@ -15,52 +14,17 @@ const RELEVANT_KEYS = [
   'content',
   'explanation',
   'pointsMultiplier',
-  'displayMode',
-  'hasSampleSolution',
-  'hasAnswerFeedbacks',
   'type',
   'options',
 ]
 
-export function processQuestionData(question: Element) {
+export function processQuestionData(question: Prisma.Element) {
   const extractRelevantKeys = R.pick(RELEVANT_KEYS)
 
-  switch (question.type) {
-    case ElementType.SC:
-    case ElementType.MC:
-    case ElementType.KPRIM:
-      // TODO: remove the extra keys, once the questionData options are compatible
-      return {
-        ...extractRelevantKeys(question),
-        id: `${question.id}-v${question.version}`,
-        questionId: question.id,
-        displayMode: question.options.displayMode,
-        hasSampleSolution: question.options.hasSampleSolution,
-        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
-      }
-
-    case ElementType.NUMERICAL:
-      // TODO: remove the extra keys, once the questionData options are compatible
-      return {
-        ...extractRelevantKeys(question),
-        id: `${question.id}-v${question.version}`,
-        questionId: question.id,
-        hasSampleSolution: question.options.hasSampleSolution,
-        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
-      }
-
-    case ElementType.FREE_TEXT:
-      // TODO: remove the extra keys, once the questionData options are compatible
-      return {
-        ...extractRelevantKeys(question),
-        id: `${question.id}-v${question.version}`,
-        questionId: question.id,
-        hasSampleSolution: question.options.hasSampleSolution,
-        hasAnswerFeedbacks: question.options.hasAnswerFeedbacks,
-      }
-
-    default:
-      throw new Error('Unknown question type')
+  return {
+    ...extractRelevantKeys(question),
+    id: `${question.id}-v${question.version}`,
+    questionId: question.id,
   }
 }
 

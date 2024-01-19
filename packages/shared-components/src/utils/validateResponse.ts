@@ -63,7 +63,9 @@ export function validateFreeTextResponse({
   response?: string
   options: FreeTextQuestionOptions
 }) {
-  if (!response || response.length == 0) return false
+  if (!response || response.length == 0) {
+    return false
+  }
 
   if (
     typeof options.restrictions?.maxLength !== 'undefined' &&
@@ -73,5 +75,5 @@ export function validateFreeTextResponse({
     return false
   }
 
-  return false
+  return true
 }

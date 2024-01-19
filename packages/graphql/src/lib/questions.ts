@@ -3,9 +3,6 @@ import * as R from 'ramda'
 import {
   AllElementTypeData,
   BaseElementDataKeys,
-  ChoicesElementData,
-  FreeTextElementData,
-  NumericalElementData,
   QuestionResults,
   QuestionResultsChoices,
 } from '../types/app'
@@ -23,32 +20,10 @@ const RELEVANT_KEYS: BaseElementDataKeys = [
 export function processQuestionData(question: Element) {
   const extractRelevantKeys = R.pick(RELEVANT_KEYS)
 
-  switch (question.type) {
-    case ElementType.SC:
-    case ElementType.MC:
-    case ElementType.KPRIM:
-      return {
-        ...extractRelevantKeys(question),
-        id: `${question.id}-v${question.version}`,
-        questionId: question.id,
-      } as ChoicesElementData
-
-    case ElementType.NUMERICAL:
-      return {
-        ...extractRelevantKeys(question),
-        id: `${question.id}-v${question.version}`,
-        questionId: question.id,
-      } as NumericalElementData
-
-    case ElementType.FREE_TEXT:
-      return {
-        ...extractRelevantKeys(question),
-        id: `${question.id}-v${question.version}`,
-        questionId: question.id,
-      } as FreeTextElementData
-
-    default:
-      throw new Error('Unknown question type')
+  return {
+    ...extractRelevantKeys(question),
+    id: `${question.id}-v${question.version}`,
+    questionId: question.id,
   }
 }
 
