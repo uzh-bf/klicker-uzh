@@ -94,7 +94,7 @@
     "seed:qa": "ENV=development doppler run --config stg -- npm-run-all seed:qa:test",
     "seed:qa:bf1": "ENV=development doppler run --config stg -- ts-node -r dotenv/config --esm --experimental-specifier-resolution=node src/data/seedBF1.ts",
     "seed:qa:test": "ts-node --esm --experimental-specifier-resolution=node src/data/seedTEST.ts",
-    "seed:test": "ENV=development bun run src/data/seedTEST.ts && ENV=development bun run src/data/seedFlashcards.ts",
+    "seed:test": "ENV=development doppler run --config dev bun run src/data/seedTEST.ts",
     "size": "size-limit"
   },
   "engines": {

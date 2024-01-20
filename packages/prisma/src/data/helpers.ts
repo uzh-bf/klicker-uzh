@@ -1,8 +1,14 @@
 import bcrypt from 'bcryptjs'
+import fs from 'fs'
+import path from 'path'
 import * as R from 'ramda'
+import Turndown from 'turndown'
+import { fileURLToPath } from 'url'
+import { parseStringPromise } from 'xml2js'
 import Prisma from '../../dist'
 import {
   Element,
+  ElementType,
   QuestionInstanceType,
   QuestionStackType,
   UserLoginScope,
@@ -668,4 +674,80 @@ export async function prepareMicroSession({
       },
     },
   }
+}
+
+export function extractQuizInfo(doc: typeof xmlDoc) {
+  const turndown = Turndown()
+
+  return {
+    title: doc.box.title[0],
+    description: doc.box.description[0],
+    elements: doc.box.cards[0].card.map((card) => ({
+      originalId: card['$'].id,
+      name: `FC ${card['$'].id}`,
+      content: turndown.turndown(card.question[0].text[0].trim()),
+      explanation: turndown.turndown(card.answer[0].text[0].trim()),
+      type: ElementType.FLASHCARD,
+      options: {},
+    })),
+    // ... other practice quiz properties
+  }
+}
+
+export async function processQuizInfo(fileName: string) {
+  const __filename = fileURLToPath(import.meta.url)
+  const __dirname = path.dirname(__filename)
+
+  const xmlData = fs.readFileSync(path.join(__dirname, fileName), 'utf-8')
+
+  const xmlDoc = await parseStringPromise(xmlData)
+
+  // console.log(xmlDoc, xmlDoc.box.cards[0])
+
+  const quizInfo = extractQuizInfo(xmlDoc)
+
+  return quizInfo
+}
+
+export async function prepareFlashcardsFromFile(
+  prismaClient: Prisma.PrismaClient,
+  fileName: string,
+  userId: string
+) {
+  const quizInfo = await processQuizInfo(fileName)
+
+  const elementsFC = await Promise.allSettled(
+    quizInfo.elements.map(async (data) => {
+      const flashcard = await prismaClient.element.upsert({
+        where: {
+          originalId: data.originalId,
+        },
+        create: {
+          ...data,
+          owner: {
+            connect: {
+              id: userId,
+            },
+          },
+        },
+        update: {
+          ...data,
+          owner: {
+            connect: {
+              id: userId,
+            },
+          },
+        },
+      })
+      return flashcard
+    })
+  )
+
+  if (elementsFC.some((el) => el.status === 'rejected')) {
+    throw new Error('Failed to seed some flashcard elements')
+  }
+
+  const elements = elementsFC.map((el) => el.value)
+
+  return elements
 }
