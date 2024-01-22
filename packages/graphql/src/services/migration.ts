@@ -3,8 +3,8 @@ import JWT from 'jsonwebtoken'
 import normalizeEmail from 'validator/es/lib/normalizeEmail'
 
 import { ServiceBusClient } from '@azure/service-bus'
-import { ContextWithUser } from 'src/lib/context'
-import getMongoDB from 'src/lib/mongo'
+import { ContextWithUser } from '../lib/context'
+import getMongoDB from '../lib/mongo'
 import {
   sendEmailMigrationNotification,
   sendTeamsNotifications,
