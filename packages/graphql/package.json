@@ -26,6 +26,7 @@
     "graphql-yoga": "3.9.1",
     "jsonwebtoken": "9.0.1",
     "mathjs": "11.9.1",
+    "mongodb": "5.7.0",
     "node-schedule": "2.1.1",
     "ramda": "0.29.0",
     "uuid": "9.0.0",
