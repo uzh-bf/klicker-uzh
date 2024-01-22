@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.29...v3.1.0-beta.30) (2024-01-22)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** refetch student data correctly after login ([#4011](https://github.com/uzh-bf/klicker-uzh/issues/4011)) ([40d0b48](https://github.com/uzh-bf/klicker-uzh/commit/40d0b48ca03abd9e2e11ab46ae23bd6709274ec6))
+* send migration failure notification from app backend before triggering service bus if old account email not valid ([#4014](https://github.com/uzh-bf/klicker-uzh/issues/4014)) ([24ec215](https://github.com/uzh-bf/klicker-uzh/commit/24ec2158b838891396954fa9baf938d0b74a2d28))
+
+
+### Refactors
+
+* move old question attributes completely to questionData ([#3974](https://github.com/uzh-bf/klicker-uzh/issues/3974)) ([55e6da4](https://github.com/uzh-bf/klicker-uzh/commit/55e6da41ca68e9629bfa193f4db6b959292735db))
+
+
+### Enhancements
+
+* **apps/func-migration-*:** send email to users if their email is not found in the old database ([#4013](https://github.com/uzh-bf/klicker-uzh/issues/4013)) ([5479338](https://github.com/uzh-bf/klicker-uzh/commit/5479338325a6d3a2cb35987f8bc8f51506a29c48))
+
 ## [3.1.0-beta.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.28...v3.1.0-beta.29) (2024-01-18)
 
 
