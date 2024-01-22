@@ -22,7 +22,7 @@ export async function requestMigrationToken(
 
   if (!userData) return false
 
-  if (zod.string().email().parse(args.email)) return false
+  zod.string().email().parse(args.email)
 
   const migrationToken = JWT.sign(
     {
