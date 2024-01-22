@@ -1104,7 +1104,7 @@ export const Mutation = builder.mutationType({
       requestMigrationToken: t.withAuth(asUserOwner).boolean({
         nullable: true,
         args: {
-          email: t.arg.string({ required: true, validate: { email: true } }),
+          email: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
           return MigrationService.requestMigrationToken(args, ctx)

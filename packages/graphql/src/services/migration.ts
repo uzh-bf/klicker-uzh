@@ -1,5 +1,6 @@
 import axios from 'axios'
 import JWT from 'jsonwebtoken'
+import zod from 'zod'
 
 import { ServiceBusClient } from '@azure/service-bus'
 import { ContextWithUser } from 'src/lib/context'
@@ -20,6 +21,8 @@ export async function requestMigrationToken(
   })
 
   if (!userData) return false
+
+  zod.string().email().parse(args.email)
 
   const migrationToken = JWT.sign(
     {
@@ -108,6 +111,14 @@ export async function triggerMigration(
     // if the user generating the token is not the same as the user currently logged in, exit
     if (token.sub !== ctx.user.sub) return false
 
+    const user = await ctx.prisma.user.findUnique({
+      where: {
+        id: token.sub,
+      },
+    })
+
+    if (!user) return false
+
     // create an azure service bus connection to post the migration message for further processing with azure functions
     const sb = new ServiceBusClient(
       process.env.MIGRATION_SERVICE_BUS_CONNECTION_STRING as string,
@@ -123,6 +134,7 @@ export async function triggerMigration(
       subject: 'migration',
       body: {
         newUserId: token.sub,
+        newEmail: user.email,
         originalEmail: token.originalEmail,
       },
     })
