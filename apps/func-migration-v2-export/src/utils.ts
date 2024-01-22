@@ -1,5 +1,4 @@
 import { InvocationContext } from '@azure/functions'
-import { ElementType } from '@klicker-uzh/prisma'
 import axios from 'axios'
 
 export function sliceIntoChunks(array: any[], chunkSize: number) {
@@ -10,13 +9,6 @@ export function sliceIntoChunks(array: any[], chunkSize: number) {
     index += chunkSize
   }
   return result
-}
-
-export const QuestionTypeMap: Record<string, ElementType> = {
-  SC: 'SC',
-  MC: 'MC',
-  FREE_RANGE: 'NUMERICAL',
-  FREE: 'FREE_TEXT',
 }
 
 export async function sendTeamsNotifications(
