@@ -1583,6 +1583,9 @@ importers:
       mathjs:
         specifier: 11.9.1
         version: 11.9.1
+      mongodb:
+        specifier: 5.7.0
+        version: 5.7.0
       node-schedule:
         specifier: 2.1.1
         version: 2.1.1
@@ -11081,7 +11084,6 @@ packages:
     resolution: {integrity: sha512-Vac8H+NlRNNlAmDfGUP7b5h/KA+AtWIzuXy0E6OyP8f1tCLYAtPvKRRDJjAPqhpCb0t6U2j7/xqAuLEebW2kiw==}
     dependencies:
       undici-types: 5.26.5
-    dev: true
 
   /@types/normalize-package-data@2.4.3:
     resolution: {integrity: sha512-ehPtgRgaULsFG8x0NeYJvmyH1hmlfsNLujHe9dQEia/7MAJYdzMSi19JtchUHjmBA6XC/75dK55mzZH+RyieSg==}
@@ -11413,7 +11415,7 @@ packages:
   /@types/whatwg-url@8.2.2:
     resolution: {integrity: sha512-FtQu10RWgn3D9U4aazdwIE2yzphmTJREDqNdODHrbrZmmMqI0vMheC/6NE/J1Yveaj8H+ela+YwWTjq5PGmuhA==}
     dependencies:
-      '@types/node': 18.18.7
+      '@types/node': 20.10.6
       '@types/webidl-conversions': 7.0.0
     dev: false
 
@@ -19012,7 +19014,7 @@ packages:
       pretty-format: 29.6.2
       slash: 3.0.0
       strip-json-comments: 3.1.1
-      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.2.2)
+      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -19053,7 +19055,7 @@ packages:
       pretty-format: 29.6.2
       slash: 3.0.0
       strip-json-comments: 3.1.1
-      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.2.2)
+      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color

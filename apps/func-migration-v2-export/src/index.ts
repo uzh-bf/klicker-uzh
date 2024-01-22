@@ -1,7 +1,7 @@
 import { app, InvocationContext } from '@azure/functions'
 import getBlobClient from './blob'
 import getMongoDB from './mongo'
-import { sendEmailMigrationNotification, sendTeamsNotifications } from './utils'
+import { sendTeamsNotifications } from './utils'
 
 interface Message {
   messageId: string
@@ -33,11 +33,6 @@ const serviceBusTrigger = async function (
       .toArray()
 
     if (!matchingUsers?.[0]) {
-      await sendEmailMigrationNotification(
-        messageData.newEmail,
-        process.env.LISTMONK_TEMPLATE_MIGRATION_EMAIL_NOT_FOUND as string,
-        context
-      )
       throw new Error(
         `No matching V2 user found for ${messageData.originalEmail}`
       )
@@ -94,7 +89,7 @@ const serviceBusTrigger = async function (
 
     await sendTeamsNotifications(
       'func/migration-v2-export',
-      `Successful export for user '${messageData.originalEmail}' (${matchingUser.email})`,
+      `Successful export for user '${messageData.originalEmail}' (${messageData.newEmail})`,
       context
     )
 

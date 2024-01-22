@@ -1,10 +1,14 @@
 import axios from 'axios'
 import JWT from 'jsonwebtoken'
-import zod from 'zod'
+import normalizeEmail from 'validator/es/lib/normalizeEmail'
 
 import { ServiceBusClient } from '@azure/service-bus'
-import { ContextWithUser } from 'src/lib/context'
-import { sendTeamsNotifications } from '../lib/util'
+import { ContextWithUser } from '../lib/context'
+import getMongoDB from '../lib/mongo'
+import {
+  sendEmailMigrationNotification,
+  sendTeamsNotifications,
+} from '../lib/util'
 
 interface RequestMigrationTokenArgs {
   email: string
@@ -22,12 +26,36 @@ export async function requestMigrationToken(
 
   if (!userData) return false
 
-  zod.string().email().parse(args.email)
+  const db = await getMongoDB()
+
+  // we used normalization for emails in the old KlickerUZH
+  // if they enter the email address unnormalized, we still want to try matching against the normalized version
+  const matchingUsers = await db
+    .collection('users')
+    .find({ email: args.email.toLowerCase() })
+    .toArray()
+
+  const matchingUsersNormalized = await db
+    .collection('users')
+    .find({ email: normalizeEmail(args.email) })
+    .toArray()
+
+  const oldEmail =
+    matchingUsers?.[0]?.email ?? matchingUsersNormalized?.[0]?.email
+
+  if (!oldEmail) {
+    await sendEmailMigrationNotification(
+      userData.email,
+      process.env.LISTMONK_TEMPLATE_MIGRATION_EMAIL_NOT_AVAILABLE as string
+    )
+
+    throw new Error(`No matching V2 user found for ${args.email}`)
+  }
 
   const migrationToken = JWT.sign(
     {
       sub: ctx.user.sub,
-      originalEmail: args.email,
+      originalEmail: oldEmail,
     },
     process.env.MIGRATION_SECRET as string,
     {
@@ -43,7 +71,7 @@ export async function requestMigrationToken(
 
   await sendTeamsNotifications(
     'graphql/migration',
-    `[${process.env.NODE_ENV}] Migration Requested for E-Mail ${args.email} in v2 with Edu-ID ${userData.email} (v3), Link: ${migrationLink}`
+    `[${process.env.NODE_ENV}] Migration Requested for E-Mail ${oldEmail} in v2 with Edu-ID ${userData.email} (v3), Link: ${migrationLink}`
   )
 
   const LISTMONK_AUTH = {
@@ -56,8 +84,8 @@ export async function requestMigrationToken(
     await axios.post(
       `${process.env.LISTMONK_URL}/api/subscribers`,
       {
-        email: args.email,
-        name: args.email,
+        email: oldEmail,
+        name: oldEmail,
         status: 'enabled',
         preconfirm_subscriptions: true,
       },
@@ -75,7 +103,7 @@ export async function requestMigrationToken(
     await axios.post(
       `${process.env.LISTMONK_URL}/api/tx`,
       {
-        subscriber_emails: [args.email],
+        subscriber_emails: [oldEmail],
         template_id: Number(process.env.LISTMONK_TEMPLATE_MIGRATION_REQUEST),
         data: { migrationLink, newAccountEmail: userData.email },
       },
