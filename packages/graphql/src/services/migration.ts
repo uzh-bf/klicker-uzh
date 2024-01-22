@@ -45,7 +45,7 @@ export async function requestMigrationToken(
 
   if (!oldEmail) {
     await sendEmailMigrationNotification(
-      args.email,
+      userData.email,
       process.env.LISTMONK_TEMPLATE_MIGRATION_EMAIL_NOT_AVAILABLE as string
     )
 
