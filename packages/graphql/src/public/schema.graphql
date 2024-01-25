@@ -66,17 +66,19 @@ type ChoiceQuestionOptions {
 
 type ChoicesElementData implements ElementData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
 type ChoicesQuestionData implements QuestionData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -156,11 +158,12 @@ type Element {
 
 interface ElementData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
@@ -247,12 +250,13 @@ type FileUploadSAS {
 
 type FlashcardElementData implements ElementData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: FlashcardElementOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
@@ -262,17 +266,19 @@ type FlashcardElementOptions {
 
 type FreeTextElementData implements ElementData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -580,17 +586,19 @@ type Mutation {
 
 type NumericalElementData implements ElementData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
 type NumericalQuestionData implements QuestionData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
@@ -805,6 +813,7 @@ type Query {
 
 interface QuestionData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!

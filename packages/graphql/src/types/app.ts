@@ -136,7 +136,8 @@ export interface BaseElementData {
   type: ElementType
 
   id: string
-  questionId: number
+  elementId: number | null // TODO - remove nullability
+  questionId: number | null // TODO - remove questionId after migration
   name: string
   content: string
   pointsMultiplier: number
@@ -152,7 +153,8 @@ interface IElementData<Type extends ElementType, Options extends ElementOptions>
   type: Type
   options: Options
   id: string
-  questionId: number
+  elementId: number | null // TODO - remove nullability
+  questionId: number | null // TODO - remove questionId after migration
 }
 
 // export type FlashcardElementData = IElementData<'FLASHCARD', null>

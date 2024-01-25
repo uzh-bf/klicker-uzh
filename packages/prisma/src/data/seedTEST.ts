@@ -9,7 +9,9 @@ import {
 } from './constants.js'
 import * as DATA_TEST from './data/TEST'
 import {
+  getInitialElementResults,
   prepareCourse,
+  prepareFlashcardsFromFile,
   prepareLearningElement,
   prepareMicroSession,
   prepareParticipant,
@@ -17,6 +19,7 @@ import {
   prepareQuestionInstance,
   prepareSession,
   prepareUser,
+  processElementData,
 } from './helpers.js'
 import { seedAchievements } from './seedAchievements'
 import { seedLevels } from './seedLevels'
@@ -133,6 +136,101 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     )
   )) as Element[]
 
+  // ----- ELEMENT STACK SEED -----
+  // const microLearningTestWithStacks = await prisma.microLearning.upsert({
+  //   where: {
+  //     id: 'f9d2c9f0-2e1c-4c1b-9c4c-6a1d2f7f0f2b',
+  //   },
+  //   create: {
+  //     id: 'f9d2c9f0-2e1c-4c1b-9c4c-6a1d2f7f0f2b',
+  //     name: 'Test Microlearning',
+  //     displayName: 'Test Microlearning',
+  //     description: 'Test Microlearning',
+  //     ownerId: USER_ID_TEST,
+  //     courseId: COURSE_ID_TEST,
+  //     status: Prisma.MicroLearningStatus.PUBLISHED,
+  //     scheduledEndAt: new Date('2025-03-17T11:00:00.000Z'),
+  //     scheduledStartAt: new Date('2020-03-10T11:00:00.000Z'),
+  //     stacks: {
+  //       create: [
+  //         {
+  //           type: 'MICROLEARNING',
+  //           options: {},
+  //           elements: {
+  //             create: [
+  //               {
+  //                 elementId: 1,
+  //               },
+  //             ],
+  //           },
+  //         },
+  //       ],
+  //     },
+  //   },
+  //   update: {},
+  // })
+
+  // const liveQuizTestWithStacks = await prisma.liveQuiz.upsert({
+  //   where: {
+  //     id: 'f98c4633-085d-4681-8e4c-dc03772c2aa0',
+  //   },
+  //   create: {
+  //     id: 'f98c4633-085d-4681-8e4c-dc03772c2aa0',
+  //     name: 'Test Live Quiz',
+  //     displayName: 'Test Live Quiz',
+  //     description: 'Test Live Quiz',
+  //     ownerId: USER_ID_TEST,
+  //     courseId: COURSE_ID_TEST,
+  //     status: Prisma.LiveQuizStatus.PREPARED,
+  //     stacks: {
+  //       create: [
+  //         {
+  //           type: 'LIVE_QUIZ',
+  //           options: {},
+  //           elements: {
+  //             create: [
+  //               {
+  //                 elementId: 1,
+  //               },
+  //             ],
+  //           },
+  //         },
+  //       ],
+  //     },
+  //   },
+  //   update: {},
+  // })
+
+  // const groupActivityTestWithStacks = await prisma.groupActivity.upsert({
+  //   where: {
+  //     id: 'b1556e4b-3856-4b4a-87eb-70817e97e16a',
+  //   },
+  //   create: {
+  //     id: 'b1556e4b-3856-4b4a-87eb-70817e97e16a',
+  //     name: 'Test Group Activity',
+  //     displayName: 'Test Group Activity',
+  //     description: 'Test Group Activity',
+  //     ownerId: USER_ID_TEST,
+  //     courseId: COURSE_ID_TEST,
+  //     status: Prisma.GroupActivityStatus.PUBLISHED,
+  //     elementStack: {
+  //       create: {
+  //         type: 'GROUP_ACTIVITY',
+  //         options: {},
+  //         elements: {
+  //           create: [
+  //             {
+  //               elementId: 1,
+  //             },
+  //           ],
+  //         },
+  //       },
+  //     },
+  //   },
+  //   update: {},
+  // })
+
+  // ----- LEGACY SEED -----
   const learningElementsTest = await Promise.all(
     DATA_TEST.LEARNING_ELEMENTS.map(async (data) =>
       prisma.learningElement.upsert(
@@ -564,6 +662,136 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       },
       update: {},
     })
+  })
+
+  // seed practice quiz
+  const flashcards = (await prepareFlashcardsFromFile(
+    prisma,
+    'data/FC_Modul_1.xml',
+    USER_ID_TEST
+  )) as Element[]
+
+  const quizId = '4214338b-c5af-4ff7-84f9-ae5a139d6e5b'
+  const practiceQuiz = await prismaClient.practiceQuiz.upsert({
+    where: {
+      id: quizId,
+    },
+    create: {
+      id: quizId,
+      name: 'Practice Quiz Demo',
+      displayName: 'Practice Quiz Demo Student Title',
+      description:
+        'This is a **description** of the practice quiz, illustrating the use of flashcards, questions and content elements.',
+      ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_TEST,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      orderType: Prisma.ElementOrderType.SPACED_REPETITION,
+      stacks: {
+        create: [
+          // create stacks with one flashcard each
+          ...flashcards.map((el, ix) => ({
+            displayName: undefined,
+            description: undefined,
+            order: ix,
+            type: Prisma.ElementStackType.PRACTICE_QUIZ,
+            options: {},
+            elements: {
+              createMany: {
+                data: [
+                  {
+                    order: ix,
+                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                    elementType: el.type,
+                    elementData: processElementData(el),
+                    options: {},
+                    results: getInitialElementResults(el),
+                    ownerId: el.ownerId,
+                    elementId: el.id,
+                  },
+                ],
+              },
+            },
+          })),
+          // create one stack with all flashcards
+          {
+            displayName: undefined,
+            description: undefined,
+            order: flashcards.length,
+            type: Prisma.ElementStackType.PRACTICE_QUIZ,
+            options: {},
+            elements: {
+              createMany: {
+                data: flashcards.map((el, ix) => ({
+                  order: ix,
+                  type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                  elementType: el.type,
+                  elementData: processElementData(el),
+                  options: {},
+                  results: getInitialElementResults(el),
+                  ownerId: el.ownerId,
+                  elementId: el.id,
+                })),
+              },
+            },
+          },
+          // create stacks with questions
+          ...questionsTest.map((el, ix) => ({
+            displayName: undefined,
+            description: undefined,
+            order: flashcards.length + ix + 1,
+            type: Prisma.ElementStackType.PRACTICE_QUIZ,
+            options: {},
+            elements: {
+              createMany: {
+                data: [
+                  {
+                    order: ix,
+                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                    elementType: el.type,
+                    elementData: processElementData(el),
+                    options: {},
+                    results: getInitialElementResults(el),
+                    ownerId: el.ownerId,
+                    elementId: el.id,
+                  },
+                ],
+              },
+            },
+          })),
+          // create one stack with all questions
+          {
+            displayName: undefined,
+            description: undefined,
+            order: flashcards.length + questionsTest.length + 1,
+            type: Prisma.ElementStackType.PRACTICE_QUIZ,
+            options: {},
+            elements: {
+              createMany: {
+                data: questionsTest.map((el, ix) => ({
+                  order: ix,
+                  type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                  elementType: el.type,
+                  elementData: processElementData(el),
+                  options: {},
+                  results: getInitialElementResults(el),
+                  ownerId: el.ownerId,
+                  elementId: el.id,
+                })),
+              },
+            },
+          },
+          // TODO - add content element to practice quiz seed
+        ],
+      },
+    },
+    update: {},
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
   })
 }
 

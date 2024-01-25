@@ -17,7 +17,8 @@ export const ElementDataRef =
 export const ElementData = ElementDataRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
-    questionId: t.exposeInt('questionId'),
+    elementId: t.exposeInt('elementId', { nullable: true }),
+    questionId: t.exposeInt('questionId', { nullable: true }),
     name: t.exposeString('name'),
     type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
