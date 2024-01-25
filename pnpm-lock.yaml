@@ -1596,8 +1596,8 @@ importers:
         specifier: 9.0.0
         version: 9.0.0
       validator:
-        specifier: 13.9.0
-        version: 13.9.0
+        specifier: 13.11.0
+        version: 13.11.0
       zod:
         specifier: 3.21.4
         version: 3.21.4
@@ -8226,7 +8226,7 @@ packages:
       unzipper: 0.10.14
       url-parse: 1.5.10
       uuid: 8.3.2
-      validator: 13.9.0
+      validator: 13.11.0
       xml2js: 0.5.0
       yaml: 2.3.2
     transitivePeerDependencies:
@@ -19014,7 +19014,7 @@ packages:
       pretty-format: 29.6.2
       slash: 3.0.0
       strip-json-comments: 3.1.1
-      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
+      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.2.2)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -19055,7 +19055,7 @@ packages:
       pretty-format: 29.6.2
       slash: 3.0.0
       strip-json-comments: 3.1.1
-      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.1.6)
+      ts-node: 10.9.1(@types/node@18.17.4)(typescript@5.2.2)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -27677,8 +27677,8 @@ packages:
       builtins: 5.0.1
     dev: true
 
-  /validator@13.9.0:
-    resolution: {integrity: sha512-B+dGG8U3fdtM0/aNK4/X8CXq/EcxU2WPrPEkJGslb47qyHsxmbggTWK0yEA4qnYVNF+nxNlN88o14hIcPmSIEA==}
+  /validator@13.11.0:
+    resolution: {integrity: sha512-Ii+sehpSfZy+At5nPdnyMhx78fEoPDkR2XW/zimHEL3MyGJQOCQ7WeP20jPYRz7ZCpcKLB21NxuXHF3bxjStBQ==}
     engines: {node: '>= 0.10'}
 
   /value-equal@1.0.1:

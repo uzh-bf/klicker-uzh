@@ -30,7 +30,7 @@
     "node-schedule": "2.1.1",
     "ramda": "0.29.0",
     "uuid": "9.0.0",
-    "validator": "13.9.0",
+    "validator": "13.11.0",
     "zod": "3.21.4"
   },
   "devDependencies": {

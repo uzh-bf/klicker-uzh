@@ -1,6 +1,6 @@
 import axios from 'axios'
 import JWT from 'jsonwebtoken'
-import normalizeEmail from 'validator/es/lib/normalizeEmail'
+import normalizeEmail from 'validator/lib/normalizeEmail'
 
 import { ServiceBusClient } from '@azure/service-bus'
 import { ContextWithUser } from '../lib/context'
