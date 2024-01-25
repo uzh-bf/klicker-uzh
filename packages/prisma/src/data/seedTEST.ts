@@ -18,6 +18,7 @@ import {
   prepareQuestionInstance,
   prepareSession,
   prepareUser,
+  processElementData,
 } from './helpers.js'
 import { seedAchievements } from './seedAchievements'
 import { seedLevels } from './seedLevels'
@@ -663,11 +664,12 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   // seed practice quiz
-  const flashcards = await prepareFlashcardsFromFile(
+  const flashcards = (await prepareFlashcardsFromFile(
     prisma,
     'data/FC_Modul_1.xml',
     USER_ID_TEST
-  )
+  )) as Element[]
+
   const initialFlashcardResults = {
     0: 0,
     1: 0,
@@ -676,61 +678,77 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   }
   // TODO - use these flashcards and questionsTest to seed a practice quiz
 
-  // const quizId = '4214338b-c5af-4ff7-84f9-ae5a139d6e5b'
-  // const practiceQuiz = await prismaClient.practiceQuiz.upsert({
-  //   where: {
-  //     id: quizId,
-  //   },
-  //   create: {
-  //     id: quizId,
-  //     name: 'Practice Quiz Demo',
-  //     displayName: 'Practice Quiz Demo Student Title',
-  //     description:
-  //       'This is a **description** of the practice quiz, illustrating the use of flashcards, questions and content elements.',
-  //     ownerId: USER_ID_TEST,
-  //     courseId: COURSE_ID_TEST,
-  //     status: PublicationStatus.PUBLISHED,
-  //     orderType: ElementOrderType.SPACED_REPETITION,
-  //     stacks: {
-  //       create: flashcards.map((el, ix) => ({
-  //         order: ix,
-  //         type: ElementStackType.PRACTICE_QUIZ,
-  //         options: {},
-  //         elements: {
-  //           createMany: {
-  //             data: [
-  //               {
-  //                 // TODO: set originalId to the "id" or "originalId" of the element
-  //                 order: ix,
-  //                 type: ElementInstanceType.PRACTICE_QUIZ,
-  //                 elementType: ElementType.FLASHCARD,
-  //                 // TODO: pick only relevant properties of the element
-  //                 elementData: el,
-  //                 options: {},
-  //                 results: {
-  //                   0: 0,
-  //                   1: 0,
-  //                   2: 0,
-  //                   total: 0,
-  //                 },
-  //                 ownerId: el.ownerId,
-  //                 elementId: el.id,
-  //               },
-  //             ],
-  //           },
-  //         },
-  //       })),
-  //     },
-  //   },
-  //   update: {},
-  //   include: {
-  //     stacks: {
-  //       include: {
-  //         elements: true,
-  //       },
-  //     },
-  //   },
-  // })
+  const quizId = '4214338b-c5af-4ff7-84f9-ae5a139d6e5b'
+  const practiceQuiz = await prismaClient.practiceQuiz.upsert({
+    where: {
+      id: quizId,
+    },
+    create: {
+      id: quizId,
+      name: 'Practice Quiz Demo',
+      displayName: 'Practice Quiz Demo Student Title',
+      description:
+        'This is a **description** of the practice quiz, illustrating the use of flashcards, questions and content elements.',
+      ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_TEST,
+      status: Prisma.PublicationStatus.PUBLISHED,
+      orderType: Prisma.ElementOrderType.SPACED_REPETITION,
+      stacks: {
+        create: [
+          // create stacks with one flashcard each
+          ...flashcards.map((el, ix) => ({
+            order: ix,
+            type: Prisma.ElementStackType.PRACTICE_QUIZ,
+            options: {},
+            elements: {
+              createMany: {
+                data: [
+                  {
+                    order: ix,
+                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                    elementType: Prisma.ElementType.FLASHCARD,
+                    elementData: processElementData(el),
+                    options: {},
+                    results: initialFlashcardResults,
+                    ownerId: el.ownerId,
+                    elementId: el.id,
+                  },
+                ],
+              },
+            },
+          })),
+          // create one stack with all flashcards
+          {
+            order: flashcards.length,
+            type: Prisma.ElementStackType.PRACTICE_QUIZ,
+            options: {},
+            elements: {
+              createMany: {
+                data: flashcards.map((el, ix) => ({
+                  order: ix,
+                  type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                  elementType: Prisma.ElementType.FLASHCARD,
+                  elementData: processElementData(el),
+                  options: {},
+                  results: initialFlashcardResults,
+                  ownerId: el.ownerId,
+                  elementId: el.id,
+                })),
+              },
+            },
+          },
+        ],
+      },
+    },
+    update: {},
+    include: {
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
 }
 
 const prismaClient = new Prisma.PrismaClient()

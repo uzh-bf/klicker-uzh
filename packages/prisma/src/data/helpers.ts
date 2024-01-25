@@ -34,6 +34,22 @@ export function processQuestionData(question: Prisma.Element) {
   }
 }
 
+const FLASHCARD_KEYS = ['name', 'content', 'explanation', 'type']
+
+export function processElementData(element: Element) {
+  const extractFlashcardKeys = R.pick(FLASHCARD_KEYS)
+
+  if (element.type === ElementType.FLASHCARD) {
+    return {
+      ...extractFlashcardKeys(element),
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
+  } else {
+    // TODO - add other types
+  }
+}
+
 export async function prepareUser({
   name,
   password,
