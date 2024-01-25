@@ -690,6 +690,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         create: [
           // create stacks with one flashcard each
           ...flashcards.map((el, ix) => ({
+            displayName: undefined,
+            description: undefined,
             order: ix,
             type: Prisma.ElementStackType.PRACTICE_QUIZ,
             options: {},
@@ -712,6 +714,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           })),
           // create one stack with all flashcards
           {
+            displayName: undefined,
+            description: undefined,
             order: flashcards.length,
             type: Prisma.ElementStackType.PRACTICE_QUIZ,
             options: {},
@@ -732,6 +736,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           },
           // create stacks with questions
           ...questionsTest.map((el, ix) => ({
+            displayName: undefined,
+            description: undefined,
             order: flashcards.length + ix + 1,
             type: Prisma.ElementStackType.PRACTICE_QUIZ,
             options: {},
@@ -754,6 +760,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           })),
           // create one stack with all questions
           {
+            displayName: undefined,
+            description: undefined,
             order: flashcards.length + questionsTest.length + 1,
             type: Prisma.ElementStackType.PRACTICE_QUIZ,
             options: {},

@@ -1,0 +1,59 @@
+#import "./FElementDataWithoutSolutions.graphql"
+
+fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
+  id
+  name
+  displayName
+  description
+  pointsMultiplier
+  resetTimeDays
+  orderType
+  # previouslyAnswered
+  # previousScore
+  # previousPointsAwarded
+  # totalTrials
+  # stacksWithQuestions
+  # numOfQuestions
+
+  course {
+    id
+    displayName
+    color
+  }
+
+  stacks {
+    id
+    type
+    displayName
+    description
+    order
+    elements {
+      id
+      type
+      elementType
+      ...ElementDataWithoutSolutions
+      # mdContent
+      # questionInstance {
+      #   id
+      #   pointsMultiplier
+      #   ...QuestionData
+      #   evaluation {
+      #     feedbacks {
+      #       ix
+      #       feedback
+      #       correct
+      #       value
+      #     }
+      #     choices
+      #     answers
+      #     score
+      #     pointsAwarded
+      #     percentile
+      #     newPointsFrom
+      #     xpAwarded
+      #     newXpFrom
+      #   }
+      # }
+    }
+  }
+}
