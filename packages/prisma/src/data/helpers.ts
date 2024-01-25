@@ -35,9 +35,18 @@ export function processQuestionData(question: Prisma.Element) {
 }
 
 const FLASHCARD_KEYS = ['name', 'content', 'explanation', 'type']
+const QUESTION_KEYS = [
+  'name',
+  'content',
+  'explanation',
+  'pointsMultiplier',
+  'type',
+  'options',
+]
 
 export function processElementData(element: Element) {
   const extractFlashcardKeys = R.pick(FLASHCARD_KEYS)
+  const extractQuestionKeys = R.pick(QUESTION_KEYS)
 
   if (element.type === ElementType.FLASHCARD) {
     return {
@@ -45,8 +54,48 @@ export function processElementData(element: Element) {
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
+  } else if (
+    element.type === ElementType.SC ||
+    element.type === ElementType.MC ||
+    element.type === ElementType.KPRIM ||
+    element.type === ElementType.NUMERICAL ||
+    element.type === ElementType.FREE_TEXT
+  ) {
+    return {
+      ...extractQuestionKeys(element),
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
   } else {
-    // TODO - add other types
+    // TODO - add picking for content elements
+  }
+}
+
+export function getInitialElementResults(element: Element) {
+  if (element.type === ElementType.FLASHCARD) {
+    return {
+      0: 0,
+      1: 0,
+      2: 0,
+      total: 0,
+    }
+  } else if (
+    element.type === ElementType.SC ||
+    element.type === ElementType.MC ||
+    element.type === ElementType.KPRIM
+  ) {
+    const choices = element.options.choices.reduce(
+      (acc, _, ix) => ({ ...acc, [ix]: 0 }),
+      {}
+    )
+    return { choices }
+  } else if (
+    element.type === ElementType.NUMERICAL ||
+    element.type === ElementType.FREE_TEXT
+  ) {
+    return {}
+  } else {
+    return null
   }
 }
 
