@@ -1,5 +1,5 @@
 import { InvocationContext } from '@azure/functions'
-import { ElementDisplayMode, PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '@klicker-uzh/prisma'
 import {
   QuestionTypeMap,
   sendTeamsNotifications,
@@ -65,7 +65,10 @@ export const importQuestions = async (
                   '\n'
                 : ''),
             options: {
-              displayMode: ElementDisplayMode.LIST,
+              displayMode:
+                question.type == 'SC' || question.type == 'MC'
+                  ? 'LIST'
+                  : undefined,
               hasSampleSolution: false,
               hasAnswerFeedbacks: false,
               choices: undefined,

@@ -84,3 +84,51 @@ export const orderStacks = R.sort((a: any, b: any) => {
 
   return 0
 })
+
+export async function sendEmailMigrationNotification(
+  email: string,
+  templateId: string
+) {
+  const LISTMONK_AUTH = {
+    username: process.env.LISTMONK_USER as string,
+    password: process.env.LISTMONK_PASS as string,
+  }
+
+  try {
+    // add the user as a subscriber to enable sending emails via listmonk
+    await axios.post(
+      `${process.env.LISTMONK_URL}/api/subscribers`,
+      {
+        email: email,
+        name: email,
+        status: 'enabled',
+        preconfirm_subscriptions: true,
+      },
+      { auth: LISTMONK_AUTH }
+    )
+  } catch (e: any) {
+    console.error(e)
+    // if (e.response.status !== 409) {
+    //   context.error(e)
+    // }
+  }
+
+  try {
+    const result = axios.post(
+      `${process.env.LISTMONK_URL}/api/tx`,
+      {
+        subscriber_emails: [email],
+        template_id: Number(templateId),
+      },
+      { auth: LISTMONK_AUTH }
+    )
+
+    console.log(result)
+
+    return result
+  } catch (e) {
+    console.error(e)
+  }
+
+  return null
+}

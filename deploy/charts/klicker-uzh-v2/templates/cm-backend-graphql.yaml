@@ -16,6 +16,7 @@ data:
   BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
   LISTMONK_URL: {{ .Values.listmonk.url | quote }}
   LISTMONK_USER: {{ .Values.listmonk.username | quote }}
+  LISTMONK_TEMPLATE_MIGRATION_EMAIL_NOT_FOUND: {{ .Values.listmonk.templates.emailNotFound | quote }}
   LISTMONK_TEMPLATE_MIGRATION_REQUEST: {{ .Values.listmonk.templates.migrationRequest | quote }}
   MIGRATION_SERVICE_BUS_QUEUE_NAME: {{ .Values.migration.serviceBus.queueName | quote }}
   {{- if .Values.backendGraphql.redisCache.tls }}

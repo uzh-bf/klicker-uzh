@@ -1583,6 +1583,9 @@ importers:
       mathjs:
         specifier: 11.9.1
         version: 11.9.1
+      mongodb:
+        specifier: 5.7.0
+        version: 5.7.0
       node-schedule:
         specifier: 2.1.1
         version: 2.1.1
@@ -1593,8 +1596,8 @@ importers:
         specifier: 9.0.0
         version: 9.0.0
       validator:
-        specifier: 13.9.0
-        version: 13.9.0
+        specifier: 13.11.0
+        version: 13.11.0
       zod:
         specifier: 3.21.4
         version: 3.21.4
@@ -8223,7 +8226,7 @@ packages:
       unzipper: 0.10.14
       url-parse: 1.5.10
       uuid: 8.3.2
-      validator: 13.9.0
+      validator: 13.11.0
       xml2js: 0.5.0
       yaml: 2.3.2
     transitivePeerDependencies:
@@ -11081,7 +11084,6 @@ packages:
     resolution: {integrity: sha512-Vac8H+NlRNNlAmDfGUP7b5h/KA+AtWIzuXy0E6OyP8f1tCLYAtPvKRRDJjAPqhpCb0t6U2j7/xqAuLEebW2kiw==}
     dependencies:
       undici-types: 5.26.5
-    dev: true
 
   /@types/normalize-package-data@2.4.3:
     resolution: {integrity: sha512-ehPtgRgaULsFG8x0NeYJvmyH1hmlfsNLujHe9dQEia/7MAJYdzMSi19JtchUHjmBA6XC/75dK55mzZH+RyieSg==}
@@ -11413,7 +11415,7 @@ packages:
   /@types/whatwg-url@8.2.2:
     resolution: {integrity: sha512-FtQu10RWgn3D9U4aazdwIE2yzphmTJREDqNdODHrbrZmmMqI0vMheC/6NE/J1Yveaj8H+ela+YwWTjq5PGmuhA==}
     dependencies:
-      '@types/node': 18.18.7
+      '@types/node': 20.10.6
       '@types/webidl-conversions': 7.0.0
     dev: false
 
@@ -27675,8 +27677,8 @@ packages:
       builtins: 5.0.1
     dev: true
 
-  /validator@13.9.0:
-    resolution: {integrity: sha512-B+dGG8U3fdtM0/aNK4/X8CXq/EcxU2WPrPEkJGslb47qyHsxmbggTWK0yEA4qnYVNF+nxNlN88o14hIcPmSIEA==}
+  /validator@13.11.0:
+    resolution: {integrity: sha512-Ii+sehpSfZy+At5nPdnyMhx78fEoPDkR2XW/zimHEL3MyGJQOCQ7WeP20jPYRz7ZCpcKLB21NxuXHF3bxjStBQ==}
     engines: {node: '>= 0.10'}
 
   /value-equal@1.0.1:

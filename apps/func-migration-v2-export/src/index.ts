@@ -1,34 +1,13 @@
 import { app, InvocationContext } from '@azure/functions'
-import axios from 'axios'
 import getBlobClient from './blob'
 import getMongoDB from './mongo'
+import { sendTeamsNotifications } from './utils'
 
 interface Message {
   messageId: string
   newUserId: string
+  newEmail: string
   originalEmail: string
-}
-
-async function sendTeamsNotifications(
-  scope: string,
-  text: string,
-  context: InvocationContext
-) {
-  if (process.env.TEAMS_WEBHOOK_URL) {
-    try {
-      return axios.post(process.env.TEAMS_WEBHOOK_URL, {
-        '@context': 'https://schema.org/extensions',
-        '@type': 'MessageCard',
-        themeColor: '0076D7',
-        title: `Migration: ${scope}`,
-        text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
-      })
-    } catch (e) {
-      context.error(e)
-    }
-  }
-
-  return null
 }
 
 const serviceBusTrigger = async function (
@@ -42,7 +21,7 @@ const serviceBusTrigger = async function (
 
     await sendTeamsNotifications(
       'func/migration-v2-export',
-      `Started export of KlickerV2 data for user '${messageData.originalEmail}'`,
+      `Started export of KlickerV2 data for '${messageData.originalEmail}' -> '${messageData.newEmail}'`,
       context
     )
 
@@ -110,7 +89,7 @@ const serviceBusTrigger = async function (
 
     await sendTeamsNotifications(
       'func/migration-v2-export',
-      `Successful export for user '${messageData.originalEmail}' (${matchingUser.email})`,
+      `Successful export for user '${messageData.originalEmail}' (${messageData.newEmail})`,
       context
     )
 

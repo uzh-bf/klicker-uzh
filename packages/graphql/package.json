@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.1.0-beta.29",
+  "version": "3.1.0-beta.30",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -26,10 +26,11 @@
     "graphql-yoga": "3.9.1",
     "jsonwebtoken": "9.0.1",
     "mathjs": "11.9.1",
+    "mongodb": "5.7.0",
     "node-schedule": "2.1.1",
     "ramda": "0.29.0",
     "uuid": "9.0.0",
-    "validator": "13.9.0",
+    "validator": "13.11.0",
     "zod": "3.21.4"
   },
   "devDependencies": {
