@@ -1,7 +1,7 @@
 fragment ElementData on ElementInstance {
   elementData {
     id
-    questionId
+    elementId
     name
     type
     content

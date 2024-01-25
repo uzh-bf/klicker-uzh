@@ -20,6 +20,7 @@ export const QuestionDataRef =
 export const QuestionData = QuestionDataRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
+    elementId: t.exposeInt('elementId', { nullable: true }),
     questionId: t.exposeInt('questionId', { nullable: true }),
     name: t.exposeString('name'),
     type: t.expose('type', { type: ElementType }),
