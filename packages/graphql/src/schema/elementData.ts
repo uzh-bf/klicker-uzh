@@ -81,48 +81,16 @@ export const FreeTextElementData = builder
     }),
   })
 
-export interface IFlashcardElementOptions {
-  fake: string
-}
-export const FlashcardElementOptions = builder
-  .objectRef<IFlashcardElementOptions>('FlashcardElementOptions')
-  .implement({
-    fields: (t) => ({
-      fake: t.exposeString('fake'),
-    }),
-  })
-
-export interface IFlashcardElementData extends BaseElementData {
-  options: IFlashcardElementOptions
-}
+export interface IFlashcardElementData extends BaseElementData {}
 export const FlashcardElementData = builder
   .objectRef<IFlashcardElementData>('FlashcardElementData')
   .implement({
     interfaces: [ElementData],
-    fields: (t) => ({
-      options: t.expose('options', { type: FlashcardElementOptions }),
-    }),
   })
 
-export interface IContentElementOptions {
-  fake: string
-}
-export const ContentElementOptions = builder
-  .objectRef<IContentElementOptions>('ContentElementOptions')
-  .implement({
-    fields: (t) => ({
-      fake: t.exposeString('fake'),
-    }),
-  })
-
-export interface IContentElementData extends BaseElementData {
-  options: IContentElementOptions
-}
+export interface IContentElementData extends BaseElementData {}
 export const ContentElementData = builder
   .objectRef<IContentElementData>('ContentElementData')
   .implement({
     interfaces: [ElementData],
-    fields: (t) => ({
-      options: t.expose('options', { type: ContentElementOptions }),
-    }),
   })

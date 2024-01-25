@@ -110,14 +110,9 @@ type ContentElementData implements ElementData {
   explanation: String
   id: ID!
   name: String!
-  options: ContentElementOptions!
   pointsMultiplier: Int!
   questionId: Int
   type: ElementType!
-}
-
-type ContentElementOptions {
-  fake: String!
 }
 
 type Course {
@@ -270,14 +265,9 @@ type FlashcardElementData implements ElementData {
   explanation: String
   id: ID!
   name: String!
-  options: FlashcardElementOptions!
   pointsMultiplier: Int!
   questionId: Int
   type: ElementType!
-}
-
-type FlashcardElementOptions {
-  fake: String!
 }
 
 type FreeTextElementData implements ElementData {

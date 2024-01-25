@@ -140,15 +140,9 @@ export type ContentElementData = ElementData & {
   explanation?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
-  options: ContentElementOptions;
   pointsMultiplier: Scalars['Int']['output'];
   questionId?: Maybe<Scalars['Int']['output']>;
   type: ElementType;
-};
-
-export type ContentElementOptions = {
-  __typename?: 'ContentElementOptions';
-  fake: Scalars['String']['output'];
 };
 
 export type Course = {
@@ -305,15 +299,9 @@ export type FlashcardElementData = ElementData & {
   explanation?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
-  options: FlashcardElementOptions;
   pointsMultiplier: Scalars['Int']['output'];
   questionId?: Maybe<Scalars['Int']['output']>;
   type: ElementType;
-};
-
-export type FlashcardElementOptions = {
-  __typename?: 'FlashcardElementOptions';
-  fake: Scalars['String']['output'];
 };
 
 export type FreeTextElementData = ElementData & {
