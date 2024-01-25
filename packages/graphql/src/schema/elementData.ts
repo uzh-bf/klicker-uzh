@@ -37,6 +37,8 @@ export const ElementData = ElementDataRef.implement({
         return 'FreeTextElementData'
       case DB.ElementType.FLASHCARD:
         return 'FlashcardElementData'
+      case DB.ElementType.CONTENT:
+        return 'ContentElementData'
       default:
         return null
     }
@@ -99,5 +101,28 @@ export const FlashcardElementData = builder
     interfaces: [ElementData],
     fields: (t) => ({
       options: t.expose('options', { type: FlashcardElementOptions }),
+    }),
+  })
+
+export interface IContentElementOptions {
+  fake: string
+}
+export const ContentElementOptions = builder
+  .objectRef<IContentElementOptions>('ContentElementOptions')
+  .implement({
+    fields: (t) => ({
+      fake: t.exposeString('fake'),
+    }),
+  })
+
+export interface IContentElementData extends BaseElementData {
+  options: IContentElementOptions
+}
+export const ContentElementData = builder
+  .objectRef<IContentElementData>('ContentElementData')
+  .implement({
+    interfaces: [ElementData],
+    fields: (t) => ({
+      options: t.expose('options', { type: ContentElementOptions }),
     }),
   })

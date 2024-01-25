@@ -104,6 +104,22 @@ type ConfusionTimestep {
   speed: Int!
 }
 
+type ContentElementData implements ElementData {
+  content: String!
+  elementId: Int
+  explanation: String
+  id: ID!
+  name: String!
+  options: ContentElementOptions!
+  pointsMultiplier: Int!
+  questionId: Int
+  type: ElementType!
+}
+
+type ContentElementOptions {
+  fake: String!
+}
+
 type Course {
   averageActiveScore: Float
   averageScore: Float
