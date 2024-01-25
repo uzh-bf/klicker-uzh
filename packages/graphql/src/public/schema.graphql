@@ -66,13 +66,13 @@ type ChoiceQuestionOptions {
 
 type ChoicesElementData implements ElementData {
   content: String!
-  elementId: Int!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
@@ -158,12 +158,12 @@ type Element {
 
 interface ElementData {
   content: String!
-  elementId: Int!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
@@ -250,13 +250,13 @@ type FileUploadSAS {
 
 type FlashcardElementData implements ElementData {
   content: String!
-  elementId: Int!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: FlashcardElementOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
@@ -266,13 +266,13 @@ type FlashcardElementOptions {
 
 type FreeTextElementData implements ElementData {
   content: String!
-  elementId: Int!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
@@ -586,13 +586,13 @@ type Mutation {
 
 type NumericalElementData implements ElementData {
   content: String!
-  elementId: Int!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 

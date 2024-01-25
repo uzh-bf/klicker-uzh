@@ -91,13 +91,13 @@ export type ChoiceQuestionOptions = {
 export type ChoicesElementData = ElementData & {
   __typename?: 'ChoicesElementData';
   content: Scalars['String']['output'];
-  elementId: Scalars['Int']['output'];
+  elementId?: Maybe<Scalars['Int']['output']>;
   explanation?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   options: ChoiceQuestionOptions;
   pointsMultiplier: Scalars['Int']['output'];
-  questionId: Scalars['Int']['output'];
+  questionId?: Maybe<Scalars['Int']['output']>;
   type: ElementType;
 };
 
@@ -184,12 +184,12 @@ export type Element = {
 
 export type ElementData = {
   content: Scalars['String']['output'];
-  elementId: Scalars['Int']['output'];
+  elementId?: Maybe<Scalars['Int']['output']>;
   explanation?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   pointsMultiplier: Scalars['Int']['output'];
-  questionId: Scalars['Int']['output'];
+  questionId?: Maybe<Scalars['Int']['output']>;
   type: ElementType;
 };
 
@@ -283,13 +283,13 @@ export type FileUploadSas = {
 export type FlashcardElementData = ElementData & {
   __typename?: 'FlashcardElementData';
   content: Scalars['String']['output'];
-  elementId: Scalars['Int']['output'];
+  elementId?: Maybe<Scalars['Int']['output']>;
   explanation?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   options: FlashcardElementOptions;
   pointsMultiplier: Scalars['Int']['output'];
-  questionId: Scalars['Int']['output'];
+  questionId?: Maybe<Scalars['Int']['output']>;
   type: ElementType;
 };
 
@@ -301,13 +301,13 @@ export type FlashcardElementOptions = {
 export type FreeTextElementData = ElementData & {
   __typename?: 'FreeTextElementData';
   content: Scalars['String']['output'];
-  elementId: Scalars['Int']['output'];
+  elementId?: Maybe<Scalars['Int']['output']>;
   explanation?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   options: FreeTextQuestionOptions;
   pointsMultiplier: Scalars['Int']['output'];
-  questionId: Scalars['Int']['output'];
+  questionId?: Maybe<Scalars['Int']['output']>;
   type: ElementType;
 };
 
@@ -1130,13 +1130,13 @@ export type MutationVoteFeedbackResponseArgs = {
 export type NumericalElementData = ElementData & {
   __typename?: 'NumericalElementData';
   content: Scalars['String']['output'];
-  elementId: Scalars['Int']['output'];
+  elementId?: Maybe<Scalars['Int']['output']>;
   explanation?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   options: NumericalQuestionOptions;
   pointsMultiplier: Scalars['Int']['output'];
-  questionId: Scalars['Int']['output'];
+  questionId?: Maybe<Scalars['Int']['output']>;
   type: ElementType;
 };
 
@@ -1790,11 +1790,11 @@ export enum UserLoginScope {
   SessionExec = 'SESSION_EXEC'
 }
 
-export type ElementDataFragment = { __typename?: 'ElementInstance', elementData: { __typename?: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null } | { __typename?: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } };
+export type ElementDataFragment = { __typename?: 'ElementInstance', elementData: { __typename?: 'ChoicesElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FlashcardElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null } | { __typename?: 'FreeTextElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } };
 
 export type FeedbackDataFragment = { __typename?: 'Feedback', id: number, isPublished: boolean, isPinned: boolean, isResolved: boolean, content: string, votes: number, resolvedAt?: any | null, createdAt: any, responses?: Array<{ __typename?: 'FeedbackResponse', id: number, content: string, positiveReactions: number, negativeReactions: number }> | null };
 
-export type PracticeQuizDataFragment = { __typename?: 'PracticeQuiz', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays: number, orderType: ElementOrderType, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null } | null, stacks?: Array<{ __typename?: 'ElementStack', id: number, type: ElementStackType, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, elementData: { __typename?: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null } | { __typename?: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null }> | null };
+export type PracticeQuizDataFragment = { __typename?: 'PracticeQuiz', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays: number, orderType: ElementOrderType, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null } | null, stacks?: Array<{ __typename?: 'ElementStack', id: number, type: ElementStackType, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, elementData: { __typename?: 'ChoicesElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FlashcardElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null } | { __typename?: 'FreeTextElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null }> | null };
 
 export type QuestionDataFragment = { __typename?: 'QuestionInstance', questionData?: { __typename?: 'ChoicesQuestionData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'ChoiceQuestionOptions', hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FreeTextQuestionData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'FreeTextQuestionOptions', hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalQuestionData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'NumericalQuestionOptions', hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } | null };
 
@@ -2536,7 +2536,7 @@ export type GetCoursePracticeQuizQueryVariables = Exact<{
 }>;
 
 
-export type GetCoursePracticeQuizQuery = { __typename?: 'Query', coursePracticeQuiz?: { __typename?: 'PracticeQuiz', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays: number, orderType: ElementOrderType, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null } | null, stacks?: Array<{ __typename?: 'ElementStack', id: number, type: ElementStackType, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, elementData: { __typename?: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null } | { __typename?: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null }> | null } | null };
+export type GetCoursePracticeQuizQuery = { __typename?: 'Query', coursePracticeQuiz?: { __typename?: 'PracticeQuiz', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays: number, orderType: ElementOrderType, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null } | null, stacks?: Array<{ __typename?: 'ElementStack', id: number, type: ElementStackType, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, elementData: { __typename?: 'ChoicesElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FlashcardElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null } | { __typename?: 'FreeTextElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null }> | null } | null };
 
 export type GetFeedbacksQueryVariables = Exact<{
   sessionId: Scalars['String']['input'];
@@ -2600,7 +2600,7 @@ export type GetPracticeQuizQueryVariables = Exact<{
 }>;
 
 
-export type GetPracticeQuizQuery = { __typename?: 'Query', practiceQuiz?: { __typename?: 'PracticeQuiz', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays: number, orderType: ElementOrderType, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null } | null, stacks?: Array<{ __typename?: 'ElementStack', id: number, type: ElementStackType, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, elementData: { __typename?: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null } | { __typename?: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null }> | null } | null };
+export type GetPracticeQuizQuery = { __typename?: 'Query', practiceQuiz?: { __typename?: 'PracticeQuiz', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays: number, orderType: ElementOrderType, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null } | null, stacks?: Array<{ __typename?: 'ElementStack', id: number, type: ElementStackType, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, elementData: { __typename?: 'ChoicesElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'ChoiceQuestionOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'FlashcardElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null } | { __typename?: 'FreeTextElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'FreeTextQuestionOptions', solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalElementData', id: string, elementId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, options: { __typename?: 'NumericalQuestionOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } }> | null }> | null } | null };
 
 export type GetPracticeQuizListQueryVariables = Exact<{ [key: string]: never; }>;
 
