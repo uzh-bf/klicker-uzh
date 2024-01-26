@@ -845,6 +845,54 @@ async function seedTest(prisma: Prisma.PrismaClient) {
               },
             },
           },
+          // create a stack with one of each kind of elements
+          {
+            displayName: undefined,
+            description: undefined,
+            order:
+              flashcards.length +
+              questionsTest.length +
+              contentElements.length +
+              3,
+            type: Prisma.ElementStackType.PRACTICE_QUIZ,
+            options: {},
+            elements: {
+              createMany: {
+                data: [
+                  {
+                    order: 0,
+                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                    elementType: flashcards[0].type,
+                    elementData: processElementData(flashcards[0]),
+                    options: {},
+                    results: getInitialElementResults(flashcards[0]),
+                    ownerId: flashcards[0].ownerId,
+                    elementId: flashcards[0].id,
+                  },
+                  {
+                    order: 1,
+                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                    elementType: questionsTest[0].type,
+                    elementData: processElementData(questionsTest[0]),
+                    options: {},
+                    results: getInitialElementResults(questionsTest[0]),
+                    ownerId: questionsTest[0].ownerId,
+                    elementId: questionsTest[0].id,
+                  },
+                  {
+                    order: 2,
+                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                    elementType: contentElements[0].type,
+                    elementData: processElementData(contentElements[0]),
+                    options: {},
+                    results: getInitialElementResults(contentElements[0]),
+                    ownerId: contentElements[0].ownerId,
+                    elementId: contentElements[0].id,
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
     },
