@@ -1,8 +1,13 @@
 mutation RespondToPracticeQuizStack(
   $stackId: Int!
+  $courseId: String!
   $responses: [StackResponseInput!]!
 ) {
-  respondToPracticeQuizStack(stackId: $stackId, responses: $responses) {
+  respondToPracticeQuizStack(
+    stackId: $stackId
+    courseId: $courseId
+    responses: $responses
+  ) {
     id
     status
     score

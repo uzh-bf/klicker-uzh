@@ -36,11 +36,7 @@ import {
   Participation,
   SubscriptionObjectInput,
 } from './participant'
-import {
-  FlashcardCorrectnessType,
-  StackFeedback,
-  StackResponseInput,
-} from './practiceQuizzes'
+import { StackFeedback, StackResponseInput } from './practiceQuizzes'
 import {
   Element,
   OptionsChoicesInput,
@@ -56,7 +52,6 @@ import {
   ConfusionTimestep,
   Feedback,
   FeedbackResponse,
-  QuestionResponse,
   Session,
 } from './session'
 import {
@@ -208,27 +203,12 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      respondToFlashcardInstance: t.field({
-        nullable: true,
-        type: QuestionResponse,
-        args: {
-          id: t.arg.int({ required: true }),
-          courseId: t.arg.string({ required: true }),
-          correctness: t.arg({
-            type: FlashcardCorrectnessType,
-            required: true,
-          }),
-        },
-        resolve: (_, args, ctx) => {
-          return PracticeQuizService.respondToFlashcardInstance(args, ctx)
-        },
-      }),
-
       respondToPracticeQuizStack: t.field({
         nullable: true,
         type: StackFeedback,
         args: {
           stackId: t.arg.int({ required: true }),
+          courseId: t.arg.string({ required: true }),
           responses: t.arg({
             type: [StackResponseInput],
             required: true,
