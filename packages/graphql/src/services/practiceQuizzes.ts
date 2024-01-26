@@ -2,8 +2,9 @@ import { ElementType, UserRole } from '@klicker-uzh/prisma'
 import { Context } from '../lib/context'
 import { orderStacks } from '../lib/util'
 import {
-  AggregatedResponseFlashcard,
+  ContentInstanceResults,
   FlashcardCorrectness,
+  FlashcardInstanceResults,
   StackFeedbackStatus,
 } from '../types/app'
 
@@ -327,15 +328,16 @@ async function respondToFlashcard(
   }
 
   // update the aggregated data on the element instance
+  const existingResults = existingInstance.results as FlashcardInstanceResults
   await ctx.prisma.elementInstance.update({
     where: {
       id,
     },
     data: {
       results: {
-        ...existingInstance.results,
-        [response]: (existingInstance.results[response] ?? 0) + 1,
-        total: existingInstance.results.total + 1,
+        ...existingResults,
+        [response]: (existingResults[response] ?? 0) + 1,
+        total: existingResults.total + 1,
       },
     },
   })
@@ -500,20 +502,142 @@ async function respondToFlashcard(
 interface RespondToContentInput {
   id: number
   courseId: string
-  response: boolean
 }
 
 async function respondToContent(
-  { id, courseId, response }: RespondToContentInput,
+  { id, courseId }: RespondToContentInput,
   ctx: Context
 ) {
-  // TODO - implement
-  const grading = StackFeedbackStatus.CORRECT
+  const existingInstance = await ctx.prisma.elementInstance.findUnique({
+    where: {
+      id,
+    },
+  })
 
-  return {
-    grading,
+  const temp = (existingInstance?.results as ContentInstanceResults).viewed
+
+  // check if the instance exists and the response is valid
+  if (!existingInstance) {
+    return null
+  }
+
+  // context elements can only be "read" when submitted
+  const result = {
+    grading: StackFeedbackStatus.CORRECT,
     score: null,
   }
+
+  // update the aggregated data on the element instance
+  const existingResults = existingInstance.results as ContentInstanceResults
+  await ctx.prisma.elementInstance.update({
+    where: {
+      id,
+    },
+    data: {
+      results: {
+        viewed: existingResults.viewed + 1,
+      },
+    },
+  })
+
+  // fetch the participation of the participant
+  const participation = ctx.user?.sub
+    ? await ctx.prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        include: {
+          participant: true,
+        },
+      })
+    : null
+
+  // if no user exists, return the grading for client display
+  if (!ctx.user?.sub || !participation) {
+    return result
+  }
+
+  // create question detail response
+  await ctx.prisma.questionResponseDetail.create({
+    data: {
+      response: {
+        viewed: true,
+      },
+      participant: {
+        connect: { id: ctx.user.sub },
+      },
+      elementInstance: {
+        connect: { id },
+      },
+      participation: {
+        connect: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+      },
+    },
+  })
+
+  // create / update question response
+  const questionResponse = await ctx.prisma.questionResponse.upsert({
+    where: {
+      participantId_elementInstanceId: {
+        participantId: ctx.user.sub,
+        elementInstanceId: id,
+      },
+    },
+    create: {
+      participant: {
+        connect: { id: ctx.user.sub },
+      },
+      elementInstance: {
+        connect: { id },
+      },
+      participation: {
+        connect: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+      },
+      // RESPONSE and aggregated response creation
+      response: {
+        viewed: true,
+      },
+      trialsCount: 1,
+
+      // CORRECT
+      correctCount: 1,
+      correctCountStreak: 1,
+      lastCorrectAt: new Date(),
+    },
+    update: {
+      // RESPONSE
+      response: {
+        viewed: true,
+      },
+      trialsCount: {
+        increment: 1,
+      },
+
+      // CORRECT
+      correctCount: {
+        increment: 1,
+      },
+      correctCountStreak: {
+        increment: 1,
+      },
+      lastCorrectAt: new Date(),
+    },
+  })
+
+  return result
 }
 
 function combineStackStatus({
@@ -587,12 +711,14 @@ export async function respondToPracticeQuizStack(
           newStatus: result.grading,
         })
       }
-    } else if (response.type === ElementType.CONTENT) {
+    } else if (
+      response.type === ElementType.CONTENT &&
+      response.contentReponse === true
+    ) {
       const result = await respondToContent(
         {
           id: response.instanceId,
           courseId: courseId,
-          response: response.contentReponse!,
         },
         ctx
       )

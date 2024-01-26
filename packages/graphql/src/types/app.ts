@@ -76,10 +76,15 @@ export type QuestionResponseFlashcard = {
   correctness: FlashcardCorrectness
 }
 
+export type QuestionResponseContent = {
+  viewed: boolean
+}
+
 export type QuestionResponse =
   | QuestionResponseChoices
   | QuestionResponseValue
   | QuestionResponseFlashcard
+  | QuestionResponseContent
 
 // TODO: results should also include the participants count (instead of storing it on the top-level)
 export type QuestionResultsChoices = {
@@ -224,7 +229,13 @@ export type FlashcardInstanceResults = {
   total: number
 }
 
-export type ElementInstanceResults = FlashcardInstanceResults
+export type ContentInstanceResults = {
+  viewed: number
+}
+
+export type ElementInstanceResults =
+  | FlashcardInstanceResults
+  | ContentInstanceResults
 
 declare global {
   namespace PrismaJson {
