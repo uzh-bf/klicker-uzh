@@ -281,6 +281,7 @@ async function respondToContent(
   { id, courseId }: RespondToContentInput,
   ctx: Context
 ) {
+  // TODO: potentially use aggregated results here as well to count how often the content was viewed
   const existingInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id,
