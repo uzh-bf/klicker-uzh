@@ -1,6 +1,9 @@
+import { useMutation } from '@apollo/client'
 import {
   ElementStack as ElementStackType,
   ElementType,
+  FlashcardCorrectnessType,
+  RespondToPracticeQuizStackDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
@@ -9,7 +12,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import ContentElement from './ContentElement'
-import Flashcard, { FlashcardResponseValues } from './Flashcard'
+import Flashcard from './Flashcard'
 
 interface ElementStackProps {
   parentId: string
@@ -38,7 +41,7 @@ type StudentResponseType = Record<
   number,
   {
     type: ElementType
-    response?: FlashcardResponseValues | boolean // TODO: augment this type for questions
+    response?: FlashcardCorrectnessType | boolean // TODO: augment this type for questions
     correct?: StackStatus
   }
 >
@@ -54,6 +57,10 @@ function ElementStack({
 }: ElementStackProps) {
   const t = useTranslations()
   const router = useRouter()
+
+  const [respondToPracticeQuizStack] = useMutation(
+    RespondToPracticeQuizStackDocument
+  )
 
   const [stackStorage, setStackStorage] = useLocalStorage<StudentResponseType>(
     `qi-${parentId}-${stack.id}`,
@@ -141,7 +148,7 @@ function ElementStack({
                     explanation={element.elementData.explanation!}
                     response={
                       studentResponse[element.id]
-                        ?.response as FlashcardResponseValues
+                        ?.response as FlashcardCorrectnessType
                     }
                     setResponse={(studentResponse) => {
                       setStudentResponse((response) => {
@@ -156,7 +163,7 @@ function ElementStack({
                     }}
                     existingResponse={
                       stackStorage?.[element.id]
-                        ?.response as FlashcardResponseValues
+                        ?.response as FlashcardCorrectnessType
                     }
                   />
                 )
@@ -201,14 +208,40 @@ function ElementStack({
         // TODO - disable continue if not all responses are different from undefined
         disabled={false}
         onClick={async () => {
-          // TODO: respond to all instances in the stack using new practice quiz stack mutation
-          // const result = await respondToFlashcardInstance({
-          //   variables: {
-          //     id: elementInstance.id,
-          //     courseId: courseId,
-          //     correctness: value,
-          //   },
-          // })
+          // TODO: check if all instances have a response before starting submission (once questions are implemented)
+
+          const result = await respondToPracticeQuizStack({
+            variables: {
+              stackId: stack.id,
+              responses: Object.entries(studentResponse).map(
+                ([instanceId, value]) => {
+                  if (value.type === ElementType.Flashcard) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: value.type,
+                      flashcardResponse:
+                        value.response as FlashcardCorrectnessType,
+                    }
+                  } else if (value.type === ElementType.Content) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: value.type,
+                      contentReponse: value.response as boolean,
+                    }
+                  }
+                  // TODO - handle question data here
+                  else {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: value.type,
+                      response: value.response,
+                    }
+                  }
+                }
+              ),
+            },
+          })
+
           setStackStorage(studentResponse)
           // TODO: set status and score according to returned correctness
           // setStepStatus({

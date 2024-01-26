@@ -4,24 +4,19 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { FlashcardCorrectnessType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import DynamicMarkdown from '../learningElements/DynamicMarkdown'
 
-export enum FlashcardResponseValues {
-  Incorrect = 0,
-  Partial = 1,
-  Correct = 2,
-}
-
 interface FlashcardProps {
   content: string
   explanation: string
-  response?: FlashcardResponseValues
-  setResponse: (value: FlashcardResponseValues) => void
-  existingResponse?: FlashcardResponseValues
+  response?: FlashcardCorrectnessType
+  setResponse: (value: FlashcardCorrectnessType) => void
+  existingResponse?: FlashcardCorrectnessType
 }
 
 function Flashcard({
@@ -92,9 +87,9 @@ function FlashcardFront({
 
 interface FlashcardBackProps {
   explanation: string
-  response?: FlashcardResponseValues
-  setResponse: (value: FlashcardResponseValues) => void
-  existingResponse?: FlashcardResponseValues
+  response?: FlashcardCorrectnessType
+  setResponse: (value: FlashcardCorrectnessType) => void
+  existingResponse?: FlashcardCorrectnessType
 }
 
 function FlashcardBack({
@@ -117,10 +112,10 @@ function FlashcardBack({
         <div className="flex flex-row w-full mt-2 space-x-2 justify-evenly">
           <FlashcardButton
             active={
-              response === FlashcardResponseValues.Incorrect ||
-              existingResponse === FlashcardResponseValues.Incorrect
+              response === FlashcardCorrectnessType.Incorrect ||
+              existingResponse === FlashcardCorrectnessType.Incorrect
             }
-            setResponse={() => setResponse(FlashcardResponseValues.Incorrect)}
+            setResponse={() => setResponse(FlashcardCorrectnessType.Incorrect)}
             text={t('pwa.practiceQuiz.flashcardNoResponse')}
             color="bg-red-300"
             activeColor="bg-red-600"
@@ -129,10 +124,10 @@ function FlashcardBack({
           />
           <FlashcardButton
             active={
-              response === FlashcardResponseValues.Partial ||
-              existingResponse === FlashcardResponseValues.Partial
+              response === FlashcardCorrectnessType.Partial ||
+              existingResponse === FlashcardCorrectnessType.Partial
             }
-            setResponse={() => setResponse(FlashcardResponseValues.Partial)}
+            setResponse={() => setResponse(FlashcardCorrectnessType.Partial)}
             text={t('pwa.practiceQuiz.flashcardPartialResponse')}
             color="bg-orange-300"
             activeColor="bg-orange-600"
@@ -141,10 +136,10 @@ function FlashcardBack({
           />
           <FlashcardButton
             active={
-              response === FlashcardResponseValues.Correct ||
-              existingResponse === FlashcardResponseValues.Correct
+              response === FlashcardCorrectnessType.Correct ||
+              existingResponse === FlashcardCorrectnessType.Correct
             }
-            setResponse={() => setResponse(FlashcardResponseValues.Correct)}
+            setResponse={() => setResponse(FlashcardCorrectnessType.Correct)}
             text={t('pwa.practiceQuiz.flashcardYesResponse')}
             color="bg-green-300"
             activeColor="bg-green-600"

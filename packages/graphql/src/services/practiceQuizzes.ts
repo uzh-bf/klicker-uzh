@@ -292,5 +292,6 @@ export async function respondToPracticeQuizStack(
   { stackId, responses }: respondToPracticeQuizStackInput,
   ctx: Context
 ) {
+  console.log('respondToPracticeQuizStack', stackId, responses)
   return null
 }

@@ -261,8 +261,8 @@ type FileUploadSAS {
 
 enum FlashcardCorrectnessType {
   CORRECT
+  INCORRECT
   PARTIAL
-  WRONG
 }
 
 type FlashcardElementData implements ElementData {

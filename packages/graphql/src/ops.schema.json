@@ -2814,13 +2814,13 @@
             "deprecationReason": null
           },
           {
-            "name": "PARTIAL",
+            "name": "INCORRECT",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "WRONG",
+            "name": "PARTIAL",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null

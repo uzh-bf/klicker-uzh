@@ -294,8 +294,8 @@ export type FileUploadSas = {
 
 export enum FlashcardCorrectnessType {
   Correct = 'CORRECT',
-  Partial = 'PARTIAL',
-  Wrong = 'WRONG'
+  Incorrect = 'INCORRECT',
+  Partial = 'PARTIAL'
 }
 
 export type FlashcardElementData = ElementData & {
