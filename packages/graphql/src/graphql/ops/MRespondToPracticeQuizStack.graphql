@@ -1,0 +1,9 @@
+mutation RespondToPracticeQuizStack(
+  $stackId: Int!
+  $responses: [StackResponseInput!]!
+) {
+  respondToPracticeQuizStack(stackId: $stackId, responses: $responses) {
+    id
+    # TODO - return correctness stuff
+  }
+}

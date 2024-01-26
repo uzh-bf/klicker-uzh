@@ -259,6 +259,12 @@ type FileUploadSAS {
   uploadSasURL: String!
 }
 
+enum FlashcardCorrectnessType {
+  CORRECT
+  PARTIAL
+  WRONG
+}
+
 type FlashcardElementData implements ElementData {
   content: String!
   elementId: Int
@@ -570,7 +576,8 @@ type Mutation {
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
-  respondToFlashcardInstance(correctness: Int!, courseId: String!, id: Int!): QuestionResponse
+  respondToFlashcardInstance(correctness: FlashcardCorrectnessType!, courseId: String!, id: Int!): QuestionResponse
+  respondToPracticeQuizStack(responses: [StackResponseInput!]!, stackId: Int!): ElementStack
   respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
   sendPushNotifications: Boolean!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
@@ -960,6 +967,13 @@ input StackElementInput {
 
 input StackInput {
   elements: [StackElementInput!]!
+}
+
+input StackResponseInput {
+  contentReponse: Boolean
+  flashcardResponse: FlashcardCorrectnessType
+  instanceId: Int!
+  type: ElementType!
 }
 
 type Statistics {

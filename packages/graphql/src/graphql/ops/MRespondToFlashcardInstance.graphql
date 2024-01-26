@@ -1,7 +1,7 @@
 mutation RespondToFlashcardInstance(
   $id: Int!
   $courseId: String!
-  $correctness: Int!
+  $correctness: FlashcardCorrectnessType!
 ) {
   respondToFlashcardInstance(
     id: $id

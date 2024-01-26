@@ -1,7 +1,7 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import { ElementType, UserRole } from '@klicker-uzh/prisma'
 import { Context } from '../lib/context'
 import { orderStacks } from '../lib/util'
-import { AggregatedResponseFlashcard, Correctness } from '../types/app'
+import { AggregatedResponseFlashcard, FlashcardCorrectness } from '../types/app'
 
 export async function getPracticeQuizData(
   { id }: { id: string },
@@ -58,7 +58,7 @@ export async function getPracticeQuizData(
 interface RespondToFlashcardInstanceInput {
   id: number
   courseId: string
-  correctness: Correctness
+  correctness: FlashcardCorrectness
 }
 
 export async function respondToFlashcardInstance(
@@ -75,9 +75,11 @@ export async function respondToFlashcardInstance(
 
   // check if passed correctness value is valid
   if (
-    ![Correctness.WRONG, Correctness.PARTIAL, Correctness.CORRECT].includes(
-      correctness
-    )
+    ![
+      FlashcardCorrectness.WRONG,
+      FlashcardCorrectness.PARTIAL,
+      FlashcardCorrectness.CORRECT,
+    ].includes(correctness)
   ) {
     return null
   }
@@ -191,29 +193,30 @@ export async function respondToFlashcardInstance(
 
         // CORRECT
         correctCount: {
-          increment: correctness === Correctness.CORRECT ? 1 : 0,
+          increment: correctness === FlashcardCorrectness.CORRECT ? 1 : 0,
         },
         correctCountStreak: {
           increment:
-            correctness === Correctness.CORRECT
+            correctness === FlashcardCorrectness.CORRECT
               ? 1
               : -existingResponse?.correctCountStreak,
         },
         lastCorrectAt:
-          correctness === Correctness.CORRECT ? new Date() : undefined,
+          correctness === FlashcardCorrectness.CORRECT ? new Date() : undefined,
 
         // PARTIALLY CORRECT
         partialCorrectCount: {
-          increment: correctness === Correctness.PARTIAL ? 1 : 0,
+          increment: correctness === FlashcardCorrectness.PARTIAL ? 1 : 0,
         },
         lastPartialCorrectAt:
-          correctness === Correctness.PARTIAL ? new Date() : undefined,
+          correctness === FlashcardCorrectness.PARTIAL ? new Date() : undefined,
 
         // WRONG
         wrongCount: {
-          increment: correctness === Correctness.WRONG ? 1 : 0,
+          increment: correctness === FlashcardCorrectness.WRONG ? 1 : 0,
         },
-        lastWrongAt: correctness === Correctness.WRONG ? new Date() : undefined,
+        lastWrongAt:
+          correctness === FlashcardCorrectness.WRONG ? new Date() : undefined,
       },
     })
 
@@ -242,9 +245,9 @@ export async function respondToFlashcardInstance(
           correctness,
         },
         aggregatedResponses: {
-          [Correctness.WRONG]: 0,
-          [Correctness.PARTIAL]: 0,
-          [Correctness.CORRECT]: 0,
+          [FlashcardCorrectness.WRONG]: 0,
+          [FlashcardCorrectness.PARTIAL]: 0,
+          [FlashcardCorrectness.CORRECT]: 0,
           total: 1,
           [correctness]: 1,
         },
@@ -252,22 +255,42 @@ export async function respondToFlashcardInstance(
         trialsCount: 1,
 
         // CORRECT
-        correctCount: correctness === Correctness.CORRECT ? 1 : 0,
-        correctCountStreak: correctness === Correctness.CORRECT ? 1 : 0,
+        correctCount: correctness === FlashcardCorrectness.CORRECT ? 1 : 0,
+        correctCountStreak:
+          correctness === FlashcardCorrectness.CORRECT ? 1 : 0,
         lastCorrectAt:
-          correctness === Correctness.CORRECT ? new Date() : undefined,
+          correctness === FlashcardCorrectness.CORRECT ? new Date() : undefined,
 
         // PARTIALLY CORRECT
-        partialCorrectCount: correctness === Correctness.PARTIAL ? 1 : 0,
+        partialCorrectCount:
+          correctness === FlashcardCorrectness.PARTIAL ? 1 : 0,
         lastPartialCorrectAt:
-          correctness === Correctness.PARTIAL ? new Date() : undefined,
+          correctness === FlashcardCorrectness.PARTIAL ? new Date() : undefined,
 
         // WRONG
-        wrongCount: correctness === Correctness.WRONG ? 1 : 0,
-        lastWrongAt: correctness === Correctness.WRONG ? new Date() : undefined,
+        wrongCount: correctness === FlashcardCorrectness.WRONG ? 1 : 0,
+        lastWrongAt:
+          correctness === FlashcardCorrectness.WRONG ? new Date() : undefined,
       },
     })
 
     return questionResponse
   }
+}
+
+interface respondToPracticeQuizStackInput {
+  stackId: number
+  responses: {
+    instanceId: number
+    type: ElementType
+    flashcardResponse?: FlashcardCorrectness | null
+    contentReponse?: boolean | null
+  }[]
+}
+
+export async function respondToPracticeQuizStack(
+  { stackId, responses }: respondToPracticeQuizStackInput,
+  ctx: Context
+) {
+  return null
 }

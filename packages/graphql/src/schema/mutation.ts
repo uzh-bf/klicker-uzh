@@ -37,6 +37,11 @@ import {
   SubscriptionObjectInput,
 } from './participant'
 import {
+  ElementStack,
+  FlashcardCorrectnessType,
+  StackResponseInput,
+} from './practiceQuizzes'
+import {
   Element,
   OptionsChoicesInput,
   OptionsFreeTextInput,
@@ -209,12 +214,28 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           courseId: t.arg.string({ required: true }),
-          correctness: t.arg.int({
+          correctness: t.arg({
+            type: FlashcardCorrectnessType,
             required: true,
           }),
         },
         resolve: (_, args, ctx) => {
           return PracticeQuizService.respondToFlashcardInstance(args, ctx)
+        },
+      }),
+
+      respondToPracticeQuizStack: t.field({
+        nullable: true,
+        type: ElementStack,
+        args: {
+          stackId: t.arg.int({ required: true }),
+          responses: t.arg({
+            type: [StackResponseInput],
+            required: true,
+          }),
+        },
+        resolve: (_, args, ctx) => {
+          return PracticeQuizService.respondToPracticeQuizStack(args, ctx)
         },
       }),
 

@@ -49,23 +49,23 @@ export type QuestionResponseValue = {
   value: string
 }
 
-export enum Correctness {
-  WRONG = 0,
-  PARTIAL = 1,
-  CORRECT = 2,
+export enum FlashcardCorrectness {
+  WRONG = 'WRONG',
+  PARTIAL = 'PARTIAL',
+  CORRECT = 'CORRECT',
 }
 
 export type AggregatedResponseFlashcard = {
-  [Correctness.WRONG]: number
-  [Correctness.PARTIAL]: number
-  [Correctness.CORRECT]: number
+  [FlashcardCorrectness.WRONG]: number
+  [FlashcardCorrectness.PARTIAL]: number
+  [FlashcardCorrectness.CORRECT]: number
   total: number
 }
 
 export type AggregatedResponse = AggregatedResponseFlashcard
 
 export type QuestionResponseFlashcard = {
-  correctness: Correctness
+  correctness: FlashcardCorrectness
 }
 
 export type QuestionResponse =
@@ -210,9 +210,9 @@ export type AllQuestionInstanceTypeData =
   | OpenQuestionInstanceData
 
 export type FlashcardInstanceResults = {
-  [Correctness.WRONG]: number
-  [Correctness.PARTIAL]: number
-  [Correctness.CORRECT]: number
+  [FlashcardCorrectness.WRONG]: number
+  [FlashcardCorrectness.PARTIAL]: number
+  [FlashcardCorrectness.CORRECT]: number
   total: number
 }
 
