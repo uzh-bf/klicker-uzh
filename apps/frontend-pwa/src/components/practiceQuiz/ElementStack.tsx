@@ -61,6 +61,7 @@ function ElementStack({
 
   // initialize student responses
   useEffect(() => {
+    // TODO: hydrate with values from local storage, if there exist any
     const newStudentResponse =
       stack.elements?.reduce((acc, element) => {
         return {
