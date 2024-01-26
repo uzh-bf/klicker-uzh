@@ -218,14 +218,14 @@ function ElementStack({
                   if (value.type === ElementType.Flashcard) {
                     return {
                       instanceId: parseInt(instanceId),
-                      type: value.type,
+                      type: ElementType.Flashcard,
                       flashcardResponse:
                         value.response as FlashcardCorrectnessType,
                     }
                   } else if (value.type === ElementType.Content) {
                     return {
                       instanceId: parseInt(instanceId),
-                      type: value.type,
+                      type: ElementType.Content,
                       contentReponse: value.response as boolean,
                     }
                   }
@@ -252,7 +252,6 @@ function ElementStack({
 
           if (currentStep === totalSteps) {
             // TODO: re-introduce summary page for practice quiz
-            // redirect to repetition page
             router.push(`/`)
           }
           handleNextElement()
