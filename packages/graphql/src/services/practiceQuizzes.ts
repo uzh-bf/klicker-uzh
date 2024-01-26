@@ -296,13 +296,205 @@ async function respondToFlashcard(
   { id, courseId, response }: RespondToFlashcardInput,
   ctx: Context
 ) {
-  // TODO - implement
-  const grading = StackFeedbackStatus.CORRECT
+  const existingInstance = await ctx.prisma.elementInstance.findUnique({
+    where: {
+      id,
+    },
+  })
 
-  return {
-    grading,
+  // check if the instance exists and the response is valid
+  if (
+    !existingInstance ||
+    ![
+      FlashcardCorrectness.INCORRECT,
+      FlashcardCorrectness.PARTIAL,
+      FlashcardCorrectness.CORRECT,
+    ].includes(response)
+  ) {
+    return null
+  }
+
+  // create result from flashcard response
+  const flashcardResultMap: Record<FlashcardCorrectness, StackFeedbackStatus> =
+    {
+      [FlashcardCorrectness.INCORRECT]: StackFeedbackStatus.INCORRECT,
+      [FlashcardCorrectness.PARTIAL]: StackFeedbackStatus.PARTIAL,
+      [FlashcardCorrectness.CORRECT]: StackFeedbackStatus.CORRECT,
+    }
+  const result = {
+    grading: flashcardResultMap[response],
     score: null,
   }
+
+  // update the aggregated data on the element instance
+  await ctx.prisma.elementInstance.update({
+    where: {
+      id,
+    },
+    data: {
+      results: {
+        ...existingInstance.results,
+        [response]: (existingInstance.results[response] ?? 0) + 1,
+        total: existingInstance.results.total + 1,
+      },
+    },
+  })
+
+  // fetch the participation of the participant
+  const participation = ctx.user?.sub
+    ? await ctx.prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        include: {
+          participant: true,
+        },
+      })
+    : null
+
+  // if no user exists, return the grading for client display
+  if (!ctx.user?.sub || !participation) {
+    return result
+  }
+
+  // create question detail response
+  await ctx.prisma.questionResponseDetail.create({
+    data: {
+      response: {
+        correctness: response,
+      },
+      participant: {
+        connect: { id: ctx.user.sub },
+      },
+      elementInstance: {
+        connect: { id },
+      },
+      participation: {
+        connect: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+      },
+    },
+  })
+
+  // find existing question response to this instance by this user and/or create/update it
+  const existingResponse = await ctx.prisma.questionResponse.findUnique({
+    where: {
+      participantId_elementInstanceId: {
+        participantId: ctx.user.sub,
+        elementInstanceId: id,
+      },
+    },
+  })
+  const aggregatedResponses = existingResponse?.aggregatedResponses ?? {
+    [FlashcardCorrectness.INCORRECT]: 0,
+    [FlashcardCorrectness.PARTIAL]: 0,
+    [FlashcardCorrectness.CORRECT]: 0,
+    total: 0,
+  }
+
+  const questionResponse = await ctx.prisma.questionResponse.upsert({
+    where: {
+      participantId_elementInstanceId: {
+        participantId: ctx.user.sub,
+        elementInstanceId: id,
+      },
+    },
+    create: {
+      participant: {
+        connect: { id: ctx.user.sub },
+      },
+      elementInstance: {
+        connect: { id },
+      },
+      participation: {
+        connect: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+      },
+      // RESPONSE and aggregated response creation
+      response: {
+        correctness: response,
+      },
+      aggregatedResponses: {
+        ...aggregatedResponses,
+        total: 1,
+        [response]: 1,
+      },
+      trialsCount: 1,
+
+      // CORRECT
+      correctCount: response === FlashcardCorrectness.CORRECT ? 1 : 0,
+      correctCountStreak: response === FlashcardCorrectness.CORRECT ? 1 : 0,
+      lastCorrectAt:
+        response === FlashcardCorrectness.CORRECT ? new Date() : undefined,
+
+      // PARTIALLY CORRECT
+      partialCorrectCount: response === FlashcardCorrectness.PARTIAL ? 1 : 0,
+      lastPartialCorrectAt:
+        response === FlashcardCorrectness.PARTIAL ? new Date() : undefined,
+
+      // WRONG
+      wrongCount: response === FlashcardCorrectness.INCORRECT ? 1 : 0,
+      lastWrongAt:
+        response === FlashcardCorrectness.INCORRECT ? new Date() : undefined,
+    },
+    update: {
+      // RESPONSE
+      response: {
+        correctness: response,
+      },
+      aggregatedResponses: {
+        ...aggregatedResponses,
+        [response]: aggregatedResponses[response] + 1,
+        total: aggregatedResponses.total + 1,
+      },
+
+      trialsCount: {
+        increment: 1,
+      },
+
+      // CORRECT
+      correctCount: {
+        increment: response === FlashcardCorrectness.CORRECT ? 1 : 0,
+      },
+      correctCountStreak: {
+        increment:
+          response === FlashcardCorrectness.CORRECT
+            ? 1
+            : existingResponse
+            ? -existingResponse.correctCountStreak
+            : 0,
+      },
+      lastCorrectAt:
+        response === FlashcardCorrectness.CORRECT ? new Date() : undefined,
+
+      // PARTIALLY CORRECT
+      partialCorrectCount: {
+        increment: response === FlashcardCorrectness.PARTIAL ? 1 : 0,
+      },
+      lastPartialCorrectAt:
+        response === FlashcardCorrectness.PARTIAL ? new Date() : undefined,
+
+      // INCORRECT
+      wrongCount: {
+        increment: response === FlashcardCorrectness.INCORRECT ? 1 : 0,
+      },
+      lastWrongAt:
+        response === FlashcardCorrectness.INCORRECT ? new Date() : undefined,
+    },
+  })
+
+  return result
 }
 
 interface RespondToContentInput {
@@ -371,6 +563,7 @@ export async function respondToPracticeQuizStack(
   let stackScore = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
 
+  // TODO: refactor this into a transaction and single combination of status and score for the stack
   for (const response of responses) {
     if (response.type === ElementType.FLASHCARD) {
       const result = await respondToFlashcard(
