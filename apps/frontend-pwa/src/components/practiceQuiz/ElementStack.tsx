@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
-  ElementStack,
+  ElementStack as ElementStackType,
   ElementType,
   RespondToFlashcardInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -10,12 +10,13 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
+import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'
 
 interface ElementStackProps {
   parentId: string
   courseId: string
-  stack: ElementStack
+  stack: ElementStackType
   currentStep: number
   totalSteps: number
   setStepStatus: ({
@@ -76,8 +77,8 @@ function ElementStack({
   }
 
   return (
-    <div>
-      <div className="flex flex-col w-full h-full">
+    <div className="pb-12">
+      <div className="w-full">
         <div className="flex flex-row items-center justify-between">
           <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
           {/* <div
@@ -109,17 +110,43 @@ function ElementStack({
           </div>
         )}
 
-        {elementInstance &&
-          elementInstance.elementData.type === ElementType.Flashcard && (
-            <Flashcard
-              key={stack.id}
-              content={elementInstance.elementData.content}
-              explanation={elementInstance.elementData.explanation!}
-              response={studentGrading}
-              setResponse={setStudentGrading}
-              existingResponse={stackStorage?.[elementInstance.id]?.response}
-            />
-          )}
+        <div className="flex flex-col gap-3">
+          {stack.elements &&
+            stack.elements.length > 0 &&
+            stack.elements.map((element) => {
+              if (element.elementData.type === ElementType.Flashcard) {
+                return (
+                  <Flashcard
+                    key={element.id}
+                    content={element.elementData.content}
+                    explanation={element.elementData.explanation!}
+                    response={studentGrading} // TODO - adapt code to work for multiple elements in a stack
+                    setResponse={setStudentGrading} // TODO - adapt code to work for multiple elements in a stack
+                    existingResponse={stackStorage?.[element.id]?.response}
+                  />
+                )
+              } else if (
+                element.elementData.type === ElementType.Sc ||
+                element.elementData.type === ElementType.Mc ||
+                element.elementData.type === ElementType.Kprim ||
+                element.elementData.type === ElementType.Numerical ||
+                element.elementData.type === ElementType.FreeText
+              ) {
+                return <div key={element.id}>TODO Question</div> // TODO - include student question here
+              } else if (element.elementData.type === ElementType.Content) {
+                return (
+                  <ContentElement
+                    key={element.id}
+                    element={element}
+                    read={false}
+                    onRead={() => null}
+                  />
+                ) // TODO - add tracking of student progress and send to backend
+              } else {
+                return null
+              }
+            })}
+        </div>
       </div>
       <Button
         className={{ root: 'float-right text-lg mt-4' }}
