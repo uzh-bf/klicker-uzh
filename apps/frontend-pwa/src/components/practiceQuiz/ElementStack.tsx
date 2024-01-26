@@ -1,8 +1,6 @@
-import { useMutation } from '@apollo/client'
 import {
   ElementStack as ElementStackType,
   ElementType,
-  RespondToFlashcardInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
@@ -11,7 +9,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import ContentElement from './ContentElement'
-import Flashcard from './Flashcard'
+import Flashcard, { FlashcardResponseValues } from './Flashcard'
 
 interface ElementStackProps {
   parentId: string
@@ -23,20 +21,27 @@ interface ElementStackProps {
     status,
     score,
   }: {
-    status: InstanceStatus
+    status: StackStatus
     score?: number | null
   }) => void
   handleNextElement: () => void
 }
 
-export type InstanceStatus =
+export type StackStatus =
   | 'unanswered'
   | 'manuallyGraded'
   | 'correct'
   | 'incorrect'
   | 'partial'
 
-export type FlashcardResponseValues = 'correct' | 'partial' | 'incorrect'
+type StudentResponseType = Record<
+  number,
+  {
+    type: ElementType
+    response?: FlashcardResponseValues | string // TODO: augment this type for questions
+    correct?: StackStatus
+  }
+>
 
 function ElementStack({
   parentId,
@@ -48,15 +53,35 @@ function ElementStack({
   handleNextElement,
 }: ElementStackProps) {
   const t = useTranslations()
-
   const router = useRouter()
+
+  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
+    {}
+  )
+
+  // initialize student responses
   useEffect(() => {
-    setStudentGrading(undefined)
+    const newStudentResponse =
+      stack.elements?.reduce((acc, element) => {
+        return {
+          ...acc,
+          [element.id]: {
+            type: element.elementData.type,
+            response: undefined,
+            correct: undefined,
+          },
+        }
+      }, {} as StudentResponseType) || {}
+
+    setStudentResponse(newStudentResponse)
   }, [currentStep])
 
-  const [respondToFlashcardInstance] = useMutation(
-    RespondToFlashcardInstanceDocument
-  )
+  console.log(studentResponse)
+
+  // TODO - replace
+  // const [respondToFlashcardInstance] = useMutation(
+  //   RespondToFlashcardInstanceDocument
+  // )
 
   // TODO: extend state for other answer objects once return value from mutation is used correctly
   const [stackStorage, setStackStorage] = useLocalStorage<
@@ -64,17 +89,11 @@ function ElementStack({
   >(`qi-${parentId}-${stack.id}`, undefined)
 
   // TODO: enable handling multiple elements in a stack / extend state and submission logic accordingly
-  const elementInstance = stack.elements?.[0]
+  // const elementInstance = stack.elements?.[0]
 
-  const [studentGrading, setStudentGrading] = useState<
-    FlashcardResponseValues | undefined
-  >(undefined)
-
-  const flashcardGradingMap: Record<FlashcardResponseValues, number> = {
-    incorrect: 0,
-    partial: 1,
-    correct: 2,
-  }
+  // const [studentGrading, setStudentGrading] = useState<
+  //   FlashcardResponseValues | undefined
+  // >(undefined)
 
   return (
     <div className="pb-12">
@@ -120,8 +139,21 @@ function ElementStack({
                     key={element.id}
                     content={element.elementData.content}
                     explanation={element.elementData.explanation!}
-                    response={studentGrading} // TODO - adapt code to work for multiple elements in a stack
-                    setResponse={setStudentGrading} // TODO - adapt code to work for multiple elements in a stack
+                    response={
+                      studentResponse[element.id]
+                        ?.response as FlashcardResponseValues
+                    }
+                    setResponse={(studentResponse) => {
+                      setStudentResponse((response) => {
+                        return {
+                          ...response,
+                          [element.id]: {
+                            ...response[element.id],
+                            response: studentResponse,
+                          },
+                        }
+                      })
+                    }}
                     existingResponse={stackStorage?.[element.id]?.response}
                   />
                 )
@@ -150,42 +182,35 @@ function ElementStack({
       </div>
       <Button
         className={{ root: 'float-right text-lg mt-4' }}
-        disabled={!studentGrading && !stackStorage}
+        disabled={!stackStorage} // TODO - update logic
         onClick={async () => {
-          if (
-            typeof stackStorage === 'undefined' &&
-            typeof elementInstance !== 'undefined' &&
-            elementInstance.elementType === ElementType.Flashcard &&
-            typeof studentGrading !== 'undefined'
-          ) {
-            // TODO: loop over all instances in a stack to respond to them or implement backend endpoint, which allows answering multiple instances
-            const value = flashcardGradingMap[studentGrading]
-            const result = await respondToFlashcardInstance({
-              variables: {
-                id: elementInstance.id,
-                courseId: courseId,
-                correctness: value,
-              },
-            })
-
-            // TODO: use mutation return value to update states
-            setStackStorage({
-              // TODO: use this once multiple instances in a stack are supported
-              // ...stackStorage,
-              [elementInstance.id]: {
-                response: studentGrading,
-              },
-            })
-            setStepStatus({
-              status: studentGrading,
-              score: null,
-            })
-            setStudentGrading(undefined)
-          }
+          // TODO - correct disabling
+          // TODO: loop over all instances in a stack to respond to them or implement backend endpoint, which allows answering multiple instances
+          // const result = await respondToFlashcardInstance({
+          //   variables: {
+          //     id: elementInstance.id,
+          //     courseId: courseId,
+          //     correctness: value,
+          //   },
+          // })
+          // TODO: use mutation return value to update states
+          // setStackStorage({
+          //   // TODO: use this once multiple instances in a stack are supported
+          //   // ...stackStorage,
+          //   [elementInstance.id]: {
+          //     response: studentGrading,
+          //   },
+          // })
+          // setStepStatus({
+          //   status: studentGrading,
+          //   score: null,
+          // })
+          // setStudentGrading(undefined)
 
           // TODO: handle other types of questions / content elements in practice quiz
 
           if (currentStep === totalSteps) {
+            // TODO: re-introduce summary page for practice quiz
             // redirect to repetition page
             router.push(`/`)
           }

@@ -2,7 +2,7 @@ import { PracticeQuiz as PracticeQuizType } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { twMerge } from 'tailwind-merge'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
-import ElementStack, { InstanceStatus } from './ElementStack'
+import ElementStack, { StackStatus } from './ElementStack'
 import PracticeQuizOverview from './PracticeQuizOverview'
 
 export function resetPracticeQuizLocalStorage(id: string) {
@@ -35,7 +35,7 @@ function PracticeQuiz({
     Record<
       string,
       {
-        status: InstanceStatus
+        status: StackStatus
         score?: number | null
       }
     >

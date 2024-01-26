@@ -9,7 +9,12 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import DynamicMarkdown from '../learningElements/DynamicMarkdown'
-import { FlashcardResponseValues } from './ElementStack'
+
+export enum FlashcardResponseValues {
+  Incorrect = 0,
+  Partial = 1,
+  Correct = 2,
+}
 
 interface FlashcardProps {
   content: string
@@ -110,9 +115,10 @@ function FlashcardBack({
         <div className="flex flex-row w-full mt-2 space-x-2 justify-evenly">
           <FlashcardButton
             active={
-              response === 'incorrect' || existingResponse === 'incorrect'
+              response === FlashcardResponseValues.Incorrect ||
+              existingResponse === FlashcardResponseValues.Incorrect
             }
-            setResponse={() => setResponse('incorrect')}
+            setResponse={() => setResponse(FlashcardResponseValues.Incorrect)}
             text={t('pwa.practiceQuiz.flashcardNoResponse')}
             color="bg-red-300"
             activeColor="bg-red-600"
@@ -120,8 +126,11 @@ function FlashcardBack({
             disabled={!!existingResponse}
           />
           <FlashcardButton
-            active={response === 'partial' || existingResponse === 'partial'}
-            setResponse={() => setResponse('partial')}
+            active={
+              response === FlashcardResponseValues.Partial ||
+              existingResponse === FlashcardResponseValues.Partial
+            }
+            setResponse={() => setResponse(FlashcardResponseValues.Partial)}
             text={t('pwa.practiceQuiz.flashcardPartialResponse')}
             color="bg-orange-300"
             activeColor="bg-orange-600"
@@ -129,8 +138,11 @@ function FlashcardBack({
             disabled={!!existingResponse}
           />
           <FlashcardButton
-            active={response === 'correct' || existingResponse === 'correct'}
-            setResponse={() => setResponse('correct')}
+            active={
+              response === FlashcardResponseValues.Correct ||
+              existingResponse === FlashcardResponseValues.Correct
+            }
+            setResponse={() => setResponse(FlashcardResponseValues.Correct)}
             text={t('pwa.practiceQuiz.flashcardYesResponse')}
             color="bg-green-300"
             activeColor="bg-green-600"
