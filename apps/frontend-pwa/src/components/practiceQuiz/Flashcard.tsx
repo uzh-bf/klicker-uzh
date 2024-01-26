@@ -32,7 +32,9 @@ function Flashcard({
   existingResponse,
 }: FlashcardProps) {
   const t = useTranslations()
-  const [isFlipped, setIsFlipped] = useState(!!existingResponse ?? false)
+  const [isFlipped, setIsFlipped] = useState(
+    typeof existingResponse !== 'undefined' ?? false
+  )
 
   const handleFlip = () => {
     setIsFlipped((prev) => !prev)
@@ -123,7 +125,7 @@ function FlashcardBack({
             color="bg-red-300"
             activeColor="bg-red-600"
             icon={faX}
-            disabled={!!existingResponse}
+            disabled={typeof existingResponse !== 'undefined'}
           />
           <FlashcardButton
             active={
@@ -135,7 +137,7 @@ function FlashcardBack({
             color="bg-orange-300"
             activeColor="bg-orange-600"
             icon={faCheck}
-            disabled={!!existingResponse}
+            disabled={typeof existingResponse !== 'undefined'}
           />
           <FlashcardButton
             active={
@@ -147,7 +149,7 @@ function FlashcardBack({
             color="bg-green-300"
             activeColor="bg-green-600"
             icon={faCheckDouble}
-            disabled={!!existingResponse}
+            disabled={typeof existingResponse !== 'undefined'}
           />
         </div>
       </div>

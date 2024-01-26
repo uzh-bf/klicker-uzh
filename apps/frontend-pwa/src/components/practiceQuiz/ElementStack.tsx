@@ -55,13 +55,17 @@ function ElementStack({
   const t = useTranslations()
   const router = useRouter()
 
+  const [stackStorage, setStackStorage] = useLocalStorage<StudentResponseType>(
+    `qi-${parentId}-${stack.id}`,
+    undefined
+  )
+
   const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
     {}
   )
 
   // initialize student responses
   useEffect(() => {
-    // TODO: hydrate with values from local storage, if there exist any
     const newStudentResponse =
       stack.elements?.reduce((acc, element) => {
         return {
@@ -83,11 +87,6 @@ function ElementStack({
   // const [respondToFlashcardInstance] = useMutation(
   //   RespondToFlashcardInstanceDocument
   // )
-
-  // TODO: extend state for other answer objects once return value from mutation is used correctly
-  const [stackStorage, setStackStorage] = useLocalStorage<
-    Record<string, { response: FlashcardResponseValues }>
-  >(`qi-${parentId}-${stack.id}`, undefined)
 
   // TODO: enable handling multiple elements in a stack / extend state and submission logic accordingly
   // const elementInstance = stack.elements?.[0]
@@ -155,7 +154,10 @@ function ElementStack({
                         }
                       })
                     }}
-                    existingResponse={stackStorage?.[element.id]?.response}
+                    existingResponse={
+                      stackStorage?.[element.id]
+                        ?.response as FlashcardResponseValues
+                    }
                   />
                 )
               } else if (
@@ -171,7 +173,10 @@ function ElementStack({
                   <ContentElement
                     key={element.id}
                     element={element}
-                    read={studentResponse[element.id]?.response as boolean}
+                    read={
+                      (stackStorage?.[element.id]?.response as boolean) ||
+                      (studentResponse[element.id]?.response as boolean)
+                    }
                     onRead={() => {
                       setStudentResponse((response) => {
                         return {
@@ -193,10 +198,10 @@ function ElementStack({
       </div>
       <Button
         className={{ root: 'float-right text-lg mt-4' }}
-        disabled={!stackStorage} // TODO - update logic
+        // TODO - disable continue if not all responses are different from undefined
+        disabled={false}
         onClick={async () => {
-          // TODO - correct disabling
-          // TODO: loop over all instances in a stack to respond to them or implement backend endpoint, which allows answering multiple instances
+          // TODO: respond to all instances in the stack using new practice quiz stack mutation
           // const result = await respondToFlashcardInstance({
           //   variables: {
           //     id: elementInstance.id,
@@ -204,21 +209,13 @@ function ElementStack({
           //     correctness: value,
           //   },
           // })
-          // TODO: use mutation return value to update states
-          // setStackStorage({
-          //   // TODO: use this once multiple instances in a stack are supported
-          //   // ...stackStorage,
-          //   [elementInstance.id]: {
-          //     response: studentGrading,
-          //   },
-          // })
+          setStackStorage(studentResponse)
+          // TODO: set status and score according to returned correctness
           // setStepStatus({
-          //   status: studentGrading,
+          //   status: 'manuallyGraded',
           //   score: null,
           // })
-          // setStudentGrading(undefined)
-
-          // TODO: handle other types of questions / content elements in practice quiz
+          setStudentResponse({})
 
           if (currentStep === totalSteps) {
             // TODO: re-introduce summary page for practice quiz
