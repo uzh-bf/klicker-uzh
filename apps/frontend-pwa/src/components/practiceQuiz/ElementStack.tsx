@@ -134,7 +134,14 @@ function ElementStack({
               ) {
                 return <div key={element.id}>TODO Question</div> // TODO - include student question here
               } else if (element.elementData.type === ElementType.Content) {
-                return <ContentElement key={element.id} element={element} /> // TODO - add tracking of student progress and send to backend
+                return (
+                  <ContentElement
+                    key={element.id}
+                    element={element}
+                    read={false}
+                    onRead={() => null}
+                  />
+                ) // TODO - add tracking of student progress and send to backend
               } else {
                 return null
               }
