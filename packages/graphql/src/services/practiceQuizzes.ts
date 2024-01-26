@@ -76,7 +76,7 @@ export async function respondToFlashcardInstance(
   // check if passed correctness value is valid
   if (
     ![
-      FlashcardCorrectness.WRONG,
+      FlashcardCorrectness.INCORRECT,
       FlashcardCorrectness.PARTIAL,
       FlashcardCorrectness.CORRECT,
     ].includes(correctness)
@@ -211,12 +211,14 @@ export async function respondToFlashcardInstance(
         lastPartialCorrectAt:
           correctness === FlashcardCorrectness.PARTIAL ? new Date() : undefined,
 
-        // WRONG
+        // INCORRECT
         wrongCount: {
-          increment: correctness === FlashcardCorrectness.WRONG ? 1 : 0,
+          increment: correctness === FlashcardCorrectness.INCORRECT ? 1 : 0,
         },
         lastWrongAt:
-          correctness === FlashcardCorrectness.WRONG ? new Date() : undefined,
+          correctness === FlashcardCorrectness.INCORRECT
+            ? new Date()
+            : undefined,
       },
     })
 
@@ -245,7 +247,7 @@ export async function respondToFlashcardInstance(
           correctness,
         },
         aggregatedResponses: {
-          [FlashcardCorrectness.WRONG]: 0,
+          [FlashcardCorrectness.INCORRECT]: 0,
           [FlashcardCorrectness.PARTIAL]: 0,
           [FlashcardCorrectness.CORRECT]: 0,
           total: 1,
@@ -268,9 +270,11 @@ export async function respondToFlashcardInstance(
           correctness === FlashcardCorrectness.PARTIAL ? new Date() : undefined,
 
         // WRONG
-        wrongCount: correctness === FlashcardCorrectness.WRONG ? 1 : 0,
+        wrongCount: correctness === FlashcardCorrectness.INCORRECT ? 1 : 0,
         lastWrongAt:
-          correctness === FlashcardCorrectness.WRONG ? new Date() : undefined,
+          correctness === FlashcardCorrectness.INCORRECT
+            ? new Date()
+            : undefined,
       },
     })
 
