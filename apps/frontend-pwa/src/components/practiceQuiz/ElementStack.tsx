@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
-  ElementStack,
+  ElementStack as ElementStackType,
   ElementType,
   RespondToFlashcardInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -15,7 +15,7 @@ import Flashcard from './Flashcard'
 interface ElementStackProps {
   parentId: string
   courseId: string
-  stack: ElementStack
+  stack: ElementStackType
   currentStep: number
   totalSteps: number
   setStepStatus: ({
@@ -76,8 +76,8 @@ function ElementStack({
   }
 
   return (
-    <div>
-      <div className="flex flex-col w-full h-full">
+    <div className="pb-12">
+      <div className="w-full">
         <div className="flex flex-row items-center justify-between">
           <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
           {/* <div
