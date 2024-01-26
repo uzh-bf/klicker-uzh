@@ -36,6 +36,7 @@ import {
   Participation,
   SubscriptionObjectInput,
 } from './participant'
+import { ElementStack, StackResponseInput } from './practiceQuizzes'
 import {
   Element,
   OptionsChoicesInput,
@@ -215,6 +216,21 @@ export const Mutation = builder.mutationType({
         },
         resolve: (_, args, ctx) => {
           return PracticeQuizService.respondToFlashcardInstance(args, ctx)
+        },
+      }),
+
+      respondToPracticeQuizStack: t.field({
+        nullable: true,
+        type: ElementStack, // TODO - extend this return type to contain feedback and correctness
+        args: {
+          stackId: t.arg.int({ required: true }),
+          responses: t.arg({
+            type: [StackResponseInput]!,
+            required: true,
+          }),
+        },
+        resolve: (_, args, ctx) => {
+          return PracticeQuizService.respondToPracticeQuizStack(args, ctx)
         },
       }),
 

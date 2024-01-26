@@ -64,6 +64,7 @@ function ElementStack({
     {}
   )
 
+  // TODO - ensure that the behavior or resetting (progress bar and local storage) on reload / re-access is as desired
   // initialize student responses
   useEffect(() => {
     const newStudentResponse =
@@ -87,13 +88,6 @@ function ElementStack({
   // const [respondToFlashcardInstance] = useMutation(
   //   RespondToFlashcardInstanceDocument
   // )
-
-  // TODO: enable handling multiple elements in a stack / extend state and submission logic accordingly
-  // const elementInstance = stack.elements?.[0]
-
-  // const [studentGrading, setStudentGrading] = useState<
-  //   FlashcardResponseValues | undefined
-  // >(undefined)
 
   return (
     <div className="pb-12">

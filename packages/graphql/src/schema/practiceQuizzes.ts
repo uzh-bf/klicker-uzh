@@ -1,7 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
+import { Correctness } from '../types/app'
 import { CourseRef, ICourse } from './course'
 import { ElementInstanceRef, IElementInstance } from './question'
+import { ElementType } from './questionData'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
@@ -13,6 +15,19 @@ export const PracticeQuizStatus = builder.enumType('PracticeQuizStatus', {
 
 export const ElementStackType = builder.enumType('ElementStackType', {
   values: Object.values(DB.ElementStackType),
+})
+
+export const StackResponseInput = builder.inputType('StackResponseInput', {
+  fields: (t) => ({
+    instanceId: t.int({ required: true }),
+    type: t.field({ type: ElementType, required: true }),
+    flashcardResponse: t.field({
+      type: Correctness,
+      required: false,
+    }),
+    contentReponse: t.boolean({ required: false }),
+    // TODO: add question response type
+  }),
 })
 
 export interface IElementStack extends DB.ElementStack {

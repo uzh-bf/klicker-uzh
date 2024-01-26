@@ -1,4 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import { ElementType, UserRole } from '@klicker-uzh/prisma'
 import { Context } from '../lib/context'
 import { orderStacks } from '../lib/util'
 import { AggregatedResponseFlashcard, Correctness } from '../types/app'
@@ -270,4 +270,21 @@ export async function respondToFlashcardInstance(
 
     return questionResponse
   }
+}
+
+interface respondToPracticeQuizStackInput {
+  stackId: number
+  responses: {
+    instanceId: number
+    type: ElementType
+    flashcardResponse?: Correctness | null
+    contentReponse?: boolean | null
+  }[]
+}
+
+export async function respondToPracticeQuizStack(
+  { stackId, responses }: respondToPracticeQuizStackInput,
+  ctx: Context
+) {
+  return null
 }
