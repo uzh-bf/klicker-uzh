@@ -197,6 +197,7 @@ function ElementStack({
             const result = await respondToPracticeQuizStack({
               variables: {
                 stackId: stack.id,
+                courseId: courseId,
                 responses: Object.entries(studentResponse).map(
                   ([instanceId, value]) => {
                     if (value.type === ElementType.Flashcard) {
