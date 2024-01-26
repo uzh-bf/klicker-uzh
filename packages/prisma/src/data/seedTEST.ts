@@ -676,9 +676,12 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const contentElements = (await prepareContentElements(
     prisma,
     {
-      'Dummy Content Element 1': 'Content for Dummy Content Element 1',
-      'Dummy Content Element 2': 'Content for Dummy Content Element 2',
-      'Dummy Content Element 3': 'Content for Dummy Content Element 3',
+      'Dummy Content Element 1':
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vitae nisl euismod, aliquam nunc vita. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vitae nisl euismod, aliquam nunc vita. Dummy Content 1',
+      'Dummy Content Element 2':
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vitae nisl euismod, aliquam nunc vita. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vitae nisl euismod, aliquam nunc vita. Dummy Content 2',
+      'Dummy Content Element 3':
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vitae nisl euismod, aliquam nunc vita. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vitae nisl euismod, aliquam nunc vita. Dummy Content 3',
     },
     USER_ID_TEST
   )) as Element[]
