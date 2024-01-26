@@ -577,7 +577,7 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
   respondToFlashcardInstance(correctness: FlashcardCorrectnessType!, courseId: String!, id: Int!): QuestionResponse
-  respondToPracticeQuizStack(responses: [StackResponseInput!]!, stackId: Int!): ElementStack
+  respondToPracticeQuizStack(responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
   respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
   sendPushNotifications: Boolean!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
@@ -963,6 +963,12 @@ type StackElement {
 input StackElementInput {
   mdContent: String
   questionId: Int
+}
+
+type StackFeedback {
+  id: Int!
+  score: Int
+  status: StackFeedbackStatus!
 }
 
 enum StackFeedbackStatus {

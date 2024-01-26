@@ -44,6 +44,21 @@ export const StackResponseInput = builder.inputType('StackResponseInput', {
   }),
 })
 
+export interface IStackFeedback {
+  id: number
+  status: StackFeedbackStatusType
+  score?: number
+}
+export const StackFeedback = builder
+  .objectRef<IStackFeedback>('StackFeedback')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      status: t.expose('status', { type: StackFeedbackStatus }),
+      score: t.exposeInt('score', { nullable: true }),
+    }),
+  })
+
 export interface IElementStack extends DB.ElementStack {
   elements?: IElementInstance[] | null
 }

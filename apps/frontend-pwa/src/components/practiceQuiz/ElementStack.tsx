@@ -204,45 +204,56 @@ function ElementStack({
         onClick={async () => {
           // TODO: check if all instances have a response before starting submission (once questions are implemented)
 
-          const result = await respondToPracticeQuizStack({
-            variables: {
-              stackId: stack.id,
-              responses: Object.entries(studentResponse).map(
-                ([instanceId, value]) => {
-                  if (value.type === ElementType.Flashcard) {
-                    return {
-                      instanceId: parseInt(instanceId),
-                      type: ElementType.Flashcard,
-                      flashcardResponse:
-                        value.response as FlashcardCorrectnessType,
+          // TODO: only submit answer if not already done before
+          if (true) {
+            const result = await respondToPracticeQuizStack({
+              variables: {
+                stackId: stack.id,
+                responses: Object.entries(studentResponse).map(
+                  ([instanceId, value]) => {
+                    if (value.type === ElementType.Flashcard) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Flashcard,
+                        flashcardResponse:
+                          value.response as FlashcardCorrectnessType,
+                      }
+                    } else if (value.type === ElementType.Content) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Content,
+                        contentReponse: value.response as boolean,
+                      }
                     }
-                  } else if (value.type === ElementType.Content) {
-                    return {
-                      instanceId: parseInt(instanceId),
-                      type: ElementType.Content,
-                      contentReponse: value.response as boolean,
+                    // TODO - handle question data here
+                    else {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: value.type,
+                        response: value.response,
+                      }
                     }
                   }
-                  // TODO - handle question data here
-                  else {
-                    return {
-                      instanceId: parseInt(instanceId),
-                      type: value.type,
-                      response: value.response,
-                    }
-                  }
-                }
-              ),
-            },
-          })
+                ),
+              },
+            })
 
-          setStackStorage(studentResponse)
-          // TODO: set status and score according to returned correctness
-          // setStepStatus({
-          //   status: 'manuallyGraded',
-          //   score: null,
-          // })
-          setStudentResponse({})
+            setStackStorage(studentResponse)
+
+            if (!result.data?.respondToPracticeQuizStack) {
+              console.error('Error submitting response')
+              return
+            }
+
+            // set status and score according to returned correctness
+            const grading = result.data?.respondToPracticeQuizStack
+            setStepStatus({
+              status: grading.status,
+              score: grading.score,
+            })
+
+            setStudentResponse({})
+          }
 
           if (currentStep === totalSteps) {
             // TODO: re-introduce summary page for practice quiz

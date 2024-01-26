@@ -37,8 +37,8 @@ import {
   SubscriptionObjectInput,
 } from './participant'
 import {
-  ElementStack,
   FlashcardCorrectnessType,
+  StackFeedback,
   StackResponseInput,
 } from './practiceQuizzes'
 import {
@@ -226,7 +226,7 @@ export const Mutation = builder.mutationType({
 
       respondToPracticeQuizStack: t.field({
         nullable: true,
-        type: ElementStack,
+        type: StackFeedback,
         args: {
           stackId: t.arg.int({ required: true }),
           responses: t.arg({

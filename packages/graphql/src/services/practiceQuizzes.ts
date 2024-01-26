@@ -1,7 +1,11 @@
 import { ElementType, UserRole } from '@klicker-uzh/prisma'
 import { Context } from '../lib/context'
 import { orderStacks } from '../lib/util'
-import { AggregatedResponseFlashcard, FlashcardCorrectness } from '../types/app'
+import {
+  AggregatedResponseFlashcard,
+  FlashcardCorrectness,
+  StackFeedbackStatus,
+} from '../types/app'
 
 export async function getPracticeQuizData(
   { id }: { id: string },
@@ -297,5 +301,9 @@ export async function respondToPracticeQuizStack(
   ctx: Context
 ) {
   console.log('respondToPracticeQuizStack', stackId, responses)
-  return null
+  // TODO - return correct, partial or wrong based on manual grading as well
+  return {
+    id: stackId,
+    status: StackFeedbackStatus.MANUALLY_GRADED,
+  }
 }

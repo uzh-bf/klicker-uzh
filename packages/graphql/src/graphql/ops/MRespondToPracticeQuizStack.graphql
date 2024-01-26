@@ -4,6 +4,7 @@ mutation RespondToPracticeQuizStack(
 ) {
   respondToPracticeQuizStack(stackId: $stackId, responses: $responses) {
     id
-    # TODO - return correctness stuff
+    status
+    score
   }
 }
