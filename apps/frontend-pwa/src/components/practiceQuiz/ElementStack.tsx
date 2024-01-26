@@ -38,7 +38,7 @@ type StudentResponseType = Record<
   number,
   {
     type: ElementType
-    response?: FlashcardResponseValues | string // TODO: augment this type for questions
+    response?: FlashcardResponseValues | boolean // TODO: augment this type for questions
     correct?: StackStatus
   }
 >
@@ -171,10 +171,20 @@ function ElementStack({
                   <ContentElement
                     key={element.id}
                     element={element}
-                    read={false}
-                    onRead={() => null}
+                    read={studentResponse[element.id]?.response as boolean}
+                    onRead={() => {
+                      setStudentResponse((response) => {
+                        return {
+                          ...response,
+                          [element.id]: {
+                            ...response[element.id],
+                            response: true,
+                          },
+                        }
+                      })
+                    }}
                   />
-                ) // TODO - add tracking of student progress and send to backend
+                )
               } else {
                 return null
               }
