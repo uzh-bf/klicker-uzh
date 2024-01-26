@@ -286,8 +286,76 @@ export async function respondToFlashcardInstance(
   }
 }
 
-interface respondToPracticeQuizStackInput {
+interface RespondToFlashcardInput {
+  id: number
+  courseId: string
+  response: FlashcardCorrectness
+}
+
+async function respondToFlashcard(
+  { id, courseId, response }: RespondToFlashcardInput,
+  ctx: Context
+) {
+  // TODO - implement
+  const grading = StackFeedbackStatus.CORRECT
+
+  return {
+    grading,
+    score: null,
+  }
+}
+
+interface RespondToContentInput {
+  id: number
+  courseId: string
+  response: boolean
+}
+
+async function respondToContent(
+  { id, courseId, response }: RespondToContentInput,
+  ctx: Context
+) {
+  // TODO - implement
+  const grading = StackFeedbackStatus.CORRECT
+
+  return {
+    grading,
+    score: null,
+  }
+}
+
+function combineStackStatus({
+  prevStatus,
+  newStatus,
+}: {
+  prevStatus: StackFeedbackStatus
+  newStatus:
+    | StackFeedbackStatus.CORRECT
+    | StackFeedbackStatus.PARTIAL
+    | StackFeedbackStatus.INCORRECT
+}) {
+  if (prevStatus === StackFeedbackStatus.UNANSWERED) {
+    // if this is the first response to the stack, set the feedback to the result
+    return newStatus
+  } else if (prevStatus === StackFeedbackStatus.CORRECT) {
+    // only keep the value at correct, if the answer was correct (partial otherwise)
+    return newStatus === StackFeedbackStatus.CORRECT
+      ? StackFeedbackStatus.CORRECT
+      : StackFeedbackStatus.PARTIAL
+  } else if (prevStatus === StackFeedbackStatus.INCORRECT) {
+    // if the result is correct or partially correct, switch to partial
+    return newStatus === StackFeedbackStatus.INCORRECT
+      ? StackFeedbackStatus.INCORRECT
+      : StackFeedbackStatus.PARTIAL
+  }
+
+  // if the state before was partial, keep it as partial (independent of the grading result)
+  return prevStatus
+}
+
+interface RespondToPracticeQuizStackInput {
   stackId: number
+  courseId: string
   responses: {
     instanceId: number
     type: ElementType
@@ -297,13 +365,65 @@ interface respondToPracticeQuizStackInput {
 }
 
 export async function respondToPracticeQuizStack(
-  { stackId, responses }: respondToPracticeQuizStackInput,
+  { stackId, courseId, responses }: RespondToPracticeQuizStackInput,
   ctx: Context
 ) {
-  console.log('respondToPracticeQuizStack', stackId, responses)
-  // TODO - return correct, partial or wrong based on manual grading as well
+  let stackScore = undefined
+  let stackFeedback = StackFeedbackStatus.UNANSWERED
+
+  for (const response of responses) {
+    if (response.type === ElementType.FLASHCARD) {
+      const result = await respondToFlashcard(
+        {
+          id: response.instanceId,
+          courseId: courseId,
+          response: response.flashcardResponse!,
+        },
+        ctx
+      )
+
+      // only update status as no points are awarded for flashcards
+      if (
+        result !== null &&
+        (result.grading === StackFeedbackStatus.CORRECT ||
+          result.grading === StackFeedbackStatus.PARTIAL ||
+          result.grading === StackFeedbackStatus.INCORRECT)
+      ) {
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus: result.grading,
+        })
+      }
+    } else if (response.type === ElementType.CONTENT) {
+      const result = await respondToContent(
+        {
+          id: response.instanceId,
+          courseId: courseId,
+          response: response.contentReponse!,
+        },
+        ctx
+      )
+
+      // only update status as no points are awarded for content elements
+      if (
+        result !== null &&
+        (result.grading === StackFeedbackStatus.CORRECT ||
+          result.grading === StackFeedbackStatus.PARTIAL ||
+          result.grading === StackFeedbackStatus.INCORRECT)
+      ) {
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus: result.grading,
+        })
+      }
+    }
+
+    // TODO: add remaining cases to answer questions
+  }
+
   return {
     id: stackId,
-    status: StackFeedbackStatus.MANUALLY_GRADED,
+    status: stackFeedback,
+    score: stackScore,
   }
 }

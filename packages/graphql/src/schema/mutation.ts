@@ -229,6 +229,7 @@ export const Mutation = builder.mutationType({
         type: StackFeedback,
         args: {
           stackId: t.arg.int({ required: true }),
+          courseId: t.arg.string({ required: true }),
           responses: t.arg({
             type: [StackResponseInput],
             required: true,
