@@ -46,7 +46,11 @@ fragment ElementData on ElementInstance {
 
     # ... on FlashcardElementData {
     #   options {
+    #   }
+    # }
 
+    # ... on ContentElementData {
+    #   options {
     #   }
     # }
   }

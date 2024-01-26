@@ -34,6 +34,7 @@ export function processQuestionData(question: Prisma.Element) {
   }
 }
 
+const CONTENT_KEYS = ['name', 'content', 'type']
 const FLASHCARD_KEYS = ['name', 'content', 'explanation', 'type']
 const QUESTION_KEYS = [
   'name',
@@ -45,6 +46,7 @@ const QUESTION_KEYS = [
 ]
 
 export function processElementData(element: Element) {
+  const extractContentKeys = R.pick(CONTENT_KEYS)
   const extractFlashcardKeys = R.pick(FLASHCARD_KEYS)
   const extractQuestionKeys = R.pick(QUESTION_KEYS)
 
@@ -66,8 +68,16 @@ export function processElementData(element: Element) {
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
+  } else if (element.type === ElementType.CONTENT) {
+    return {
+      ...extractContentKeys(element),
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
   } else {
-    // TODO - add picking for content elements
+    throw new Error(
+      'Invalid element type encountered during element data processing'
+    )
   }
 }
 
@@ -94,8 +104,14 @@ export function getInitialElementResults(element: Element) {
     element.type === ElementType.FREE_TEXT
   ) {
     return {}
+  } else if (element.type === ElementType.CONTENT) {
+    return {
+      viewed: 0,
+    }
   } else {
-    return null
+    throw new Error(
+      'Invalid element type encountered during result initialization'
+    )
   }
 }
 
@@ -813,6 +829,39 @@ export async function prepareFlashcardsFromFile(
   }
 
   const elements = elementsFC.map((el) => el.value)
+
+  return elements
+}
+
+export async function prepareContentElements(
+  prismaClient: Prisma.PrismaClient,
+  content: Record<string, string>,
+  userId: string
+) {
+  const elementsCE = await Promise.allSettled(
+    Object.entries(content).map(async ([name, data]) => {
+      const contentElement = await prismaClient.element.create({
+        data: {
+          name: name,
+          content: data,
+          options: {},
+          type: ElementType.CONTENT,
+          owner: {
+            connect: {
+              id: userId,
+            },
+          },
+        },
+      })
+      return contentElement
+    })
+  )
+
+  if (elementsCE.some((el) => el.status === 'rejected')) {
+    throw new Error('Failed to seed some content elements')
+  }
+
+  const elements = elementsCE.map((el) => el.value)
 
   return elements
 }

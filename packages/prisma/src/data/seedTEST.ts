@@ -10,6 +10,7 @@ import {
 import * as DATA_TEST from './data/TEST'
 import {
   getInitialElementResults,
+  prepareContentElements,
   prepareCourse,
   prepareFlashcardsFromFile,
   prepareLearningElement,
@@ -671,6 +672,17 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     USER_ID_TEST
   )) as Element[]
 
+  // seed content elements
+  const contentElements = (await prepareContentElements(
+    prisma,
+    {
+      'Dummy Content Element 1': 'Content for Dummy Content Element 1',
+      'Dummy Content Element 2': 'Content for Dummy Content Element 2',
+      'Dummy Content Element 3': 'Content for Dummy Content Element 3',
+    },
+    USER_ID_TEST
+  )) as Element[]
+
   const quizId = '4214338b-c5af-4ff7-84f9-ae5a139d6e5b'
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
     where: {
@@ -780,7 +792,56 @@ async function seedTest(prisma: Prisma.PrismaClient) {
               },
             },
           },
-          // TODO - add content element to practice quiz seed
+          // create stacks with content elements
+          ...contentElements.map((el, ix) => ({
+            displayName: undefined,
+            description: undefined,
+            order: flashcards.length + questionsTest.length + ix + 2,
+            type: Prisma.ElementStackType.PRACTICE_QUIZ,
+            options: {},
+            elements: {
+              createMany: {
+                data: [
+                  {
+                    order: ix,
+                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                    elementType: el.type,
+                    elementData: processElementData(el),
+                    options: {},
+                    results: getInitialElementResults(el),
+                    ownerId: el.ownerId,
+                    elementId: el.id,
+                  },
+                ],
+              },
+            },
+          })),
+          // create one stack with all content elements
+          {
+            displayName: undefined,
+            description: undefined,
+            order:
+              flashcards.length +
+              questionsTest.length +
+              contentElements.length +
+              2,
+            type: Prisma.ElementStackType.PRACTICE_QUIZ,
+            options: {},
+            elements: {
+              createMany: {
+                data: contentElements.map((el, ix) => ({
+                  order: ix,
+                  type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+                  elementType: el.type,
+                  elementData: processElementData(el),
+                  options: {},
+                  results: getInitialElementResults(el),
+                  ownerId: el.ownerId,
+                  elementId: el.id,
+                })),
+              },
+            },
+          },
         ],
       },
     },

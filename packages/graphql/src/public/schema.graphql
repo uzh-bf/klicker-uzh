@@ -104,6 +104,17 @@ type ConfusionTimestep {
   speed: Int!
 }
 
+type ContentElementData implements ElementData {
+  content: String!
+  elementId: Int
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int!
+  questionId: Int
+  type: ElementType!
+}
+
 type Course {
   averageActiveScore: Float
   averageScore: Float
@@ -254,14 +265,9 @@ type FlashcardElementData implements ElementData {
   explanation: String
   id: ID!
   name: String!
-  options: FlashcardElementOptions!
   pointsMultiplier: Int!
   questionId: Int
   type: ElementType!
-}
-
-type FlashcardElementOptions {
-  fake: String!
 }
 
 type FreeTextElementData implements ElementData {

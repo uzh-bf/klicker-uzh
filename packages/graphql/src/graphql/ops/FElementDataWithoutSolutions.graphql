@@ -39,7 +39,11 @@ fragment ElementDataWithoutSolutions on ElementInstance {
 
     # ... on FlashcardElementData {
     #   options {
+    #   }
+    # }
 
+    # ... on ContentElementData {
+    #   options {
     #   }
     # }
   }
