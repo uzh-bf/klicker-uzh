@@ -84,18 +84,6 @@ function ElementStack({
 
   console.log(studentResponse)
 
-  // TODO - replace
-  // const [respondToFlashcardInstance] = useMutation(
-  //   RespondToFlashcardInstanceDocument
-  // )
-
-  // TODO: enable handling multiple elements in a stack / extend state and submission logic accordingly
-  // const elementInstance = stack.elements?.[0]
-
-  // const [studentGrading, setStudentGrading] = useState<
-  //   FlashcardResponseValues | undefined
-  // >(undefined)
-
   return (
     <div className="pb-12">
       <div className="w-full">

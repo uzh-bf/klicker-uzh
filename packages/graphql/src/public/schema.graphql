@@ -576,7 +576,6 @@ type Mutation {
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
-  respondToFlashcardInstance(correctness: FlashcardCorrectnessType!, courseId: String!, id: Int!): QuestionResponse
   respondToPracticeQuizStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
   respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
   sendPushNotifications: Boolean!
