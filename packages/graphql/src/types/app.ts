@@ -55,6 +55,14 @@ export enum FlashcardCorrectness {
   CORRECT = 'CORRECT',
 }
 
+export enum StackFeedbackStatus {
+  UNANSWERED = 'unanswered',
+  MANUALLY_GRADED = 'manuallyGraded',
+  CORRECT = 'correct',
+  INCORRECT = 'incorrect',
+  PARTIAL = 'partial',
+}
+
 export type AggregatedResponseFlashcard = {
   [FlashcardCorrectness.INCORRECT]: number
   [FlashcardCorrectness.PARTIAL]: number

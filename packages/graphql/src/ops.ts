@@ -1696,6 +1696,14 @@ export type StackElementInput = {
   questionId?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export enum StackFeedbackStatus {
+  Correct = 'correct',
+  Incorrect = 'incorrect',
+  ManuallyGraded = 'manuallyGraded',
+  Partial = 'partial',
+  Unanswered = 'unanswered'
+}
+
 export type StackInput = {
   elements: Array<StackElementInput>;
 };

@@ -1,6 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
-import { FlashcardCorrectness } from '../types/app'
+import {
+  FlashcardCorrectness,
+  StackFeedbackStatus as StackFeedbackStatusType,
+} from '../types/app'
 import { CourseRef, ICourse } from './course'
 import { ElementInstanceRef, IElementInstance } from './question'
 import { ElementType } from './questionData'
@@ -23,6 +26,10 @@ export const FlashcardCorrectnessType = builder.enumType(
     values: Object.values(FlashcardCorrectness),
   }
 )
+
+export const StackFeedbackStatus = builder.enumType('StackFeedbackStatus', {
+  values: Object.values(StackFeedbackStatusType),
+})
 
 export const StackResponseInput = builder.inputType('StackResponseInput', {
   fields: (t) => ({

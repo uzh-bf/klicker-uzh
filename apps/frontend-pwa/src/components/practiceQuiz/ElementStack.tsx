@@ -4,6 +4,7 @@ import {
   ElementType,
   FlashcardCorrectnessType,
   RespondToPracticeQuizStackDocument,
+  StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
@@ -24,25 +25,18 @@ interface ElementStackProps {
     status,
     score,
   }: {
-    status: StackStatus
+    status: StackFeedbackStatus
     score?: number | null
   }) => void
   handleNextElement: () => void
 }
-
-export type StackStatus =
-  | 'unanswered'
-  | 'manuallyGraded'
-  | 'correct'
-  | 'incorrect'
-  | 'partial'
 
 type StudentResponseType = Record<
   number,
   {
     type: ElementType
     response?: FlashcardCorrectnessType | boolean // TODO: augment this type for questions
-    correct?: StackStatus
+    correct?: StackFeedbackStatus
   }
 >
 

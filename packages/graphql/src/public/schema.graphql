@@ -965,6 +965,14 @@ input StackElementInput {
   questionId: Int
 }
 
+enum StackFeedbackStatus {
+  correct
+  incorrect
+  manuallyGraded
+  partial
+  unanswered
+}
+
 input StackInput {
   elements: [StackElementInput!]!
 }
