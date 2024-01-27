@@ -1,0 +1,107 @@
+describe('Practice Quizzes as a Student', () => {
+  beforeEach(() => {
+    // cy.exec('cd .. && pnpm run prisma:setup:yes && cd cypress', {
+    //   failOnNonZeroExit: false,
+    // })
+    cy.loginStudent()
+  })
+
+  it('run through a practice quiz', function () {
+    cy.get('[data-cy="quizzes"]').click()
+
+    cy.get('[data-cy="practice-quiz-Practice Quiz Demo Student Title"]').click()
+
+    cy.get('[data-cy="start-practice-quiz"]').click()
+
+    cy.get('[data-cy="flashcard-front"]').click()
+    cy.get('[data-cy="flashcard-response-No"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    cy.get('[data-cy="flashcard-front"]').click()
+    cy.get('[data-cy="flashcard-response-Partially"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    cy.get('[data-cy="flashcard-front"]').click()
+    cy.get('[data-cy="flashcard-response-Yes"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    cy.get('[data-cy="practice-quiz-progress-2"]').click()
+    cy.get('[data-cy="practice-quiz-progress-1"]').click()
+    cy.get('[data-cy="practice-quiz-progress-0"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    cy.get('[data-cy="flashcard-front"]').click()
+    cy.get('[data-cy="flashcard-response-Partially"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    cy.get('[data-cy="practice-quiz-progress-right"]').click()
+    cy.get('[data-cy="practice-quiz-progress-right"]').click()
+    cy.get('[data-cy="practice-quiz-progress-right"]').click()
+    cy.get('[data-cy="practice-quiz-progress-right"]').click()
+    cy.get('[data-cy="practice-quiz-progress-right"]').click()
+    cy.get('[data-cy="practice-quiz-progress-right"]').click()
+    cy.get('[data-cy="practice-quiz-progress-right"]').click()
+    cy.get('[data-cy="practice-quiz-progress-right"]').click()
+    cy.get('[data-cy="practice-quiz-progress-right"]').click()
+    cy.get('[data-cy="practice-quiz-progress-right"]').click()
+
+    cy.get(':nth-child(1) > [data-cy="flashcard-front"]').click()
+    cy.get('[data-cy="flashcard-response-Yes"]').click()
+
+    // TODO: fix selection of first FC
+    cy.get(':nth-child(2) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(2) > [data-cy="flashcard-response-Partially"]').click()
+    cy.get(':nth-child(3) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(3) > [data-cy="flashcard-response-No"]').click()
+    cy.get(':nth-child(4) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(4) > [data-cy="flashcard-response-Partially"]').click()
+    cy.get(':nth-child(5) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(5) > [data-cy="flashcard-response-Yes"]').click()
+    cy.get(':nth-child(6) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(6) > [data-cy="flashcard-response-Partially"]').click()
+    cy.get(':nth-child(7) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(7) > [data-cy="flashcard-response-No"]').click()
+    cy.get(':nth-child(8) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(8) > [data-cy="flashcard-response-Partially"]').click()
+    cy.get(':nth-child(9) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(9) > [data-cy="flashcard-response-Partially"]').click()
+    cy.get(':nth-child(10) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(10) > [data-cy="flashcard-response-Yes"]').click()
+    cy.get(':nth-child(11) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(11) > [data-cy="flashcard-response-Partially"]').click()
+    cy.get(':nth-child(12) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(12) > [data-cy="flashcard-response-No"]').click()
+    cy.get(':nth-child(13) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(13) > [data-cy="flashcard-response-No"]').click()
+    cy.get(':nth-child(14) > [data-cy="flashcard-front"]').click()
+    cy.get(':nth-child(14) > [data-cy="flashcard-response-Yes"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    // TODO: continue with clean naming
+    cy.get('.px-3 > .border > div').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('.px-3 > .border > div').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('.px-3 > .border > div').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('.flex-col > :nth-child(1) > .border').click()
+    cy.get(':nth-child(2) > .flex > .prose-h4\\:text-md').click()
+    cy.get('.flex-col > :nth-child(2) > .border > div').click()
+    cy.get(':nth-child(3) > .border > div').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('.flex-1 > .flex-col').click()
+    cy.get('[data-cy="flashcard-response-Yes"]').click()
+    cy.get('.flex-col.gap-3 > .border-solid').click()
+    cy.get('.border-solid > .border').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+  })
+})

@@ -3,6 +3,7 @@
   "name": "@klicker-uzh/cypress",
   "devDependencies": {
     "@cypress/code-coverage": "3.12.16",
+    "@klicker-uzh/prisma": "workspace:*",
     "@testing-library/cypress": "10.0.1",
     "@types/jsonwebtoken": "^8.0.0",
     "@types/node": "^20.10.6",

@@ -73,12 +73,13 @@ function FlashcardFront({
   return (
     <DynamicMarkdown
       withProse
+      data={{ cy: 'flashcard-front' }}
       content={content}
       className={{
         root: twMerge(
           'mx-auto text-center flex-none',
           isFlipped &&
-            'w-full transform-rotateY-180 px-4 py-2 border rounded bg-slate-100 prose-p:mb-0 mb-4'
+            'w-full transform-rotateY-180 px-4 py-2 border rounded bg-slate-100 prose-p:mb-0 mb-4 backface-hidden'
         ),
       }}
     />
@@ -101,7 +102,7 @@ function FlashcardBack({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col flex-1 w-full transform-rotateY-180 backface-hidden">
+    <div className="flex flex-col flex-1 w-full transform-rotateY-180">
       <div className="flex flex-1">
         <DynamicMarkdown content={explanation} withProse />
       </div>
