@@ -53,12 +53,13 @@ function ChoicesQuestion({
           displayMode={options.displayMode}
           type={ElementType.Kprim}
           choices={options.choices}
-          value={response}
+          value={existingResponse ?? response}
           onChange={(newValue: Record<number, boolean>) => {
             const valid = validateKprimResponse(newValue)
             setResponse(newValue, valid)
           }}
           elementIx={elementIx}
+          disabled={!!existingResponse}
         />
       )}
 
@@ -66,12 +67,13 @@ function ChoicesQuestion({
         <MCAnswerOptions
           displayMode={options.displayMode}
           choices={options.choices}
-          value={response}
+          value={existingResponse ?? response}
           onChange={(newValue: Record<number, boolean>) => {
             const valid = validateMcResponse(newValue)
             setResponse(newValue, valid)
           }}
           elementIx={elementIx}
+          disabled={!!existingResponse}
         />
       )}
 
@@ -79,12 +81,13 @@ function ChoicesQuestion({
         <SCAnswerOptions
           displayMode={options.displayMode}
           choices={options.choices}
-          value={response}
+          value={existingResponse ?? response}
           onChange={(newValue: Record<number, boolean>) => {
             const valid = validateScResponse(newValue)
             setResponse(newValue, valid)
           }}
           elementIx={elementIx}
+          disabled={!!existingResponse}
         />
       )}
     </div>

@@ -11,6 +11,7 @@ export interface SCAnswerOptionsProps {
   onChange: (value: Record<number, boolean>) => void
   id?: string
   elementIx: number
+  disabled: boolean
 }
 
 export function SCAnswerOptions({
@@ -19,6 +20,7 @@ export function SCAnswerOptions({
   value,
   onChange,
   elementIx,
+  disabled,
 }: SCAnswerOptionsProps): React.ReactElement {
   return (
     <div
@@ -46,6 +48,7 @@ export function SCAnswerOptions({
             key={`${choice.value}-${index}`}
             active={value?.[index]}
             data={{ cy: `sc-${elementIx + 1}-answer-option-${index + 1}` }}
+            disabled={disabled}
           >
             <Button.Label>
               <Markdown
