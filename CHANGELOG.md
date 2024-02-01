@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.30...v3.1.0-beta.31) (2024-02-01)
+
+
+### Bug Fixes
+
+* **apps/func-migration-v3-import:** remove deprecated display mode type ([#4015](https://github.com/uzh-bf/klicker-uzh/issues/4015)) ([f97ea03](https://github.com/uzh-bf/klicker-uzh/commit/f97ea03d3ba189eda8be5e0720c40f707e816ed8))
+* import issue with validator ([aae4105](https://github.com/uzh-bf/klicker-uzh/commit/aae41054153be1af2a4329c0a5badf0df4182e63))
+* increase concurrency for turbo, add logging middleware ([06ed090](https://github.com/uzh-bf/klicker-uzh/commit/06ed090d609c66180eee2eb388c5a0887e94066c))
+
 ## [3.1.0-beta.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.29...v3.1.0-beta.30) (2024-01-22)
 
 
