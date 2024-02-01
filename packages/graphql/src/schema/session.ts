@@ -208,6 +208,7 @@ export interface IInstanceResult {
 
   blockIx?: number
   instanceIx: number
+  participants: number
   results: QuestionResults
   status: DB.SessionBlockStatus
 
@@ -222,7 +223,7 @@ export const InstanceResult = InstanceResultRef.implement({
 
     blockIx: t.exposeInt('blockIx', { nullable: true }),
     instanceIx: t.exposeInt('instanceIx'),
-    // participants: t.exposeInt('participants'),
+    participants: t.exposeInt('participants'),
     results: t.expose('results', { type: 'Json' }),
     status: t.expose('status', { type: SessionBlockStatus }),
 
