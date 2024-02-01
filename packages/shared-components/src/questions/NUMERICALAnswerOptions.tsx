@@ -16,6 +16,7 @@ export interface NUMERICALAnswerOptionsProps {
   onChange: (value: string) => void
   hidePrecision?: boolean
   disabled?: boolean
+  elementIx: number
 }
 
 export function NUMERICALAnswerOptions({
@@ -29,6 +30,7 @@ export function NUMERICALAnswerOptions({
   onChange,
   hidePrecision,
   disabled,
+  elementIx,
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   const t = useTranslations()
 
@@ -66,6 +68,7 @@ export function NUMERICALAnswerOptions({
               !valid && 'border-red-600'
             ),
           }}
+          data={{ cy: `input-numerical-${elementIx + 1}` }}
         />
         {unit && (
           <div className="flex flex-col items-center justify-center px-4 text-white rounded-r bg-slate-600 min-w-max">

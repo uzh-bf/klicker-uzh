@@ -58,6 +58,7 @@ function NumericalQuestion({
         min={options.restrictions?.min ?? undefined}
         max={options.restrictions?.max ?? undefined}
         disabled={!!existingResponse}
+        elementIx={elementIx}
       />
     </div>
   )

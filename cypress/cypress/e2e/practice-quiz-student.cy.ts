@@ -50,7 +50,7 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
-    // TODO: remove from seed or answer as well
+    // skip remaining flashcards
     cy.get('[data-cy="practice-quiz-progress-right"]').click()
     cy.get('[data-cy="practice-quiz-progress-right"]').click()
     cy.get('[data-cy="practice-quiz-progress-right"]').click()
@@ -111,9 +111,19 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="mc-1-answer-option-3"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
-    // TODO: answer numerical question
-    cy.get('[data-cy="practice-quiz-progress-right"]').click() // TODO: remove
-    // cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    // answer numerical question
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-1"]').clear().type('-20')
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-1"]').clear().type('-10')
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="input-numerical-1"]').clear().type('0')
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="input-numerical-1"]').clear()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-1"]').type('100')
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
     // answer KPRIM question
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
@@ -135,10 +145,14 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="sc-1-answer-option-3"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
-    // answer MC, PRIM and SC question
+    // answer combined question stack
+    // TODO: answer free text questions
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
     cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-3"]').clear().type('0')
+    cy.get('[data-cy="input-numerical-3"]').clear().type('100')
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-4-answer-1-correct"]').click()
     cy.get('[data-cy="toggle-kp-4-answer-2-incorrect"]').click()
@@ -201,8 +215,6 @@ describe('Practice Quizzes as a Student', () => {
     // ) // contains continue
     // cy.get('[data-cy="practice-quiz-stack-submit"]').click() // continue / submit stack
 
-    // TODO: check that answers are correctly shown on submission
-    // TODO: check that skipping back and forth in quiz saves the previous answers
     // TODO: check that resetting answers works as to be expected
   })
 })
