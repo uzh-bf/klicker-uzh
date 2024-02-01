@@ -18,7 +18,7 @@ import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
 import KPAnswerOptionsOLD from './questions/KPAnswerOptionsOLD'
-import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
+import { NUMERICALAnswerOptionsOLD } from './questions/NUMERICALAnswerOptionsOLD'
 import { SCAnswerOptionsOLD } from './questions/SCAnswerOptionsOLD'
 import SessionProgress from './questions/SessionProgress'
 // TODO: merge validation logic in this file with the validateResponse utils
@@ -290,7 +290,7 @@ export const StudentQuestion = ({
         )}
 
         {QUESTION_GROUPS.NUMERICAL.includes(currentQuestion.type) && (
-          <NUMERICALAnswerOptions
+          <NUMERICALAnswerOptionsOLD
             min={currentQuestion.options?.restrictions?.min}
             max={currentQuestion.options?.restrictions?.max}
             valid={inputValid || inputEmpty}

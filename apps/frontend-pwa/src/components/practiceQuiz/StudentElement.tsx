@@ -1,8 +1,9 @@
 import {
-  ChoicesQuestionData,
+  ChoicesElementData,
   ElementStack,
   ElementType,
   FlashcardCorrectnessType,
+  NumericalElementData,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import ChoicesQuestion from '@klicker-uzh/shared-components/src/ChoicesQuestion'
@@ -109,7 +110,7 @@ function StudentElement({
                 key={element.id}
                 content={element.elementData.content}
                 type={element.elementData.type}
-                options={(element.elementData as ChoicesQuestionData).options}
+                options={(element.elementData as ChoicesElementData).options}
                 response={
                   studentResponse[element.id]?.response as Record<
                     number,
@@ -139,7 +140,32 @@ function StudentElement({
               />
             )
           } else if (element.elementData.type === ElementType.Numerical) {
-            return <NumericalQuestion key={element.id} />
+            return (
+              <NumericalQuestion
+                key={element.id}
+                content={element.elementData.content}
+                options={(element.elementData as NumericalElementData).options}
+                response={studentResponse[element.id]?.response as number}
+                valid={studentResponse[element.id]?.valid as boolean}
+                setResponse={(newValue, valid) => {
+                  setStudentResponse((response) => {
+                    return {
+                      ...response,
+                      [element.id]: {
+                        ...response[element.id],
+                        type: ElementType.Numerical,
+                        response: newValue,
+                        valid: valid,
+                      },
+                    }
+                  })
+                }}
+                existingResponse={
+                  stackStorage?.[element.id]?.response as number
+                }
+                elementIx={elementIx}
+              />
+            )
           } else if (element.elementData.type === ElementType.FreeText) {
             return <FreeTextQuestion key={element.id} />
           } else if (element.elementData.type === ElementType.Content) {
