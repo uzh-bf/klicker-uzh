@@ -96,7 +96,6 @@ function ElementStack({
             },
           }
         }
-        // TODO: set initial value for numerical questions
         // TODO: set initial value for free text questions
         else if (element.elementData.type === ElementType.Content) {
           return {
@@ -247,7 +246,14 @@ function ElementStack({
                         choicesResponse: responseList,
                       }
                     }
-                    // TODO: submission logic for numerical questions
+                    // submission logic for numerical questions
+                    else if (value.type === ElementType.Numerical) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Numerical,
+                        numericalResponse: parseFloat(value.response as string),
+                      }
+                    }
                     // TODO: submission logic for free text questions
                     else {
                       return {
