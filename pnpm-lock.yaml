@@ -1456,9 +1456,6 @@ importers:
       '@cypress/code-coverage':
         specifier: 3.12.16
         version: 3.12.16(@babel/core@7.21.8)(@babel/preset-env@7.23.2)(babel-loader@9.1.2)(cypress@13.6.2)(webpack@5.83.1)
-      '@klicker-uzh/prisma':
-        specifier: workspace:*
-        version: link:../packages/prisma
       '@testing-library/cypress':
         specifier: 10.0.1
         version: 10.0.1(cypress@13.6.2)

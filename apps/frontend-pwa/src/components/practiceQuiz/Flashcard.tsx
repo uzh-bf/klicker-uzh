@@ -17,6 +17,7 @@ interface FlashcardProps {
   response?: FlashcardCorrectnessType
   setResponse: (value: FlashcardCorrectnessType) => void
   existingResponse?: FlashcardCorrectnessType
+  elementIx: number
 }
 
 function Flashcard({
@@ -25,6 +26,7 @@ function Flashcard({
   response,
   setResponse,
   existingResponse,
+  elementIx,
 }: FlashcardProps) {
   const t = useTranslations()
   const [isFlipped, setIsFlipped] = useState(
@@ -43,7 +45,11 @@ function Flashcard({
         }`}
         onClick={!isFlipped ? handleFlip : () => null}
       >
-        <FlashcardFront isFlipped={isFlipped} content={content} />
+        <FlashcardFront
+          isFlipped={isFlipped}
+          content={content}
+          elementIx={elementIx}
+        />
 
         {isFlipped ? (
           <FlashcardBack
@@ -51,6 +57,7 @@ function Flashcard({
             response={response}
             setResponse={setResponse}
             existingResponse={existingResponse}
+            elementIx={elementIx}
           />
         ) : (
           <div className="flex flex-row items-center self-end gap-2 text-sm text-gray-500">
@@ -66,14 +73,16 @@ function Flashcard({
 function FlashcardFront({
   isFlipped,
   content,
+  elementIx,
 }: {
   isFlipped: boolean
   content: string
+  elementIx: number
 }) {
   return (
     <DynamicMarkdown
       withProse
-      data={{ cy: 'flashcard-front' }}
+      data={{ cy: `flashcard-front-${elementIx + 1}` }}
       content={content}
       className={{
         root: twMerge(
@@ -91,6 +100,7 @@ interface FlashcardBackProps {
   response?: FlashcardCorrectnessType
   setResponse: (value: FlashcardCorrectnessType) => void
   existingResponse?: FlashcardCorrectnessType
+  elementIx: number
 }
 
 function FlashcardBack({
@@ -98,6 +108,7 @@ function FlashcardBack({
   response,
   setResponse,
   existingResponse,
+  elementIx,
 }: FlashcardBackProps) {
   const t = useTranslations()
 
@@ -122,6 +133,7 @@ function FlashcardBack({
             activeColor="bg-red-600"
             icon={faX}
             disabled={typeof existingResponse !== 'undefined'}
+            elementIx={elementIx}
           />
           <FlashcardButton
             active={
@@ -134,6 +146,7 @@ function FlashcardBack({
             activeColor="bg-orange-600"
             icon={faCheck}
             disabled={typeof existingResponse !== 'undefined'}
+            elementIx={elementIx}
           />
           <FlashcardButton
             active={
@@ -146,6 +159,7 @@ function FlashcardBack({
             activeColor="bg-green-600"
             icon={faCheckDouble}
             disabled={typeof existingResponse !== 'undefined'}
+            elementIx={elementIx}
           />
         </div>
       </div>
@@ -161,6 +175,7 @@ interface FlashcardButtonProps {
   activeColor: string
   icon: IconDefinition
   disabled?: boolean
+  elementIx: number
 }
 
 function FlashcardButton({
@@ -171,6 +186,7 @@ function FlashcardButton({
   activeColor,
   icon,
   disabled,
+  elementIx,
 }: FlashcardButtonProps) {
   return (
     <Button
@@ -189,7 +205,7 @@ function FlashcardButton({
         e?.stopPropagation()
         setResponse()
       }}
-      data={{ cy: `flashcard-response-${text}` }}
+      data={{ cy: `flashcard-response-${elementIx + 1}-${text}` }}
     >
       <FontAwesomeIcon icon={icon} />
       {text}
