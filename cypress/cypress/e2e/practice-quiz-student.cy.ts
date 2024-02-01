@@ -26,6 +26,7 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="flashcard-response-1-Yes"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
+    // skip back and forth
     cy.get('[data-cy="practice-quiz-progress-2"]').click()
     cy.get('[data-cy="practice-quiz-progress-1"]').click()
     cy.get('[data-cy="practice-quiz-progress-0"]').click()
@@ -33,6 +34,7 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
+    // answer another stack with a single flashcard
     cy.get('[data-cy="flashcard-front-1"]').click()
     cy.get('[data-cy="flashcard-response-1-Partially"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
