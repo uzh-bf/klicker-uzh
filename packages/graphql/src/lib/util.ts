@@ -114,7 +114,7 @@ export async function sendEmailMigrationNotification(
   }
 
   try {
-    const result = axios.post(
+    const result = await axios.post(
       `${process.env.LISTMONK_URL}/api/tx`,
       {
         subscriber_emails: [email],
