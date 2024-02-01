@@ -77,7 +77,7 @@ function ElementStack({
     } else {
       return false
     }
-  }, [currentStep, totalSteps, studentResponse])
+  }, [studentResponse])
 
   // initialize student responses
   useEffect(() => {
