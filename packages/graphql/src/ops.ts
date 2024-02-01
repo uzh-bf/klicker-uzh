@@ -1709,9 +1709,12 @@ export type StackInput = {
 };
 
 export type StackResponseInput = {
+  choicesResponse?: InputMaybe<Array<Scalars['Int']['input']>>;
   contentReponse?: InputMaybe<Scalars['Boolean']['input']>;
   flashcardResponse?: InputMaybe<FlashcardCorrectnessType>;
+  freeTextResponse?: InputMaybe<Scalars['String']['input']>;
   instanceId: Scalars['Int']['input'];
+  numericalResponse?: InputMaybe<Scalars['Float']['input']>;
   type: ElementType;
 };
 

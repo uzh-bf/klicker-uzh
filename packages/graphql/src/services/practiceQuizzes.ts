@@ -1,12 +1,32 @@
+import {
+  computeAwardedXp,
+  computeSimpleAwardedPoints,
+  gradeQuestionFreeText,
+  gradeQuestionKPRIM,
+  gradeQuestionMC,
+  gradeQuestionNumerical,
+  gradeQuestionSC,
+} from '@klicker-uzh/grading'
 import { ElementType, UserRole } from '@klicker-uzh/prisma'
+import dayjs from 'dayjs'
+import * as R from 'ramda'
+import { ResponseInput } from 'src/ops'
 import { Context } from '../lib/context'
 import { orderStacks } from '../lib/util'
 import {
+  AllElementTypeData,
+  AllQuestionInstanceTypeData,
   ContentInstanceResults,
   FlashcardCorrectness,
   FlashcardInstanceResults,
+  QuestionResponse,
+  QuestionResponseChoices,
   StackFeedbackStatus,
 } from '../types/app'
+
+const POINTS_PER_INSTANCE = 10
+const POINTS_AWARD_TIMEFRAME_DAYS = 6
+const XP_AWARD_TIMEFRAME_DAYS = 1
 
 export async function getPracticeQuizData(
   { id }: { id: string },
@@ -414,16 +434,585 @@ async function respondToContent(
   return result
 }
 
+function evaluateQuestionResponse(
+  elementData: AllElementTypeData,
+  results: any,
+  response: ResponseInput,
+  multiplier?: number
+) {
+  switch (elementData.type) {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
+      // TODO: feedbacks only for selected options?
+      // const feedbacks = elementData.options.choices.filter((choice) =>
+      //   response.choices!.includes(choice.ix)
+      // )
+
+      const feedbacks = elementData.options.choices
+      const solution = elementData.options.choices.reduce<number[]>(
+        (acc, choice) => {
+          if (choice.correct) return [...acc, choice.ix]
+          return acc
+        },
+        []
+      )
+
+      if (elementData.type === ElementType.SC) {
+        const pointsPercentage = gradeQuestionSC({
+          responseCount: elementData.options.choices.length,
+          response: (response as QuestionResponseChoices).choices,
+          solution,
+        })
+        return {
+          feedbacks,
+          choices: results.choices,
+          score: computeSimpleAwardedPoints({
+            points: POINTS_PER_INSTANCE,
+            pointsPercentage,
+            pointsMultiplier: multiplier,
+          }),
+          xp: computeAwardedXp({
+            pointsPercentage,
+          }),
+          percentile: pointsPercentage ?? 0,
+        }
+      } else if (elementData.type === ElementType.MC) {
+        const pointsPercentage = gradeQuestionMC({
+          responseCount: elementData.options.choices.length,
+          response: (response as QuestionResponseChoices).choices,
+          solution,
+        })
+        return {
+          feedbacks,
+          choices: results.choices,
+          score: computeSimpleAwardedPoints({
+            points: POINTS_PER_INSTANCE,
+            pointsPercentage,
+            pointsMultiplier: multiplier,
+          }),
+          xp: computeAwardedXp({
+            pointsPercentage,
+          }),
+          percentile: pointsPercentage ?? 0,
+        }
+      } else {
+        const pointsPercentage = gradeQuestionKPRIM({
+          responseCount: elementData.options.choices.length,
+          response: (response as QuestionResponseChoices).choices,
+          solution,
+        })
+        return {
+          feedbacks,
+          choices: results.choices,
+          score: computeSimpleAwardedPoints({
+            points: POINTS_PER_INSTANCE,
+            pointsPercentage,
+            pointsMultiplier: multiplier,
+          }),
+          xp: computeAwardedXp({
+            pointsPercentage,
+          }),
+          percentile: pointsPercentage ?? 0,
+        }
+      }
+    }
+
+    case ElementType.NUMERICAL: {
+      const solutionRanges = elementData.options.solutionRanges
+
+      const correct = gradeQuestionNumerical({
+        response: parseFloat(String(response.value)),
+        solutionRanges: solutionRanges ?? [],
+      })
+
+      // TODO: add feedbacks here once they are implemented for specified solution ranges
+      return {
+        feedbacks: [],
+        answers: results ?? [],
+        score: correct ? correct * 10 * (multiplier ?? 1) : 0,
+        xp: computeAwardedXp({
+          pointsPercentage: correct,
+        }),
+        percentile: correct ?? 0,
+      }
+    }
+
+    case ElementType.FREE_TEXT: {
+      const solutions = elementData.options.solutions
+
+      const correct = gradeQuestionFreeText({
+        response: response.value ?? '',
+        solutions: solutions ?? [],
+      })
+
+      return {
+        feedbacks: [],
+        answers: results ?? [],
+        score: correct ? correct * 10 * (multiplier ?? 1) : 0,
+        xp: computeAwardedXp({
+          pointsPercentage: correct,
+        }),
+        percentile: correct ?? 0,
+      }
+    }
+
+    default:
+      return null
+  }
+}
+
+export async function respondToQuestion(
+  {
+    courseId,
+    id,
+    response,
+  }: { courseId: string; id: number; response: ResponseInput },
+  ctx: Context
+) {
+  let treatAnonymous = false
+
+  const participation = ctx.user?.sub
+    ? await ctx.prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        include: {
+          participant: true,
+        },
+      })
+    : null
+
+  // if the participant is logged in does not participate in the course, treat him as anonymous
+  if (ctx.user?.sub && !participation) {
+    treatAnonymous = true
+  }
+
+  const { instance, updatedInstance } = await ctx.prisma.$transaction(
+    async (prisma) => {
+      const instance = await prisma.elementInstance.findUnique({
+        where: { id },
+        // if the participant is logged in, fetch the last response of the participant
+        // the response will not be counted and will only yield points if not within the past week
+        include:
+          ctx.user?.sub &&
+          !treatAnonymous &&
+          ctx.user.role === UserRole.PARTICIPANT
+            ? {
+                responses: {
+                  where: {
+                    participant: {
+                      id: ctx.user.sub,
+                    },
+                  },
+                  take: 1,
+                },
+              }
+            : {
+                responses: {
+                  take: 1,
+                },
+              },
+      })
+
+      if (!instance) {
+        return {}
+      }
+
+      // if the participant had already responded, don't track the new response
+      // keeps the evaluation more accurate, as repeated entries do not skew into the "correct direction"
+      const hasPreviousResponse = instance?.responses.length > 0
+      if (ctx.user?.sub && !treatAnonymous && hasPreviousResponse) {
+        return {
+          instance,
+          updatedInstance: instance,
+        }
+      }
+
+      const elementData = instance?.elementData
+
+      // FIXME: ensure the types of this allow assignment of the different element type results
+      const results: AllQuestionInstanceTypeData['results'] = instance?.results
+
+      if (!elementData) {
+        return {}
+      }
+
+      let updatedResults:
+        | {
+            choices?: Record<string, number>
+          }
+        | Record<string, number> = {}
+
+      switch (elementData.type) {
+        case ElementType.SC:
+        case ElementType.MC:
+        case ElementType.KPRIM: {
+          updatedResults.choices = (
+            response as QuestionResponseChoices
+          ).choices.reduce(
+            (acc, ix) => ({
+              ...acc,
+              [ix]: acc[ix] + 1,
+            }),
+            results.choices as Record<string, number>
+          )
+          break
+        }
+
+        case ElementType.NUMERICAL: {
+          if (
+            typeof response.value === 'undefined' ||
+            response.value === null ||
+            response.value === ''
+          ) {
+            return {}
+          }
+
+          const parsedValue = parseFloat(response.value)
+          if (
+            isNaN(parsedValue) ||
+            (typeof elementData.options.restrictions?.min === 'number' &&
+              parsedValue < elementData.options.restrictions.min) ||
+            (typeof elementData.options.restrictions?.max === 'number' &&
+              parsedValue > elementData.options.restrictions.max)
+          ) {
+            return {}
+          }
+
+          const value = String(parsedValue)
+
+          if (Object.keys(results).includes(value)) {
+            updatedResults = {
+              ...results,
+              [value]: results[value] + 1,
+            }
+          } else {
+            updatedResults = { ...results, [value]: 1 }
+          }
+          break
+        }
+
+        case ElementType.FREE_TEXT: {
+          if (
+            typeof response.value === 'undefined' ||
+            response.value === null ||
+            response.value === '' ||
+            (typeof elementData.options.restrictions?.maxLength === 'number' &&
+              response.value.length >
+                elementData.options.restrictions?.maxLength)
+          ) {
+            return {}
+          }
+
+          const value = R.toLower(R.trim(response.value))
+
+          if (Object.keys(results).includes(value)) {
+            updatedResults = {
+              ...results,
+              [value]: results[value] + 1,
+            }
+          } else {
+            updatedResults = { ...results, [value]: 1 }
+          }
+          break
+        }
+
+        default:
+          break
+      }
+
+      const updatedInstance = await prisma.elementInstance.update({
+        where: { id },
+        data: {
+          results: updatedResults,
+          // TODO: re-introduce participants count as part of options / results
+          // participants: {
+          //   increment: 1,
+          // },
+        },
+      })
+
+      return {
+        instance,
+        updatedInstance,
+      }
+    }
+  )
+
+  const elementData = updatedInstance?.elementData
+  const results = updatedInstance?.results
+
+  if (!instance || !updatedInstance || !elementData) return null
+
+  const evaluation = evaluateQuestionResponse(
+    elementData,
+    results,
+    response,
+    updatedInstance.options.pointsMultiplier
+  )
+  const score = evaluation?.score || 0
+  const xp = evaluation?.xp || 0
+  let pointsAwarded
+  let newPointsFrom
+  let lastAwardedAt
+  let lastXpAwardedAt
+  let xpAwarded
+  let newXpFrom
+  const promises = []
+
+  // if the user is logged in and the last response was not within the past 6 days
+  // award points and update the response
+  if (
+    ctx.user?.sub &&
+    !treatAnonymous &&
+    ctx.user.role === UserRole.PARTICIPANT
+  ) {
+    const hasPreviousResponse = instance?.responses?.length > 0
+
+    if (hasPreviousResponse) {
+      const previousResponseOutsideTimeframe =
+        !instance.responses[0].lastAwardedAt ||
+        dayjs(instance.responses[0].lastAwardedAt).isBefore(
+          dayjs().subtract(
+            instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
+            'days'
+          )
+        )
+
+      if (previousResponseOutsideTimeframe) {
+        pointsAwarded = score
+      } else {
+        pointsAwarded = 0
+      }
+
+      const previousXpResponseOutsideTimeframe =
+        !instance.responses[0].lastXpAwardedAt ||
+        dayjs(instance.responses[0].lastXpAwardedAt).isBefore(
+          dayjs().subtract(XP_AWARD_TIMEFRAME_DAYS, 'days')
+        )
+
+      if (previousXpResponseOutsideTimeframe) {
+        xpAwarded = xp
+      } else {
+        xpAwarded = 0
+      }
+
+      lastAwardedAt = previousResponseOutsideTimeframe
+        ? new Date()
+        : instance.responses[0].lastAwardedAt
+      lastXpAwardedAt = previousXpResponseOutsideTimeframe
+        ? new Date()
+        : instance.responses[0].lastXpAwardedAt
+      newPointsFrom = dayjs(lastAwardedAt)
+        .add(
+          instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
+          'days'
+        )
+        .toDate()
+      newXpFrom = dayjs(lastXpAwardedAt)
+        .add(XP_AWARD_TIMEFRAME_DAYS, 'days')
+        .toDate()
+    } else {
+      pointsAwarded = score
+      xpAwarded = xp
+
+      lastAwardedAt = new Date()
+      lastXpAwardedAt = new Date()
+      newPointsFrom = dayjs(lastAwardedAt)
+        .add(
+          instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
+          'days'
+        )
+        .toDate()
+      newXpFrom = dayjs(lastAwardedAt)
+        .add(XP_AWARD_TIMEFRAME_DAYS, 'days')
+        .toDate()
+    }
+
+    // if the user is not participating in the leaderboard, do not award points
+    if (ctx.user.sub && participation?.isActive === false) {
+      pointsAwarded = null
+      lastAwardedAt = undefined
+    }
+
+    promises.push(
+      ctx.prisma.questionResponse.upsert({
+        where: {
+          participantId_elementInstanceId: {
+            participantId: ctx.user.sub,
+            elementInstanceId: id,
+          },
+        },
+        create: {
+          totalScore: score,
+          totalPointsAwarded: pointsAwarded,
+          totalXpAwarded: xpAwarded,
+          trialsCount: 1,
+          lastAwardedAt,
+          lastXpAwardedAt,
+          response: response as QuestionResponse,
+          participant: {
+            connect: { id: ctx.user.sub },
+          },
+          elementInstance: {
+            connect: { id },
+          },
+          participation: {
+            connect: {
+              courseId_participantId: {
+                courseId,
+                participantId: ctx.user.sub,
+              },
+            },
+          },
+        },
+        update: {
+          response: response as QuestionResponse,
+          lastAwardedAt,
+          lastXpAwardedAt,
+          trialsCount: {
+            increment: 1,
+          },
+          totalScore: {
+            increment: score,
+          },
+          totalPointsAwarded:
+            typeof pointsAwarded === 'number'
+              ? {
+                  increment: pointsAwarded,
+                }
+              : null,
+          totalXpAwarded: {
+            increment: xpAwarded,
+          },
+        },
+      }),
+      ctx.prisma.questionResponseDetail.create({
+        data: {
+          score,
+          pointsAwarded,
+          xpAwarded,
+          response: response as QuestionResponse,
+          participant: {
+            connect: { id: ctx.user.sub },
+          },
+          elementInstance: {
+            connect: { id },
+          },
+          participation: {
+            connect: {
+              courseId_participantId: {
+                courseId,
+                participantId: ctx.user.sub,
+              },
+            },
+          },
+        },
+      })
+    )
+
+    if (typeof xpAwarded === 'number' && xpAwarded > 0) {
+      promises.push(
+        ctx.prisma.participant.update({
+          where: {
+            id: ctx.user.sub,
+          },
+          data: {
+            xp: {
+              increment: xpAwarded,
+            },
+          },
+        })
+      )
+    }
+
+    if (typeof pointsAwarded === 'number') {
+      promises.push(
+        ctx.prisma.leaderboardEntry.upsert({
+          where: {
+            type_participantId_courseId: {
+              type: 'COURSE',
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+          create: {
+            type: 'COURSE',
+            score: pointsAwarded,
+            participant: {
+              connect: {
+                id: ctx.user.sub,
+              },
+            },
+            course: {
+              connect: {
+                id: courseId,
+              },
+            },
+            participation: {
+              connect: {
+                courseId_participantId: {
+                  courseId,
+                  participantId: ctx.user.sub,
+                },
+              },
+            },
+          },
+          update: {
+            score: {
+              increment: pointsAwarded,
+            },
+          },
+        })
+      )
+    }
+  }
+
+  await ctx.prisma.$transaction(promises)
+
+  // processing of percentile into status of instance
+  const status =
+    evaluation?.percentile === 0
+      ? StackFeedbackStatus.INCORRECT
+      : evaluation?.percentile === 1
+      ? StackFeedbackStatus.CORRECT
+      : StackFeedbackStatus.PARTIAL
+
+  return {
+    ...updatedInstance,
+    evaluation: evaluation
+      ? {
+          ...evaluation,
+          pointsAwarded,
+          newPointsFrom,
+          xpAwarded,
+          newXpFrom,
+        }
+      : undefined,
+    status: status,
+  }
+}
+
 function combineStackStatus({
   prevStatus,
   newStatus,
 }: {
   prevStatus: StackFeedbackStatus
-  newStatus:
-    | StackFeedbackStatus.CORRECT
-    | StackFeedbackStatus.PARTIAL
-    | StackFeedbackStatus.INCORRECT
+  newStatus: StackFeedbackStatus
 }) {
+  // if the new status is not valid, return the previous one
+  if (
+    newStatus !== StackFeedbackStatus.INCORRECT &&
+    newStatus !== StackFeedbackStatus.PARTIAL &&
+    newStatus !== StackFeedbackStatus.CORRECT
+  ) {
+    return prevStatus
+  }
+
   if (prevStatus === StackFeedbackStatus.UNANSWERED) {
     // if this is the first response to the stack, set the feedback to the result
     return newStatus
@@ -451,6 +1040,9 @@ interface RespondToPracticeQuizStackInput {
     type: ElementType
     flashcardResponse?: FlashcardCorrectness | null
     contentReponse?: boolean | null
+    choicesResponse?: number[] | null
+    numericalResponse?: number | null
+    freeTextResponse?: string | null
   }[]
 }
 
@@ -509,9 +1101,76 @@ export async function respondToPracticeQuizStack(
           newStatus: result.grading,
         })
       }
-    }
+    } else if (
+      response.type === ElementType.SC ||
+      response.type === ElementType.MC ||
+      response.type === ElementType.KPRIM
+    ) {
+      const result = await respondToQuestion(
+        {
+          courseId: courseId,
+          id: response.instanceId,
+          response: { choices: response.choicesResponse },
+        },
+        ctx
+      )
 
-    // TODO: add remaining cases to answer questions
+      if (result) {
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus: result.status,
+        })
+        stackScore =
+          typeof stackScore === 'undefined'
+            ? result.evaluation?.score
+            : stackScore + (result.evaluation?.score ?? 0)
+      }
+    } else if (response.type === ElementType.NUMERICAL) {
+      const result = await respondToQuestion(
+        {
+          courseId: courseId,
+          id: response.instanceId,
+          response: { value: String(response.numericalResponse) },
+        },
+        ctx
+      )
+
+      if (result) {
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus: result.status,
+        })
+        stackScore =
+          typeof stackScore === 'undefined'
+            ? result.evaluation?.score
+            : stackScore + (result.evaluation?.score ?? 0)
+      }
+    } else if (response.type === ElementType.FREE_TEXT) {
+      const result = await respondToQuestion(
+        {
+          courseId: courseId,
+          id: response.instanceId,
+          response: { value: response.freeTextResponse },
+        },
+        ctx
+      )
+
+      if (result) {
+        stackFeedback = combineStackStatus({
+          prevStatus: stackFeedback,
+          newStatus: result.status,
+        })
+        stackScore =
+          typeof stackScore === 'undefined'
+            ? result.evaluation?.score
+            : stackScore + (result.evaluation?.score ?? 0)
+      }
+    } else {
+      throw new Error(
+        'Submission of practice quiz stack answers not implemented for type ' +
+          response.type
+      )
+    }
   }
 
   return {

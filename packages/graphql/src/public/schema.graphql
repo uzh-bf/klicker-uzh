@@ -983,9 +983,12 @@ input StackInput {
 }
 
 input StackResponseInput {
+  choicesResponse: [Int!]
   contentReponse: Boolean
   flashcardResponse: FlashcardCorrectnessType
+  freeTextResponse: String
   instanceId: Int!
+  numericalResponse: Float
   type: ElementType!
 }
 

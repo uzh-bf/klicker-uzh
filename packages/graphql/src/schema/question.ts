@@ -94,6 +94,7 @@ export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
   }),
 })
 
+// TODO: remove after migration to new element structure
 export const ResponseInput = builder.inputType('ResponseInput', {
   // directives: {
   //   oneOf: {},

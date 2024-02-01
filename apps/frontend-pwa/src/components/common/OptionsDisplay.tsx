@@ -13,10 +13,10 @@ import FREETextAnswerOptions from '@klicker-uzh/shared-components/src/questions/
 import NUMERICALAnswerOptions from '@klicker-uzh/shared-components/src/questions/NUMERICALAnswerOptions'
 import {
   validateFreeTextResponse,
-  validateKprimResponse,
-  validateMcResponse,
+  validateKprimResponseOld,
+  validateMcResponseOld,
   validateNumericalResponse,
-  validateScResponse,
+  validateScResponseOld,
 } from '@klicker-uzh/shared-components/src/utils/validateResponse'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -432,11 +432,11 @@ function OptionsDisplay({
               !(
                 isEvaluation ||
                 (questionType === ElementType.Sc &&
-                  validateScResponse(response)) ||
+                  validateScResponseOld(response)) ||
                 (questionType === ElementType.Mc &&
-                  validateMcResponse(response)) ||
+                  validateMcResponseOld(response)) ||
                 (questionType === ElementType.Kprim &&
-                  validateKprimResponse(response)) ||
+                  validateKprimResponseOld(response)) ||
                 (questionType === ElementType.Numerical &&
                   validateNumericalResponse({
                     response,

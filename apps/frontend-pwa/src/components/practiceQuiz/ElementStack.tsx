@@ -1,11 +1,16 @@
 import { useMutation } from '@apollo/client'
 import {
+  ChoicesElementData,
+  ChoicesQuestionData,
   ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectnessType,
   RespondToPracticeQuizStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import ChoicesQuestion from '@klicker-uzh/shared-components/src/ChoicesQuestion'
+import FreeTextQuestion from '@klicker-uzh/shared-components/src/FreeTextQuestion'
+import NumericalQuestion from '@klicker-uzh/shared-components/src/NumericalQuestion'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -31,13 +36,35 @@ interface ElementStackProps {
   handleNextElement: () => void
 }
 
+type ElementChoicesType = ElementType.Sc | ElementType.Mc | ElementType.Kprim
+
 type StudentResponseType = Record<
   number,
-  {
-    type: ElementType
-    response?: FlashcardCorrectnessType | boolean // TODO: augment this type for questions
-    correct?: StackFeedbackStatus
-  }
+  | {
+      type: ElementType.Flashcard
+      response?: FlashcardCorrectnessType
+      correct?: StackFeedbackStatus
+    }
+  | {
+      type: ElementType.Content
+      response?: boolean
+      correct?: StackFeedbackStatus
+    }
+  | {
+      type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
+      response?: Record<number, boolean | undefined>
+      correct?: StackFeedbackStatus
+    }
+  | {
+      type: ElementType.Numerical
+      response?: number
+      correct?: StackFeedbackStatus
+    }
+  | {
+      type: ElementType.FreeText
+      response?: string
+      correct?: StackFeedbackStatus
+    }
 >
 
 function ElementStack({
@@ -83,13 +110,31 @@ function ElementStack({
   useEffect(() => {
     const newStudentResponse =
       stack.elements?.reduce((acc, element) => {
-        return {
-          ...acc,
-          [element.id]: {
-            type: element.elementData.type,
-            response: undefined,
-            correct: undefined,
-          },
+        if (element.elementData.type === ElementType.Kprim) {
+          return {
+            ...acc,
+            [element.id]: {
+              type: element.elementData.type,
+              response: (
+                element.elementData as ChoicesElementData
+              ).options.choices.reduce((acc, _, ix) => {
+                return { ...acc, [ix]: undefined }
+              }, {} as Record<number, boolean | undefined>),
+              correct: undefined,
+            },
+          }
+        }
+        // TODO: set initial value for numerical questions
+        // TODO: set initial value for free text questions
+        else {
+          return {
+            ...acc,
+            [element.id]: {
+              type: element.elementData.type,
+              response: undefined,
+              correct: undefined,
+            },
+          }
         }
       }, {} as StudentResponseType) || {}
 
@@ -133,6 +178,7 @@ function ElementStack({
           </div>
         )}
 
+        {/* // TODO: extract this part to a new component "StudentElement" */}
         <div className="flex flex-col gap-3">
           {stack.elements &&
             stack.elements.length > 0 &&
@@ -153,6 +199,7 @@ function ElementStack({
                           ...response,
                           [element.id]: {
                             ...response[element.id],
+                            type: ElementType.Flashcard,
                             response: studentResponse,
                           },
                         }
@@ -168,11 +215,49 @@ function ElementStack({
               } else if (
                 element.elementData.type === ElementType.Sc ||
                 element.elementData.type === ElementType.Mc ||
-                element.elementData.type === ElementType.Kprim ||
-                element.elementData.type === ElementType.Numerical ||
-                element.elementData.type === ElementType.FreeText
+                element.elementData.type === ElementType.Kprim
               ) {
-                return <div key={element.id}>TODO Question</div> // TODO - include student question here
+                return (
+                  <ChoicesQuestion
+                    key={element.id}
+                    content={element.elementData.content}
+                    type={element.elementData.type}
+                    options={
+                      (element.elementData as ChoicesQuestionData).options
+                    }
+                    response={
+                      studentResponse[element.id]?.response as Record<
+                        number,
+                        boolean
+                      >
+                    }
+                    setResponse={(newValue, valid) => {
+                      // TODO: use validity type
+                      setStudentResponse((response) => {
+                        return {
+                          ...response,
+                          [element.id]: {
+                            ...response[element.id],
+                            type: element.elementData
+                              .type as ElementChoicesType,
+                            response: newValue,
+                          },
+                        }
+                      })
+                    }}
+                    existingResponse={
+                      stackStorage?.[element.id]?.response as Record<
+                        number,
+                        boolean
+                      >
+                    }
+                    elementIx={elementIx}
+                  />
+                )
+              } else if (element.elementData.type === ElementType.Numerical) {
+                return <NumericalQuestion key={element.id} />
+              } else if (element.elementData.type === ElementType.FreeText) {
+                return <FreeTextQuestion key={element.id} />
               } else if (element.elementData.type === ElementType.Content) {
                 return (
                   <ContentElement
@@ -188,6 +273,7 @@ function ElementStack({
                           ...response,
                           [element.id]: {
                             ...response[element.id],
+                            type: ElementType.Content,
                             response: true,
                           },
                         }
@@ -269,8 +355,26 @@ function ElementStack({
                         type: ElementType.Content,
                         contentReponse: value.response as boolean,
                       }
+                    } else if (
+                      value.type === ElementType.Sc ||
+                      value.type === ElementType.Mc ||
+                      value.type === ElementType.Kprim
+                    ) {
+                      // convert the solution objects into integer lists
+                      const responseList = Object.entries(
+                        value.response as Record<number, boolean>
+                      )
+                        .filter(([, value]) => value)
+                        .map(([key]) => parseInt(key))
+
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: value.type as ElementChoicesType,
+                        choicesResponse: responseList,
+                      }
                     }
-                    // TODO - handle question data here
+                    // TODO: submission logic for numerical questions
+                    // TODO: submission logic for free text questions
                     else {
                       return {
                         instanceId: parseInt(instanceId),

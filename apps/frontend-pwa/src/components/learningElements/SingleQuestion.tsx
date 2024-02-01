@@ -1,10 +1,10 @@
 import { ElementType, QuestionInstance } from '@klicker-uzh/graphql/dist/ops'
 import {
   validateFreeTextResponse,
-  validateKprimResponse,
-  validateMcResponse,
+  validateKprimResponseOld,
+  validateMcResponseOld,
   validateNumericalResponse,
-  validateScResponse,
+  validateScResponseOld,
 } from '@klicker-uzh/shared-components/src/utils/validateResponse'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -38,7 +38,7 @@ function SingleQuestion({
 
     switch (instance.questionData.type) {
       case ElementType.Sc:
-        if (validateScResponse(questionResponse)) {
+        if (validateScResponseOld(questionResponse)) {
           setInputValid(true)
           break
         }
@@ -46,7 +46,7 @@ function SingleQuestion({
         break
 
       case ElementType.Mc:
-        if (validateMcResponse(questionResponse)) {
+        if (validateMcResponseOld(questionResponse)) {
           setInputValid(true)
           break
         }
@@ -54,7 +54,7 @@ function SingleQuestion({
         break
 
       case ElementType.Kprim:
-        if (validateKprimResponse(questionResponse)) {
+        if (validateKprimResponseOld(questionResponse)) {
           setInputValid(true)
           break
         }

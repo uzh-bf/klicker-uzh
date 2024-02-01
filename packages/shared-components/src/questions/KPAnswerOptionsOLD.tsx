@@ -1,32 +1,26 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Choice,
-  ElementDisplayMode,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export interface KPAnswerOptionsProps {
+export interface KPAnswerOptionsOLDProps {
   displayMode?: ElementDisplayMode
   type: ElementType
-  choices: Partial<Choice>[]
-  value?: Record<number, boolean>
-  onChange: (newValue: Record<number, boolean>) => void
+  choices: { value: string; correct: boolean; feedback: string }[]
+  value?: { [key: number]: boolean }
+  onChange: (answer: any, selectedValue: boolean) => any
   id?: string
-  elementIx: number
 }
 
-export function KPAnswerOptions({
+export function KPAnswerOptionsOLD({
   displayMode,
   choices,
   value,
   onChange,
-  elementIx,
-}: KPAnswerOptionsProps): React.ReactElement {
+}: KPAnswerOptionsOLDProps): React.ReactElement {
   return (
     <div
       className={twMerge(
@@ -58,10 +52,8 @@ export function KPAnswerOptions({
                 ),
               }}
               active={value?.[index] === true}
-              onClick={() => onChange({ ...value, [index]: true })}
-              data={{
-                cy: `toggle-kp-${elementIx + 1}-answer-${index + 1}-correct`,
-              }}
+              onClick={onChange(index, true)}
+              data={{ cy: `toggle-kp-answer-${index}-correct` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faCheck} />
@@ -74,10 +66,8 @@ export function KPAnswerOptions({
                 ),
               }}
               active={value?.[index] === false}
-              onClick={() => onChange({ ...value, [index]: false })}
-              data={{
-                cy: `toggle-kp-${elementIx + 1}-answer-${index + 1}-incorrect`,
-              }}
+              onClick={onChange(index, false)}
+              data={{ cy: `toggle-kp-answer-${index}-incorrect` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faX} />
@@ -90,4 +80,4 @@ export function KPAnswerOptions({
   )
 }
 
-export default KPAnswerOptions
+export default KPAnswerOptionsOLD
