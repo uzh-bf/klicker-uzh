@@ -47,7 +47,7 @@ export type StudentResponseType = Record<
     }
   | {
       type: ElementType.Numerical
-      response?: number
+      response?: string
       correct?: StackFeedbackStatus
       valid?: boolean
     }
@@ -145,7 +145,7 @@ function StudentElement({
                 key={element.id}
                 content={element.elementData.content}
                 options={(element.elementData as NumericalElementData).options}
-                response={studentResponse[element.id]?.response as number}
+                response={studentResponse[element.id]?.response as string}
                 valid={studentResponse[element.id]?.valid as boolean}
                 setResponse={(newValue, valid) => {
                   setStudentResponse((response) => {
@@ -161,7 +161,7 @@ function StudentElement({
                   })
                 }}
                 existingResponse={
-                  stackStorage?.[element.id]?.response as number
+                  stackStorage?.[element.id]?.response as string
                 }
                 elementIx={elementIx}
               />

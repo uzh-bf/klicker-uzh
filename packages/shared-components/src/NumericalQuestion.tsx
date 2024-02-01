@@ -8,10 +8,10 @@ import { validateNumericalResponse } from './utils/validateResponse'
 interface NumericalQuestionProps {
   content: string
   options: NumericalQuestionOptions
-  response?: number
+  response?: string
   valid: boolean
-  setResponse: (newValue: number, valid: boolean) => void
-  existingResponse?: number
+  setResponse: (newValue: string, valid: boolean) => void
+  existingResponse?: string
   elementIx: number
 }
 
@@ -49,7 +49,7 @@ function NumericalQuestion({
             response: newValue,
             options,
           })
-          setResponse(parseFloat(newValue), valid)
+          setResponse(newValue, valid)
         }}
         valid={valid}
         accuracy={options.accuracy ? options.accuracy : undefined}
