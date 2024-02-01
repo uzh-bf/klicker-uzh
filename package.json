@@ -52,6 +52,7 @@
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
     "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
+    "prisma:setup:yes": "pnpm run --filter @klicker-uzh/prisma prisma:setup:yes",
     "prisma:studio": "pnpm run --filter @klicker-uzh/prisma prisma:studio",
     "prune": "turbo prune",
     "publish": "turbo run publish",

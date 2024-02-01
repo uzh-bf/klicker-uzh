@@ -121,7 +121,7 @@ function ElementStack({
         <div className="flex flex-col gap-3">
           {stack.elements &&
             stack.elements.length > 0 &&
-            stack.elements.map((element) => {
+            stack.elements.map((element, elementIx) => {
               if (element.elementData.type === ElementType.Flashcard) {
                 return (
                   <Flashcard
@@ -147,6 +147,7 @@ function ElementStack({
                       stackStorage?.[element.id]
                         ?.response as FlashcardCorrectnessType
                     }
+                    elementIx={elementIx}
                   />
                 )
               } else if (
@@ -177,6 +178,7 @@ function ElementStack({
                         }
                       })
                     }}
+                    elementIx={elementIx}
                   />
                 )
               } else {

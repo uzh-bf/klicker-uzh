@@ -10,16 +10,29 @@ interface ContentelementProps {
   element: ElementInstance
   read: boolean
   onRead: () => void
+  elementIx: number
 }
 
-function ContentElement({ element, read, onRead }: ContentelementProps) {
+function ContentElement({
+  element,
+  read,
+  onRead,
+  elementIx,
+}: ContentelementProps) {
   const t = useTranslations()
 
   return (
-    <div className="px-3 py-2 border border-solid rounded-lg bg-slate-100">
+    <div
+      className="px-3 py-2 border border-solid rounded-lg bg-slate-100"
+      data-cy={`content-element-${elementIx + 1}`}
+    >
       <div className="flex flex-row gap-3 -mb-2">
         <FontAwesomeIcon icon={faBookOpen} className="mt-1.5" />
-        <DynamicMarkdown content={element.elementData.content} withProse />
+        <DynamicMarkdown
+          content={element.elementData.content}
+          withProse
+          data={{ cy: `content-element-md-${elementIx + 1}` }}
+        />
       </div>
       <Button
         disabled={read}
@@ -30,6 +43,7 @@ function ContentElement({ element, read, onRead }: ContentelementProps) {
             read && 'bg-green-700 bg-opacity-50 text-white'
           ),
         }}
+        data={{ cy: `read-content-element-${elementIx + 1}` }}
       >
         <FontAwesomeIcon icon={faCheck} />
         <div>{t('pwa.practiceQuiz.read')}</div>
