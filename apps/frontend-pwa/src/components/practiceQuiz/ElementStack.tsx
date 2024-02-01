@@ -83,7 +83,7 @@ function ElementStack({
   }, [currentStep])
 
   // TODO: remove logging
-  console.log(studentResponse)
+  console.log('student response:', studentResponse)
 
   return (
     <div className="pb-12">
@@ -192,18 +192,20 @@ function ElementStack({
         className={{ root: 'float-right text-lg mt-4' }}
         disabled={
           // TODO: remove the type check where questions are considered to be valid
-          Object.values(studentResponse).some(
-            (response) =>
-              typeof response.response === 'undefined' &&
-              (response.type === ElementType.Flashcard ||
-                response.type === ElementType.Content)
-          )
+          typeof stackStorage !== 'undefined'
+            ? false
+            : Object.values(studentResponse).some(
+                (response) =>
+                  typeof response.response === 'undefined' &&
+                  (response.type === ElementType.Flashcard ||
+                    response.type === ElementType.Content)
+              )
         }
         onClick={async () => {
           // TODO: check if all instances have a response before starting submission (once questions are implemented)
 
-          // TODO: only submit answer if not already done before
-          if (true) {
+          // only submit answer if not already answered before
+          if (typeof stackStorage === 'undefined') {
             const result = await respondToPracticeQuizStack({
               variables: {
                 stackId: stack.id,
