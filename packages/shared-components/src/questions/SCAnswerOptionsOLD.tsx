@@ -1,23 +1,23 @@
-import { Choice, ElementDisplayMode } from '@klicker-uzh/graphql/dist/ops'
+import { ElementDisplayMode } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export interface SCAnswerOptionsProps {
+export interface SCAnswerOptionsOLDProps {
   displayMode?: ElementDisplayMode
-  choices: Partial<Choice>[]
-  value?: Record<number, boolean>
-  onChange: (value: Record<number, boolean>) => void
+  choices: { value: string; correct: boolean; feedback: string }[]
+  value?: number[]
+  onChange: (value: any) => any
   id?: string
 }
 
-export function SCAnswerOptions({
+export function SCAnswerOptionsOLD({
   displayMode,
   choices,
   value,
   onChange,
-}: SCAnswerOptionsProps): React.ReactElement {
+}: SCAnswerOptionsOLDProps): React.ReactElement {
   return (
     <div
       className={twMerge(
@@ -36,13 +36,9 @@ export function SCAnswerOptions({
                 'min-h-[2.5rem] border-slate-400 sm:hover:bg-unset'
               ),
             }}
-            onClick={() =>
-              onChange(
-                Object.fromEntries(choices.map((_, i) => [i, i === index]))
-              )
-            }
+            onClick={onChange(index)}
             key={`${choice.value}-${index}`}
-            active={value?.[index]}
+            active={value?.includes(index)}
             data={{ cy: 'sc-answer-options' }}
           >
             <Button.Label>
@@ -61,4 +57,4 @@ export function SCAnswerOptions({
   )
 }
 
-export default SCAnswerOptions
+export default SCAnswerOptionsOLD
