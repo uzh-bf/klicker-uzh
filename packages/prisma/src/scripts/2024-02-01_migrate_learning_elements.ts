@@ -6,6 +6,8 @@ async function migrate() {
 
   const learningElements = await prisma.learningElement.findMany({
     include: {
+      course: true,
+      owner: true,
       stacks: {
         include: {
           elements: {
@@ -26,6 +28,10 @@ async function migrate() {
 
   for (const elem of learningElements) {
     console.log(counter, elem.id, elem)
+
+    if (elem.courseId === null) {
+      continue
+    }
 
     // create a new practice quiz
     await prisma.practiceQuiz.upsert({
@@ -49,12 +55,12 @@ async function migrate() {
         updatedAt: elem.updatedAt,
         course: {
           connect: {
-            id: elem.courseId as string,
+            id: elem.course?.id as string,
           },
         },
         owner: {
           connect: {
-            id: elem.ownerId as string,
+            id: elem.owner?.id as string,
           },
         },
       },
