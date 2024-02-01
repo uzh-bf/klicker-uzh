@@ -5,21 +5,21 @@ import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export interface NUMERICALAnswerOptionsProps {
+export interface NUMERICALAnswerOptionsOLDProps {
+  disabled?: boolean
   accuracy?: number
   placeholder?: string
   unit?: string
   valid: boolean
-  value?: string
+  value: string | number
   min?: number
   max?: number
-  onChange: (value: string) => void
+  onChange: (value: any) => any
   hidePrecision?: boolean
-  disabled?: boolean
-  elementIx: number
 }
 
-export function NUMERICALAnswerOptions({
+export function NUMERICALAnswerOptionsOLD({
+  disabled,
   accuracy,
   placeholder,
   unit,
@@ -29,9 +29,7 @@ export function NUMERICALAnswerOptions({
   max,
   onChange,
   hidePrecision,
-  disabled,
-  elementIx,
-}: NUMERICALAnswerOptionsProps): React.ReactElement {
+}: NUMERICALAnswerOptionsOLDProps): React.ReactElement {
   const t = useTranslations()
 
   return (
@@ -55,8 +53,8 @@ export function NUMERICALAnswerOptions({
       </div>
       <div className="flex flex-row">
         <NumberField
-          value={value ?? ''}
-          onChange={(newValue: string) => onChange(newValue)}
+          value={value}
+          onChange={onChange}
           placeholder={placeholder}
           disabled={disabled}
           precision={accuracy}
@@ -65,10 +63,9 @@ export function NUMERICALAnswerOptions({
             input: twMerge(
               'focus:border-primary-80',
               unit && '!rounded-r-none',
-              !valid && 'border-red-600'
+              !valid && value !== '' && 'border-red-600'
             ),
           }}
-          data={{ cy: `input-numerical-${elementIx + 1}` }}
         />
         {unit && (
           <div className="flex flex-col items-center justify-center px-4 text-white rounded-r bg-slate-600 min-w-max">
@@ -76,7 +73,7 @@ export function NUMERICALAnswerOptions({
           </div>
         )}
       </div>
-      {!valid && (
+      {!valid && value !== '' && (
         <div className="text-black">
           <FontAwesomeIcon
             icon={faTriangleExclamation}
@@ -89,4 +86,4 @@ export function NUMERICALAnswerOptions({
   )
 }
 
-export default NUMERICALAnswerOptions
+export default NUMERICALAnswerOptionsOLD

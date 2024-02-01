@@ -10,7 +10,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import FREETextAnswerOptions from '@klicker-uzh/shared-components/src/questions/FREETextAnswerOptions'
-import NUMERICALAnswerOptions from '@klicker-uzh/shared-components/src/questions/NUMERICALAnswerOptions'
+import NUMERICALAnswerOptionsOLD from '@klicker-uzh/shared-components/src/questions/NUMERICALAnswerOptionsOLD'
 import {
   validateFreeTextResponse,
   validateKprimResponseOld,
@@ -332,7 +332,7 @@ export function Options({
                 })}
             </div>
           )}
-          <NUMERICALAnswerOptions
+          <NUMERICALAnswerOptionsOLD
             disabled={disabled || isEvaluation}
             accuracy={accuracy}
             placeholder={questionOptions?.placeholder ?? undefined}

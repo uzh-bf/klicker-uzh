@@ -33,9 +33,6 @@ function ChoicesQuestion({
   existingResponse,
   elementIx,
 }: ChoicesQuestionProps) {
-  // TODO: implement UI for existing response in local storage (disabled and highlighted)
-  // TODO: implement cypress testing attributes using elementIx
-
   return (
     <div>
       {content !== '<br>' && (
