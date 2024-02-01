@@ -18,6 +18,7 @@ export interface KPAnswerOptionsProps {
   onChange: (newValue: Record<number, boolean>) => void
   id?: string
   elementIx: number
+  disabled: boolean
 }
 
 export function KPAnswerOptions({
@@ -26,6 +27,7 @@ export function KPAnswerOptions({
   value,
   onChange,
   elementIx,
+  disabled,
 }: KPAnswerOptionsProps): React.ReactElement {
   return (
     <div
@@ -62,6 +64,7 @@ export function KPAnswerOptions({
               data={{
                 cy: `toggle-kp-${elementIx + 1}-answer-${index + 1}-correct`,
               }}
+              disabled={disabled}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faCheck} />
@@ -78,6 +81,7 @@ export function KPAnswerOptions({
               data={{
                 cy: `toggle-kp-${elementIx + 1}-answer-${index + 1}-incorrect`,
               }}
+              disabled={disabled}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faX} />

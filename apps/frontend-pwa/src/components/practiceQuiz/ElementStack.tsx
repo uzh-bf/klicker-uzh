@@ -1,24 +1,22 @@
 import { useMutation } from '@apollo/client'
 import {
   ChoicesElementData,
-  ChoicesQuestionData,
   ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectnessType,
   RespondToPracticeQuizStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import ChoicesQuestion from '@klicker-uzh/shared-components/src/ChoicesQuestion'
-import FreeTextQuestion from '@klicker-uzh/shared-components/src/FreeTextQuestion'
-import NumericalQuestion from '@klicker-uzh/shared-components/src/NumericalQuestion'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
-import ContentElement from './ContentElement'
-import Flashcard from './Flashcard'
+import StudentElement, {
+  ElementChoicesType,
+  StudentResponseType,
+} from './StudentElement'
 
 interface ElementStackProps {
   parentId: string
@@ -35,37 +33,6 @@ interface ElementStackProps {
   }) => void
   handleNextElement: () => void
 }
-
-type ElementChoicesType = ElementType.Sc | ElementType.Mc | ElementType.Kprim
-
-type StudentResponseType = Record<
-  number,
-  | {
-      type: ElementType.Flashcard
-      response?: FlashcardCorrectnessType
-      correct?: StackFeedbackStatus
-    }
-  | {
-      type: ElementType.Content
-      response?: boolean
-      correct?: StackFeedbackStatus
-    }
-  | {
-      type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
-      response?: Record<number, boolean | undefined>
-      correct?: StackFeedbackStatus
-    }
-  | {
-      type: ElementType.Numerical
-      response?: number
-      correct?: StackFeedbackStatus
-    }
-  | {
-      type: ElementType.FreeText
-      response?: string
-      correct?: StackFeedbackStatus
-    }
->
 
 function ElementStack({
   parentId,
@@ -110,7 +77,11 @@ function ElementStack({
   useEffect(() => {
     const newStudentResponse =
       stack.elements?.reduce((acc, element) => {
-        if (element.elementData.type === ElementType.Kprim) {
+        if (
+          element.elementData.type === ElementType.Kprim ||
+          element.elementData.type === ElementType.Mc ||
+          element.elementData.type === ElementType.Sc
+        ) {
           return {
             ...acc,
             [element.id]: {
@@ -121,18 +92,30 @@ function ElementStack({
                 return { ...acc, [ix]: undefined }
               }, {} as Record<number, boolean | undefined>),
               correct: undefined,
+              valid: false,
             },
           }
         }
         // TODO: set initial value for numerical questions
         // TODO: set initial value for free text questions
-        else {
+        else if (element.elementData.type === ElementType.Content) {
           return {
             ...acc,
             [element.id]: {
               type: element.elementData.type,
               response: undefined,
               correct: undefined,
+              valid: true,
+            },
+          }
+        } else {
+          return {
+            ...acc,
+            [element.id]: {
+              type: element.elementData.type,
+              response: undefined,
+              correct: undefined,
+              valid: false,
             },
           }
         }
@@ -178,128 +161,19 @@ function ElementStack({
           </div>
         )}
 
-        {/* // TODO: extract this part to a new component "StudentElement" */}
-        <div className="flex flex-col gap-3">
-          {stack.elements &&
-            stack.elements.length > 0 &&
-            stack.elements.map((element, elementIx) => {
-              if (element.elementData.type === ElementType.Flashcard) {
-                return (
-                  <Flashcard
-                    key={element.id}
-                    content={element.elementData.content}
-                    explanation={element.elementData.explanation!}
-                    response={
-                      studentResponse[element.id]
-                        ?.response as FlashcardCorrectnessType
-                    }
-                    setResponse={(studentResponse) => {
-                      setStudentResponse((response) => {
-                        return {
-                          ...response,
-                          [element.id]: {
-                            ...response[element.id],
-                            type: ElementType.Flashcard,
-                            response: studentResponse,
-                          },
-                        }
-                      })
-                    }}
-                    existingResponse={
-                      stackStorage?.[element.id]
-                        ?.response as FlashcardCorrectnessType
-                    }
-                    elementIx={elementIx}
-                  />
-                )
-              } else if (
-                element.elementData.type === ElementType.Sc ||
-                element.elementData.type === ElementType.Mc ||
-                element.elementData.type === ElementType.Kprim
-              ) {
-                return (
-                  <ChoicesQuestion
-                    key={element.id}
-                    content={element.elementData.content}
-                    type={element.elementData.type}
-                    options={
-                      (element.elementData as ChoicesQuestionData).options
-                    }
-                    response={
-                      studentResponse[element.id]?.response as Record<
-                        number,
-                        boolean
-                      >
-                    }
-                    setResponse={(newValue, valid) => {
-                      // TODO: use validity type
-                      setStudentResponse((response) => {
-                        return {
-                          ...response,
-                          [element.id]: {
-                            ...response[element.id],
-                            type: element.elementData
-                              .type as ElementChoicesType,
-                            response: newValue,
-                          },
-                        }
-                      })
-                    }}
-                    existingResponse={
-                      stackStorage?.[element.id]?.response as Record<
-                        number,
-                        boolean
-                      >
-                    }
-                    elementIx={elementIx}
-                  />
-                )
-              } else if (element.elementData.type === ElementType.Numerical) {
-                return <NumericalQuestion key={element.id} />
-              } else if (element.elementData.type === ElementType.FreeText) {
-                return <FreeTextQuestion key={element.id} />
-              } else if (element.elementData.type === ElementType.Content) {
-                return (
-                  <ContentElement
-                    key={element.id}
-                    element={element}
-                    read={
-                      (stackStorage?.[element.id]?.response as boolean) ||
-                      (studentResponse[element.id]?.response as boolean)
-                    }
-                    onRead={() => {
-                      setStudentResponse((response) => {
-                        return {
-                          ...response,
-                          [element.id]: {
-                            ...response[element.id],
-                            type: ElementType.Content,
-                            response: true,
-                          },
-                        }
-                      })
-                    }}
-                    elementIx={elementIx}
-                  />
-                )
-              } else {
-                return null
-              }
-            })}
-        </div>
+        <StudentElement
+          stack={stack}
+          studentResponse={studentResponse}
+          setStudentResponse={setStudentResponse}
+          stackStorage={stackStorage}
+        />
       </div>
       <Button
         className={{ root: 'float-right text-lg mt-4' }}
         disabled={
-          // TODO: questions and flashcards with undefined answer should lead to disabling the continue button
-          // TODO: content elements without answers should not disable button, but change functionality to "mark all as read"
           typeof stackStorage !== 'undefined'
             ? false
-            : Object.values(studentResponse).some(
-                (response) =>
-                  typeof response.response === 'undefined' &&
-                  response.type === ElementType.Flashcard
-              )
+            : Object.values(studentResponse).some((response) => !response.valid)
         }
         onClick={async () => {
           // TODO: check if all instances have a response before starting submission (once questions are implemented)
