@@ -246,7 +246,14 @@ function ElementStack({
                         choicesResponse: responseList,
                       }
                     }
-                    // TODO: submission logic for numerical questions - convert to float on submission
+                    // submission logic for numerical questions
+                    else if (value.type === ElementType.Numerical) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Numerical,
+                        numericalResponse: parseFloat(value.response as string),
+                      }
+                    }
                     // TODO: submission logic for free text questions
                     else {
                       return {
