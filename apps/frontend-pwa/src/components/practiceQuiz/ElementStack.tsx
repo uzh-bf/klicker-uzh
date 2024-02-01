@@ -218,7 +218,16 @@ function ElementStack({
         onClick={async () => {
           // TODO: check if all instances have a response before starting submission (once questions are implemented)
 
-          if (showMarkAsRead) {
+          // if stack was already answered, just go to next element
+          if (typeof stackStorage !== 'undefined') {
+            setStudentResponse({})
+
+            if (currentStep === totalSteps) {
+              // TODO: re-introduce summary page for practice quiz
+              router.push(`/`)
+            }
+            handleNextElement()
+          } else if (showMarkAsRead) {
             // update the read status of all content elements in studentResponse to true
             setStudentResponse((currentResponses) =>
               Object.entries(currentResponses).reduce(
