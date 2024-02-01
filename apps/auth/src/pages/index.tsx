@@ -30,7 +30,11 @@ function SignInOutButton() {
           type="info"
           className={{ root: '-mt-4' }}
         />
-        <br />{' '}
+        <br />
+        <a href={process.env.NEXT_PUBLIC_MANAGE_URL}>
+          <Button>MANAGE</Button>
+        </a>
+        <br />
         <Button onClick={() => signOut()} data={{ cy: 'auth-logout-button' }}>
           {t('shared.generic.logout')}
         </Button>
