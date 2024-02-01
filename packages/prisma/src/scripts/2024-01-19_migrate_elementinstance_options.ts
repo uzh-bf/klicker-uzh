@@ -133,6 +133,27 @@ async function migrate() {
       }
     }
 
+    const updatedInstance = await prisma.questionInstance.findUnique({
+      where: {
+        id: elem.id,
+      },
+    })
+    if (!updatedInstance) throw new Error('Instance not found')
+    await prisma.questionInstance.update({
+      where: {
+        id: elem.id,
+      },
+      data: {
+        questionData: {
+          ...updatedInstance.questionData,
+          options: {
+            ...(updatedInstance.questionData.options ?? {}),
+            pointsMultiplier: updatedInstance.pointsMultiplier,
+          },
+        },
+      },
+    })
+
     counter++
   }
 
