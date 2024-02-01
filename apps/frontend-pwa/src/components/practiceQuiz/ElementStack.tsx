@@ -178,6 +178,7 @@ function ElementStack({
                         }
                       })
                     }}
+                    elementIx={elementIx}
                   />
                 )
               } else {

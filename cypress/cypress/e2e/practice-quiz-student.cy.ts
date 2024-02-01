@@ -13,6 +13,7 @@ describe('Practice Quizzes as a Student', () => {
 
     cy.get('[data-cy="start-practice-quiz"]').click()
 
+    // answer stacks with single flashcards
     cy.get('[data-cy="flashcard-front-1"]').click()
     cy.get('[data-cy="flashcard-response-1-No"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
@@ -36,6 +37,7 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="flashcard-response-1-Partially"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
+    // TODO: remove from seed or answer as well
     cy.get('[data-cy="practice-quiz-progress-right"]').click()
     cy.get('[data-cy="practice-quiz-progress-right"]').click()
     cy.get('[data-cy="practice-quiz-progress-right"]').click()
@@ -47,6 +49,7 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="practice-quiz-progress-right"]').click()
     cy.get('[data-cy="practice-quiz-progress-right"]').click()
 
+    // answer stack with all flashcards
     cy.get('[data-cy="flashcard-front-1"]').click()
     cy.get('[data-cy="flashcard-response-1-Yes"]').click()
     cy.get('[data-cy="flashcard-front-2"]').click()
@@ -77,6 +80,7 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="flashcard-response-14-Yes"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
+    // TODO: answer question stacks
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
@@ -84,22 +88,23 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
-    // TODO: continue with clean naming
-    cy.get('.px-3 > .border > div').click()
+    // answer content elements (single and stacked)
+    cy.get('[data-cy="read-content-element-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-    cy.get('.px-3 > .border > div').click()
+    cy.get('[data-cy="read-content-element-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-    cy.get('.px-3 > .border > div').click()
+    cy.get('[data-cy="read-content-element-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-    cy.get('.flex-col > :nth-child(1) > .border').click()
-    cy.get(':nth-child(2) > .flex > .prose-h4\\:text-md').click()
-    cy.get('.flex-col > :nth-child(2) > .border > div').click()
-    cy.get(':nth-child(3) > .border > div').click()
+    cy.get('[data-cy="read-content-element-1"]').click()
+    cy.get('[data-cy="read-content-element-2"]').click()
+    cy.get('[data-cy="read-content-element-3"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-    cy.get('.flex-1 > .flex-col').click()
-    cy.get('[data-cy="flashcard-response-Yes"]').click()
-    cy.get('.flex-col.gap-3 > .border-solid').click()
-    cy.get('.border-solid > .border').click()
+
+    // answer combined stack with flashcard, content element and question
+    cy.get('[data-cy="flashcard-front-1"]').click()
+    cy.get('[data-cy="flashcard-response-1-Yes"]').click()
+    // TODO: answer question in combined stack
+    cy.get('[data-cy="read-content-element-3"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
     // TODO: check that answers are correctly shown on submission
