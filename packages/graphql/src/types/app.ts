@@ -97,6 +97,7 @@ export type QuestionResponse =
 // TODO: results should also include the participants count (instead of storing it on the top-level)
 export type QuestionResultsChoices = {
   choices: Record<string, number>
+  total: number
 }
 
 // TODO: to be consistent with choices results, the real results should be nested inside an e.g., values object, and participants should be included as a property
@@ -106,6 +107,8 @@ export type QuestionResultsOpen = {
     value: string
     correct?: boolean
   }
+} & {
+  total: number
 }
 
 export type QuestionResults = QuestionResultsChoices | QuestionResultsOpen
