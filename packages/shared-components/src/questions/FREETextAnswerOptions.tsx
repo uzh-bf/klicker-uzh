@@ -33,7 +33,7 @@ export function FREETextAnswerOptions({
           typeof maxLength === 'number' && !isNaN(maxLength) ? maxLength : 1500
         }
         placeholder={placeholder || t('shared.questions.ftPlaceholder')}
-        data-cy={`free-text-input-${elementIx}`}
+        data-cy={`free-text-input-${elementIx + 1}`}
       />
 
       {typeof maxLength === 'number' && !isNaN(maxLength) && (
