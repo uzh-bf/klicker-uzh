@@ -819,15 +819,16 @@ async function seedTest(prisma: Prisma.PrismaClient) {
               },
             },
           })),
-          // create one stack with all content elements
-          {
+          // create two stacks with all content elements
+          ...[0, 1].map((ix) => ({
             displayName: undefined,
             description: undefined,
             order:
               flashcards.length +
               questionsTest.length +
               contentElements.length +
-              2,
+              2 +
+              ix,
             type: Prisma.ElementStackType.PRACTICE_QUIZ,
             options: {},
             elements: {
@@ -844,16 +845,17 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                 })),
               },
             },
-          },
-          // create a stack with one of each kind of elements
-          {
+          })),
+          // create two stacks with one of each kind of elements
+          ...[0, 1].map((ix) => ({
             displayName: undefined,
             description: undefined,
             order:
               flashcards.length +
               questionsTest.length +
               contentElements.length +
-              3,
+              4 +
+              ix,
             type: Prisma.ElementStackType.PRACTICE_QUIZ,
             options: {},
             elements: {
@@ -892,7 +894,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                 ],
               },
             },
-          },
+          })),
         ],
       },
     },

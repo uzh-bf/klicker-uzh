@@ -10,7 +10,7 @@ import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'
@@ -64,6 +64,20 @@ function ElementStack({
   const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
     {}
   )
+
+  const showMarkAsRead = useMemo(() => {
+    if (
+      Object.values(studentResponse).some(
+        (response) =>
+          response.type === ElementType.Content &&
+          typeof response.response === 'undefined'
+      )
+    ) {
+      return true
+    } else {
+      return false
+    }
+  }, [studentResponse])
 
   // initialize student responses
   useEffect(() => {
@@ -191,21 +205,51 @@ function ElementStack({
       <Button
         className={{ root: 'float-right text-lg mt-4' }}
         disabled={
-          // TODO: remove the type check where questions are considered to be valid
+          // TODO: questions and flashcards with undefined answer should lead to disabling the continue button
+          // TODO: content elements without answers should not disable button, but change functionality to "mark all as read"
           typeof stackStorage !== 'undefined'
             ? false
             : Object.values(studentResponse).some(
                 (response) =>
                   typeof response.response === 'undefined' &&
-                  (response.type === ElementType.Flashcard ||
-                    response.type === ElementType.Content)
+                  response.type === ElementType.Flashcard
               )
         }
         onClick={async () => {
           // TODO: check if all instances have a response before starting submission (once questions are implemented)
 
+          // if stack was already answered, just go to next element
+          if (typeof stackStorage !== 'undefined') {
+            setStudentResponse({})
+
+            if (currentStep === totalSteps) {
+              // TODO: re-introduce summary page for practice quiz
+              router.push(`/`)
+            }
+            handleNextElement()
+          } else if (showMarkAsRead) {
+            // update the read status of all content elements in studentResponse to true
+            setStudentResponse((currentResponses) =>
+              Object.entries(currentResponses).reduce(
+                (acc, [instanceId, value]) => {
+                  if (value.type === ElementType.Content) {
+                    return {
+                      ...acc,
+                      [instanceId]: {
+                        ...value,
+                        response: true,
+                      },
+                    }
+                  } else {
+                    return { ...acc, [instanceId]: value }
+                  }
+                },
+                {} as StudentResponseType
+              )
+            )
+          }
           // only submit answer if not already answered before
-          if (typeof stackStorage === 'undefined') {
+          else if (typeof stackStorage === 'undefined') {
             const result = await respondToPracticeQuizStack({
               variables: {
                 stackId: stack.id,
@@ -254,17 +298,19 @@ function ElementStack({
             })
 
             setStudentResponse({})
-          }
 
-          if (currentStep === totalSteps) {
-            // TODO: re-introduce summary page for practice quiz
-            router.push(`/`)
+            if (currentStep === totalSteps) {
+              // TODO: re-introduce summary page for practice quiz
+              router.push(`/`)
+            }
+            handleNextElement()
           }
-          handleNextElement()
         }}
         data={{ cy: 'practice-quiz-stack-submit' }}
       >
-        {currentStep === totalSteps
+        {showMarkAsRead
+          ? t('pwa.practiceQuiz.markAllAsRead')
+          : currentStep === totalSteps
           ? t('shared.generic.finish')
           : t('shared.generic.continue')}
       </Button>
