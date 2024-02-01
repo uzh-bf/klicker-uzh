@@ -182,7 +182,7 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="flashcard-response-1-Yes"]').click()
     // TODO: answer question in combined stack
     cy.get('[data-cy="read-content-element-3"]').click()
-    cy.get('[data-cy="practice-quiz-progress-right"]').click() // TODO: remove
+    cy.get('[data-cy="practice-quiz-progress-27"]').click() // TODO: remove
     // cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
     // answer combined stack with flashcard, content element and question
@@ -195,7 +195,6 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="practice-quiz-stack-submit"]').contains(
       messages.pwa.practiceQuiz.markAllAsRead
     ) // contains mark all as read
-    cy.get('[data-cy="practice-quiz-progress-right"]').click() // TODO: remove
     // cy.get('[data-cy="practice-quiz-stack-submit"]').click() // mark all as read
     // cy.get('[data-cy="practice-quiz-stack-submit"]').contains(
     //   messages.shared.generic.finish
