@@ -356,8 +356,9 @@ function ElementStack({
                         contentReponse: value.response as boolean,
                       }
                     }
-                    // TODO - handle question data here (all types still to be implemented)
-                    // TODO: for choices questions, transform number string record here to number array
+                    // TODO: submission logic for choices questions (conversion from object to int array still required to be consistent with old approach)
+                    // TODO: submission logic for numerical questions
+                    // TODO: submission logic for free text questions
                     else {
                       return {
                         instanceId: parseInt(instanceId),
