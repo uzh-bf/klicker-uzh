@@ -17,6 +17,7 @@ export interface KPAnswerOptionsProps {
   value?: Record<number, boolean>
   onChange: (newValue: Record<number, boolean>) => void
   id?: string
+  elementIx: number
 }
 
 export function KPAnswerOptions({
@@ -24,6 +25,7 @@ export function KPAnswerOptions({
   choices,
   value,
   onChange,
+  elementIx,
 }: KPAnswerOptionsProps): React.ReactElement {
   return (
     <div
@@ -57,7 +59,9 @@ export function KPAnswerOptions({
               }}
               active={value?.[index] === true}
               onClick={() => onChange({ ...value, [index]: true })}
-              data={{ cy: `toggle-kp-answer-${index}-correct` }}
+              data={{
+                cy: `toggle-kp-${elementIx + 1}-answer-${index + 1}-correct`,
+              }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faCheck} />
@@ -71,7 +75,9 @@ export function KPAnswerOptions({
               }}
               active={value?.[index] === false}
               onClick={() => onChange({ ...value, [index]: false })}
-              data={{ cy: `toggle-kp-answer-${index}-incorrect` }}
+              data={{
+                cy: `toggle-kp-${elementIx + 1}-answer-${index + 1}-incorrect`,
+              }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faX} />

@@ -10,6 +10,7 @@ export interface MCAnswerOptionsProps {
   value?: Record<number, boolean>
   onChange: (value: Record<number, boolean>) => void
   id?: string
+  elementIx: number
 }
 
 export function MCAnswerOptions({
@@ -17,6 +18,7 @@ export function MCAnswerOptions({
   choices,
   value,
   onChange,
+  elementIx,
 }: MCAnswerOptionsProps): React.ReactElement {
   return (
     <div
@@ -39,7 +41,7 @@ export function MCAnswerOptions({
             onClick={() => onChange({ ...value, [index]: !value?.[index] })}
             key={`${choice.value}-${index}`}
             active={value?.[index]}
-            data={{ cy: 'sc-answer-options' }}
+            data={{ cy: `mc-${elementIx + 1}-answer-option-${index + 1}` }}
           >
             <Button.Label>
               <Markdown

@@ -9,6 +9,8 @@ describe('Practice Quizzes as a Student', () => {
   })
 
   it('run through a practice quiz', function () {
+    cy.clearLocalStorage()
+    cy.clearAllSessionStorage()
     cy.get('[data-cy="quizzes"]').click()
 
     cy.get('[data-cy="practice-quiz-Practice Quiz Demo Student Title"]').click()
@@ -84,12 +86,41 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="flashcard-response-14-Yes"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
-    // TODO: answer question stacks
+    // TODO: test for all questions, that deleting also disabled the continue button again, etc.
+    // TODO: answer free text question
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    // answer MC question
+    cy.get('[data-cy="mc-1-answer-option-2"]').click()
+    cy.get('[data-cy="mc-1-answer-option-3"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    // TODO: answer numerical question
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    // answer KPRIM question
+    cy.get('[data-cy="toggle-kp-1-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-1-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-1-answer-3-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    // answer SC question
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="sc-1-answer-option-3"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+
+    // answer MC, PRIM and SC question
+    cy.get('[data-cy="mc-2-answer-option-2"]').click()
+    cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="toggle-kp-4-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-4-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-4-answer-3-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-4-answer-4-correct"]').click()
+    cy.get('[data-cy="sc-5-answer-option-2"]').click()
+    cy.get('[data-cy="sc-5-answer-option-2"]').click()
+    cy.get('[data-cy="sc-5-answer-option-3"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
     // answer content elements (single and stacked)

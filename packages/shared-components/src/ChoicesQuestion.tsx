@@ -58,6 +58,7 @@ function ChoicesQuestion({
             const valid = validateKprimResponse(newValue)
             setResponse(newValue, valid)
           }}
+          elementIx={elementIx}
         />
       )}
 
@@ -70,6 +71,7 @@ function ChoicesQuestion({
             const valid = validateMcResponse(newValue)
             setResponse(newValue, valid)
           }}
+          elementIx={elementIx}
         />
       )}
 
@@ -82,6 +84,7 @@ function ChoicesQuestion({
             const valid = validateScResponse(newValue)
             setResponse(newValue, valid)
           }}
+          elementIx={elementIx}
         />
       )}
     </div>
