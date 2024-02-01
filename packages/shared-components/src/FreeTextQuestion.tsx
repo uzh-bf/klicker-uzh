@@ -2,6 +2,8 @@ import { FreeTextQuestionOptions } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import FREETextAnswerOptions from './questions/FREETextAnswerOptions'
+import { validateFreeTextResponse } from './utils/validateResponse'
 
 interface FreeTextQuestionProps {
   content: string
@@ -34,7 +36,19 @@ function FreeTextQuestion({
         </div>
       )}
 
-      <div>FREE TEXT INPUT</div>
+      <FREETextAnswerOptions
+        value={existingResponse ?? response ?? ''}
+        onChange={(newValue) => {
+          const valid = validateFreeTextResponse({
+            response: newValue,
+            options,
+          })
+          setResponse(newValue, valid)
+        }}
+        maxLength={options.restrictions?.maxLength ?? undefined}
+        disabled={!!existingResponse}
+        elementIx={elementIx}
+      />
     </div>
   )
 }
