@@ -355,8 +355,24 @@ function ElementStack({
                         type: ElementType.Content,
                         contentReponse: value.response as boolean,
                       }
+                    } else if (
+                      value.type === ElementType.Sc ||
+                      value.type === ElementType.Mc ||
+                      value.type === ElementType.Kprim
+                    ) {
+                      // convert the solution objects into integer lists
+                      const responseList = Object.entries(
+                        value.response as Record<number, boolean>
+                      )
+                        .filter(([, value]) => value)
+                        .map(([key]) => parseInt(key))
+
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: value.type as ElementChoicesType,
+                        choicesResponse: responseList,
+                      }
                     }
-                    // TODO: submission logic for choices questions (conversion from object to int array still required to be consistent with old approach)
                     // TODO: submission logic for numerical questions
                     // TODO: submission logic for free text questions
                     else {
