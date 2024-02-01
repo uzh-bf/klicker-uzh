@@ -3,19 +3,44 @@ import {
   NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 
-export function validateScResponse(response?: number[]) {
+export function validateScResponse(response?: Record<number, boolean>) {
   return (
-    typeof response !== 'undefined' && response !== null && response.length > 0
+    typeof response !== 'undefined' &&
+    response !== null &&
+    Object.values(response).filter((value) => value === true).length === 1
   )
 }
 
-export function validateMcResponse(response?: number[]) {
+export function validateMcResponse(response?: Record<number, boolean>) {
   return (
-    typeof response !== 'undefined' && response !== null && response.length > 0
+    typeof response !== 'undefined' &&
+    response !== null &&
+    Object.values(response).some((value) => value === true)
   )
 }
 
 export function validateKprimResponse(response?: Record<number, boolean>) {
+  return (
+    typeof response !== 'undefined' &&
+    response !== null &&
+    Object.values(response).length === 4 &&
+    Object.values(response).every((value) => typeof value === 'boolean')
+  )
+}
+
+export function validateScResponseOld(response?: number[]) {
+  return (
+    typeof response !== 'undefined' && response !== null && response.length > 0
+  )
+}
+
+export function validateMcResponseOld(response?: number[]) {
+  return (
+    typeof response !== 'undefined' && response !== null && response.length > 0
+  )
+}
+
+export function validateKprimResponseOld(response?: Record<number, boolean>) {
   return (
     typeof response !== 'undefined' &&
     response !== null &&

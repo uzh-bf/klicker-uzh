@@ -13,6 +13,14 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
+export enum QuestionType {
+  SC = 'SC',
+  MC = 'MC',
+  KPRIM = 'KPRIM',
+  NUMERICAL = 'NUMERICAL',
+  FREE_TEXT = 'FREE_TEXT',
+}
+
 export type PrismaMigrationClient = Omit<
   PrismaClient<Prisma.PrismaClientOptions, never>,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
@@ -107,6 +115,21 @@ export type Choice = {
   value: string
   correct?: boolean
   feedback?: string
+}
+
+export type ChoicesInputType = {
+  type: QuestionType.SC | QuestionType.MC | QuestionType.KPRIM
+  value: number[]
+}
+
+export type NumericalInputType = {
+  type: QuestionType.NUMERICAL
+  value: number
+}
+
+export type FreeTextInputType = {
+  type: QuestionType.FREE_TEXT
+  value: string
 }
 
 interface BaseQuestionOptions {
@@ -236,6 +259,7 @@ export type ContentInstanceResults = {
 export type ElementInstanceResults =
   | FlashcardInstanceResults
   | ContentInstanceResults
+  | AllQuestionInstanceTypeData
 
 declare global {
   namespace PrismaJson {

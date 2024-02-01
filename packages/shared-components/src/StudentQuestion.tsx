@@ -17,14 +17,14 @@ import React, { useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
 import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
-import KPAnswerOptions from './questions/KPAnswerOptions'
+import KPAnswerOptionsOLD from './questions/KPAnswerOptionsOLD'
 import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
-import { SCAnswerOptions } from './questions/SCAnswerOptions'
+import { SCAnswerOptionsOLD } from './questions/SCAnswerOptionsOLD'
 import SessionProgress from './questions/SessionProgress'
 // TODO: merge validation logic in this file with the validateResponse utils
 import {
-  validateKprimResponse,
-  validateMcResponse,
+  validateKprimResponseOld,
+  validateMcResponseOld,
 } from './utils/validateResponse'
 
 export interface StudentQuestionProps {
@@ -96,7 +96,7 @@ export const StudentQuestion = ({
         if (typeof inputValue === 'object') {
           setInputState({
             inputEmpty: false,
-            inputValid: validateMcResponse(inputValue),
+            inputValid: validateMcResponseOld(inputValue),
             inputValue: [],
           })
         }
@@ -106,7 +106,7 @@ export const StudentQuestion = ({
 
           return setInputState({
             inputEmpty: newInputValue.length === 0,
-            inputValid: validateMcResponse(newInputValue),
+            inputValid: validateMcResponseOld(newInputValue),
             inputValue: newInputValue,
           })
         }
@@ -115,7 +115,7 @@ export const StudentQuestion = ({
         const newInputValue = [...inputValue, choice]
         return setInputState({
           inputEmpty: false,
-          inputValid: validateMcResponse(newInputValue),
+          inputValid: validateMcResponseOld(newInputValue),
           inputValue: newInputValue,
         })
       }
@@ -128,7 +128,7 @@ export const StudentQuestion = ({
 
         return setInputState({
           inputEmpty: Object.keys(newInputValue).length === 0,
-          inputValid: validateKprimResponse(newInputValue),
+          inputValid: validateKprimResponseOld(newInputValue),
           inputValue: newInputValue,
         })
       }
@@ -256,7 +256,7 @@ export const StudentQuestion = ({
 
         {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) &&
           (currentQuestion.type === ElementType.Kprim ? (
-            <KPAnswerOptions
+            <KPAnswerOptionsOLD
               displayMode={currentQuestion.options.displayMode}
               type={currentQuestion.type}
               choices={currentQuestion.options.choices}
@@ -268,7 +268,7 @@ export const StudentQuestion = ({
               onChange={onActiveChoicesChange(currentQuestion.type)}
             />
           ) : (
-            <SCAnswerOptions
+            <SCAnswerOptionsOLD
               displayMode={currentQuestion.options.displayMode}
               type={currentQuestion.type}
               choices={currentQuestion.options.choices}
