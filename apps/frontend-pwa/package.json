@@ -24,7 +24,7 @@
     "@radix-ui/react-tabs": "1.0.3",
     "@socialgouv/matomo-next": "1.6.1",
     "@uidotdev/usehooks": "2.4.1",
-    "@uzh-bf/design-system": "2.4.7",
+    "@uzh-bf/design-system": "2.4.8",
     "body-parser": "1.20.2",
     "dayjs": "1.11.9",
     "deepmerge": "4.3.1",

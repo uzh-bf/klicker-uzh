@@ -84,9 +84,9 @@ export function processElementData(element: Element) {
 export function getInitialElementResults(element: Element) {
   if (element.type === ElementType.FLASHCARD) {
     return {
-      0: 0,
-      1: 0,
-      2: 0,
+      INCORRECT: 0,
+      PARTIAL: 0,
+      CORRECT: 0,
       total: 0,
     }
   } else if (

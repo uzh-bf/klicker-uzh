@@ -1,7 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
+import {
+  FlashcardCorrectness,
+  StackFeedbackStatus as StackFeedbackStatusType,
+} from '../types/app'
 import { CourseRef, ICourse } from './course'
 import { ElementInstanceRef, IElementInstance } from './question'
+import { ElementType } from './questionData'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
@@ -14,6 +19,45 @@ export const PracticeQuizStatus = builder.enumType('PracticeQuizStatus', {
 export const ElementStackType = builder.enumType('ElementStackType', {
   values: Object.values(DB.ElementStackType),
 })
+
+export const FlashcardCorrectnessType = builder.enumType(
+  'FlashcardCorrectnessType',
+  {
+    values: Object.values(FlashcardCorrectness),
+  }
+)
+
+export const StackFeedbackStatus = builder.enumType('StackFeedbackStatus', {
+  values: Object.values(StackFeedbackStatusType),
+})
+
+export const StackResponseInput = builder.inputType('StackResponseInput', {
+  fields: (t) => ({
+    instanceId: t.int({ required: true }),
+    type: t.field({ type: ElementType, required: true }),
+    flashcardResponse: t.field({
+      type: FlashcardCorrectnessType,
+      required: false,
+    }),
+    contentReponse: t.boolean({ required: false }),
+    // TODO: add question response type
+  }),
+})
+
+export interface IStackFeedback {
+  id: number
+  status: StackFeedbackStatusType
+  score?: number
+}
+export const StackFeedback = builder
+  .objectRef<IStackFeedback>('StackFeedback')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      status: t.expose('status', { type: StackFeedbackStatus }),
+      score: t.exposeInt('score', { nullable: true }),
+    }),
+  })
 
 export interface IElementStack extends DB.ElementStack {
   elements?: IElementInstance[] | null

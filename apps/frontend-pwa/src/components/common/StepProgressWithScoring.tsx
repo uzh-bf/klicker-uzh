@@ -8,15 +8,17 @@ import {
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Button, StepItem, StepProgress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
-const ICON_MAP: Record<string, IconDefinition> = {
-  correct: faCheckDouble,
-  incorrect: faX,
-  partial: faCheck,
-  unanswered: faInbox,
+const ICON_MAP: Record<StackFeedbackStatus, IconDefinition> = {
+  [StackFeedbackStatus.ManuallyGraded]: faCheck,
+  [StackFeedbackStatus.Correct]: faCheckDouble,
+  [StackFeedbackStatus.Incorrect]: faX,
+  [StackFeedbackStatus.Partial]: faCheck,
+  [StackFeedbackStatus.Unanswered]: faInbox,
 }
 
 interface StepProgressWithScoringProps {
@@ -70,7 +72,7 @@ function StepProgressWithScoring({
                       />
                     )}
                     <FontAwesomeIcon
-                      icon={ICON_MAP[element.status]}
+                      icon={ICON_MAP[element.status as StackFeedbackStatus]}
                       className="hidden md:block"
                     />
                   </div>
@@ -79,21 +81,21 @@ function StepProgressWithScoring({
             }
           }
 
-          if (element.status === 'correct') {
+          if (element.status === StackFeedbackStatus.Correct) {
             return render({
               element,
               className: 'bg-green-600 bg-opacity-60 text-white',
             })
           }
 
-          if (element.status === 'incorrect') {
+          if (element.status === StackFeedbackStatus.Incorrect) {
             return render({
               element,
               className: 'bg-red-600 bg-opacity-60 text-white',
             })
           }
 
-          if (element.status === 'partial') {
+          if (element.status === StackFeedbackStatus.Partial) {
             return render({
               element,
               className: 'bg-uzh-red-100 bg-opacity-60 text-white',

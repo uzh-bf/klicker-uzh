@@ -2,7 +2,9 @@ import { useMutation } from '@apollo/client'
 import {
   ElementStack as ElementStackType,
   ElementType,
-  RespondToFlashcardInstanceDocument,
+  FlashcardCorrectnessType,
+  RespondToPracticeQuizStackDocument,
+  StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
@@ -23,20 +25,20 @@ interface ElementStackProps {
     status,
     score,
   }: {
-    status: InstanceStatus
+    status: StackFeedbackStatus
     score?: number | null
   }) => void
   handleNextElement: () => void
 }
 
-export type InstanceStatus =
-  | 'unanswered'
-  | 'manuallyGraded'
-  | 'correct'
-  | 'incorrect'
-  | 'partial'
-
-export type FlashcardResponseValues = 'correct' | 'partial' | 'incorrect'
+type StudentResponseType = Record<
+  number,
+  {
+    type: ElementType
+    response?: FlashcardCorrectnessType | boolean // TODO: augment this type for questions
+    correct?: StackFeedbackStatus
+  }
+>
 
 function ElementStack({
   parentId,
@@ -48,39 +50,46 @@ function ElementStack({
   handleNextElement,
 }: ElementStackProps) {
   const t = useTranslations()
-
   const router = useRouter()
-  useEffect(() => {
-    setStudentGrading(undefined)
-  }, [currentStep])
 
-  const [respondToFlashcardInstance] = useMutation(
-    RespondToFlashcardInstanceDocument
+  const [respondToPracticeQuizStack] = useMutation(
+    RespondToPracticeQuizStackDocument
   )
 
-  // TODO: extend state for other answer objects once return value from mutation is used correctly
-  const [stackStorage, setStackStorage] = useLocalStorage<
-    Record<string, { response: FlashcardResponseValues }>
-  >(`qi-${parentId}-${stack.id}`, undefined)
+  const [stackStorage, setStackStorage] = useLocalStorage<StudentResponseType>(
+    `qi-${parentId}-${stack.id}`,
+    undefined
+  )
 
-  // TODO: enable handling multiple elements in a stack / extend state and submission logic accordingly
-  const elementInstance = stack.elements?.[0]
+  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
+    {}
+  )
 
-  const [studentGrading, setStudentGrading] = useState<
-    FlashcardResponseValues | undefined
-  >(undefined)
+  // initialize student responses
+  useEffect(() => {
+    const newStudentResponse =
+      stack.elements?.reduce((acc, element) => {
+        return {
+          ...acc,
+          [element.id]: {
+            type: element.elementData.type,
+            response: undefined,
+            correct: undefined,
+          },
+        }
+      }, {} as StudentResponseType) || {}
 
-  const flashcardGradingMap: Record<FlashcardResponseValues, number> = {
-    incorrect: 0,
-    partial: 1,
-    correct: 2,
-  }
+    setStudentResponse(newStudentResponse)
+  }, [currentStep])
+
+  // TODO: remove logging
+  console.log('student response:', studentResponse)
 
   return (
     <div className="pb-12">
       <div className="w-full">
         <div className="flex flex-row items-center justify-between">
-          <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
+          {stack.displayName && <H2>{stack.displayName}</H2>}
           {/* <div
                 className={twMerge(
                   'flex flex-row gap-2',
@@ -113,16 +122,33 @@ function ElementStack({
         <div className="flex flex-col gap-3">
           {stack.elements &&
             stack.elements.length > 0 &&
-            stack.elements.map((element) => {
+            stack.elements.map((element, elementIx) => {
               if (element.elementData.type === ElementType.Flashcard) {
                 return (
                   <Flashcard
                     key={element.id}
                     content={element.elementData.content}
                     explanation={element.elementData.explanation!}
-                    response={studentGrading} // TODO - adapt code to work for multiple elements in a stack
-                    setResponse={setStudentGrading} // TODO - adapt code to work for multiple elements in a stack
-                    existingResponse={stackStorage?.[element.id]?.response}
+                    response={
+                      studentResponse[element.id]
+                        ?.response as FlashcardCorrectnessType
+                    }
+                    setResponse={(studentResponse) => {
+                      setStudentResponse((response) => {
+                        return {
+                          ...response,
+                          [element.id]: {
+                            ...response[element.id],
+                            response: studentResponse,
+                          },
+                        }
+                      })
+                    }}
+                    existingResponse={
+                      stackStorage?.[element.id]
+                        ?.response as FlashcardCorrectnessType
+                    }
+                    elementIx={elementIx}
                   />
                 )
               } else if (
@@ -138,10 +164,24 @@ function ElementStack({
                   <ContentElement
                     key={element.id}
                     element={element}
-                    read={false}
-                    onRead={() => null}
+                    read={
+                      (stackStorage?.[element.id]?.response as boolean) ||
+                      (studentResponse[element.id]?.response as boolean)
+                    }
+                    onRead={() => {
+                      setStudentResponse((response) => {
+                        return {
+                          ...response,
+                          [element.id]: {
+                            ...response[element.id],
+                            response: true,
+                          },
+                        }
+                      })
+                    }}
+                    elementIx={elementIx}
                   />
-                ) // TODO - add tracking of student progress and send to backend
+                )
               } else {
                 return null
               }
@@ -150,43 +190,74 @@ function ElementStack({
       </div>
       <Button
         className={{ root: 'float-right text-lg mt-4' }}
-        disabled={!studentGrading && !stackStorage}
+        disabled={
+          // TODO: remove the type check where questions are considered to be valid
+          typeof stackStorage !== 'undefined'
+            ? false
+            : Object.values(studentResponse).some(
+                (response) =>
+                  typeof response.response === 'undefined' &&
+                  (response.type === ElementType.Flashcard ||
+                    response.type === ElementType.Content)
+              )
+        }
         onClick={async () => {
-          if (
-            typeof stackStorage === 'undefined' &&
-            typeof elementInstance !== 'undefined' &&
-            elementInstance.elementType === ElementType.Flashcard &&
-            typeof studentGrading !== 'undefined'
-          ) {
-            // TODO: loop over all instances in a stack to respond to them or implement backend endpoint, which allows answering multiple instances
-            const value = flashcardGradingMap[studentGrading]
-            const result = await respondToFlashcardInstance({
+          // TODO: check if all instances have a response before starting submission (once questions are implemented)
+
+          // only submit answer if not already answered before
+          if (typeof stackStorage === 'undefined') {
+            const result = await respondToPracticeQuizStack({
               variables: {
-                id: elementInstance.id,
+                stackId: stack.id,
                 courseId: courseId,
-                correctness: value,
+                responses: Object.entries(studentResponse).map(
+                  ([instanceId, value]) => {
+                    if (value.type === ElementType.Flashcard) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Flashcard,
+                        flashcardResponse:
+                          value.response as FlashcardCorrectnessType,
+                      }
+                    } else if (value.type === ElementType.Content) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Content,
+                        contentReponse: value.response as boolean,
+                      }
+                    }
+                    // TODO - handle question data here
+                    else {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: value.type,
+                        response: value.response,
+                      }
+                    }
+                  }
+                ),
               },
             })
 
-            // TODO: use mutation return value to update states
-            setStackStorage({
-              // TODO: use this once multiple instances in a stack are supported
-              // ...stackStorage,
-              [elementInstance.id]: {
-                response: studentGrading,
-              },
-            })
+            setStackStorage(studentResponse)
+
+            if (!result.data?.respondToPracticeQuizStack) {
+              console.error('Error submitting response')
+              return
+            }
+
+            // set status and score according to returned correctness
+            const grading = result.data?.respondToPracticeQuizStack
             setStepStatus({
-              status: studentGrading,
-              score: null,
+              status: grading.status,
+              score: grading.score,
             })
-            setStudentGrading(undefined)
+
+            setStudentResponse({})
           }
 
-          // TODO: handle other types of questions / content elements in practice quiz
-
           if (currentStep === totalSteps) {
-            // redirect to repetition page
+            // TODO: re-introduce summary page for practice quiz
             router.push(`/`)
           }
           handleNextElement()

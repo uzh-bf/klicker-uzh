@@ -49,29 +49,42 @@ export type QuestionResponseValue = {
   value: string
 }
 
-export enum Correctness {
-  WRONG = 0,
-  PARTIAL = 1,
-  CORRECT = 2,
+export enum FlashcardCorrectness {
+  INCORRECT = 'INCORRECT',
+  PARTIAL = 'PARTIAL',
+  CORRECT = 'CORRECT',
+}
+
+export enum StackFeedbackStatus {
+  UNANSWERED = 'unanswered',
+  MANUALLY_GRADED = 'manuallyGraded',
+  CORRECT = 'correct',
+  INCORRECT = 'incorrect',
+  PARTIAL = 'partial',
 }
 
 export type AggregatedResponseFlashcard = {
-  [Correctness.WRONG]: number
-  [Correctness.PARTIAL]: number
-  [Correctness.CORRECT]: number
+  [FlashcardCorrectness.INCORRECT]: number
+  [FlashcardCorrectness.PARTIAL]: number
+  [FlashcardCorrectness.CORRECT]: number
   total: number
 }
 
 export type AggregatedResponse = AggregatedResponseFlashcard
 
 export type QuestionResponseFlashcard = {
-  correctness: Correctness
+  correctness: FlashcardCorrectness
+}
+
+export type QuestionResponseContent = {
+  viewed: boolean
 }
 
 export type QuestionResponse =
   | QuestionResponseChoices
   | QuestionResponseValue
   | QuestionResponseFlashcard
+  | QuestionResponseContent
 
 // TODO: results should also include the participants count (instead of storing it on the top-level)
 export type QuestionResultsChoices = {
@@ -210,13 +223,19 @@ export type AllQuestionInstanceTypeData =
   | OpenQuestionInstanceData
 
 export type FlashcardInstanceResults = {
-  [Correctness.WRONG]: number
-  [Correctness.PARTIAL]: number
-  [Correctness.CORRECT]: number
+  [FlashcardCorrectness.INCORRECT]: number
+  [FlashcardCorrectness.PARTIAL]: number
+  [FlashcardCorrectness.CORRECT]: number
   total: number
 }
 
-export type ElementInstanceResults = FlashcardInstanceResults
+export type ContentInstanceResults = {
+  viewed: number
+}
+
+export type ElementInstanceResults =
+  | FlashcardInstanceResults
+  | ContentInstanceResults
 
 declare global {
   namespace PrismaJson {
