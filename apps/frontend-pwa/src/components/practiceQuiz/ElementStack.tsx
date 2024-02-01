@@ -82,13 +82,14 @@ function ElementStack({
     setStudentResponse(newStudentResponse)
   }, [currentStep])
 
+  // TODO: remove logging
   console.log(studentResponse)
 
   return (
     <div className="pb-12">
       <div className="w-full">
         <div className="flex flex-row items-center justify-between">
-          <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
+          {stack.displayName && <H2>{stack.displayName}</H2>}
           {/* <div
                 className={twMerge(
                   'flex flex-row gap-2',
@@ -189,8 +190,15 @@ function ElementStack({
       </div>
       <Button
         className={{ root: 'float-right text-lg mt-4' }}
-        // TODO - disable continue if not all responses are different from undefined
-        disabled={false}
+        disabled={
+          // TODO: remove the type check where questions are considered to be valid
+          Object.values(studentResponse).some(
+            (response) =>
+              typeof response.response === 'undefined' &&
+              (response.type === ElementType.Flashcard ||
+                response.type === ElementType.Content)
+          )
+        }
         onClick={async () => {
           // TODO: check if all instances have a response before starting submission (once questions are implemented)
 

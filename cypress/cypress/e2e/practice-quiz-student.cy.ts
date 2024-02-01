@@ -109,5 +109,6 @@ describe('Practice Quizzes as a Student', () => {
 
     // TODO: check that answers are correctly shown on submission
     // TODO: check that skipping back and forth in quiz saves the previous answers
+    // TODO: check that resetting answers works as to be expected
   })
 })
