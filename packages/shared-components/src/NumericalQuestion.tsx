@@ -72,7 +72,7 @@ function NumericalQuestion({
 
       {evaluation && (
         <div
-          className="col-span-1 px-2 py-4 mr-2 border border-solid md:w-64 lg:w-80 md:px-0 md:ml-2 md:mr-0 bg-slate-50"
+          className="col-span-1 px-2 py-4 mr-2 border border-solid rounded-md md:w-64 lg:w-80 md:px-0 md:ml-2 md:mr-0 bg-slate-50"
           key={`evaluation-${elementIx}`}
         >
           <div className="flex flex-col gap-4 md:px-4">

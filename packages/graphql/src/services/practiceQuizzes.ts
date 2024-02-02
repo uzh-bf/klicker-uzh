@@ -523,6 +523,7 @@ function evaluateQuestionResponse(
             pointsPercentage,
           }),
           percentile: pointsPercentage ?? 0,
+          pointsMultiplier: multiplier,
         }
       }
     }
@@ -545,6 +546,7 @@ function evaluateQuestionResponse(
           pointsPercentage: correct,
         }),
         percentile: correct ?? 0,
+        pointsMultiplier: multiplier,
       }
     }
 
@@ -565,6 +567,7 @@ function evaluateQuestionResponse(
           pointsPercentage: correct,
         }),
         percentile: correct ?? 0,
+        pointsMultiplier: multiplier,
       }
     }
 
@@ -995,7 +998,6 @@ export async function respondToQuestion(
 
   return {
     ...updatedInstance,
-    elementData: elementData,
     evaluation: evaluation
       ? {
           ...evaluation,

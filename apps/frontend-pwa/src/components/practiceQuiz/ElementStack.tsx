@@ -123,10 +123,6 @@ function ElementStack({
     setStudentResponse(newStudentResponse)
   }, [currentStep])
 
-  // TODO: remove logging
-  console.log('student response:', studentResponse)
-  console.log('stack storage:', stackStorage)
-
   return (
     <div className="pb-12">
       <div className="w-full">
