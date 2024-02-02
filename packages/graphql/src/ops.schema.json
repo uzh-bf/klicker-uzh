@@ -4232,6 +4232,22 @@
             "deprecationReason": null
           },
           {
+            "name": "instanceId",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "newPointsFrom",
             "description": null,
             "args": [],
@@ -4275,22 +4291,6 @@
               "kind": "SCALAR",
               "name": "Float",
               "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "questionIx",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Int",
-                "ofType": null
-              }
             },
             "isDeprecated": false,
             "deprecationReason": null

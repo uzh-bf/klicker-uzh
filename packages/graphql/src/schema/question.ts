@@ -163,7 +163,7 @@ export const InstanceEvaluationOLD = builder
   })
 
 export interface IInstanceEvaluation {
-  questionIx: number
+  instanceId: number
   feedbacks?: IQuestionFeedback[]
   choices?: object[]
   answers?: object[]
@@ -178,7 +178,7 @@ export const InstanceEvaluation = builder
   .objectRef<IInstanceEvaluation>('InstanceEvaluation')
   .implement({
     fields: (t) => ({
-      questionIx: t.exposeInt('questionIx'),
+      instanceId: t.exposeInt('instanceId'),
       feedbacks: t.expose('feedbacks', {
         type: [QuestionFeedback],
         nullable: true,

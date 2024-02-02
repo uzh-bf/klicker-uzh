@@ -42,6 +42,7 @@ export function KPAnswerOptions({
         <div
           className="flex flex-row items-center justify-between gap-4 p-2 border"
           data-cy="kp-answer-options"
+          key={`${choice.value}-${index}`}
         >
           <div>
             <Markdown

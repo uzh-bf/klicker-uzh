@@ -1056,9 +1056,7 @@ export async function respondToPracticeQuizStack(
   const evaluationsArr: IInstanceEvaluation[] = []
 
   // TODO: refactor this into a transaction and single combination of status and score for the stack
-  for (let ix = 0; ix < responses.length; ix++) {
-    const response = responses[ix]
-
+  for (const response of responses) {
     if (response.type === ElementType.FLASHCARD) {
       const result = await respondToFlashcard(
         {
@@ -1131,7 +1129,7 @@ export async function respondToPracticeQuizStack(
             : stackScore + (result.evaluation?.score ?? 0)
 
         evaluationsArr.push({
-          questionIx: ix,
+          instanceId: response.instanceId,
           ...result.evaluation,
         } as IInstanceEvaluation)
       }
@@ -1157,7 +1155,7 @@ export async function respondToPracticeQuizStack(
             : stackScore + (result.evaluation?.score ?? 0)
 
         evaluationsArr.push({
-          questionIx: ix,
+          instanceId: response.instanceId,
           ...result.evaluation,
         } as IInstanceEvaluation)
       }
@@ -1183,7 +1181,7 @@ export async function respondToPracticeQuizStack(
             : stackScore + (result.evaluation?.score ?? 0)
 
         evaluationsArr.push({
-          questionIx: ix,
+          instanceId: response.instanceId,
           ...result.evaluation,
         } as IInstanceEvaluation)
       }

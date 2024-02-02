@@ -125,6 +125,7 @@ function ElementStack({
 
   // TODO: remove logging
   console.log('student response:', studentResponse)
+  console.log('stack storage:', stackStorage)
 
   return (
     <div className="pb-12">
@@ -292,8 +293,20 @@ function ElementStack({
               },
             })
 
-            // TODO: include evaluation in stack storage
-            setStackStorage(studentResponse)
+            setStackStorage(
+              Object.entries(studentResponse).reduce((acc, [key, value]) => {
+                return {
+                  ...acc,
+                  [key]: {
+                    ...value,
+                    evaluation:
+                      result.data?.respondToPracticeQuizStack?.evaluations?.find(
+                        (evaluation) => evaluation.instanceId === parseInt(key)
+                      ),
+                  },
+                }
+              }, {} as StudentResponseType)
+            )
 
             if (!result.data?.respondToPracticeQuizStack) {
               console.error('Error submitting response')
