@@ -169,7 +169,7 @@ function ElementStack({
       </div>
 
       {/* display continue button if question was already answered */}
-      {typeof stackStorage !== 'undefined' && (
+      {typeof stackStorage !== 'undefined' && !showMarkAsRead && (
         <Button
           className={{ root: 'float-right text-lg mt-4' }}
           onClick={() => {
@@ -193,6 +193,9 @@ function ElementStack({
       {typeof stackStorage === 'undefined' && showMarkAsRead && (
         <Button
           className={{ root: 'float-right text-lg mt-4' }}
+          disabled={Object.values(studentResponse).some(
+            (response) => !response.valid
+          )}
           onClick={() => {
             // update the read status of all content elements in studentResponse to true
             setStudentResponse((currentResponses) =>
@@ -223,13 +226,9 @@ function ElementStack({
       {typeof stackStorage === 'undefined' && !showMarkAsRead && (
         <Button
           className={{ root: 'float-right text-lg mt-4' }}
-          disabled={
-            typeof stackStorage !== 'undefined'
-              ? false
-              : Object.values(studentResponse).some(
-                  (response) => !response.valid
-                )
-          }
+          disabled={Object.values(studentResponse).some(
+            (response) => !response.valid
+          )}
           onClick={async () => {
             const result = await respondToPracticeQuizStack({
               variables: {
