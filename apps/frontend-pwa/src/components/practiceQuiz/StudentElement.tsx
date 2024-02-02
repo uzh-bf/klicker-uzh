@@ -4,6 +4,7 @@ import {
   ElementType,
   FlashcardCorrectnessType,
   FreeTextElementData,
+  InstanceEvaluation,
   NumericalElementData,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -33,30 +34,35 @@ export type StudentResponseType = Record<
       response?: FlashcardCorrectnessType
       correct?: StackFeedbackStatus
       valid?: boolean
+      evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.Content
       response?: boolean
       correct?: StackFeedbackStatus
       valid?: boolean
+      evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
       response?: Record<number, boolean | undefined>
       correct?: StackFeedbackStatus
       valid?: boolean
+      evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.Numerical
       response?: string
       correct?: StackFeedbackStatus
       valid?: boolean
+      evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.FreeText
       response?: string
       correct?: StackFeedbackStatus
       valid?: boolean
+      evaluation?: InstanceEvaluation
     }
 >
 
@@ -137,6 +143,7 @@ function StudentElement({
                     boolean
                   >
                 }
+                evaluation={stackStorage?.[element.id]?.evaluation}
                 elementIx={elementIx}
               />
             )
@@ -164,6 +171,7 @@ function StudentElement({
                 existingResponse={
                   stackStorage?.[element.id]?.response as string
                 }
+                evaluation={stackStorage?.[element.id]?.evaluation}
                 elementIx={elementIx}
               />
             )
@@ -191,6 +199,7 @@ function StudentElement({
                 existingResponse={
                   stackStorage?.[element.id]?.response as string
                 }
+                evaluation={stackStorage?.[element.id]?.evaluation}
                 elementIx={elementIx}
               />
             )

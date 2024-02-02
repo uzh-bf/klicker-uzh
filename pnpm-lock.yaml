@@ -2026,6 +2026,9 @@ importers:
       '@uzh-bf/design-system':
         specifier: 2.4.8
         version: 2.4.8(@fortawesome/fontawesome-svg-core@6.4.2)(@fortawesome/free-regular-svg-icons@6.4.2)(@fortawesome/free-solid-svg-icons@6.4.2)(@fortawesome/react-fontawesome@0.2.0)(@types/react-dom@18.2.7)(@types/react@18.2.18)(autoprefixer@10.4.14)(dayjs@1.11.9)(formik@2.4.3)(postcss-import@15.1.0)(react-dom@18.2.0)(react@18.2.0)(tailwind-merge@1.14.0)(tailwindcss-radix@2.8.0)(tailwindcss@3.3.3)(yup@1.2.0)
+      dayjs:
+        specifier: 1.11.9
+        version: 1.11.9
       formik:
         specifier: 2.4.3
         version: 2.4.3(react@18.2.0)

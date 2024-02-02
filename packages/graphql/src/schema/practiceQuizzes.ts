@@ -5,7 +5,11 @@ import {
   StackFeedbackStatus as StackFeedbackStatusType,
 } from '../types/app'
 import { CourseRef, ICourse } from './course'
-import { ElementInstanceRef, IElementInstance } from './question'
+import {
+  ElementInstanceRef,
+  IInstanceEvaluation,
+  InstanceEvaluation,
+} from './question'
 import { ElementType } from './questionData'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
@@ -50,6 +54,7 @@ export interface IStackFeedback {
   id: number
   status: StackFeedbackStatusType
   score?: number
+  evaluations?: IInstanceEvaluation[]
 }
 export const StackFeedback = builder
   .objectRef<IStackFeedback>('StackFeedback')
@@ -58,11 +63,15 @@ export const StackFeedback = builder
       id: t.exposeInt('id'),
       status: t.expose('status', { type: StackFeedbackStatus }),
       score: t.exposeInt('score', { nullable: true }),
+      evaluations: t.expose('evaluations', {
+        type: [InstanceEvaluation],
+        nullable: true,
+      }),
     }),
   })
 
 export interface IElementStack extends DB.ElementStack {
-  elements?: IElementInstance[] | null
+  elements?: DB.ElementInstance[] | null
 }
 export const ElementStackRef = builder.objectRef<IElementStack>('ElementStack')
 export const ElementStack = ElementStackRef.implement({

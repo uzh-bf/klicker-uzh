@@ -217,6 +217,11 @@ export type AllElementTypeData =
   | NumericalElementData
 // | FlashcardElementData
 
+export type ElementInstanceOptions = {
+  pointsMultiplier?: number
+  resetTimeDays?: number
+}
+
 export interface IQuestionInstanceWithResults<
   Type extends ElementType,
   Results extends QuestionResults
@@ -270,6 +275,7 @@ declare global {
     type PrismaElementOptions = ElementOptions
     type PrismaQuestionResults = QuestionResults
     type PrismaElementData = AllElementTypeData
+    type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaElementInstanceResults = ElementInstanceResults
     type PrismaAggregatedResponse = AggregatedResponse
   }
