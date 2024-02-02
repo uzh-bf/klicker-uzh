@@ -392,6 +392,7 @@ type GroupLeaderboardEntry {
 type InstanceEvaluation {
   answers: Json
   choices: Json
+  explanation: String
   feedbacks: [QuestionFeedback!]
   instanceId: Int!
   newPointsFrom: Date

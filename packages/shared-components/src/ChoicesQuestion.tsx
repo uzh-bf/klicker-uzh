@@ -8,6 +8,7 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import MCKPRIMEvaluation from './evaluation/MCKPRIMEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
+import QuestionExplanation from './evaluation/QuestionExplanation'
 import SCEvaluation from './evaluation/SCEvaluation'
 import KPAnswerOptions from './questions/KPAnswerOptions'
 import MCAnswerOptions from './questions/MCAnswerOptions'
@@ -50,6 +51,10 @@ function ChoicesQuestion({
           >
             <Markdown content={content} />
           </div>
+        )}
+
+        {evaluation && evaluation.explanation && (
+          <QuestionExplanation explanation={evaluation.explanation} />
         )}
 
         {type === ElementType.Kprim && (

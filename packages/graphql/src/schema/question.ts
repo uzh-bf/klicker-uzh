@@ -165,6 +165,7 @@ export const InstanceEvaluationOLD = builder
 export interface IInstanceEvaluation {
   instanceId: number
   pointsMultiplier?: number
+  explanation?: string
   feedbacks?: IQuestionFeedback[]
   choices?: object[]
   answers?: object[]
@@ -183,6 +184,7 @@ export const InstanceEvaluation = builder
     fields: (t) => ({
       instanceId: t.exposeInt('instanceId'),
       pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
+      explanation: t.exposeString('explanation', { nullable: true }),
       feedbacks: t.expose('feedbacks', {
         type: [QuestionFeedback],
         nullable: true,

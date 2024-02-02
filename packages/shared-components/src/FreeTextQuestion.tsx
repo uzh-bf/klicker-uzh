@@ -7,6 +7,7 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import FTEvaluation from './evaluation/FTEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
+import QuestionExplanation from './evaluation/QuestionExplanation'
 import FREETextAnswerOptions from './questions/FREETextAnswerOptions'
 import { validateFreeTextResponse } from './utils/validateResponse'
 
@@ -42,6 +43,10 @@ function FreeTextQuestion({
           >
             <Markdown content={content} />
           </div>
+        )}
+
+        {evaluation && evaluation.explanation && (
+          <QuestionExplanation explanation={evaluation.explanation} />
         )}
 
         <FREETextAnswerOptions

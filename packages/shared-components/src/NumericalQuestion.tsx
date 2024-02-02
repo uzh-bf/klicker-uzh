@@ -7,6 +7,7 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import NREvaluation from './evaluation/NREvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
+import QuestionExplanation from './evaluation/QuestionExplanation'
 import NUMERICALAnswerOptions from './questions/NUMERICALAnswerOptions'
 import { validateNumericalResponse } from './utils/validateResponse'
 
@@ -42,6 +43,10 @@ function NumericalQuestion({
           >
             <Markdown content={content} />
           </div>
+        )}
+
+        {evaluation && evaluation.explanation && (
+          <QuestionExplanation explanation={evaluation.explanation} />
         )}
 
         <NUMERICALAnswerOptions

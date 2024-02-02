@@ -100,6 +100,10 @@
   margin-right: 1rem
 }
 
+.mt-0 {
+  margin-top: 0px
+}
+
 .mt-1 {
   margin-top: 0.25rem
 }
@@ -504,6 +508,11 @@
   vertical-align: middle
 }
 
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5rem
+}
+
 .text-lg {
   font-size: 1.125rem;
   line-height: 1.75rem
@@ -548,6 +557,11 @@
 .text-green-600 {
   --tw-text-opacity: 1;
   color: rgb(22 163 74 / var(--tw-text-opacity))
+}
+
+.text-green-800 {
+  --tw-text-opacity: 1;
+  color: rgb(22 101 52 / var(--tw-text-opacity))
 }
 
 .text-red-600 {
@@ -624,6 +638,14 @@
   margin: 0px !important
 }
 
+.prose-p\:mb-1 :is(:where(p):not(:where([class~="not-prose"] *))) {
+  margin-bottom: 0.25rem
+}
+
+.prose-p\:mt-0 :is(:where(p):not(:where([class~="not-prose"] *))) {
+  margin-top: 0px
+}
+
 .prose-img\:\!m-0 :is(:where(img):not(:where([class~="not-prose"] *))) {
   margin: 0px !important
 }
@@ -641,6 +663,10 @@
 
   .md\:order-2 {
     order: 2
+  }
+
+  .md\:mb-4 {
+    margin-bottom: 1rem
   }
 
   .md\:ml-2 {
