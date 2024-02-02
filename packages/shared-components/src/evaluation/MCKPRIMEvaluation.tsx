@@ -8,7 +8,7 @@ interface Props {
   evaluation: InstanceEvaluation
 }
 
-function EvaluationDisplay({ evaluation }: Props) {
+function MCKPRIMEvaluation({ evaluation }: Props) {
   const t = useTranslations()
 
   // TODO: Fix the issue here that the number of responses cannot be computed from the number of choice results
@@ -46,4 +46,4 @@ function EvaluationDisplay({ evaluation }: Props) {
   )
 }
 
-export default EvaluationDisplay
+export default MCKPRIMEvaluation

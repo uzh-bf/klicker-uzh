@@ -1,0 +1,42 @@
+import {
+  InstanceEvaluation,
+  NumericalQuestionData,
+  NumericalQuestionOptions,
+} from '@klicker-uzh/graphql/dist/ops'
+import { useTranslations } from 'next-intl'
+import React from 'react'
+import Histogram from '../Histogram'
+
+interface Props {
+  options: NumericalQuestionOptions
+  evaluation: InstanceEvaluation
+  reference?: string
+}
+
+function NREvaluation({ options, evaluation, reference }: Props) {
+  const t = useTranslations()
+
+  const results = Object.entries(
+    evaluation.answers as Record<string, number>
+  ).reduce((acc, [value, count]) => ({ ...acc, [value]: { value, count } }), {})
+
+  return (
+    <div className="h-40 space-y-2">
+      <div className="font-bold">{t('pwa.learningElement.othersAnswered')}</div>
+      <Histogram
+        data={{
+          results: results,
+          questionData: { options } as NumericalQuestionData,
+        }}
+        showSolution={{ general: true }}
+        textSize="md"
+        className={{ root: 'h-40' }}
+        reference={reference ? parseFloat(reference) : undefined}
+        hideBins
+        basic
+      />
+    </div>
+  )
+}
+
+export default NREvaluation

@@ -995,6 +995,7 @@ export async function respondToQuestion(
 
   return {
     ...updatedInstance,
+    elementData: elementData,
     evaluation: evaluation
       ? {
           ...evaluation,
@@ -1002,6 +1003,8 @@ export async function respondToQuestion(
           newPointsFrom,
           xpAwarded,
           newXpFrom,
+          solutions: elementData.options.solutions,
+          solutionRanges: elementData.options.solutionRanges,
         }
       : undefined,
     status: status,

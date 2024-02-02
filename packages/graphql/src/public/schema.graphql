@@ -400,6 +400,8 @@ type InstanceEvaluation {
   pointsAwarded: Float
   pointsMultiplier: Int
   score: Float!
+  solutionRanges: Json
+  solutions: Json
   xpAwarded: Int
 }
 

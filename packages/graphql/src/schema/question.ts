@@ -174,6 +174,8 @@ export interface IInstanceEvaluation {
   newPointsFrom?: Date
   xpAwarded?: number
   newXpFrom?: Date
+  solutions?: string[]
+  solutionRanges?: { min?: number | null; max?: number | null }[]
 }
 export const InstanceEvaluation = builder
   .objectRef<IInstanceEvaluation>('InstanceEvaluation')
@@ -200,6 +202,11 @@ export const InstanceEvaluation = builder
       xpAwarded: t.exposeInt('xpAwarded', { nullable: true }),
       newXpFrom: t.expose('newXpFrom', {
         type: 'Date',
+        nullable: true,
+      }),
+      solutions: t.expose('solutions', { type: 'Json', nullable: true }),
+      solutionRanges: t.expose('solutionRanges', {
+        type: 'Json',
         nullable: true,
       }),
     }),

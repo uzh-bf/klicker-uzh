@@ -28,6 +28,8 @@ mutation RespondToPracticeQuizStack(
       newPointsFrom
       xpAwarded
       newXpFrom
+      solutions
+      solutionRanges
     }
   }
 }

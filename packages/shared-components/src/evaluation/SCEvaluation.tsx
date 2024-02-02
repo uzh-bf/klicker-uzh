@@ -8,7 +8,7 @@ interface Props {
   evaluation: InstanceEvaluation
 }
 
-function EvaluationDisplay({ evaluation }: Props) {
+function SCEvaluation({ evaluation }: Props) {
   const t = useTranslations()
 
   const sum = Object.values(
@@ -44,4 +44,4 @@ function EvaluationDisplay({ evaluation }: Props) {
   )
 }
 
-export default EvaluationDisplay
+export default SCEvaluation
