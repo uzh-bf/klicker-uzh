@@ -95,9 +95,7 @@ function ElementStack({
               valid: false,
             },
           }
-        }
-        // TODO: set initial value for free text questions
-        else if (element.elementData.type === ElementType.Content) {
+        } else if (element.elementData.type === ElementType.Content) {
           return {
             ...acc,
             [element.id]: {
@@ -107,7 +105,9 @@ function ElementStack({
               valid: true,
             },
           }
-        } else {
+        }
+        // default case - valid for FREE_TEXT, NUMERICAL, FLASHCARD elements
+        else {
           return {
             ...acc,
             [element.id]: {
@@ -167,16 +167,12 @@ function ElementStack({
           stackStorage={stackStorage}
         />
       </div>
-      <Button
-        className={{ root: 'float-right text-lg mt-4' }}
-        disabled={
-          typeof stackStorage !== 'undefined'
-            ? false
-            : Object.values(studentResponse).some((response) => !response.valid)
-        }
-        onClick={async () => {
-          // if stack was already answered, just go to next element
-          if (typeof stackStorage !== 'undefined') {
+
+      {/* display continue button if question was already answered */}
+      {typeof stackStorage !== 'undefined' && (
+        <Button
+          className={{ root: 'float-right text-lg mt-4' }}
+          onClick={() => {
             setStudentResponse({})
 
             if (currentStep === totalSteps) {
@@ -184,7 +180,20 @@ function ElementStack({
               router.push(`/`)
             }
             handleNextElement()
-          } else if (showMarkAsRead) {
+          }}
+          data={{ cy: 'practice-quiz-continue' }}
+        >
+          {currentStep === totalSteps
+            ? t('shared.generic.finish')
+            : t('shared.generic.continue')}
+        </Button>
+      )}
+
+      {/* display mark all as read button, if only content elements have not been answered yet */}
+      {typeof stackStorage === 'undefined' && showMarkAsRead && (
+        <Button
+          className={{ root: 'float-right text-lg mt-4' }}
+          onClick={() => {
             // update the read status of all content elements in studentResponse to true
             setStudentResponse((currentResponses) =>
               Object.entries(currentResponses).reduce(
@@ -204,9 +213,24 @@ function ElementStack({
                 {} as StudentResponseType
               )
             )
+          }}
+          data={{ cy: 'practice-quiz-mark-all-as-read' }}
+        >
+          {t('pwa.practiceQuiz.markAllAsRead')}
+        </Button>
+      )}
+
+      {typeof stackStorage === 'undefined' && !showMarkAsRead && (
+        <Button
+          className={{ root: 'float-right text-lg mt-4' }}
+          disabled={
+            typeof stackStorage !== 'undefined'
+              ? false
+              : Object.values(studentResponse).some(
+                  (response) => !response.valid
+                )
           }
-          // only submit answer if not already answered before
-          else if (typeof stackStorage === 'undefined') {
+          onClick={async () => {
             const result = await respondToPracticeQuizStack({
               variables: {
                 stackId: stack.id,
@@ -269,6 +293,7 @@ function ElementStack({
               },
             })
 
+            // TODO: include evaluation in stack storage
             setStackStorage(studentResponse)
 
             if (!result.data?.respondToPracticeQuizStack) {
@@ -282,26 +307,28 @@ function ElementStack({
               status: grading.status,
               score: grading.score,
             })
-
             setStudentResponse({})
 
-            // TODO: continue if stack only included content elements and/or flashcards, otherwise show evaluation
-            console.log(result.data?.respondToPracticeQuizStack)
-            // if (currentStep === totalSteps) {
-            //   // TODO: re-introduce summary page for practice quiz
-            //   router.push(`/`)
-            // }
-            // handleNextElement()
-          }
-        }}
-        data={{ cy: 'practice-quiz-stack-submit' }}
-      >
-        {showMarkAsRead
-          ? t('pwa.practiceQuiz.markAllAsRead')
-          : currentStep === totalSteps
-          ? t('shared.generic.finish')
-          : t('shared.generic.continue')}
-      </Button>
+            // continue if stack only included content elements and/or flashcards, otherwise show evaluation
+            if (
+              Object.values(studentResponse).every(
+                (response) =>
+                  response.type === ElementType.Content ||
+                  response.type === ElementType.Flashcard
+              )
+            ) {
+              if (currentStep === totalSteps) {
+                // TODO: re-introduce summary page for practice quiz
+                router.push(`/`)
+              }
+              handleNextElement()
+            }
+          }}
+          data={{ cy: 'practice-quiz-stack-submit' }}
+        >
+          {t('shared.generic.submit')}
+        </Button>
+      )}
     </div>
   )
 }

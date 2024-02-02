@@ -59,6 +59,7 @@ export default {
       points: 'Punkte',
       title: 'KlickerUZH',
       send: 'Absenden',
+      submit: 'Absenden',
       save: 'Speichern',
       start: 'Starten',
       continue: 'Weiter',
