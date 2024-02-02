@@ -143,6 +143,7 @@ function StudentElement({
                     boolean
                   >
                 }
+                evaluation={stackStorage?.[element.id]?.evaluation}
                 elementIx={elementIx}
               />
             )
@@ -170,6 +171,7 @@ function StudentElement({
                 existingResponse={
                   stackStorage?.[element.id]?.response as string
                 }
+                evaluation={stackStorage?.[element.id]?.evaluation}
                 elementIx={elementIx}
               />
             )
@@ -197,6 +199,7 @@ function StudentElement({
                 existingResponse={
                   stackStorage?.[element.id]?.response as string
                 }
+                evaluation={stackStorage?.[element.id]?.evaluation}
                 elementIx={elementIx}
               />
             )
