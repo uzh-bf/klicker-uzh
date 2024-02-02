@@ -11,6 +11,7 @@ import { ElementType, UserRole } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { ResponseInput } from 'src/ops'
+import { IInstanceEvaluation } from 'src/schema/question'
 import { Context } from '../lib/context'
 import { orderStacks } from '../lib/util'
 import {
@@ -1050,11 +1051,14 @@ export async function respondToPracticeQuizStack(
   { stackId, courseId, responses }: RespondToPracticeQuizStackInput,
   ctx: Context
 ) {
-  let stackScore = undefined
+  let stackScore: number | undefined = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
+  const evaluationsArr: IInstanceEvaluation[] = []
 
   // TODO: refactor this into a transaction and single combination of status and score for the stack
-  for (const response of responses) {
+  for (let ix = 0; ix < responses.length; ix++) {
+    const response = responses[ix]
+
     if (response.type === ElementType.FLASHCARD) {
       const result = await respondToFlashcard(
         {
@@ -1120,10 +1124,16 @@ export async function respondToPracticeQuizStack(
           prevStatus: stackFeedback,
           newStatus: result.status,
         })
+
         stackScore =
           typeof stackScore === 'undefined'
             ? result.evaluation?.score
             : stackScore + (result.evaluation?.score ?? 0)
+
+        evaluationsArr.push({
+          questionIx: ix,
+          ...result.evaluation,
+        } as IInstanceEvaluation)
       }
     } else if (response.type === ElementType.NUMERICAL) {
       const result = await respondToQuestion(
@@ -1140,10 +1150,16 @@ export async function respondToPracticeQuizStack(
           prevStatus: stackFeedback,
           newStatus: result.status,
         })
+
         stackScore =
           typeof stackScore === 'undefined'
             ? result.evaluation?.score
             : stackScore + (result.evaluation?.score ?? 0)
+
+        evaluationsArr.push({
+          questionIx: ix,
+          ...result.evaluation,
+        } as IInstanceEvaluation)
       }
     } else if (response.type === ElementType.FREE_TEXT) {
       const result = await respondToQuestion(
@@ -1160,10 +1176,16 @@ export async function respondToPracticeQuizStack(
           prevStatus: stackFeedback,
           newStatus: result.status,
         })
+
         stackScore =
           typeof stackScore === 'undefined'
             ? result.evaluation?.score
             : stackScore + (result.evaluation?.score ?? 0)
+
+        evaluationsArr.push({
+          questionIx: ix,
+          ...result.evaluation,
+        } as IInstanceEvaluation)
       }
     } else {
       throw new Error(
@@ -1177,5 +1199,6 @@ export async function respondToPracticeQuizStack(
     id: stackId,
     status: stackFeedback,
     score: stackScore,
+    evaluations: evaluationsArr,
   }
 }

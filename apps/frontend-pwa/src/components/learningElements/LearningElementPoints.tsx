@@ -1,9 +1,9 @@
-import { InstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { InstanceEvaluationOld } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 
 interface LearningElementPointsProps {
-  evaluation: InstanceEvaluation
+  evaluation: InstanceEvaluationOld
   pointsMultiplier?: number
 }
 

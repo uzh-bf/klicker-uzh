@@ -285,11 +285,13 @@ function ElementStack({
 
             setStudentResponse({})
 
-            if (currentStep === totalSteps) {
-              // TODO: re-introduce summary page for practice quiz
-              router.push(`/`)
-            }
-            handleNextElement()
+            // TODO: continue if stack only included content elements and/or flashcards, otherwise show evaluation
+            console.log(result.data?.respondToPracticeQuizStack)
+            // if (currentStep === totalSteps) {
+            //   // TODO: re-introduce summary page for practice quiz
+            //   router.push(`/`)
+            // }
+            // handleNextElement()
           }
         }}
         data={{ cy: 'practice-quiz-stack-submit' }}

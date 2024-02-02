@@ -1,6 +1,6 @@
 import {
   ElementType,
-  InstanceEvaluation,
+  InstanceEvaluationOld,
   NumericalQuestionData,
 } from '@klicker-uzh/graphql/dist/ops'
 import Histogram from '@klicker-uzh/shared-components/src/Histogram'
@@ -11,7 +11,7 @@ import { twMerge } from 'tailwind-merge'
 interface Props {
   questionType: string
   options: any
-  evaluation: InstanceEvaluation
+  evaluation: InstanceEvaluationOld
   reference?: string
 }
 
