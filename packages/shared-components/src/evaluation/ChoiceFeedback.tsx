@@ -13,7 +13,7 @@ function ChoiceFeedback({ feedback }: ChoiceFeedbackProps) {
   return (
     <div
       className={twMerge(
-        'flex flex-row gap-3 items-center text-sm border rounded bg-gray-50'
+        'flex flex-row gap-3 items-center text-sm border rounded-b bg-gray-50'
       )}
     >
       <div

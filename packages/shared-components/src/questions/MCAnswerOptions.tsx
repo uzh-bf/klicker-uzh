@@ -42,16 +42,19 @@ export function MCAnswerOptions({
     >
       {choices.map((choice, index) => {
         return (
-          <div>
+          <div key={`mc-choice-${index}-${choice.value}`}>
             <Button
               fluid
               className={{
                 root: twMerge(
-                  'min-h-[2.5rem] border-slate-400 sm:hover:bg-unset'
+                  'min-h-[2.5rem] border-slate-400 sm:hover:bg-unset',
+                  !hideFeedbacks &&
+                    feedbacks &&
+                    feedbacks[index] &&
+                    'rounded-b-none'
                 ),
               }}
               onClick={() => onChange({ ...value, [index]: !value?.[index] })}
-              key={`${choice.value}-${index}`}
               active={value?.[index]}
               data={{ cy: `mc-${elementIx + 1}-answer-option-${index + 1}` }}
               disabled={disabled}

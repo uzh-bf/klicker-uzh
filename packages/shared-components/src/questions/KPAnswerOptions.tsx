@@ -45,11 +45,16 @@ export function KPAnswerOptions({
       )}
     >
       {choices.map((choice, index) => (
-        <div>
+        <div key={`kp-choice-${index}-${choice.value}`}>
           <div
-            className="flex flex-row items-center justify-between gap-4 p-2 border"
+            className={twMerge(
+              'flex flex-row items-center justify-between gap-4 p-2 border rounded',
+              !hideFeedbacks &&
+                feedbacks &&
+                feedbacks[index] &&
+                '!rounded-b-none'
+            )}
             data-cy="kp-answer-options"
-            key={`${choice.value}-${index}`}
           >
             <div>
               <Markdown

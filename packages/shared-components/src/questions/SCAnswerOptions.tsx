@@ -42,12 +42,16 @@ export function SCAnswerOptions({
     >
       {choices.map((choice, index) => {
         return (
-          <div>
+          <div key={`sc-choice-${index}-${choice.value}`}>
             <Button
               fluid
               className={{
                 root: twMerge(
-                  'min-h-[2.5rem] border-slate-400 sm:hover:bg-unset'
+                  'min-h-[2.5rem] border-slate-400 sm:hover:bg-unset',
+                  !hideFeedbacks &&
+                    feedbacks &&
+                    feedbacks[index] &&
+                    'rounded-b-none'
                 ),
               }}
               onClick={() =>
@@ -55,7 +59,6 @@ export function SCAnswerOptions({
                   Object.fromEntries(choices.map((_, i) => [i, i === index]))
                 )
               }
-              key={`${choice.value}-${index}`}
               active={value?.[index]}
               data={{ cy: `sc-${elementIx + 1}-answer-option-${index + 1}` }}
               disabled={disabled}
