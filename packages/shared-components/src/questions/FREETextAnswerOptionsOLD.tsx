@@ -1,23 +1,21 @@
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
-export interface FREETextAnswerOptionsProps {
-  value: string
-  onChange: (value: string) => void
+export interface FREETextAnswerOptionsOLDProps {
+  disabled?: boolean
   placeholder?: string
   maxLength?: number
-  disabled: boolean
-  elementIx: number
+  onChange: (value: any) => any
+  value?: string
 }
 
-export function FREETextAnswerOptions({
+export function FREETextAnswerOptionsOLD({
+  disabled,
   placeholder,
   maxLength,
   onChange,
   value,
-  disabled,
-  elementIx,
-}: FREETextAnswerOptionsProps): React.ReactElement {
+}: FREETextAnswerOptionsOLDProps): React.ReactElement {
   const t = useTranslations()
 
   return (
@@ -33,7 +31,7 @@ export function FREETextAnswerOptions({
           typeof maxLength === 'number' && !isNaN(maxLength) ? maxLength : 1500
         }
         placeholder={placeholder || t('shared.questions.ftPlaceholder')}
-        data-cy={`free-text-input-${elementIx + 1}`}
+        data-cy="free-text-response-input"
       />
 
       {typeof maxLength === 'number' && !isNaN(maxLength) && (
@@ -46,4 +44,4 @@ export function FREETextAnswerOptions({
   )
 }
 
-export default FREETextAnswerOptions
+export default FREETextAnswerOptionsOLD

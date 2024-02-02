@@ -9,7 +9,7 @@ import {
   NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import FREETextAnswerOptions from '@klicker-uzh/shared-components/src/questions/FREETextAnswerOptions'
+import FREETextAnswerOptionsOLD from '@klicker-uzh/shared-components/src/questions/FREETextAnswerOptionsOLD'
 import NUMERICALAnswerOptionsOLD from '@klicker-uzh/shared-components/src/questions/NUMERICALAnswerOptionsOLD'
 import {
   validateFreeTextResponse,
@@ -363,7 +363,7 @@ export function Options({
               })}
             </div>
           )}
-          <FREETextAnswerOptions
+          <FREETextAnswerOptionsOLD
             disabled={disabled}
             onChange={onChangeResponse}
             maxLength={questionOptions.restrictions?.maxLength ?? undefined}

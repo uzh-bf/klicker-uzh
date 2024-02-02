@@ -3,6 +3,7 @@ import {
   ElementStack,
   ElementType,
   FlashcardCorrectnessType,
+  FreeTextElementData,
   NumericalElementData,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -167,7 +168,32 @@ function StudentElement({
               />
             )
           } else if (element.elementData.type === ElementType.FreeText) {
-            return <FreeTextQuestion key={element.id} />
+            return (
+              <FreeTextQuestion
+                key={element.id}
+                content={element.elementData.content}
+                options={(element.elementData as FreeTextElementData).options}
+                response={studentResponse[element.id]?.response as string}
+                valid={studentResponse[element.id]?.valid as boolean}
+                setResponse={(newValue, valid) => {
+                  setStudentResponse((response) => {
+                    return {
+                      ...response,
+                      [element.id]: {
+                        ...response[element.id],
+                        type: ElementType.FreeText,
+                        response: newValue,
+                        valid: valid,
+                      },
+                    }
+                  })
+                }}
+                existingResponse={
+                  stackStorage?.[element.id]?.response as string
+                }
+                elementIx={elementIx}
+              />
+            )
           } else if (element.elementData.type === ElementType.Content) {
             return (
               <ContentElement

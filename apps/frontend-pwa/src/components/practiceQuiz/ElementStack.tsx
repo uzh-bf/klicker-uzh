@@ -175,8 +175,6 @@ function ElementStack({
             : Object.values(studentResponse).some((response) => !response.valid)
         }
         onClick={async () => {
-          // TODO: check if all instances have a response before starting submission (once questions are implemented)
-
           // if stack was already answered, just go to next element
           if (typeof stackStorage !== 'undefined') {
             setStudentResponse({})
@@ -253,9 +251,13 @@ function ElementStack({
                         type: ElementType.Numerical,
                         numericalResponse: parseFloat(value.response as string),
                       }
-                    }
-                    // TODO: submission logic for free text questions
-                    else {
+                    } else if (value.type === ElementType.FreeText) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.FreeText,
+                        freeTextResponse: value.response as string,
+                      }
+                    } else {
                       return {
                         instanceId: parseInt(instanceId),
                         type: value.type,
