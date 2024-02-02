@@ -62,6 +62,7 @@ function ChoicesQuestion({
             displayMode={options.displayMode}
             type={ElementType.Kprim}
             choices={options.choices}
+            feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: Record<number, boolean>) => {
               const valid = validateKprimResponse(newValue)
@@ -76,6 +77,7 @@ function ChoicesQuestion({
           <MCAnswerOptions
             displayMode={options.displayMode}
             choices={options.choices}
+            feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: Record<number, boolean>) => {
               const valid = validateMcResponse(newValue)
@@ -90,6 +92,7 @@ function ChoicesQuestion({
           <SCAnswerOptions
             displayMode={options.displayMode}
             choices={options.choices}
+            feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: Record<number, boolean>) => {
               const valid = validateScResponse(newValue)
