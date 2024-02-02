@@ -398,6 +398,7 @@ type InstanceEvaluation {
   newXpFrom: Date
   percentile: Float
   pointsAwarded: Float
+  pointsMultiplier: Int
   score: Float!
   xpAwarded: Int
 }

@@ -10,7 +10,12 @@ import {
 import { ElementType, UserRole } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
-import { ResponseInput } from 'src/ops'
+import {
+  ChoiceQuestionOptions,
+  FreeTextQuestionOptions,
+  NumericalQuestionOptions,
+  ResponseInput,
+} from 'src/ops'
 import { IInstanceEvaluation } from 'src/schema/question'
 import { Context } from '../lib/context'
 import { orderStacks } from '../lib/util'
@@ -450,8 +455,9 @@ function evaluateQuestionResponse(
       //   response.choices!.includes(choice.ix)
       // )
 
-      const feedbacks = elementData.options.choices
-      const solution = elementData.options.choices.reduce<number[]>(
+      const elementOptions = elementData.options as ChoiceQuestionOptions
+      const feedbacks = elementOptions.choices
+      const solution = elementOptions.choices.reduce<number[]>(
         (acc, choice) => {
           if (choice.correct) return [...acc, choice.ix]
           return acc
@@ -461,7 +467,7 @@ function evaluateQuestionResponse(
 
       if (elementData.type === ElementType.SC) {
         const pointsPercentage = gradeQuestionSC({
-          responseCount: elementData.options.choices.length,
+          responseCount: elementOptions.choices.length,
           response: (response as QuestionResponseChoices).choices,
           solution,
         })
@@ -477,10 +483,11 @@ function evaluateQuestionResponse(
             pointsPercentage,
           }),
           percentile: pointsPercentage ?? 0,
+          pointsMultiplier: multiplier,
         }
       } else if (elementData.type === ElementType.MC) {
         const pointsPercentage = gradeQuestionMC({
-          responseCount: elementData.options.choices.length,
+          responseCount: elementOptions.choices.length,
           response: (response as QuestionResponseChoices).choices,
           solution,
         })
@@ -496,10 +503,11 @@ function evaluateQuestionResponse(
             pointsPercentage,
           }),
           percentile: pointsPercentage ?? 0,
+          pointsMultiplier: multiplier,
         }
       } else {
         const pointsPercentage = gradeQuestionKPRIM({
-          responseCount: elementData.options.choices.length,
+          responseCount: elementOptions.choices.length,
           response: (response as QuestionResponseChoices).choices,
           solution,
         })
@@ -520,7 +528,8 @@ function evaluateQuestionResponse(
     }
 
     case ElementType.NUMERICAL: {
-      const solutionRanges = elementData.options.solutionRanges
+      const solutionRanges = (elementData.options as NumericalQuestionOptions)
+        .solutionRanges
 
       const correct = gradeQuestionNumerical({
         response: parseFloat(String(response.value)),
@@ -540,7 +549,8 @@ function evaluateQuestionResponse(
     }
 
     case ElementType.FREE_TEXT: {
-      const solutions = elementData.options.solutions
+      const solutions = (elementData.options as FreeTextQuestionOptions)
+        .solutions
 
       const correct = gradeQuestionFreeText({
         response: response.value ?? '',

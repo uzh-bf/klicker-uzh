@@ -13,6 +13,7 @@ mutation RespondToPracticeQuizStack(
     score
     evaluations {
       instanceId
+      pointsMultiplier
       feedbacks {
         ix
         feedback
