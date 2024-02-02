@@ -8,6 +8,7 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import MCKPRIMEvaluation from './evaluation/MCKPRIMEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
+import QuestionExplanation from './evaluation/QuestionExplanation'
 import SCEvaluation from './evaluation/SCEvaluation'
 import KPAnswerOptions from './questions/KPAnswerOptions'
 import MCAnswerOptions from './questions/MCAnswerOptions'
@@ -52,11 +53,16 @@ function ChoicesQuestion({
           </div>
         )}
 
+        {evaluation && evaluation.explanation && (
+          <QuestionExplanation explanation={evaluation.explanation} />
+        )}
+
         {type === ElementType.Kprim && (
           <KPAnswerOptions
             displayMode={options.displayMode}
             type={ElementType.Kprim}
             choices={options.choices}
+            feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: Record<number, boolean>) => {
               const valid = validateKprimResponse(newValue)
@@ -71,6 +77,7 @@ function ChoicesQuestion({
           <MCAnswerOptions
             displayMode={options.displayMode}
             choices={options.choices}
+            feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: Record<number, boolean>) => {
               const valid = validateMcResponse(newValue)
@@ -85,6 +92,7 @@ function ChoicesQuestion({
           <SCAnswerOptions
             displayMode={options.displayMode}
             choices={options.choices}
+            feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: Record<number, boolean>) => {
               const valid = validateScResponse(newValue)

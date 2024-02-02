@@ -484,6 +484,7 @@ function evaluateQuestionResponse(
           }),
           percentile: pointsPercentage ?? 0,
           pointsMultiplier: multiplier,
+          explanation: elementData.explanation,
         }
       } else if (elementData.type === ElementType.MC) {
         const pointsPercentage = gradeQuestionMC({
@@ -504,6 +505,7 @@ function evaluateQuestionResponse(
           }),
           percentile: pointsPercentage ?? 0,
           pointsMultiplier: multiplier,
+          explanation: elementData.explanation,
         }
       } else {
         const pointsPercentage = gradeQuestionKPRIM({
@@ -524,6 +526,7 @@ function evaluateQuestionResponse(
           }),
           percentile: pointsPercentage ?? 0,
           pointsMultiplier: multiplier,
+          explanation: elementData.explanation,
         }
       }
     }
@@ -547,6 +550,7 @@ function evaluateQuestionResponse(
         }),
         percentile: correct ?? 0,
         pointsMultiplier: multiplier,
+        explanation: elementData.explanation,
       }
     }
 
@@ -568,6 +572,7 @@ function evaluateQuestionResponse(
         }),
         percentile: correct ?? 0,
         pointsMultiplier: multiplier,
+        explanation: elementData.explanation,
       }
     }
 
