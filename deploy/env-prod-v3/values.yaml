@@ -144,6 +144,10 @@ backendGraphql:
   autoscaling:
     enabled: false
 
+  appManageSubdomain: manage.klicker.uzh.ch
+  appStudentSubdomain: pwa.klicker.uzh.ch
+  appControlSubdomain: control.klicker.uzh.ch
+
   ingress:
     hosts:
       - host: backend-sls.klicker.uzh.ch
