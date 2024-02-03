@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.31...v3.1.0-beta.32) (2024-02-03)
+
+
+### Bug Fixes
+
+* **apps/auth:** ensure tosChecked actually parses bool from string, add update date to tos and privacy notice ([79fbbe9](https://github.com/uzh-bf/klicker-uzh/commit/79fbbe9a8644e52f3b246a92800ebef5b6b6d700))
+* **apps/frontend-pwa:** fetchSelf only after successful login ([a331994](https://github.com/uzh-bf/klicker-uzh/commit/a331994fe914175fe435ae2e985786abfb8de4cf))
+
 ## [3.1.0-beta.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.30...v3.1.0-beta.31) (2024-02-01)
 
 
