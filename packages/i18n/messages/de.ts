@@ -201,7 +201,7 @@ export default {
     delegatedAccess: 'Delegierter Zugriff',
     signedInAs: 'Sie sind bereits eingelogged als {username}',
     tosAgreement:
-      'Ich akzeptiere die KlickerUZH <tos></tos> und <privacy></privacy>.',
+      'Ich akzeptiere die KlickerUZH <tos></tos> (aktualisiert am 26.08.2023) und <privacy></privacy> (aktualisiert am 26.08.2023).',
     termsOfService: 'Nutzungsbedingungen',
     privacyPolicy: 'Datenschutzerklärung',
     tosUrl: 'https://www.klicker.uzh.ch/nutzungsbedingungen',
