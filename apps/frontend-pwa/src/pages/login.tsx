@@ -44,16 +44,14 @@ function Login() {
           password: values.password.trim(),
         },
       })
-      const { data: dataSelf } = await fetchSelf()
 
-      const userID: string | null = result.data!.loginParticipant
-      if (!userID || !dataSelf?.self?.id) {
+      if (!result.data?.loginParticipant) {
         setError(t('shared.generic.loginError'))
         setShowError(true)
         setSubmitting(false)
         resetForm()
       } else {
-        console.log('Login successful!', userID)
+        await fetchSelf()
 
         // redirect to the specified redirect path (default: question pool)
         router.push(decodedRedirectPath)
