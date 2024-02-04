@@ -56,7 +56,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
           }
 
           if (req.cookies) {
-            console.log('origin', req.headers?.origin)
+            console.log('headers', req.headers)
 
             if (
               req.headers.origin?.includes(
