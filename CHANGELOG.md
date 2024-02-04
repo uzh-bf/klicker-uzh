@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.35...v3.1.0-beta.36) (2024-02-04)
+
+
+### Bug Fixes
+
+* **apps:** remove all middleware due to middleware bug ([44ac74f](https://github.com/uzh-bf/klicker-uzh/commit/44ac74fa6ff8becea7d3b5b2723b03fe7bfa5920))
+
 ## [3.1.0-beta.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.34...v3.1.0-beta.35) (2024-02-04)
 
 

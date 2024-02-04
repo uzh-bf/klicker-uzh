@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/auth",
-  "version": "3.1.0-beta.35",
+  "version": "3.1.0-beta.36",
   "license": "AGPL-3.0",
   "dependencies": {
     "@klicker-uzh/i18n": "workspace:*",
