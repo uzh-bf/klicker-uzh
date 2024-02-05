@@ -10,7 +10,7 @@
     "typescript": "5.0.4"
   },
   "peerDependencies": {
-    "next-intl": "3.4.0"
+    "next-intl": "3.5.4"
   },
   "volta": {
     "extends": "../../package.json"
