@@ -696,6 +696,244 @@ export async function prepareSession({
   }
 }
 
+export function prepareStackVariety({
+  flashcards,
+  questions,
+  contentElements,
+  stackType,
+  elementInstanceType,
+  courseId,
+}: {
+  flashcards: any
+  questions: any
+  contentElements: any
+  stackType: Prisma.ElementStackType
+  elementInstanceType: Prisma.ElementInstanceType
+  courseId: string
+}) {
+  return [
+    // create stacks with one flashcard each
+    ...flashcards.map((el, ix) => ({
+      displayName: undefined,
+      description: undefined,
+      order: ix,
+      type: stackType,
+      options: {},
+      elements: {
+        createMany: {
+          data: [
+            {
+              order: ix,
+              type: elementInstanceType,
+              elementType: el.type,
+              elementData: processElementData(el),
+              options: { resetTimeDays: 7 },
+              results: getInitialElementResults(el),
+              ownerId: el.ownerId,
+              elementId: el.id,
+            },
+          ],
+        },
+      },
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+    })),
+    // create one stack with all flashcards
+    {
+      displayName: undefined,
+      description: undefined,
+      order: flashcards.length,
+      type: stackType,
+      options: {},
+      elements: {
+        createMany: {
+          data: flashcards.map((el, ix) => ({
+            order: ix,
+            type: elementInstanceType,
+            elementType: el.type,
+            elementData: processElementData(el),
+            options: { resetTimeDays: 6 },
+            results: getInitialElementResults(el),
+            ownerId: el.ownerId,
+            elementId: el.id,
+          })),
+        },
+      },
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+    },
+    // create stacks with questions
+    ...questions.map((el, ix) => ({
+      displayName: undefined,
+      description: undefined,
+      order: flashcards.length + ix + 1,
+      type: stackType,
+      options: {},
+      elements: {
+        createMany: {
+          data: [
+            {
+              order: ix,
+              type: elementInstanceType,
+              elementType: el.type,
+              elementData: processElementData(el),
+              options: { pointsMultiplier: 1, resetTimeDays: 5 },
+              results: getInitialElementResults(el),
+              ownerId: el.ownerId,
+              elementId: el.id,
+            },
+          ],
+        },
+      },
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+    })),
+    // create one stack with all questions
+    {
+      displayName: undefined,
+      description: undefined,
+      order: flashcards.length + questions.length + 1,
+      type: stackType,
+      options: {},
+      elements: {
+        createMany: {
+          data: questions.map((el, ix) => ({
+            order: ix,
+            type: elementInstanceType,
+            elementType: el.type,
+            elementData: processElementData(el),
+            options: { pointsMultiplier: 4, resetTimeDays: 8 },
+            results: getInitialElementResults(el),
+            ownerId: el.ownerId,
+            elementId: el.id,
+          })),
+        },
+      },
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+    },
+    // create stacks with content elements
+    ...contentElements.map((el, ix) => ({
+      displayName: undefined,
+      description: undefined,
+      order: flashcards.length + questions.length + ix + 2,
+      type: stackType,
+      options: {},
+      elements: {
+        createMany: {
+          data: [
+            {
+              order: ix,
+              type: elementInstanceType,
+              elementType: el.type,
+              elementData: processElementData(el),
+              options: { pointsMultiplier: 4, resetTimeDays: 7 },
+              results: getInitialElementResults(el),
+              ownerId: el.ownerId,
+              elementId: el.id,
+            },
+          ],
+        },
+      },
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+    })),
+    // create two stacks with all content elements
+    ...[0, 1].map((ix) => ({
+      displayName: undefined,
+      description: undefined,
+      order:
+        flashcards.length + questions.length + contentElements.length + 2 + ix,
+      type: stackType,
+      options: {},
+      elements: {
+        createMany: {
+          data: contentElements.map((el, ix) => ({
+            order: ix,
+            type: elementInstanceType,
+            elementType: el.type,
+            elementData: processElementData(el),
+            options: { pointsMultiplier: 2, resetTimeDays: 6 },
+            results: getInitialElementResults(el),
+            ownerId: el.ownerId,
+            elementId: el.id,
+          })),
+        },
+      },
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+    })),
+    // create two stacks with one of each kind of elements
+    ...[0, 1].map((ix) => ({
+      displayName: undefined,
+      description: undefined,
+      order:
+        flashcards.length + questions.length + contentElements.length + 4 + ix,
+      type: stackType,
+      options: {},
+      elements: {
+        createMany: {
+          data: [
+            {
+              order: 0,
+              type: elementInstanceType,
+              elementType: flashcards[0].type,
+              elementData: processElementData(flashcards[0]),
+              options: { resetTimeDays: 5 },
+              results: getInitialElementResults(flashcards[0]),
+              ownerId: flashcards[0].ownerId,
+              elementId: flashcards[0].id,
+            },
+            {
+              order: 1,
+              type: elementInstanceType,
+              elementType: questions[0].type,
+              elementData: processElementData(questions[0]),
+              options: { pointsMultiplier: 3, resetTimeDays: 6 },
+              results: getInitialElementResults(questions[0]),
+              ownerId: questions[0].ownerId,
+              elementId: questions[0].id,
+            },
+            {
+              order: 2,
+              type: elementInstanceType,
+              elementType: contentElements[0].type,
+              elementData: processElementData(contentElements[0]),
+              options: {},
+              results: getInitialElementResults(contentElements[0]),
+              ownerId: contentElements[0].ownerId,
+              elementId: contentElements[0].id,
+            },
+          ],
+        },
+      },
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+    })),
+  ]
+}
+
 export async function prepareMicroSession({
   questions,
   ...args
