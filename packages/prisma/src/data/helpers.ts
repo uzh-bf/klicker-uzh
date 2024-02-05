@@ -703,6 +703,7 @@ export function prepareStackVariety({
   stackType,
   elementInstanceType,
   courseId,
+  connectToCourse = true,
 }: {
   flashcards: any
   questions: any
@@ -710,6 +711,7 @@ export function prepareStackVariety({
   stackType: Prisma.ElementStackType
   elementInstanceType: Prisma.ElementInstanceType
   courseId: string
+  connectToCourse?: boolean
 }) {
   return [
     // create stacks with one flashcard each
@@ -735,11 +737,13 @@ export function prepareStackVariety({
           ],
         },
       },
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
+      course: connectToCourse
+        ? {
+            connect: {
+              id: courseId,
+            },
+          }
+        : undefined,
     })),
     // create one stack with all flashcards
     {
@@ -762,11 +766,13 @@ export function prepareStackVariety({
           })),
         },
       },
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
+      course: connectToCourse
+        ? {
+            connect: {
+              id: courseId,
+            },
+          }
+        : undefined,
     },
     // create stacks with questions
     ...questions.map((el, ix) => ({
@@ -791,11 +797,13 @@ export function prepareStackVariety({
           ],
         },
       },
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
+      course: connectToCourse
+        ? {
+            connect: {
+              id: courseId,
+            },
+          }
+        : undefined,
     })),
     // create one stack with all questions
     {
@@ -818,11 +826,13 @@ export function prepareStackVariety({
           })),
         },
       },
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
+      course: connectToCourse
+        ? {
+            connect: {
+              id: courseId,
+            },
+          }
+        : undefined,
     },
     // create stacks with content elements
     ...contentElements.map((el, ix) => ({
@@ -847,11 +857,13 @@ export function prepareStackVariety({
           ],
         },
       },
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
+      course: connectToCourse
+        ? {
+            connect: {
+              id: courseId,
+            },
+          }
+        : undefined,
     })),
     // create two stacks with all content elements
     ...[0, 1].map((ix) => ({
@@ -875,11 +887,13 @@ export function prepareStackVariety({
           })),
         },
       },
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
+      course: connectToCourse
+        ? {
+            connect: {
+              id: courseId,
+            },
+          }
+        : undefined,
     })),
     // create two stacks with one of each kind of elements
     ...[0, 1].map((ix) => ({
@@ -925,11 +939,13 @@ export function prepareStackVariety({
           ],
         },
       },
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
+      course: connectToCourse
+        ? {
+            connect: {
+              id: courseId,
+            },
+          }
+        : undefined,
     })),
   ]
 }
