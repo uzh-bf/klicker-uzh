@@ -726,6 +726,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                 ],
               },
             },
+            course: {
+              connect: {
+                id: COURSE_ID_TEST,
+              },
+            },
           })),
           // create one stack with all flashcards
           {
@@ -746,6 +751,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                   ownerId: el.ownerId,
                   elementId: el.id,
                 })),
+              },
+            },
+            course: {
+              connect: {
+                id: COURSE_ID_TEST,
               },
             },
           },
@@ -772,6 +782,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                 ],
               },
             },
+            course: {
+              connect: {
+                id: COURSE_ID_TEST,
+              },
+            },
           })),
           // create one stack with all questions
           {
@@ -792,6 +807,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                   ownerId: el.ownerId,
                   elementId: el.id,
                 })),
+              },
+            },
+            course: {
+              connect: {
+                id: COURSE_ID_TEST,
               },
             },
           },
@@ -816,6 +836,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                     elementId: el.id,
                   },
                 ],
+              },
+            },
+            course: {
+              connect: {
+                id: COURSE_ID_TEST,
               },
             },
           })),
@@ -843,6 +868,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                   ownerId: el.ownerId,
                   elementId: el.id,
                 })),
+              },
+            },
+            course: {
+              connect: {
+                id: COURSE_ID_TEST,
               },
             },
           })),
@@ -892,6 +922,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                     elementId: contentElements[0].id,
                   },
                 ],
+              },
+            },
+            course: {
+              connect: {
+                id: COURSE_ID_TEST,
               },
             },
           })),
