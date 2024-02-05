@@ -705,9 +705,9 @@ export function prepareStackVariety({
   courseId,
   connectToCourse = true,
 }: {
-  flashcards: any
-  questions: any
-  contentElements: any
+  flashcards: Prisma.Element[]
+  questions: Prisma.Element[]
+  contentElements: Prisma.Element[]
   stackType: Prisma.ElementStackType
   elementInstanceType: Prisma.ElementInstanceType
   courseId: string
