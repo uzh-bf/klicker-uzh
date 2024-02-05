@@ -6,6 +6,7 @@ import { signIn, signOut, useSession } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useMemo } from 'react'
 
 import useStickyState from 'src/hooks/useStickyState'
 
@@ -13,10 +14,12 @@ function SignInOutButton() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { value: tosChecked, setValue: setTosChecked } = useStickyState(
-    'tos-agreement-2024',
+  const { value, setValue: setTosChecked } = useStickyState(
+    'tos-agreement-2024-v2',
     'false'
   )
+
+  const tosChecked = useMemo(() => JSON.parse(value), [value])
 
   const { data: session, status } = useSession()
 
@@ -76,7 +79,7 @@ function SignInOutButton() {
           </div>
         }
         onCheck={() => setTosChecked(!tosChecked)}
-        checked={Boolean(tosChecked)}
+        checked={tosChecked}
       />
 
       <Button

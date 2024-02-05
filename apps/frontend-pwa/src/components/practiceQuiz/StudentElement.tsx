@@ -3,6 +3,8 @@ import {
   ElementStack,
   ElementType,
   FlashcardCorrectnessType,
+  FreeTextElementData,
+  InstanceEvaluation,
   NumericalElementData,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -32,30 +34,35 @@ export type StudentResponseType = Record<
       response?: FlashcardCorrectnessType
       correct?: StackFeedbackStatus
       valid?: boolean
+      evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.Content
       response?: boolean
       correct?: StackFeedbackStatus
       valid?: boolean
+      evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
       response?: Record<number, boolean | undefined>
       correct?: StackFeedbackStatus
       valid?: boolean
+      evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.Numerical
       response?: string
       correct?: StackFeedbackStatus
       valid?: boolean
+      evaluation?: InstanceEvaluation
     }
   | {
       type: ElementType.FreeText
       response?: string
       correct?: StackFeedbackStatus
       valid?: boolean
+      evaluation?: InstanceEvaluation
     }
 >
 
@@ -136,6 +143,7 @@ function StudentElement({
                     boolean
                   >
                 }
+                evaluation={stackStorage?.[element.id]?.evaluation}
                 elementIx={elementIx}
               />
             )
@@ -163,11 +171,38 @@ function StudentElement({
                 existingResponse={
                   stackStorage?.[element.id]?.response as string
                 }
+                evaluation={stackStorage?.[element.id]?.evaluation}
                 elementIx={elementIx}
               />
             )
           } else if (element.elementData.type === ElementType.FreeText) {
-            return <FreeTextQuestion key={element.id} />
+            return (
+              <FreeTextQuestion
+                key={element.id}
+                content={element.elementData.content}
+                options={(element.elementData as FreeTextElementData).options}
+                response={studentResponse[element.id]?.response as string}
+                valid={studentResponse[element.id]?.valid as boolean}
+                setResponse={(newValue, valid) => {
+                  setStudentResponse((response) => {
+                    return {
+                      ...response,
+                      [element.id]: {
+                        ...response[element.id],
+                        type: ElementType.FreeText,
+                        response: newValue,
+                        valid: valid,
+                      },
+                    }
+                  })
+                }}
+                existingResponse={
+                  stackStorage?.[element.id]?.response as string
+                }
+                evaluation={stackStorage?.[element.id]?.evaluation}
+                elementIx={elementIx}
+              />
+            )
           } else if (element.elementData.type === ElementType.Content) {
             return (
               <ContentElement

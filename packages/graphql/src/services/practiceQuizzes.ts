@@ -10,7 +10,13 @@ import {
 import { ElementType, UserRole } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
-import { ResponseInput } from 'src/ops'
+import {
+  ChoiceQuestionOptions,
+  FreeTextQuestionOptions,
+  NumericalQuestionOptions,
+  ResponseInput,
+} from 'src/ops'
+import { IInstanceEvaluation } from 'src/schema/question'
 import { Context } from '../lib/context'
 import { orderStacks } from '../lib/util'
 import {
@@ -449,8 +455,9 @@ function evaluateQuestionResponse(
       //   response.choices!.includes(choice.ix)
       // )
 
-      const feedbacks = elementData.options.choices
-      const solution = elementData.options.choices.reduce<number[]>(
+      const elementOptions = elementData.options as ChoiceQuestionOptions
+      const feedbacks = elementOptions.choices
+      const solution = elementOptions.choices.reduce<number[]>(
         (acc, choice) => {
           if (choice.correct) return [...acc, choice.ix]
           return acc
@@ -460,7 +467,7 @@ function evaluateQuestionResponse(
 
       if (elementData.type === ElementType.SC) {
         const pointsPercentage = gradeQuestionSC({
-          responseCount: elementData.options.choices.length,
+          responseCount: elementOptions.choices.length,
           response: (response as QuestionResponseChoices).choices,
           solution,
         })
@@ -476,10 +483,12 @@ function evaluateQuestionResponse(
             pointsPercentage,
           }),
           percentile: pointsPercentage ?? 0,
+          pointsMultiplier: multiplier,
+          explanation: elementData.explanation,
         }
       } else if (elementData.type === ElementType.MC) {
         const pointsPercentage = gradeQuestionMC({
-          responseCount: elementData.options.choices.length,
+          responseCount: elementOptions.choices.length,
           response: (response as QuestionResponseChoices).choices,
           solution,
         })
@@ -495,10 +504,12 @@ function evaluateQuestionResponse(
             pointsPercentage,
           }),
           percentile: pointsPercentage ?? 0,
+          pointsMultiplier: multiplier,
+          explanation: elementData.explanation,
         }
       } else {
         const pointsPercentage = gradeQuestionKPRIM({
-          responseCount: elementData.options.choices.length,
+          responseCount: elementOptions.choices.length,
           response: (response as QuestionResponseChoices).choices,
           solution,
         })
@@ -514,12 +525,15 @@ function evaluateQuestionResponse(
             pointsPercentage,
           }),
           percentile: pointsPercentage ?? 0,
+          pointsMultiplier: multiplier,
+          explanation: elementData.explanation,
         }
       }
     }
 
     case ElementType.NUMERICAL: {
-      const solutionRanges = elementData.options.solutionRanges
+      const solutionRanges = (elementData.options as NumericalQuestionOptions)
+        .solutionRanges
 
       const correct = gradeQuestionNumerical({
         response: parseFloat(String(response.value)),
@@ -535,11 +549,14 @@ function evaluateQuestionResponse(
           pointsPercentage: correct,
         }),
         percentile: correct ?? 0,
+        pointsMultiplier: multiplier,
+        explanation: elementData.explanation,
       }
     }
 
     case ElementType.FREE_TEXT: {
-      const solutions = elementData.options.solutions
+      const solutions = (elementData.options as FreeTextQuestionOptions)
+        .solutions
 
       const correct = gradeQuestionFreeText({
         response: response.value ?? '',
@@ -554,6 +571,8 @@ function evaluateQuestionResponse(
           pointsPercentage: correct,
         }),
         percentile: correct ?? 0,
+        pointsMultiplier: multiplier,
+        explanation: elementData.explanation,
       }
     }
 
@@ -991,6 +1010,8 @@ export async function respondToQuestion(
           newPointsFrom,
           xpAwarded,
           newXpFrom,
+          solutions: elementData.options.solutions,
+          solutionRanges: elementData.options.solutionRanges,
         }
       : undefined,
     status: status,
@@ -1050,8 +1071,9 @@ export async function respondToPracticeQuizStack(
   { stackId, courseId, responses }: RespondToPracticeQuizStackInput,
   ctx: Context
 ) {
-  let stackScore = undefined
+  let stackScore: number | undefined = undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
+  const evaluationsArr: IInstanceEvaluation[] = []
 
   // TODO: refactor this into a transaction and single combination of status and score for the stack
   for (const response of responses) {
@@ -1120,10 +1142,16 @@ export async function respondToPracticeQuizStack(
           prevStatus: stackFeedback,
           newStatus: result.status,
         })
+
         stackScore =
           typeof stackScore === 'undefined'
             ? result.evaluation?.score
             : stackScore + (result.evaluation?.score ?? 0)
+
+        evaluationsArr.push({
+          instanceId: response.instanceId,
+          ...result.evaluation,
+        } as IInstanceEvaluation)
       }
     } else if (response.type === ElementType.NUMERICAL) {
       const result = await respondToQuestion(
@@ -1140,10 +1168,16 @@ export async function respondToPracticeQuizStack(
           prevStatus: stackFeedback,
           newStatus: result.status,
         })
+
         stackScore =
           typeof stackScore === 'undefined'
             ? result.evaluation?.score
             : stackScore + (result.evaluation?.score ?? 0)
+
+        evaluationsArr.push({
+          instanceId: response.instanceId,
+          ...result.evaluation,
+        } as IInstanceEvaluation)
       }
     } else if (response.type === ElementType.FREE_TEXT) {
       const result = await respondToQuestion(
@@ -1160,10 +1194,16 @@ export async function respondToPracticeQuizStack(
           prevStatus: stackFeedback,
           newStatus: result.status,
         })
+
         stackScore =
           typeof stackScore === 'undefined'
             ? result.evaluation?.score
             : stackScore + (result.evaluation?.score ?? 0)
+
+        evaluationsArr.push({
+          instanceId: response.instanceId,
+          ...result.evaluation,
+        } as IInstanceEvaluation)
       }
     } else {
       throw new Error(
@@ -1177,5 +1217,6 @@ export async function respondToPracticeQuizStack(
     id: stackId,
     status: stackFeedback,
     score: stackScore,
+    evaluations: evaluationsArr,
   }
 }

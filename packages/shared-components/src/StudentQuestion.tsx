@@ -16,7 +16,7 @@ import React, { useEffect } from 'react'
 
 import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
-import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
+import { FREETextAnswerOptionsOLD } from './questions/FREETextAnswerOptionsOLD'
 import KPAnswerOptionsOLD from './questions/KPAnswerOptionsOLD'
 import { NUMERICALAnswerOptionsOLD } from './questions/NUMERICALAnswerOptionsOLD'
 import { SCAnswerOptionsOLD } from './questions/SCAnswerOptionsOLD'
@@ -282,7 +282,7 @@ export const StudentQuestion = ({
           ))}
 
         {QUESTION_GROUPS.FREE_TEXT.includes(currentQuestion.type) && (
-          <FREETextAnswerOptions
+          <FREETextAnswerOptionsOLD
             onChange={onFreeTextValueChange}
             maxLength={currentQuestion.options?.restrictions?.maxLength}
             value={inputValue as string}

@@ -7,6 +7,9 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
+  APP_MANAGE_SUBDOMAIN: {{ .Values.backendGraphql.appManageSubdomain | quote }}
+  APP_STUDENT_SUBDOMAIN: {{ .Values.backendGraphql.appStudentSubdomain | quote }}
+  APP_CONTROL_SUBDOMAIN: {{ .Values.backendGraphql.appControlSubdomain | quote }}
   NOTIFICATION_URL: {{ .Values.backendGraphql.notifications.url | quote }}
   NOTIFICATION_SUPPORT_MAIL: {{ .Values.backendGraphql.notifications.supportEmail | quote }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
