@@ -157,12 +157,22 @@ function ElementStack({
           </div>
         )}
 
-        <StudentElement
-          stack={stack}
-          studentResponse={studentResponse}
-          setStudentResponse={setStudentResponse}
-          stackStorage={stackStorage}
-        />
+        <div className="flex flex-col gap-3">
+          {stack.elements &&
+            stack.elements.length > 0 &&
+            stack.elements.map((element, elementIx) => {
+              return (
+                <StudentElement
+                  key={`${element.id}-student`}
+                  element={element}
+                  elementIx={elementIx}
+                  studentResponse={studentResponse}
+                  setStudentResponse={setStudentResponse}
+                  stackStorage={stackStorage}
+                />
+              )
+            })}
+        </div>
       </div>
 
       {/* display continue button if question was already answered */}
