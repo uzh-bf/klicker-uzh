@@ -781,8 +781,8 @@ export function prepareStackVariety({
   return [
     // create stacks with one flashcard each
     ...flashcards.map((el, ix) => ({
-      displayName: undefined,
-      description: undefined,
+      displayName: `Flashcard Stack ${ix + 1}`,
+      description: 'This stack contains a single *flashcard*.',
       order: ix,
       type: stackType,
       options: {},
@@ -812,8 +812,8 @@ export function prepareStackVariety({
     })),
     // create one stack with all flashcards
     {
-      displayName: undefined,
-      description: undefined,
+      displayName: `Flashcard Stack All`,
+      description: 'This stack contains all the *flashcards*.',
       order: flashcards.length,
       type: stackType,
       options: {},
@@ -841,8 +841,8 @@ export function prepareStackVariety({
     },
     // create stacks with questions
     ...questions.map((el, ix) => ({
-      displayName: undefined,
-      description: undefined,
+      displayName: `Question Stack ${ix + 1}`,
+      description: 'This stack contains a single *question*.',
       order: flashcards.length + ix + 1,
       type: stackType,
       options: {},
@@ -872,8 +872,8 @@ export function prepareStackVariety({
     })),
     // create one stack with all questions
     {
-      displayName: undefined,
-      description: undefined,
+      displayName: `Question Stack All`,
+      description: 'This stack contains all the *questions*.',
       order: flashcards.length + questions.length + 1,
       type: stackType,
       options: {},
@@ -901,8 +901,8 @@ export function prepareStackVariety({
     },
     // create stacks with content elements
     ...contentElements.map((el, ix) => ({
-      displayName: undefined,
-      description: undefined,
+      displayName: `Content Stack ${ix + 1}`,
+      description: 'This stack contains a single *content element*.',
       order: flashcards.length + questions.length + ix + 2,
       type: stackType,
       options: {},
@@ -932,8 +932,8 @@ export function prepareStackVariety({
     })),
     // create two stacks with all content elements
     ...[0, 1].map((ix) => ({
-      displayName: undefined,
-      description: undefined,
+      displayName: `Content Stack All ${ix + 1}`,
+      description: 'This stack contains all the *content elements*.',
       order:
         flashcards.length + questions.length + contentElements.length + 2 + ix,
       type: stackType,
@@ -962,8 +962,9 @@ export function prepareStackVariety({
     })),
     // create two stacks with one of each kind of elements
     ...[0, 1].map((ix) => ({
-      displayName: undefined,
-      description: undefined,
+      displayName: `Mixed Stack ${ix + 1}`,
+      description:
+        'This stack contains one *flashcard*, one *question*, and one *content element*.',
       order:
         flashcards.length + questions.length + contentElements.length + 4 + ix,
       type: stackType,
