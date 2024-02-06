@@ -586,6 +586,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       elementStack: {
         create: {
           ...prepareGroupActivityStack({
+            migrationIdOffset: 0,
             flashcards,
             questions: questionsTest,
             contentElements,
@@ -630,6 +631,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       elementStack: {
         create: {
           ...prepareGroupActivityStack({
+            migrationIdOffset: 100,
             flashcards,
             questions: questionsTest,
             contentElements,
@@ -670,6 +672,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       stacks: {
         create: [
           ...prepareStackVariety({
+            migrationIdOffset: 200,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -721,6 +724,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
+            migrationIdOffset: 300,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,
@@ -765,6 +769,7 @@ Mehr bla bla...
       stacks: {
         create: [
           ...prepareStackVariety({
+            migrationIdOffset: 400,
             flashcards: flashcards,
             questions: questionsTest,
             contentElements: contentElements,

@@ -702,12 +702,14 @@ export function prepareGroupActivityStack({
   contentElements,
   courseId,
   connectStackToCourse,
+  migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
   questions: Prisma.Element[]
   contentElements: Prisma.Element[]
   courseId: string
   connectStackToCourse?: boolean
+  migrationIdOffset: number
 }) {
   return {
     displayName: 'Stack displayname for group activity',
@@ -719,6 +721,7 @@ export function prepareGroupActivityStack({
       createMany: {
         data: [
           ...flashcards.slice(0, 2).map((el, ix) => ({
+            migrationId: migrationIdOffset + ix,
             order: ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
@@ -729,6 +732,7 @@ export function prepareGroupActivityStack({
             elementId: el.id,
           })),
           ...questions.map((el, ix) => ({
+            migrationId: migrationIdOffset + 2 + ix,
             order: 2 + ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
@@ -739,6 +743,7 @@ export function prepareGroupActivityStack({
             elementId: el.id,
           })),
           ...contentElements.slice(0, 2).map((el, ix) => ({
+            migrationId: migrationIdOffset + questions.length + 2 + ix,
             order: questions.length + 2 + ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
@@ -769,6 +774,7 @@ export function prepareStackVariety({
   elementInstanceType,
   courseId,
   connectToCourse = true,
+  migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
   questions: Prisma.Element[]
@@ -777,6 +783,7 @@ export function prepareStackVariety({
   elementInstanceType: Prisma.ElementInstanceType
   courseId: string
   connectToCourse?: boolean
+  migrationIdOffset: number
 }) {
   return [
     // create stacks with one flashcard each
@@ -790,6 +797,7 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
+              migrationId: migrationIdOffset + ix,
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -820,6 +828,7 @@ export function prepareStackVariety({
       elements: {
         createMany: {
           data: flashcards.map((el, ix) => ({
+            migrationId: migrationIdOffset + flashcards.length + ix,
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -850,6 +859,7 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
+              migrationId: migrationIdOffset + 2 * flashcards.length + ix,
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -880,6 +890,8 @@ export function prepareStackVariety({
       elements: {
         createMany: {
           data: questions.map((el, ix) => ({
+            migrationId:
+              migrationIdOffset + 2 * flashcards.length + questions.length + ix,
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -910,6 +922,11 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
+              migrationId:
+                migrationIdOffset +
+                2 * flashcards.length +
+                2 * questions.length +
+                ix,
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -931,16 +948,27 @@ export function prepareStackVariety({
         : undefined,
     })),
     // create two stacks with all content elements
-    ...[0, 1].map((ix) => ({
-      displayName: `Content Stack All ${ix + 1}`,
+    ...[0, 1].map((outer_ix) => ({
+      displayName: `Content Stack All ${outer_ix + 1}`,
       description: 'This stack contains all the *content elements*.',
       order:
-        flashcards.length + questions.length + contentElements.length + 2 + ix,
+        flashcards.length +
+        questions.length +
+        contentElements.length +
+        2 +
+        outer_ix,
       type: stackType,
       options: {},
       elements: {
         createMany: {
           data: contentElements.map((el, ix) => ({
+            migrationId:
+              migrationIdOffset +
+              2 * flashcards.length +
+              2 * questions.length +
+              contentElements.length +
+              outer_ix * contentElements.length +
+              ix,
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -973,6 +1001,12 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
+              migrationId:
+                migrationIdOffset +
+                2 * flashcards.length +
+                2 * questions.length +
+                3 * contentElements.length +
+                ix * 5,
               order: 0,
               type: elementInstanceType,
               elementType: flashcards[0].type,
@@ -983,6 +1017,13 @@ export function prepareStackVariety({
               elementId: flashcards[0].id,
             },
             {
+              migrationId:
+                migrationIdOffset +
+                2 * flashcards.length +
+                2 * questions.length +
+                3 * contentElements.length +
+                ix * 5 +
+                1,
               order: 1,
               type: elementInstanceType,
               elementType: questions[0].type,
@@ -993,6 +1034,13 @@ export function prepareStackVariety({
               elementId: questions[0].id,
             },
             {
+              migrationId:
+                migrationIdOffset +
+                2 * flashcards.length +
+                2 * questions.length +
+                3 * contentElements.length +
+                ix * 5 +
+                2,
               order: 2,
               type: elementInstanceType,
               elementType: contentElements[0].type,
