@@ -2185,6 +2185,24 @@
         "interfaces": null,
         "enumValues": [
           {
+            "name": "GROUP_ACTIVITY",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "LIVE_QUIZ",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "MICROLEARNING",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "PRACTICE_QUIZ",
             "description": null,
             "isDeprecated": false,
