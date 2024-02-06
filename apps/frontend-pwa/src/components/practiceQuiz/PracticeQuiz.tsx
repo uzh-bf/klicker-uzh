@@ -1,5 +1,7 @@
+import { useQuery } from '@apollo/client'
 import {
   PracticeQuiz as PracticeQuizType,
+  SelfDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
@@ -33,6 +35,7 @@ function PracticeQuiz({
   showResetLocalStorage = false,
 }: PracticeQuizProps) {
   const currentStack = quiz.stacks?.[currentIx]
+  const { data: dataParticipant } = useQuery(SelfDocument)
 
   const [progressState, setProgressState] = useLocalStorage<
     Record<
@@ -110,6 +113,7 @@ function PracticeQuiz({
               })
             }}
             handleNextElement={handleNextElement}
+            withParticipant={!!dataParticipant?.self}
           />
         )}
 

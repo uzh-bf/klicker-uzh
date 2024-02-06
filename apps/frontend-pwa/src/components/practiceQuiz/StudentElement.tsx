@@ -70,7 +70,6 @@ interface StudentElementProps {
 function StudentElement({
   element,
   elementIx,
-
   studentResponse,
   setStudentResponse,
   stackStorage,
