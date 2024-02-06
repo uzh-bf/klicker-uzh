@@ -9,7 +9,6 @@ import {
 } from './constants.js'
 import * as DATA_TEST from './data/TEST'
 import {
-  getInitialElementResults,
   prepareContentElements,
   prepareCourse,
   prepareFlashcardsFromFile,
@@ -19,8 +18,8 @@ import {
   prepareQuestion,
   prepareQuestionInstance,
   prepareSession,
+  prepareStackVariety,
   prepareUser,
-  processElementData,
 } from './helpers.js'
 import { seedAchievements } from './seedAchievements'
 import { seedLevels } from './seedLevels'
@@ -703,198 +702,14 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       orderType: Prisma.ElementOrderType.SPACED_REPETITION,
       stacks: {
         create: [
-          // create stacks with one flashcard each
-          ...flashcards.map((el, ix) => ({
-            displayName: undefined,
-            description: undefined,
-            order: ix,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: [
-                  {
-                    order: ix,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: el.type,
-                    elementData: processElementData(el),
-                    options: { resetTimeDays: 7 },
-                    results: getInitialElementResults(el),
-                    ownerId: el.ownerId,
-                    elementId: el.id,
-                  },
-                ],
-              },
-            },
-          })),
-          // create one stack with all flashcards
-          {
-            displayName: undefined,
-            description: undefined,
-            order: flashcards.length,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: flashcards.map((el, ix) => ({
-                  order: ix,
-                  type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                  elementType: el.type,
-                  elementData: processElementData(el),
-                  options: { resetTimeDays: 6 },
-                  results: getInitialElementResults(el),
-                  ownerId: el.ownerId,
-                  elementId: el.id,
-                })),
-              },
-            },
-          },
-          // create stacks with questions
-          ...questionsTest.map((el, ix) => ({
-            displayName: undefined,
-            description: undefined,
-            order: flashcards.length + ix + 1,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: [
-                  {
-                    order: ix,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: el.type,
-                    elementData: processElementData(el),
-                    options: { pointsMultiplier: 1, resetTimeDays: 5 },
-                    results: getInitialElementResults(el),
-                    ownerId: el.ownerId,
-                    elementId: el.id,
-                  },
-                ],
-              },
-            },
-          })),
-          // create one stack with all questions
-          {
-            displayName: undefined,
-            description: undefined,
-            order: flashcards.length + questionsTest.length + 1,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: questionsTest.map((el, ix) => ({
-                  order: ix,
-                  type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                  elementType: el.type,
-                  elementData: processElementData(el),
-                  options: { pointsMultiplier: 4, resetTimeDays: 8 },
-                  results: getInitialElementResults(el),
-                  ownerId: el.ownerId,
-                  elementId: el.id,
-                })),
-              },
-            },
-          },
-          // create stacks with content elements
-          ...contentElements.map((el, ix) => ({
-            displayName: undefined,
-            description: undefined,
-            order: flashcards.length + questionsTest.length + ix + 2,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: [
-                  {
-                    order: ix,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: el.type,
-                    elementData: processElementData(el),
-                    options: { pointsMultiplier: 4, resetTimeDays: 7 },
-                    results: getInitialElementResults(el),
-                    ownerId: el.ownerId,
-                    elementId: el.id,
-                  },
-                ],
-              },
-            },
-          })),
-          // create two stacks with all content elements
-          ...[0, 1].map((ix) => ({
-            displayName: undefined,
-            description: undefined,
-            order:
-              flashcards.length +
-              questionsTest.length +
-              contentElements.length +
-              2 +
-              ix,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: contentElements.map((el, ix) => ({
-                  order: ix,
-                  type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                  elementType: el.type,
-                  elementData: processElementData(el),
-                  options: { pointsMultiplier: 2, resetTimeDays: 6 },
-                  results: getInitialElementResults(el),
-                  ownerId: el.ownerId,
-                  elementId: el.id,
-                })),
-              },
-            },
-          })),
-          // create two stacks with one of each kind of elements
-          ...[0, 1].map((ix) => ({
-            displayName: undefined,
-            description: undefined,
-            order:
-              flashcards.length +
-              questionsTest.length +
-              contentElements.length +
-              4 +
-              ix,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: [
-                  {
-                    order: 0,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: flashcards[0].type,
-                    elementData: processElementData(flashcards[0]),
-                    options: { resetTimeDays: 5 },
-                    results: getInitialElementResults(flashcards[0]),
-                    ownerId: flashcards[0].ownerId,
-                    elementId: flashcards[0].id,
-                  },
-                  {
-                    order: 1,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: questionsTest[0].type,
-                    elementData: processElementData(questionsTest[0]),
-                    options: { pointsMultiplier: 3, resetTimeDays: 6 },
-                    results: getInitialElementResults(questionsTest[0]),
-                    ownerId: questionsTest[0].ownerId,
-                    elementId: questionsTest[0].id,
-                  },
-                  {
-                    order: 2,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: contentElements[0].type,
-                    elementData: processElementData(contentElements[0]),
-                    options: {},
-                    results: getInitialElementResults(contentElements[0]),
-                    ownerId: contentElements[0].ownerId,
-                    elementId: contentElements[0].id,
-                  },
-                ],
-              },
-            },
-          })),
+          ...prepareStackVariety({
+            flashcards: flashcards,
+            questions: questionsTest,
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
+            elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+            courseId: COURSE_ID_TEST,
+          }),
         ],
       },
     },
@@ -906,6 +721,94 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         },
       },
     },
+  })
+
+  const microlearningId1 = 'd2f7fcbc-a54c-4518-b094-91d8adbd803f'
+  const microlearningPublished = await prismaClient.microLearning.upsert({
+    where: {
+      id: microlearningId1,
+    },
+    create: {
+      id: microlearningId1,
+      name: 'Test Microlearning',
+      displayName: 'Test Microlearning',
+      description: `
+Diese Woche lernen wir...
+
+Mehr bla bla...
+`,
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+      pointsMultiplier: 4,
+      status: Prisma.MicroLearningStatus.PUBLISHED,
+      scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            flashcards: flashcards,
+            questions: questionsTest,
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_TEST,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
+  const microlearningId2 = '6a0b6674-5f9b-40fd-90a4-53d493c210ba'
+  const microlearningFuture = await prismaClient.microLearning.upsert({
+    where: {
+      id: microlearningId2,
+    },
+    create: {
+      id: microlearningId2,
+      name: 'Test Microlearning Future',
+      displayName: 'Test Microlearning Future',
+      description: `
+In ferner Zukunft lernen wir...
+
+Mehr bla bla...
+`,
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+      pointsMultiplier: 1,
+      status: Prisma.MicroLearningStatus.DRAFT,
+      scheduledEndAt: new Date('2040-01-01T11:00:00.000Z'),
+      scheduledStartAt: new Date('2030-01-01T11:00:00.000Z'),
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            flashcards: flashcards,
+            questions: questionsTest,
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_TEST,
+          }),
+        ],
+      },
+    },
+    update: {},
   })
 }
 
