@@ -856,6 +856,7 @@ model GroupActivity {
 
   parameters        GroupActivityParameter[]
   clues             GroupActivityClue[]
+  // TODO: remove after migration
   instances         QuestionInstance[]
   activityInstances GroupActivityInstance[]
 

@@ -696,6 +696,71 @@ export async function prepareSession({
   }
 }
 
+export function prepareGroupActivityStack({
+  flashcards,
+  questions,
+  contentElements,
+  courseId,
+  connectStackToCourse,
+}: {
+  flashcards: Prisma.Element[]
+  questions: Prisma.Element[]
+  contentElements: Prisma.Element[]
+  courseId: string
+  connectStackToCourse?: boolean
+}) {
+  return {
+    displayName: 'Stack displayname for group activity',
+    description: 'Stack description for group activity.',
+    order: 0,
+    type: Prisma.ElementStackType.GROUP_ACTIVITY,
+    options: {},
+    elements: {
+      createMany: {
+        data: [
+          ...flashcards.slice(0, 2).map((el, ix) => ({
+            order: ix,
+            type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
+            elementType: el.type,
+            elementData: processElementData(el),
+            options: {},
+            results: getInitialElementResults(el),
+            ownerId: el.ownerId,
+            elementId: el.id,
+          })),
+          ...questions.map((el, ix) => ({
+            order: 2 + ix,
+            type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
+            elementType: el.type,
+            elementData: processElementData(el),
+            options: { pointsMultiplier: 1, resetTimeDays: 5 },
+            results: getInitialElementResults(el),
+            ownerId: el.ownerId,
+            elementId: el.id,
+          })),
+          ...contentElements.slice(0, 2).map((el, ix) => ({
+            order: questions.length + 2 + ix,
+            type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
+            elementType: el.type,
+            elementData: processElementData(el),
+            options: {},
+            results: getInitialElementResults(el),
+            ownerId: el.ownerId,
+            elementId: el.id,
+          })),
+        ],
+      },
+    },
+    course: connectStackToCourse
+      ? {
+          connect: {
+            id: courseId,
+          },
+        }
+      : undefined,
+  }
+}
+
 export function prepareStackVariety({
   flashcards,
   questions,
