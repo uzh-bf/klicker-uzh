@@ -90,41 +90,57 @@ async function migrate() {
               options: {},
 
               elements: {
-                connectOrCreate: elem.instances.map((instance) => ({
-                  where: {
-                    type_migrationId: {
-                      type: ElementInstanceType.GROUP_ACTIVITY,
-                      migrationId: instance.id,
-                    },
-                  },
-                  create: {
-                    migrationId: instance.id,
-                    type: ElementInstanceType.GROUP_ACTIVITY,
-                    elementType: instance.questionData.type,
-                    order: instance.order as number,
-                    createdAt: instance.createdAt,
-                    updatedAt: instance.updatedAt,
+                connectOrCreate: elem.instances.map((instance) => {
+                  if (
+                    [
+                      ElementType.SC,
+                      ElementType.MC,
+                      ElementType.KPRIM,
+                      ElementType.NUMERICAL,
+                      ElementType.FREE_TEXT,
+                    ].includes(instance.questionData.type)
+                  ) {
+                    throw new Error(
+                      `invalid questionData.type in questionInstance ${instance.id}`
+                    )
+                  }
 
-                    options: prepareGroupActivityInstanceOptions(
-                      elem,
-                      instance
-                    ),
-                    elementData: prepareGroupActivityElementData(
-                      elem,
-                      instance
-                    ),
-                    results: prepareGroupActivityInstanceResults(
-                      elem,
-                      instance
-                    ),
-
-                    owner: {
-                      connect: {
-                        id: elem.owner.id,
+                  return {
+                    where: {
+                      type_migrationId: {
+                        type: ElementInstanceType.GROUP_ACTIVITY,
+                        migrationId: instance.id,
                       },
                     },
-                  },
-                })),
+                    create: {
+                      migrationId: instance.id,
+                      type: ElementInstanceType.GROUP_ACTIVITY,
+                      elementType: instance.questionData.type,
+                      order: instance.order as number,
+                      createdAt: instance.createdAt,
+                      updatedAt: instance.updatedAt,
+
+                      options: prepareGroupActivityInstanceOptions(
+                        elem,
+                        instance
+                      ),
+                      elementData: prepareGroupActivityElementData(
+                        elem,
+                        instance
+                      ),
+                      results: prepareGroupActivityInstanceResults(
+                        elem,
+                        instance
+                      ),
+
+                      owner: {
+                        connect: {
+                          id: elem.owner.id,
+                        },
+                      },
+                    },
+                  }
+                }),
               },
             },
           },

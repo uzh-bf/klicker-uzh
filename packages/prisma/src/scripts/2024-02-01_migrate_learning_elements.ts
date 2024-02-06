@@ -4,6 +4,8 @@ import {
   ElementStackType,
   ElementType,
   LearningElement,
+  LearningElementStatus,
+  PublicationStatus,
   QuestionInstance,
 } from 'dist'
 import { PrismaClient } from '../client'
@@ -89,7 +91,10 @@ async function migrate() {
         name: elem.name,
         displayName: elem.displayName,
         description: elem.description,
-        status: elem.status === LearningElementStatus.PUBLISHED ? PublicationStatus.PUBLISHED : PublicationStatus.DRAFT
+        status:
+          elem.status === LearningElementStatus.PUBLISHED
+            ? PublicationStatus.PUBLISHED
+            : PublicationStatus.DRAFT,
         orderType:
           ((elem.orderType === 'LAST_RESPONSE' ||
             elem.orderType === 'SHUFFLED') &&
@@ -115,7 +120,7 @@ async function migrate() {
           connectOrCreate: elem.stacks.map((stack) => ({
             where: {
               type_practiceQuizId_order: {
-                type: 'PRACTICE_QUIZ',
+                type: ElementStackType.PRACTICE_QUIZ,
                 practiceQuizId: elem.id,
                 order: stack.order as number,
               },
@@ -143,6 +148,20 @@ async function migrate() {
                   if (stackElement.questionInstance === null) {
                     console.warn('stackElement.questionInstance is null')
                     return []
+                  }
+
+                  if (
+                    [
+                      ElementType.SC,
+                      ElementType.MC,
+                      ElementType.KPRIM,
+                      ElementType.NUMERICAL,
+                      ElementType.FREE_TEXT,
+                    ].includes(stackElement.questionInstance.questionData.type)
+                  ) {
+                    throw new Error(
+                      `invalid questionData.type in questionInstance ${stackElement.questionInstance.questionData.id}`
+                    )
                   }
 
                   return [

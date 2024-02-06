@@ -3,6 +3,8 @@ import {
   ElementStackType,
   ElementType,
   MicroSession,
+  MicroSessionStatus,
+  PublicationStatus,
   QuestionInstance,
 } from 'dist'
 import { PrismaClient } from '../client'
@@ -80,7 +82,10 @@ async function migrate() {
         name: elem.name,
         displayName: elem.displayName,
         description: elem.description,
-        status: elem.status,
+        status:
+          elem.status === MicroSessionStatus.PUBLISHED
+            ? PublicationStatus.PUBLISHED
+            : PublicationStatus.DRAFT,
         pointsMultiplier: elem.pointsMultiplier,
         scheduledStartAt: elem.scheduledStartAt,
         scheduledEndAt: elem.scheduledEndAt,
@@ -100,20 +105,32 @@ async function migrate() {
         },
 
         stacks: {
-          connectOrCreate: elem.instances
-            // filter old and broken instances without the order
-            .filter((instance) => instance.order !== null)
-            .map((instance) => ({
+          connectOrCreate: elem.instances.map((instance, ix) => {
+            if (
+              [
+                ElementType.SC,
+                ElementType.MC,
+                ElementType.KPRIM,
+                ElementType.NUMERICAL,
+                ElementType.FREE_TEXT,
+              ].includes(instance.questionData.type)
+            ) {
+              throw new Error(
+                `invalid questionData.type in questionInstance ${instance.id}`
+              )
+            }
+
+            return {
               where: {
                 type_microLearningId_order: {
                   type: ElementStackType.MICROLEARNING,
                   microLearningId: elem.id,
-                  order: instance.order as number,
+                  order: instance.order ?? ix,
                 },
               },
               create: {
                 type: ElementStackType.MICROLEARNING,
-                order: instance.order as number,
+                order: instance.order ?? ix,
 
                 options: {},
 
@@ -167,7 +184,8 @@ async function migrate() {
                   },
                 },
               },
-            })),
+            }
+          }),
         },
       },
       update: {},
