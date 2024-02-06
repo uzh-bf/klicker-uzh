@@ -1,5 +1,50 @@
-import { ElementOrderType } from 'dist'
+import {
+  ElementInstanceType,
+  ElementOrderType,
+  ElementStackType,
+  ElementType,
+  LearningElement,
+  QuestionInstance,
+} from 'dist'
 import { PrismaClient } from '../client'
+
+function preparePracticeQuizInstanceOptions(
+  learningElement: LearningElement,
+  questionInstance: QuestionInstance
+) {
+  if (
+    questionInstance.questionData.type === ElementType.SC ||
+    questionInstance.questionData.type === ElementType.MC ||
+    questionInstance.questionData.type === ElementType.KPRIM ||
+    questionInstance.questionData.type === ElementType.NUMERICAL ||
+    questionInstance.questionData.type === ElementType.FREE_TEXT
+  ) {
+    return {
+      pointsMultiplier: questionInstance.pointsMultiplier,
+      resetTimeDays: learningElement.resetTimeDays,
+    }
+  }
+
+  return {}
+}
+
+function preparePracticeQuizElementData(
+  learningElement: LearningElement,
+  questionInstance: QuestionInstance
+) {
+  return {
+    ...questionInstance.questionData,
+  }
+}
+
+function preparePracticeQuizInstanceResults(
+  learningElement: LearningElement,
+  questionInstance: QuestionInstance
+) {
+  return {
+    ...questionInstance.results,
+  }
+}
 
 async function migrate() {
   const prisma = new PrismaClient()
@@ -14,7 +59,8 @@ async function migrate() {
             include: {
               questionInstance: {
                 include: {
-                  question: {},
+                  responses: true,
+                  detailResponses: true,
                 },
               },
             },
@@ -34,7 +80,7 @@ async function migrate() {
     }
 
     // create a new practice quiz
-    await prisma.practiceQuiz.upsert({
+    const quiz = await prisma.practiceQuiz.upsert({
       where: {
         id: elem.id,
       },
@@ -43,7 +89,7 @@ async function migrate() {
         name: elem.name,
         displayName: elem.displayName,
         description: elem.description,
-        status: elem.status,
+        status: elem.status === LearningElementStatus.PUBLISHED ? PublicationStatus.PUBLISHED : PublicationStatus.DRAFT
         orderType:
           ((elem.orderType === 'LAST_RESPONSE' ||
             elem.orderType === 'SHUFFLED') &&
@@ -53,19 +99,120 @@ async function migrate() {
         resetTimeDays: elem.resetTimeDays,
         createdAt: elem.createdAt,
         updatedAt: elem.updatedAt,
+
         course: {
           connect: {
-            id: elem.course?.id as string,
+            id: elem.course!.id,
           },
         },
         owner: {
           connect: {
-            id: elem.owner?.id as string,
+            id: elem.owner.id,
           },
+        },
+
+        stacks: {
+          connectOrCreate: elem.stacks.map((stack) => ({
+            where: {
+              type_practiceQuizId_order: {
+                type: 'PRACTICE_QUIZ',
+                practiceQuizId: elem.id,
+                order: stack.order as number,
+              },
+            },
+            create: {
+              type: ElementStackType.PRACTICE_QUIZ,
+              order: stack.order as number,
+              displayName: stack.displayName,
+              description: stack.description,
+
+              options: {},
+
+              // connecting the stacks to the course will add them to practice mode
+              course: {
+                connect: {
+                  id: elem.course!.id,
+                },
+              },
+
+              elements: {
+                connectOrCreate: stack.elements.flatMap((stackElement) => {
+                  console.log(stack.id, stackElement.order)
+
+                  // there are no stackElement with mdContent in the PROD db, so that case can be safely ignored
+                  if (stackElement.questionInstance === null) {
+                    console.warn('stackElement.questionInstance is null')
+                    return []
+                  }
+
+                  return [
+                    {
+                      where: {
+                        type_migrationId: {
+                          type: ElementInstanceType.PRACTICE_QUIZ,
+                          migrationId: stackElement.questionInstance.id,
+                        },
+                      },
+                      create: {
+                        migrationId: stackElement.questionInstance.id,
+                        type: ElementInstanceType.PRACTICE_QUIZ,
+                        elementType:
+                          stackElement.questionInstance.questionData.type,
+                        order: stackElement.order as number,
+                        createdAt: stackElement.questionInstance.createdAt,
+                        updatedAt: stackElement.questionInstance.updatedAt,
+
+                        owner: {
+                          connect: {
+                            id: elem.owner.id,
+                          },
+                        },
+
+                        options: preparePracticeQuizInstanceOptions(
+                          elem,
+                          stackElement.questionInstance
+                        ),
+                        elementData: preparePracticeQuizElementData(
+                          elem,
+                          stackElement.questionInstance
+                        ),
+                        results: preparePracticeQuizInstanceResults(
+                          elem,
+                          stackElement.questionInstance
+                        ),
+
+                        // both links will be set (to element instance and question instance) until we remove question instances completely
+                        responses: {
+                          connect: stackElement.questionInstance.responses.map(
+                            (response) => ({ id: response.id })
+                          ),
+                        },
+                        detailResponses: {
+                          connect:
+                            stackElement.questionInstance.detailResponses.map(
+                              (response) => ({ id: response.id })
+                            ),
+                        },
+                      },
+                    },
+                  ]
+                }),
+              },
+            },
+          })),
         },
       },
       update: {},
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
     })
+
+    console.log(counter, quiz)
 
     counter++
   }
