@@ -1,0 +1,3 @@
+mutation FlagElement($elementInstanceId: Int!, $content: String!) {
+  flagElement(elementInstanceId: $elementInstanceId, content: $content)
+}

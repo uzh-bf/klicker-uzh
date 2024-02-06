@@ -472,6 +472,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetAnswers: 'Reset answers',
       markAllAsRead: 'Mark all as read',
       read: 'Read',
+      feedbackTransmitted: 'Your feedback has been transmitted successfully.',
+      feedbackRequired: 'Please add a text to your feedback.',
+      flagElement: 'Report element',
+      flagElementText:
+        'This feedback form is intended to allow you to make a direct comment on the individual elements of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
+      addFeedback: 'Add feedback',
+      submitFeedback: 'Submit feedback',
     },
     microSession: {
       notFound:
