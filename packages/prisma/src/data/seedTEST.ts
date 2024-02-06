@@ -12,6 +12,8 @@ import {
   prepareContentElements,
   prepareCourse,
   prepareFlashcardsFromFile,
+  prepareGroupActivityClues,
+  prepareGroupActivityStack,
   prepareLearningElement,
   prepareMicroSession,
   prepareParticipant,
@@ -275,6 +277,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     )
   )
 
+  // TODO: remove after migration to new data structure
   const microSessionsTest = await Promise.all(
     DATA_TEST.MICRO_SESSIONS.map(async (data) =>
       prisma.microSession.upsert(
@@ -291,6 +294,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     )
   )
 
+  // TODO: remove after migration to new data structure
   const GROUP_ACTIVITY_ID = '06e53b6b-97b1-4e29-b70f-e5309a2a3369'
   const groupActivityTest = await prisma.groupActivity.upsert({
     where: {
@@ -307,132 +311,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       parameters: {},
       clues: {
         connectOrCreate: [
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond1',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond1',
-              displayName: 'Bond 1',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond2',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond2',
-              displayName: 'Bond 2',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond3',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond3',
-              displayName: 'Bond 3',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond4',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond4',
-              displayName: 'Bond 4',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond5',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond5',
-              displayName: 'Bond 5',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond6',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond6',
-              displayName: 'Bond 6',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond7',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond7',
-              displayName: 'Bond 7',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond8',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond8',
-              displayName: 'Bond 8',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond9',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond9',
-              displayName: 'Bond 9',
-              value: 'Schweiz',
-            },
-          },
+          ...prepareGroupActivityClues({ activityId: GROUP_ACTIVITY_ID }),
         ],
       },
       instances: {
@@ -684,6 +563,94 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
     USER_ID_TEST
   )) as Element[]
+
+  const groupActivityId1 = '99fe99d2-696c-46d7-b6ae-cf385879822a'
+  const groupActivityPublished = await prisma.groupActivity.upsert({
+    where: {
+      id: groupActivityId1,
+    },
+    create: {
+      id: groupActivityId1,
+      name: 'Gruppenquest Published',
+      displayName: 'Gruppenquest Published',
+      description: `Description of the published group activity.`,
+      status: Prisma.GroupActivityStatus.PUBLISHED,
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
+      parameters: {},
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({ activityId: groupActivityId1 }),
+        ],
+      },
+      elementStack: {
+        create: {
+          ...prepareGroupActivityStack({
+            flashcards,
+            questions: questionsTest,
+            contentElements,
+            courseId: COURSE_ID_TEST,
+            connectStackToCourse: true,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const groupActivityId2 = '07e9847d-32bb-44a1-af49-de11a2151a92'
+  const groupActivityDraft = await prisma.groupActivity.upsert({
+    where: {
+      id: groupActivityId2,
+    },
+    create: {
+      id: groupActivityId2,
+      name: 'Gruppenquest Draft',
+      displayName: 'Gruppenquest Draft',
+      description: `Description of the draft group activity.`,
+      status: Prisma.GroupActivityStatus.DRAFT,
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
+      parameters: {},
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({ activityId: groupActivityId2 }),
+        ],
+      },
+      elementStack: {
+        create: {
+          ...prepareGroupActivityStack({
+            flashcards,
+            questions: questionsTest,
+            contentElements,
+            courseId: COURSE_ID_TEST,
+            connectStackToCourse: false,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+  })
 
   const quizId = '4214338b-c5af-4ff7-84f9-ae5a139d6e5b'
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
