@@ -71,6 +71,7 @@ export enum StackFeedbackStatus {
   PARTIAL = 'partial',
 }
 
+// TODO: merge this with QuestionResults (ElementResults)
 export type AggregatedResponseFlashcard = {
   [FlashcardCorrectness.INCORRECT]: number
   [FlashcardCorrectness.PARTIAL]: number
@@ -166,10 +167,16 @@ export interface ElementOptionsFreeText extends BaseQuestionOptions {
   }
 }
 
+// TODO: no options for FC and CONTENT?
+export interface ElementOptionsFlashcard {}
+export interface ElementOptionsContent {}
+
 export type ElementOptions =
   | ElementOptionsChoices
   | ElementOptionsNumerical
   | ElementOptionsFreeText
+  | ElementOptionsFlashcard
+  | ElementOptionsContent
 
 export interface BaseElementData {
   type: ElementType
@@ -210,12 +217,18 @@ export type NumericalElementData = IElementData<
   'NUMERICAL',
   ElementOptionsNumerical
 >
+export type FlashcardElementData = IElementData<
+  'FLASHCARD',
+  ElementOptionsFlashcard
+>
+export type ContentElementData = IElementData<'CONTENT', ElementOptionsContent>
 
 export type AllElementTypeData =
   | ChoicesElementData
   | FreeTextElementData
   | NumericalElementData
-// | FlashcardElementData
+  | FlashcardElementData
+  | ContentElementData
 
 export type ElementInstanceOptions = {
   pointsMultiplier?: number
@@ -298,10 +311,13 @@ export type MicrolearningStackOptions = {}
 
 export type PracticeQuizStackOptions = {}
 
+export type GroupActivityStackOptions = {}
+
 export type ElementStackOptions =
   | LiveQuizStackOptions
   | MicrolearningStackOptions
   | PracticeQuizStackOptions
+  | GroupActivityStackOptions
 
 interface IElementStackOptions<
   Type extends ElementStackType,
@@ -312,7 +328,7 @@ export type AllElementStackOptions =
   | IElementStackOptions<'LIVE_QUIZ', LiveQuizStackOptions>
   | IElementStackOptions<'PRACTICE_QUIZ', PracticeQuizStackOptions>
   | IElementStackOptions<'MICROLEARNING', MicrolearningStackOptions>
-  | IElementStackOptions<'GROUP_ACTIVITY', null>
+  | IElementStackOptions<'GROUP_ACTIVITY', GroupActivityStackOptions>
 
 declare global {
   namespace PrismaJson {
