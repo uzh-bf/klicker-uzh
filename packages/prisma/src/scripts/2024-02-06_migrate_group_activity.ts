@@ -92,7 +92,8 @@ async function migrate() {
               elements: {
                 connectOrCreate: elem.instances.map((instance) => {
                   if (
-                    [
+                    !instance.question &&
+                    ![
                       ElementType.SC,
                       ElementType.MC,
                       ElementType.KPRIM,
@@ -101,7 +102,8 @@ async function migrate() {
                     ].includes(instance.questionData.type)
                   ) {
                     throw new Error(
-                      `invalid questionData.type in questionInstance ${instance.id}`
+                      'cannot determine valid question type for instance ' +
+                        instance.id
                     )
                   }
 
@@ -115,7 +117,8 @@ async function migrate() {
                     create: {
                       migrationId: instance.id,
                       type: ElementInstanceType.GROUP_ACTIVITY,
-                      elementType: instance.questionData.type,
+                      elementType:
+                        instance.question?.type ?? instance.questionData.type,
                       order: instance.order as number,
                       createdAt: instance.createdAt,
                       updatedAt: instance.updatedAt,

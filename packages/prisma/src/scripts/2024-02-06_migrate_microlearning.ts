@@ -72,7 +72,6 @@ async function migrate() {
       continue
     }
 
-    // create a new practice quiz
     const quiz = await prisma.microLearning.upsert({
       where: {
         id: elem.id,
@@ -107,7 +106,8 @@ async function migrate() {
         stacks: {
           connectOrCreate: elem.instances.map((instance, ix) => {
             if (
-              [
+              !instance.question &&
+              ![
                 ElementType.SC,
                 ElementType.MC,
                 ElementType.KPRIM,
@@ -116,7 +116,8 @@ async function migrate() {
               ].includes(instance.questionData.type)
             ) {
               throw new Error(
-                `invalid questionData.type in questionInstance ${instance.id}`
+                'cannot determine valid question type for instance ' +
+                  instance.id
               )
             }
 
@@ -145,8 +146,9 @@ async function migrate() {
                     create: {
                       migrationId: instance.id,
                       type: ElementInstanceType.MICROLEARNING,
-                      elementType: instance.questionData.type,
-                      order: instance.order as number,
+                      elementType:
+                        instance.question?.type ?? instance.questionData.type,
+                      order: instance.order ?? ix,
                       createdAt: instance.createdAt,
                       updatedAt: instance.updatedAt,
 

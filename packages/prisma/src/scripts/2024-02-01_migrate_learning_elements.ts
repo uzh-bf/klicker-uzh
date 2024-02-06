@@ -61,6 +61,7 @@ async function migrate() {
             include: {
               questionInstance: {
                 include: {
+                  question: true,
                   responses: true,
                   detailResponses: true,
                 },
@@ -81,7 +82,6 @@ async function migrate() {
       continue
     }
 
-    // create a new practice quiz
     const quiz = await prisma.practiceQuiz.upsert({
       where: {
         id: elem.id,
@@ -151,7 +151,8 @@ async function migrate() {
                   }
 
                   if (
-                    [
+                    !stackElement.questionInstance.question &&
+                    ![
                       ElementType.SC,
                       ElementType.MC,
                       ElementType.KPRIM,
@@ -160,7 +161,8 @@ async function migrate() {
                     ].includes(stackElement.questionInstance.questionData.type)
                   ) {
                     throw new Error(
-                      `invalid questionData.type in questionInstance ${stackElement.questionInstance.questionData.id}`
+                      'cannot determine valid question type for instance ' +
+                        stackElement.questionInstance.id
                     )
                   }
 
@@ -176,6 +178,7 @@ async function migrate() {
                         migrationId: stackElement.questionInstance.id,
                         type: ElementInstanceType.PRACTICE_QUIZ,
                         elementType:
+                          stackElement.questionInstance.question?.type ??
                           stackElement.questionInstance.questionData.type,
                         order: stackElement.order as number,
                         createdAt: stackElement.questionInstance.createdAt,

@@ -1,0 +1,48 @@
+{
+  "id": "177-v1",
+  "name": "Risikobereitschaft",
+  "type": "SC",
+  "content": "Welches der folgenden Kriterien ist **kein** Element bei der Beurteilung der Risikobereitschaft?",
+  "options": {
+    "choices": [
+      {
+        "ix": 0,
+        "value": "Erfahrung mit Wertschriften",
+        "correct": false,
+        "feedback": "Falsch! Diese Aussage ist korrekt."
+      },
+      {
+        "ix": 1,
+        "value": "Alter des Investors",
+        "correct": true,
+        "feedback": "Richtig! Diese Aussage ist nicht korrekt. Dies ist ein Kriterium bei der Beurteilung der Risikofähigkeit."
+      },
+      {
+        "ix": 2,
+        "value": "Einstellung zu Risiken",
+        "correct": false,
+        "feedback": "Falsch! Diese Aussage ist korrekt."
+      },
+      {
+        "ix": 3,
+        "value": "Verhalten bei Kursrückgängen",
+        "correct": false,
+        "feedback": "Falsch! Diese Aussage ist korrekt."
+      },
+      {
+        "ix": 4,
+        "value": "Wahrnehmung von Schwankungen",
+        "correct": false,
+        "feedback": "Falsch! Diese Aussage ist korrekt."
+      }
+    ],
+    "displayMode": "LIST",
+    "hasSampleSolution": true,
+    "hasAnswerFeedbacks": true
+  },
+  "ownerId": "163e4f34-52a4-4e47-866f-79a8aec2feac",
+  "isDeleted": false,
+  "isArchived": false,
+  "questionId": 177,
+  "contentPlain": "Welches der folgenden Kriterien ist **kein** Element bei der Beurteilung der Risikobereitschaft?"
+}

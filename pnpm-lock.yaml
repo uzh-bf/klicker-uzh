@@ -1926,9 +1926,6 @@ importers:
       '@prisma/client':
         specifier: 5.9.1
         version: 5.9.1(prisma@5.9.1)
-      xml2js:
-        specifier: 0.6.2
-        version: 0.6.2
     devDependencies:
       '@pothos/plugin-prisma':
         specifier: 3.60.0
@@ -2008,6 +2005,9 @@ importers:
       uuidv4:
         specifier: 6.2.13
         version: 6.2.13
+      xml2js:
+        specifier: 0.6.2
+        version: 0.6.2
 
   packages/shared-components:
     dependencies:
@@ -28646,7 +28646,7 @@ packages:
     dependencies:
       sax: 1.2.4
       xmlbuilder: 11.0.1
-    dev: false
+    dev: true
 
   /xmlbuilder@11.0.1:
     resolution: {integrity: sha512-fDlsI/kFEx7gLvbecc0/ohLG50fugQp8ryHzMTuW9vSa1GJ0XYWKnhsUx7oie3G98+r56aTQIUB4kht42R3JvA==}
