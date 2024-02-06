@@ -57,7 +57,12 @@ async function migrate() {
         include: {
           elements: {
             include: {
-              questionInstance: true,
+              questionInstance: {
+                include: {
+                  responses: true,
+                  detailResponses: true,
+                },
+              },
             },
           },
         },
@@ -157,6 +162,12 @@ async function migrate() {
                         createdAt: stackElement.questionInstance.createdAt,
                         updatedAt: stackElement.questionInstance.updatedAt,
 
+                        owner: {
+                          connect: {
+                            id: elem.owner.id,
+                          },
+                        },
+
                         options: preparePracticeQuizInstanceOptions(
                           elem,
                           stackElement.questionInstance
@@ -170,20 +181,17 @@ async function migrate() {
                           stackElement.questionInstance
                         ),
 
-                        // TODO: add the link to responses and detailResponses
                         // both links will be set (to element instance and question instance) until we remove question instances completely
-                        // responses: {
-                        //   connect: stackElement.questionInstance.responses,
-                        // },
-                        // detailResponses: {
-                        //   connect:
-                        //     stackElement.questionInstance.detailResponses,
-                        // },
-
-                        owner: {
-                          connect: {
-                            id: elem.owner.id,
-                          },
+                        responses: {
+                          connect: stackElement.questionInstance.responses.map(
+                            (response) => ({ id: response.id })
+                          ),
+                        },
+                        detailResponses: {
+                          connect:
+                            stackElement.questionInstance.detailResponses.map(
+                              (response) => ({ id: response.id })
+                            ),
                         },
                       },
                     },

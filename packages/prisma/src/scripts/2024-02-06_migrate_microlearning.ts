@@ -53,6 +53,8 @@ async function migrate() {
       owner: true,
       instances: {
         include: {
+          responses: true,
+          detailResponses: true,
           question: true,
         },
       },
@@ -131,6 +133,12 @@ async function migrate() {
                       createdAt: instance.createdAt,
                       updatedAt: instance.updatedAt,
 
+                      owner: {
+                        connect: {
+                          id: elem.owner.id,
+                        },
+                      },
+
                       options: prepareMicrolearningInstanceOptions(
                         elem,
                         instance
@@ -144,20 +152,16 @@ async function migrate() {
                         instance
                       ),
 
-                      // TODO: add the link to responses and detailResponses
                       // both links will be set (to element instance and question instance) until we remove question instances completely
-                      // responses: {
-                      //   connect: stackElement.questionInstance.responses,
-                      // },
-                      // detailResponses: {
-                      //   connect:
-                      //     stackElement.questionInstance.detailResponses,
-                      // },
-
-                      owner: {
-                        connect: {
-                          id: elem.owner.id,
-                        },
+                      responses: {
+                        connect: instance.responses.map((response) => ({
+                          id: response.id,
+                        })),
+                      },
+                      detailResponses: {
+                        connect: instance.detailResponses.map((response) => ({
+                          id: response.id,
+                        })),
                       },
                     },
                   },
