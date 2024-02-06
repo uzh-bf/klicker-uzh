@@ -950,6 +950,183 @@ export function prepareStackVariety({
   ]
 }
 
+export function prepareGroupActivityClues({
+  activityId,
+}: {
+  activityId: string
+}) {
+  return [
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'bond1',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.STRING,
+        name: 'bond1',
+        displayName: 'Bond 1',
+        value: 'Schweiz',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'bond2',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.STRING,
+        name: 'bond2',
+        displayName: 'Bond 2',
+        value: 'Schweiz',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'bond3',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.STRING,
+        name: 'bond3',
+        displayName: 'Bond 3',
+        value: 'Schweiz',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'bond4',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.STRING,
+        name: 'bond4',
+        displayName: 'Bond 4',
+        value: 'Schweiz',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'bond5',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.STRING,
+        name: 'bond5',
+        displayName: 'Bond 5',
+        value: 'Schweiz',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'bond6',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.STRING,
+        name: 'bond6',
+        displayName: 'Bond 6',
+        value: 'Schweiz',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'bond7',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.STRING,
+        name: 'bond7',
+        displayName: 'Bond 7',
+        value: 'Schweiz',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'bond8',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.STRING,
+        name: 'bond8',
+        displayName: 'Bond 8',
+        value: 'Schweiz',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'bond9',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.STRING,
+        name: 'bond9',
+        displayName: 'Bond 9',
+        value: 'Schweiz',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'numberClue1',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.NUMBER,
+        name: 'numberClue1',
+        displayName: 'Display number clue',
+        value: '-100.25',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'numberClue2',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.NUMBER,
+        name: 'numberClue2',
+        displayName: 'Display number clue 2',
+        value: '0',
+      },
+    },
+    {
+      where: {
+        groupActivityId_name: {
+          groupActivityId: activityId,
+          name: 'numberClue3',
+        },
+      },
+      create: {
+        type: Prisma.ParameterType.NUMBER,
+        name: 'numberClue3',
+        displayName: 'Display number clue 3',
+        value: '100.25',
+      },
+    },
+  ]
+}
+
 export async function prepareMicroSession({
   questions,
   ...args

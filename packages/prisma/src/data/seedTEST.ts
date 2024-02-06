@@ -12,6 +12,7 @@ import {
   prepareContentElements,
   prepareCourse,
   prepareFlashcardsFromFile,
+  prepareGroupActivityClues,
   prepareLearningElement,
   prepareMicroSession,
   prepareParticipant,
@@ -307,132 +308,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       parameters: {},
       clues: {
         connectOrCreate: [
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond1',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond1',
-              displayName: 'Bond 1',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond2',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond2',
-              displayName: 'Bond 2',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond3',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond3',
-              displayName: 'Bond 3',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond4',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond4',
-              displayName: 'Bond 4',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond5',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond5',
-              displayName: 'Bond 5',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond6',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond6',
-              displayName: 'Bond 6',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond7',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond7',
-              displayName: 'Bond 7',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond8',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond8',
-              displayName: 'Bond 8',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond9',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond9',
-              displayName: 'Bond 9',
-              value: 'Schweiz',
-            },
-          },
+          ...prepareGroupActivityClues({ activityId: GROUP_ACTIVITY_ID }),
         ],
       },
       instances: {
