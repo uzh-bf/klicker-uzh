@@ -219,6 +219,9 @@ export type ElementInstance = {
 };
 
 export enum ElementInstanceType {
+  GroupActivity = 'GROUP_ACTIVITY',
+  LiveQuiz = 'LIVE_QUIZ',
+  Microlearning = 'MICROLEARNING',
   PracticeQuiz = 'PRACTICE_QUIZ'
 }
 
