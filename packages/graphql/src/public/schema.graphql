@@ -186,7 +186,6 @@ enum ElementDisplayMode {
 type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
-  evaluation: InstanceEvaluation
   id: Int!
   type: ElementInstanceType!
 }
@@ -391,6 +390,23 @@ type GroupLeaderboardEntry {
 }
 
 type InstanceEvaluation {
+  answers: Json
+  choices: Json
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  newPointsFrom: Date
+  newXpFrom: Date
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int
+  score: Float!
+  solutionRanges: Json
+  solutions: Json
+  xpAwarded: Int
+}
+
+type InstanceEvaluationOLD {
   answers: Json
   choices: Json
   feedbacks: [QuestionFeedback!]
@@ -842,7 +858,7 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  evaluation: InstanceEvaluation
+  evaluation: InstanceEvaluationOLD
   id: Int!
   pointsMultiplier: Int!
   questionData: QuestionData
@@ -965,6 +981,7 @@ input StackElementInput {
 }
 
 type StackFeedback {
+  evaluations: [InstanceEvaluation!]
   id: Int!
   score: Int
   status: StackFeedbackStatus!

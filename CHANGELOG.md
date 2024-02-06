@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-beta.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.35...v3.1.0-beta.36) (2024-02-04)
+
+
+### Bug Fixes
+
+* **apps:** remove all middleware due to middleware bug ([44ac74f](https://github.com/uzh-bf/klicker-uzh/commit/44ac74fa6ff8becea7d3b5b2723b03fe7bfa5920))
+
+## [3.1.0-beta.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.34...v3.1.0-beta.35) (2024-02-04)
+
+
+### Dependencies
+
+* upgrade next and next-intl in all apps ([3685fee](https://github.com/uzh-bf/klicker-uzh/commit/3685fee8e2b27987f250e9bf2d44aacec2c1da22))
+
+## [3.1.0-beta.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.33...v3.1.0-beta.34) (2024-02-04)
+
+## [3.1.0-beta.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.32...v3.1.0-beta.33) (2024-02-04)
+
+## [3.1.0-beta.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.31...v3.1.0-beta.32) (2024-02-03)
+
+
+### Bug Fixes
+
+* **apps/auth:** ensure tosChecked actually parses bool from string, add update date to tos and privacy notice ([79fbbe9](https://github.com/uzh-bf/klicker-uzh/commit/79fbbe9a8644e52f3b246a92800ebef5b6b6d700))
+* **apps/frontend-pwa:** fetchSelf only after successful login ([a331994](https://github.com/uzh-bf/klicker-uzh/commit/a331994fe914175fe435ae2e985786abfb8de4cf))
+
 ## [3.1.0-beta.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.30...v3.1.0-beta.31) (2024-02-01)
 
 

@@ -257,7 +257,10 @@ model Element {
 
 // TODO: elements are only supported for the new PRACTICE_QUIZ type in the first iteration. add the other types here when working on them.
 enum ElementInstanceType {
+  LIVE_QUIZ
   PRACTICE_QUIZ
+  MICROLEARNING
+  GROUP_ACTIVITY
 }
 
 model ElementInstance {
@@ -848,10 +851,12 @@ model GroupActivity {
   questionStack   QuestionStack? @relation(fields: [questionStackId], references: [id])
   questionStackId Int?           @unique
 
+  // TODO: make required after migration
   elementStack ElementStack?
 
   parameters        GroupActivityParameter[]
   clues             GroupActivityClue[]
+  // TODO: remove after migration
   instances         QuestionInstance[]
   activityInstances GroupActivityInstance[]
 

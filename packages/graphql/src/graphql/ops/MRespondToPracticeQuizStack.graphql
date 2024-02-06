@@ -11,5 +11,26 @@ mutation RespondToPracticeQuizStack(
     id
     status
     score
+    evaluations {
+      instanceId
+      pointsMultiplier
+      explanation
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      choices
+      answers
+      score
+      pointsAwarded
+      percentile
+      newPointsFrom
+      xpAwarded
+      newXpFrom
+      solutions
+      solutionRanges
+    }
   }
 }

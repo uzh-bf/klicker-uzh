@@ -9,18 +9,19 @@ import {
 } from './constants.js'
 import * as DATA_TEST from './data/TEST'
 import {
-  getInitialElementResults,
   prepareContentElements,
   prepareCourse,
   prepareFlashcardsFromFile,
+  prepareGroupActivityClues,
+  prepareGroupActivityStack,
   prepareLearningElement,
   prepareMicroSession,
   prepareParticipant,
   prepareQuestion,
   prepareQuestionInstance,
   prepareSession,
+  prepareStackVariety,
   prepareUser,
-  processElementData,
 } from './helpers.js'
 import { seedAchievements } from './seedAchievements'
 import { seedLevels } from './seedLevels'
@@ -276,6 +277,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     )
   )
 
+  // TODO: remove after migration to new data structure
   const microSessionsTest = await Promise.all(
     DATA_TEST.MICRO_SESSIONS.map(async (data) =>
       prisma.microSession.upsert(
@@ -292,6 +294,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     )
   )
 
+  // TODO: remove after migration to new data structure
   const GROUP_ACTIVITY_ID = '06e53b6b-97b1-4e29-b70f-e5309a2a3369'
   const groupActivityTest = await prisma.groupActivity.upsert({
     where: {
@@ -308,132 +311,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       parameters: {},
       clues: {
         connectOrCreate: [
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond1',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond1',
-              displayName: 'Bond 1',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond2',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond2',
-              displayName: 'Bond 2',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond3',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond3',
-              displayName: 'Bond 3',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond4',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond4',
-              displayName: 'Bond 4',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond5',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond5',
-              displayName: 'Bond 5',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond6',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond6',
-              displayName: 'Bond 6',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond7',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond7',
-              displayName: 'Bond 7',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond8',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond8',
-              displayName: 'Bond 8',
-              value: 'Schweiz',
-            },
-          },
-          {
-            where: {
-              groupActivityId_name: {
-                groupActivityId: GROUP_ACTIVITY_ID,
-                name: 'bond9',
-              },
-            },
-            create: {
-              type: 'STRING',
-              name: 'bond9',
-              displayName: 'Bond 9',
-              value: 'Schweiz',
-            },
-          },
+          ...prepareGroupActivityClues({ activityId: GROUP_ACTIVITY_ID }),
         ],
       },
       instances: {
@@ -686,6 +564,94 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     USER_ID_TEST
   )) as Element[]
 
+  const groupActivityId1 = '99fe99d2-696c-46d7-b6ae-cf385879822a'
+  const groupActivityPublished = await prisma.groupActivity.upsert({
+    where: {
+      id: groupActivityId1,
+    },
+    create: {
+      id: groupActivityId1,
+      name: 'Gruppenquest Published',
+      displayName: 'Gruppenquest Published',
+      description: `Description of the published group activity.`,
+      status: Prisma.GroupActivityStatus.PUBLISHED,
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
+      parameters: {},
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({ activityId: groupActivityId1 }),
+        ],
+      },
+      elementStack: {
+        create: {
+          ...prepareGroupActivityStack({
+            flashcards,
+            questions: questionsTest,
+            contentElements,
+            courseId: COURSE_ID_TEST,
+            connectStackToCourse: true,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const groupActivityId2 = '07e9847d-32bb-44a1-af49-de11a2151a92'
+  const groupActivityDraft = await prisma.groupActivity.upsert({
+    where: {
+      id: groupActivityId2,
+    },
+    create: {
+      id: groupActivityId2,
+      name: 'Gruppenquest Draft',
+      displayName: 'Gruppenquest Draft',
+      description: `Description of the draft group activity.`,
+      status: Prisma.GroupActivityStatus.DRAFT,
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
+      parameters: {},
+      clues: {
+        connectOrCreate: [
+          ...prepareGroupActivityClues({ activityId: groupActivityId2 }),
+        ],
+      },
+      elementStack: {
+        create: {
+          ...prepareGroupActivityStack({
+            flashcards,
+            questions: questionsTest,
+            contentElements,
+            courseId: COURSE_ID_TEST,
+            connectStackToCourse: false,
+          }),
+        },
+      },
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+    },
+    update: {},
+  })
+
   const quizId = '4214338b-c5af-4ff7-84f9-ae5a139d6e5b'
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
     where: {
@@ -703,198 +669,14 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       orderType: Prisma.ElementOrderType.SPACED_REPETITION,
       stacks: {
         create: [
-          // create stacks with one flashcard each
-          ...flashcards.map((el, ix) => ({
-            displayName: undefined,
-            description: undefined,
-            order: ix,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: [
-                  {
-                    order: ix,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: el.type,
-                    elementData: processElementData(el),
-                    options: {},
-                    results: getInitialElementResults(el),
-                    ownerId: el.ownerId,
-                    elementId: el.id,
-                  },
-                ],
-              },
-            },
-          })),
-          // create one stack with all flashcards
-          {
-            displayName: undefined,
-            description: undefined,
-            order: flashcards.length,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: flashcards.map((el, ix) => ({
-                  order: ix,
-                  type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                  elementType: el.type,
-                  elementData: processElementData(el),
-                  options: {},
-                  results: getInitialElementResults(el),
-                  ownerId: el.ownerId,
-                  elementId: el.id,
-                })),
-              },
-            },
-          },
-          // create stacks with questions
-          ...questionsTest.map((el, ix) => ({
-            displayName: undefined,
-            description: undefined,
-            order: flashcards.length + ix + 1,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: [
-                  {
-                    order: ix,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: el.type,
-                    elementData: processElementData(el),
-                    options: {},
-                    results: getInitialElementResults(el),
-                    ownerId: el.ownerId,
-                    elementId: el.id,
-                  },
-                ],
-              },
-            },
-          })),
-          // create one stack with all questions
-          {
-            displayName: undefined,
-            description: undefined,
-            order: flashcards.length + questionsTest.length + 1,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: questionsTest.map((el, ix) => ({
-                  order: ix,
-                  type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                  elementType: el.type,
-                  elementData: processElementData(el),
-                  options: {},
-                  results: getInitialElementResults(el),
-                  ownerId: el.ownerId,
-                  elementId: el.id,
-                })),
-              },
-            },
-          },
-          // create stacks with content elements
-          ...contentElements.map((el, ix) => ({
-            displayName: undefined,
-            description: undefined,
-            order: flashcards.length + questionsTest.length + ix + 2,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: [
-                  {
-                    order: ix,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: el.type,
-                    elementData: processElementData(el),
-                    options: {},
-                    results: getInitialElementResults(el),
-                    ownerId: el.ownerId,
-                    elementId: el.id,
-                  },
-                ],
-              },
-            },
-          })),
-          // create two stacks with all content elements
-          ...[0, 1].map((ix) => ({
-            displayName: undefined,
-            description: undefined,
-            order:
-              flashcards.length +
-              questionsTest.length +
-              contentElements.length +
-              2 +
-              ix,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: contentElements.map((el, ix) => ({
-                  order: ix,
-                  type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                  elementType: el.type,
-                  elementData: processElementData(el),
-                  options: {},
-                  results: getInitialElementResults(el),
-                  ownerId: el.ownerId,
-                  elementId: el.id,
-                })),
-              },
-            },
-          })),
-          // create two stacks with one of each kind of elements
-          ...[0, 1].map((ix) => ({
-            displayName: undefined,
-            description: undefined,
-            order:
-              flashcards.length +
-              questionsTest.length +
-              contentElements.length +
-              4 +
-              ix,
-            type: Prisma.ElementStackType.PRACTICE_QUIZ,
-            options: {},
-            elements: {
-              createMany: {
-                data: [
-                  {
-                    order: 0,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: flashcards[0].type,
-                    elementData: processElementData(flashcards[0]),
-                    options: {},
-                    results: getInitialElementResults(flashcards[0]),
-                    ownerId: flashcards[0].ownerId,
-                    elementId: flashcards[0].id,
-                  },
-                  {
-                    order: 1,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: questionsTest[0].type,
-                    elementData: processElementData(questionsTest[0]),
-                    options: {},
-                    results: getInitialElementResults(questionsTest[0]),
-                    ownerId: questionsTest[0].ownerId,
-                    elementId: questionsTest[0].id,
-                  },
-                  {
-                    order: 2,
-                    type: Prisma.ElementInstanceType.PRACTICE_QUIZ,
-                    elementType: contentElements[0].type,
-                    elementData: processElementData(contentElements[0]),
-                    options: {},
-                    results: getInitialElementResults(contentElements[0]),
-                    ownerId: contentElements[0].ownerId,
-                    elementId: contentElements[0].id,
-                  },
-                ],
-              },
-            },
-          })),
+          ...prepareStackVariety({
+            flashcards: flashcards,
+            questions: questionsTest,
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
+            elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
+            courseId: COURSE_ID_TEST,
+          }),
         ],
       },
     },
@@ -906,6 +688,94 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         },
       },
     },
+  })
+
+  const microlearningId1 = 'd2f7fcbc-a54c-4518-b094-91d8adbd803f'
+  const microlearningPublished = await prismaClient.microLearning.upsert({
+    where: {
+      id: microlearningId1,
+    },
+    create: {
+      id: microlearningId1,
+      name: 'Test Microlearning',
+      displayName: 'Test Microlearning',
+      description: `
+Diese Woche lernen wir...
+
+Mehr bla bla...
+`,
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+      pointsMultiplier: 4,
+      status: Prisma.MicroLearningStatus.PUBLISHED,
+      scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
+      scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            flashcards: flashcards,
+            questions: questionsTest,
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_TEST,
+          }),
+        ],
+      },
+    },
+    update: {},
+  })
+
+  const microlearningId2 = '6a0b6674-5f9b-40fd-90a4-53d493c210ba'
+  const microlearningFuture = await prismaClient.microLearning.upsert({
+    where: {
+      id: microlearningId2,
+    },
+    create: {
+      id: microlearningId2,
+      name: 'Test Microlearning Future',
+      displayName: 'Test Microlearning Future',
+      description: `
+In ferner Zukunft lernen wir...
+
+Mehr bla bla...
+`,
+      owner: {
+        connect: {
+          id: USER_ID_TEST,
+        },
+      },
+      course: {
+        connect: {
+          id: COURSE_ID_TEST,
+        },
+      },
+      pointsMultiplier: 1,
+      status: Prisma.MicroLearningStatus.DRAFT,
+      scheduledEndAt: new Date('2040-01-01T11:00:00.000Z'),
+      scheduledStartAt: new Date('2030-01-01T11:00:00.000Z'),
+      stacks: {
+        create: [
+          ...prepareStackVariety({
+            flashcards: flashcards,
+            questions: questionsTest,
+            contentElements: contentElements,
+            stackType: Prisma.ElementStackType.MICROLEARNING,
+            elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
+            courseId: COURSE_ID_TEST,
+          }),
+        ],
+      },
+    },
+    update: {},
   })
 }
 

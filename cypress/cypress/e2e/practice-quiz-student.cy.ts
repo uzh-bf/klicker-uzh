@@ -20,6 +20,7 @@ describe('Practice Quizzes as a Student', () => {
     // answer stacks with single flashcards
     cy.get('[data-cy="flashcard-front-1"]').click()
     cy.get('[data-cy="flashcard-response-1-No"]').click()
+    cy.get('[data-cy="flashcard-response-1-Yes"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
     cy.get('[data-cy="flashcard-front-1"]').click()
@@ -33,22 +34,24 @@ describe('Practice Quizzes as a Student', () => {
     // skip back and forth
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="practice-quiz-progress-2"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="practice-quiz-continue"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-progress-1"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="practice-quiz-continue"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-progress-0"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // answer another stack with a single flashcard
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="flashcard-front-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="flashcard-response-1-Partially"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]')
+      .should('not.be.disabled')
+      .click()
 
     // skip remaining flashcards
     cy.get('[data-cy="practice-quiz-progress-right"]').click()
@@ -94,12 +97,19 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="flashcard-front-14"]').click()
     cy.get('[data-cy="flashcard-response-14-Yes"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]')
+      .should('not.be.disabled')
+      .click()
 
-    // TODO: answer free text question
-    cy.get('[data-cy="practice-quiz-progress-right"]').click() // TODO: remove
-    // cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    // answer free text question
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-1"]').type('Testinput')
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="free-text-input-1"]').clear()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-1"]').type('richtig')
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // answer MC question
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
@@ -110,6 +120,7 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="mc-1-answer-option-2"]').click()
     cy.get('[data-cy="mc-1-answer-option-3"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // answer numerical question
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
@@ -124,6 +135,7 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="input-numerical-1"]').type('100')
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // answer KPRIM question
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
@@ -136,6 +148,7 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // answer SC question
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
@@ -144,9 +157,11 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="sc-1-answer-option-3"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // answer combined question stack
-    // TODO: answer free text questions
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-1"]').type('richtig')
     cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
     cy.get('[data-cy="mc-2-answer-option-3"]').click()
@@ -162,14 +177,19 @@ describe('Practice Quizzes as a Student', () => {
     cy.get('[data-cy="sc-5-answer-option-2"]').click()
     cy.get('[data-cy="sc-5-answer-option-2"]').click()
     cy.get('[data-cy="sc-5-answer-option-3"]').click()
-    // cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
-    // cy.get('[data-cy="practice-quiz-stack-submit"]').click()
-    cy.get('[data-cy="practice-quiz-progress-right"]').click() // TODO: remove
+    cy.get('[data-cy="practice-quiz-stack-submit"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // answer content elements (single and stacked)
-    cy.get('[data-cy="practice-quiz-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should(
+      'not.be.disabled'
+    )
     cy.get('[data-cy="read-content-element-1"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]')
+      .should('not.be.disabled')
+      .click()
     cy.get('[data-cy="read-content-element-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.get('[data-cy="read-content-element-1"]').click()
@@ -181,39 +201,42 @@ describe('Practice Quizzes as a Student', () => {
 
     // use automatic marking as read for second content element stack
     cy.get('[data-cy="read-content-element-1"]').click()
-    cy.get('[data-cy="practice-quiz-stack-submit"]').contains(
-      messages.pwa.practiceQuiz.markAllAsRead
-    ) // contains mark all as read
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click() // mark all as read
-    cy.get('[data-cy="practice-quiz-stack-submit"]').contains(
-      messages.shared.generic.continue
-    ) // contains continue
-    cy.get('[data-cy="practice-quiz-stack-submit"]').click() // continue / submit stack
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]')
+      .contains(messages.pwa.practiceQuiz.markAllAsRead)
+      .click() // mark all as read
+    cy.get('[data-cy="practice-quiz-stack-submit"]')
+      .contains(messages.shared.generic.submit)
+      .click() // submit responses and continue
 
-    // TODO: add validity checks / disabled submission button checks for the following cases
     // answer combined stack with flashcard, content element and question
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
     cy.get('[data-cy="flashcard-front-1"]').click()
     cy.get('[data-cy="flashcard-response-1-Yes"]').click()
-    // TODO: answer question in combined stack
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
     cy.get('[data-cy="read-content-element-3"]').click()
-    cy.get('[data-cy="practice-quiz-progress-27"]').click() // TODO: remove
-    // cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-2"]').type('richtig')
+    cy.get('[data-cy="practice-quiz-stack-submit"]')
+      .should('not.be.disabled')
+      .click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // answer combined stack with flashcard, content element and question
-    cy.get('[data-cy="practice-quiz-stack-submit"]')
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]')
       .contains(messages.pwa.practiceQuiz.markAllAsRead)
       .should('be.disabled') // contains mark all as read and is disabled
     cy.get('[data-cy="flashcard-front-1"]').click()
     cy.get('[data-cy="flashcard-response-1-No"]').click()
-    // TODO: answer question in combined stack
-    cy.get('[data-cy="practice-quiz-stack-submit"]').contains(
-      messages.pwa.practiceQuiz.markAllAsRead
-    ) // contains mark all as read
-    // cy.get('[data-cy="practice-quiz-stack-submit"]').click() // mark all as read
-    // cy.get('[data-cy="practice-quiz-stack-submit"]').contains(
-    //   messages.shared.generic.finish
-    // ) // contains continue
-    // cy.get('[data-cy="practice-quiz-stack-submit"]').click() // continue / submit stack
+    cy.get('[data-cy="flashcard-response-1-Partially"]').click()
+    cy.get('[data-cy="free-text-input-2"]').type('richtig')
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]')
+      .contains(messages.pwa.practiceQuiz.markAllAsRead)
+      .should('not.be.disabled')
+      .click() // contains mark all as read and click
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]')
+      .contains(messages.shared.generic.finish)
+      .click() // finish quiz
 
     // TODO: check that resetting answers works as to be expected
   })

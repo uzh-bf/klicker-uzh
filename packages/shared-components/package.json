@@ -34,11 +34,12 @@
     "@uzh-bf/design-system": "2.4.8",
     "formik": "2.4.3",
     "next": "14.1.0",
-    "next-intl": "3.4.0",
+    "next-intl": "3.5.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "tailwind-merge": "1.14.0",
-    "yup": "1.2.0"
+    "yup": "1.2.0",
+    "dayjs": "1.11.9"
   },
   "scripts": {
     "build": "run-p build:tw:*",

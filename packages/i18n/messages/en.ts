@@ -59,6 +59,7 @@ export default {
       points: 'Points',
       title: 'KlickerUZH',
       send: 'Send',
+      submit: 'Submit',
       save: 'Save',
       start: 'Start',
       continue: 'Continue',
@@ -201,7 +202,7 @@ export default {
     delegatedAccess: 'Delegated Access',
     signedInAs: 'You are already logged in as {username}',
     tosAgreement:
-      'I consent to the KlickerUZH <tos></tos> and <privacy></privacy>.',
+      'I consent to the KlickerUZH <tos></tos> (updated on 26.08.2023) and <privacy></privacy> (updated on 26.08.2023).',
     termsOfService: 'Terms of Service',
     privacyPolicy: 'Privacy Policy',
     tosUrl: 'https://www.klicker.uzh.ch/terms_of_service',

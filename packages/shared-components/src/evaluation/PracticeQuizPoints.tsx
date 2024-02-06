@@ -1,24 +1,21 @@
-import { InstanceEvaluationOld } from '@klicker-uzh/graphql/dist/ops'
+import { InstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import React from 'react'
 
-interface LearningElementPointsProps {
-  evaluation: InstanceEvaluationOld
-  pointsMultiplier?: number
+interface PracticeQuizPointsProps {
+  evaluation: InstanceEvaluation
 }
 
-function LearningElementPoints({
-  evaluation,
-  pointsMultiplier,
-}: LearningElementPointsProps) {
+function PracticeQuizPoints({ evaluation }: PracticeQuizPointsProps) {
   const t = useTranslations()
 
   return (
     <div className="block">
-      {typeof pointsMultiplier === 'number' && (
+      {typeof evaluation.pointsMultiplier === 'number' && (
         <div className="mb-2">
           {t.rich('pwa.learningElement.multiplicatorEval', {
-            mult: pointsMultiplier,
+            mult: evaluation.pointsMultiplier,
             b: (text) => <span className="font-bold">{text}</span>,
           })}
         </div>
@@ -69,4 +66,4 @@ function LearningElementPoints({
   )
 }
 
-export default LearningElementPoints
+export default PracticeQuizPoints
