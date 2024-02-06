@@ -74,152 +74,176 @@ function QuestionEditModal({
     name: Yup.string().required(t('manage.formErrors.questionName')),
     tags: Yup.array().of(Yup.string()),
     type: Yup.string().oneOf(Object.values(ElementType)).required(),
-    displayMode: Yup.string().oneOf(Object.values(ElementDisplayMode)),
+
     content: Yup.string()
       .required(t('manage.formErrors.questionContent'))
       .test({
         message: t('manage.formErrors.questionContent'),
         test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
       }),
-    explanation: Yup.string().nullable(),
-    hasSampleSolution: Yup.boolean(),
-    hasAnswerFeedbacks: Yup.boolean(),
 
-    options: Yup.object().when(
-      ['type', 'hasSampleSolution', 'hasAnswerFeedbacks'],
-      ([type, hasSampleSolution, hasAnswerFeedbacks], schema) => {
-        const baseChoicesSchema = Yup.array().of(
-          Yup.object().shape({
-            ix: Yup.number(),
-            value: Yup.string().test({
-              message: t('manage.formErrors.answerContent'),
-              test: (content) =>
-                !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-            }),
-            correct: Yup.boolean().nullable(),
-            feedback: hasAnswerFeedbacks
-              ? Yup.string().test({
-                  message: t('manage.formErrors.feedbackContent'),
-                  test: (content) =>
-                    !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-                })
-              : Yup.string().nullable(),
-          })
-        )
+    explanation: Yup.string().when(['type'], ([type], schema) => {
+      if (type === ElementType.Flashcard)
+        return schema.required(t('manage.formErrors.explanationRequired'))
+      return schema.nullable()
+    }),
 
-        switch (type) {
-          case 'SC':
-          case 'MC': {
-            let choicesSchema = baseChoicesSchema.min(
-              1,
-              t('manage.formErrors.NumberQuestionsRequired')
-            )
+    options: Yup.object().when(['type'], ([type], schema) => {
+      const baseChoicesSchema = Yup.array().of(
+        Yup.object().shape({
+          ix: Yup.number(),
+          value: Yup.string().test({
+            message: t('manage.formErrors.answerContent'),
+            test: (content) =>
+              !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+          }),
+          correct: Yup.boolean().nullable(),
+          feedback: Yup.string().when('hasAnswerFeedbacks', {
+            is: true,
+            then: (schema) =>
+              schema.test({
+                message: t('manage.formErrors.feedbackContent'),
+                test: (content) =>
+                  !content?.match(/^(<br>(\n)*)$/g) && content !== '',
+              }),
+            otherwise: (schema) => schema.nullable(),
+          }),
+        })
+      )
 
-            if (type === 'SC')
-              return schema.shape({
-                choices: choicesSchema.test({
-                  message: t('manage.formErrors.SCAnswersCorrect'),
+      switch (type) {
+        case ElementType.Sc:
+        case ElementType.Mc: {
+          let choicesSchema = baseChoicesSchema.min(
+            1,
+            t('manage.formErrors.NumberQuestionsRequired')
+          )
+
+          if (type === 'SC')
+            return schema.shape({
+              displayMode: Yup.string().oneOf(
+                Object.values(ElementDisplayMode)
+              ),
+              hasAnswerFeedbacks: Yup.boolean(),
+              hasSampleSolution: Yup.boolean(),
+              choices: choicesSchema.when('hasSampleSolution', {
+                is: true,
+                then: (schema) =>
+                  schema.test({
+                    message: t('manage.formErrors.SCAnswersCorrect'),
+                    test: (choices) => {
+                      return (
+                        choices.filter((choice) => choice.correct).length === 1
+                      )
+                    },
+                  }),
+              }),
+            })
+
+          return schema.shape({
+            displayMode: Yup.string().oneOf(Object.values(ElementDisplayMode)),
+            hasAnswerFeedbacks: Yup.boolean(),
+            hasSampleSolution: Yup.boolean(),
+            choices: choicesSchema.when('hasSampleSolution', {
+              is: true,
+              then: (schema) =>
+                schema.test({
+                  message: t('manage.formErrors.MCAnswersCorrect'),
                   test: (choices) => {
                     return (
-                      !hasSampleSolution ||
-                      choices.filter((choice) => choice.correct).length === 1
+                      choices.filter((choice) => choice.correct).length >= 1
                     )
                   },
                 }),
-              })
+            }),
+          })
+        }
 
-            return schema.shape({
-              choices: choicesSchema.test({
-                message: t('manage.formErrors.MCAnswersCorrect'),
-                test: (choices) => {
-                  return (
-                    !hasSampleSolution ||
-                    choices.filter((choice) => choice.correct).length >= 1
-                  )
-                },
-              }),
-            })
-          }
+        case ElementType.Kprim: {
+          const choicesSchema = baseChoicesSchema.length(
+            4,
+            t('manage.formErrors.NumberQuestionsRequiredKPRIM')
+          )
 
-          case 'KPRIM': {
-            const choicesSchema = baseChoicesSchema.length(
-              4,
-              t('manage.formErrors.NumberQuestionsRequiredKPRIM')
-            )
+          return schema.shape({
+            hasAnswerFeedbacks: Yup.boolean(),
+            hasSampleSolution: Yup.boolean(),
+            choices: choicesSchema,
+          })
+        }
 
-            return schema.shape({
-              choices: choicesSchema,
-            })
-          }
-
-          case 'NUMERICAL': {
-            const baseSolutionRanges = Yup.array()
-              .of(
-                Yup.object().shape({
-                  min: Yup.number().nullable(),
-                  // TODO: min less than max if defined
-                  // .when('max', {
-                  //   is: (max) => typeof max !== 'undefined',
-                  //   then: (schema) => schema.lessThan(Yup.ref('max')),
-                  // }),
-                  max: Yup.number().nullable(),
-                  // TODO: max more than min if defined
-                  // .when('min', {
-                  //   is: (min) => typeof min !== 'undefined',
-                  //   then: (schema) => schema.moreThan(Yup.ref('min')),
-                  // }),
-                })
-              )
-              .nullable()
-
-            return schema.shape({
-              accuracy: Yup.number()
-                .nullable()
-                .min(0, t('manage.formErrors.NRPrecision')),
-              unit: Yup.string().nullable(),
-
-              restrictions: Yup.object().shape({
+        case ElementType.Numerical: {
+          const baseSolutionRanges = Yup.array()
+            .of(
+              Yup.object().shape({
                 min: Yup.number().nullable(),
-                // TODO: less than if max defined
-                // .lessThan(Yup.ref('max')),
+                // TODO: min less than max if defined
+                // .when('max', {
+                //   is: (max) => typeof max !== 'undefined',
+                //   then: (schema) => schema.lessThan(Yup.ref('max')),
+                // }),
                 max: Yup.number().nullable(),
-                // TODO: more than if min defined
-                // .moreThan(Yup.ref('min')),
-              }),
-
-              solutionRanges: hasSampleSolution
-                ? baseSolutionRanges.min(
-                    1,
-                    t('manage.formErrors.solutionRangeRequired')
-                  )
-                : baseSolutionRanges,
-            })
-          }
-
-          case 'FREE_TEXT': {
-            const baseSolutions = Yup.array().of(
-              Yup.string()
-                .required(t('manage.formErrors.enterSolution'))
-                .min(1, t('manage.formErrors.enterSolution'))
+                // TODO: max more than min if defined
+                // .when('min', {
+                //   is: (min) => typeof min !== 'undefined',
+                //   then: (schema) => schema.moreThan(Yup.ref('min')),
+                // }),
+              })
             )
+            .nullable()
 
-            return schema.shape({
-              restrictions: Yup.object().shape({
-                // TODO: ensure that this check does not fail if the user enters a number and then deletes it
-                maxLength: Yup.number()
-                  .min(1, t('manage.formErrors.FTMaxLength'))
-                  .nullable(),
-              }),
+          return schema.shape({
+            hasSampleSolution: Yup.boolean(),
 
-              // TODO: ensure that this check does not fail if the user enters a feedback and then deactivates the sample solution option again
-              solutions:
-                hasSampleSolution &&
-                baseSolutions.min(1, t('manage.formErrors.solutionRequired')),
-            })
-          }
+            accuracy: Yup.number()
+              .nullable()
+              .min(0, t('manage.formErrors.NRPrecision')),
+            unit: Yup.string().nullable(),
+
+            restrictions: Yup.object().shape({
+              min: Yup.number().nullable(),
+              // TODO: less than if max defined
+              // .lessThan(Yup.ref('max')),
+              max: Yup.number().nullable(),
+              // TODO: more than if min defined
+              // .moreThan(Yup.ref('min')),
+            }),
+
+            solutionRanges: baseSolutionRanges.when('hasSampleSolution', {
+              is: true,
+              then: (schema) =>
+                schema.min(1, t('manage.formErrors.solutionRangeRequired')),
+            }),
+          })
+        }
+
+        case ElementType.FreeText: {
+          const baseSolutions = Yup.array().of(
+            Yup.string()
+              .required(t('manage.formErrors.enterSolution'))
+              .min(1, t('manage.formErrors.enterSolution'))
+          )
+
+          return schema.shape({
+            hasSampleSolution: Yup.boolean(),
+
+            restrictions: Yup.object().shape({
+              // TODO: ensure that this check does not fail if the user enters a number and then deletes it
+              maxLength: Yup.number()
+                .min(1, t('manage.formErrors.FTMaxLength'))
+                .nullable(),
+            }),
+
+            // TODO: ensure that this check does not fail if the user enters a feedback and then deactivates the sample solution option again
+            solutions: baseSolutions.when('hasSampleSolution', {
+              is: true,
+              then: (schema) =>
+                schema.min(1, t('manage.formErrors.solutionRequired')),
+            }),
+          })
         }
       }
-    ),
+    }),
   })
 
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
@@ -240,7 +264,7 @@ function QuestionEditModal({
   const [manipulateChoicesQuestion] = useMutation(
     ManipulateChoicesQuestionDocument
   )
-  const [manipulateNUMERICALQuestion] = useMutation(
+  const [manipulateNumericalQuestion] = useMutation(
     ManipulateNumericalQuestionDocument
   )
   const [manipulateFreeTextQuestion] = useMutation(
@@ -249,6 +273,24 @@ function QuestionEditModal({
   const [updateQuestionInstances] = useMutation(UpdateQuestionInstancesDocument)
 
   const DROPDOWN_OPTIONS = [
+    {
+      value: ElementType.Content,
+      label: t(`shared.${ElementType.Content}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Content}.typeLabel`
+        )}`,
+      },
+    },
+    {
+      value: ElementType.Flashcard,
+      label: t(`shared.${ElementType.Flashcard}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Flashcard}.typeLabel`
+        )}`,
+      },
+    },
     {
       value: ElementType.Sc,
       label: t(`shared.${ElementType.Sc}.typeLabel`),
@@ -294,7 +336,7 @@ function QuestionEditModal({
 
   const question = useMemo(() => {
     if (mode === QuestionEditMode.CREATE) {
-      const common = {
+      return {
         type: ElementType.Sc,
         name: '',
         content: '',
@@ -302,53 +344,13 @@ function QuestionEditModal({
         tags: [],
 
         pointsMultiplier: '1',
-      }
 
-      const commonOptions = {
-        hasSampleSolution: false,
-        hasAnswerFeedbacks: false,
-      }
-
-      switch (common.type) {
-        case ElementType.Sc:
-        case ElementType.Mc:
-        case ElementType.Kprim:
-          return {
-            ...common,
-            options: {
-              ...commonOptions,
-              displayMode: ElementDisplayMode.List,
-              choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
-            },
-          }
-
-        case ElementType.Numerical:
-          return {
-            ...common,
-            options: {
-              ...commonOptions,
-              accuracy: undefined,
-              unit: '',
-              restrictions: { min: undefined, max: undefined },
-              solutionRanges: [{ min: undefined, max: undefined }],
-            },
-          }
-
-        case ElementType.FreeText:
-          return {
-            ...common,
-            options: {
-              ...commonOptions,
-              placeholder: '',
-              restrictions: { maxLength: undefined },
-              solutions: [],
-            },
-          }
-
-        default: {
-          console.error('question type not implemented', common.type)
-          return {}
-        }
+        options: {
+          hasSampleSolution: false,
+          hasAnswerFeedbacks: false,
+          displayMode: ElementDisplayMode.List,
+          choices: [{ ix: 0, value: '', correct: false, feedback: '' }],
+        },
       }
     }
 
@@ -360,15 +362,6 @@ function QuestionEditModal({
             : dataQuestion.question.name,
           pointsMultiplier: String(dataQuestion.question.pointsMultiplier),
           explanation: dataQuestion.question.explanation ?? '',
-          displayMode:
-            dataQuestion.question.questionData.options.displayMode ??
-            ElementDisplayMode.List,
-          hasSampleSolution:
-            dataQuestion.question.questionData.options.hasSampleSolution ??
-            false,
-          hasAnswerFeedbacks:
-            dataQuestion.question.questionData.options.hasAnswerFeedbacks ??
-            false,
           tags: dataQuestion.question.tags?.map((tag) => tag.name) ?? [],
           options: dataQuestion.question.questionData.options,
         }
@@ -405,8 +398,8 @@ function QuestionEditModal({
           tags: values.tags,
           pointsMultiplier: parseInt(values.pointsMultiplier),
           options: {
-            hasSampleSolution: values.hasSampleSolution,
-            hasAnswerFeedbacks: values.hasAnswerFeedbacks,
+            hasSampleSolution: values.options.hasSampleSolution,
+            hasAnswerFeedbacks: values.options.hasAnswerFeedbacks,
           },
         }
 
@@ -420,7 +413,8 @@ function QuestionEditModal({
                 id: isDuplication ? undefined : questionId,
                 options: {
                   ...common.options,
-                  displayMode: values.displayMode || ElementDisplayMode.List,
+                  displayMode:
+                    values.options.displayMode || ElementDisplayMode.List,
                   choices: values.options?.choices.map((choice: any) => {
                     return {
                       ix: choice.ix,
@@ -440,7 +434,7 @@ function QuestionEditModal({
             break
           }
           case ElementType.Numerical: {
-            const result = await manipulateNUMERICALQuestion({
+            const result = await manipulateNumericalQuestion({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
@@ -739,46 +733,49 @@ function QuestionEditModal({
                     )}
                   </div>
 
-                  <div className="mt-4">
-                    <Label
-                      label={t('shared.generic.explanation')}
-                      className={{
-                        root: 'my-auto mr-2 text-lg font-bold',
-                        tooltip:
-                          'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
-                      }}
-                      tooltip={t('manage.questionForms.explanationTooltip')}
-                      showTooltipSymbol={true}
-                    />
+                  {values.type !== ElementType.Content && (
+                    <div className="mt-4">
+                      <Label
+                        label={t('shared.generic.explanation')}
+                        className={{
+                          root: 'my-auto mr-2 text-lg font-bold',
+                          tooltip:
+                            'font-normal text-sm md:text-base max-w-[45%] md:max-w-[70%]',
+                        }}
+                        tooltip={t('manage.questionForms.explanationTooltip')}
+                        showTooltipSymbol={true}
+                      />
 
-                    {typeof values.explanation !== 'undefined' && (
-                      <FastField
-                        name="explanation"
-                        questionType={values.type}
-                        shouldUpdate={(next, prev) =>
-                          next?.formik.values.explanation !==
-                            prev?.formik.values.explanation ||
-                          next?.formik.values.type !== prev?.formik.values.type
-                        }
-                      >
-                        {({ field, meta }: FastFieldProps) => (
-                          <ContentInput
-                            error={meta.error}
-                            touched={meta.touched}
-                            content={field.value || '<br>'}
-                            onChange={(newValue: string) =>
-                              setFieldValue('explanation', newValue)
-                            }
-                            placeholder={t(
-                              'manage.questionForms.explanationPlaceholder'
-                            )}
-                            key={`${values.type}-explanation`}
-                            data_cy="insert-question-explanation"
-                          />
-                        )}
-                      </FastField>
-                    )}
-                  </div>
+                      {typeof values.explanation !== 'undefined' && (
+                        <FastField
+                          name="explanation"
+                          questionType={values.type}
+                          shouldUpdate={(next, prev) =>
+                            next?.formik.values.explanation !==
+                              prev?.formik.values.explanation ||
+                            next?.formik.values.type !==
+                              prev?.formik.values.type
+                          }
+                        >
+                          {({ field, meta }: FastFieldProps) => (
+                            <ContentInput
+                              error={meta.error}
+                              touched={meta.touched}
+                              content={field.value || '<br>'}
+                              onChange={(newValue: string) =>
+                                setFieldValue('explanation', newValue)
+                              }
+                              placeholder={t(
+                                'manage.questionForms.explanationPlaceholder'
+                              )}
+                              key={`${values.type}-explanation`}
+                              data_cy="insert-question-explanation"
+                            />
+                          )}
+                        </FastField>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex flex-row gap-4 mt-4">
                     {QUESTION_GROUPS.CHOICES.includes(values.type) && (
@@ -810,34 +807,36 @@ function QuestionEditModal({
                         />
                       </div>
                     )}
-                    <Switch
-                      checked={values.hasSampleSolution || false}
-                      onCheckedChange={(newValue: boolean) => {
-                        setFieldValue('hasSampleSolution', newValue)
-                        validateForm()
-                      }}
-                      label={t('shared.generic.sampleSolution')}
-                      data={{ cy: 'configure-sample-solution' }}
-                    />
+                    {QUESTION_GROUPS.ALL.includes(values.type) && (
+                      <Switch
+                        checked={values.options.hasSampleSolution || false}
+                        onCheckedChange={(newValue: boolean) => {
+                          setFieldValue('options.hasSampleSolution', newValue)
+                          validateForm()
+                        }}
+                        label={t('shared.generic.sampleSolution')}
+                        data={{ cy: 'configure-sample-solution' }}
+                      />
+                    )}
                     {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                       <Switch
-                        checked={values.hasAnswerFeedbacks || false}
+                        checked={values.options.hasAnswerFeedbacks || false}
                         onCheckedChange={(newValue: boolean) => {
-                          setFieldValue('hasAnswerFeedbacks', newValue)
+                          setFieldValue('options.hasAnswerFeedbacks', newValue)
                           validateForm()
                         }}
                         label={t('manage.questionPool.answerFeedbacks')}
-                        disabled={!values.hasSampleSolution}
+                        disabled={!values.options.hasSampleSolution}
                         className={{
                           root: twMerge(
-                            !values.hasSampleSolution && 'opacity-50'
+                            !values.options.hasSampleSolution && 'opacity-50'
                           ),
                         }}
                       />
                     )}
                     {[ElementType.Sc, ElementType.Mc].includes(values.type) && (
                       <FormikSelectField
-                        name="displayMode"
+                        name="options.displayMode"
                         items={Object.values(ElementDisplayMode).map(
                           (mode) => ({
                             value: mode,
@@ -873,12 +872,12 @@ function QuestionEditModal({
                                   key={index}
                                   className={twMerge(
                                     'w-full rounded border-uzh-grey-80',
-                                    values.hasSampleSolution && 'p-2',
+                                    values.options.hasSampleSolution && 'p-2',
                                     choice.correct &&
-                                      values.hasSampleSolution &&
+                                      values.options.hasSampleSolution &&
                                       ' bg-green-100 border-green-300',
                                     !choice.correct &&
-                                      values.hasSampleSolution &&
+                                      values.options.hasSampleSolution &&
                                       ' bg-red-100 border-red-300'
                                   )}
                                 >
@@ -925,7 +924,7 @@ function QuestionEditModal({
                                         />
                                       )}
                                     </FastField>
-                                    {values.hasSampleSolution && (
+                                    {values.options.hasSampleSolution && (
                                       <div className="flex flex-row items-center ml-2">
                                         <div className="mr-2">
                                           {t('shared.generic.correct')}?
@@ -983,8 +982,8 @@ function QuestionEditModal({
                                     </Button>
                                   </div>
 
-                                  {values.hasAnswerFeedbacks &&
-                                    values.hasSampleSolution && (
+                                  {values.options.hasAnswerFeedbacks &&
+                                    values.options.hasSampleSolution && (
                                       <div className="">
                                         <div className="mt-2 text-sm font-bold">
                                           {t('shared.generic.feedback')}
@@ -1133,7 +1132,7 @@ function QuestionEditModal({
                           />
                         </div>
                       </div>
-                      {values.hasSampleSolution && (
+                      {values.options.hasSampleSolution && (
                         <div className="mt-3">
                           <Label
                             label={t('manage.questionForms.solutionRanges')}
@@ -1242,7 +1241,7 @@ function QuestionEditModal({
                           hideError
                         />
                       </div>
-                      {values.hasSampleSolution && (
+                      {values.options.hasSampleSolution && (
                         <FieldArray name="options.solutions">
                           {({ push, remove }: FieldArrayRenderProps) => (
                             <div className="flex flex-col gap-1 w-max">
@@ -1415,9 +1414,9 @@ function QuestionEditModal({
                       // ...dataQuestion?.question,
                       content: values.content,
                       type: values.type,
-                      displayMode: values.displayMode,
                       // options: dataQuestion?.question?.questionData.options,
                       options: {
+                        displayMode: values.options.displayMode,
                         choices: values.options?.choices,
                         accuracy: parseInt(values.options?.accuracy),
                         unit: values.options?.unit,
@@ -1443,7 +1442,7 @@ function QuestionEditModal({
                   </div>
                 )}
                 {QUESTION_GROUPS.CHOICES.includes(values.type) &&
-                  values.hasAnswerFeedbacks && (
+                  values.options.hasAnswerFeedbacks && (
                     <div className="mt-4">
                       <H3>{t('shared.generic.feedbacks')}</H3>
                       {values.options?.choices?.map((choice, index) => (
