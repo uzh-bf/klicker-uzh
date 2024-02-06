@@ -3,8 +3,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import DynamicMarkdown from './evaluation/DynamicMarkdown'
 
 interface ContentelementProps {
   element: ElementInstance
