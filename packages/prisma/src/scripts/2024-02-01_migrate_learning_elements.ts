@@ -89,7 +89,7 @@ async function migrate() {
         name: elem.name,
         displayName: elem.displayName,
         description: elem.description,
-        status: elem.status,
+        status: elem.status === LearningElementStatus.PUBLISHED ? PublicationStatus.PUBLISHED : PublicationStatus.DRAFT
         orderType:
           ((elem.orderType === 'LAST_RESPONSE' ||
             elem.orderType === 'SHUFFLED') &&
