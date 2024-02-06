@@ -8,6 +8,8 @@ import {
   GetUserQuestionsDocument,
   GetUserTagsDocument,
   ManipulateChoicesQuestionDocument,
+  ManipulateContentElementDocument,
+  ManipulateFlashcardElementDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
   UpdateQuestionInstancesDocument,
@@ -261,6 +263,12 @@ function QuestionEditModal({
     skip: typeof questionId === 'undefined',
   })
 
+  const [manipulateContentElement] = useMutation(
+    ManipulateContentElementDocument
+  )
+  const [manipulateFlashcardElement] = useMutation(
+    ManipulateFlashcardElementDocument
+  )
   const [manipulateChoicesQuestion] = useMutation(
     ManipulateChoicesQuestionDocument
   )
@@ -387,7 +395,6 @@ function QuestionEditModal({
       onSubmit={async (values) => {
         const common = {
           id: questionId,
-          type: values.type,
           name: values.name,
           content: values.content,
           explanation:
@@ -397,13 +404,39 @@ function QuestionEditModal({
               : null,
           tags: values.tags,
           pointsMultiplier: parseInt(values.pointsMultiplier),
-          options: {
-            hasSampleSolution: values.options.hasSampleSolution,
-            hasAnswerFeedbacks: values.options.hasAnswerFeedbacks,
-          },
         }
 
-        switch (common.type) {
+        switch (values.type) {
+          case ElementType.Content: {
+            const result = await manipulateContentElement({
+              variables: {
+                ...common,
+                id: isDuplication ? undefined : questionId,
+              },
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
+            })
+            if (!result.data?.manipulateContentElement?.id) return
+            break
+          }
+
+          case ElementType.Flashcard: {
+            const result = await manipulateFlashcardElement({
+              variables: {
+                ...common,
+                id: isDuplication ? undefined : questionId,
+              },
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
+            })
+            if (!result.data?.manipulateFlashcardElement?.id) return
+            break
+          }
+
           case ElementType.Sc:
           case ElementType.Mc:
           case ElementType.Kprim: {
@@ -411,10 +444,12 @@ function QuestionEditModal({
               variables: {
                 ...common,
                 id: isDuplication ? undefined : questionId,
+                type: values.type,
                 options: {
-                  ...common.options,
+                  hasSampleSolution: values.options?.hasSampleSolution,
+                  hasAnswerFeedbacks: values.options?.hasAnswerFeedbacks,
                   displayMode:
-                    values.options.displayMode || ElementDisplayMode.List,
+                    values.options?.displayMode || ElementDisplayMode.List,
                   choices: values.options?.choices.map((choice: any) => {
                     return {
                       ix: choice.ix,
@@ -439,20 +474,19 @@ function QuestionEditModal({
                 ...common,
                 id: isDuplication ? undefined : questionId,
                 options: {
-                  ...common.options,
-                  unit: values.options?.unit,
+                  hasSampleSolution: values.options?.hasSampleSolution,
                   accuracy: parseInt(values.options?.accuracy),
                   restrictions: {
                     min:
                       !values.options?.restrictions ||
                       values.options?.restrictions?.min === ''
                         ? undefined
-                        : parseFloat(values.options.restrictions?.min),
+                        : parseFloat(values.options?.restrictions?.min),
                     max:
                       !values.options?.restrictions ||
                       values.options?.restrictions?.max === ''
                         ? undefined
-                        : parseFloat(values.options.restrictions?.max),
+                        : parseFloat(values.options?.restrictions?.max),
                   },
                   solutionRanges: values.options?.solutionRanges?.map(
                     (range: any) => {
@@ -480,7 +514,7 @@ function QuestionEditModal({
                 ...common,
                 id: isDuplication ? undefined : questionId,
                 options: {
-                  ...common.options,
+                  hasSampleSolution: values.options?.hasSampleSolution,
                   placeholder: values.options?.placeholder,
                   restrictions: {
                     maxLength: parseInt(
@@ -809,7 +843,7 @@ function QuestionEditModal({
                     )}
                     {QUESTION_GROUPS.ALL.includes(values.type) && (
                       <Switch
-                        checked={values.options.hasSampleSolution || false}
+                        checked={values.options?.hasSampleSolution || false}
                         onCheckedChange={(newValue: boolean) => {
                           setFieldValue('options.hasSampleSolution', newValue)
                           validateForm()
@@ -820,16 +854,16 @@ function QuestionEditModal({
                     )}
                     {QUESTION_GROUPS.CHOICES.includes(values.type) && (
                       <Switch
-                        checked={values.options.hasAnswerFeedbacks || false}
+                        checked={values.options?.hasAnswerFeedbacks || false}
                         onCheckedChange={(newValue: boolean) => {
                           setFieldValue('options.hasAnswerFeedbacks', newValue)
                           validateForm()
                         }}
                         label={t('manage.questionPool.answerFeedbacks')}
-                        disabled={!values.options.hasSampleSolution}
+                        disabled={!values.options?.hasSampleSolution}
                         className={{
                           root: twMerge(
-                            !values.options.hasSampleSolution && 'opacity-50'
+                            !values.options?.hasSampleSolution && 'opacity-50'
                           ),
                         }}
                       />
@@ -872,12 +906,12 @@ function QuestionEditModal({
                                   key={index}
                                   className={twMerge(
                                     'w-full rounded border-uzh-grey-80',
-                                    values.options.hasSampleSolution && 'p-2',
+                                    values.options?.hasSampleSolution && 'p-2',
                                     choice.correct &&
-                                      values.options.hasSampleSolution &&
+                                      values.options?.hasSampleSolution &&
                                       ' bg-green-100 border-green-300',
                                     !choice.correct &&
-                                      values.options.hasSampleSolution &&
+                                      values.options?.hasSampleSolution &&
                                       ' bg-red-100 border-red-300'
                                   )}
                                 >
@@ -895,15 +929,15 @@ function QuestionEditModal({
                                           ] ||
                                         next.formik.values.type !==
                                           prev.formik.values.type ||
-                                        next.formik.values.options.choices
+                                        next.formik.values.options?.choices
                                           .length !==
-                                          prev.formik.values.options.choices
+                                          prev.formik.values.options?.choices
                                             .length
                                       }
                                     >
                                       {({ field, meta }: FastFieldProps) => (
                                         <ContentInput
-                                          key={`${values.type}-choice-${index}-${values.options.choices.length}`}
+                                          key={`${values.type}-choice-${index}-${values.options?.choices.length}`}
                                           error={meta.error}
                                           touched={meta.touched}
                                           content={field.value}
@@ -924,7 +958,7 @@ function QuestionEditModal({
                                         />
                                       )}
                                     </FastField>
-                                    {values.options.hasSampleSolution && (
+                                    {values.options?.hasSampleSolution && (
                                       <div className="flex flex-row items-center ml-2">
                                         <div className="mr-2">
                                           {t('shared.generic.correct')}?
@@ -956,7 +990,7 @@ function QuestionEditModal({
                                     <Button
                                       onClick={() => {
                                         // decrement the choice.ix value of all answers after this one
-                                        values.options.choices
+                                        values.options?.choices
                                           .slice(index + 1)
                                           .forEach((choice) => {
                                             setFieldValue(
@@ -982,8 +1016,8 @@ function QuestionEditModal({
                                     </Button>
                                   </div>
 
-                                  {values.options.hasAnswerFeedbacks &&
-                                    values.options.hasSampleSolution && (
+                                  {values.options?.hasAnswerFeedbacks &&
+                                    values.options?.hasSampleSolution && (
                                       <div className="">
                                         <div className="mt-2 text-sm font-bold">
                                           {t('shared.generic.feedback')}
@@ -1043,21 +1077,21 @@ function QuestionEditModal({
                                 root: twMerge(
                                   'font-bold border border-solid border-uzh-grey-100',
                                   values.type === ElementType.Kprim &&
-                                    values.options.choices.length >= 4 &&
+                                    values.options?.choices.length >= 4 &&
                                     'opacity-50 cursor-not-allowed'
                                 ),
                               }}
                               disabled={
                                 values.type === ElementType.Kprim &&
-                                values.options.choices.length >= 4
+                                values.options?.choices.length >= 4
                               }
                               onClick={() =>
                                 push({
-                                  ix: values.options.choices[
-                                    values.options.choices.length - 1
+                                  ix: values.options?.choices[
+                                    values.options?.choices.length - 1
                                   ]
-                                    ? values.options.choices[
-                                        values.options.choices.length - 1
+                                    ? values.options?.choices[
+                                        values.options?.choices.length - 1
                                       ].ix + 1
                                     : 0,
                                   value: '<br>',
@@ -1132,7 +1166,7 @@ function QuestionEditModal({
                           />
                         </div>
                       </div>
-                      {values.options.hasSampleSolution && (
+                      {values.options?.hasSampleSolution && (
                         <div className="mt-3">
                           <Label
                             label={t('manage.questionForms.solutionRanges')}
@@ -1148,11 +1182,11 @@ function QuestionEditModal({
                           <FieldArray name="options.solutionRanges">
                             {({ push, remove }: FieldArrayRenderProps) => (
                               <div className="flex flex-col gap-1 w-max">
-                                {values.options.solutionRanges?.map(
+                                {values.options?.solutionRanges?.map(
                                   (_range: any, index: number) => (
                                     <div
                                       className="flex flex-row items-center gap-2"
-                                      key={`${index}-${values.options.solutionRanges.length}`}
+                                      key={`${index}-${values.options?.solutionRanges.length}`}
                                     >
                                       <div className="font-bold">
                                         {t('shared.generic.min')}:{' '}
@@ -1241,15 +1275,15 @@ function QuestionEditModal({
                           hideError
                         />
                       </div>
-                      {values.options.hasSampleSolution && (
+                      {values.options?.hasSampleSolution && (
                         <FieldArray name="options.solutions">
                           {({ push, remove }: FieldArrayRenderProps) => (
                             <div className="flex flex-col gap-1 w-max">
-                              {values.options.solutions?.map(
+                              {values.options?.solutions?.map(
                                 (_solution, index) => (
                                   <div
                                     className="flex flex-row items-center gap-2"
-                                    key={`${index}-${values.options.solutions.length}`}
+                                    key={`${index}-${values.options?.solutions.length}`}
                                   >
                                     <div className="w-40 font-bold">
                                       {t(
@@ -1416,7 +1450,7 @@ function QuestionEditModal({
                       type: values.type,
                       // options: dataQuestion?.question?.questionData.options,
                       options: {
-                        displayMode: values.options.displayMode,
+                        displayMode: values.options?.displayMode,
                         choices: values.options?.choices,
                         accuracy: parseInt(values.options?.accuracy),
                         unit: values.options?.unit,
@@ -1442,7 +1476,7 @@ function QuestionEditModal({
                   </div>
                 )}
                 {QUESTION_GROUPS.CHOICES.includes(values.type) &&
-                  values.options.hasAnswerFeedbacks && (
+                  values.options?.hasAnswerFeedbacks && (
                     <div className="mt-4">
                       <H3>{t('shared.generic.feedbacks')}</H3>
                       {values.options?.choices?.map((choice, index) => (

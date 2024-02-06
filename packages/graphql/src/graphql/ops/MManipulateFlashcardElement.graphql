@@ -1,18 +1,16 @@
-mutation ManipulateFreeTextQuestion(
+mutation ManipulateFlashcardElement(
   $id: Int
   $name: String
   $content: String
   $explanation: String
-  $options: OptionsFreeTextInput
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
-  manipulateFreeTextQuestion(
+  manipulateFlashcardElement(
     id: $id
     name: $name
     content: $content
     explanation: $explanation
-    options: $options
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
@@ -22,19 +20,6 @@ mutation ManipulateFreeTextQuestion(
     content
     explanation
     pointsMultiplier
-
-    questionData {
-      ... on FreeTextQuestionData {
-        options {
-          hasSampleSolution
-          hasAnswerFeedbacks
-          restrictions {
-            maxLength
-          }
-          solutions
-        }
-      }
-    }
 
     tags {
       id

@@ -115,6 +115,17 @@ type ContentElementData implements ElementData {
   type: ElementType!
 }
 
+type ContentElementQData implements QuestionData {
+  content: String!
+  elementId: Int
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int
+  questionId: Int
+  type: ElementType!
+}
+
 type Course {
   averageActiveScore: Float
   averageScore: Float
@@ -274,6 +285,17 @@ type FlashcardElementData implements ElementData {
   id: ID!
   name: String!
   pointsMultiplier: Int!
+  questionId: Int
+  type: ElementType!
+}
+
+type FlashcardElementQData implements QuestionData {
+  content: String!
+  elementId: Int
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int
   questionId: Int
   type: ElementType!
 }
@@ -585,8 +607,10 @@ type Mutation {
   logoutParticipant: ID
   logoutUser: ID
   manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
-  manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
-  manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!], type: ElementType!): Element
+  manipulateContentElement(content: String, id: Int, name: String, pointsMultiplier: Int, tags: [String!]): Element
+  manipulateFlashcardElement(content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, tags: [String!]): Element
+  manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, tags: [String!]): Element
+  manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, tags: [String!]): Element
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
