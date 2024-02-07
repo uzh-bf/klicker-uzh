@@ -591,9 +591,9 @@ type Mutation {
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
-  deleteLearningElement(id: String!): LearningElement
   deleteMicroSession(id: String!): MicroSession
   deleteParticipantAccount: Boolean
+  deletePracticeQuiz(id: String!): PracticeQuiz
   deleteQuestion(id: Int!): Element
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
@@ -626,8 +626,8 @@ type Mutation {
   markMicroSessionCompleted(courseId: String!, id: String!): Participation
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
-  publishLearningElement(id: String!): LearningElement
   publishMicroSession(id: String!): MicroSession
+  publishPracticeQuiz(id: String!): PracticeQuiz
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback

@@ -967,8 +967,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Select an order in which the questions are to be solved by the students.',
       learningElemenSelectOrder: 'Select order',
       learningElementSEQUENTIAL: 'Sequential',
-      learningElementSHUFFLED: 'Shuffled',
-      learningElementLAST_RESPONSE: 'Last response first',
+      learningElementSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
     },

@@ -40,9 +40,11 @@ query GetSingleCourse($courseId: String!) {
       name
       displayName
       status
+      numOfQuestions
     }
     groupActivities {
       id
+      name
       displayName
     }
     microSessions {

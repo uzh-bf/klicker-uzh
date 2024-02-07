@@ -1158,16 +1158,16 @@ export const Mutation = builder.mutationType({
           },
         }),
 
-      publishLearningElement: t
+      publishPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: LearningElement,
+          type: PracticeQuiz,
           args: {
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
-            return LearningElementService.publishLearningElement(args, ctx)
+            return PracticeQuizService.publishPracticeQuiz(args, ctx)
           },
         }),
 
@@ -1198,16 +1198,16 @@ export const Mutation = builder.mutationType({
         }),
 
       // TODO: delete operations only as owner?
-      deleteLearningElement: t
+      deletePracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: LearningElement,
+          type: PracticeQuiz,
           args: {
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
-            return LearningElementService.deleteLearningElement(args, ctx)
+            return PracticeQuizService.deletePracticeQuiz(args, ctx)
           },
         }),
       deleteMicroSession: t

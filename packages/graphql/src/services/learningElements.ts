@@ -19,7 +19,6 @@ import {
   QuestionStackType,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
@@ -1042,62 +1041,6 @@ export async function getBookmarksLearningElement(
   })
 
   return participation?.bookmarkedStacks
-}
-
-interface PublishLearningElementArgs {
-  id: string
-}
-
-export async function publishLearningElement(
-  { id }: PublishLearningElementArgs,
-  ctx: ContextWithUser
-) {
-  const learningElement = await ctx.prisma.learningElement.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      status: LearningElementStatus.PUBLISHED,
-    },
-  })
-
-  return learningElement
-}
-
-interface DeleteLearningElementArgs {
-  id: string
-}
-
-export async function deleteLearningElement(
-  { id }: DeleteLearningElementArgs,
-  ctx: ContextWithUser
-) {
-  try {
-    const deletedItem = await ctx.prisma.learningElement.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        status: LearningElementStatus.DRAFT,
-      },
-    })
-
-    ctx.emitter.emit('invalidate', {
-      typename: 'LearningElement',
-      id,
-    })
-
-    return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e?.code === 'P2025') {
-      console.log(
-        'The learning element is not in draft status and cannot be deleted.'
-      )
-      return null
-    }
-
-    throw e
-  }
 }
 
 interface GetQuestionStackArgs {
