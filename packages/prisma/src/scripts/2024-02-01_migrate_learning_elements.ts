@@ -240,13 +240,13 @@ async function migrate() {
                         createdAt: stackElement.questionInstance.createdAt,
                         updatedAt: stackElement.questionInstance.updatedAt,
 
-                        element: {
-                          connect: {
-                            id:
-                              stackElement.questionInstance.questionId ??
-                              undefined,
-                          },
-                        },
+                        element: stackElement.questionInstance.questionId
+                          ? {
+                              connect: {
+                                id: stackElement.questionInstance.questionId,
+                              },
+                            }
+                          : undefined,
                         owner: {
                           connect: {
                             id: elem.owner.id,
