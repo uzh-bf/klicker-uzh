@@ -1064,7 +1064,7 @@ export const Mutation = builder.mutationType({
               type: [ElementStackInput],
               required: true,
             }),
-            courseId: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
             multiplier: t.arg.int({ required: true }),
             order: t.arg({
               type: ElementOrderType,
@@ -1091,7 +1091,7 @@ export const Mutation = builder.mutationType({
               type: [ElementStackInput],
               required: true,
             }),
-            courseId: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
             multiplier: t.arg.int({ required: true }),
             order: t.arg({
               type: ElementOrderType,

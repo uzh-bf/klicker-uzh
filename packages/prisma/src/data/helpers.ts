@@ -15,40 +15,6 @@ import {
   UserLoginScope,
 } from '../client'
 
-export function getInitialElementResults(element: Element) {
-  if (element.type === ElementType.FLASHCARD) {
-    return {
-      INCORRECT: 0,
-      PARTIAL: 0,
-      CORRECT: 0,
-      total: 0,
-    }
-  } else if (
-    element.type === ElementType.SC ||
-    element.type === ElementType.MC ||
-    element.type === ElementType.KPRIM
-  ) {
-    const choices = element.options.choices.reduce(
-      (acc, _, ix) => ({ ...acc, [ix]: 0 }),
-      {}
-    )
-    return { choices }
-  } else if (
-    element.type === ElementType.NUMERICAL ||
-    element.type === ElementType.FREE_TEXT
-  ) {
-    return {}
-  } else if (element.type === ElementType.CONTENT) {
-    return {
-      viewed: 0,
-    }
-  } else {
-    throw new Error(
-      'Invalid element type encountered during result initialization'
-    )
-  }
-}
-
 export async function prepareUser({
   name,
   password,
@@ -541,7 +507,7 @@ export function prepareGroupActivityStack({
       createMany: {
         data: [
           ...flashcards.slice(0, 2).map((el, ix) => ({
-            migrationId: migrationIdOffset + ix,
+            migrationId: String(migrationIdOffset + ix),
             order: ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
@@ -552,7 +518,7 @@ export function prepareGroupActivityStack({
             elementId: el.id,
           })),
           ...questions.map((el, ix) => ({
-            migrationId: migrationIdOffset + 2 + ix,
+            migrationId: String(migrationIdOffset + 2 + ix),
             order: 2 + ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
@@ -563,7 +529,7 @@ export function prepareGroupActivityStack({
             elementId: el.id,
           })),
           ...contentElements.slice(0, 2).map((el, ix) => ({
-            migrationId: migrationIdOffset + questions.length + 2 + ix,
+            migrationId: String(migrationIdOffset + questions.length + 2 + ix),
             order: questions.length + 2 + ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
@@ -617,7 +583,7 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
-              migrationId: migrationIdOffset + ix,
+              migrationId: String(migrationIdOffset + ix),
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -648,7 +614,7 @@ export function prepareStackVariety({
       elements: {
         createMany: {
           data: flashcards.map((el, ix) => ({
-            migrationId: migrationIdOffset + flashcards.length + ix,
+            migrationId: String(migrationIdOffset + flashcards.length + ix),
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -679,7 +645,9 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
-              migrationId: migrationIdOffset + 2 * flashcards.length + ix,
+              migrationId: String(
+                migrationIdOffset + 2 * flashcards.length + ix
+              ),
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -710,8 +678,9 @@ export function prepareStackVariety({
       elements: {
         createMany: {
           data: questions.map((el, ix) => ({
-            migrationId:
-              migrationIdOffset + 2 * flashcards.length + questions.length + ix,
+            migrationId: String(
+              migrationIdOffset + 2 * flashcards.length + questions.length + ix
+            ),
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -742,11 +711,12 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
-              migrationId:
+              migrationId: String(
                 migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                ix,
+                  2 * flashcards.length +
+                  2 * questions.length +
+                  ix
+              ),
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -782,13 +752,14 @@ export function prepareStackVariety({
       elements: {
         createMany: {
           data: contentElements.map((el, ix) => ({
-            migrationId:
+            migrationId: String(
               migrationIdOffset +
-              2 * flashcards.length +
-              2 * questions.length +
-              contentElements.length +
-              outer_ix * contentElements.length +
-              ix,
+                2 * flashcards.length +
+                2 * questions.length +
+                contentElements.length +
+                outer_ix * contentElements.length +
+                ix
+            ),
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -821,12 +792,13 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
-              migrationId:
+              migrationId: String(
                 migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                3 * contentElements.length +
-                ix * 5,
+                  2 * flashcards.length +
+                  2 * questions.length +
+                  3 * contentElements.length +
+                  ix * 5
+              ),
               order: 0,
               type: elementInstanceType,
               elementType: flashcards[0].type,
@@ -837,13 +809,14 @@ export function prepareStackVariety({
               elementId: flashcards[0].id,
             },
             {
-              migrationId:
+              migrationId: String(
                 migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                3 * contentElements.length +
-                ix * 5 +
-                1,
+                  2 * flashcards.length +
+                  2 * questions.length +
+                  3 * contentElements.length +
+                  ix * 5 +
+                  1
+              ),
               order: 1,
               type: elementInstanceType,
               elementType: questions[0].type,
@@ -854,13 +827,14 @@ export function prepareStackVariety({
               elementId: questions[0].id,
             },
             {
-              migrationId:
+              migrationId: String(
                 migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                3 * contentElements.length +
-                ix * 5 +
-                2,
+                  2 * flashcards.length +
+                  2 * questions.length +
+                  3 * contentElements.length +
+                  ix * 5 +
+                  2
+              ),
               order: 2,
               type: elementInstanceType,
               elementType: contentElements[0].type,

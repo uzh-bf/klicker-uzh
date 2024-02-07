@@ -16,13 +16,12 @@ import {
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { processElementData } from '@klicker-uzh/util'
+import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
-import { prepareInitialInstanceResults } from '../lib/questions'
 import { orderStacks } from '../lib/util'
 import {
   ChoiceQuestionOptions,
@@ -1236,6 +1235,7 @@ export async function respondToPracticeQuizStack(
 interface PracticeQuizStackInput {
   displayName?: string | null
   description?: string | null
+  order: number
   elements: {
     elementId: number
     order: number
@@ -1248,7 +1248,7 @@ interface ManipulatePracticeQuizArgs {
   displayName: string
   description?: string | null
   stacks: PracticeQuizStackInput[]
-  courseId?: string | null
+  courseId: string
   multiplier: number
   order: ElementOrderType
   resetTimeDays: number
@@ -1343,12 +1343,13 @@ export async function manipulatePracticeQuiz(
     orderType: order,
     resetTimeDays: resetTimeDays,
     stacks: {
-      create: stacks.map((stack, ix) => {
+      create: stacks.map((stack) => {
         return {
           type: ElementStackType.PRACTICE_QUIZ,
-          order: ix,
+          order: stack.order,
           displayName: stack.displayName ?? '',
           description: stack.description ?? '',
+          options: {},
           elements: {
             create: stack.elements.map((elem) => {
               const element = elementMap[elem.elementId]
@@ -1356,23 +1357,20 @@ export async function manipulatePracticeQuiz(
               const processedElementData = processElementData(element)
 
               return {
+                elementType: element.type,
+                migrationId: uuidv4(),
                 order: elem.order,
-                elementInstance: {
-                  create: {
-                    order: ix,
-                    type: ElementInstanceType.PRACTICE_QUIZ,
-                    pointsMultiplier: multiplier * element.pointsMultiplier,
-                    elementData: processedElementData,
-                    options: {},
-                    results:
-                      prepareInitialInstanceResults(processedElementData),
-                    element: {
-                      connect: { id: element.id },
-                    },
-                    owner: {
-                      connect: { id: ctx.user.sub },
-                    },
-                  },
+                type: ElementInstanceType.PRACTICE_QUIZ,
+                elementData: processedElementData,
+                options: {
+                  pointsMultiplier: multiplier * element.pointsMultiplier,
+                },
+                results: getInitialElementResults(processedElementData),
+                element: {
+                  connect: { id: element.id },
+                },
+                owner: {
+                  connect: { id: ctx.user.sub },
                 },
               }
             }),
@@ -1383,11 +1381,9 @@ export async function manipulatePracticeQuiz(
     owner: {
       connect: { id: ctx.user.sub },
     },
-    course: courseId
-      ? {
-          connect: { id: courseId },
-        }
-      : undefined,
+    course: {
+      connect: { id: courseId },
+    },
   }
 
   const element = await ctx.prisma.practiceQuiz.upsert({

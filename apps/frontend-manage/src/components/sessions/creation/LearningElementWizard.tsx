@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
-  CreateLearningElementDocument,
-  EditLearningElementDocument,
+  CreatePracticeQuizDocument,
+  EditPracticeQuizDocument,
   ElementType,
   GetSingleCourseDocument,
   LearningElement,
@@ -41,8 +41,8 @@ function LearningElementWizard({
   const router = useRouter()
   const t = useTranslations()
 
-  const [createLearningElement] = useMutation(CreateLearningElementDocument)
-  const [editLearningElement] = useMutation(EditLearningElementDocument)
+  const [createLearningElement] = useMutation(CreatePracticeQuizDocument)
+  const [editLearningElement] = useMutation(EditPracticeQuizDocument)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [editMode, setEditMode] = useState(!!initialValues)
   const [selectedCourseId, setSelectedCourseId] = useState('')
@@ -115,12 +115,12 @@ function LearningElementWizard({
             name: values.name,
             displayName: values.displayName,
             description: values.description,
-            stacks: values.questions.map((q: any) => {
-              return { elements: [{ questionId: q.id }] }
+            stacks: values.questions.map((q: any, ix) => {
+              return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
             }),
             multiplier: parseInt(values.multiplier),
             courseId: values.courseId,
-            order: values.order as LearningElementOrderType,
+            order: values.order,
             resetTimeDays: parseInt(values.resetTimeDays),
           },
           refetchQueries: [
@@ -133,7 +133,7 @@ function LearningElementWizard({
           ],
         })
 
-        if (result.data?.editLearningElement) {
+        if (result.data?.editPracticeQuiz) {
           setIsWizardCompleted(true)
         }
         setSelectedCourseId(values.courseId)
@@ -143,12 +143,12 @@ function LearningElementWizard({
             name: values.name,
             displayName: values.displayName,
             description: values.description,
-            stacks: values.questions.map((q: any) => {
-              return { elements: [{ questionId: q.id }] }
+            stacks: values.questions.map((q: any, ix) => {
+              return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
             }),
             multiplier: parseInt(values.multiplier),
             courseId: values.courseId,
-            order: values.order as LearningElementOrderType,
+            order: values.order,
             resetTimeDays: parseInt(values.resetTimeDays),
           },
           refetchQueries: [
@@ -161,7 +161,7 @@ function LearningElementWizard({
           ],
         })
 
-        if (result.data?.createLearningElement) {
+        if (result.data?.createPracticeQuiz) {
           setIsWizardCompleted(true)
         }
         setSelectedCourseId(values.courseId)
@@ -203,10 +203,8 @@ function LearningElementWizard({
                 )
                 .map((stack) => {
                   return {
-                    id: stack.elements![0].questionInstance?.questionData
-                      .questionId,
-                    title:
-                      stack.elements![0].questionInstance?.questionData.name,
+                    id: stack.elements![0].elementData.questionId,
+                    title: stack.elements![0].elementData.name,
                     hasAnswerFeedbacks: true, // TODO - based on questionData options
                     hasSampleSolution: true, // TODO - based on questionData options
                   }

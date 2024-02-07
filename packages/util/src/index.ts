@@ -67,3 +67,43 @@ export function processElementData(element: Element) {
     )
   }
 }
+
+export function getInitialElementResults(element: Element) {
+  if (element.type === ElementType.FLASHCARD) {
+    return {
+      INCORRECT: 0,
+      PARTIAL: 0,
+      CORRECT: 0,
+      total: 0,
+    }
+  } else if (
+    element.type === ElementType.SC ||
+    element.type === ElementType.MC ||
+    element.type === ElementType.KPRIM
+  ) {
+    const choices = element.options.choices.reduce(
+      (acc: Record<string, number>, _: any, ix: number) => ({
+        ...acc,
+        [ix]: 0,
+      }),
+      {}
+    )
+    return { choices, total: 0 }
+  } else if (
+    element.type === ElementType.NUMERICAL ||
+    element.type === ElementType.FREE_TEXT
+  ) {
+    return {
+      responses: {},
+      total: 0,
+    }
+  } else if (element.type === ElementType.CONTENT) {
+    return {
+      viewed: 0,
+    }
+  } else {
+    throw new Error(
+      'Invalid element type encountered during result initialization'
+    )
+  }
+}

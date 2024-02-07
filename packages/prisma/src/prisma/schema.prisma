@@ -269,7 +269,7 @@ model ElementInstance {
   originalId String? @unique
 
   // TODO: remove after migration to new data structure
-  migrationId Int
+  migrationId String
 
   type        ElementInstanceType
   elementType ElementType
