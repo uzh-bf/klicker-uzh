@@ -35,6 +35,21 @@ export const StackFeedbackStatus = builder.enumType('StackFeedbackStatus', {
   values: Object.values(StackFeedbackStatusType),
 })
 
+export const ElementStackInput = builder.inputType('ElementStackInput', {
+  fields: (t) => ({
+    displayName: t.string({ required: false }),
+    description: t.string({ required: false }),
+    elements: t.field({ type: [StackElementsInput], required: true }),
+  }),
+})
+
+export const StackElementsInput = builder.inputType('StackElementsInput', {
+  fields: (t) => ({
+    elementId: t.int({ required: true }),
+    order: t.int({ required: true }),
+  }),
+})
+
 export const StackResponseInput = builder.inputType('StackResponseInput', {
   fields: (t) => ({
     instanceId: t.int({ required: true }),

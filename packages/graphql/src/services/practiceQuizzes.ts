@@ -7,18 +7,30 @@ import {
   gradeQuestionNumerical,
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
-import { ElementType, UserRole } from '@klicker-uzh/prisma'
+import {
+  Element,
+  ElementInstanceType,
+  ElementOrderType,
+  ElementStackType,
+  ElementType,
+  PublicationStatus,
+  UserRole,
+} from '@klicker-uzh/prisma'
+import { processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
+import { v4 as uuidv4 } from 'uuid'
+import { Context, ContextWithUser } from '../lib/context'
+import { prepareInitialInstanceResults } from '../lib/questions'
+import { orderStacks } from '../lib/util'
 import {
   ChoiceQuestionOptions,
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
   ResponseInput,
-} from 'src/ops'
-import { IInstanceEvaluation } from 'src/schema/question'
-import { Context } from '../lib/context'
-import { orderStacks } from '../lib/util'
+} from '../ops'
+import { IInstanceEvaluation } from '../schema/question'
 import {
   AllElementTypeData,
   AllQuestionInstanceTypeData,
@@ -1219,4 +1231,190 @@ export async function respondToPracticeQuizStack(
     score: stackScore,
     evaluations: evaluationsArr,
   }
+}
+
+interface PracticeQuizStackInput {
+  displayName?: string | null
+  description?: string | null
+  elements: {
+    elementId: number
+    order: number
+  }[]
+}
+
+interface ManipulatePracticeQuizArgs {
+  id?: string
+  name: string
+  displayName: string
+  description?: string | null
+  stacks: PracticeQuizStackInput[]
+  courseId?: string | null
+  multiplier: number
+  order: ElementOrderType
+  resetTimeDays: number
+}
+
+export async function manipulatePracticeQuiz(
+  {
+    id,
+    name,
+    displayName,
+    description,
+    stacks,
+    courseId,
+    multiplier,
+    order,
+    resetTimeDays,
+  }: ManipulatePracticeQuizArgs,
+  ctx: ContextWithUser
+) {
+  if (id) {
+    // find all instances belonging to the old session and delete them as the content of the questions might have changed
+    const oldElement = await ctx.prisma.practiceQuiz.findUnique({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!oldElement) {
+      throw new GraphQLError('Practice quiz not found')
+    }
+    if (oldElement.status === PublicationStatus.PUBLISHED) {
+      throw new GraphQLError('Cannot edit a published practice quiz')
+    }
+
+    const oldInstances = oldElement.stacks.flatMap((stack) => stack.elements)
+
+    await ctx.prisma.elementInstance.deleteMany({
+      where: {
+        id: { in: oldInstances.map(({ id }) => id) },
+      },
+    })
+    await ctx.prisma.practiceQuiz.update({
+      where: { id },
+      data: {
+        stacks: {
+          deleteMany: {},
+        },
+        course: {
+          disconnect: true,
+        },
+      },
+    })
+  }
+
+  const elements = stacks
+    .flatMap((stack) => stack.elements)
+    .map((stackElem) => stackElem.elementId)
+    .filter(
+      (stackElem) => stackElem !== null && typeof stackElem !== undefined
+    ) as number[]
+
+  const dbElements = await ctx.prisma.element.findMany({
+    where: {
+      id: { in: elements },
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  const uniqueElements = new Set(dbElements.map((q) => q.id))
+  if (dbElements.length !== uniqueElements.size) {
+    throw new GraphQLError('Not all elements could be found')
+  }
+
+  const elementMap = dbElements.reduce<Record<number, Element>>(
+    (acc, elem) => ({ ...acc, [elem.id]: elem }),
+    {}
+  )
+
+  const createOrUpdateJSON = {
+    name,
+    displayName: displayName ?? name,
+    description,
+    pointsMultiplier: multiplier,
+    orderType: order,
+    resetTimeDays: resetTimeDays,
+    stacks: {
+      create: stacks.map((stack, ix) => {
+        return {
+          type: ElementStackType.PRACTICE_QUIZ,
+          order: ix,
+          displayName: stack.displayName ?? '',
+          description: stack.description ?? '',
+          elements: {
+            create: stack.elements.map((elem) => {
+              const element = elementMap[elem.elementId]
+
+              const processedElementData = processElementData(element)
+
+              return {
+                order: elem.order,
+                elementInstance: {
+                  create: {
+                    order: ix,
+                    type: ElementInstanceType.PRACTICE_QUIZ,
+                    pointsMultiplier: multiplier * element.pointsMultiplier,
+                    elementData: processedElementData,
+                    options: {},
+                    results:
+                      prepareInitialInstanceResults(processedElementData),
+                    element: {
+                      connect: { id: element.id },
+                    },
+                    owner: {
+                      connect: { id: ctx.user.sub },
+                    },
+                  },
+                },
+              }
+            }),
+          },
+        }
+      }),
+    },
+    owner: {
+      connect: { id: ctx.user.sub },
+    },
+    course: courseId
+      ? {
+          connect: { id: courseId },
+        }
+      : undefined,
+  }
+
+  const element = await ctx.prisma.practiceQuiz.upsert({
+    where: { id: id ?? uuidv4() },
+    create: createOrUpdateJSON,
+    update: createOrUpdateJSON,
+    include: {
+      course: true,
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'PracticeQuiz',
+    id,
+  })
+
+  return element
 }

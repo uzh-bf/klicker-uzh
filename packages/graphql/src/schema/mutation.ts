@@ -36,7 +36,13 @@ import {
   Participation,
   SubscriptionObjectInput,
 } from './participant'
-import { StackFeedback, StackResponseInput } from './practiceQuizzes'
+import {
+  ElementOrderType,
+  ElementStackInput,
+  PracticeQuiz,
+  StackFeedback,
+  StackResponseInput,
+} from './practiceQuizzes'
 import {
   Element,
   OptionsChoicesInput,
@@ -1031,6 +1037,59 @@ export const Mutation = builder.mutationType({
           },
           resolve(_, args, ctx) {
             return LearningElementService.manipulateLearningElement(args, ctx)
+          },
+        }),
+
+      createPracticeQuiz: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: PracticeQuiz,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({
+              type: [ElementStackInput],
+              required: true,
+            }),
+            courseId: t.arg.string({ required: false }),
+            multiplier: t.arg.int({ required: true }),
+            order: t.arg({
+              type: ElementOrderType,
+              required: true,
+            }),
+            resetTimeDays: t.arg.int({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return PracticeQuizService.manipulatePracticeQuiz(args, ctx)
+          },
+        }),
+
+      editPracticeQuiz: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: PracticeQuiz,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({
+              type: [ElementStackInput],
+              required: true,
+            }),
+            courseId: t.arg.string({ required: false }),
+            multiplier: t.arg.int({ required: true }),
+            order: t.arg({
+              type: ElementOrderType,
+              required: true,
+            }),
+            resetTimeDays: t.arg.int({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return PracticeQuizService.manipulatePracticeQuiz(args, ctx)
           },
         }),
 

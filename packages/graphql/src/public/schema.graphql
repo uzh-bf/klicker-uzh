@@ -222,6 +222,12 @@ type ElementStack {
   type: ElementStackType!
 }
 
+input ElementStackInput {
+  description: String
+  displayName: String
+  elements: [StackElementsInput!]!
+}
+
 enum ElementStackType {
   GROUP_ACTIVITY
   LIVE_QUIZ
@@ -576,6 +582,7 @@ type Mutation {
   createMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
   createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
+  createPracticeQuiz(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
@@ -590,6 +597,7 @@ type Mutation {
   deleteUserLogin(id: String!): UserLogin
   editLearningElement(courseId: String, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
+  editPracticeQuiz(courseId: String, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
@@ -1005,6 +1013,11 @@ type StackElement {
 input StackElementInput {
   mdContent: String
   questionId: Int
+}
+
+input StackElementsInput {
+  elementId: Int!
+  order: Int!
 }
 
 type StackFeedback {

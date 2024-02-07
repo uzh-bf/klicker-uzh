@@ -275,12 +275,6 @@ model ElementInstance {
   elementType ElementType
   order       Int
 
-  // TODO: moved to options Json
-  // resetTimeDays    Int?
-  // pointsMultiplier Int                      @default(1)
-  // TODO: moved to results Json
-  // participants    Int                      @default(0)
-
   /// [PrismaElementInstanceOptions]
   options Json // contains element type specific settings (resetTimeDays for LE instances, pointsMultiplier where relevant)
 

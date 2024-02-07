@@ -252,6 +252,12 @@ export type ElementStack = {
   type: ElementStackType;
 };
 
+export type ElementStackInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName?: InputMaybe<Scalars['String']['input']>;
+  elements: Array<StackElementsInput>;
+};
+
 export enum ElementStackType {
   GroupActivity = 'GROUP_ACTIVITY',
   LiveQuiz = 'LIVE_QUIZ',
@@ -631,6 +637,7 @@ export type Mutation = {
   createMicroSession?: Maybe<MicroSession>;
   createParticipantAccount?: Maybe<ParticipantTokenData>;
   createParticipantGroup?: Maybe<ParticipantGroup>;
+  createPracticeQuiz?: Maybe<PracticeQuiz>;
   createSession?: Maybe<Session>;
   createUserLogin?: Maybe<UserLogin>;
   deactivateSessionBlock?: Maybe<Session>;
@@ -645,6 +652,7 @@ export type Mutation = {
   deleteUserLogin?: Maybe<UserLogin>;
   editLearningElement?: Maybe<LearningElement>;
   editMicroSession?: Maybe<MicroSession>;
+  editPracticeQuiz?: Maybe<PracticeQuiz>;
   editSession?: Maybe<Session>;
   editTag?: Maybe<Tag>;
   endSession?: Maybe<Session>;
@@ -833,6 +841,18 @@ export type MutationCreateParticipantGroupArgs = {
 };
 
 
+export type MutationCreatePracticeQuizArgs = {
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  order: ElementOrderType;
+  resetTimeDays: Scalars['Int']['input'];
+  stacks: Array<ElementStackInput>;
+};
+
+
 export type MutationCreateSessionArgs = {
   blocks: Array<BlockInput>;
   courseId?: InputMaybe<Scalars['String']['input']>;
@@ -923,6 +943,19 @@ export type MutationEditMicroSessionArgs = {
   name: Scalars['String']['input'];
   questions: Array<Scalars['Int']['input']>;
   startDate: Scalars['Date']['input'];
+};
+
+
+export type MutationEditPracticeQuizArgs = {
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  id: Scalars['String']['input'];
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  order: ElementOrderType;
+  resetTimeDays: Scalars['Int']['input'];
+  stacks: Array<ElementStackInput>;
 };
 
 
@@ -1750,6 +1783,11 @@ export type StackElement = {
 export type StackElementInput = {
   mdContent?: InputMaybe<Scalars['String']['input']>;
   questionId?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type StackElementsInput = {
+  elementId: Scalars['Int']['input'];
+  order: Scalars['Int']['input'];
 };
 
 export type StackFeedback = {

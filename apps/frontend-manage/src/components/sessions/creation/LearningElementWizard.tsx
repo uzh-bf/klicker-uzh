@@ -61,7 +61,9 @@ function LearningElementWizard({
     multiplier: yup
       .string()
       .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
-    courseId: yup.string(),
+    courseId: yup
+      .string()
+      .required(t('manage.sessionForms.learningElementCourse')),
     order: yup.string(),
     resetTimeDays: yup
       .string()
@@ -414,7 +416,7 @@ function StepTwo(props: StepProps) {
           label={t('shared.generic.repetitionInterval')}
           tooltip={t('manage.sessionForms.learningElementRepetition')}
           className={{
-            root: 'w-20',
+            root: 'w-[100px]',
             tooltip: 'z-20',
           }}
           required
