@@ -54,8 +54,8 @@ describe('Question bookmarking and flagging workflow', () => {
 
     // step 3
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle2}"]`)
-      .contains(questionTitle2)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`)
+      .contains(questionTitle)
       .trigger('dragstart', {
         dataTransfer,
       })
@@ -148,46 +148,45 @@ describe('Question bookmarking and flagging workflow', () => {
       .type(Cypress.env('STUDENT_PASSWORD'))
     cy.get('[data-cy="submit-login"]').click()
 
-    // bookmark the question in the microlearning
-    // TODO - implement bookmarking once this is available for microlearnings
+    // test flagging for microlearnings
     cy.get(`[data-cy="microlearning-${microlearningName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="flag-question-button"]').click()
-    cy.get('[data-cy="submit-flag-question"').should('be.disabled')
+    cy.get('[data-cy="flag-element-button"]').click()
+    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
     cy.get('[data-cy="flag-question-textarea"').type(
       `Test flagging quesiton on microlearning ${microlearningName}`
     )
     // TODO - actually submit the flagging once adding notification emails is available
-    cy.get('[data-cy="submit-flag-question"]').should('not.be.disabled')
-    cy.get('[data-cy="cancel-flag-question"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
+    cy.get('[data-cy="cancel-flag-element"]').click()
     cy.get(':nth-child(1) > [data-cy="choice-option"]').click()
     cy.get('[data-cy="send-answer"]').click()
     cy.wait(1000)
     cy.get('[data-cy="send-answer"]').click()
     cy.get('[data-cy="finish-microlearning"]').click()
 
-    // bookmark the question in the practice quiz
+    // test bookmarking and flagging for microlearnings
     cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${quizName}"]`).click()
     cy.get('[data-cy="start-practice-quiz"]').click()
-    cy.get('[data-cy="practice-quiz-bookmark"]').click()
-    cy.get('[data-cy="flag-question-button"]').click()
-    cy.get('[data-cy="submit-flag-question"').should('be.disabled')
+    cy.get('[data-cy="bookmark-element-stack"]').click()
+    cy.get('[data-cy="flag-element-button"]').click()
+    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
     cy.get('[data-cy="flag-question-textarea"').type(
       `Test flagging quesiton on practice quiz ${quizName}`
     )
     // TODO - actually submit the flagging once adding notification emails is available
-    cy.get('[data-cy="submit-flag-question"]').should('not.be.disabled')
-    cy.get('[data-cy="cancel-flag-question"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
+    cy.get('[data-cy="cancel-flag-element"]').click()
 
     // open the bookmarks of the test course and check if the marked questions appear
     cy.get('[data-cy="header-home"]').click()
     cy.get('[data-cy="bookmarks"]').click()
     cy.get(`[data-cy="bookmarks-course-${courseName}"]`).click()
+    cy.findByText('Number of questions: 1').should('exist')
     cy.get('[data-cy="start-practice-quiz"]').click()
-    cy.get('[data-cy="question-stack-question-content"]').should('exist')
-    cy.get('[data-cy="question-stack-question-content"]').contains(
-      'Question to be bookmarked'
+    cy.get(`[data-cy="element-instance-header-${questionTitle}"]`).should(
+      'exist'
     )
   })
 })

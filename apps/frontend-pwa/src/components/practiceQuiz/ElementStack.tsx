@@ -143,7 +143,11 @@ function ElementStack({
 
         {stack.description && (
           <div className="mb-4">
-            <DynamicMarkdown content={stack.description} withProse />
+            <DynamicMarkdown
+              content={stack.description}
+              data={{ cy: 'element-stack-description' }}
+              withProse
+            />
           </div>
         )}
 
