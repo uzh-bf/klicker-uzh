@@ -53,5 +53,5 @@
       "limit": "10 KB"
     }
   ],
-  "type": "module"
+  "//type": "module"
 }

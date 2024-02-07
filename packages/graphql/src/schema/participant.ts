@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
+import { levelFromXp } from '@klicker-uzh/util/dist/pure'
 import builder from '../builder'
-import { levelFromXp } from '../lib/util'
 import {
   AchievementRef,
   IAchievement,

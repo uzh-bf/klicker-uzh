@@ -5,10 +5,11 @@ import {
   LearningElementStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
+import { levelFromXp } from '@klicker-uzh/util/dist/pure'
 import * as R from 'ramda'
 import { GroupLeaderboardEntry } from 'src/ops'
 import { Context, ContextWithUser } from '../lib/context'
-import { levelFromXp, orderStacks } from '../lib/util'
+import { orderStacks } from '../lib/util'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
