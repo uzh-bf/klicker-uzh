@@ -1,4 +1,8 @@
-import { processElementData, processQuestionData } from '@klicker-uzh/util'
+import {
+  getInitialElementResults,
+  processElementData,
+  processQuestionData,
+} from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
 import path from 'path'
