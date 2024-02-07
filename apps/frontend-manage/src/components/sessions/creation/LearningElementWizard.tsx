@@ -276,44 +276,57 @@ function StepOne(_: StepProps) {
   const t = useTranslations()
 
   return (
-    <>
-      <div className="flex flex-col w-full gap-4 md:flex-row">
-        <FormikTextField
-          required
-          autoComplete="off"
-          name="name"
-          label={t('manage.sessionForms.name')}
-          tooltip={t('manage.sessionForms.learningElementName')}
-          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-practice-quiz-name"
-        />
-        <FormikTextField
-          required
-          autoComplete="off"
-          name="displayName"
-          label={t('manage.sessionForms.displayName')}
-          tooltip={t('manage.sessionForms.displayNameTooltip')}
-          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-practice-quiz-display-name"
-        />
-      </div>
+    <div className="flex flex-row gap-6">
+      <div className="flex-1">
+        <div className="flex flex-col w-full gap-4 md:flex-row">
+          <FormikTextField
+            required
+            autoComplete="off"
+            name="name"
+            label={t('manage.sessionForms.name')}
+            tooltip={t('manage.sessionForms.learningElementName')}
+            className={{
+              root: 'mb-2 w-full md:w-1/2',
+              tooltip: 'z-20',
+              label: 'w-36',
+            }}
+            data-cy="insert-practice-quiz-name"
+          />
+          <FormikTextField
+            required
+            autoComplete="off"
+            name="displayName"
+            label={t('manage.sessionForms.displayName')}
+            tooltip={t('manage.sessionForms.displayNameTooltip')}
+            className={{
+              root: 'mb-2 w-full md:w-1/2',
+              tooltip: 'z-20',
+              label: 'w-36',
+            }}
+            data-cy="insert-practice-quiz-display-name"
+          />
+        </div>
 
-      <EditorField
-        label={t('shared.generic.description')}
-        tooltip={t('manage.sessionForms.learningElementDescField')}
-        fieldName="description"
-        data_cy="insert-practice-quiz-description"
-        showToolbarOnFocus={false}
-      />
-
-      <div className="w-full text-right">
-        <ErrorMessage
-          name="description"
-          component="div"
-          className="text-sm text-red-400"
+        <EditorField
+          label={t('shared.generic.description')}
+          tooltip={t('manage.sessionForms.learningElementDescField')}
+          fieldName="description"
+          data_cy="insert-practice-quiz-description"
+          showToolbarOnFocus={false}
         />
+
+        <div className="w-full text-right">
+          <ErrorMessage
+            name="description"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
       </div>
-    </>
+      <div className="hidden md:block flex-initial w-[350px] border bg-slate-50 p-4 rounded prose prose-sm">
+        Practice Quizzes allow you to... mini use case
+      </div>
+    </div>
   )
 }
 

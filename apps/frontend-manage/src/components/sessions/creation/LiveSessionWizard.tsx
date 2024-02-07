@@ -329,43 +329,56 @@ function StepOne(_: StepProps) {
   const t = useTranslations()
 
   return (
-    <>
-      <div className="flex flex-col gap-4 md:flex-row">
-        <FormikTextField
-          required
-          autoComplete="off"
-          name="name"
-          label={t('manage.sessionForms.name')}
-          tooltip={t('manage.sessionForms.liveSessionName')}
-          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-live-quiz-name"
-          shouldValidate={() => true}
+    <div className="flex flex-row gap-6">
+      <div className="flex-1">
+        <div className="flex flex-col gap-4 md:flex-row">
+          <FormikTextField
+            required
+            autoComplete="off"
+            name="name"
+            label={t('manage.sessionForms.name')}
+            tooltip={t('manage.sessionForms.liveSessionName')}
+            className={{
+              root: 'mb-2 w-full md:w-1/2',
+              tooltip: 'z-20',
+              label: 'w-36',
+            }}
+            data-cy="insert-live-quiz-name"
+            shouldValidate={() => true}
+          />
+          <FormikTextField
+            required
+            autoComplete="off"
+            name="displayName"
+            label={t('manage.sessionForms.displayName')}
+            tooltip={t('manage.sessionForms.displayNameTooltip')}
+            className={{
+              root: 'mb-2 w-full md:w-1/2',
+              tooltip: 'z-20',
+              label: 'w-36',
+            }}
+            data-cy="insert-live-display-name"
+          />
+        </div>
+        <EditorField
+          // key={fieldName.value}
+          label={t('shared.generic.description')}
+          tooltip={t('manage.sessionForms.liveSessionDescField')}
+          fieldName="description"
+          showToolbarOnFocus={false}
         />
-        <FormikTextField
-          required
-          autoComplete="off"
-          name="displayName"
-          label={t('manage.sessionForms.displayName')}
-          tooltip={t('manage.sessionForms.displayNameTooltip')}
-          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-live-display-name"
-        />
+        <div className="w-full text-right">
+          <ErrorMessage
+            name="description"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
       </div>
-      <EditorField
-        // key={fieldName.value}
-        label={t('shared.generic.description')}
-        tooltip={t('manage.sessionForms.liveSessionDescField')}
-        fieldName="description"
-        showToolbarOnFocus={false}
-      />
-      <div className="w-full text-right">
-        <ErrorMessage
-          name="description"
-          component="div"
-          className="text-sm text-red-400"
-        />
+      <div className="hidden md:block flex-initial w-[350px] border bg-slate-50 p-4 rounded prose prose-sm">
+        Live Quizzes allow you to... mini use case
       </div>
-    </>
+    </div>
   )
 }
 
