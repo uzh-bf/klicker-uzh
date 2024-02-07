@@ -1,8 +1,6 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
-  "include": [
-    "src",
-  ],
+  "include": ["src"],
   "compilerOptions": {
     "baseUrl": "."
   },
@@ -11,7 +9,7 @@
     "moduleTypes": {
       "src/seed/*": "esm",
       "src/data/*": "esm",
-      "src/scripts/*": "esm",
+      "src/scripts/*": "esm"
     }
   }
 }
