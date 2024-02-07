@@ -13,6 +13,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementInstanceType,
   MicroSession,
   MicroSessionStatus,
   UnpublishMicroSessionDocument,
@@ -203,7 +204,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         {t('manage.course.linkMicroSessionCopied')}
       </Toast>
       <PublishConfirmationModal
-        elementType="MICRO_SESSION"
+        elementType={ElementInstanceType.Microlearning}
         elementId={microSession.id}
         title={microSession.name}
         open={publishModal}

@@ -2148,7 +2148,7 @@ export async function deleteSession(
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === 'P2025') {
       console.log(
-        'The learning element is not in draft status and cannot be deleted.'
+        'The practice quiz is not in draft status and cannot be deleted.'
       )
       return null
     }

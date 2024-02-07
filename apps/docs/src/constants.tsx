@@ -1572,10 +1572,10 @@ export const USE_CASES = {
             students participated, on average, in a more extensive range of the
             different features offered, such as the microlearning and mock exam,
             and achieved higher scores in them. More than a quarter of all
-            learning element question entries stem from this pool of 5% of
-            users; they were more than five times as active as their average
-            peer and consistently scored high points not only in the leaderboard
-            but also in the mock exam.
+            practice quiz question entries stem from this pool of 5% of users;
+            they were more than five times as active as their average peer and
+            consistently scored high points not only in the leaderboard but also
+            in the mock exam.
           </li>
           <li>
             Link to performance in the mock exam: The most significant positive

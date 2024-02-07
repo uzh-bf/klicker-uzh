@@ -19,7 +19,7 @@ async function seed(prisma: Prisma.PrismaClient) {
 
   const uniqueQuestionIds = new Set<number>()
 
-  // get all learning elements and micro sessions of the course
+  // get all practice quizzes and microlearnings of the course
   const learningElements = await prisma.learningElement.findMany({
     where: {
       courseId: COURSE_ID,
@@ -48,7 +48,7 @@ async function seed(prisma: Prisma.PrismaClient) {
     },
   })
 
-  // go through learning elements and micro sessions and add all used questions to the repetition pool
+  // go through practice quizzes and microlearnings and add all used questions to the repetition pool
   learningElements.forEach((learningElement) => {
     learningElement.stacks.forEach((stack) => {
       stack.elements.forEach((element) => {
@@ -72,7 +72,7 @@ async function seed(prisma: Prisma.PrismaClient) {
 
   console.log(uniqueQuestionIds)
 
-  // create a new learning element based on the set of unique question ids
+  // create a new practice quiz based on the set of unique question ids
   await prisma.learningElement.upsert(
     await prepareLearningElement({
       id: 'c8866eb2-a41c-4029-b386-30d57941f00c',

@@ -424,7 +424,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points10Multiplier).toEqual(15)
   })
 
-  it('should compute the awarded points correctly for learning elements and micro sessions', () => {
+  it('should compute the awarded points correctly for practice quizzes and microlearnings', () => {
     const points = computeSimpleAwardedPoints({
       points: 10,
       pointsPercentage: 1,

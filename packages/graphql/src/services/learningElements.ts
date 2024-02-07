@@ -36,7 +36,7 @@ import {
   QuestionResponseChoices,
 } from '../types/app'
 
-// TODO: delete entire file, once learning elements have been replaced through practice quiz
+// TODO: delete entire file, once practice quizzes have been replaced through practice quiz
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
@@ -851,10 +851,10 @@ export async function manipulateLearningElement(
     })
 
     if (!oldElement) {
-      throw new GraphQLError('Learning element not found')
+      throw new GraphQLError('Practice quiz not found')
     }
     if (oldElement.status === LearningElementStatus.PUBLISHED) {
-      throw new GraphQLError('Cannot edit a published learning element')
+      throw new GraphQLError('Cannot edit a published practice quiz')
     }
 
     const oldQuestionInstances = oldElement.stacks.reduce<QuestionInstance[]>(

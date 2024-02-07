@@ -262,7 +262,7 @@ export async function editMicroSession(
   }: EditMicroSessionArgs,
   ctx: ContextWithUser
 ) {
-  // find all instances belonging to the old micro session and delete them as the content of the questions might have changed
+  // find all instances belonging to the old microlearnings and delete them as the content of the questions might have changed
   const oldSession = await ctx.prisma.microSession.findUnique({
     where: {
       id,
@@ -274,10 +274,10 @@ export async function editMicroSession(
   })
 
   if (!oldSession) {
-    throw new GraphQLError('Micro-Session not found')
+    throw new GraphQLError('Microlearning not found')
   }
   if (oldSession.status === MicroSessionStatus.PUBLISHED) {
-    throw new GraphQLError('Micro-Session is already published')
+    throw new GraphQLError('Microlearning is already published')
   }
 
   await ctx.prisma.questionInstance.deleteMany({

@@ -8,11 +8,11 @@ describe('Different microlearning workflows', () => {
   // get current year
   const currentYear = new Date().getFullYear()
 
-  it('creates and publishes a micro session that should be visible to students', () => {
+  it('creates and publishes a micro learning that should be visible to students', () => {
     const randomNumber = Math.round(Math.random() * 1000)
     const questionTitle = 'A Single Choice with solution' + randomNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const microSessionName = 'Test Micro-Session ' + randomNumber
+    const microSessionName = 'Test Microlearning ' + randomNumber
     const microSessionDisplayName = 'Displayed Name ' + randomNumber
     const description = 'This is the official descriptioin of ' + randomNumber
     const courseName = 'Testkurs'
@@ -140,11 +140,11 @@ describe('Different microlearning workflows', () => {
     cy.viewport('macbook-16')
   })
 
-  it('creates and publishes a future micro session that should not be visible to students and tests unpublishing it', () => {
+  it('creates and publishes a future micro learning that should not be visible to students and tests unpublishing it', () => {
     const randomNumber = Math.round(Math.random() * 1000)
     const questionTitle = 'A Single Choice with solution' + randomNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const microSessionName = 'Test Micro-Session ' + randomNumber
+    const microSessionName = 'Test Microlearning ' + randomNumber
     const microSessionDisplayName = 'Displayed Name ' + randomNumber
     const description = 'This is the official descriptioin of ' + randomNumber
     const courseName = 'Testkurs'
@@ -242,7 +242,7 @@ describe('Different microlearning workflows', () => {
       'not.exist'
     )
 
-    // switch back to the lecturer and unpublish the micro session
+    // switch back to the lecturer and unpublish the micro learning
     cy.clearAllCookies()
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -256,11 +256,11 @@ describe('Different microlearning workflows', () => {
     )
   })
 
-  it('creates and publishes a past micro session that should not be visible to students', () => {
+  it('creates and publishes a past micro learning that should not be visible to students', () => {
     const randomNumber = Math.round(Math.random() * 1000)
     const questionTitle = 'A Single Choice with solution' + randomNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const microSessionName = 'Test Micro-Session ' + randomNumber
+    const microSessionName = 'Test Microlearning ' + randomNumber
     const microSessionDisplayName = 'Displayed Name ' + randomNumber
     const description = 'This is the official descriptioin of ' + randomNumber
     const courseName = 'Testkurs'
@@ -359,11 +359,11 @@ describe('Different microlearning workflows', () => {
     )
   })
 
-  it('creates and edits a micro session, which should then be accessible by students', () => {
+  it('creates and edits a micro learning, which should then be accessible by students', () => {
     const randomNumber = Math.round(Math.random() * 1000)
     const questionTitle = 'A Single Choice with solution' + randomNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const microSessionName = 'Test Micro-Session ' + randomNumber
+    const microSessionName = 'Test Microlearning ' + randomNumber
     const microSessionDisplayName = 'Displayed Name ' + randomNumber
     const description = 'This is the official descriptioin of ' + randomNumber
     const courseName = 'Testkurs'
@@ -461,7 +461,7 @@ describe('Different microlearning workflows', () => {
       'not.exist'
     )
 
-    // switch back to the lecturer and unpublish the micro session
+    // switch back to the lecturer and unpublish the micro learning
     cy.clearAllCookies()
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -474,7 +474,7 @@ describe('Different microlearning workflows', () => {
       messages.shared.generic.draft
     )
 
-    // edit the micro session
+    // edit the micro learning
     cy.findByText(microSessionName)
     cy.get(`[data-cy="edit-microlearning-${microSessionName}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.microSessions).should(

@@ -19,7 +19,7 @@ const Development = () => {
           status: 'Released in v2.0 (HS21)',
         },
         {
-          content: 'Learning Elements & Microlearning',
+          content: 'Practice Quizzes & Microlearning',
           href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-0-concept-and-request-for-feedback/79',
           status: 'Released in v3.0 (HS23)',
         },
@@ -71,15 +71,15 @@ const Development = () => {
 
   return (
     <Layout>
-      <div className="m-auto max-w-6xl p-8">
-        <div className="mb-4 flex h-12 flex-row items-start justify-between">
+      <div className="max-w-6xl p-8 m-auto">
+        <div className="flex flex-row items-start justify-between h-12 mb-4">
           <div className="mb-8 text-3xl font-bold md:mb-0">
             Get Involved - P-8 "Digital Skills"
           </div>
           <div className="hidden h-full md:block">
             <img
               src="/img/logo_swissuniversities.png"
-              className="mr-8 h-full"
+              className="h-full mr-8"
             />
             <img src="/img/logo_uzh.jpeg" className="h-full" />
           </div>
@@ -99,12 +99,12 @@ const Development = () => {
             community
           </a>
           .
-          <div className="mt-4 block md:hidden">
-            <img src="/img/logo_swissuniversities.png" className="mr-2 h-12" />
+          <div className="block mt-4 md:hidden">
+            <img src="/img/logo_swissuniversities.png" className="h-12 mr-2" />
             <img src="/img/logo_uzh.jpeg" className="h-12" />
           </div>
         </div>
-        <div className="mb-16 grid w-full grid-cols-1 justify-between gap-4 md:grid-cols-3 lg:gap-4">
+        <div className="grid justify-between w-full grid-cols-1 gap-4 mb-16 md:grid-cols-3 lg:gap-4">
           {tileContent.map((tile: any) => (
             <RoadmapTile
               title={tile.title}
@@ -118,7 +118,7 @@ const Development = () => {
         <div>
           <div className="mb-4 text-3xl font-bold">Public Roadmap</div>
           <iframe
-            className="overflow-hidden rounded border border-solid border-gray-300"
+            className="overflow-hidden border border-gray-300 border-solid rounded"
             src="https://klicker-uzh.feedbear.com/roadmap?embed=true"
             width="100%"
             height="900px"
