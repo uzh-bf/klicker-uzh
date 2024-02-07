@@ -32,7 +32,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   if (global.__coverage__) {
     try {
       require('@cypress/code-coverage/middleware/express')(app)
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   app.use(
@@ -70,16 +72,16 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
                 process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
               )
             ) {
-              return (
-                req.cookies['participant_token'] ||
-                req.cookies['next-auth.session-token']
-              )
+              return req.cookies['participant_token']
+              // TODO: use below to fix preview mode
+              // req.cookies['participant_token'] ||
+              // req.cookies['next-auth.session-token']
             }
 
-            return (
-              req.cookies['participant_token'] ||
-              req.cookies['next-auth.session-token']
-            )
+            return req.cookies['participant_token']
+            // TODO: use below to fix preview mode
+            // req.cookies['participant_token'] ||
+            // req.cookies['next-auth.session-token']
           }
 
           return null

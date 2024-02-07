@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { faPlayCircle, faUserCircle } from '@fortawesome/free-regular-svg-icons'
+import {
+  faPlayCircle,
+  faQuestionCircle,
+  faUserCircle,
+} from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetUserRunningSessionsDocument,
@@ -8,7 +12,9 @@ import {
 import { Navigation } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SupportModal from './SupportModal'
 
 interface HeaderProps {
   user?: User | null
@@ -17,6 +23,7 @@ interface HeaderProps {
 function Header({ user }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
+  const [showSupportModal, setShowSupportModal] = useState(false)
 
   const { data } = useQuery(GetUserRunningSessionsDocument)
 
@@ -89,7 +96,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
             }
             dropdownWidth="w-[12rem]"
             className={{
-              root: 'h-10 w-10 group',
+              root: 'h-10 w-2 group',
               icon: twMerge(
                 'text-uzh-grey-80',
                 data?.userRunningSessions?.length !== 0 && 'text-green-600'
@@ -118,6 +125,14 @@ function Header({ user }: HeaderProps): React.ReactElement {
             )}
           </Navigation.TriggerItem>
         </div>
+        <Navigation.ButtonItem
+          onClick={() => setShowSupportModal(true)}
+          label=""
+          icon={<FontAwesomeIcon icon={faQuestionCircle} className="h-7" />}
+          className={{
+            root: 'hidden md:block h-7 sm:group-hover:text-white bg-transparent hover:bg-transparent text-white hover:text-uzh-blue-40 -mt-1',
+          }}
+        />
         <Navigation.TriggerItem
           icon={<FontAwesomeIcon icon={faUserCircle} className="h-5" />}
           label={user?.shortname}
@@ -130,11 +145,6 @@ function Header({ user }: HeaderProps): React.ReactElement {
           }}
           data={{ cy: 'user-menu' }}
         >
-          {/* <Navigation.DropdownItem
-            title="Support"
-            onClick={() => router.push("/support")}
-            className={{ title: 'text-base font-bold', root: 'p-2' }}
-          /> */}
           <Navigation.DropdownItem
             title={t('shared.generic.settings')}
             onClick={() => router.push('/user/settings')}
@@ -157,6 +167,11 @@ function Header({ user }: HeaderProps): React.ReactElement {
           />
         </Navigation.TriggerItem>
       </Navigation>
+      <SupportModal
+        open={showSupportModal}
+        setOpen={setShowSupportModal}
+        user={user}
+      />
     </div>
   )
 }

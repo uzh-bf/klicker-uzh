@@ -1,6 +1,6 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import LanguageChanger from '@klicker-uzh/shared-components/src/LanguageChanger'
-import { Button, Checkbox, H1 } from '@uzh-bf/design-system'
+import { Button, Checkbox, H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
@@ -9,60 +9,38 @@ import { useRouter } from 'next/router'
 
 import useStickyState from 'src/hooks/useStickyState'
 
-function PrivacyLink() {
-  const t = useTranslations()
-
-  return (
-    <a
-      className="underline text-blue-500 hover:text-red-500"
-      href={t('auth.privacyUrl')}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {t('auth.privacyPolicy')}
-    </a>
-  )
-}
-
-function ToSLink() {
-  const t = useTranslations()
-
-  return (
-    <a
-      className="underline text-blue-500 hover:text-red-500"
-      href={t('auth.tosUrl')}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {t('auth.termsOfService')}
-    </a>
-  )
-}
-
 function SignInOutButton() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { data: session } = useSession()
-
   const { value: tosChecked, setValue: setTosChecked } = useStickyState(
-    'tos-agreement',
+    'tos-agreement-2024',
     'false'
   )
+
+  const { data: session, status } = useSession()
+
+  if (status === 'loading') return null
 
   if (session) {
     return (
       <>
-        {t('auth.signedInAs', { username: session?.user?.email })}
+        <UserNotification
+          message={t('auth.signedInAs', { username: session?.user?.email })}
+          type="info"
+          className={{ root: '-mt-4' }}
+        />
         <br />{' '}
-        <Button onClick={() => signOut()}>{t('shared.generic.logout')}</Button>
+        <Button onClick={() => signOut()} data={{ cy: 'auth-logout-button' }}>
+          {t('shared.generic.logout')}
+        </Button>
       </>
     )
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="bg-slate-100 px-3 py-2 rounded border-slate-300 shadow">
+      <p className="px-3 py-2 rounded shadow bg-slate-100 border-slate-300">
         {t('auth.loginInfo')}
       </p>
       <Checkbox
@@ -70,17 +48,35 @@ function SignInOutButton() {
         label={
           <div className="text-sm">
             {t.rich('auth.tosAgreement', {
-              privacy: PrivacyLink,
-              tos: ToSLink,
+              privacy: () => (
+                <a
+                  className="text-blue-500 underline hover:text-red-500"
+                  href={t('auth.privacyUrl')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('auth.privacyPolicy')}
+                </a>
+              ),
+              tos: () => (
+                <a
+                  className="text-blue-500 underline hover:text-red-500"
+                  href={t('auth.tosUrl')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('auth.termsOfService')}
+                </a>
+              ),
             })}
           </div>
         }
-        onCheck={() => setTosChecked(!Boolean(tosChecked))}
+        onCheck={() => setTosChecked(!tosChecked)}
         checked={Boolean(tosChecked)}
       />
 
       <Button
-        disabled={!Boolean(tosChecked)}
+        disabled={!tosChecked}
         data={{ cy: 'eduid-login-button' }}
         className={{ root: 'p-4 disabled:opacity-50' }}
         onClick={() =>
@@ -104,7 +100,7 @@ function SignInOutButton() {
         className={{
           root: 'disabled:opacity-50 justify-center italic',
         }}
-        disabled={!Boolean(tosChecked)}
+        disabled={!tosChecked}
         data={{ cy: 'delegated-login-button' }}
         onClick={() =>
           signIn('delegation', {
@@ -126,8 +122,8 @@ export function Index() {
 
   return (
     <div className="m-auto flex w-full md:max-w-2xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
-      <div className="flex flex-1 flex-col items-center justify-center gap-8 md:p-8">
-        <div className="w-full px-5 sm:px-8 border-b pb-4 text-center">
+      <div className="flex flex-col items-center justify-center flex-1 gap-8 md:p-8">
+        <div className="w-full px-5 pb-4 text-center border-b sm:px-8">
           <Image
             src="/KlickerLogo.png"
             width={300}
@@ -137,7 +133,7 @@ export function Index() {
             data-cy="login-logo"
           />
         </div>
-        <div className="w-full px-6 sm:px-10 md:mx-0 flex flex-row justify-between">
+        <div className="flex flex-row justify-between w-full px-6 sm:px-10 md:mx-0">
           <H1 className={{ root: 'mb-0' }}>{t('auth.authentication')}</H1>
           <div>
             <LanguageChanger
@@ -155,7 +151,7 @@ export function Index() {
           <SignInOutButton />
         </div>
       </div>
-      <div className="w-full flex-none">
+      <div className="flex-none w-full">
         <Footer className="!text-xs" />
       </div>
     </div>

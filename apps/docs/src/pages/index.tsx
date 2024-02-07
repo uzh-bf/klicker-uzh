@@ -36,6 +36,7 @@ function TitleImage() {
                     </a>
                   </div>
                 </div>
+
                 <img className="w-80 -ml-2" src="/img/KlickerLogo.png" />
                 <p className="mt-6 text-2xl leading-8 text-gray-600">
                   Enhance your classroom experience.
@@ -58,37 +59,15 @@ function TitleImage() {
                   </a>
                 </div>
                 <div className="border border-solid rounded-md px-3 py-2 mt-4 bg-slate-100 border-slate-200 shadow">
-                  <div>
-                    This website contains information on KlickerUZH v3.0 only.
-                    For KlickerUZH v2.0, please refer to the corresponding{' '}
-                    <a
-                      href="/v2/home"
-                      className="font-semibold leading-6 text-gray-900"
-                      target="_blank"
-                    >
-                      homepage
-                    </a>{' '}
-                    and{' '}
-                    <a
-                      href="/v2/getting_started/welcome/"
-                      className="font-semibold leading-6 text-gray-900"
-                      target="_blank"
-                    >
-                      documentation
-                    </a>
-                    .
-                  </div>
-                  <div className="mt-4">
-                    To migrate to KlickerUZH v3.0, log-in and start the{' '}
-                    <a
-                      href="https://manage.klicker.uzh.ch/migration"
-                      className="font-semibold leading-6 text-gray-900"
-                      target="_blank"
-                    >
-                      migration process
-                    </a>
-                    .
-                  </div>
+                  We are now offering introductory courses through UZH Central
+                  IT. For more details see{' '}
+                  <a
+                    target="_blank"
+                    href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257"
+                  >
+                    the following page
+                  </a>
+                  .
                 </div>
               </div>
             </div>

@@ -70,7 +70,7 @@ function SessionBlock({
           <FontAwesomeIcon icon={ICON_MAP[block.status]} />
         </div>
         <div>{t('manage.cockpit.blockN', { number: block.order! + 1 })}</div>
-        {block.expiresAt && untilExpiration && untilExpiration !== -2 && (
+        {block.timeLimit && untilExpiration && untilExpiration !== -2 && (
           <CycleCountdown
             key={`${block.expiresAt}-${block.status}`}
             size="sm"
@@ -92,9 +92,13 @@ function SessionBlock({
             href={`/questions/${instance.questionData.questionId}`}
             className="text-sm sm:hover:text-slate-700"
             target="_blank"
+            legacyBehavior
+            passHref
           >
-            {instance.questionData.name}{' '}
-            <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
+            <a data-cy={`open-embedding-link-session-${instance.id}`}>
+              {instance.questionData.name}{' '}
+              <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
+            </a>
           </Link>
         </div>
       ))}

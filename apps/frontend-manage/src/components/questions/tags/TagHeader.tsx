@@ -20,6 +20,7 @@ function TagHeader({ text, state, setState }: TagHeaderProps) {
           'font-bold border-b border-solid border-gray-300 text-[1.05rem] text-neutral-500'
         ),
       }}
+      data={{ cy: `collapse-tag-header-${text}` }}
     >
       <div>{text}</div>
       <FontAwesomeIcon icon={state ? faChevronUp : faChevronDown} />

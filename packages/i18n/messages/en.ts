@@ -187,7 +187,7 @@ export default {
         'No points have been collected in this quiz so far. As soon as this changes, podium and leaderboard will be displayed here.',
     },
     error: {
-      404: '404 Page not found',
+      '404': '404 Page not found',
       pwaWithoutUser:
         'Sorry, the page you requested does not exist. You can <login>sign in</login> to see an overview of all KlickerUZH elements your courses offer.',
       pwaWithUser:
@@ -199,7 +199,7 @@ export default {
   auth: {
     authentication: 'Authentication',
     delegatedAccess: 'Delegated Access',
-    signedInAs: 'Signed in as {username}',
+    signedInAs: 'You are already logged in as {username}',
     tosAgreement:
       'I consent to the KlickerUZH <tos></tos> and <privacy></privacy>.',
     termsOfService: 'Terms of Service',
@@ -622,6 +622,39 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sortBy: 'Sort by...',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
+    },
+    support: {
+      modalTitle: 'Support KlickerUZH',
+      yourFeedback: 'Your Feedback',
+      feedbackText:
+        'Do you have any feedback for us? Are you experiencing issues when using the KlickerUZH? Please provide us with your feedback so we can continue to improve the KlickerUZH for you.',
+      featureRequest: 'Feature Request',
+      featureRequestDesc: 'I would like to request a new feature.',
+      bugReport: 'Bug Report',
+      bugReportDesc: 'I would like to report a bug or issue.',
+      selfHosting: 'Self-Hosting',
+      selfHostingDesc: 'I have problems when self-hosting the KlickerUZH.',
+      furtherResources: 'Further Resources',
+      documentationDesc: 'Tutorials, feature documentation, and release notes',
+      faq: 'FAQ',
+      faqDesc: 'Frequently asked questions',
+      connect: 'Connect with Us',
+      community: 'Community',
+      communityDesc:
+        'A place for discussions and questions regarding the KlickerUZH',
+      email: 'E-Mail',
+      emailDesc: 'Contact us at klicker@bf.uzh.ch',
+      aboutProject: 'About the Project',
+      projectUpdates: 'Project Updates',
+      projectUpdatesDesc:
+        'Regular updates regarding the progress of our project',
+      roadmap: 'Roadmap',
+      roadmapDesc: 'Our current priorities and plans for the future',
+      releaseNotes: 'Release Notes',
+      releaseNotesDesc: 'Overview of changes in our latest releases',
+      openSource: 'Open-Source',
+      githubRepository: 'GitHub Repository',
+      githubRepositoryDesc: 'Source code of the open-source project',
     },
     login: {
       lecturerLogin: 'Login Lecturers',

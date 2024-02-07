@@ -11,6 +11,8 @@ import { Provider } from 'next-auth/providers/index'
 
 import prisma from 'src/lib/prisma'
 
+export const COOKIE_NAME = 'next-auth.session-token'
+
 interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
   swissEduIDLinkedAffiliation?: string[]
@@ -148,6 +150,7 @@ const CredentialProvider: Provider = CredentialsProvider({
           id: user.id,
           email: user.email,
           role: user.role,
+          shortname: user.shortname,
           scope: login.scope,
           catalystInstitutional: user.catalystInstitutional,
           catalystIndividual: user.catalystIndividual,
@@ -178,6 +181,16 @@ export const authOptions: NextAuthOptions = {
   },
 
   cookies: {
+    // csrfToken: {
+    //   name: 'next-auth.csrf-token',
+    //   options: {
+    //     domain: process.env.COOKIE_DOMAIN,
+    //     // path: '/',
+    //     // httpOnly: true,
+    //     // sameSite: 'lax',
+    //     // secure: process.env.NODE_ENV === 'production',
+    //   },
+    // },
     sessionToken: {
       name: 'next-auth.session-token',
       options: {
@@ -228,29 +241,38 @@ export const authOptions: NextAuthOptions = {
       return true
     },
 
-    async jwt({ token, user, account, profile }) {
-      token.role = UserRole.USER
+    async jwt({ token, user, account, profile, trigger }) {
+      if (typeof user !== 'undefined') {
+        token.shortname = user.shortname
 
-      if (typeof profile?.swissEduPersonUniqueID === 'string') {
-        token.scope = UserLoginScope.ACCOUNT_OWNER
-      } else {
-        token.scope = (user as any).scope as UserLoginScope
+        if (typeof profile?.swissEduPersonUniqueID === 'string') {
+          token.scope = UserLoginScope.ACCOUNT_OWNER
+        } else {
+          token.scope = (user as any).scope as UserLoginScope
+        }
+
+        token.catalystInstitutional = user.catalystInstitutional
+        token.catalystIndividual = user.catalystIndividual
+
+        token.role = UserRole.USER
       }
-
-      token.catalystInstitutional = user.catalystInstitutional
-      token.catalystIndividual = user.catalystIndividual
 
       return token
     },
     async redirect({ url, baseUrl }) {
       // allows relative callback URLs
-      if (url.startsWith('/')) return `${baseUrl}${url}`
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+
       // allows callback URLs that end with valid klicker domains
-      else if (
+      if (
         url.includes(process.env.COOKIE_DOMAIN as string) ||
         url.includes('127.0.0.1')
-      )
+      ) {
         return url
+      }
+
       // return the homepage for all other URLs
       return baseUrl
     },

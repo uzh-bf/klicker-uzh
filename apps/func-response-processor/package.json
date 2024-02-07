@@ -1,14 +1,14 @@
 {
   "private": true,
   "name": "@klicker-uzh/func-response-processor",
-  "version": "3.1.0-beta.20",
+  "version": "3.1.0-beta.26",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
     "dist/"
   ],
   "dependencies": {
-    "@azure/functions": "4.0.0",
+    "@azure/functions": "4.1.0",
     "@klicker-uzh/grading": "workspace:*",
     "@sentry/node": "7.52.1",
     "ioredis": "5.3.2",
@@ -23,8 +23,8 @@
     "@types/md5": "2.3.2",
     "@types/node": "^18.17.4",
     "@types/ramda": "^0.29.3",
-    "@uzh-bf/design-system": "2.4.6",
-    "azure-functions-core-tools": "4.0.5390",
+    "@uzh-bf/design-system": "2.4.7",
+    "azure-functions-core-tools": "4.0.5455",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
     "eslint": "8.45.0",

@@ -83,6 +83,19 @@ Cypress.Commands.add(
   })
 )
 
+Cypress.Commands.add('loginStudent', () => {
+  cy.clearAllCookies()
+  cy.visit(Cypress.env('URL_STUDENT'))
+  cy.get('[data-cy="username-field"]')
+    .click()
+    .type(Cypress.env('STUDENT_USERNAME'))
+  cy.get('[data-cy="password-field"]')
+    .click()
+    .type(Cypress.env('STUDENT_PASSWORD'))
+  cy.get('[data-cy="submit-login"]').click()
+  cy.wait(1000)
+})
+
 //
 // -- This is a child command --
 // Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
@@ -102,6 +115,7 @@ declare global {
       loginFreeUser(): Chainable<void>
       loginIndividualCatalyst(): Chainable<void>
       loginInstitutionalCatalyst(): Chainable<void>
+      loginStudent(): Chainable<void>
       // drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
       // visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>

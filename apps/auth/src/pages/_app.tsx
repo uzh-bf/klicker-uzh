@@ -26,7 +26,6 @@ export default function App({
           <Component {...pageProps} />
         </SessionProvider>
       </NextIntlClientProvider>
-
       <style jsx global>{`
         :root {
           --source-sans-pro: ${sourceSansPro.variable};

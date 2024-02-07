@@ -1,6 +1,6 @@
 import { LeaderboardType } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
-import { pickRandom, round } from 'mathjs'
+import { pickRandom } from 'mathjs'
 import * as R from 'ramda'
 import { Context, ContextWithUser } from '../lib/context'
 import { shuffle } from '../lib/util'
@@ -258,7 +258,7 @@ export async function updateGroupAverageScores(ctx: Context) {
         // if it has not changed, exit early
         // if the group consists of only one participant, the member score should be zero
         const averageMemberScore =
-          aggregate.count > 1 ? round(aggregate.sum / aggregate.count, 2) : 0
+          aggregate.count > 1 ? Math.round(aggregate.sum / aggregate.count) : 0
 
         if (averageMemberScore === group.averageMemberScore)
           return Promise.resolve()

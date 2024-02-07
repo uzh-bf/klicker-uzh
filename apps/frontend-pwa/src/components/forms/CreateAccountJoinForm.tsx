@@ -69,6 +69,7 @@ function CreateAccountJoinForm() {
               type="submit"
               // TODO: improve state that field is disabled for invalid pins
               disabled={isSubmitting}
+              data={{ cy: 'signup-course' }}
             >
               {t('pwa.login.signup')}
             </Button>

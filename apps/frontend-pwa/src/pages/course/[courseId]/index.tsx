@@ -237,6 +237,7 @@ function CourseOverview({ courseId }: Props) {
                             fluid
                             className={{ root: 'bg-white' }}
                             onClick={() => joinCourse()}
+                            data={{ cy: 'student-course-join-leaderboard' }}
                           >
                             {t.rich('pwa.courses.joinLeaderboardCourse', {
                               name: course.displayName,
@@ -369,7 +370,7 @@ function CourseOverview({ courseId }: Props) {
                               <div>
                                 {award.participantGroup
                                   ? `🥳  ${award.participantGroup.name}  🥳`
-                                  : t('pwa.course.open')}
+                                  : t('pwa.courses.open')}
                               </div>
                             </div>
                             <div>{award.description}</div>
@@ -528,6 +529,7 @@ function CourseOverview({ courseId }: Props) {
                                       className={{
                                         root: 'gap-4 text-left text-sm',
                                       }}
+                                      data={{ cy: 'open-group-activity' }}
                                     >
                                       <Button.Icon>
                                         <FontAwesomeIcon
@@ -588,7 +590,12 @@ function CourseOverview({ courseId }: Props) {
                       name="groupName"
                       placeholder={t('pwa.courses.groupName')}
                     />
-                    <Button type="submit">{t('shared.generic.create')}</Button>
+                    <Button
+                      type="submit"
+                      data={{ cy: 'create-new-participant-group' }}
+                    >
+                      {t('shared.generic.create')}
+                    </Button>
                   </div>
                 </Form>
               </Formik>
@@ -621,7 +628,12 @@ function CourseOverview({ courseId }: Props) {
                       name="code"
                       placeholder={t('pwa.courses.code')}
                     />
-                    <Button type="submit">{t('shared.generic.join')}</Button>
+                    <Button
+                      type="submit"
+                      data={{ cy: 'join-participant-group' }}
+                    >
+                      {t('shared.generic.join')}
+                    </Button>
                   </div>
                 </Form>
               </Formik>
