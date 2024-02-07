@@ -1,10 +1,12 @@
 import { useQuery } from '@apollo/client'
 import {
+  GetBookmarksPracticeQuizDocument,
   PracticeQuiz as PracticeQuizType,
   SelfDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
+import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
@@ -34,6 +36,7 @@ function PracticeQuiz({
   handleNextElement,
   showResetLocalStorage = false,
 }: PracticeQuizProps) {
+  const router = useRouter()
   const currentStack = quiz.stacks?.[currentIx]
   const { data: dataParticipant } = useQuery(SelfDocument)
 
@@ -58,6 +61,14 @@ function PracticeQuiz({
       {}
     )
   )
+
+  const { data: bookmarksData } = useQuery(GetBookmarksPracticeQuizDocument, {
+    variables: {
+      courseId: router.query.courseId as string,
+      quizId: quiz.id === 'bookmarks' ? undefined : quiz.id,
+    },
+    skip: !router.query.courseId,
+  })
 
   return (
     <div className="flex-1">
@@ -114,6 +125,7 @@ function PracticeQuiz({
             }}
             handleNextElement={handleNextElement}
             withParticipant={!!dataParticipant?.self}
+            bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
           />
         )}
 

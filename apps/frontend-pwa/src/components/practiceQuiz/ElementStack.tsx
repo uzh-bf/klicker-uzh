@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
+import Bookmark from './Bookmark'
 import InstanceHeader from './InstanceHeader'
 import StudentElement, {
   ElementChoicesType,
@@ -34,6 +35,7 @@ interface ElementStackProps {
   }) => void
   handleNextElement: () => void
   withParticipant?: boolean
+  bookmarks?: number[] | null
 }
 
 function ElementStack({
@@ -45,6 +47,7 @@ function ElementStack({
   setStepStatus,
   handleNextElement,
   withParticipant = false,
+  bookmarks,
 }: ElementStackProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -124,39 +127,27 @@ function ElementStack({
       }, {} as StudentResponseType) || {}
 
     setStudentResponse(newStudentResponse)
-  }, [currentStep])
+  }, [currentStep, stack.elements])
 
   return (
     <div className="pb-12">
       <div className="w-full">
         <div className="flex flex-row items-center justify-between">
           {stack.displayName && <H2>{stack.displayName}</H2>}
-          {/* <div
-                className={twMerge(
-                  'flex flex-row gap-2',
-                  !data?.getBookmarksLearningElement && 'hidden'
-                )}
-              >
-                <div>Bookmark</div>
-                <Button basic onClick={() => bookmarkQuestion()}>
-                  {isBookmarked ? (
-                    <FontAwesomeIcon
-                      className="text-red-600 sm:hover:text-red-500"
-                      icon={faBookmarkFilled}
-                    />
-                  ) : (
-                    <FontAwesomeIcon
-                      className="sm:hover:text-red-400"
-                      icon={faBookmark}
-                    />
-                  )}
-                </Button>
-              </div> */}
+          <Bookmark
+            bookmarks={bookmarks}
+            quizId={parentId === 'bookmarks' ? undefined : parentId}
+            stackId={stack.id}
+          />
         </div>
 
         {stack.description && (
           <div className="mb-4">
-            <DynamicMarkdown content={stack.description} withProse />
+            <DynamicMarkdown
+              content={stack.description}
+              data={{ cy: 'element-stack-description' }}
+              withProse
+            />
           </div>
         )}
 

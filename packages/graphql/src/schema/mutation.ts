@@ -460,6 +460,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      bookmarkElementStack: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ['Int'],
+        args: {
+          courseId: t.arg.string({ required: true }),
+          stackId: t.arg.int({ required: true }),
+          bookmarked: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.bookmarkElementStack(args, ctx)
+        },
+      }),
+
       flagQuestion: t.withAuth(asParticipant).string({
         nullable: true,
         args: {

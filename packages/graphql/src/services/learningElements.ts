@@ -1010,11 +1010,13 @@ export async function manipulateLearningElement(
   return element
 }
 
+// TODO: remove this after migration to practice quiz
 interface GetBookMarksLearningElement {
   elementId: string
   courseId: string
 }
 
+// TODO: remove this function after migration to practice quiz
 export async function getBookmarksLearningElement(
   { elementId, courseId }: GetBookMarksLearningElement,
   ctx: Context
