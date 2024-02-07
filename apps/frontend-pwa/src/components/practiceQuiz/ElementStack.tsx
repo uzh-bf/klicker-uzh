@@ -125,7 +125,7 @@ function ElementStack({
       }, {} as StudentResponseType) || {}
 
     setStudentResponse(newStudentResponse)
-  }, [currentStep])
+  }, [currentStep, stack.elements])
 
   return (
     <div className="pb-12">
