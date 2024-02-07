@@ -69,11 +69,8 @@ function LearningElementWizard({
     order: yup.string(),
     resetTimeDays: yup
       .string()
-      .required(t('manage.sessionForms.learningElementResetDays'))
-      .matches(
-        /^[0-9]+$/,
-        t('manage.sessionForms.learningElementValidResetDays')
-      ),
+      .required(t('manage.sessionForms.practiceQuizResetDays'))
+      .matches(/^[0-9]+$/, t('manage.sessionForms.practiceQuizValidResetDays')),
   })
 
   const stepThreeValidationSchema = yup.object().shape({
@@ -94,11 +91,11 @@ function LearningElementWizard({
                 ElementType.Flashcard,
                 ElementType.Content,
               ],
-              t('manage.sessionForms.learningElementTypes')
+              t('manage.sessionForms.practiceQuizElementTypes')
             ),
           hasSampleSolution: yup
             .boolean()
-            .isTrue(t('manage.sessionForms.learningElementSolutionReq')),
+            .isTrue(t('manage.sessionForms.practiceQuizSolutionReq')),
           // hasAnswerFeedbacks: yup.boolean().when('type', {
           //   is: (type) => ['SC', 'MC', 'KPRIM'].includes(type),
           //   then: yup.boolean().isTrue(),
@@ -183,11 +180,11 @@ function LearningElementWizard({
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
-              ? t.rich('manage.sessionForms.learningElementUpdated', {
+              ? t.rich('manage.sessionForms.practiceQuizUpdated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })
-              : t.rich('manage.sessionForms.learningElementCreated', {
+              : t.rich('manage.sessionForms.practiceQuizCreated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })}
@@ -227,16 +224,16 @@ function LearningElementWizard({
         workflowItems={[
           {
             title: t('shared.generic.description'),
-            tooltip: t('manage.sessionForms.learningElementDescription'),
+            tooltip: t('manage.sessionForms.practiceQuizDescription'),
           },
           {
             title: t('shared.generic.settings'),
-            tooltip: t('manage.sessionForms.learningElementSettings'),
+            tooltip: t('manage.sessionForms.practiceQuizSettings'),
             tooltipDisabled: t('manage.sessionForms.checkValues'),
           },
           {
             title: t('shared.generic.questions'),
-            tooltip: t('manage.sessionForms.learningElementContent'),
+            tooltip: t('manage.sessionForms.practiceQuizContent'),
             tooltipDisabled: t('manage.sessionForms.checkValues'),
           },
         ]}
@@ -250,8 +247,8 @@ function LearningElementWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? t('manage.sessionForms.learningElementEditingFailed')
-            : t('manage.sessionForms.learningElementCreationFailed')
+            ? t('manage.sessionForms.practiceQuizEditingFailed')
+            : t('manage.sessionForms.practiceQuizCreationFailed')
         }
       />
     </div>
@@ -282,7 +279,7 @@ function StepOne(_: StepProps) {
             autoComplete="off"
             name="name"
             label={t('manage.sessionForms.name')}
-            tooltip={t('manage.sessionForms.learningElementName')}
+            tooltip={t('manage.sessionForms.practiceQuizName')}
             className={{
               root: 'mb-2 w-full md:w-1/2',
               tooltip: 'z-20',
@@ -307,7 +304,7 @@ function StepOne(_: StepProps) {
 
         <EditorField
           label={t('shared.generic.description')}
-          tooltip={t('manage.sessionForms.learningElementDescField')}
+          tooltip={t('manage.sessionForms.practiceQuizDescField')}
           fieldName="description"
           data_cy="insert-practice-quiz-description"
           showToolbarOnFocus={false}
@@ -359,7 +356,7 @@ function StepTwo(props: StepProps) {
             }) || [{ label: '', value: '' }]
           }
           required
-          tooltip={t('manage.sessionForms.learningElementSelectCourse')}
+          tooltip={t('manage.sessionForms.practiceQuizSelectCourse')}
           label={t('shared.generic.course')}
           data={{ cy: 'select-course' }}
           className={{ tooltip: 'z-20' }}
@@ -375,7 +372,7 @@ function StepTwo(props: StepProps) {
         <FormikSelectField
           label={t('shared.generic.multiplier')}
           required
-          tooltip={t('manage.sessionForms.learningElementMultiplier')}
+          tooltip={t('manage.sessionForms.practiceQuizMultiplier')}
           name="multiplier"
           placeholder={t('manage.sessionForms.multiplierDefault')}
           items={[
@@ -422,7 +419,7 @@ function StepTwo(props: StepProps) {
         <FormikNumberField
           name="resetTimeDays"
           label={t('shared.generic.repetitionInterval')}
-          tooltip={t('manage.sessionForms.learningElementRepetition')}
+          tooltip={t('manage.sessionForms.practiceQuizRepetition')}
           className={{
             root: 'w-[100px]',
             tooltip: 'z-20',
@@ -441,9 +438,9 @@ function StepTwo(props: StepProps) {
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
           label={t('shared.generic.order')}
-          tooltip={t('manage.sessionForms.learningElementOrder')}
+          tooltip={t('manage.sessionForms.practiceQuizOrder')}
           name="order"
-          placeholder={t('manage.sessionForms.learningElemenSelectOrder')}
+          placeholder={t('manage.sessionForms.practiceQuizSelectOrder')}
           items={Object.values(ElementOrderType).map((order) => {
             return {
               value: order,

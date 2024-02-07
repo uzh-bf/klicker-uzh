@@ -217,7 +217,7 @@ const Index = function () {
                   href={session.linkTo || `/session/${session.id}`}
                   key={session.id}
                   icon={session.linkTo ? faLink : faChalkboard}
-                  data={{ cy: `live-session-${session.displayName}` }}
+                  data={{ cy: `live-quiz-${session.displayName}` }}
                 >
                   <div className="flex flex-row items-end justify-between md:flex-row">
                     <div>{session.displayName}</div>

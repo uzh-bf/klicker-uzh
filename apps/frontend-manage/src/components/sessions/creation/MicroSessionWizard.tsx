@@ -96,7 +96,7 @@ function MicroSessionWizard({
             ),
           hasSampleSolution: yup
             .boolean()
-            .isTrue(t('manage.sessionForms.learningElementSolutionReq')),
+            .isTrue(t('manage.sessionForms.practiceQuizSolutionReq')),
         })
       )
       .min(1),

@@ -313,7 +313,7 @@ export async function getLiveSessionData(
     return null
   }
 
-  // TODO: only return data that is required for the live session update
+  // TODO: only return data that is required for the live quiz update
   const session = await ctx.prisma.liveSession.findUnique({
     where: { id, ownerId: ctx.user.sub },
     include: {

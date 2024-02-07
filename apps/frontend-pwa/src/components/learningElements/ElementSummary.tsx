@@ -139,7 +139,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
       <div>
         <H3>{t('shared.generic.congrats')}</H3>
         <p>
-          {t.rich('pwa.learningElement.solvedLearningElement', {
+          {t.rich('pwa.learningElement.solvedPracticeQuiz', {
             name: displayName,
             it: (text) => <span className="italic">{text}</span>,
           })}
