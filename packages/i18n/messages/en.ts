@@ -95,7 +95,7 @@ export default {
       liveQuiz: 'Live Quiz',
       practiceQuiz: 'Practice Quiz',
       practiceQuizzes: 'Practice Quizzes',
-      microSessions: 'Microlearning',
+      microlearnings: 'Microlearning',
       microlearning: 'Microlearning',
       activeSessions: 'Active Quizzes',
       characters: 'characters',
@@ -752,7 +752,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
-      createMicroSession: 'Create microlearning',
+      createMicrolearning: 'Create microlearning',
       createPracticeQuiz: 'Create practice quiz',
       createGroupTask: 'Create group activity',
       createQuestionCaps: 'CREATE QUESTION',
@@ -869,31 +869,31 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pasteSingleQuestions: 'Add {count} blocks with 1 question',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
-      microSessionTypes:
+      microlearningTypes:
         'A microlearning can only contain single choice, multiple choice, kprim and numerical questions.',
-      microSessionCreated:
+      microlearningCreated:
         'Your microlearning <b>{name}</b> has been created successfully.',
-      microSessionEdited:
+      microlearningEdited:
         'Your microlearning <b>{name}</b> has been edited successfully.',
-      microSessionDescription:
+      microlearningDescription:
         'In this step, enter the name and description of the microlearning.',
-      microSessionSettings:
+      microlearningSettings:
         'In this step, select the start and end date and make further settings.',
-      microSessionQuestions:
+      microlearningQuestions:
         'In this step, select the questions for the microlearning.',
-      microSessionEditingFailed: 'Editing the Microlearning failed...',
-      microSessionCreationFailed: 'Creating the Microlearning failed...',
-      microSessionName:
+      microlearningEditingFailed: 'Editing the Microlearning failed...',
+      microlearningCreationFailed: 'Creating the Microlearning failed...',
+      microlearningName:
         'This name should allow you to distinguish this microlearning from others. It will not be shown to the participants, please use the display name (next field) for this.',
-      microSessionDescField:
+      microlearningDescField:
         'Add a description to your microlearning that will be displayed to participants at the beginning.',
-      microSessionCourse:
+      microlearningCourse:
         'For the creation of a microlearning, the selection of the corresponding course is required.',
-      microSessionStartDate:
+      microlearningStartDate:
         'Please choose the start date of the microlearning. The microlearning will be displayed to the participants from this point in time.',
-      microSessionEndDate:
+      microlearningEndDate:
         'Please choose the end date of the microlearning. The microlearning will no longer be displayed to the participants after this point in time.',
-      microSessionMultiplier:
+      microlearningMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
       microlearningUseCase:
         '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
@@ -1170,7 +1170,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while adjusting the date. Please check the input.',
       noSessions: 'No live quizzes available',
       noPracticeQuizzes: 'No practice quizzes available',
-      noMicroSessions: 'No microlearning available',
+      noMicrolearnings: 'No microlearning available',
       courseLeaderboard: 'Course Leaderboard',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
@@ -1181,14 +1181,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endAt: 'End: {time}',
       nQuestions: '{number} questions',
       copyAccessLink: 'Copy access link',
-      linkMicroSessionCopied:
+      linkMicrolearningCopied:
         'The link to the microlearning has been successfully copied to the clipboard.',
       linkPracticeQuizCopied:
         'The link to the practice quiz has been successfully copied to the clipboard.',
-      editMicroSession: 'Edit microlearning',
-      publishMicroSession: 'Publish microlearning',
-      unpublishMicroSession: 'Unpublish microlearning',
-      deleteMicroSession: 'Delete microlearning',
+      editMicrolearning: 'Edit microlearning',
+      publishMicrolearning: 'Publish microlearning',
+      unpublishMicrolearning: 'Unpublish microlearning',
+      deleteMicrolearning: 'Delete microlearning',
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',
       confirmPublishing: 'Are you sure you want to publish the following item?',
@@ -1196,9 +1196,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Publishing a practice quiz or microlearning makes the item visible to all participants. This process can only be undone later, if the element has not yet started and/or has not received any answers. Changes to the content of an item cannot be made after publishing.',
       microPublishingHint:
         'Microlearnings are additionally only visible within the specified date range.',
-      confirmDeletionMicroSession:
+      confirmDeletionMicrolearning:
         'Are you sure you want to delete the following microlearing?',
-      hintDeletionMicroSession:
+      hintDeletionMicrolearning:
         'Deleting a microlearning is only possible as long as it is not running and is not used in a course. A deleted microlearning cannot be restored at a later date.',
       editPracticeQuiz: 'Edit practice quiz',
       publishPracticeQuiz: 'Publish practice quiz',
@@ -1215,8 +1215,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizEdit: 'Live quiz successfully edited!',
       liveQuizCreate: 'Live quiz successfully created!',
       toSessionList: 'To <link>quiz overview</link>',
-      microSessionEdit: 'Microlearning successfully edited!',
-      microSessionCreate: 'Microlearning successfully created!',
+      microlearningEdit: 'Microlearning successfully edited!',
+      microlearningCreate: 'Microlearning successfully created!',
     },
   },
   control: {

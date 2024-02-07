@@ -95,7 +95,7 @@ export default {
       liveQuiz: 'Live Quiz',
       practiceQuiz: 'Übungs-Quiz',
       practiceQuizzes: 'Übungs-Quizzes',
-      microSessions: 'Microlearnings',
+      microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeSessions: 'Aktive Sessions',
       characters: 'Zeichen',
@@ -749,7 +749,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',
-      createMicroSession: 'Microlearning erstellen',
+      createMicrolearning: 'Microlearning erstellen',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
       createGroupTask: 'Gruppenaufgabe erstellen',
       createQuestionCaps: 'FRAGE ERSTELLEN',
@@ -868,32 +868,32 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pasteSingleQuestions: '{count} Blocks mit 1 Frage anfügen',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
-      microSessionTypes:
+      microlearningTypes:
         'Microlearnings können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.',
-      microSessionCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',
-      microSessionEdited:
+      microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',
+      microlearningEdited:
         'Microlearning <b>{name}</b> erfolgreich modifiziert.',
-      microSessionDescription:
+      microlearningDescription:
         'Geben Sie in diesem Schritt den Namen und die Beschreibung des Microlearnings ein.',
-      microSessionSettings:
+      microlearningSettings:
         'Wählen Sie in diesem Schritt das Start- und Enddatum und nehmen Sie weitere Einstellungen vor.',
-      microSessionQuestions:
+      microlearningQuestions:
         'Wählen Sie in diesem Schritt die Fragen für das Microlearning aus.',
-      microSessionEditingFailed:
+      microlearningEditingFailed:
         'Anpassen des Microlearnings fehlgeschlagen...',
-      microSessionCreationFailed:
+      microlearningCreationFailed:
         'Erstellen des Microlearnings fehlgeschlagen...',
-      microSessionName:
+      microlearningName:
         'Der Name soll Ihnen ermöglichen, dieses Microlearning von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
-      microSessionDescField:
+      microlearningDescField:
         'Fügen Sie eine Beschreibung zu Ihrem Microlearning hinzu, welche den Teilnehmern zu Beginn angezeigt wird.',
-      microSessionCourse:
+      microlearningCourse:
         'Für die Erstellung eines Microlearnings ist die Auswahl des zugehörigen Kurses erforderlich.',
-      microSessionStartDate:
+      microlearningStartDate:
         'Wählen Sie das Startdatum des Microlearnings aus. Die Session wird den Teilnehmenden ab diesem Zeitpunkt angezeigt.',
-      microSessionEndDate:
+      microlearningEndDate:
         'Wählen Sie das Enddatum des Microlearnings aus. Die Session wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
-      microSessionMultiplier:
+      microlearningMultiplier:
         'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
       microlearningUseCase:
         '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
@@ -1177,7 +1177,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Anpassen des Datums ist ein Fehler aufgetreten. Bitte überprüfen Sie die Eingabe.',
       noSessions: 'Keine Sessionen vorhanden',
       noPracticeQuizzes: 'Keine Übungs-Quizzes vorhanden',
-      noMicroSessions: 'Keine Microlearnings vorhanden',
+      noMicrolearnings: 'Keine Microlearnings vorhanden',
       courseLeaderboard: 'Kurs Leaderboard',
       participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',
@@ -1188,14 +1188,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endAt: 'Ende: {time}',
       nQuestions: '{number} Fragen',
       copyAccessLink: 'Zugriffslink kopieren',
-      linkMicroSessionCopied:
+      linkMicrolearningCopied:
         'Der Link zum Microlearning wurde erfolgreich in die Zwischenablage kopiert.',
       linkPracticeQuizCopied:
         'Der Link zum Übungs-Quiz wurde erfolgreich in die Zwischenablage kopiert.',
-      editMicroSession: 'Microlearning bearbeiten',
-      publishMicroSession: 'Microlearning veröffentlichen',
-      unpublishMicroSession: 'Veröffentlichung aufheben',
-      deleteMicroSession: 'Microlearning löschen',
+      editMicrolearning: 'Microlearning bearbeiten',
+      publishMicrolearning: 'Microlearning veröffentlichen',
+      unpublishMicrolearning: 'Veröffentlichung aufheben',
+      deleteMicrolearning: 'Microlearning löschen',
       publishItemPRACTICE_QUIZ: 'Übungs-Quiz veröffentlichen',
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
       confirmPublishing:
@@ -1204,9 +1204,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Publizieren eines Übungs-Quizzes oder eines Microlearnings macht das Element für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn das Element noch nicht läuft und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       microPublishingHint:
         'Microlearnings sind ausserdem nur innerhalb des spezifizierten Datumsbereichs sichtbar.',
-      confirmDeletionMicroSession:
+      confirmDeletionMicrolearning:
         'Sind Sie sich sicher, dass Sie das folgende Microlearning löschen möchten?',
-      hintDeletionMicroSession:
+      hintDeletionMicrolearning:
         'Das Löschen eines Microlearnings ist nur möglich, solange sie noch nicht läuft und in einem Kurs genutzt wird. Gelöschte Microlearnings können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       editPracticeQuiz: 'Übungs-Quiz bearbeiten',
       publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
@@ -1223,8 +1223,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizEdit: 'Session erfolgreich angepasst!',
       liveQuizCreate: 'Session erfolgreich erstellt!',
       toSessionList: 'Zur <link>Session-Liste</link>',
-      microSessionEdit: 'Microlearning erfolgreich angepasst!',
-      microSessionCreate: 'Microlearning erfolgreich erstellt!',
+      microlearningEdit: 'Microlearning erfolgreich angepasst!',
+      microlearningCreate: 'Microlearning erfolgreich erstellt!',
     },
   },
   control: {

@@ -35,7 +35,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         isCatalystRequired
         disabled={!data?.userProfile?.catalyst}
         icon={faChalkboardUser}
-        text={t('manage.questionPool.createMicroSession')}
+        text={t('manage.questionPool.createMicrolearning')}
         onClick={() => {
           setCreationMode('microSession')
         }}

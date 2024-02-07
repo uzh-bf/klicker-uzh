@@ -147,7 +147,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           <Button.Icon>
             <FontAwesomeIcon icon={faPencil} />
           </Button.Icon>
-          <Button.Label>{t('manage.course.editMicroSession')}</Button.Label>
+          <Button.Label>{t('manage.course.editMicrolearning')}</Button.Label>
         </Button>
       )}
 
@@ -161,7 +161,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           <Button.Icon>
             <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
           </Button.Icon>
-          <Button.Label>{t('manage.course.publishMicroSession')}</Button.Label>
+          <Button.Label>{t('manage.course.publishMicrolearning')}</Button.Label>
         </Button>
       )}
 
@@ -175,7 +175,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           <Button.Icon>
             <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
           </Button.Icon>
-          <Button.Label>{t('manage.course.deleteMicroSession')}</Button.Label>
+          <Button.Label>{t('manage.course.deleteMicrolearning')}</Button.Label>
         </Button>
       )}
 
@@ -190,7 +190,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
             <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
           </Button.Icon>
           <Button.Label>
-            {t('manage.course.unpublishMicroSession')}
+            {t('manage.course.unpublishMicrolearning')}
           </Button.Label>
         </Button>
       )}
@@ -201,7 +201,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         type="success"
         className={{ root: 'w-[24rem]' }}
       >
-        {t('manage.course.linkMicroSessionCopied')}
+        {t('manage.course.linkMicrolearningCopied')}
       </Toast>
       <PublishConfirmationModal
         elementType={ElementInstanceType.Microlearning}

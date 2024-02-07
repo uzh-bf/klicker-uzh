@@ -92,7 +92,7 @@ function MicroSessionWizard({
                 ElementType.Flashcard,
                 ElementType.Content,
               ],
-              t('manage.sessionForms.microSessionTypes')
+              t('manage.sessionForms.microlearningTypes')
             ),
           hasSampleSolution: yup
             .boolean()
@@ -173,11 +173,11 @@ function MicroSessionWizard({
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
-              ? t.rich('manage.sessionForms.microSessionCreated', {
+              ? t.rich('manage.sessionForms.microlearningCreated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })
-              : t.rich('manage.sessionForms.microSessionEdited', {
+              : t.rich('manage.sessionForms.microlearningEdited', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })}
@@ -232,16 +232,16 @@ function MicroSessionWizard({
         workflowItems={[
           {
             title: t('shared.generic.description'),
-            tooltip: t('manage.sessionForms.microSessionDescription'),
+            tooltip: t('manage.sessionForms.microlearningDescription'),
           },
           {
             title: t('shared.generic.settings'),
-            tooltip: t('manage.sessionForms.microSessionSettings'),
+            tooltip: t('manage.sessionForms.microlearningSettings'),
             tooltipDisabled: t('manage.sessionForms.checkValues'),
           },
           {
             title: t('shared.generic.questions'),
-            tooltip: t('manage.sessionForms.microSessionQuestions'),
+            tooltip: t('manage.sessionForms.microlearningQuestions'),
             tooltipDisabled: t('manage.sessionForms.checkValues'),
           },
         ]}
@@ -255,8 +255,8 @@ function MicroSessionWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? t('manage.sessionForms.microSessionEditingFailed')
-            : t('manage.sessionForms.microSessionCreationFailed')
+            ? t('manage.sessionForms.microlearningEditingFailed')
+            : t('manage.sessionForms.microlearningCreationFailed')
         }
       />
     </div>
@@ -286,7 +286,7 @@ function StepOne(_: StepProps) {
             autoComplete="off"
             name="name"
             label={t('manage.sessionForms.name')}
-            tooltip={t('manage.sessionForms.microSessionName')}
+            tooltip={t('manage.sessionForms.microlearningName')}
             className={{
               root: 'mb-2 w-full md:w-1/2',
               tooltip: 'z-20',
@@ -311,7 +311,7 @@ function StepOne(_: StepProps) {
 
         <EditorField
           label={t('shared.generic.description')}
-          tooltip={t('manage.sessionForms.microSessionDescField')}
+          tooltip={t('manage.sessionForms.microlearningDescField')}
           fieldName="description"
           data_cy="insert-microlearning-description"
           showToolbarOnFocus={false}
@@ -363,7 +363,7 @@ function StepTwo(props: StepProps) {
             }) || []
           }
           required
-          tooltip={t('manage.sessionForms.microSessionCourse')}
+          tooltip={t('manage.sessionForms.microlearningCourse')}
           label={t('shared.generic.course')}
           data={{ cy: 'select-course' }}
           className={{ tooltip: 'z-20' }}
@@ -377,7 +377,7 @@ function StepTwo(props: StepProps) {
       <FormikDateField
         label={t('shared.generic.startDate')}
         name="startDate"
-        tooltip={t('manage.sessionForms.microSessionStartDate')}
+        tooltip={t('manage.sessionForms.microlearningStartDate')}
         required
         className={{
           root: 'w-[24rem]',
@@ -389,7 +389,7 @@ function StepTwo(props: StepProps) {
       <FormikDateField
         label={t('shared.generic.endDate')}
         name="endDate"
-        tooltip={t('manage.sessionForms.microSessionEndDate')}
+        tooltip={t('manage.sessionForms.microlearningEndDate')}
         required
         className={{
           root: 'w-[24rem]',
@@ -403,7 +403,7 @@ function StepTwo(props: StepProps) {
           name="multiplier"
           placeholder={t('manage.sessionForms.multiplierDefault')}
           label={t('shared.generic.multiplier')}
-          tooltip={t('manage.sessionForms.microSessionMultiplier')}
+          tooltip={t('manage.sessionForms.microlearningMultiplier')}
           required
           items={[
             {

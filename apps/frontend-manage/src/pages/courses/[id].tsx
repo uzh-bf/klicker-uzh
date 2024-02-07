@@ -314,7 +314,7 @@ function CourseOverviewPage() {
           </div>
           <div className="mb-4">
             <H3 className={{ root: 'flex flex-row gap-3' }}>
-              <div>{t('shared.generic.microSessions')}</div>
+              <div>{t('shared.generic.microlearnings')}</div>
               <Button.Icon className={{ root: 'text-orange-400' }}>
                 <FontAwesomeIcon icon={faCrown} size="sm" />
               </Button.Icon>
@@ -329,7 +329,7 @@ function CourseOverviewPage() {
                 ))}
               </div>
             ) : user?.userProfile?.catalyst ? (
-              <div>{t('manage.course.noMicroSessions')}</div>
+              <div>{t('manage.course.noMicrolearnings')}</div>
             ) : (
               <UserNotification className={{ root: 'mr-3' }}>
                 {t.rich('manage.general.catalystRequired', {
