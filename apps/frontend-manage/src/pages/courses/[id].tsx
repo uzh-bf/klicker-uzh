@@ -279,7 +279,7 @@ function CourseOverviewPage() {
           </div>
           <div className="mb-4">
             <H3 className={{ root: 'flex flex-row gap-3' }}>
-              <div>{t('shared.generic.practiceQuizs')}</div>
+              <div>{t('shared.generic.practiceQuizzes')}</div>
               <Button.Icon className={{ root: 'text-orange-400' }}>
                 <FontAwesomeIcon icon={faCrown} size="sm" />
               </Button.Icon>
