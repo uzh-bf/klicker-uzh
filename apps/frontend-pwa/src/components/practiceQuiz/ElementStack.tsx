@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
+import InstanceHeader from './InstanceHeader'
 import StudentElement, {
   ElementChoicesType,
   StudentResponseType,
@@ -32,6 +33,7 @@ interface ElementStackProps {
     score?: number | null
   }) => void
   handleNextElement: () => void
+  withParticipant?: boolean
 }
 
 function ElementStack({
@@ -42,6 +44,7 @@ function ElementStack({
   totalSteps,
   setStepStatus,
   handleNextElement,
+  withParticipant = false,
 }: ElementStackProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -157,12 +160,28 @@ function ElementStack({
           </div>
         )}
 
-        <StudentElement
-          stack={stack}
-          studentResponse={studentResponse}
-          setStudentResponse={setStudentResponse}
-          stackStorage={stackStorage}
-        />
+        <div className="flex flex-col gap-3">
+          {stack.elements &&
+            stack.elements.length > 0 &&
+            stack.elements.map((element, elementIx) => {
+              return (
+                <div key={`${element.id}-student`}>
+                  <InstanceHeader
+                    instanceId={element.id}
+                    name={element.elementData.name}
+                    withParticipant={withParticipant}
+                  />
+                  <StudentElement
+                    element={element}
+                    elementIx={elementIx}
+                    studentResponse={studentResponse}
+                    setStudentResponse={setStudentResponse}
+                    stackStorage={stackStorage}
+                  />
+                </div>
+              )
+            })}
+        </div>
       </div>
 
       {/* display continue button if question was already answered */}

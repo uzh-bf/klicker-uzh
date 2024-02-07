@@ -3,8 +3,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import DynamicMarkdown from './evaluation/DynamicMarkdown'
 
 interface ContentelementProps {
   element: ElementInstance
@@ -23,7 +24,7 @@ function ContentElement({
 
   return (
     <div
-      className="px-3 py-2 border border-solid rounded-lg bg-slate-100"
+      className="px-3 pt-2 pb-10 border border-solid rounded-lg bg-slate-100"
       data-cy={`content-element-${elementIx + 1}`}
     >
       <div className="flex flex-row gap-3 -mb-2">

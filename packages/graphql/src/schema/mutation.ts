@@ -471,6 +471,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      flagElement: t.withAuth(asParticipant).string({
+        nullable: true,
+        args: {
+          elementInstanceId: t.arg.int({ required: true }),
+          content: t.arg.string({ required: true }),
+        },
+        async resolve(_, args, ctx) {
+          return ParticipantService.flagElement(args, ctx)
+        },
+      }),
+
       deleteParticipantAccount: t.withAuth(asParticipant).boolean({
         nullable: true,
         resolve(_, __, ctx) {
