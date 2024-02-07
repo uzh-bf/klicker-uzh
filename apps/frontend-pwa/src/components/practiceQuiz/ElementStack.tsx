@@ -1,24 +1,24 @@
 import { useMutation } from '@apollo/client'
 import {
-  ChoicesElementData,
   ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectnessType,
   RespondToPracticeQuizStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
+import StudentElement, {
+  ElementChoicesType,
+  StudentResponseType,
+} from '@klicker-uzh/shared-components/src/StudentElement'
+import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
 import Bookmark from './Bookmark'
 import InstanceHeader from './InstanceHeader'
-import StudentElement, {
-  ElementChoicesType,
-  StudentResponseType,
-} from './StudentElement'
 
 interface ElementStackProps {
   parentId: string
@@ -80,54 +80,11 @@ function ElementStack({
   }, [studentResponse])
 
   // initialize student responses
-  useEffect(() => {
-    const newStudentResponse =
-      stack.elements?.reduce((acc, element) => {
-        if (
-          element.elementData.type === ElementType.Kprim ||
-          element.elementData.type === ElementType.Mc ||
-          element.elementData.type === ElementType.Sc
-        ) {
-          return {
-            ...acc,
-            [element.id]: {
-              type: element.elementData.type,
-              response: (
-                element.elementData as ChoicesElementData
-              ).options.choices.reduce((acc, _, ix) => {
-                return { ...acc, [ix]: undefined }
-              }, {} as Record<number, boolean | undefined>),
-              correct: undefined,
-              valid: false,
-            },
-          }
-        } else if (element.elementData.type === ElementType.Content) {
-          return {
-            ...acc,
-            [element.id]: {
-              type: element.elementData.type,
-              response: undefined,
-              correct: undefined,
-              valid: true,
-            },
-          }
-        }
-        // default case - valid for FREE_TEXT, NUMERICAL, FLASHCARD elements
-        else {
-          return {
-            ...acc,
-            [element.id]: {
-              type: element.elementData.type,
-              response: undefined,
-              correct: undefined,
-              valid: false,
-            },
-          }
-        }
-      }, {} as StudentResponseType) || {}
-
-    setStudentResponse(newStudentResponse)
-  }, [currentStep, stack.elements])
+  useStudentResponse({
+    stack,
+    currentStep,
+    setStudentResponse,
+  })
 
   return (
     <div className="pb-12">

@@ -767,6 +767,22 @@
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)
 }
 
+.transform-rotateY-180 {
+  transform: rotateY(180deg)
+}
+
+.transform-style-preserve-3d {
+  transform-style: preserve-3d
+}
+
+.transition-transform-0_6s {
+  transition: transform 0.6s
+}
+
+.backface-hidden {
+  backface-visibility: hidden
+}
+
 .first\:ml-2:first-child {
   margin-left: 0.5rem
 }
