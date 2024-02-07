@@ -3,8 +3,8 @@ import {
   ElementOrderType,
   GetBasicCourseInformationDocument,
   GetBookmarkedElementStacksDocument,
-  PracticeQuizStatus,
   PracticeQuiz as PracticeQuizType,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -55,7 +55,7 @@ function Bookmarks() {
       id: 'bookmarks',
       orderType: ElementOrderType.SpacedRepetition,
       pointsMultiplier: 1,
-      status: PracticeQuizStatus.Published,
+      status: PublicationStatus.Published,
       course: courseData?.basicCourseInformation,
       stacks: bookmarkedStacks?.getBookmarkedElementStacks,
     } as PracticeQuizType

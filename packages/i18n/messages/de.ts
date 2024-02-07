@@ -1178,6 +1178,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noSessions: 'Keine Sessionen vorhanden',
       noPracticeQuizzes: 'Keine Übungs-Quizzes vorhanden',
       noMicrolearnings: 'Keine Microlearnings vorhanden',
+      noGroupActivities: 'Keine Gruppenaktivitäten vorhanden',
       courseLeaderboard: 'Kurs Leaderboard',
       participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',

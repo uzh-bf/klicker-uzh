@@ -45,7 +45,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         isCatalystRequired
         disabled={!data?.userProfile?.catalyst}
         icon={faGraduationCap}
-        text={t('manage.createPracticeQuiz')}
+        text={t('manage.questionPool.createPracticeQuiz')}
         onClick={() => {
           setCreationMode('learningElement')
         }}

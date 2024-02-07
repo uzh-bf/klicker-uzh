@@ -1171,6 +1171,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noSessions: 'No live quizzes available',
       noPracticeQuizzes: 'No practice quizzes available',
       noMicrolearnings: 'No microlearning available',
+      noGroupActivities: 'No group activities available',
       courseLeaderboard: 'Course Leaderboard',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
