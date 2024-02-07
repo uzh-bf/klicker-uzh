@@ -52,7 +52,8 @@ describe('Create questions', () => {
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
-    cy.get('[data-cy="sc-answer-options"]').should('have.length', 2)
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('exist')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('exist')
   })
 
   it('creates a multiple choice question', () => {
@@ -81,7 +82,8 @@ describe('Create questions', () => {
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
-    cy.get('[data-cy="sc-answer-options"]').should('have.length', 2)
+    cy.get('[data-cy="mc-1-answer-option-1"]').should('exist')
+    cy.get('[data-cy="mc-1-answer-option-2"]').should('exist')
   })
 
   it('creates a KPRIM question', () => {
