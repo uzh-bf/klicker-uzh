@@ -108,6 +108,7 @@ export default {
       free: 'Frei',
       congrats: 'Gratulation!',
       thanks: 'Vielen Dank!',
+      bookmark: 'Bookmark',
       bookmarks: 'Bookmarks',
       group: 'Gruppe',
       create: 'Erstellen',

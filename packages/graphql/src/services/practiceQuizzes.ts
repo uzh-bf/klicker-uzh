@@ -1221,13 +1221,13 @@ export async function respondToPracticeQuizStack(
   }
 }
 
-interface GetBookmarksPracticeQuizInput {
+interface GetBookmarksPracticeQuizArgs {
   quizId: string
   courseId: string
 }
 
 export async function getBookmarksPracticeQuiz(
-  { quizId, courseId }: GetBookmarksPracticeQuizInput,
+  { quizId, courseId }: GetBookmarksPracticeQuizArgs,
   ctx: Context
 ) {
   if (!ctx.user?.sub) {

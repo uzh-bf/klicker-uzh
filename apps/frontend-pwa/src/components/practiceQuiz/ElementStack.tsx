@@ -132,7 +132,7 @@ function ElementStack({
       <div className="w-full">
         <div className="flex flex-row items-center justify-between">
           {stack.displayName && <H2>{stack.displayName}</H2>}
-          <Bookmark quizId={parentId} />
+          <Bookmark quizId={parentId} stackId={stack.id} />
         </div>
 
         {stack.description && (
