@@ -83,6 +83,30 @@ function preparePracticeQuizInstanceResults(
 async function migrate() {
   const prisma = new PrismaClient()
 
+  const elementInstances = await prisma.elementInstance.findMany({})
+
+  for (const instance of elementInstances) {
+    if (
+      instance.elementData.type === ElementType.FLASHCARD &&
+      Object.keys(instance.results).includes('0')
+    ) {
+      console.log(instance.id, instance.results)
+      await prisma.elementInstance.update({
+        where: {
+          id: instance.id,
+        },
+        data: {
+          results: {
+            CORRECT: instance.results['2'],
+            PARTIAL: instance.results['1'],
+            INCORRECT: instance.results['0'],
+            total: instance.results.total ?? 0,
+          },
+        },
+      })
+    }
+  }
+
   const learningElements = await prisma.learningElement.findMany({
     include: {
       course: true,
@@ -216,6 +240,11 @@ async function migrate() {
                         createdAt: stackElement.questionInstance.createdAt,
                         updatedAt: stackElement.questionInstance.updatedAt,
 
+                        element: {
+                          connect: {
+                            id: stackElement.questionInstance.questionId,
+                          },
+                        },
                         owner: {
                           connect: {
                             id: elem.owner.id,
