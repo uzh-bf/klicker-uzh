@@ -141,6 +141,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="set-numerical-maximum"]').click().type('100')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
+    // TODO: FIXME
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
@@ -169,6 +170,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="set-free-text-length"]').click().type('100')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
+    // TODO: FIXME
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()

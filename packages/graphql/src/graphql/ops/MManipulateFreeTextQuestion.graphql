@@ -27,7 +27,6 @@ mutation ManipulateFreeTextQuestion(
       ... on FreeTextQuestionData {
         options {
           hasSampleSolution
-          hasAnswerFeedbacks
           restrictions {
             maxLength
           }

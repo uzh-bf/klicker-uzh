@@ -134,7 +134,9 @@ export const NumericalQuestionOptions = builder
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
-      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
+        nullable: true,
+      }),
       accuracy: t.exposeInt('accuracy', { nullable: true }),
       placeholder: t.exposeString('placeholder', { nullable: true }),
       unit: t.exposeString('unit', { nullable: true }),
@@ -184,7 +186,9 @@ export const FreeTextQuestionOptions = builder
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
-      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
+        nullable: true,
+      }),
       restrictions: t.expose('restrictions', {
         type: FreeTextRestrictions,
         nullable: true,

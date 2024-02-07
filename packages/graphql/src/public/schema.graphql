@@ -332,7 +332,7 @@ type FreeTextQuestionData implements QuestionData {
 }
 
 type FreeTextQuestionOptions {
-  hasAnswerFeedbacks: Boolean!
+  hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean!
   restrictions: FreeTextRestrictions
   solutions: [String!]
@@ -677,7 +677,7 @@ type NumericalQuestionData implements QuestionData {
 
 type NumericalQuestionOptions {
   accuracy: Int
-  hasAnswerFeedbacks: Boolean!
+  hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean!
   placeholder: String
   restrictions: NumericalRestrictions

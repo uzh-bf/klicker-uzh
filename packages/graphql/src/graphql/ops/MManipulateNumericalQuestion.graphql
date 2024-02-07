@@ -27,7 +27,6 @@ mutation ManipulateNumericalQuestion(
       ... on NumericalQuestionData {
         options {
           hasSampleSolution
-          hasAnswerFeedbacks
           accuracy
           placeholder
           unit
