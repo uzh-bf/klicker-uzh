@@ -6,7 +6,11 @@ import {
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PracticeQuiz, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementInstanceType,
+  PracticeQuiz,
+  PublicationStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -162,7 +166,7 @@ function LearningElementTile({
           {t('manage.course.linkLearningElementCopied')}
         </Toast>
         <PublishConfirmationModal
-          elementType="LEARNING_ELEMENT"
+          elementType={ElementInstanceType.PracticeQuiz}
           elementId={learningElement.id}
           title={learningElement.name}
           open={publishModal}

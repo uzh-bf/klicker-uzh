@@ -712,7 +712,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       passwordTooltip:
         'The password is automatically generated. Please write it down before creating the login, it will not be visible anymore afterwards. If you want to change it, you can generate a new one using the button on the right.',
       shortnameRequirements:
-        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other learning elements in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
+        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other practice quizzes in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
       shortnameRequired: 'Please enter a shortname.',
       shortnameMin: 'The shortname must be at least 5 characters long.',
       shortnameMax: 'The shortname must be at most 8 characters long.',
@@ -942,9 +942,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions.',
       learningElementSolutionReq: 'Please only add questions with solution.',
       learningElementCreated:
-        'Learning element <b>{name}</b> successfully created.',
+        'Practice quiz <b>{name}</b> successfully created.',
       learningElementUpdated:
-        'Learning element <b>{name}</b> successfully modified.',
+        'Practice quiz <b>{name}</b> successfully modified.',
       learningElementDescription:
         'In this step, enter the name and description of the practice quiz.',
       learningElementSettings:
@@ -1192,7 +1192,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       publishMicroSession: 'Publish microlearning',
       unpublishMicroSession: 'Unpublish microlearning',
       deleteMicroSession: 'Delete microlearning',
-      publishItem: 'Publish {name}',
+      publishItemPRACTICE_QUIZ: 'Publish practice quiz',
+      publishItemMICROLEARNING: 'Publish microlearning',
       confirmPublishing: 'Are you sure you want to publish the following item?',
       publishingHint:
         'Publishing a practice quiz or microlearning makes the item visible to all participants. This process can only be undone later, if the element has not yet started and/or has not received any answers. Changes to the content of an item cannot be made after publishing.',

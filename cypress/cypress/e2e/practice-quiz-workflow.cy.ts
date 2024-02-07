@@ -3,12 +3,12 @@ import messages from '../../../packages/i18n/messages/en'
 const randomNumber = Math.round(Math.random() * 1000)
 const questionTitle = 'A Single Choice with solution' + randomNumber
 const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-const practiceQuizName = 'Test Lernelement ' + randomNumber
+const practiceQuizName = 'Test Übungs-Quiz ' + randomNumber
 const practiceQuizDisplayName = 'Displayed Name ' + randomNumber
 const description = 'This is the official descriptioin of ' + randomNumber
 
 const randomNumber2 = Math.round(Math.random() * 1000)
-const practiceQuizName2 = 'Test Lernelement ' + randomNumber2
+const practiceQuizName2 = 'Test Übungs-Quiz ' + randomNumber2
 const practiceQuizDisplayName2 = 'Displayed Name ' + randomNumber2
 const description2 = 'This is the official descriptioin of ' + randomNumber2
 const courseName = 'Testkurs'
