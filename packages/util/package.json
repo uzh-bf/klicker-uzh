@@ -7,7 +7,9 @@
   "files": [
     "dist"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "@klicker-uzh/prisma": "workspace:*"
+  },
   "devDependencies": {
     "@size-limit/preset-small-lib": "8.2.4",
     "@tsconfig/node18": "^2.0.0",
@@ -25,7 +27,6 @@
     "typescript": "5.0.4"
   },
   "peerDependencies": {
-    "@klicker-uzh/prisma": "workspace:*",
     "ramda": "0.29.0"
   },
   "scripts": {
