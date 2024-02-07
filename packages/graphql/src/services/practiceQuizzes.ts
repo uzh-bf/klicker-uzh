@@ -53,7 +53,14 @@ export async function getPracticeQuizData(
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
-      status: PublicationStatus.PUBLISHED,
+      OR: [
+        {
+          status: PublicationStatus.PUBLISHED,
+        },
+        {
+          ownerId: ctx.user?.sub,
+        },
+      ],
     },
     include: {
       course: true,
