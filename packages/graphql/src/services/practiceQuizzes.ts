@@ -325,8 +325,6 @@ async function respondToContent(
     },
   })
 
-  const temp = (existingInstance?.results as ContentInstanceResults).viewed
-
   // check if the instance exists and the response is valid
   if (!existingInstance) {
     return null
@@ -346,7 +344,7 @@ async function respondToContent(
     },
     data: {
       results: {
-        viewed: existingResults.viewed + 1,
+        total: existingResults.total + 1,
       },
     },
   })
@@ -673,7 +671,8 @@ export async function respondToQuestion(
 
       let updatedResults:
         | {
-            choices?: Record<string, number>
+            choices: Record<string, number>
+            total: number
           }
         | Record<string, number> = {}
 
@@ -690,6 +689,7 @@ export async function respondToQuestion(
             }),
             results.choices as Record<string, number>
           )
+          updatedResults.total = results.total + 1
           break
         }
 
@@ -715,14 +715,15 @@ export async function respondToQuestion(
 
           const value = String(parsedValue)
 
-          if (Object.keys(results).includes(value)) {
-            updatedResults = {
-              ...results,
-              [value]: results[value] + 1,
+          if (Object.keys(results.responses).includes(value)) {
+            updatedResults.responses = {
+              ...results.responses,
+              [value]: results.responses[value] + 1,
             }
           } else {
-            updatedResults = { ...results, [value]: 1 }
+            updatedResults.responses = { ...results.responses, [value]: 1 }
           }
+          updatedResults.total = results.total + 1
           break
         }
 
@@ -740,14 +741,15 @@ export async function respondToQuestion(
 
           const value = R.toLower(R.trim(response.value))
 
-          if (Object.keys(results).includes(value)) {
-            updatedResults = {
-              ...results,
-              [value]: results[value] + 1,
+          if (Object.keys(results.responses).includes(value)) {
+            updatedResults.responses = {
+              ...results.responses,
+              [value]: results.responses[value] + 1,
             }
           } else {
-            updatedResults = { ...results, [value]: 1 }
+            updatedResults.responses = { ...results.responses, [value]: 1 }
           }
+          updatedResults.total = results.total + 1
           break
         }
 
@@ -759,10 +761,6 @@ export async function respondToQuestion(
         where: { id },
         data: {
           results: updatedResults,
-          // TODO: re-introduce participants count as part of options / results
-          // participants: {
-          //   increment: 1,
-          // },
         },
       })
 
@@ -1364,6 +1362,7 @@ export async function manipulatePracticeQuiz(
                 elementData: processedElementData,
                 options: {
                   pointsMultiplier: multiplier * element.pointsMultiplier,
+                  resetTimeDays,
                 },
                 results: getInitialElementResults(processedElementData),
                 element: {

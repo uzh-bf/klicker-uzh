@@ -101,20 +101,7 @@ export type QuestionResultsOpen = {
   total: number
 }
 
-export type QuestionResultsFlashcard = {
-  [FlashcardCorrectness.INCORRECT]: number
-  [FlashcardCorrectness.PARTIAL]: number
-  [FlashcardCorrectness.CORRECT]: number
-  total: number
-}
-
-export type QuestionResultsContent = {}
-
-export type QuestionResults =
-  | QuestionResultsChoices
-  | QuestionResultsOpen
-  | QuestionResultsFlashcard
-  | QuestionResultsContent
+export type QuestionResults = QuestionResultsChoices | QuestionResultsOpen
 
 export type Choice = {
   ix: number
@@ -276,7 +263,7 @@ export type FlashcardInstanceResults = {
 }
 
 export type ContentInstanceResults = {
-  viewed: number
+  total: number
 }
 
 export type ElementInstanceResults =
