@@ -5,6 +5,37 @@ describe('Create questions', () => {
     cy.loginLecturer()
   })
 
+  it('creates a content element', () => {
+    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const questionTitle = 'A Content ' + randomQuestionNumber
+    const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
+  })
+
+  it('creates a flashcard element', () => {
+    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const questionTitle = 'A Flashcard ' + randomQuestionNumber
+    const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-question-explanation"]').click().type(question)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
+  })
+
   it('creates a single choice question', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000)
     const questionTitle = 'A Single Choice ' + randomQuestionNumber
