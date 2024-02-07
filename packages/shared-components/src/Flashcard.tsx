@@ -7,9 +7,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlashcardCorrectnessType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import DynamicMarkdown from '../learningElements/DynamicMarkdown'
+import DynamicMarkdown from './evaluation/DynamicMarkdown'
 
 interface FlashcardProps {
   content: string
@@ -38,33 +38,37 @@ function Flashcard({
   }
 
   return (
-    <div className={twMerge('flex-1 md:max-w-xl md:mx-auto md:mb-4 w-full')}>
-      <div
-        className={`flex flex-col p-4 border border-gray-300 rounded-lg shadow transform-style-preserve-3d transition-transform-0_6s ${
-          isFlipped ? 'transform-rotateY-180' : 'cursor-pointer hover:shadow-xl'
-        }`}
-        onClick={!isFlipped ? handleFlip : () => null}
-      >
-        <FlashcardFront
-          isFlipped={isFlipped}
-          content={content}
-          elementIx={elementIx}
-        />
-
-        {isFlipped ? (
-          <FlashcardBack
-            explanation={explanation}
-            response={response}
-            setResponse={setResponse}
-            existingResponse={existingResponse}
+    <div>
+      <div className={twMerge('flex-1 md:max-w-xl md:mx-auto md:mb-4 w-full')}>
+        <div
+          className={`flex flex-col p-4 border border-gray-300 rounded-lg shadow transform-style-preserve-3d transition-transform-0_6s ${
+            isFlipped
+              ? 'transform-rotateY-180'
+              : 'cursor-pointer hover:shadow-xl'
+          }`}
+          onClick={!isFlipped ? handleFlip : () => null}
+        >
+          <FlashcardFront
+            isFlipped={isFlipped}
+            content={content}
             elementIx={elementIx}
           />
-        ) : (
-          <div className="flex flex-row items-center self-end gap-2 text-sm text-gray-500">
-            <FontAwesomeIcon icon={faHandPointer} />
-            {t('pwa.practiceQuiz.flashcardClick')}
-          </div>
-        )}
+
+          {isFlipped ? (
+            <FlashcardBack
+              explanation={explanation}
+              response={response}
+              setResponse={setResponse}
+              existingResponse={existingResponse}
+              elementIx={elementIx}
+            />
+          ) : (
+            <div className="flex flex-row items-center self-end gap-2 text-sm text-gray-500">
+              <FontAwesomeIcon icon={faHandPointer} />
+              {t('pwa.practiceQuiz.flashcardClick')}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
