@@ -58,7 +58,7 @@ export async function sendTeamsNotifications(scope: string, text: string) {
   return null
 }
 
-export { levelFromXp } from '@klicker-uzh/prisma/dist/util'
+export { levelFromXp } from '@klicker-uzh/util/dist/pure'
 
 export const orderStacks = R.sort((a: any, b: any) => {
   const aResponses = a.elements[0].responses
