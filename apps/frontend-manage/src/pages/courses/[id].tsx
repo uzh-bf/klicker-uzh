@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import GroupActivityTile from '@components/courses/GroupActivityTile'
 import { faCrown, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -352,7 +353,32 @@ function CourseOverviewPage() {
                 <FontAwesomeIcon icon={faCrown} size="sm" />
               </Button.Icon>
             </H3>
-            Coming Soon
+            {course.groupActivities && course.groupActivities.length > 0 ? (
+              <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
+                {course.groupActivities.map((groupActivity) => (
+                  <GroupActivityTile
+                    groupActivity={groupActivity}
+                    key={groupActivity.id}
+                  />
+                ))}
+              </div>
+            ) : user?.userProfile?.catalyst ? (
+              <div>{t('manage.course.noGroupActivities')}</div>
+            ) : (
+              <UserNotification className={{ root: 'mr-3' }}>
+                {t.rich('manage.general.catalystRequired', {
+                  link: () => (
+                    <a
+                      target="_blank"
+                      href="https://www.klicker.uzh.ch/catalyst"
+                      className="underline"
+                    >
+                      www.klicker.uzh.ch/catalyst
+                    </a>
+                  ),
+                })}
+              </UserNotification>
+            )}
           </div>
         </div>
         {data?.course?.isGamificationEnabled && (
