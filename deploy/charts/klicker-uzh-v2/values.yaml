@@ -24,6 +24,8 @@ blobStorage:
 
 migration:
   secret: ''
+  mongo:
+    connectionString: ''
   serviceBus:
     connectionString: ''
     queueName: ''
@@ -34,6 +36,7 @@ listmonk:
   password: ''
   templates:
     migrationRequest: -1
+    emailNotFound: -1
 
 vapid:
   publicKey: ''

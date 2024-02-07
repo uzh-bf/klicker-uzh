@@ -6,20 +6,20 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface NUMERICALAnswerOptionsProps {
-  disabled?: boolean
   accuracy?: number
   placeholder?: string
   unit?: string
   valid: boolean
-  value: string | number
-  min: number
-  max: number
-  onChange: (value: any) => any
+  value?: string
+  min?: number
+  max?: number
+  onChange: (value: string) => void
   hidePrecision?: boolean
+  disabled?: boolean
+  elementIx: number
 }
 
 export function NUMERICALAnswerOptions({
-  disabled,
   accuracy,
   placeholder,
   unit,
@@ -29,6 +29,8 @@ export function NUMERICALAnswerOptions({
   max,
   onChange,
   hidePrecision,
+  disabled,
+  elementIx,
 }: NUMERICALAnswerOptionsProps): React.ReactElement {
   const t = useTranslations()
 
@@ -53,8 +55,8 @@ export function NUMERICALAnswerOptions({
       </div>
       <div className="flex flex-row">
         <NumberField
-          value={value}
-          onChange={onChange}
+          value={value ?? ''}
+          onChange={(newValue: string) => onChange(newValue)}
           placeholder={placeholder}
           disabled={disabled}
           precision={accuracy}
@@ -63,9 +65,10 @@ export function NUMERICALAnswerOptions({
             input: twMerge(
               'focus:border-primary-80',
               unit && '!rounded-r-none',
-              !valid && value !== '' && 'border-red-600'
+              !valid && 'border-red-600'
             ),
           }}
+          data={{ cy: `input-numerical-${elementIx + 1}` }}
         />
         {unit && (
           <div className="flex flex-col items-center justify-center px-4 text-white rounded-r bg-slate-600 min-w-max">
@@ -73,7 +76,7 @@ export function NUMERICALAnswerOptions({
           </div>
         )}
       </div>
-      {!valid && value !== '' && (
+      {!valid && (
         <div className="text-black">
           <FontAwesomeIcon
             icon={faTriangleExclamation}

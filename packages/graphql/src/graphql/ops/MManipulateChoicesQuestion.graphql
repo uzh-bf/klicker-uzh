@@ -39,32 +39,6 @@ mutation ManipulateChoicesQuestion(
           }
         }
       }
-
-      ... on NumericalQuestionData {
-        options {
-          hasSampleSolution
-          hasAnswerFeedbacks
-          restrictions {
-            min
-            max
-          }
-          solutionRanges {
-            min
-            max
-          }
-        }
-      }
-
-      ... on FreeTextQuestionData {
-        options {
-          hasSampleSolution
-          hasAnswerFeedbacks
-          restrictions {
-            maxLength
-          }
-          solutions
-        }
-      }
     }
 
     tags {

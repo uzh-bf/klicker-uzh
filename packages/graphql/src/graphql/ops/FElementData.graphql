@@ -1,7 +1,7 @@
 fragment ElementData on ElementInstance {
   elementData {
     id
-    questionId
+    elementId
     name
     type
     content
@@ -46,7 +46,11 @@ fragment ElementData on ElementInstance {
 
     # ... on FlashcardElementData {
     #   options {
+    #   }
+    # }
 
+    # ... on ContentElementData {
+    #   options {
     #   }
     # }
   }

@@ -4,19 +4,20 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faCheckDouble, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { FlashcardCorrectnessType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import DynamicMarkdown from '../learningElements/DynamicMarkdown'
-import { FlashcardResponseValues } from './ElementStack'
+import DynamicMarkdown from './evaluation/DynamicMarkdown'
 
 interface FlashcardProps {
   content: string
   explanation: string
-  response?: FlashcardResponseValues
-  setResponse: (value: FlashcardResponseValues) => void
-  existingResponse?: FlashcardResponseValues
+  response?: FlashcardCorrectnessType
+  setResponse: (value: FlashcardCorrectnessType) => void
+  existingResponse?: FlashcardCorrectnessType
+  elementIx: number
 }
 
 function Flashcard({
@@ -25,37 +26,49 @@ function Flashcard({
   response,
   setResponse,
   existingResponse,
+  elementIx,
 }: FlashcardProps) {
   const t = useTranslations()
-  const [isFlipped, setIsFlipped] = useState(!!existingResponse ?? false)
+  const [isFlipped, setIsFlipped] = useState(
+    typeof existingResponse !== 'undefined' ?? false
+  )
 
   const handleFlip = () => {
     setIsFlipped((prev) => !prev)
   }
 
   return (
-    <div className={twMerge('flex-1 md:max-w-xl md:mx-auto md:mb-4 w-full')}>
-      <div
-        className={`flex flex-col p-4 border border-gray-300 rounded-lg shadow transform-style-preserve-3d transition-transform-0_6s ${
-          isFlipped ? 'transform-rotateY-180' : 'cursor-pointer hover:shadow-xl'
-        }`}
-        onClick={!isFlipped ? handleFlip : () => null}
-      >
-        <FlashcardFront isFlipped={isFlipped} content={content} />
-
-        {isFlipped ? (
-          <FlashcardBack
-            explanation={explanation}
-            response={response}
-            setResponse={setResponse}
-            existingResponse={existingResponse}
+    <div>
+      <div className={twMerge('flex-1 md:max-w-xl md:mx-auto md:mb-4 w-full')}>
+        <div
+          className={`flex flex-col p-4 border border-gray-300 rounded-lg shadow transform-style-preserve-3d transition-transform-0_6s ${
+            isFlipped
+              ? 'transform-rotateY-180'
+              : 'cursor-pointer hover:shadow-xl'
+          }`}
+          onClick={!isFlipped ? handleFlip : () => null}
+        >
+          <FlashcardFront
+            isFlipped={isFlipped}
+            content={content}
+            elementIx={elementIx}
           />
-        ) : (
-          <div className="flex flex-row items-center self-end gap-2 text-sm text-gray-500">
-            <FontAwesomeIcon icon={faHandPointer} />
-            {t('pwa.practiceQuiz.flashcardClick')}
-          </div>
-        )}
+
+          {isFlipped ? (
+            <FlashcardBack
+              explanation={explanation}
+              response={response}
+              setResponse={setResponse}
+              existingResponse={existingResponse}
+              elementIx={elementIx}
+            />
+          ) : (
+            <div className="flex flex-row items-center self-end gap-2 text-sm text-gray-500">
+              <FontAwesomeIcon icon={faHandPointer} />
+              {t('pwa.practiceQuiz.flashcardClick')}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -64,19 +77,22 @@ function Flashcard({
 function FlashcardFront({
   isFlipped,
   content,
+  elementIx,
 }: {
   isFlipped: boolean
   content: string
+  elementIx: number
 }) {
   return (
     <DynamicMarkdown
       withProse
+      data={{ cy: `flashcard-front-${elementIx + 1}` }}
       content={content}
       className={{
         root: twMerge(
           'mx-auto text-center flex-none',
           isFlipped &&
-            'w-full transform-rotateY-180 px-4 py-2 border rounded bg-slate-100 prose-p:mb-0 mb-4'
+            'w-full transform-rotateY-180 px-4 py-2 border rounded bg-slate-100 prose-p:mb-0 mb-4 backface-hidden'
         ),
       }}
     />
@@ -85,9 +101,10 @@ function FlashcardFront({
 
 interface FlashcardBackProps {
   explanation: string
-  response?: FlashcardResponseValues
-  setResponse: (value: FlashcardResponseValues) => void
-  existingResponse?: FlashcardResponseValues
+  response?: FlashcardCorrectnessType
+  setResponse: (value: FlashcardCorrectnessType) => void
+  existingResponse?: FlashcardCorrectnessType
+  elementIx: number
 }
 
 function FlashcardBack({
@@ -95,11 +112,12 @@ function FlashcardBack({
   response,
   setResponse,
   existingResponse,
+  elementIx,
 }: FlashcardBackProps) {
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col flex-1 w-full transform-rotateY-180 backface-hidden">
+    <div className="flex flex-col flex-1 w-full transform-rotateY-180">
       <div className="flex flex-1">
         <DynamicMarkdown content={explanation} withProse />
       </div>
@@ -110,32 +128,42 @@ function FlashcardBack({
         <div className="flex flex-row w-full mt-2 space-x-2 justify-evenly">
           <FlashcardButton
             active={
-              response === 'incorrect' || existingResponse === 'incorrect'
+              response === FlashcardCorrectnessType.Incorrect ||
+              existingResponse === FlashcardCorrectnessType.Incorrect
             }
-            setResponse={() => setResponse('incorrect')}
+            setResponse={() => setResponse(FlashcardCorrectnessType.Incorrect)}
             text={t('pwa.practiceQuiz.flashcardNoResponse')}
             color="bg-red-300"
             activeColor="bg-red-600"
             icon={faX}
-            disabled={!!existingResponse}
+            disabled={typeof existingResponse !== 'undefined'}
+            elementIx={elementIx}
           />
           <FlashcardButton
-            active={response === 'partial' || existingResponse === 'partial'}
-            setResponse={() => setResponse('partial')}
+            active={
+              response === FlashcardCorrectnessType.Partial ||
+              existingResponse === FlashcardCorrectnessType.Partial
+            }
+            setResponse={() => setResponse(FlashcardCorrectnessType.Partial)}
             text={t('pwa.practiceQuiz.flashcardPartialResponse')}
             color="bg-orange-300"
             activeColor="bg-orange-600"
             icon={faCheck}
-            disabled={!!existingResponse}
+            disabled={typeof existingResponse !== 'undefined'}
+            elementIx={elementIx}
           />
           <FlashcardButton
-            active={response === 'correct' || existingResponse === 'correct'}
-            setResponse={() => setResponse('correct')}
+            active={
+              response === FlashcardCorrectnessType.Correct ||
+              existingResponse === FlashcardCorrectnessType.Correct
+            }
+            setResponse={() => setResponse(FlashcardCorrectnessType.Correct)}
             text={t('pwa.practiceQuiz.flashcardYesResponse')}
             color="bg-green-300"
             activeColor="bg-green-600"
             icon={faCheckDouble}
-            disabled={!!existingResponse}
+            disabled={typeof existingResponse !== 'undefined'}
+            elementIx={elementIx}
           />
         </div>
       </div>
@@ -151,6 +179,7 @@ interface FlashcardButtonProps {
   activeColor: string
   icon: IconDefinition
   disabled?: boolean
+  elementIx: number
 }
 
 function FlashcardButton({
@@ -161,6 +190,7 @@ function FlashcardButton({
   activeColor,
   icon,
   disabled,
+  elementIx,
 }: FlashcardButtonProps) {
   return (
     <Button
@@ -179,7 +209,7 @@ function FlashcardButton({
         e?.stopPropagation()
         setResponse()
       }}
-      data={{ cy: `flashcard-response-${text}` }}
+      data={{ cy: `flashcard-response-${elementIx + 1}-${text}` }}
     >
       <FontAwesomeIcon icon={icon} />
       {text}

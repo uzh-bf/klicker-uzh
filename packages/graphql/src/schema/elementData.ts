@@ -17,7 +17,8 @@ export const ElementDataRef =
 export const ElementData = ElementDataRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
-    questionId: t.exposeInt('questionId'),
+    elementId: t.exposeInt('elementId', { nullable: true }), // TODO: remove nullability
+    questionId: t.exposeInt('questionId', { nullable: true }), // TODO: remove after migration
     name: t.exposeString('name'),
     type: t.expose('type', { type: ElementType }),
     content: t.exposeString('content'),
@@ -36,6 +37,8 @@ export const ElementData = ElementDataRef.implement({
         return 'FreeTextElementData'
       case DB.ElementType.FLASHCARD:
         return 'FlashcardElementData'
+      case DB.ElementType.CONTENT:
+        return 'ContentElementData'
       default:
         return null
     }
@@ -78,25 +81,16 @@ export const FreeTextElementData = builder
     }),
   })
 
-export interface IFlashcardElementOptions {
-  fake: string
-}
-export const FlashcardElementOptions = builder
-  .objectRef<IFlashcardElementOptions>('FlashcardElementOptions')
-  .implement({
-    fields: (t) => ({
-      fake: t.exposeString('fake'),
-    }),
-  })
-
-export interface IFlashcardElementData extends BaseElementData {
-  options: IFlashcardElementOptions
-}
+export interface IFlashcardElementData extends BaseElementData {}
 export const FlashcardElementData = builder
   .objectRef<IFlashcardElementData>('FlashcardElementData')
   .implement({
     interfaces: [ElementData],
-    fields: (t) => ({
-      options: t.expose('options', { type: FlashcardElementOptions }),
-    }),
+  })
+
+export interface IContentElementData extends BaseElementData {}
+export const ContentElementData = builder
+  .objectRef<IContentElementData>('ContentElementData')
+  .implement({
+    interfaces: [ElementData],
   })

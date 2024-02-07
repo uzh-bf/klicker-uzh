@@ -37,6 +37,7 @@ import {
   QuestionResponseChoices,
 } from '../types/app'
 
+// TODO: delete entire file, once learning elements have been replaced through practice quiz
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
@@ -336,9 +337,10 @@ export async function respondToQuestionInstance(
         where: { id },
         data: {
           results: updatedResults,
-          participants: {
-            increment: 1,
-          },
+          // TODO: re-introduce participant count - probably as part of results
+          // participants: {
+          //   increment: 1,
+          // },
         },
       })
 
@@ -1018,11 +1020,13 @@ export async function manipulateLearningElement(
   return element
 }
 
+// TODO: remove this after migration to practice quiz
 interface GetBookMarksLearningElement {
   elementId: string
   courseId: string
 }
 
+// TODO: remove this function after migration to practice quiz
 export async function getBookmarksLearningElement(
   { elementId, courseId }: GetBookMarksLearningElement,
   ctx: Context

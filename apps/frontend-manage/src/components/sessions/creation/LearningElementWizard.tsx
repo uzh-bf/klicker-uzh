@@ -203,8 +203,8 @@ function LearningElementWizard({
                       .questionId,
                     title:
                       stack.elements![0].questionInstance?.questionData.name,
-                    hasAnswerFeedbacks: true, // has been checked during previous submission
-                    hasSampleSolution: true, // has been checked during previous submission
+                    hasAnswerFeedbacks: true, // TODO - based on questionData options
+                    hasSampleSolution: true, // TODO - based on questionData options
                   }
                 })
             : [],

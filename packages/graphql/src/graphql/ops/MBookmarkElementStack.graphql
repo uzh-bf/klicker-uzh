@@ -1,0 +1,11 @@
+mutation BookmarkElementStack(
+  $stackId: Int!
+  $courseId: String!
+  $bookmarked: Boolean!
+) {
+  bookmarkElementStack(
+    stackId: $stackId
+    courseId: $courseId
+    bookmarked: $bookmarked
+  )
+}

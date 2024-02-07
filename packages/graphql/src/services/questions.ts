@@ -14,6 +14,7 @@ import {
   prepareInitialInstanceResults,
   processQuestionData,
 } from '../lib/questions'
+import { DisplayMode } from '../types/app'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -105,7 +106,7 @@ interface QuestionOptionsArgs {
         feedback?: string | null
       }[]
     | null
-  displayMode?: DB.ElementDisplayMode | null
+  displayMode?: DisplayMode | null
   hasSampleSolution?: boolean | null
   hasAnswerFeedbacks?: boolean | null
   pointsMultiplier?: number | null
@@ -172,7 +173,7 @@ export async function manipulateQuestion(
       pointsMultiplier: pointsMultiplier ?? 1,
       options: {
         ...options,
-        displayMode: options?.displayMode ?? DB.ElementDisplayMode.LIST,
+        displayMode: options?.displayMode ?? DisplayMode.LIST,
         hasSampleSolution: options?.hasSampleSolution ?? false,
         hasAnswerFeedbacks: options?.hasAnswerFeedbacks ?? false,
         accuracy: options?.accuracy ?? undefined,
@@ -216,7 +217,7 @@ export async function manipulateQuestion(
       options: options
         ? {
             ...options,
-            displayMode: options?.displayMode ?? DB.ElementDisplayMode.LIST,
+            displayMode: options?.displayMode ?? DisplayMode.LIST,
             hasSampleSolution: options?.hasSampleSolution ?? false,
             hasAnswerFeedbacks: options?.hasAnswerFeedbacks ?? false,
             accuracy: options?.accuracy ?? undefined,

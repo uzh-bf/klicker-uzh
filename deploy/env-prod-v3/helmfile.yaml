@@ -22,6 +22,8 @@ releases:
 
         migration:
           secret: '{{ requiredEnv "MIGRATION_SECRET" }}'
+          mongo:
+            connectionString: '{{ requiredEnv "MIGRATION_MONGO_CONNECTION_STRING" }}'
           serviceBus:
             connectionString: '{{ requiredEnv "MIGRATION_SERVICE_BUS_CONNECTION_STRING" }}'
             queueName: '{{ requiredEnv "MIGRATION_SERVICE_BUS_QUEUE_NAME" }}'
@@ -31,6 +33,7 @@ releases:
           username: '{{ requiredEnv "LISTMONK_USER" }}'
           password: '{{ requiredEnv "LISTMONK_PASS" }}'
           templates:
+            emailNotFound: '{{ requiredEnv "LISTMONK_TEMPLATE_EMAIL_NOT_FOUND" }}'
             migrationRequest: '{{ requiredEnv "LISTMONK_TEMPLATE_MIGRATION_REQUEST" }}'
 
         cron:

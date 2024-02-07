@@ -59,6 +59,7 @@ export default {
       points: 'Punkte',
       title: 'KlickerUZH',
       send: 'Absenden',
+      submit: 'Absenden',
       save: 'Speichern',
       start: 'Starten',
       continue: 'Weiter',
@@ -107,6 +108,7 @@ export default {
       free: 'Frei',
       congrats: 'Gratulation!',
       thanks: 'Vielen Dank!',
+      bookmark: 'Bookmark',
       bookmarks: 'Bookmarks',
       group: 'Gruppe',
       create: 'Erstellen',
@@ -201,7 +203,7 @@ export default {
     delegatedAccess: 'Delegierter Zugriff',
     signedInAs: 'Sie sind bereits eingelogged als {username}',
     tosAgreement:
-      'Ich akzeptiere die KlickerUZH <tos></tos> und <privacy></privacy>.',
+      'Ich akzeptiere die KlickerUZH <tos></tos> (aktualisiert am 26.08.2023) und <privacy></privacy> (aktualisiert am 26.08.2023).',
     termsOfService: 'Nutzungsbedingungen',
     privacyPolicy: 'Datenschutzerklärung',
     tosUrl: 'https://www.klicker.uzh.ch/nutzungsbedingungen',
@@ -344,7 +346,7 @@ Practice Quiz und Microlearning sind über direkte Links verfügbar, die Sie von
       `,
       appSetupTitle: 'App Installation',
       appSetup: `
-Um von überall auf KlickerUZH zugreifen zu können, gibt es eine KlickerUZH-App. Mit der App können Sie die Lerninhalte Ihrer Kurse (mit KlickerUZH) einfach verwalten und darauf zugreifen, sowie wichtige Elemente zu Ihrer privaten Wiederholungsbibliothek hinzufügen und an den gamifizierten Elementen (Challenge) teilnehmen. Außerdem können Sie (aktuell nur auf Android) die Push-Benachrichtigungen für Microlearning in Ihren Kursen aktivieren.
+Um von überall auf KlickerUZH zugreifen zu können, gibt es eine KlickerUZH-App. Mit der App können Sie die Lerninhalte Ihrer Kurse (mit KlickerUZH) einfach verwalten und darauf zugreifen, sowie wichtige Elemente zu Ihrer privaten Wiederholungsbibliothek hinzufügen und an den gamifizierten Elementen (Challenge) teilnehmen. Außerdem können Sie die Push-Benachrichtigungen für Microlearning in Ihren Kursen aktivieren.
 
 Sie können die KlickerUZH-App wie folgt einrichten:
 
@@ -361,8 +363,8 @@ Nach der Installation sollten Sie die App auf Ihrem Startbildschirm finden und k
 Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie dieser Anleitung, um die App auf Ihrem Startbildschirm hinzuzufügen.
 
 1. Öffnen Sie den folgenden Link auf Ihrem Smartphone: [{pwa_url}/login]({pwa_url}/login)
-2. Es sollte eine Meldung "Zum Homescreen hinzufügen" / "Zum Startbildschirm zufügen" erscheinen - klicken Sie darauf.
-3. Akzeptieren Sie, dass die App installiert wird. Sobald die App installiert ist, sollten Sie zum Log-in weitergeleitet werden. Sie werden auch ein neues KlickerUZH-Symbol auf Ihrem Startbildschirm oder in der App-Schublade finden.
+2. Nutzen Sie den Teilen-Dialog und klicken Sie auf "Zum Homescreen hinzufügen" / "Zum Startbildschirm zufügen".
+3. Akzeptieren Sie, dass die App installiert wird. Sobald die App installiert ist, sollten Sie zum Log-in weitergeleitet werden. Sie werden auch ein neues KlickerUZH-Symbol auf Ihrem Startbildschirm finden.
       `,
     },
     login: {
@@ -401,7 +403,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       bookmarkedQuestionsTitle: 'Bookmarks in {courseName}',
       bookmarkedQuestionsDesc:
         'Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie einem gewöhnlichen Lernelement dargestellt.',
-      noBooksmarksSet:
+      noBookmarksSet:
         'Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage.',
       awards: 'Auszeichnungen',
       open: 'offen',
@@ -469,6 +471,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       flashcardPartialResponse: 'Teilweise',
       flashcardYesResponse: 'Ja',
       resetAnswers: 'Antworten zurücksetzen',
+      markAllAsRead: 'Alle als gelesen markieren',
+      read: 'Gelesen',
+      feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
+      feedbackRequired: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
+      flagElement: 'Fehler melden',
+      flagElementText:
+        'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Elementen eines Practice Quiz / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
+      addFeedback: 'Feedback hinzufügen',
+      submitFeedback: 'Feedback abschicken',
     },
     microSession: {
       notFound:
@@ -672,6 +683,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       languageSettings: 'Spracheinstellungen',
       languageTooltip:
         'Ändern Sie hier die Programmsprache der KlickerUZH Manage App. Beachten Sie, dass dies keinerlei Einfluss auf Ihre Kursinhalte oder die Spracheinstellungen bei anderen Nutzern oder Studierenden in Ihren Kursen hat.',
+      confirmDelegatedAcces: 'Delegierten Login bestätigen',
+      confirmDelegatedAccesTooltip:
+        'Bitte überprüfen Sie die Zugangsdaten für den delegierten Login. Kopieren Sie das Passwort, bevor Sie dieses Pop-Up schliessen, da es nicht erneut angezeigt werden kann.',
       FULL_ACCESS: 'Voller Zugriff',
       SESSION_EXEC: 'Durchführung von Sessionen',
       READ_ONLY: 'Nur Lesen',
@@ -701,6 +715,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shortnameAlphanumeric:
         'Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.',
       shortnameTaken: 'Dieser Kurzname ist bereits vergeben.',
+      emailUpdates: 'Project-Updates per E-Mail',
+      emailUpdatesTooltip:
+        'Diese Einstellung beeinflusst die E-Mails, die Sie in Verbindung mit KlickerUZH erhalten. E-Mails zu wichtigen Releases werden immer an Ihre Edu-ID E-Mail-Adresse gesendet (ca. 2x pro Jahr), häufigere Projekt-Updates (z.B. zu Beta-Tests oder Umfragen) können hier aktiviert oder deaktiviert werden.',
     },
     token: {
       pageName: 'Token Generation',
@@ -717,18 +734,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pageName: 'Migration der Daten von KlickerV2',
       step1Title: 'Schritt 1: Migrations-Token anfordern',
       step1Description:
-        'Um Ihr altes Konto auf KlickerUZH v3.0 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist (siehe https://app.klicker.uzh.ch/user/settings). Danach erhalten Sie einen Link, um mit der Migration fortzufahren. Sollten Sie innerhalb der nächsten 5 Minuten keine E-Mail erhalten, überprüfen Sie bitte Ihren Spam-Ordner und starten Sie den Prozess erneut. Stellen Sie sicher, dass Sie Zugriff auf diese Mailbox haben.',
+        'Um Ihr altes Konto auf KlickerUZH v3.0 zu migrieren, geben Sie die E-Mail an, die mit Ihrem alten Konto verknüpft ist (siehe https://app.klicker.uzh.ch/user/settings). Danach erhalten Sie einen Link, um mit der Migration fortzufahren. Sollten Sie innerhalb der nächsten 5 Minuten keine E-Mail erhalten, überprüfen Sie bitte Ihren Spam-Ordner und starten Sie den Prozess erneut. Stellen Sie sicher, dass Sie Zugriff auf diese Mailbox haben. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@bf.uzh.ch.',
       requestMigrationToken: 'Migrations-Token anfordern',
       step2Title: 'Schritt 2: Migrations-Link einfügen',
       step2Description:
-        'Sie sollten eine E-Mail mit einem Migrations-Link in Ihr KlickerUZH-v2.0 Postfach erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner oder starten Sie den Prozess erneut. Klicken oder kopieren Sie den erhaltenen Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren.',
+        'Sie sollten eine E-Mail mit einem Migrations-Link in Ihr KlickerUZH-v2.0 Postfach erhalten haben. Wenn sie nicht in Ihrem Posteingang ist, überprüfen Sie den Spam-Ordner oder starten Sie den Prozess erneut. Klicken oder kopieren Sie den erhaltenen Link und fügen Sie ihn in die Adresszeile Ihres Browsers ein, um fortzufahren. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@bf.uzh.ch.',
       step3Title: 'Schritt 3: Migration starten',
       step3Description:
-        'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist.',
+        'Sie sind fast fertig! Klicken Sie auf den unten stehenden Button, um die Migration zu starten. Bitte beachten Sie, dass die Migration einige Zeit in Anspruch nehmen kann. Sie können die Seite schliessen, sobald die Migration gestartet wurde. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@bf.uzh.ch.',
       startMigration: 'Migration starten',
       step4Title: 'Schritt 4: Benachrichtigung über den Migrationsstatus',
       step4Description:
-        'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist.',
+        'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@bf.uzh.ch.',
     },
     questionPool: {
       createLiveSession: 'Live-Session erstellen',
@@ -841,9 +858,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enterContentHere: 'Inhalt hier eingeben…',
       questionsDragDrop: 'Fügen Sie mittels Drag&Drop Fragen hinzu.',
       newQuestion: 'Neue Frage',
+      blockSettingsTitle: 'Einstellungen Block {blockIx}',
       timeLimit: 'Zeit-Limit',
       optionalTimeLimit: 'Optionales Zeit-Limit',
-      timeLimitTooltip: 'Zeit-Limit für Block ${blockIx} in Sekunden',
+      timeLimitTooltip: 'Zeit-Limit für Block {blockIx} in Sekunden',
       newBlock: 'Neuer Block',
       newBlockSelected: '1 Block mit {count} Fragen anfügen',
       pasteSelection: '{count} Fragen hinzufügen',

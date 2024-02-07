@@ -8,6 +8,7 @@ import {
   GetUserLoginsDocument,
   UserLoginScope,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { monoSpaceFont } from '@klicker-uzh/shared-components/src/font'
 import {
   Button,
@@ -15,6 +16,7 @@ import {
   FormikTextField,
   H4,
   Label,
+  Modal,
   Prose,
   Toast,
 } from '@uzh-bf/design-system'
@@ -40,6 +42,7 @@ interface DelegatedAccessSettingsProps {
 
 function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
   const t = useTranslations()
+  const [confirmationModal, setConfirmationModal] = useState(false)
   const { data: userLogins } = useSuspenseQuery(GetUserLoginsDocument)
   // const { data: scope } = useSuspenseQuery(GetUserScopeDocument)
 
@@ -139,13 +142,14 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                   scope: values.scope,
                 },
               })
+              setConfirmationModal(false)
 
               if (result.data?.createUserLogin) {
+                resetForm()
                 setFieldValue(
                   'password',
                   generatePassword.generate(PW_SETTINGS)
                 )
-                resetForm()
               }
             }}
           >
@@ -248,7 +252,7 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     />
                   </div>
                   <Button
-                    type="submit"
+                    type="button"
                     className={{
                       root: twMerge(
                         'float-right mt-2 mb-2 bg-primary-80 text-white',
@@ -258,9 +262,72 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     }}
                     disabled={!isValid || isSubmitting}
                     data={{ cy: 'create-delegated-login' }}
+                    onClick={() => setConfirmationModal(true)}
                   >
                     {t('manage.settings.createLogin')}
                   </Button>
+                  <Modal
+                    title={t('manage.settings.confirmDelegatedAcces')}
+                    open={confirmationModal}
+                    onClose={() => setConfirmationModal(false)}
+                    className={{
+                      content: '!min-h-[10rem] h-max w-1/2 !pb-1',
+                    }}
+                  >
+                    <div>
+                      {t('manage.settings.confirmDelegatedAccesTooltip')}
+                    </div>
+                    <div className="p-3 mt-2 bg-gray-300 rounded-lg">
+                      <div>
+                        <span className="font-bold">
+                          {t('shared.generic.shortname')}:{' '}
+                        </span>
+                        {shortname}
+                      </div>
+                      <div className="flex flex-row items-center gap-2">
+                        <div>
+                          <span className="font-bold">
+                            {t('shared.generic.password')}:{' '}
+                          </span>
+                          {values.password}
+                        </div>
+                        <Button
+                          onClick={() => {
+                            navigator?.clipboard
+                              ?.writeText(values.password)
+                              .then(
+                                () => {
+                                  setCopiedPassword(true)
+                                },
+                                () => {
+                                  setCopiedPassword(false)
+                                }
+                              )
+                          }}
+                          data={{ cy: 'copy-new-delegated-login-password' }}
+                        >
+                          <FontAwesomeIcon
+                            icon={faClipboard}
+                            className="w-4 -mx-1"
+                          />
+                        </Button>
+                      </div>
+                    </div>
+                    <Button
+                      type="submit"
+                      className={{
+                        root: twMerge(
+                          'float-right mt-2 mb-2 bg-primary-80 text-white',
+                          (!isValid || isSubmitting) &&
+                            'bg-primary-20 cursor-not-allowed'
+                        ),
+                      }}
+                      disabled={!isValid || isSubmitting}
+                      data={{ cy: 'confirm-delegated-login-creation' }}
+                    >
+                      {isSubmitting ? <Loader /> : t('shared.generic.confirm')}
+                    </Button>
+                  </Modal>
                 </Form>
               )
             }}

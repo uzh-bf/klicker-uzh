@@ -1,4 +1,11 @@
-import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChoicesQuestionData,
+  ElementType,
+  FreeTextQuestionData,
+  FreeTextQuestionOptions,
+  NumericalQuestionData,
+  NumericalQuestionOptions,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { without } from 'ramda'
 import { twMerge } from 'tailwind-merge'
@@ -9,15 +16,15 @@ import React, { useEffect } from 'react'
 
 import { useTranslations } from 'next-intl'
 import { QUESTION_GROUPS } from './constants'
-import { FREETextAnswerOptions } from './questions/FREETextAnswerOptions'
-import KPAnswerOptions from './questions/KPAnswerOptions'
-import { NUMERICALAnswerOptions } from './questions/NUMERICALAnswerOptions'
-import { SCAnswerOptions } from './questions/SCAnswerOptions'
+import { FREETextAnswerOptionsOLD } from './questions/FREETextAnswerOptionsOLD'
+import KPAnswerOptionsOLD from './questions/KPAnswerOptionsOLD'
+import { NUMERICALAnswerOptionsOLD } from './questions/NUMERICALAnswerOptionsOLD'
+import { SCAnswerOptionsOLD } from './questions/SCAnswerOptionsOLD'
 import SessionProgress from './questions/SessionProgress'
 // TODO: merge validation logic in this file with the validateResponse utils
 import {
-  validateKprimResponse,
-  validateMcResponse,
+  validateKprimResponseOld,
+  validateMcResponseOld,
 } from './utils/validateResponse'
 
 export interface StudentQuestionProps {
@@ -28,15 +35,11 @@ export interface StudentQuestionProps {
   isSubmitDisabled: boolean
   onSubmit: () => void
   onExpire: () => void
-  currentQuestion: {
-    displayMode?: ElementDisplayMode
-    content: string
-    id: number
-    name: string
-    type: ElementType
-    options: any
-    instanceId: number
-  }
+  currentQuestion: (
+    | ChoicesQuestionData
+    | NumericalQuestionData
+    | FreeTextQuestionData
+  ) & { instanceId?: number }
   inputValue: string | any[] | {}
   inputValid: boolean
   inputEmpty: boolean
@@ -93,7 +96,7 @@ export const StudentQuestion = ({
         if (typeof inputValue === 'object') {
           setInputState({
             inputEmpty: false,
-            inputValid: validateMcResponse(inputValue),
+            inputValid: validateMcResponseOld(inputValue),
             inputValue: [],
           })
         }
@@ -103,7 +106,7 @@ export const StudentQuestion = ({
 
           return setInputState({
             inputEmpty: newInputValue.length === 0,
-            inputValid: validateMcResponse(newInputValue),
+            inputValid: validateMcResponseOld(newInputValue),
             inputValue: newInputValue,
           })
         }
@@ -112,7 +115,7 @@ export const StudentQuestion = ({
         const newInputValue = [...inputValue, choice]
         return setInputState({
           inputEmpty: false,
-          inputValid: validateMcResponse(newInputValue),
+          inputValid: validateMcResponseOld(newInputValue),
           inputValue: newInputValue,
         })
       }
@@ -125,7 +128,7 @@ export const StudentQuestion = ({
 
         return setInputState({
           inputEmpty: Object.keys(newInputValue).length === 0,
-          inputValid: validateKprimResponse(newInputValue),
+          inputValid: validateKprimResponseOld(newInputValue),
           inputValue: newInputValue,
         })
       }
@@ -140,16 +143,17 @@ export const StudentQuestion = ({
 
   const onFreeTextValueChange = (inputValue: any): void => {
     const inputEmpty = !inputValue || inputValue.length === 0
+    const questionOptions = currentQuestion.options as FreeTextQuestionOptions
 
     let schema = Yup.object().shape({ input: Yup.string() })
 
     if (
-      typeof currentQuestion.options?.restrictions?.maxLength === 'number' &&
-      !isNaN(currentQuestion.options?.restrictions?.maxLength)
+      typeof questionOptions.restrictions?.maxLength === 'number' &&
+      !isNaN(questionOptions.restrictions.maxLength)
     ) {
       schema = Yup.object().shape({
         input: Yup.string()
-          .max(currentQuestion.options?.restrictions?.maxLength)
+          .max(questionOptions.restrictions.maxLength)
           .required(),
       })
     }
@@ -177,19 +181,20 @@ export const StudentQuestion = ({
       typeof inputValue === 'undefined' ||
       inputValue === null ||
       inputValue === ''
+    const questionOptions = currentQuestion.options as NumericalQuestionOptions
 
     let validator = Yup.number().required()
     if (
-      typeof currentQuestion.options?.restrictions?.min === 'number' &&
-      !isNaN(currentQuestion.options?.restrictions?.min)
+      typeof questionOptions.restrictions?.min === 'number' &&
+      !isNaN(questionOptions.restrictions.min)
     ) {
-      validator = validator.min(currentQuestion.options?.restrictions?.min)
+      validator = validator.min(questionOptions.restrictions.min)
     }
     if (
-      typeof currentQuestion.options?.restrictions?.max === 'number' &&
-      !isNaN(currentQuestion.options?.restrictions?.max)
+      typeof questionOptions.restrictions?.max === 'number' &&
+      !isNaN(questionOptions.restrictions.max)
     ) {
-      validator = validator.max(currentQuestion.options?.restrictions?.max)
+      validator = validator.max(questionOptions.restrictions.max)
     }
     const schema = Yup.object().shape({
       input: validator,
@@ -251,8 +256,8 @@ export const StudentQuestion = ({
 
         {QUESTION_GROUPS.CHOICES.includes(currentQuestion.type) &&
           (currentQuestion.type === ElementType.Kprim ? (
-            <KPAnswerOptions
-              displayMode={currentQuestion.displayMode}
+            <KPAnswerOptionsOLD
+              displayMode={currentQuestion.options.displayMode}
               type={currentQuestion.type}
               choices={currentQuestion.options.choices}
               value={
@@ -263,8 +268,8 @@ export const StudentQuestion = ({
               onChange={onActiveChoicesChange(currentQuestion.type)}
             />
           ) : (
-            <SCAnswerOptions
-              displayMode={currentQuestion.displayMode}
+            <SCAnswerOptionsOLD
+              displayMode={currentQuestion.options.displayMode}
               type={currentQuestion.type}
               choices={currentQuestion.options.choices}
               value={
@@ -277,7 +282,7 @@ export const StudentQuestion = ({
           ))}
 
         {QUESTION_GROUPS.FREE_TEXT.includes(currentQuestion.type) && (
-          <FREETextAnswerOptions
+          <FREETextAnswerOptionsOLD
             onChange={onFreeTextValueChange}
             maxLength={currentQuestion.options?.restrictions?.maxLength}
             value={inputValue as string}
@@ -285,7 +290,7 @@ export const StudentQuestion = ({
         )}
 
         {QUESTION_GROUPS.NUMERICAL.includes(currentQuestion.type) && (
-          <NUMERICALAnswerOptions
+          <NUMERICALAnswerOptionsOLD
             min={currentQuestion.options?.restrictions?.min}
             max={currentQuestion.options?.restrictions?.max}
             valid={inputValid || inputEmpty}

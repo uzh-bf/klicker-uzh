@@ -1,6 +1,5 @@
 import {
   Element,
-  ElementDisplayMode,
   ElementStackType,
   ElementType,
   Prisma,
@@ -8,6 +7,19 @@ import {
   QuestionInstance,
   SessionBlockStatus,
 } from '@klicker-uzh/prisma'
+
+export enum DisplayMode {
+  LIST = 'LIST',
+  GRID = 'GRID',
+}
+
+export enum QuestionType {
+  SC = 'SC',
+  MC = 'MC',
+  KPRIM = 'KPRIM',
+  NUMERICAL = 'NUMERICAL',
+  FREE_TEXT = 'FREE_TEXT',
+}
 
 export type PrismaMigrationClient = Omit<
   PrismaClient<Prisma.PrismaClientOptions, never>,
@@ -45,33 +57,48 @@ export type QuestionResponseValue = {
   value: string
 }
 
-export enum Correctness {
-  WRONG = 0,
-  PARTIAL = 1,
-  CORRECT = 2,
+export enum FlashcardCorrectness {
+  INCORRECT = 'INCORRECT',
+  PARTIAL = 'PARTIAL',
+  CORRECT = 'CORRECT',
 }
 
+export enum StackFeedbackStatus {
+  UNANSWERED = 'unanswered',
+  MANUALLY_GRADED = 'manuallyGraded',
+  CORRECT = 'correct',
+  INCORRECT = 'incorrect',
+  PARTIAL = 'partial',
+}
+
+// TODO: merge this with QuestionResults (ElementResults)
 export type AggregatedResponseFlashcard = {
-  [Correctness.WRONG]: number
-  [Correctness.PARTIAL]: number
-  [Correctness.CORRECT]: number
+  [FlashcardCorrectness.INCORRECT]: number
+  [FlashcardCorrectness.PARTIAL]: number
+  [FlashcardCorrectness.CORRECT]: number
   total: number
 }
 
 export type AggregatedResponse = AggregatedResponseFlashcard
 
 export type QuestionResponseFlashcard = {
-  correctness: Correctness
+  correctness: FlashcardCorrectness
+}
+
+export type QuestionResponseContent = {
+  viewed: boolean
 }
 
 export type QuestionResponse =
   | QuestionResponseChoices
   | QuestionResponseValue
   | QuestionResponseFlashcard
+  | QuestionResponseContent
 
 // TODO: results should also include the participants count (instead of storing it on the top-level)
 export type QuestionResultsChoices = {
   choices: Record<string, number>
+  total: number
 }
 
 // TODO: to be consistent with choices results, the real results should be nested inside an e.g., values object, and participants should be included as a property
@@ -81,6 +108,8 @@ export type QuestionResultsOpen = {
     value: string
     correct?: boolean
   }
+} & {
+  total: number
 }
 
 export type QuestionResults = QuestionResultsChoices | QuestionResultsOpen
@@ -92,17 +121,32 @@ export type Choice = {
   feedback?: string
 }
 
-interface BaseElementOptions {
+export type ChoicesInputType = {
+  type: QuestionType.SC | QuestionType.MC | QuestionType.KPRIM
+  value: number[]
+}
+
+export type NumericalInputType = {
+  type: QuestionType.NUMERICAL
+  value: number
+}
+
+export type FreeTextInputType = {
+  type: QuestionType.FREE_TEXT
+  value: string
+}
+
+interface BaseQuestionOptions {
   hasSampleSolution?: boolean
   hasAnswerFeedbacks?: boolean
 }
 
-export interface ElementOptionsChoices extends BaseElementOptions {
+export interface ElementOptionsChoices extends BaseQuestionOptions {
   choices: Choice[]
-  displayMode: ElementDisplayMode
+  displayMode: DisplayMode
 }
 
-export interface ElementOptionsNumerical extends BaseElementOptions {
+export interface ElementOptionsNumerical extends BaseQuestionOptions {
   unit?: string | null
   accuracy?: number
   placeholder?: string
@@ -116,34 +160,36 @@ export interface ElementOptionsNumerical extends BaseElementOptions {
   }[]
 }
 
-export interface ElementOptionsFreeText extends BaseElementOptions {
+export interface ElementOptionsFreeText extends BaseQuestionOptions {
   solutions?: string[]
   restrictions?: {
     maxLength?: number | null
   }
 }
 
+// TODO: no options for FC and CONTENT?
+export interface ElementOptionsFlashcard {}
+export interface ElementOptionsContent {}
+
 export type ElementOptions =
   | ElementOptionsChoices
   | ElementOptionsNumerical
   | ElementOptionsFreeText
+  | ElementOptionsFlashcard
+  | ElementOptionsContent
 
 export interface BaseElementData {
   type: ElementType
 
   id: string
-  questionId: number
+  elementId: number | null // TODO - remove nullability
+  questionId: number | null // TODO - remove questionId after migration
   name: string
   content: string
   pointsMultiplier: number
   explanation?: string | null
 
   options: object
-
-  // TODO: these legacy props have been moved to options
-  displayMode: ElementDisplayMode
-  hasSampleSolution: boolean
-  hasAnswerFeedbacks: boolean
 }
 
 export type BaseElementDataKeys = (keyof BaseElementData)[]
@@ -153,7 +199,8 @@ interface IElementData<Type extends ElementType, Options extends ElementOptions>
   type: Type
   options: Options
   id: string
-  questionId: number
+  elementId: number | null // TODO - remove nullability
+  questionId: number | null // TODO - remove questionId after migration
 }
 
 // export type FlashcardElementData = IElementData<'FLASHCARD', null>
@@ -170,12 +217,23 @@ export type NumericalElementData = IElementData<
   'NUMERICAL',
   ElementOptionsNumerical
 >
+export type FlashcardElementData = IElementData<
+  'FLASHCARD',
+  ElementOptionsFlashcard
+>
+export type ContentElementData = IElementData<'CONTENT', ElementOptionsContent>
 
 export type AllElementTypeData =
   | ChoicesElementData
   | FreeTextElementData
   | NumericalElementData
-// | FlashcardElementData
+  | FlashcardElementData
+  | ContentElementData
+
+export type ElementInstanceOptions = {
+  pointsMultiplier?: number
+  resetTimeDays?: number
+}
 
 export interface IQuestionInstanceWithResults<
   Type extends ElementType,
@@ -209,13 +267,20 @@ export type AllQuestionInstanceTypeData =
   | OpenQuestionInstanceData
 
 export type FlashcardInstanceResults = {
-  [Correctness.WRONG]: number
-  [Correctness.PARTIAL]: number
-  [Correctness.CORRECT]: number
+  [FlashcardCorrectness.INCORRECT]: number
+  [FlashcardCorrectness.PARTIAL]: number
+  [FlashcardCorrectness.CORRECT]: number
   total: number
 }
 
-export type ElementInstanceResults = FlashcardInstanceResults
+export type ContentInstanceResults = {
+  viewed: number
+}
+
+export type ElementInstanceResults =
+  | FlashcardInstanceResults
+  | ContentInstanceResults
+  | AllQuestionInstanceTypeData
 
 declare global {
   namespace PrismaJson {
@@ -223,6 +288,7 @@ declare global {
     type PrismaElementOptions = ElementOptions
     type PrismaQuestionResults = QuestionResults
     type PrismaElementData = AllElementTypeData
+    type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaElementInstanceResults = ElementInstanceResults
     type PrismaAggregatedResponse = AggregatedResponse
   }
@@ -245,10 +311,13 @@ export type MicrolearningStackOptions = {}
 
 export type PracticeQuizStackOptions = {}
 
+export type GroupActivityStackOptions = {}
+
 export type ElementStackOptions =
   | LiveQuizStackOptions
   | MicrolearningStackOptions
   | PracticeQuizStackOptions
+  | GroupActivityStackOptions
 
 interface IElementStackOptions<
   Type extends ElementStackType,
@@ -259,7 +328,7 @@ export type AllElementStackOptions =
   | IElementStackOptions<'LIVE_QUIZ', LiveQuizStackOptions>
   | IElementStackOptions<'PRACTICE_QUIZ', PracticeQuizStackOptions>
   | IElementStackOptions<'MICROLEARNING', MicrolearningStackOptions>
-  | IElementStackOptions<'GROUP_ACTIVITY', null>
+  | IElementStackOptions<'GROUP_ACTIVITY', GroupActivityStackOptions>
 
 declare global {
   namespace PrismaJson {

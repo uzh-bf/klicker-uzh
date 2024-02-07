@@ -74,7 +74,7 @@ export const QUESTIONS = [
       hasSampleSolution: true,
       hasAnswerFeedbacks: false,
       restrictions: {
-        min: 0,
+        min: -10,
         max: 100,
       },
       solutionRanges: [

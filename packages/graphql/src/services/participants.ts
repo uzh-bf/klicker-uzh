@@ -401,12 +401,14 @@ export async function getParticipation(
 //   }
 // }
 
+// TODO: remove this after migration to practice quiz
 interface BookmarkQuestionArgs {
   stackId: number
   courseId: string
   bookmarked: boolean
 }
 
+// TODO: remove this function after migration to practice quiz
 export async function bookmarkQuestion(
   { stackId, courseId, bookmarked }: BookmarkQuestionArgs,
   ctx: ContextWithUser
@@ -433,10 +435,44 @@ export async function bookmarkQuestion(
   return participation.bookmarkedStacks
 }
 
+interface BookmarkElementStackArgs {
+  stackId: number
+  courseId: string
+  bookmarked: boolean
+}
+
+export async function bookmarkElementStack(
+  { stackId, courseId, bookmarked }: BookmarkElementStackArgs,
+  ctx: ContextWithUser
+) {
+  const participation = await ctx.prisma.participation.update({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    data: {
+      bookmarkedElementStacks: {
+        [bookmarked ? 'connect' : 'disconnect']: {
+          id: stackId,
+        },
+      },
+    },
+    include: {
+      bookmarkedElementStacks: true,
+    },
+  })
+
+  return participation.bookmarkedElementStacks.map((stack) => stack.id)
+}
+
+// TODO: remove after migration
 interface GetBookmarkedQuestionsArgs {
   courseId: string
 }
 
+// TODO: remove after migration
 export async function getBookmarkedQuestions(
   { courseId }: GetBookmarkedQuestionsArgs,
   ctx: ContextWithUser
@@ -464,6 +500,38 @@ export async function getBookmarkedQuestions(
   return participation?.bookmarkedStacks ?? []
 }
 
+interface GetBookmarkedElementStacksArgs {
+  courseId: string
+}
+
+export async function getBookmarkedElementStacks(
+  { courseId }: GetBookmarkedElementStacksArgs,
+  ctx: ContextWithUser
+) {
+  const participation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    include: {
+      bookmarkedElementStacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+    },
+  })
+
+  return participation?.bookmarkedElementStacks ?? []
+}
+
+// TODO: remove after migration to element instances
 export async function flagQuestion(
   args: { questionInstanceId: number; content: string },
   ctx: ContextWithUser
@@ -526,6 +594,66 @@ export async function flagQuestion(
         questionInstance.stackElement?.stack?.learningElement?.course
           ?.notificationEmail ||
         questionInstance.microSession?.course?.notificationEmail,
+    }),
+  })
+
+  return 'OK'
+}
+
+export async function flagElement(
+  args: { elementInstanceId: number; content: string },
+  ctx: ContextWithUser
+) {
+  const elementInstance = await ctx.prisma.elementInstance.findUnique({
+    where: {
+      id: args.elementInstanceId,
+    },
+    include: {
+      elementStack: {
+        include: {
+          practiceQuiz: {
+            include: {
+              course: true,
+            },
+          },
+          microLearning: {
+            include: {
+              course: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (
+    !elementInstance?.elementStack.practiceQuiz?.course?.notificationEmail &&
+    !elementInstance?.elementStack.microLearning?.course?.notificationEmail
+  ) {
+    return null
+  }
+
+  const practiceQuiz = elementInstance.elementStack.practiceQuiz
+  const microLearning = elementInstance.elementStack.microLearning
+
+  await fetch(process.env.NOTIFICATION_URL as string, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      elementType: practiceQuiz !== null ? 'Practice Quiz' : 'Micro-Learning',
+      elementId: practiceQuiz?.id || microLearning?.id,
+      elementName: practiceQuiz?.name || microLearning?.name,
+      questionId: elementInstance.elementId,
+      questionName: elementInstance.elementData.name,
+      content: args.content,
+      participantId: ctx.user?.sub,
+      secret: process.env.NOTIFICATION_SECRET,
+      notificationEmail:
+        practiceQuiz?.course?.notificationEmail ||
+        microLearning?.course?.notificationEmail,
     }),
   })
 

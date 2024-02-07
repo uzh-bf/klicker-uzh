@@ -1,10 +1,10 @@
 import { ElementType, QuestionInstance } from '@klicker-uzh/graphql/dist/ops'
 import {
   validateFreeTextResponse,
-  validateKprimResponse,
-  validateMcResponse,
+  validateKprimResponseOld,
+  validateMcResponseOld,
   validateNumericalResponse,
-  validateScResponse,
+  validateScResponseOld,
 } from '@klicker-uzh/shared-components/src/utils/validateResponse'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -15,8 +15,6 @@ import DynamicMarkdown from './DynamicMarkdown'
 
 interface SingleQuestionProps {
   instance: QuestionInstance
-  currentStep: number
-  totalSteps: number
   response: any
   setResponse: (response: any) => void
   setInputValid: (valid: boolean) => void
@@ -25,8 +23,6 @@ interface SingleQuestionProps {
 
 function SingleQuestion({
   instance,
-  currentStep,
-  totalSteps,
   response,
   setResponse,
   setInputValid,
@@ -42,7 +38,7 @@ function SingleQuestion({
 
     switch (instance.questionData.type) {
       case ElementType.Sc:
-        if (validateScResponse(questionResponse)) {
+        if (validateScResponseOld(questionResponse)) {
           setInputValid(true)
           break
         }
@@ -50,7 +46,7 @@ function SingleQuestion({
         break
 
       case ElementType.Mc:
-        if (validateMcResponse(questionResponse)) {
+        if (validateMcResponseOld(questionResponse)) {
           setInputValid(true)
           break
         }
@@ -58,7 +54,7 @@ function SingleQuestion({
         break
 
       case ElementType.Kprim:
-        if (validateKprimResponse(questionResponse)) {
+        if (validateKprimResponseOld(questionResponse)) {
           setInputValid(true)
           break
         }
@@ -69,8 +65,7 @@ function SingleQuestion({
         if (
           validateNumericalResponse({
             response: questionResponse,
-            min: instance.questionData.options.restrictions.min,
-            max: instance.questionData.options.restrictions.max,
+            options: instance.questionData?.options,
           })
         ) {
           setInputValid(true)
@@ -83,7 +78,7 @@ function SingleQuestion({
         if (
           validateFreeTextResponse({
             response: questionResponse,
-            maxLength: instance.questionData.options.restrictions.maxLength,
+            options: instance.questionData?.options,
           })
         ) {
           setInputValid(true)
@@ -152,7 +147,6 @@ function SingleQuestion({
             onChangeResponse={setQuestionResponse}
             questionType={questionData.type}
             options={questionData.options}
-            displayMode={questionData.displayMode}
           />
         </div>
       </div>

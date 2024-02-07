@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
-import { BaseElementData } from 'src/types/app'
 import builder from '../builder'
+import { BaseElementData } from '../types/app'
 import { ElementDataRef } from './elementData'
 import {
   ElementDisplayMode,
@@ -94,6 +94,7 @@ export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
   }),
 })
 
+// TODO: remove after migration to new element structure
 export const ResponseInput = builder.inputType('ResponseInput', {
   // directives: {
   //   oneOf: {},
@@ -121,7 +122,8 @@ export const QuestionFeedback = builder
     }),
   })
 
-export interface IInstanceEvaluation {
+// TODO: remove old evaluation type
+export interface IInstanceEvaluationOLD {
   feedbacks?: IQuestionFeedback[]
   choices?: object[]
   answers?: object[]
@@ -132,8 +134,8 @@ export interface IInstanceEvaluation {
   xpAwarded?: number
   newXpFrom?: Date
 }
-export const InstanceEvaluation = builder
-  .objectRef<IInstanceEvaluation>('InstanceEvaluation')
+export const InstanceEvaluationOLD = builder
+  .objectRef<IInstanceEvaluationOLD>('InstanceEvaluationOLD')
   .implement({
     fields: (t) => ({
       feedbacks: t.expose('feedbacks', {
@@ -160,6 +162,58 @@ export const InstanceEvaluation = builder
     }),
   })
 
+export interface IInstanceEvaluation {
+  instanceId: number
+  pointsMultiplier?: number
+  explanation?: string
+  feedbacks?: IQuestionFeedback[]
+  choices?: object[]
+  answers?: object[]
+  score: number
+  pointsAwarded?: number | null
+  percentile?: number
+  newPointsFrom?: Date
+  xpAwarded?: number
+  newXpFrom?: Date
+  solutions?: string[]
+  solutionRanges?: { min?: number | null; max?: number | null }[]
+}
+export const InstanceEvaluation = builder
+  .objectRef<IInstanceEvaluation>('InstanceEvaluation')
+  .implement({
+    fields: (t) => ({
+      instanceId: t.exposeInt('instanceId'),
+      pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
+      explanation: t.exposeString('explanation', { nullable: true }),
+      feedbacks: t.expose('feedbacks', {
+        type: [QuestionFeedback],
+        nullable: true,
+      }),
+      choices: t.expose('choices', { type: 'Json', nullable: true }),
+      answers: t.expose('answers', {
+        type: 'Json',
+        nullable: true,
+      }),
+      score: t.exposeFloat('score'),
+      pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
+      percentile: t.exposeFloat('percentile', { nullable: true }),
+      newPointsFrom: t.expose('newPointsFrom', {
+        type: 'Date',
+        nullable: true,
+      }),
+      xpAwarded: t.exposeInt('xpAwarded', { nullable: true }),
+      newXpFrom: t.expose('newXpFrom', {
+        type: 'Date',
+        nullable: true,
+      }),
+      solutions: t.expose('solutions', { type: 'Json', nullable: true }),
+      solutionRanges: t.expose('solutionRanges', {
+        type: 'Json',
+        nullable: true,
+      }),
+    }),
+  })
+
 export interface IElement extends Omit<DB.Element, 'ownerId' | 'originalId'> {
   tags?: ITag[] | null
 }
@@ -181,13 +235,9 @@ export const Element = ElementRef.implement({
       type: QuestionDataRef,
       resolve: (q) => q as unknown as BaseElementData,
     }),
-    displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
 
     isArchived: t.exposeBoolean('isArchived'),
     isDeleted: t.exposeBoolean('isDeleted'),
-
-    hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
-    hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
 
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
@@ -200,7 +250,7 @@ export const Element = ElementRef.implement({
 })
 
 export interface IQuestionInstance extends DB.QuestionInstance {
-  evaluation?: IInstanceEvaluation
+  evaluation?: IInstanceEvaluationOLD
 }
 export const QuestionInstanceRef =
   builder.objectRef<IQuestionInstance>('QuestionInstance')
@@ -210,7 +260,7 @@ export const QuestionInstance = QuestionInstanceRef.implement({
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     evaluation: t.expose('evaluation', {
-      type: InstanceEvaluation,
+      type: InstanceEvaluationOLD,
       nullable: true,
     }),
 
@@ -222,22 +272,14 @@ export const QuestionInstance = QuestionInstanceRef.implement({
   }),
 })
 
-export interface IElementInstance extends DB.ElementInstance {
-  evaluation?: IInstanceEvaluation
-}
 export const ElementInstanceRef =
-  builder.objectRef<IElementInstance>('ElementInstance')
+  builder.objectRef<DB.ElementInstance>('ElementInstance')
 export const ElementInstance = ElementInstanceRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
 
     type: t.expose('type', { type: ElementInstanceType }),
     elementType: t.expose('elementType', { type: ElementType }),
-
-    evaluation: t.expose('evaluation', {
-      type: InstanceEvaluation,
-      nullable: true,
-    }),
 
     elementData: t.field({
       type: ElementDataRef,

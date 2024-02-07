@@ -36,6 +36,7 @@ import {
   Participation,
   SubscriptionObjectInput,
 } from './participant'
+import { StackFeedback, StackResponseInput } from './practiceQuizzes'
 import {
   Element,
   OptionsChoicesInput,
@@ -51,7 +52,6 @@ import {
   ConfusionTimestep,
   Feedback,
   FeedbackResponse,
-  QuestionResponse,
   Session,
 } from './session'
 import {
@@ -203,18 +203,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      respondToFlashcardInstance: t.field({
+      respondToPracticeQuizStack: t.field({
         nullable: true,
-        type: QuestionResponse,
+        type: StackFeedback,
         args: {
-          id: t.arg.int({ required: true }),
+          stackId: t.arg.int({ required: true }),
           courseId: t.arg.string({ required: true }),
-          correctness: t.arg.int({
+          responses: t.arg({
+            type: [StackResponseInput],
             required: true,
           }),
         },
         resolve: (_, args, ctx) => {
-          return PracticeQuizService.respondToFlashcardInstance(args, ctx)
+          return PracticeQuizService.respondToPracticeQuizStack(args, ctx)
         },
       }),
 
@@ -453,6 +454,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      bookmarkElementStack: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ['Int'],
+        args: {
+          courseId: t.arg.string({ required: true }),
+          stackId: t.arg.int({ required: true }),
+          bookmarked: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.bookmarkElementStack(args, ctx)
+        },
+      }),
+
       flagQuestion: t.withAuth(asParticipant).string({
         nullable: true,
         args: {
@@ -461,6 +475,17 @@ export const Mutation = builder.mutationType({
         },
         async resolve(_, args, ctx) {
           return ParticipantService.flagQuestion(args, ctx)
+        },
+      }),
+
+      flagElement: t.withAuth(asParticipant).string({
+        nullable: true,
+        args: {
+          elementInstanceId: t.arg.int({ required: true }),
+          content: t.arg.string({ required: true }),
+        },
+        async resolve(_, args, ctx) {
+          return ParticipantService.flagElement(args, ctx)
         },
       }),
 
@@ -912,12 +937,24 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      changeEmailSettings: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: User,
+        args: {
+          projectUpdates: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AccountService.changeEmailSettings(args, ctx)
+        },
+      }),
+
       changeInitialSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
         args: {
           shortname: t.arg.string({ required: true }),
           locale: t.arg({ type: LocaleType, required: true }),
+          sendUpdates: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return AccountService.changeInitialSettings(args, ctx)
@@ -1092,7 +1129,7 @@ export const Mutation = builder.mutationType({
       requestMigrationToken: t.withAuth(asUserOwner).boolean({
         nullable: true,
         args: {
-          email: t.arg.string({ required: true, validate: { email: true } }),
+          email: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
           return MigrationService.requestMigrationToken(args, ctx)

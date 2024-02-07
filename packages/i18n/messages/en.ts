@@ -59,6 +59,7 @@ export default {
       points: 'Points',
       title: 'KlickerUZH',
       send: 'Send',
+      submit: 'Submit',
       save: 'Save',
       start: 'Start',
       continue: 'Continue',
@@ -107,6 +108,7 @@ export default {
       free: 'Free',
       congrats: 'Congratulations!',
       thanks: 'Thank you!',
+      bookmark: 'Bookmark',
       bookmarks: 'Bookmarks',
       group: 'Group',
       create: 'Create',
@@ -201,7 +203,7 @@ export default {
     delegatedAccess: 'Delegated Access',
     signedInAs: 'You are already logged in as {username}',
     tosAgreement:
-      'I consent to the KlickerUZH <tos></tos> and <privacy></privacy>.',
+      'I consent to the KlickerUZH <tos></tos> (updated on 26.08.2023) and <privacy></privacy> (updated on 26.08.2023).',
     termsOfService: 'Terms of Service',
     privacyPolicy: 'Privacy Policy',
     tosUrl: 'https://www.klicker.uzh.ch/terms_of_service',
@@ -344,7 +346,7 @@ Practice quizzes and microlearning are available via direct links that you can r
       `,
       appSetupTitle: 'App Installation',
       appSetup: `
-In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can (on Android) activate the push notifications for microlearning in your courses.
+In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can activate the push notifications for microlearning in your courses.
 
 You can set up the KlickerUZH app as follows:
 
@@ -361,8 +363,8 @@ After installation, you should find the app on your home screen and can log in a
 Since the KlickerUZH app is not yet available on the iOS App Store, follow these instructions to add the app onto your home screen.
 
 1. Open the following link on your smartphone: [{pwa_url}/login]({pwa_url}/login)
-2. A message should appear “Add to Homescreen” / “Zum Startbildschirm zufügen” - click on it.
-3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen or in the app drawer.
+2. Use the share dialogue and click on the button “Add to Homescreen” / “Zum Startbildschirm zufügen”.
+3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen.
       `,
     },
     login: {
@@ -400,7 +402,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       bookmarkedQuestionsTitle: 'Bookmarks for {courseName}',
       bookmarkedQuestionsDesc:
         'This page allows you to repeat all questions with bookmarks from the course {courseName}. They will be displayed as a regular practice quiz.',
-      noBooksmarksSet:
+      noBookmarksSet:
         'You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.',
       awards: 'Awards',
       open: 'open',
@@ -469,6 +471,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       flashcardPartialResponse: 'Partially',
       flashcardYesResponse: 'Yes',
       resetAnswers: 'Reset answers',
+      markAllAsRead: 'Mark all as read',
+      read: 'Read',
+      feedbackTransmitted: 'Your feedback has been transmitted successfully.',
+      feedbackRequired: 'Please add a text to your feedback.',
+      flagElement: 'Report element',
+      flagElementText:
+        'This feedback form is intended to allow you to make a direct comment on the individual elements of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
+      addFeedback: 'Add feedback',
+      submitFeedback: 'Submit feedback',
     },
     microSession: {
       notFound:
@@ -677,6 +688,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       languageSettings: 'Language Settings',
       languageTooltip:
         'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
+      confirmDelegatedAcces: 'Confirm delegated login creation',
+      confirmDelegatedAccesTooltip:
+        'Please check your delegated access login credentials. Make sure to copy the password before closing this dialogue, as it cannot be shown again.',
       FULL_ACCESS: 'Full Access',
       SESSION_EXEC: 'Session Execution',
       READ_ONLY: 'Read Only',
@@ -705,6 +719,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
       shortnameTaken: 'The shortname you have chosen is already taken.',
+      emailUpdates: 'Project Updates via E-Mail',
+      emailUpdatesTooltip:
+        'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
     },
     token: {
       pageName: 'Token Generation',
@@ -721,18 +738,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pageName: 'Migrate Data from KlickerV2',
       step1Title: 'Step 1: Request Migration Token',
       step1Description:
-        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox.',
+        'To migrate your old account to KlickerUZH v3.0, provide the e-mail linked to your old account (see https://app.klicker.uzh.ch/user/settings). After submitting the e-mail, you will receive a link to proceed. If you do not receive a message on the provided e-mail within the next 5 minutes, please check your spam folder and try starting the migration process again. Please ensure you have access to your old e-mail inbox. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
       requestMigrationToken: 'Request Migration Token',
       step2Title: 'Step 2: Insert Migration Link',
       step2Description:
-        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed.',
+        'You should have received an email containing a migration link to your KlickerUZH-v2.0 mailbox. If it is not in your inbox, check the spam folder, or try starting the migration process again. Click or copy the received link and paste it into the address bar of your browser to proceed. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
       step3Title: 'Step 3: Start Migration',
       step3Description:
-        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete.',
+        'You are almost done! Having verified your email, you are all set to initiate the migration. Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
       startMigration: 'Start Migration',
       step4Title: 'Step 4: Migration Status Notification',
       step4Description:
-        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete.',
+        'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
     },
     questionPool: {
       createLiveSession: 'Create live quiz',
@@ -843,9 +860,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       enterContentHere: 'Enter your content here...',
       questionsDragDrop: 'Use drag and drop to add your questions here...',
       newQuestion: 'New question',
+      blockSettingsTitle: 'Settings Block {blockIx}',
       timeLimit: 'Time limit',
       optionalTimeLimit: 'Optional time limit',
-      timeLimitTooltip: 'Time limit for block ${blockIx} in seconds',
+      timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
       newBlockSelected: 'Add 1 block with {count} questions',
       pasteSelection: 'Add {count} questions',

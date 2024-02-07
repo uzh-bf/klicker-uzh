@@ -184,9 +184,9 @@ function Index({ id }: Props) {
             )
           ) : (
             <QuestionArea
-              expiresAt={activeBlock?.expiresAt}
+              expiresAt={activeBlock.expiresAt}
               questions={
-                activeBlock?.instances?.map((question: any) => {
+                activeBlock.instances?.map((question) => {
                   return {
                     ...question.questionData,
                     instanceId: question.id,

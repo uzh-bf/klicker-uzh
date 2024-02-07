@@ -66,21 +66,20 @@ type ChoiceQuestionOptions {
 
 type ChoicesElementData implements ElementData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: ChoiceQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
 type ChoicesQuestionData implements QuestionData {
   content: String!
-  displayMode: ElementDisplayMode
+  elementId: Int
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: ID!
   name: String!
   options: ChoiceQuestionOptions!
@@ -103,6 +102,17 @@ type ConfusionTimestep {
   createdAt: Date!
   difficulty: Int!
   speed: Int!
+}
+
+type ContentElementData implements ElementData {
+  content: String!
+  elementId: Int
+  explanation: String
+  id: ID!
+  name: String!
+  pointsMultiplier: Int!
+  questionId: Int
+  type: ElementType!
 }
 
 type Course {
@@ -143,10 +153,7 @@ scalar Date
 type Element {
   content: String!
   createdAt: Date!
-  displayMode: ElementDisplayMode!
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: Int!
   isArchived: Boolean!
   isDeleted: Boolean!
@@ -162,11 +169,12 @@ type Element {
 
 interface ElementData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
@@ -178,12 +186,14 @@ enum ElementDisplayMode {
 type ElementInstance {
   elementData: ElementData!
   elementType: ElementType!
-  evaluation: InstanceEvaluation
   id: Int!
   type: ElementInstanceType!
 }
 
 enum ElementInstanceType {
+  GROUP_ACTIVITY
+  LIVE_QUIZ
+  MICROLEARNING
   PRACTICE_QUIZ
 }
 
@@ -251,38 +261,39 @@ type FileUploadSAS {
   uploadSasURL: String!
 }
 
+enum FlashcardCorrectnessType {
+  CORRECT
+  INCORRECT
+  PARTIAL
+}
+
 type FlashcardElementData implements ElementData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
-  options: FlashcardElementOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
-}
-
-type FlashcardElementOptions {
-  fake: String!
 }
 
 type FreeTextElementData implements ElementData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: FreeTextQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
 type FreeTextQuestionData implements QuestionData {
   content: String!
-  displayMode: ElementDisplayMode
+  elementId: Int
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: ID!
   name: String!
   options: FreeTextQuestionOptions!
@@ -382,6 +393,23 @@ type GroupLeaderboardEntry {
 }
 
 type InstanceEvaluation {
+  answers: Json
+  choices: Json
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  newPointsFrom: Date
+  newXpFrom: Date
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int
+  score: Float!
+  solutionRanges: Json
+  solutions: Json
+  xpAwarded: Int
+}
+
+type InstanceEvaluationOLD {
   answers: Json
   choices: Json
   feedbacks: [QuestionFeedback!]
@@ -509,12 +537,14 @@ enum MicroSessionStatus {
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
+  bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   bookmarkQuestion(bookmarked: Boolean!, courseId: String!, stackId: Int!): [QuestionStack!]
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDates(courseId: String!, endDate: Date, startDate: Date): Course
   changeCourseDescription(courseId: String!, input: String!): Course
-  changeInitialSettings(locale: LocaleType!, shortname: String!): User
+  changeEmailSettings(projectUpdates: Boolean!): User
+  changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
   changeParticipantLocale(locale: LocaleType!): Participant
   changeSessionSettings(id: String!, isConfusionFeedbackEnabled: Boolean, isGamificationEnabled: Boolean, isLiveQAEnabled: Boolean, isModerationEnabled: Boolean): Session
   changeShortname(shortname: String!): User
@@ -542,6 +572,7 @@ type Mutation {
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
   editTag(id: Int!, name: String!): Tag
   endSession(id: String!): Session
+  flagElement(content: String!, elementInstanceId: Int!): String
   flagQuestion(content: String!, questionInstanceId: Int!): String
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
@@ -566,7 +597,7 @@ type Mutation {
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
-  respondToFlashcardInstance(correctness: Int!, courseId: String!, id: Int!): QuestionResponse
+  respondToPracticeQuizStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
   respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
   sendPushNotifications: Boolean!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
@@ -588,21 +619,20 @@ type Mutation {
 
 type NumericalElementData implements ElementData {
   content: String!
+  elementId: Int
   explanation: String
   id: ID!
   name: String!
   options: NumericalQuestionOptions!
   pointsMultiplier: Int!
-  questionId: Int!
+  questionId: Int
   type: ElementType!
 }
 
 type NumericalQuestionData implements QuestionData {
   content: String!
-  displayMode: ElementDisplayMode
+  elementId: Int
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: ID!
   name: String!
   options: NumericalQuestionOptions!
@@ -775,8 +805,10 @@ type Query {
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(id: String!): [Feedback!]
+  getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarkedQuestions(courseId: String!): [QuestionStack!]
   getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionStack!]
+  getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   getParticipation(courseId: String!): Participation
@@ -816,10 +848,8 @@ type Query {
 
 interface QuestionData {
   content: String!
-  displayMode: ElementDisplayMode
+  elementId: Int
   explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
   id: ID!
   name: String!
   pointsMultiplier: Int
@@ -835,7 +865,7 @@ type QuestionFeedback {
 }
 
 type QuestionInstance {
-  evaluation: InstanceEvaluation
+  evaluation: InstanceEvaluationOLD
   id: Int!
   pointsMultiplier: Int!
   questionData: QuestionData
@@ -957,8 +987,33 @@ input StackElementInput {
   questionId: Int
 }
 
+type StackFeedback {
+  evaluations: [InstanceEvaluation!]
+  id: Int!
+  score: Int
+  status: StackFeedbackStatus!
+}
+
+enum StackFeedbackStatus {
+  correct
+  incorrect
+  manuallyGraded
+  partial
+  unanswered
+}
+
 input StackInput {
   elements: [StackElementInput!]!
+}
+
+input StackResponseInput {
+  choicesResponse: [Int!]
+  contentReponse: Boolean
+  flashcardResponse: FlashcardCorrectnessType
+  freeTextResponse: String
+  instanceId: Int!
+  numericalResponse: Float
+  type: ElementType!
 }
 
 type Statistics {
@@ -1019,6 +1074,7 @@ type User {
   loginToken: String
   loginTokenExpiresAt: Date
   mediaFiles: [MediaFile!]
+  sendProjectUpdates: Boolean!
   shortname: String!
 }
 

@@ -1,4 +1,4 @@
-import { FetchResult, useMutation } from '@apollo/client'
+import { FetchResult, useLazyQuery, useMutation } from '@apollo/client'
 import {
   LoginParticipantDocument,
   SelfDocument,
@@ -17,6 +17,7 @@ function Login() {
   const router = useRouter()
 
   const [loginParticipant] = useMutation(LoginParticipantDocument)
+  const [fetchSelf] = useLazyQuery(SelfDocument)
   const [error, setError] = useState<string>('')
   const [showError, setShowError] = useState(false)
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
@@ -42,17 +43,15 @@ function Login() {
           username: values.username.trim(),
           password: values.password.trim(),
         },
-        refetchQueries: [SelfDocument],
-        awaitRefetchQueries: true,
       })
-      const userID: string | null = result.data!.loginParticipant
-      if (!userID) {
+
+      if (!result.data?.loginParticipant) {
         setError(t('shared.generic.loginError'))
         setShowError(true)
         setSubmitting(false)
         resetForm()
       } else {
-        console.log('Login successful!', userID)
+        await fetchSelf()
 
         // redirect to the specified redirect path (default: question pool)
         router.push(decodedRedirectPath)

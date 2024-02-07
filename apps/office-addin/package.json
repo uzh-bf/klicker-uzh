@@ -1,9 +1,9 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.1.0-beta.26",
+  "version": "3.1.0-beta.36",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@uzh-bf/design-system": "2.4.7",
+    "@uzh-bf/design-system": "2.4.9",
     "core-js": "3.30.2",
     "es6-promise": "4.2.8",
     "formik": "2.4.3",

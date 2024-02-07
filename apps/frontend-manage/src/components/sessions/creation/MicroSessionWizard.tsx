@@ -184,13 +184,21 @@ function MicroSessionWizard({
           displayName: initialValues?.displayName || '',
           description: initialValues?.description || '',
           questions:
-            initialValues?.instances?.map((instance) => {
-              return {
-                id: instance.questionData.questionId,
-                title: instance.questionData.name,
-                hasAnswerFeedbacks: instance.questionData.hasAnswerFeedbacks,
-                hasSampleSolution: instance.questionData.hasSampleSolution,
+            initialValues?.instances?.flatMap((instance) => {
+              if (!instance.questionData) {
+                return []
               }
+
+              return [
+                {
+                  id: instance.questionData.questionId,
+                  title: instance.questionData.name,
+                  hasAnswerFeedbacks:
+                    instance.questionData?.options.hasAnswerFeedbacks,
+                  hasSampleSolution:
+                    instance.questionData.options.hasSampleSolution,
+                },
+              ]
             }) || [],
           startDate: initialValues?.scheduledStartAt
             ? dayjs(initialValues?.scheduledStartAt)
