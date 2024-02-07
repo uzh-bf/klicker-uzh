@@ -16,6 +16,7 @@ import {
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -1442,4 +1443,60 @@ export async function getBookmarksPracticeQuiz(
   })
 
   return participation?.bookmarkedElementStacks.map((stack) => stack.id)
+}
+
+interface DeletePracticeQuizArgs {
+  id: string
+}
+
+export async function deletePracticeQuiz(
+  { id }: DeletePracticeQuizArgs,
+  ctx: ContextWithUser
+) {
+  try {
+    const deletedItem = await ctx.prisma.practiceQuiz.delete({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+        status: PublicationStatus.DRAFT,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id,
+    })
+
+    return deletedItem
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e?.code === 'P2025') {
+      console.log(
+        'The practice quiz is not in draft status and cannot be deleted.'
+      )
+      return null
+    }
+
+    throw e
+  }
+}
+
+interface PublishPracticeQuizArgs {
+  id: string
+}
+
+export async function publishPracticeQuiz(
+  { id }: PublishPracticeQuizArgs,
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      status: PublicationStatus.PUBLISHED,
+    },
+  })
+
+  return practiceQuiz
 }

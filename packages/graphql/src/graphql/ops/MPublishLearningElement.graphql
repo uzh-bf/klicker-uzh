@@ -1,5 +1,5 @@
 mutation PublishLearningElement($id: String!) {
-  publishLearningElement(id: $id) {
+  publishPracticeQuiz(id: $id) {
     id
     name
     displayName
