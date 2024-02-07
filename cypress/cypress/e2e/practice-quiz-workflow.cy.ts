@@ -67,13 +67,13 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
+      .contains(messages.manage.sessionForms.learningElementSPACED_REPETITION)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSHUFFLED}"]`
+      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
     ).click()
     cy.get('[data-cy="select-order"]').contains(
-      messages.manage.sessionForms.learningElementSHUFFLED
+      messages.manage.sessionForms.learningElementSEQUENTIAL
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -207,13 +207,13 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
+      .contains(messages.manage.sessionForms.learningElementSPACED_REPETITION)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSHUFFLED}"]`
+      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
     ).click()
     cy.get('[data-cy="select-order"]').contains(
-      messages.manage.sessionForms.learningElementSHUFFLED
+      messages.manage.sessionForms.learningElementSEQUENTIAL
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -266,9 +266,6 @@ describe('Different practice quiz workflows', () => {
       .should('have.value', '4')
       .clear()
       .type('10')
-    cy.get('[data-cy="select-order"]')
-      .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSHUFFLED)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
       `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`

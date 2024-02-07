@@ -2,9 +2,9 @@ import { useMutation } from '@apollo/client'
 import {
   CreatePracticeQuizDocument,
   EditPracticeQuizDocument,
+  ElementOrderType,
   ElementType,
   GetSingleCourseDocument,
-  LearningElementOrderType,
   PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -209,8 +209,7 @@ function LearningElementWizard({
             ? String(initialValues?.pointsMultiplier)
             : '1',
           courseId: initialValues?.course?.id || courses?.[0]?.value,
-          order:
-            initialValues?.orderType || LearningElementOrderType.Sequential,
+          order: initialValues?.orderType || ElementOrderType.SpacedRepetition,
           resetTimeDays: initialValues?.resetTimeDays || '6',
         }}
         onSubmit={onSubmit}
@@ -429,7 +428,7 @@ function StepTwo(props: StepProps) {
           tooltip={t('manage.sessionForms.learningElementOrder')}
           name="order"
           placeholder={t('manage.sessionForms.learningElemenSelectOrder')}
-          items={Object.values(LearningElementOrderType).map((order) => {
+          items={Object.values(ElementOrderType).map((order) => {
             return {
               value: order,
               label: t(`manage.sessionForms.learningElement${order}`),

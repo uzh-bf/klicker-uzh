@@ -965,6 +965,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       learningElementSEQUENTIAL: 'Sequential',
       learningElementSHUFFLED: 'Shuffled',
       learningElementLAST_RESPONSE: 'Last response first',
+      learningElementSPACED_REPETITION: 'Spaced Repetition',
     },
     formErrors: {
       resolveErrors:
