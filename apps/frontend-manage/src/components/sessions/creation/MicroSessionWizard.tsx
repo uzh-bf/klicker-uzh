@@ -1,4 +1,6 @@
 import { useMutation } from '@apollo/client'
+import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateMicroSessionDocument,
   EditMicroSessionDocument,
@@ -324,7 +326,21 @@ function StepOne(_: StepProps) {
         </div>
       </div>
       <div className="hidden md:block flex-initial w-[350px] border bg-slate-50 p-4 rounded prose prose-sm">
-        Microlearnings allow you to... mini use case
+        <FontAwesomeIcon
+          icon={faLightbulb}
+          className="mr-2 text-orange-400"
+          size="lg"
+        />
+        {t.rich('manage.sessionForms.microlearningUseCase', {
+          link: (text) => (
+            <a
+              href="https://www.klicker.uzh.ch/use_cases/microlearning/"
+              target="_blank"
+            >
+              {text}
+            </a>
+          ),
+        })}
       </div>
     </div>
   )

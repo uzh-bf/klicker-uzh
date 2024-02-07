@@ -154,7 +154,7 @@ export default {
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
       practiceQuizzes: 'Quizzes',
-      practice: 'Übungsaktivitäten',
+      practice: 'Übungs-Quiz',
     },
     contentInput: {
       boldStyle:
@@ -894,6 +894,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie das Enddatum der Micro-Session aus. Die Session wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
       microSessionMultiplier:
         'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einer gamifizierten Micro-Session multipliziert werden.',
+      microlearningUseCase:
+        '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
       liveSessionGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       liveSessionTypes:
@@ -930,6 +932,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Einstellung spezifiziert, ob die Moderation im Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
       liveSessionFeedbackChannel:
         'Diese Einstellung spezifiziert, ob der Feedback-Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
+      liveQuizUseCase:
+        '<link>Live Quizzes</link> können zur Förderung der Interaktivität in Vorlesungen, Seminaren und Workshops eingesetzt werden. Während die Teilnehmenden die Fragen beantworten, werden die Resultate auf einer Evaluationsansicht dargestellt.',
       learningElementResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.',
       learningElementValidResetDays:
@@ -967,6 +971,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       learningElementSEQUENTIAL: 'Sequenziell',
       learningElementSHUFFLED: 'Zufällig',
       learningElementLAST_RESPONSE: 'Letzte Antwort zuletzt',
+      practiceQuizUseCase:
+        '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
     },
     formErrors: {
       resolveErrors:

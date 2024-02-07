@@ -896,6 +896,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please choose the end date of the microlearning. The microlearning will no longer be displayed to the participants after this point in time.',
       microSessionMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
+      microlearningUseCase:
+        '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
       liveSessionGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveSessionTypes:
@@ -930,6 +932,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
       liveSessionFeedbackChannel:
         'This setting specifies whether the feedback channel should be activated at the beginning of the session. It can be changed at any time during the session.',
+      liveQuizUseCase:
+        '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
       learningElementResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
       learningElementValidResetDays:
@@ -965,6 +969,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       learningElementSEQUENTIAL: 'Sequential',
       learningElementSHUFFLED: 'Shuffled',
       learningElementLAST_RESPONSE: 'Last response first',
+      practiceQuizUseCase:
+        '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
     },
     formErrors: {
       resolveErrors:
