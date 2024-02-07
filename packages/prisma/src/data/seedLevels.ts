@@ -1,4 +1,4 @@
-import { xpForLevel } from '@klicker-uzh/util'
+import { xpForLevel } from '@klicker-uzh/util/dist/pure'
 import Prisma from '../../dist'
 
 export async function seedLevels(prisma: Prisma.PrismaClient) {
