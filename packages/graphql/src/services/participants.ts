@@ -467,10 +467,12 @@ export async function bookmarkElementStack(
   return participation.bookmarkedElementStacks.map((stack) => stack.id)
 }
 
+// TODO: remove after migration
 interface GetBookmarkedQuestionsArgs {
   courseId: string
 }
 
+// TODO: remove after migration
 export async function getBookmarkedQuestions(
   { courseId }: GetBookmarkedQuestionsArgs,
   ctx: ContextWithUser
@@ -516,7 +518,11 @@ export async function getBookmarkedElementStacks(
     include: {
       bookmarkedElementStacks: {
         include: {
-          elements: true,
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
         },
       },
     },
