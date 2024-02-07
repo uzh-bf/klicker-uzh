@@ -6,6 +6,8 @@ import {
   PracticeQuizStatus,
   PracticeQuiz as PracticeQuizType,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -23,7 +25,7 @@ function Bookmarks() {
     setCurrentIx((ix) => ix + 1)
   }
 
-  const { data: bookmarkedStacks } = useQuery(
+  const { data: bookmarkedStacks, loading: loadingBookmarks } = useQuery(
     GetBookmarkedElementStacksDocument,
     {
       variables: { courseId: router.query.courseId as string },
@@ -31,9 +33,12 @@ function Bookmarks() {
     }
   )
 
-  const { data: courseData } = useQuery(GetBasicCourseInformationDocument, {
-    variables: { courseId: router.query.courseId as string },
-  })
+  const { data: courseData, loading: loadingCourse } = useQuery(
+    GetBasicCourseInformationDocument,
+    {
+      variables: { courseId: router.query.courseId as string },
+    }
+  )
 
   const name = t('pwa.courses.bookmarkedQuestionsTitle', {
     courseName: courseData?.basicCourseInformation?.displayName ?? '',
@@ -62,6 +67,14 @@ function Bookmarks() {
     bookmarkedStacks?.getBookmarkedElementStacks,
   ])
 
+  if (loadingBookmarks || loadingCourse) {
+    return (
+      <Layout displayName={t('shared.generic.bookmarks')}>
+        <Loader />
+      </Layout>
+    )
+  }
+
   return (
     <Layout
       course={courseData?.basicCourseInformation ?? undefined}
@@ -76,7 +89,9 @@ function Bookmarks() {
           showResetLocalStorage
         />
       ) : (
-        'No bookmarks'
+        <UserNotification type="info">
+          {t('pwa.courses.noBookmarksSet')}
+        </UserNotification>
       )}
     </Layout>
   )

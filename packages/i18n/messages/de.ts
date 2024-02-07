@@ -403,7 +403,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       bookmarkedQuestionsTitle: 'Bookmarks in {courseName}',
       bookmarkedQuestionsDesc:
         'Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie einem gewöhnlichen Lernelement dargestellt.',
-      noBooksmarksSet:
+      noBookmarksSet:
         'Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage.',
       awards: 'Auszeichnungen',
       open: 'offen',

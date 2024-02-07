@@ -402,7 +402,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       bookmarkedQuestionsTitle: 'Bookmarks for {courseName}',
       bookmarkedQuestionsDesc:
         'This page allows you to repeat all questions with bookmarks from the course {courseName}. They will be displayed as a regular practice quiz.',
-      noBooksmarksSet:
+      noBookmarksSet:
         'You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.',
       awards: 'Awards',
       open: 'open',

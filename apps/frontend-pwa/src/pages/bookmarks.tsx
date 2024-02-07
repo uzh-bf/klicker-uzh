@@ -33,7 +33,7 @@ function Bookmarks() {
         {data?.participantCourses?.length === 0 && (
           <div className="flex flex-col gap-2">
             <UserNotification type="info">
-              {t('pwa.courses.noBooksmarksSet')}
+              {t('pwa.courses.noBookmarksSet')}
             </UserNotification>
           </div>
         )}
