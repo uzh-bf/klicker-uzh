@@ -136,14 +136,14 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // sign in as student on mobile and answer practice quiz again
-    cy.get('[data-cy="practice-quiz-reset"]').click()
     cy.viewport('iphone-x')
-    cy.get('[data-cy="mobile-menu-home"]').click()
-
     cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName}"]`)
       .contains(practiceQuizDisplayName)
       .click()
+    cy.get('[data-cy="start-practice-quiz"]').click()
+    cy.get('[data-cy="practice-quiz-reset"]').click()
+
     cy.get('[data-cy="start-practice-quiz"]').click()
     cy.findByText('50%').click()
     cy.get('[data-cy="practice-quiz-submit"]').click()
