@@ -3,6 +3,8 @@ import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementDisplayMode,
+  ElementInstance,
+  ElementInstanceType,
   ElementType,
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
@@ -16,7 +18,9 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import StudentQuestion from '@klicker-uzh/shared-components/src/StudentQuestion'
+import StudentElement, {
+  StudentResponseType,
+} from '@klicker-uzh/shared-components/src/StudentElement'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import {
   Button,
@@ -70,6 +74,9 @@ function QuestionEditModal({
   const isDuplication = mode === QuestionEditMode.DUPLICATE
   const t = useTranslations()
   const [updateInstances, setUpdateInstances] = useState(false)
+  const [studentResponse, setStudentResponse] = useState<StudentResponseType>(
+    {}
+  )
 
   // TODO: ensure that every validation schema change is also reflected in an adaption of the error messages
   const questionManipulationSchema = Yup.object().shape({
@@ -569,7 +576,8 @@ function QuestionEditModal({
             fullScreen
             title={t(`manage.questionForms.${mode}Title`)}
             className={{
-              content: 'max-w-[1400px] md:text-base text-sm',
+              content:
+                'max-w-[1400px] md:text-base text-sm h-max max-h-[calc(100vh-2rem)]',
               title: 'text-xl',
             }}
             open={isOpen}
@@ -1437,36 +1445,45 @@ function QuestionEditModal({
               <div className="flex-1 max-w-sm">
                 <H3>{t('shared.generic.preview')}</H3>
                 <div className="p-4 border rounded">
-                  <StudentQuestion
-                    activeIndex={0}
-                    numItems={1}
-                    isSubmitDisabled
-                    onSubmit={() => null}
-                    onExpire={() => null}
-                    currentQuestion={{
-                      instanceId: 0,
-                      // ...dataQuestion?.question,
-                      content: values.content,
-                      type: values.type,
-                      // options: dataQuestion?.question?.questionData.options,
-                      options: {
-                        displayMode: values.options?.displayMode,
-                        choices: values.options?.choices,
-                        accuracy: parseInt(values.options?.accuracy),
-                        unit: values.options?.unit,
-                        restrictions: {
-                          min: parseFloat(values.options?.restrictions?.min),
-                          max: parseFloat(values.options?.restrictions?.max),
-                          maxLength: parseInt(
-                            values.options?.restrictions?.maxLength
+                  <StudentElement
+                    element={
+                      {
+                        id: 0,
+                        type: ElementInstanceType.LiveQuiz,
+                        elementType: values.type,
+                        elementData: {
+                          id: '0',
+                          questionId: 0,
+                          content: values.content,
+                          explanation: values.explanation,
+                          name: values.name,
+                          pointsMultiplier: parseInt(
+                            values.pointsMultiplier || '1'
                           ),
+                          type: values.type,
+                          options: {
+                            displayMode: values.options?.displayMode,
+                            choices: values.options?.choices,
+                            accuracy: parseInt(values.options?.accuracy),
+                            unit: values.options?.unit,
+                            restrictions: {
+                              min: parseFloat(
+                                values.options?.restrictions?.min
+                              ),
+                              max: parseFloat(
+                                values.options?.restrictions?.max
+                              ),
+                              maxLength: parseInt(
+                                values.options?.restrictions?.maxLength
+                              ),
+                            },
+                          },
                         },
-                      },
-                    }}
-                    inputValue={inputValue}
-                    inputValid={inputValid}
-                    inputEmpty={inputEmpty}
-                    setInputState={setInputState}
+                      } as ElementInstance
+                    }
+                    elementIx={0}
+                    studentResponse={studentResponse}
+                    setStudentResponse={setStudentResponse}
                   />
                 </div>
                 {values.explanation && (

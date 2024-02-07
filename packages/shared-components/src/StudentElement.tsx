@@ -8,12 +8,12 @@ import {
   NumericalElementData,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import ChoicesQuestion from '@klicker-uzh/shared-components/src/ChoicesQuestion'
-import ContentElement from '@klicker-uzh/shared-components/src/ContentElement'
-import Flashcard from '@klicker-uzh/shared-components/src/Flashcard'
-import FreeTextQuestion from '@klicker-uzh/shared-components/src/FreeTextQuestion'
-import NumericalQuestion from '@klicker-uzh/shared-components/src/NumericalQuestion'
-import { Dispatch, SetStateAction } from 'react'
+import React, { Dispatch, SetStateAction } from 'react'
+import ChoicesQuestion from './ChoicesQuestion'
+import ContentElement from './ContentElement'
+import Flashcard from './Flashcard'
+import FreeTextQuestion from './FreeTextQuestion'
+import NumericalQuestion from './NumericalQuestion'
 
 export type ElementChoicesType =
   | ElementType.Sc
@@ -64,7 +64,7 @@ interface StudentElementProps {
   elementIx: number
   studentResponse: StudentResponseType
   setStudentResponse: Dispatch<SetStateAction<StudentResponseType>>
-  stackStorage: StudentResponseType
+  stackStorage?: StudentResponseType
 }
 
 function StudentElement({
