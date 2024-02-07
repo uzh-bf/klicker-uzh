@@ -90,7 +90,7 @@ function ElementStack({
     <div className="pb-12">
       <div className="w-full">
         <div className="flex flex-row items-center justify-between">
-          {stack.displayName && <H2>{stack.displayName}</H2>}
+          <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
           <Bookmark
             bookmarks={bookmarks}
             quizId={parentId === 'bookmarks' ? undefined : parentId}

@@ -561,7 +561,7 @@ function evaluateQuestionResponse(
       // TODO: add feedbacks here once they are implemented for specified solution ranges
       return {
         feedbacks: [],
-        answers: results ?? [],
+        answers: results?.responses ?? {},
         score: correct ? correct * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
           pointsPercentage: correct,
@@ -583,7 +583,7 @@ function evaluateQuestionResponse(
 
       return {
         feedbacks: [],
-        answers: results ?? [],
+        answers: results.responses ?? {},
         score: correct ? correct * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
           pointsPercentage: correct,
