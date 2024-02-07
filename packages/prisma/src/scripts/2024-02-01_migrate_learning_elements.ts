@@ -242,7 +242,9 @@ async function migrate() {
 
                         element: {
                           connect: {
-                            id: stackElement.questionInstance.questionId,
+                            id:
+                              stackElement.questionInstance.questionId ??
+                              undefined,
                           },
                         },
                         owner: {
