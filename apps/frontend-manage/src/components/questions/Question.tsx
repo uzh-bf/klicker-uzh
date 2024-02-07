@@ -82,7 +82,7 @@ function Question({
   const [collectedProps, drag] = useDrag({
     item: {
       id,
-      type: 'question',
+      type,
       questionType: type,
       title,
       content,
@@ -92,7 +92,7 @@ function Question({
     collect: (monitor): any => ({
       isDragging: monitor.isDragging(),
     }),
-    type: 'question',
+    type,
   })
 
   return (

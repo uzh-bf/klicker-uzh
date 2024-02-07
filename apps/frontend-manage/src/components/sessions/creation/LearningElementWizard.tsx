@@ -87,6 +87,8 @@ function LearningElementWizard({
                 ElementType.Mc,
                 ElementType.Kprim,
                 ElementType.Numerical,
+                ElementType.Flashcard,
+                ElementType.Content,
               ],
               t('manage.sessionForms.learningElementTypes')
             ),
