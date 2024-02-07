@@ -123,7 +123,7 @@ function SessionCreation({
         )}
         {creationMode === 'learningElement' && (
           <LearningElementWizard
-            title={t('shared.generic.learningElement')}
+            title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={dataLearningElement?.practiceQuiz ?? undefined}

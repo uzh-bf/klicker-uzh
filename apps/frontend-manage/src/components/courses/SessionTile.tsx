@@ -82,7 +82,7 @@ function SessionTile({ session }: SessionTileProps) {
                   query: { sessionId: session.id, editMode: 'liveSession' },
                 })
               }
-              data={{ cy: `edit-live-session-${session.name}` }}
+              data={{ cy: `edit-live-quiz-${session.name}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faPencil} />
@@ -102,7 +102,7 @@ function SessionTile({ session }: SessionTileProps) {
                   console.log(error)
                 }
               }}
-              data={{ cy: `start-live-session-${session.name}` }}
+              data={{ cy: `start-live-quiz-${session.name}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faPlay} />
@@ -113,7 +113,7 @@ function SessionTile({ session }: SessionTileProps) {
               basic
               className={{ root: 'text-red-600' }}
               onClick={() => setDeletionModal(true)}
-              data={{ cy: `delete-live-session-${session.name}` }}
+              data={{ cy: `delete-live-quiz-${session.name}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faTrashCan} />

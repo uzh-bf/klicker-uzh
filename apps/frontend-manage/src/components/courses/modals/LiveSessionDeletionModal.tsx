@@ -29,7 +29,7 @@ function LiveSessionDeletionModal({
           className={{
             root: twMerge('bg-red-600 font-bold text-white'),
           }}
-          data={{ cy: 'confirm-delete-live-session' }}
+          data={{ cy: 'confirm-delete-live-quiz' }}
         >
           {t('shared.generic.confirm')}
         </Button>
@@ -37,7 +37,7 @@ function LiveSessionDeletionModal({
       onSecondaryAction={
         <Button
           onClick={(): void => setOpen(false)}
-          data={{ cy: 'cancel-delete-live-session' }}
+          data={{ cy: 'cancel-delete-live-quiz' }}
         >
           {t('shared.generic.cancel')}
         </Button>

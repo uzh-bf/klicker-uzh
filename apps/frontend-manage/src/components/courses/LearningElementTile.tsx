@@ -119,9 +119,7 @@ function LearningElementTile({
             <Button.Icon>
               <FontAwesomeIcon icon={faPencil} />
             </Button.Icon>
-            <Button.Label>
-              {t('manage.course.editLearningElement')}
-            </Button.Label>
+            <Button.Label>{t('manage.course.editPracticeQuiz')}</Button.Label>
           </Button>
         )}
 
@@ -136,7 +134,7 @@ function LearningElementTile({
               <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
             </Button.Icon>
             <Button.Label>
-              {t('manage.course.publishLearningElement')}
+              {t('manage.course.publishPracticeQuiz')}
             </Button.Label>
           </Button>
         )}
@@ -151,9 +149,7 @@ function LearningElementTile({
             <Button.Icon>
               <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
             </Button.Icon>
-            <Button.Label>
-              {t('manage.course.deleteLearningElement')}
-            </Button.Label>
+            <Button.Label>{t('manage.course.deletePracticeQuiz')}</Button.Label>
           </Button>
         )}
 
@@ -163,7 +159,7 @@ function LearningElementTile({
           type="success"
           className={{ root: 'w-[24rem]' }}
         >
-          {t('manage.course.linkLearningElementCopied')}
+          {t('manage.course.linkPracticeQuizCopied')}
         </Toast>
         <PublishConfirmationModal
           elementType={ElementInstanceType.PracticeQuiz}

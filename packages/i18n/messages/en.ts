@@ -93,8 +93,8 @@ export default {
       repetition: 'Repetition',
       evaluation: 'Evaluation',
       liveSession: 'Live Quiz',
-      learningElement: 'Practice Quiz',
-      learningElements: 'Practice Quizzes',
+      practiceQuiz: 'Practice Quiz',
+      practiceQuizzes: 'Practice Quizzes',
       microSessions: 'Microlearning',
       microlearning: 'Microlearning',
       activeSessions: 'Active Quizzes',
@@ -153,7 +153,6 @@ export default {
       german: 'German',
       practicePool: 'Practice',
       practiceTitle: 'Practice Pool',
-      practiceQuizzes: 'Quizzes',
       practice: 'Practice Activities',
     },
     contentInput: {
@@ -440,7 +439,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       answeredMinOnce: 'Min. answered once: {answered}/{total}',
       multiplicatorPoints: 'Multiplicator: {mult}x points',
       multiplicatorEval: '<b>Multiplicator</b> {mult}x',
-      solvedLearningElement:
+      solvedPracticeQuiz:
         'You have successfully completed the practice quiz <it>{name}</it>.',
       pointsCollectedPossible: 'Points (collected/computed/available)',
       pointsComputedAvailable: 'Points (computed/available)',
@@ -754,7 +753,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     questionPool: {
       createLiveSession: 'Create live quiz',
       createMicroSession: 'Create microlearning',
-      createLearningElement: 'Create practice quiz',
+      createPracticeQuiz: 'Create practice quiz',
       createGroupTask: 'Create group activity',
       createQuestionCaps: 'CREATE QUESTION',
       resetFilters: 'Reset filters',
@@ -934,38 +933,36 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This setting specifies whether the feedback channel should be activated at the beginning of the session. It can be changed at any time during the session.',
       liveQuizUseCase:
         '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
-      learningElementResetDays:
+      practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
-      learningElementValidResetDays:
+      practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
-      learningElementTypes:
+      practiceQuizElementTypes:
         'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions.',
-      learningElementSolutionReq: 'Please only add questions with solution.',
-      learningElementCreated:
-        'Practice quiz <b>{name}</b> successfully created.',
-      learningElementUpdated:
-        'Practice quiz <b>{name}</b> successfully modified.',
-      learningElementDescription:
+      practiceQuizSolutionReq: 'Please only add questions with solution.',
+      practiceQuizCreated: 'Practice quiz <b>{name}</b> successfully created.',
+      practiceQuizUpdated: 'Practice quiz <b>{name}</b> successfully modified.',
+      practiceQuizDescription:
         'In this step, enter the name and description of the practice quiz.',
-      learningElementSettings:
+      practiceQuizSettings:
         'In this step, make settings for your practice quiz.',
-      learningElementContent:
+      practiceQuizContent:
         'In this step, add questions and text elements to your practice quiz.',
-      learningElementCreationFailed: 'Creating the practice quiz failed...',
-      learningElementEditingFailed: 'Editing the practice quiz failed...',
-      learningElementName:
+      practiceQuizCreationFailed: 'Creating the practice quiz failed...',
+      practiceQuizEditingFailed: 'Editing the practice quiz failed...',
+      practiceQuizName:
         'The name should allow you to distinguish this practice quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
-      learningElementDescField:
+      practiceQuizDescField:
         'Add a description to your practice quiz that will be displayed to participants at the beginning.',
-      learningElementSelectCourse:
+      practiceQuizSelectCourse:
         'For the creation of a practice quiz, the selection of the corresponding course is required.',
-      learningElementMultiplier:
+      practiceQuizMultiplier:
         'Select a multiplier. All points that students collect in this practice quiz will be multiplied by the multiplier.',
-      learningElementRepetition:
+      practiceQuizRepetition:
         'Select a period after which students can repeat the practice quiz.',
-      learningElementOrder:
+      practiceQuizOrder:
         'Select an order in which the questions are to be solved by the students.',
-      learningElemenSelectOrder: 'Select order',
+      practiceQuizSelectOrder: 'Select order',
       learningElementSEQUENTIAL: 'Sequential',
       learningElementSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
@@ -1172,7 +1169,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       dateChangeFailed:
         'An error occurred while adjusting the date. Please check the input.',
       noSessions: 'No live quizzes available',
-      noLearningElements: 'No practice quizzes available',
+      noPracticeQuizzes: 'No practice quizzes available',
       noMicroSessions: 'No microlearning available',
       courseLeaderboard: 'Course Leaderboard',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
@@ -1186,7 +1183,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       copyAccessLink: 'Copy access link',
       linkMicroSessionCopied:
         'The link to the microlearning has been successfully copied to the clipboard.',
-      linkLearningElementCopied:
+      linkPracticeQuizCopied:
         'The link to the practice quiz has been successfully copied to the clipboard.',
       editMicroSession: 'Edit microlearning',
       publishMicroSession: 'Publish microlearning',
@@ -1203,17 +1200,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to delete the following microlearing?',
       hintDeletionMicroSession:
         'Deleting a microlearning is only possible as long as it is not running and is not used in a course. A deleted microlearning cannot be restored at a later date.',
-      editLearningElement: 'Edit practice quiz',
-      publishLearningElement: 'Publish practice quiz',
-      deleteLearningElement: 'Delete practice quiz',
-      confirmDeletionLearningElement:
+      editPracticeQuiz: 'Edit practice quiz',
+      publishPracticeQuiz: 'Publish practice quiz',
+      deletePracticeQuiz: 'Delete practice quiz',
+      confirmDeletionPracticeQuiz:
         'Are you sure you want to delete the following practice quiz?',
-      hintDeletionLearningElement:
+      hintDeletionPracticeQuiz:
         'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
     },
     toasts: {
-      learningElementEdit: 'Practice quiz successfully edited!',
-      learningElementCreate: 'Practice quiz successfully created!',
+      practiceQuizEdit: 'Practice quiz successfully edited!',
+      practiceQuizCreate: 'Practice quiz successfully created!',
       toCourseOverview: 'To <link>course overview</link>',
       liveSessionEdit: 'Live quiz successfully edited!',
       liveSessionCreate: 'Live quiz successfully created!',
@@ -1228,7 +1225,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       installAndroid:
         'Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.',
       installIOS:
-        "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live sessions directly.",
+        "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live quizzes directly.",
       shortnameRequired: 'Please enter your shortname.',
       tokenRequired:
         'Enter a valid token. Please note the validity displayed during token generation.',

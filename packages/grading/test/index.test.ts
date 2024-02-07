@@ -185,7 +185,7 @@ describe('@klicker-uzh/grading', () => {
     expect(points4).toEqual(0)
   })
 
-  it('should compute the awarded points correctly for live sessions', () => {
+  it('should compute the awarded points correctly for live quizzes', () => {
     const points = computeAwardedPoints({
       firstResponseReceivedAt: null,
       responseTimestamp: 2000,

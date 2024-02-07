@@ -246,7 +246,7 @@ describe('Different practice quiz workflows', () => {
 
     // start editing the practice quiz
     cy.get(`[data-cy="edit-practice-quiz-${practiceQuizName2}"]`).click()
-    cy.findByText('Edit ' + messages.shared.generic.learningElement).should(
+    cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
     )
     cy.get('[data-cy="next-or-submit"]').click()
