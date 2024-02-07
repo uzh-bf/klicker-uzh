@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import { faBookmark as faBookmarkFilled } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -13,29 +13,22 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface BookmarkProps {
+  bookmarks?: number[] | null
   quizId: string
   stackId: number
 }
 
-function Bookmark({ quizId, stackId }: BookmarkProps) {
+function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
   const router = useRouter()
   const t = useTranslations()
 
-  const { data: bookmarksData } = useQuery(GetBookmarksPracticeQuizDocument, {
-    variables: {
-      courseId: router.query.courseId as string,
-      quizId: quizId,
-    },
-    skip: !router.query.courseId,
-  })
-
   const isBookmarked = useMemo(() => {
-    if (!bookmarksData || !bookmarksData.getBookmarksPracticeQuiz) {
+    if (!bookmarks) {
       return false
     }
 
-    return bookmarksData.getBookmarksPracticeQuiz.includes(stackId)
-  }, [bookmarksData, stackId])
+    return bookmarks.includes(stackId)
+  }, [bookmarks, stackId])
 
   const [bookmarkQuestion] = useMutation(BookmarkElementStackDocument, {
     variables: {
@@ -65,10 +58,8 @@ function Bookmark({ quizId, stackId }: BookmarkProps) {
     },
     optimisticResponse: {
       bookmarkElementStack: isBookmarked
-        ? bookmarksData?.getBookmarksPracticeQuiz?.filter(
-            (entry) => entry !== stackId
-          )
-        : [...(bookmarksData?.getBookmarksPracticeQuiz ?? []), stackId],
+        ? (bookmarks || []).filter((entry) => entry !== stackId)
+        : [...(bookmarks || []), stackId],
     },
   })
 
@@ -76,7 +67,7 @@ function Bookmark({ quizId, stackId }: BookmarkProps) {
     <div
       className={twMerge(
         'flex flex-row gap-2',
-        !(bookmarksData?.getBookmarksPracticeQuiz !== null) && 'hidden'
+        (bookmarks === null || typeof bookmarks === 'undefined') && 'hidden'
       )}
     >
       <div>{t('shared.generic.bookmark')}</div>

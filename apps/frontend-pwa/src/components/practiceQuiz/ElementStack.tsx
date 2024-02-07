@@ -35,6 +35,7 @@ interface ElementStackProps {
   }) => void
   handleNextElement: () => void
   withParticipant?: boolean
+  bookmarks?: number[] | null
 }
 
 function ElementStack({
@@ -46,6 +47,7 @@ function ElementStack({
   setStepStatus,
   handleNextElement,
   withParticipant = false,
+  bookmarks,
 }: ElementStackProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -132,7 +134,11 @@ function ElementStack({
       <div className="w-full">
         <div className="flex flex-row items-center justify-between">
           {stack.displayName && <H2>{stack.displayName}</H2>}
-          <Bookmark quizId={parentId} stackId={stack.id} />
+          <Bookmark
+            bookmarks={bookmarks}
+            quizId={parentId}
+            stackId={stack.id}
+          />
         </div>
 
         {stack.description && (
