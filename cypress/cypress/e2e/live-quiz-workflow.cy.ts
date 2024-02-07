@@ -135,7 +135,7 @@ describe('Different live-quiz workflows', () => {
     // step 2
     cy.get('[data-cy="select-course"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.liveSessionNoCourse)
+      .contains(messages.manage.sessionForms.liveQuizNoCourse)
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseName)
@@ -287,7 +287,7 @@ describe('Different live-quiz workflows', () => {
 
     cy.get('[data-cy="select-course"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.liveSessionNoCourse)
+      .contains(messages.manage.sessionForms.liveQuizNoCourse)
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseName)

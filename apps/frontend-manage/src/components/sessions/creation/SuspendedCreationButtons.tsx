@@ -25,7 +25,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
     <div className="grid gap-1 mb-4 md:grid-cols-4 md:gap-2">
       <CreationButton
         icon={faUsersLine}
-        text={t('manage.questionPool.createLiveSession')}
+        text={t('manage.questionPool.createLiveQuiz')}
         onClick={() => {
           setCreationMode('liveSession')
         }}

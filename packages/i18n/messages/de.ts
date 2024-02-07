@@ -92,7 +92,7 @@ export default {
       leaderboard: 'Leaderboard',
       repetition: 'Repetition',
       evaluation: 'Auswertung',
-      liveSession: 'Live Quiz',
+      liveQuiz: 'Live Quiz',
       practiceQuiz: 'Übungs-Quiz',
       practiceQuizzes: 'Übungs-Quizzes',
       microSessions: 'Microlearnings',
@@ -748,7 +748,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@bf.uzh.ch.',
     },
     questionPool: {
-      createLiveSession: 'Live Quiz erstellen',
+      createLiveQuiz: 'Live Quiz erstellen',
       createMicroSession: 'Microlearning erstellen',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
       createGroupTask: 'Gruppenaufgabe erstellen',
@@ -897,41 +897,41 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
       microlearningUseCase:
         '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
-      liveSessionGamified:
+      liveQuizGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
-      liveSessionTypes:
+      liveQuizTypes:
         'Live Quizzes können nur Single-Choice, Multiple-Choice, Numerische und Freitext-Fragen enthalten.',
-      liveSessionTimeRestriction:
+      liveQuizTimeRestriction:
         'Bitte geben Sie eine gültige Zeitbegrenzung ein.',
-      liveSessionMinQuestions:
+      liveQuizMinQuestions:
         'Der Frageblock muss mindestens eine Frage enthalten.',
-      liveSessionCreated: 'Live Quiz <b>{name}</b> erfolgreich erstellt.',
-      liveSessionUpdated: 'Live Quiz <b>{name}</b> erfolgreich modifiziert.',
-      liveSessionDescription:
+      liveQuizCreated: 'Live Quiz <b>{name}</b> erfolgreich erstellt.',
+      liveQuizUpdated: 'Live Quiz <b>{name}</b> erfolgreich modifiziert.',
+      liveQuizDescription:
         'Geben Sie in diesem Schritt den Namen und die Beschreibung des Live Quizzes ein.',
-      liveSessionSettings:
+      liveQuizSettings:
         'In diesem Schritt können Sie Einstellungen zur Session vornehmen.',
-      liveSessionBlocks: 'Fragen & Blöcke',
-      liveSessionDragDrop:
+      liveQuizBlocks: 'Fragen & Blöcke',
+      liveQuizDragDrop:
         'Fügen Sie mittels Drag&Drop auf das Plus-Icon Fragen zu Ihren Blöcken hinzu. Neue Blöcke können entweder ebenfalls durch Drag&Drop auf das entsprechende Feld oder durch Klicken auf den Button erstellt werden.',
-      liveSessionCreationFailed: 'Anpassen des Live Quizzes fehlgeschlagen...',
-      liveSessionEditingFailed: 'Erstellen des Live Quizzes fehlgeschlagen...',
-      liveSessionName:
+      liveQuizCreationFailed: 'Anpassen des Live Quizzes fehlgeschlagen...',
+      liveQuizEditingFailed: 'Erstellen des Live Quizzes fehlgeschlagen...',
+      liveQuizName:
         'Der Name soll Ihnen ermöglichen, diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
-      liveSessionDescField:
+      liveQuizDescField:
         'Hier können Sie eine optionale Beschreibung des Live Quizzes eingeben. Diese wird in den Studierenden zu Beginn der Session angezeigt.',
-      liveSessionCourse: 'Sie können Ihre Session einem Kurs zuordnen.',
-      liveSessionSelectCourse: 'Kurs auswählen',
-      liveSessionNoCourse: 'Kein Kurs',
-      liveSessionMultiplier:
+      liveQuizDescCourse: 'Sie können Ihre Session einem Kurs zuordnen.',
+      liveQuizSelectCourse: 'Kurs auswählen',
+      liveQuizNoCourse: 'Kein Kurs',
+      liveQuizMultiplier:
         'Beim Multiplier handelt es sich um einen Faktor, mit welchem die Punkte bei einer beantworteten Frage multipliziert werden. Der Faktor findet nur Verwendung, wenn Gamification aktiviert ist.',
-      liveSessionGamification:
+      liveQuizGamification:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
-      liveSessionLiveQA:
+      liveQuizLiveQA:
         'Diese Einstellung spezifiziert, ob der Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
-      liveSessionModeration:
+      liveQuizModeration:
         'Diese Einstellung spezifiziert, ob die Moderation im Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
-      liveSessionFeedbackChannel:
+      liveQuizFeedbackChannel:
         'Diese Einstellung spezifiziert, ob der Feedback-Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
       liveQuizUseCase:
         '<link>Live Quizzes</link> können zur Förderung der Interaktivität in Vorlesungen, Seminaren und Workshops eingesetzt werden. Während die Teilnehmenden die Fragen beantworten, werden die Resultate auf einer Evaluationsansicht dargestellt.',
@@ -1010,10 +1010,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deleteSession: 'Session löschen',
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
-      deleteLiveSession: 'Live Quiz löschen',
-      confirmLiveSessionDeletion:
+      deleteLiveQuiz: 'Live Quiz löschen',
+      confirmLiveQuizDeletion:
         'Sind Sie sich sicher, dass Sie die folgendes Live Quiz löschen möchten?',
-      liveSessionDeletionHint:
+      liveQuizDeletionHint:
         'Das Löschen eines Live Quizzes ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
       noSessions: 'Keine Sessionen gefunden',
@@ -1220,8 +1220,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizEdit: 'Übungs-Quiz erfolgreich angepasst!',
       practiceQuizCreate: 'Übungs-Quiz erfolgreich erstellt!',
       toCourseOverview: 'Zur <link>Kursübersicht</link>',
-      liveSessionEdit: 'Session erfolgreich angepasst!',
-      liveSessionCreate: 'Session erfolgreich erstellt!',
+      liveQuizEdit: 'Session erfolgreich angepasst!',
+      liveQuizCreate: 'Session erfolgreich erstellt!',
       toSessionList: 'Zur <link>Session-Liste</link>',
       microSessionEdit: 'Microlearning erfolgreich angepasst!',
       microSessionCreate: 'Microlearning erfolgreich erstellt!',

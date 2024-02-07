@@ -91,7 +91,7 @@ function SessionCreation({
       <div className="w-full h-full rounded-lg">
         {creationMode === 'liveSession' && (
           <LiveSessionWizard
-            title={t('shared.generic.liveSession')}
+            title={t('shared.generic.liveQuiz')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={

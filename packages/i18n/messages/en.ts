@@ -92,7 +92,7 @@ export default {
       leaderboard: 'Leaderboard',
       repetition: 'Repetition',
       evaluation: 'Evaluation',
-      liveSession: 'Live Quiz',
+      liveQuiz: 'Live Quiz',
       practiceQuiz: 'Practice Quiz',
       practiceQuizzes: 'Practice Quizzes',
       microSessions: 'Microlearning',
@@ -751,7 +751,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
     },
     questionPool: {
-      createLiveSession: 'Create live quiz',
+      createLiveQuiz: 'Create live quiz',
       createMicroSession: 'Create microlearning',
       createPracticeQuiz: 'Create practice quiz',
       createGroupTask: 'Create group activity',
@@ -897,39 +897,39 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
       microlearningUseCase:
         '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
-      liveSessionGamified:
+      liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
-      liveSessionTypes:
+      liveQuizTypes:
         'Live quizzes can only contain single choice, multiple choice, numerical and free text questions.',
-      liveSessionTimeRestriction: 'Please enter a valid time restriction.',
-      liveSessionMinQuestions: 'Block must contain at least one question.',
-      liveSessionCreated: 'Live quiz <b>{name}</b> successfully created.',
-      liveSessionUpdated: 'Live quiz <b>{name}</b> successfully updated.',
-      liveSessionDescription:
+      liveQuizTimeRestriction: 'Please enter a valid time restriction.',
+      liveQuizMinQuestions: 'Block must contain at least one question.',
+      liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
+      liveQuizUpdated: 'Live quiz <b>{name}</b> successfully updated.',
+      liveQuizDescription:
         'In this step, enter the name and description of the live quiz.',
-      liveSessionSettings:
+      liveQuizSettings:
         'In this step, you can make settings for the live quiz.',
-      liveSessionBlocks: 'Questions & Blocks',
-      liveSessionDragDrop:
+      liveQuizBlocks: 'Questions & Blocks',
+      liveQuizDragDrop:
         'Use drag&drop on the plus icon to add questions to your blocks. New blocks can be created either by drag&drop on the corresponding field or by clicking on the button.',
-      liveSessionCreationFailed: 'Creating the live quiz failed...',
-      liveSessionEditingFailed: 'Editing the live quiz failed...',
-      liveSessionName:
+      liveQuizCreationFailed: 'Creating the live quiz failed...',
+      liveQuizEditingFailed: 'Editing the live quiz failed...',
+      liveQuizName:
         'The name should allow you to distinguish this live quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
-      liveSessionDescField:
+      liveQuizDescField:
         'Here you can enter an optional description of the live quiz. This will be displayed to the students at the beginning of the quiz.',
-      liveSessionCourse: 'You can assign your live quiz to a course.',
-      liveSessionSelectCourse: 'Select course',
-      liveSessionNoCourse: 'No course',
-      liveSessionMultiplier:
+      liveQuizDescCourse: 'You can assign your live quiz to a course.',
+      liveQuizSelectCourse: 'Select course',
+      liveQuizNoCourse: 'No course',
+      liveQuizMultiplier:
         'The multiplier is a factor with which the points are multiplied when a question is answered. The factor is only used if gamification is activated.',
-      liveSessionGamification:
+      liveQuizGamification:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
-      liveSessionLiveQA:
+      liveQuizLiveQA:
         'This setting specifies whether the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
-      liveSessionModeration:
+      liveQuizModeration:
         'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
-      liveSessionFeedbackChannel:
+      liveQuizFeedbackChannel:
         'This setting specifies whether the feedback channel should be activated at the beginning of the session. It can be changed at any time during the session.',
       liveQuizUseCase:
         '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
@@ -1004,10 +1004,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deleteSession: 'Delete Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
-      deleteLiveSession: 'Delete Quiz',
-      confirmLiveSessionDeletion:
+      deleteLiveQuiz: 'Delete Quiz',
+      confirmLiveQuizDeletion:
         'Are you sure you want to delete the following live quiz?',
-      liveSessionDeletionHint:
+      liveQuizDeletionHint:
         'Deleting a live quiz is only possible as long as it has not been started. Deleted live quizzes cannot be restored at a later date.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noSessions: 'No live quizzes available',
@@ -1212,8 +1212,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizEdit: 'Practice quiz successfully edited!',
       practiceQuizCreate: 'Practice quiz successfully created!',
       toCourseOverview: 'To <link>course overview</link>',
-      liveSessionEdit: 'Live quiz successfully edited!',
-      liveSessionCreate: 'Live quiz successfully created!',
+      liveQuizEdit: 'Live quiz successfully edited!',
+      liveQuizCreate: 'Live quiz successfully created!',
       toSessionList: 'To <link>quiz overview</link>',
       microSessionEdit: 'Microlearning successfully edited!',
       microSessionCreate: 'Microlearning successfully created!',

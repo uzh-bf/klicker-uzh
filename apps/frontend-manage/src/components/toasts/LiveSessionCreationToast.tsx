@@ -26,9 +26,9 @@ function LiveSessionCreationToast({
     >
       <div>
         {editMode ? (
-          <div>{t('manage.toasts.liveSessionEdit')}</div>
+          <div>{t('manage.toasts.liveQuizEdit')}</div>
         ) : (
-          <div>{t('manage.toasts.liveSessionCreate')}</div>
+          <div>{t('manage.toasts.liveQuizCreate')}</div>
         )}
         <div className="flex flex-row items-center">
           <FontAwesomeIcon icon={faArrowRight} className="mr-2" />

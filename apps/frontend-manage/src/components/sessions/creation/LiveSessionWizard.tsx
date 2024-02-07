@@ -75,7 +75,7 @@ function LiveSessionWizard({
     courseId: yup.string(),
     isGamificationEnabled: yup
       .boolean()
-      .required(t('manage.sessionForms.liveSessionGamified')),
+      .required(t('manage.sessionForms.liveQuizGamified')),
   })
 
   const stepThreeValidationSchema = yup.object().shape({
@@ -96,15 +96,15 @@ function LiveSessionWizard({
                   ElementType.Numerical,
                   ElementType.FreeText,
                 ],
-                t('manage.sessionForms.liveSessionTypes')
+                t('manage.sessionForms.liveQuizTypes')
               )
           ),
         timeLimit: yup
           .number()
-          .min(1, t('manage.sessionForms.liveSessionTimeRestriction')),
+          .min(1, t('manage.sessionForms.liveQuizTimeRestriction')),
         questionIds: yup
           .array()
-          .min(1, t('manage.sessionForms.liveSessionMinQuestions')),
+          .min(1, t('manage.sessionForms.liveQuizMinQuestions')),
       })
     ),
   })
@@ -203,11 +203,11 @@ function LiveSessionWizard({
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
-              ? t.rich('manage.sessionForms.liveSessionUpdated', {
+              ? t.rich('manage.sessionForms.liveQuizUpdated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })
-              : t.rich('manage.sessionForms.liveSessionCreated', {
+              : t.rich('manage.sessionForms.liveQuizCreated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })}
@@ -278,16 +278,16 @@ function LiveSessionWizard({
         workflowItems={[
           {
             title: t('shared.generic.description'),
-            tooltip: t('manage.sessionForms.liveSessionDescription'),
+            tooltip: t('manage.sessionForms.liveQuizDescription'),
           },
           {
             title: t('shared.generic.settings'),
-            tooltip: t('manage.sessionForms.liveSessionSettings'),
+            tooltip: t('manage.sessionForms.liveQuizSettings'),
             tooltipDisabled: t('manage.sessionForms.checkValues'),
           },
           {
-            title: t('manage.sessionForms.liveSessionBlocks'),
-            tooltip: t('manage.sessionForms.liveSessionDragDrop'),
+            title: t('manage.sessionForms.liveQuizBlocks'),
+            tooltip: t('manage.sessionForms.liveQuizDragDrop'),
             tooltipDisabled: t('manage.sessionForms.checkValues'),
           },
         ]}
@@ -305,8 +305,8 @@ function LiveSessionWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? t('manage.sessionForms.liveSessionEditingFailed')
-            : t('manage.sessionForms.liveSessionCreationFailed')
+            ? t('manage.sessionForms.liveQuizEditingFailed')
+            : t('manage.sessionForms.liveQuizCreationFailed')
         }
       />
     </div>
@@ -338,7 +338,7 @@ function StepOne(_: StepProps) {
             autoComplete="off"
             name="name"
             label={t('manage.sessionForms.name')}
-            tooltip={t('manage.sessionForms.liveSessionName')}
+            tooltip={t('manage.sessionForms.liveQuizName')}
             className={{
               root: 'mb-2 w-full md:w-1/2',
               tooltip: 'z-20',
@@ -364,7 +364,7 @@ function StepOne(_: StepProps) {
         <EditorField
           // key={fieldName.value}
           label={t('shared.generic.description')}
-          tooltip={t('manage.sessionForms.liveSessionDescField')}
+          tooltip={t('manage.sessionForms.liveQuizDescField')}
           fieldName="description"
           showToolbarOnFocus={false}
         />
@@ -429,15 +429,15 @@ function StepTwo(props: StepProps) {
             <FormikSelectField
               name="courseId"
               label={t('shared.generic.course')}
-              tooltip={t('manage.sessionForms.liveSessionCourse')}
-              placeholder={t('manage.sessionForms.liveSessionSelectCourse')}
+              tooltip={t('manage.sessionForms.liveQuizDescCourse')}
+              placeholder={t('manage.sessionForms.liveQuizSelectCourse')}
               items={[
                 {
-                  label: t('manage.sessionForms.liveSessionNoCourse'),
+                  label: t('manage.sessionForms.liveQuizNoCourse'),
                   value: '',
                   data: {
                     cy: `select-course-${t(
-                      'manage.sessionForms.liveSessionNoCourse'
+                      'manage.sessionForms.liveQuizNoCourse'
                     )}`,
                   },
                 },
@@ -459,7 +459,7 @@ function StepTwo(props: StepProps) {
               disabled={values.courseId === ''}
               name="isGamificationEnabled"
               label={t('shared.generic.gamification')}
-              tooltip={t('manage.sessionForms.liveSessionGamification')}
+              tooltip={t('manage.sessionForms.liveQuizGamification')}
               standardLabel
               data={{ cy: 'set-gamification' }}
               className={{ tooltip: 'z-20' }}
@@ -475,7 +475,7 @@ function StepTwo(props: StepProps) {
               disabled={!values.isGamificationEnabled}
               name="multiplier"
               label={t('shared.generic.multiplier')}
-              tooltip={t('manage.sessionForms.liveSessionMultiplier')}
+              tooltip={t('manage.sessionForms.liveQuizMultiplier')}
               placeholder={t('manage.sessionForms.multiplierDefault')}
               items={[
                 {
@@ -531,7 +531,7 @@ function StepTwo(props: StepProps) {
           <FormikSwitchField
             name="isConfusionFeedbackEnabled"
             label={t('shared.generic.feedbackChannel')}
-            tooltip={t('manage.sessionForms.liveSessionFeedbackChannel')}
+            tooltip={t('manage.sessionForms.liveQuizFeedbackChannel')}
             standardLabel
             data={{ cy: 'set-feedback-enabled' }}
             className={{ tooltip: 'z-20' }}
@@ -546,7 +546,7 @@ function StepTwo(props: StepProps) {
           <FormikSwitchField
             name="isLiveQAEnabled"
             label={t('shared.generic.liveQA')}
-            tooltip={t('manage.sessionForms.liveSessionLiveQA')}
+            tooltip={t('manage.sessionForms.liveQuizLiveQA')}
             standardLabel
             data={{ cy: 'set-liveqa-enabled' }}
             className={{ tooltip: 'z-20' }}
@@ -562,7 +562,7 @@ function StepTwo(props: StepProps) {
             disabled={!values.isLiveQAEnabled}
             name="isModerationEnabled"
             label={t('shared.generic.moderation')}
-            tooltip={t('manage.sessionForms.liveSessionModeration')}
+            tooltip={t('manage.sessionForms.liveQuizModeration')}
             standardLabel
             data={{ cy: 'set-liveqa-moderation' }}
             className={{ tooltip: 'z-20' }}
