@@ -139,7 +139,7 @@ function Question({
               </Ellipsis>
             </div>
 
-            <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-4 text-slate-600">
+            <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-6 text-slate-600">
               <div>
                 {t('shared.generic.createdAt', {
                   date: dayjs(createdAt).format('DD.MM.YYYY HH:mm'),
@@ -150,6 +150,7 @@ function Question({
                   date: dayjs(updatedAt).format('DD.MM.YYYY HH:mm'),
                 })}
               </div>
+              <div>{t(`shared.${type}.typeLabel`)}</div>
             </div>
           </div>
           <div className="hidden mr-6 w-max md:block">
