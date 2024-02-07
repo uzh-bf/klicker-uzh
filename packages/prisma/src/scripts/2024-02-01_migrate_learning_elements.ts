@@ -43,8 +43,40 @@ function preparePracticeQuizInstanceResults(
   learningElement: LearningElement,
   questionInstance: QuestionInstance
 ) {
-  return {
-    ...questionInstance.results,
+  if (
+    questionInstance.questionData.type === ElementType.SC ||
+    questionInstance.questionData.type === ElementType.MC ||
+    questionInstance.questionData.type === ElementType.KPRIM
+  ) {
+    return {
+      choices:
+        questionInstance.results.choices ??
+        questionInstance.questionData.options.choices.map(
+          (_: any, ix: number) => ({
+            [`${ix}`]: 0,
+          })
+        ),
+      total: questionInstance.participants ?? 0,
+    }
+  }
+
+  if (
+    questionInstance.questionData.type === ElementType.NUMERICAL ||
+    questionInstance.questionData.type === ElementType.FREE_TEXT
+  ) {
+    return {
+      responses: questionInstance.results ?? {},
+      total: questionInstance.participants ?? 0,
+    }
+  }
+
+  if (questionInstance.questionData.type === ElementType.FLASHCARD) {
+    return {
+      CORRECT: questionInstance.results?.['2'] ?? 0,
+      PARTIAL: questionInstance.results?.['1'] ?? 0,
+      INCORRECT: questionInstance.results?.['0'] ?? 0,
+      total: questionInstance.participants ?? 0,
+    }
   }
 }
 
@@ -171,11 +203,11 @@ async function migrate() {
                       where: {
                         type_migrationId: {
                           type: ElementInstanceType.PRACTICE_QUIZ,
-                          migrationId: stackElement.questionInstance.id,
+                          migrationId: String(stackElement.questionInstance.id),
                         },
                       },
                       create: {
-                        migrationId: stackElement.questionInstance.id,
+                        migrationId: String(stackElement.questionInstance.id),
                         type: ElementInstanceType.PRACTICE_QUIZ,
                         elementType:
                           stackElement.questionInstance.question?.type ??
