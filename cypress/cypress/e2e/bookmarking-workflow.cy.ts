@@ -151,14 +151,14 @@ describe('Question bookmarking and flagging workflow', () => {
     // test flagging for microlearnings
     cy.get(`[data-cy="microlearning-${microlearningName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="flag-element-button"]').click()
-    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
+    cy.get('[data-cy="flag-question-button"]').click()
+    cy.get('[data-cy="submit-flag-question"').should('be.disabled')
     cy.get('[data-cy="flag-question-textarea"').type(
       `Test flagging quesiton on microlearning ${microlearningName}`
     )
     // TODO - actually submit the flagging once adding notification emails is available
-    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
-    cy.get('[data-cy="cancel-flag-element"]').click()
+    cy.get('[data-cy="submit-flag-question"]').should('not.be.disabled')
+    cy.get('[data-cy="cancel-flag-question"]').click()
     cy.get(':nth-child(1) > [data-cy="choice-option"]').click()
     cy.get('[data-cy="send-answer"]').click()
     cy.wait(1000)
