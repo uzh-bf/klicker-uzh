@@ -17,7 +17,7 @@ function AddQuestionField({ push }: AddQuestionFieldProps) {
         ElementType.Sc,
         ElementType.Mc,
         ElementType.Kprim,
-        ElementType.FreeText,
+        // ElementType.FreeText,
         ElementType.Numerical,
         ElementType.Content,
         ElementType.Flashcard,

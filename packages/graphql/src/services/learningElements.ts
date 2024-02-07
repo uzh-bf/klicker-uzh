@@ -797,16 +797,6 @@ export async function getLearningElementData(
   }
 }
 
-// TODO: think about refactor how to enforce either questionId or mdContent on type level
-// interface StackInputQuestion {
-//   questionId?: number
-//   mdContent?: never | null
-// }
-// interface StackInputMdContent {
-//   questionId?: never | null
-//   mdContent?: string
-// }
-
 interface StackInput {
   // TODO: add missing stack input data (optional displayname and description)
   elements: {
