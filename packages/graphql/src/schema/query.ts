@@ -21,7 +21,7 @@ import {
   ParticipantWithAchievements,
   Participation,
 } from './participant'
-import { PracticeQuiz } from './practiceQuizzes'
+import { ElementStack, PracticeQuiz } from './practiceQuizzes'
 import { Element, Tag } from './question'
 import { Feedback, Session, SessionEvaluation } from './session'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user'
@@ -465,6 +465,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ParticipantService.getBookmarkedQuestions(args, ctx)
+        },
+      }),
+
+      getBookmarkedElementStacks: asParticipant.field({
+        nullable: true,
+        type: [ElementStack],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.getBookmarkedElementStacks(args, ctx)
         },
       }),
 

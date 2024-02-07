@@ -805,6 +805,7 @@ type Query {
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(id: String!): [Feedback!]
+  getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarkedQuestions(courseId: String!): [QuestionStack!]
   getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String!): [Int!]

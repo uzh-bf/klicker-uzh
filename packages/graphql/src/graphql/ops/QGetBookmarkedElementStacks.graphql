@@ -1,0 +1,13 @@
+#import "./FElementData.graphql"
+
+query GetBookmarkedElementStacks($courseId: String!) {
+  getBookmarkedElementStacks(courseId: $courseId) {
+    id
+    displayName
+    description
+    order
+    elements {
+      ...ElementData
+    }
+  }
+}

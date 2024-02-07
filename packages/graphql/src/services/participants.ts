@@ -498,6 +498,33 @@ export async function getBookmarkedQuestions(
   return participation?.bookmarkedStacks ?? []
 }
 
+interface GetBookmarkedElementStacksArgs {
+  courseId: string
+}
+
+export async function getBookmarkedElementStacks(
+  { courseId }: GetBookmarkedElementStacksArgs,
+  ctx: ContextWithUser
+) {
+  const participation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    include: {
+      bookmarkedElementStacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  return participation?.bookmarkedElementStacks ?? []
+}
+
 // TODO: remove after migration to element instances
 export async function flagQuestion(
   args: { questionInstanceId: number; content: string },
