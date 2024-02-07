@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
+import Bookmark from './Bookmark'
 import InstanceHeader from './InstanceHeader'
 import StudentElement, {
   ElementChoicesType,
@@ -131,27 +132,7 @@ function ElementStack({
       <div className="w-full">
         <div className="flex flex-row items-center justify-between">
           {stack.displayName && <H2>{stack.displayName}</H2>}
-          {/* <div
-                className={twMerge(
-                  'flex flex-row gap-2',
-                  !data?.getBookmarksLearningElement && 'hidden'
-                )}
-              >
-                <div>Bookmark</div>
-                <Button basic onClick={() => bookmarkQuestion()}>
-                  {isBookmarked ? (
-                    <FontAwesomeIcon
-                      className="text-red-600 sm:hover:text-red-500"
-                      icon={faBookmarkFilled}
-                    />
-                  ) : (
-                    <FontAwesomeIcon
-                      className="sm:hover:text-red-400"
-                      icon={faBookmark}
-                    />
-                  )}
-                </Button>
-              </div> */}
+          <Bookmark quizId={parentId} />
         </div>
 
         {stack.description && (

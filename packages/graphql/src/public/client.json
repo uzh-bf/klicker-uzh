@@ -83,6 +83,7 @@
    "GetBasicCourseInformation": "14169116abd9278adb08977b9c153403e6065ab0c3d02a6beb38017e1c8b19d6",
    "GetBookmarkedQuestions": "b4ae2fe245fe1f341aca20890fa7510f311e4e26c24b0580d8979026bec667b9",
    "GetBookmarksLearningElement": "9f5e65e151a9351487604361ba32d5185009a56ac1c4ec249814a76e402946ad",
+   "GetBookmarksPracticeQuiz": "073e18c78d78baefcca70c644fd96b6dce0ba5782b2acfcf1df0731cbaa78d95",
    "GetCockpitSession": "2dc05efe666612973c434ba15bcdd3e66b1da57683e156e043479243b7577753",
    "GetControlCourse": "88f7734aa4fd0d77bcf607916ed3e6aee305171448d19d6be9604f845b0c2594",
    "GetControlCourses": "f62c7d2cb59eb42a077e6d527c90f4838a2888cb9a9f60259979114b6a3b759f",

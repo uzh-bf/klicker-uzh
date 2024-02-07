@@ -806,6 +806,7 @@ type Query {
   feedbacks(id: String!): [Feedback!]
   getBookmarkedQuestions(courseId: String!): [QuestionStack!]
   getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionStack!]
+  getBookmarksPracticeQuiz(courseId: String!, quizId: String!): [Int!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   getParticipation(courseId: String!): Participation

@@ -550,6 +550,18 @@ export const Query = builder.queryType({
           return CourseService.getCoursePracticeQuiz(args, ctx)
         },
       }),
+
+      getBookmarksPracticeQuiz: asParticipant.field({
+        nullable: true,
+        type: ['Int'],
+        args: {
+          quizId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getBookmarksPracticeQuiz(args, ctx)
+        },
+      }),
     }
   },
 })
