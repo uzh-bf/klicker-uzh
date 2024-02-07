@@ -537,6 +537,7 @@ enum MicroSessionStatus {
 type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
+  bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   bookmarkQuestion(bookmarked: Boolean!, courseId: String!, stackId: Int!): [QuestionStack!]
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
@@ -804,8 +805,10 @@ type Query {
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(id: String!): [Feedback!]
+  getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarkedQuestions(courseId: String!): [QuestionStack!]
   getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionStack!]
+  getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
   getParticipation(courseId: String!): Participation

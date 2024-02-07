@@ -293,8 +293,6 @@ model ElementInstance {
   responses       QuestionResponse[]
   detailResponses QuestionResponseDetail[]
 
-  bookmarkedBy Participation[]
-
   element        Element?     @relation(fields: [elementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   elementId      Int?
   elementStack   ElementStack @relation(fields: [elementStackId], references: [id])
@@ -1069,9 +1067,8 @@ model Participation {
   detailResponses         QuestionResponseDetail[]
   subscriptions           PushSubscription[]
   completedMicroSessions  String[]
-  bookmarkedQuestions     QuestionInstance[]
-  bookmarkedStacks        QuestionStack[]
-  bookmarkedElements      ElementInstance[]
+  bookmarkedQuestions     QuestionInstance[] // TODO: remove after migration - not used anymore
+  bookmarkedStacks        QuestionStack[] // TODO: remove after migration - new element stack bookmarks
   bookmarkedElementStacks ElementStack[]
 
   createdAt DateTime @default(now())

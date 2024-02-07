@@ -21,7 +21,7 @@ function InstanceHeader({
   return (
     <div className={twMerge('mb-4', className)}>
       <div className="flex flex-row justify-between pr-1">
-        <H4>{name}</H4>
+        <H4 data={{ cy: `element-instance-header-${name}` }}>{name}</H4>
         {withParticipant && (
           <FlagElementModal
             open={modalOpen}

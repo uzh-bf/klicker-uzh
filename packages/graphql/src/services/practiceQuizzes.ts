@@ -1220,3 +1220,35 @@ export async function respondToPracticeQuizStack(
     evaluations: evaluationsArr,
   }
 }
+
+interface GetBookmarksPracticeQuizArgs {
+  quizId?: string | null
+  courseId: string
+}
+
+export async function getBookmarksPracticeQuiz(
+  { quizId, courseId }: GetBookmarksPracticeQuizArgs,
+  ctx: Context
+) {
+  if (!ctx.user?.sub) {
+    return null
+  }
+
+  const participation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    include: {
+      bookmarkedElementStacks: {
+        where: {
+          practiceQuizId: quizId ?? undefined,
+        },
+      },
+    },
+  })
+
+  return participation?.bookmarkedElementStacks.map((stack) => stack.id)
+}
