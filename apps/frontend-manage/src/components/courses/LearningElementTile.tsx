@@ -8,7 +8,8 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   LearningElement,
-  LearningElementStatus,
+  PracticeQuiz,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Toast } from '@uzh-bf/design-system'
@@ -22,8 +23,7 @@ import PublishConfirmationModal from './modals/PublishConfirmationModal'
 
 interface LearningElementTileProps {
   courseId: string
-  learningElement: Partial<LearningElement> &
-    Pick<LearningElement, 'id' | 'name'>
+  learningElement: Partial<PracticeQuiz> & Pick<LearningElement, 'id' | 'name'>
 }
 
 function LearningElementTile({
@@ -36,7 +36,7 @@ function LearningElementTile({
   const [deletionModal, setDeletionModal] = useState(false)
   const router = useRouter()
 
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/element/${learningElement.id}/`
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${learningElement.id}/`
 
   return (
     <div
@@ -48,14 +48,14 @@ function LearningElementTile({
           <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
             {learningElement.name || ''}
           </Ellipsis>
-          {learningElement.status === LearningElementStatus.Draft && (
+          {learningElement.status === PublicationStatus.Draft && (
             <StatusTag
               color="bg-gray-200"
               status={t('shared.generic.draft')}
               icon={faPencil}
             />
           )}
-          {learningElement.status === LearningElementStatus.Published && (
+          {learningElement.status === PublicationStatus.Published && (
             <StatusTag
               color="bg-green-300"
               status={t('shared.generic.published')}
@@ -101,7 +101,7 @@ function LearningElementTile({
           </Button>
         </Link>
 
-        {learningElement.status === LearningElementStatus.Draft && (
+        {learningElement.status === PublicationStatus.Draft && (
           <Button
             basic
             className={{ root: 'text-primary' }}
@@ -125,7 +125,7 @@ function LearningElementTile({
           </Button>
         )}
 
-        {learningElement.status === LearningElementStatus.Draft && (
+        {learningElement.status === PublicationStatus.Draft && (
           <Button
             basic
             className={{ root: 'text-primary' }}
@@ -141,7 +141,7 @@ function LearningElementTile({
           </Button>
         )}
 
-        {learningElement.status === LearningElementStatus.Draft && (
+        {learningElement.status === PublicationStatus.Draft && (
           <Button
             basic
             className={{ root: 'text-red-600' }}

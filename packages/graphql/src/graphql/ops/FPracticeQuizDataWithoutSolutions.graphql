@@ -2,6 +2,7 @@
 
 fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
   id
+  status
   name
   displayName
   description

@@ -30,6 +30,7 @@ export const GroupActivity = GroupActivityRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
 
+    name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
 

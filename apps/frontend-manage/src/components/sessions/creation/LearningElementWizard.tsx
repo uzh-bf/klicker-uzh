@@ -4,8 +4,8 @@ import {
   EditPracticeQuizDocument,
   ElementType,
   GetSingleCourseDocument,
-  LearningElement,
   LearningElementOrderType,
+  PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FormikNumberField,
@@ -29,7 +29,7 @@ interface LearningElementWizardProps {
     label: string
     value: string
   }[]
-  initialValues?: LearningElement
+  initialValues?: PracticeQuiz
 }
 
 function LearningElementWizard({
@@ -196,19 +196,14 @@ function LearningElementWizard({
           displayName: initialValues?.displayName || '',
           description: initialValues?.description || '',
           questions: initialValues?.stacks
-            ? initialValues?.stacks
-                ?.filter(
-                  (stack) =>
-                    stack.elements && stack.elements[0].questionInstance
-                )
-                .map((stack) => {
-                  return {
-                    id: stack.elements![0].elementData.questionId,
-                    title: stack.elements![0].elementData.name,
-                    hasAnswerFeedbacks: true, // TODO - based on questionData options
-                    hasSampleSolution: true, // TODO - based on questionData options
-                  }
-                })
+            ? initialValues.stacks.map((stack) => {
+                return {
+                  id: stack.elements![0].elementData.elementId,
+                  title: stack.elements![0].elementData.name,
+                  hasAnswerFeedbacks: true, // TODO - based on questionData options
+                  hasSampleSolution: true, // TODO - based on questionData options
+                }
+              })
             : [],
           multiplier: initialValues?.pointsMultiplier
             ? String(initialValues?.pointsMultiplier)

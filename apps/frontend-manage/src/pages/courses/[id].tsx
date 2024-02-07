@@ -283,9 +283,9 @@ function CourseOverviewPage() {
                 <FontAwesomeIcon icon={faCrown} size="sm" />
               </Button.Icon>
             </H3>
-            {course.learningElements && course.learningElements.length > 0 ? (
+            {course.practiceQuizzes && course.practiceQuizzes.length > 0 ? (
               <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                {course.learningElements.map((learningElement) => (
+                {course.practiceQuizzes.map((learningElement) => (
                   <LearningElementTile
                     courseId={course.id}
                     learningElement={learningElement}

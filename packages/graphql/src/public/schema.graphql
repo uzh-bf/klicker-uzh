@@ -356,6 +356,7 @@ type GroupActivity {
   description: String
   displayName: String!
   id: ID!
+  name: String!
   scheduledEndAt: Date!
   scheduledStartAt: Date!
 }
@@ -809,14 +810,15 @@ type PracticeQuiz {
   displayName: String!
   id: String!
   name: String!
+  numOfQuestions: Int
   orderType: ElementOrderType!
   pointsMultiplier: Int!
   resetTimeDays: Int!
   stacks: [ElementStack!]
-  status: PracticeQuizStatus!
+  status: PublicationStatus!
 }
 
-enum PracticeQuizStatus {
+enum PublicationStatus {
   DRAFT
   PUBLISHED
 }

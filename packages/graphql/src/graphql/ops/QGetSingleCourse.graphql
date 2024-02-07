@@ -35,6 +35,16 @@ query GetSingleCourse($courseId: String!) {
       stacksWithQuestions
       numOfQuestions
     }
+    practiceQuizzes {
+      id
+      name
+      displayName
+      status
+    }
+    groupActivities {
+      id
+      displayName
+    }
     microSessions {
       id
       name

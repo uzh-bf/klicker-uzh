@@ -1296,14 +1296,12 @@ export async function manipulatePracticeQuiz(
         id: { in: oldInstances.map(({ id }) => id) },
       },
     })
+
     await ctx.prisma.practiceQuiz.update({
       where: { id },
       data: {
         stacks: {
           deleteMany: {},
-        },
-        course: {
-          disconnect: true,
         },
       },
     })
