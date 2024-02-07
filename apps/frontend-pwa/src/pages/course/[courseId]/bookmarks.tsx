@@ -52,7 +52,7 @@ function Bookmarks() {
       name: name,
       displayName: name,
       description: description,
-      id: `bookmarks-${router.query.courseId}`,
+      id: 'bookmarks',
       orderType: ElementOrderType.SpacedRepetition,
       pointsMultiplier: 1,
       status: PracticeQuizStatus.Published,
@@ -62,7 +62,6 @@ function Bookmarks() {
   }, [
     name,
     description,
-    router.query.courseId,
     courseData?.basicCourseInformation,
     bookmarkedStacks?.getBookmarkedElementStacks,
   ])

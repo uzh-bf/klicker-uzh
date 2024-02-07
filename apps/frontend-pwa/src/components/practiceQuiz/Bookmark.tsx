@@ -14,7 +14,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface BookmarkProps {
   bookmarks?: number[] | null
-  quizId: string
+  quizId?: string
   stackId: number
 }
 

@@ -136,7 +136,7 @@ function ElementStack({
           {stack.displayName && <H2>{stack.displayName}</H2>}
           <Bookmark
             bookmarks={bookmarks}
-            quizId={parentId}
+            quizId={parentId === 'bookmarks' ? undefined : parentId}
             stackId={stack.id}
           />
         </div>

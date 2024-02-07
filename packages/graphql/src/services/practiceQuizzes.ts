@@ -1222,7 +1222,7 @@ export async function respondToPracticeQuizStack(
 }
 
 interface GetBookmarksPracticeQuizArgs {
-  quizId: string
+  quizId?: string | null
   courseId: string
 }
 
@@ -1244,7 +1244,7 @@ export async function getBookmarksPracticeQuiz(
     include: {
       bookmarkedElementStacks: {
         where: {
-          practiceQuizId: quizId,
+          practiceQuizId: quizId ?? undefined,
         },
       },
     },

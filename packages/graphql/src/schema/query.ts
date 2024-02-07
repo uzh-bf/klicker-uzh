@@ -566,7 +566,7 @@ export const Query = builder.queryType({
         nullable: true,
         type: ['Int'],
         args: {
-          quizId: t.arg.string({ required: true }),
+          quizId: t.arg.string({ required: false }),
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {

@@ -65,7 +65,7 @@ function PracticeQuiz({
   const { data: bookmarksData } = useQuery(GetBookmarksPracticeQuizDocument, {
     variables: {
       courseId: router.query.courseId as string,
-      quizId: quiz.id,
+      quizId: quiz.id === 'bookmarks' ? undefined : quiz.id,
     },
     skip: !router.query.courseId,
   })
