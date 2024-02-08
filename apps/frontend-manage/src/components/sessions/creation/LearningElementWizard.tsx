@@ -342,10 +342,20 @@ function StepOne(_: StepProps) {
 function StepTwo(props: StepProps) {
   const t = useTranslations()
 
+  // const { validateField } = useFormikContext()
+
+  // useEffect(() => {
+  //   const validator = async () => {
+  //     await validateField('courseId')
+  //   }
+  //   validator()
+  // }, [validateField, props.courses])
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-row items-center gap-4">
         <FormikSelectField
+          placeholder={t('manage.sessionForms.practiceQuizCoursePlaceholder')}
           name="courseId"
           items={
             props.courses?.map((course) => {
@@ -360,6 +370,7 @@ function StepTwo(props: StepProps) {
           label={t('shared.generic.course')}
           data={{ cy: 'select-course' }}
           className={{ tooltip: 'z-20' }}
+          hideError
         />
         <ErrorMessage
           name="courseId"

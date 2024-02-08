@@ -954,6 +954,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Anpassen des Übungs-Quizzes fehlgeschlagen...',
       practiceQuizEditingFailed:
         'Erstellen des Übungs-Quizzes fehlgeschlagen...',
+      practiceQuizCoursePlaceholder: 'Kurs auswählen...',
       practiceQuizName:
         'Der Name soll Ihnen ermöglichen, dieses Übungs-Quiz von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
       practiceQuizDescField:

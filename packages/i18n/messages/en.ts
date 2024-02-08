@@ -948,6 +948,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'In this step, make settings for your practice quiz.',
       practiceQuizContent:
         'In this step, add questions and text elements to your practice quiz.',
+      practiceQuizCoursePlaceholder: 'Select course...',
       practiceQuizCreationFailed: 'Creating the practice quiz failed...',
       practiceQuizEditingFailed: 'Editing the practice quiz failed...',
       practiceQuizName:

@@ -367,6 +367,7 @@ function StepTwo(props: StepProps) {
           label={t('shared.generic.course')}
           data={{ cy: 'select-course' }}
           className={{ tooltip: 'z-20' }}
+          hideError
         />
         <ErrorMessage
           name="courseId"
