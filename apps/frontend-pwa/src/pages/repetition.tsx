@@ -29,22 +29,14 @@ function Repetition() {
     return {
       id: course.id,
       displayName: course.displayName,
-      elements: [
-        ...(course.learningElements?.map((element) => {
-          return {
-            id: element.id,
-            displayName: element.displayName,
-            type: RepetitionElementType.LEARNING_ELEMENT,
-          }
-        }) || []),
-        ...(course.practiceQuizzes?.map((element) => {
+      elements:
+        course.practiceQuizzes?.map((element) => {
           return {
             id: element.id,
             displayName: element.displayName,
             type: RepetitionElementType.PRACTICE_QUIZ,
           }
-        }) || []),
-      ],
+        }) || [],
     }
   })
 
