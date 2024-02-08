@@ -19,7 +19,6 @@ import {
   GroupActivityDetails,
   GroupActivityInstance,
 } from './groupActivity'
-import { QuestionStack } from './learningElements'
 import { MicroSession } from './microSession'
 import {
   AvatarSettingsInput,
@@ -439,19 +438,6 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ParticipantGroupService.createParticipantGroup(args, ctx)
-        },
-      }),
-
-      bookmarkQuestion: t.withAuth(asParticipant).field({
-        nullable: true,
-        type: [QuestionStack],
-        args: {
-          courseId: t.arg.string({ required: true }),
-          stackId: t.arg.int({ required: true }),
-          bookmarked: t.arg.boolean({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.bookmarkQuestion(args, ctx)
         },
       }),
 

@@ -401,40 +401,6 @@ export async function getParticipation(
 //   }
 // }
 
-// TODO: remove this after migration to practice quiz
-interface BookmarkQuestionArgs {
-  stackId: number
-  courseId: string
-  bookmarked: boolean
-}
-
-// TODO: remove this function after migration to practice quiz
-export async function bookmarkQuestion(
-  { stackId, courseId, bookmarked }: BookmarkQuestionArgs,
-  ctx: ContextWithUser
-) {
-  const participation = await ctx.prisma.participation.update({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
-    },
-    data: {
-      bookmarkedStacks: {
-        [bookmarked ? 'connect' : 'disconnect']: {
-          id: stackId,
-        },
-      },
-    },
-    include: {
-      bookmarkedStacks: true,
-    },
-  })
-
-  return participation.bookmarkedStacks
-}
-
 interface BookmarkElementStackArgs {
   stackId: number
   courseId: string

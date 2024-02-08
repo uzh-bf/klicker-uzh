@@ -561,7 +561,6 @@ type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
-  bookmarkQuestion(bookmarked: Boolean!, courseId: String!, stackId: Int!): [QuestionStack!]
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDates(courseId: String!, endDate: Date, startDate: Date): Course
@@ -855,7 +854,6 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
-  questionStack(id: Int!): QuestionStack
   runningSessions(shortname: String!): [Session!]
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
