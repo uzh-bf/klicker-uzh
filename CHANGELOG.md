@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.36...v3.1.0-rc.0) (2024-02-08)
+
+
+### Features
+
+* add content elements and flashcards to element pool and practice quiz ([#4035](https://github.com/uzh-bf/klicker-uzh/issues/4035)) ([ce2218a](https://github.com/uzh-bf/klicker-uzh/commit/ce2218ad829a4a02b8e55c7bc448dd87043bae29))
+* **apps/frontend-pwa:** add free text question support for practice quiz ([#4029](https://github.com/uzh-bf/klicker-uzh/issues/4029)) ([33b2115](https://github.com/uzh-bf/klicker-uzh/commit/33b211588aa46cb22a9111dca633801cd1081846))
+* **apps/frontend-pwa:** add numerical questions to practice quiz ([#4027](https://github.com/uzh-bf/klicker-uzh/issues/4027)) ([dfe050b](https://github.com/uzh-bf/klicker-uzh/commit/dfe050bda393193d766288b6e4f64d617a5a9f66))
+* implement bookmarking for new practice quiz element stacks ([#4036](https://github.com/uzh-bf/klicker-uzh/issues/4036)) ([0ae39d6](https://github.com/uzh-bf/klicker-uzh/commit/0ae39d6b8d671dcd41d6be4d0f72cbbd896a1122))
+* implement client-side state tracking and backend response logic for practice quiz stacks ([#4019](https://github.com/uzh-bf/klicker-uzh/issues/4019)) ([6b539b1](https://github.com/uzh-bf/klicker-uzh/commit/6b539b1bffcbdc43c0a9ee3e16d87b6a90c7855b))
+* implement frontend and backend components for choices questions in practice quiz ([#4024](https://github.com/uzh-bf/klicker-uzh/issues/4024)) ([fc6d73f](https://github.com/uzh-bf/klicker-uzh/commit/fc6d73f86866d5c7c28032cdfcbf372f1443c342))
+* restructure backend for new live quiz, microlearning and practice quiz elements ([#4012](https://github.com/uzh-bf/klicker-uzh/issues/4012)) ([bb89789](https://github.com/uzh-bf/klicker-uzh/commit/bb897893ea8e0fc293d49ed66c6fefccbc042bea))
+
+
+### Bug Fixes
+
+* **deploy:** use correct email template env variable for the email not found template ([5591c81](https://github.com/uzh-bf/klicker-uzh/commit/5591c81e2df8086e89939bae5156e72233efba6d))
+
+
+### Enhancements
+
+* add backend components for content element and extend practice quiz frontend ([#4017](https://github.com/uzh-bf/klicker-uzh/issues/4017)) ([5b99749](https://github.com/uzh-bf/klicker-uzh/commit/5b997499257f2115f411dbed7efae3312c29f7fb))
+* add evaluation to practice quiz (backend and frontend) ([#4030](https://github.com/uzh-bf/klicker-uzh/issues/4030)) ([940ded9](https://github.com/uzh-bf/klicker-uzh/commit/940ded983289add05070be04daff0a542b4d529b))
+* add explanation and feedbacks to practice quiz questions ([#4031](https://github.com/uzh-bf/klicker-uzh/issues/4031)) ([3cf0967](https://github.com/uzh-bf/klicker-uzh/commit/3cf096751410930aac0fda0c3efca104c1a549ef))
+* add titles and flagging for elements in stack ([#4034](https://github.com/uzh-bf/klicker-uzh/issues/4034)) ([cd831fa](https://github.com/uzh-bf/klicker-uzh/commit/cd831fa6776d5ec153eb2e075aabd06822ef4fc5))
+* **apps/frontend-pwa:** add new frontend components for practice quiz ([#4018](https://github.com/uzh-bf/klicker-uzh/issues/4018)) ([564c997](https://github.com/uzh-bf/klicker-uzh/commit/564c9974654c8b701cf3e9bdd2c644a2b192091f))
+* **apps/frontend-pwa:** add possibility to mark all content elements as read ([#4023](https://github.com/uzh-bf/klicker-uzh/issues/4023)) ([26fbe76](https://github.com/uzh-bf/klicker-uzh/commit/26fbe7600c8bd1e4fd5a59b5b61dd5c04d77ff91))
+* **apps/frontend-pwa:** add validity logic and previous responses for choice questions in practice quiz ([#4026](https://github.com/uzh-bf/klicker-uzh/issues/4026)) ([fd2d66d](https://github.com/uzh-bf/klicker-uzh/commit/fd2d66d19f9b9ec51e69aeac090dacb60814e281))
+* **packages/prisma:** extend seed with group activities with new element stacks ([#4033](https://github.com/uzh-bf/klicker-uzh/issues/4033)) ([91e7b2d](https://github.com/uzh-bf/klicker-uzh/commit/91e7b2d3bf8f49dd8349f9dd852a308d59a1d5f9))
+* **packages/prisma:** extend test seed with elements from new schema ([#4032](https://github.com/uzh-bf/klicker-uzh/issues/4032)) ([0621db0](https://github.com/uzh-bf/klicker-uzh/commit/0621db0afb7f82e167a078ec51ae5ce615755e72))
+
 ## [3.1.0-beta.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.35...v3.1.0-beta.36) (2024-02-04)
 
 
