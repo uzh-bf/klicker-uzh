@@ -52,6 +52,5 @@
       "path": "dist/index.js",
       "limit": "10 KB"
     }
-  ],
-  "//type": "module"
+  ]
 }

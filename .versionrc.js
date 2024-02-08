@@ -36,10 +36,6 @@ module.exports = {
     },
     [
       {
-        filename: `package-lock.json`,
-        type: 'json',
-      },
-      {
         filename: `deploy/charts/klicker-uzh-v3/Chart.yaml`,
         updater: 'util/yaml-updater.js',
       },
