@@ -534,31 +534,6 @@ export type LeaderboardStatistics = {
   participantCount: Scalars['Int']['output'];
 };
 
-export type LearningElement = {
-  __typename?: 'LearningElement';
-  course?: Maybe<Course>;
-  courseId?: Maybe<Scalars['String']['output']>;
-  description?: Maybe<Scalars['String']['output']>;
-  displayName: Scalars['String']['output'];
-  id: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-  numOfQuestions?: Maybe<Scalars['Int']['output']>;
-  orderType: PracticeQuizOrderType;
-  pointsMultiplier: Scalars['Int']['output'];
-  previousPointsAwarded?: Maybe<Scalars['Float']['output']>;
-  previousScore?: Maybe<Scalars['Float']['output']>;
-  previouslyAnswered?: Maybe<Scalars['Int']['output']>;
-  resetTimeDays?: Maybe<Scalars['Int']['output']>;
-  stacksWithQuestions?: Maybe<Scalars['Int']['output']>;
-  status: LearningElementStatus;
-  totalTrials?: Maybe<Scalars['Int']['output']>;
-};
-
-export enum LearningElementStatus {
-  Draft = 'DRAFT',
-  Published = 'PUBLISHED'
-}
-
 export type LeaveCourseParticipation = {
   __typename?: 'LeaveCourseParticipation';
   id: Scalars['String']['output'];

@@ -12,6 +12,10 @@ import {
 } from './question'
 import { ElementType } from './questionData'
 
+export const PracticeQuizOrderType = builder.enumType('PracticeQuizOrderType', {
+  values: Object.values(DB.OrderType),
+})
+
 export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
 })

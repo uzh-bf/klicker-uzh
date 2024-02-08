@@ -485,30 +485,6 @@ type LeaderboardStatistics {
   participantCount: Int!
 }
 
-type LearningElement {
-  course: Course
-  courseId: String
-  description: String
-  displayName: String!
-  id: String!
-  name: String!
-  numOfQuestions: Int
-  orderType: PracticeQuizOrderType!
-  pointsMultiplier: Int!
-  previousPointsAwarded: Float
-  previousScore: Float
-  previouslyAnswered: Int
-  resetTimeDays: Int
-  stacksWithQuestions: Int
-  status: LearningElementStatus!
-  totalTrials: Int
-}
-
-enum LearningElementStatus {
-  DRAFT
-  PUBLISHED
-}
-
 type LeaveCourseParticipation {
   id: String!
   participation: Participation!
