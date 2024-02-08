@@ -1,6 +1,5 @@
-import Prisma, { Element, OrderType, PublicationStatus } from '../../dist'
+import Prisma, { PublicationStatus } from '../../dist'
 import { COURSE_ID_AMI_HS23, USER_ID_AMI_HS23 } from './constants'
-import { prepareLearningElement } from './helpers'
 // import * as R from 'ramda'
 // import { prepareQuestionInstance } from './helpers.js'
 
@@ -71,26 +70,6 @@ async function seed(prisma: Prisma.PrismaClient) {
   })
 
   console.log(uniqueQuestionIds)
-
-  // create a new practice quiz based on the set of unique question ids
-  await prisma.learningElement.upsert(
-    await prepareLearningElement({
-      id: 'c8866eb2-a41c-4029-b386-30d57941f00c',
-      name: 'AMI Repetition',
-      displayName: 'AMI Repetition',
-      description: '',
-      status: PublicationStatus.DRAFT,
-      orderType: OrderType.LAST_RESPONSE,
-      ownerId: OWNER_ID,
-      courseId: COURSE_ID,
-      pointsMultiplier: 2,
-      stacks: [...uniqueQuestionIds].map((questionId) => {
-        return {
-          elements: [questions.find((q) => q.id === questionId) as Element],
-        }
-      }),
-    })
-  )
 }
 
 const prismaClient = new Prisma.PrismaClient()

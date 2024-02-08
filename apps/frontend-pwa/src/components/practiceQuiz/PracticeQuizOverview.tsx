@@ -109,13 +109,13 @@ function PracticeQuizOverview({
           )}
           {/* <div className="flex flex-row items-center gap-2">
         <div>
-          Punkte (berechnet): {data.learningElement.previousScore}
+          Punkte (berechnet): {previousScore}
         </div>
       </div>
       <div className="flex flex-row items-center gap-2">
         <div>
           Punkte (gesammelt):{' '}
-          {data.learningElement.previousPointsAwarded}
+          {previousPointsAwarded}
         </div>
       </div> */}
           {/* {typeof previouslyAnswered !== 'undefined' && (
@@ -131,7 +131,7 @@ function PracticeQuizOverview({
           )} */}
           {/* <div className="flex flex-row items-center gap-2">
         Anzahl Antworten:{' '}
-        <div>{data.learningElement.totalTrials}</div>
+        <div>{totalTrials}</div>
       </div> */}
           {typeof pointsMultiplier !== 'undefined' && (
             <div className="flex flex-row items-center gap-2">
