@@ -18,44 +18,41 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import StatusTag from './StatusTag'
-import LearningElementDeletionModal from './modals/LearningElementDeletionModal'
+import PracticeQuizDeletionModal from './modals/PracticeQuizDeletionModal'
 import PublishConfirmationModal from './modals/PublishConfirmationModal'
 
-interface LearningElementTileProps {
+interface PracticeQuizTileProps {
   courseId: string
-  learningElement: Partial<PracticeQuiz> & Pick<PracticeQuiz, 'id' | 'name'>
+  practiceQuiz: Partial<PracticeQuiz> & Pick<PracticeQuiz, 'id' | 'name'>
 }
 
-function LearningElementTile({
-  courseId,
-  learningElement,
-}: LearningElementTileProps) {
+function PracticeQuizTile({ courseId, practiceQuiz }: PracticeQuizTileProps) {
   const t = useTranslations()
   const [copyToast, setCopyToast] = useState(false)
   const [publishModal, setPublishModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const router = useRouter()
 
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${learningElement.id}/`
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${practiceQuiz.id}/`
 
   return (
     <div
       className="flex flex-col justify-between p-2 border border-solid rounded w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80"
-      data-cy={`practice-quiz-${learningElement.name}`}
+      data-cy={`practice-quiz-${practiceQuiz.name}`}
     >
       <div>
         <div className="flex flex-row justify-between">
           <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
-            {learningElement.name || ''}
+            {practiceQuiz.name || ''}
           </Ellipsis>
-          {learningElement.status === PublicationStatus.Draft && (
+          {practiceQuiz.status === PublicationStatus.Draft && (
             <StatusTag
               color="bg-gray-200"
               status={t('shared.generic.draft')}
               icon={faPencil}
             />
           )}
-          {learningElement.status === PublicationStatus.Published && (
+          {practiceQuiz.status === PublicationStatus.Published && (
             <StatusTag
               color="bg-green-300"
               status={t('shared.generic.published')}
@@ -65,10 +62,10 @@ function LearningElementTile({
         </div>
         <div
           className="mb-1 italic"
-          data-cy={`practice-quiz-num-of-questions-${learningElement.name}`}
+          data-cy={`practice-quiz-num-of-questions-${practiceQuiz.name}`}
         >
           {t('manage.course.nQuestions', {
-            number: learningElement.numOfQuestions || '0',
+            number: practiceQuiz.numOfQuestions || '0',
           })}
         </div>
 
@@ -83,7 +80,7 @@ function LearningElementTile({
           className={{
             root: 'flex flex-row items-center gap-1 text-primary',
           }}
-          data={{ cy: `copy-practice-quiz-link-${learningElement.name}` }}
+          data={{ cy: `copy-practice-quiz-link-${practiceQuiz.name}` }}
         >
           <FontAwesomeIcon icon={faCopy} size="sm" className="w-4" />
           <div>{t('manage.course.copyAccessLink')}</div>
@@ -94,14 +91,14 @@ function LearningElementTile({
             className={{
               root: 'flex flex-row items-center gap-1 text-primary',
             }}
-            data={{ cy: `open-practice-quiz-${learningElement.name}` }}
+            data={{ cy: `open-practice-quiz-${practiceQuiz.name}` }}
           >
             <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
             <div>{t('shared.generic.open')}</div>
           </Button>
         </Link>
 
-        {learningElement.status === PublicationStatus.Draft && (
+        {practiceQuiz.status === PublicationStatus.Draft && (
           <Button
             basic
             className={{ root: 'text-primary' }}
@@ -109,12 +106,12 @@ function LearningElementTile({
               router.push({
                 pathname: '/',
                 query: {
-                  sessionId: learningElement.id,
+                  sessionId: practiceQuiz.id,
                   editMode: 'learningElement',
                 },
               })
             }
-            data={{ cy: `edit-practice-quiz-${learningElement.name}` }}
+            data={{ cy: `edit-practice-quiz-${practiceQuiz.name}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faPencil} />
@@ -123,12 +120,12 @@ function LearningElementTile({
           </Button>
         )}
 
-        {learningElement.status === PublicationStatus.Draft && (
+        {practiceQuiz.status === PublicationStatus.Draft && (
           <Button
             basic
             className={{ root: 'text-primary' }}
             onClick={() => setPublishModal(true)}
-            data={{ cy: `publish-practice-quiz-${learningElement.name}` }}
+            data={{ cy: `publish-practice-quiz-${practiceQuiz.name}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
@@ -139,12 +136,12 @@ function LearningElementTile({
           </Button>
         )}
 
-        {learningElement.status === PublicationStatus.Draft && (
+        {practiceQuiz.status === PublicationStatus.Draft && (
           <Button
             basic
             className={{ root: 'text-red-600' }}
             onClick={() => setDeletionModal(true)}
-            data={{ cy: `delete-practice-quiz-${learningElement.name}` }}
+            data={{ cy: `delete-practice-quiz-${practiceQuiz.name}` }}
           >
             <Button.Icon>
               <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
@@ -163,14 +160,14 @@ function LearningElementTile({
         </Toast>
         <PublishConfirmationModal
           elementType={ElementInstanceType.PracticeQuiz}
-          elementId={learningElement.id}
-          title={learningElement.name}
+          elementId={practiceQuiz.id}
+          title={practiceQuiz.name}
           open={publishModal}
           setOpen={setPublishModal}
         />
-        <LearningElementDeletionModal
-          elementId={learningElement.id}
-          title={learningElement.name}
+        <PracticeQuizDeletionModal
+          elementId={practiceQuiz.id}
+          title={practiceQuiz.name}
           open={deletionModal}
           setOpen={setDeletionModal}
         />
@@ -179,4 +176,4 @@ function LearningElementTile({
   )
 }
 
-export default LearningElementTile
+export default PracticeQuizTile

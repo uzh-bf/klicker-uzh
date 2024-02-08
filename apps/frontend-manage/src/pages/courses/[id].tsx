@@ -32,8 +32,8 @@ import { sort } from 'ramda'
 import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
 import CourseDescription from '../../components/courses/CourseDescription'
-import LearningElementTile from '../../components/courses/LearningElementTile'
 import MicroSessionTile from '../../components/courses/MicroSessionTile'
+import PracticeQuizTile from '../../components/courses/PracticeQuizTile'
 import SessionTile from '../../components/courses/SessionTile'
 import CourseQRModal from '../../components/sessions/cockpit/CourseQRModal'
 
@@ -287,7 +287,7 @@ function CourseOverviewPage() {
             {course.practiceQuizzes && course.practiceQuizzes.length > 0 ? (
               <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
                 {course.practiceQuizzes.map((learningElement) => (
-                  <LearningElementTile
+                  <PracticeQuizTile
                     courseId={course.id}
                     learningElement={learningElement}
                     key={learningElement.id}

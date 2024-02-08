@@ -1,4 +1,4 @@
-mutation PublishLearningElement($id: String!) {
+mutation PublishPracticeQuiz($id: String!) {
   publishPracticeQuiz(id: $id) {
     id
     name
