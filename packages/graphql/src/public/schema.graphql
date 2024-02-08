@@ -142,7 +142,6 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
   leaderboard: [LeaderboardEntry!]
-  learningElements: [LearningElement!]
   microSessions: [MicroSession!]
   name: String!
   notificationEmail: String
