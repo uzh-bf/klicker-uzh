@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.0...v3.1.0-rc.1) (2024-02-08)
+
+
+### Bug Fixes
+
+* **apps/backend-docker:** add util package to runtime image ([23f3252](https://github.com/uzh-bf/klicker-uzh/commit/23f325295491e3bc3018bd2f398e4a3d7c2723d6))
+
 ## [3.1.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-beta.36...v3.1.0-rc.0) (2024-02-08)
 
 
