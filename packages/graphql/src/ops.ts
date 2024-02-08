@@ -549,7 +549,6 @@ export type LearningElement = {
   previousScore?: Maybe<Scalars['Float']['output']>;
   previouslyAnswered?: Maybe<Scalars['Int']['output']>;
   resetTimeDays?: Maybe<Scalars['Int']['output']>;
-  stacks?: Maybe<Array<QuestionStack>>;
   stacksWithQuestions?: Maybe<Scalars['Int']['output']>;
   status: LearningElementStatus;
   totalTrials?: Maybe<Scalars['Int']['output']>;
@@ -1641,23 +1640,6 @@ export type QuestionResponseDetail = {
   id: Scalars['Int']['output'];
 };
 
-export type QuestionStack = {
-  __typename?: 'QuestionStack';
-  description?: Maybe<Scalars['String']['output']>;
-  displayName?: Maybe<Scalars['String']['output']>;
-  elements?: Maybe<Array<StackElement>>;
-  id: Scalars['Int']['output'];
-  order?: Maybe<Scalars['Int']['output']>;
-  type: QuestionStackType;
-};
-
-export enum QuestionStackType {
-  GroupActivity = 'GROUP_ACTIVITY',
-  LearningElement = 'LEARNING_ELEMENT',
-  LiveSession = 'LIVE_SESSION',
-  MicroSession = 'MICRO_SESSION'
-}
-
 export type ResponseInput = {
   choices?: InputMaybe<Array<Scalars['Int']['input']>>;
   value?: InputMaybe<Scalars['String']['input']>;
@@ -1741,19 +1723,6 @@ export type SolutionRangeInput = {
   min?: InputMaybe<Scalars['Float']['input']>;
 };
 
-export type StackElement = {
-  __typename?: 'StackElement';
-  id: Scalars['Int']['output'];
-  mdContent?: Maybe<Scalars['String']['output']>;
-  order?: Maybe<Scalars['Int']['output']>;
-  questionInstance?: Maybe<QuestionInstance>;
-};
-
-export type StackElementInput = {
-  mdContent?: InputMaybe<Scalars['String']['input']>;
-  questionId?: InputMaybe<Scalars['Int']['input']>;
-};
-
 export type StackElementsInput = {
   elementId: Scalars['Int']['input'];
   order: Scalars['Int']['input'];
@@ -1774,10 +1743,6 @@ export enum StackFeedbackStatus {
   Partial = 'partial',
   Unanswered = 'unanswered'
 }
-
-export type StackInput = {
-  elements: Array<StackElementInput>;
-};
 
 export type StackResponseInput = {
   choicesResponse?: InputMaybe<Array<Scalars['Int']['input']>>;

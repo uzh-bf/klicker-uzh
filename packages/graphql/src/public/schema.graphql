@@ -499,7 +499,6 @@ type LearningElement {
   previousScore: Float
   previouslyAnswered: Int
   resetTimeDays: Int
-  stacks: [QuestionStack!]
   stacksWithQuestions: Int
   status: LearningElementStatus!
   totalTrials: Int
@@ -905,22 +904,6 @@ type QuestionResponseDetail {
   id: Int!
 }
 
-type QuestionStack {
-  description: String
-  displayName: String
-  elements: [StackElement!]
-  id: Int!
-  order: Int
-  type: QuestionStackType!
-}
-
-enum QuestionStackType {
-  GROUP_ACTIVITY
-  LEARNING_ELEMENT
-  LIVE_SESSION
-  MICRO_SESSION
-}
-
 input ResponseInput {
   choices: [Int!]
   value: String
@@ -1001,18 +984,6 @@ input SolutionRangeInput {
   min: Float
 }
 
-type StackElement {
-  id: Int!
-  mdContent: String
-  order: Int
-  questionInstance: QuestionInstance
-}
-
-input StackElementInput {
-  mdContent: String
-  questionId: Int
-}
-
 input StackElementsInput {
   elementId: Int!
   order: Int!
@@ -1031,10 +1002,6 @@ enum StackFeedbackStatus {
   manuallyGraded
   partial
   unanswered
-}
-
-input StackInput {
-  elements: [StackElementInput!]!
 }
 
 input StackResponseInput {

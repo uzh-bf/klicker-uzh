@@ -3,8 +3,6 @@ import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import type { ICourse } from './course'
 import { CourseRef } from './course'
-import type { IQuestionInstance } from './question'
-import { QuestionInstanceRef } from './question'
 
 export const PracticeQuizOrderType = builder.enumType('PracticeQuizOrderType', {
   values: Object.values(DB.OrderType),
@@ -14,60 +12,6 @@ export const LearningElementStatus = builder.enumType('LearningElementStatus', {
   values: Object.values(DB.LearningElementStatus),
 })
 
-export const QuestionStackType = builder.enumType('QuestionStackType', {
-  values: Object.values(DB.QuestionStackType),
-})
-
-export const StackInput = builder.inputType('StackInput', {
-  fields: (t) => ({
-    elements: t.field({ type: [StackElementInput], required: true }),
-  }),
-})
-
-export const StackElementInput = builder.inputType('StackElementInput', {
-  fields: (t) => ({
-    questionId: t.int({ required: false }),
-    mdContent: t.string({ required: false }),
-  }),
-})
-
-export interface IQuestionStack extends DB.QuestionStack {
-  elements?: IStackElement[]
-}
-export const QuestionStackRef =
-  builder.objectRef<IQuestionStack>('QuestionStack')
-export const QuestionStack = QuestionStackRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    type: t.expose('type', { type: QuestionStackType }),
-    displayName: t.exposeString('displayName', { nullable: true }),
-    description: t.exposeString('description', { nullable: true }),
-    order: t.exposeInt('order', { nullable: true }),
-
-    elements: t.expose('elements', {
-      type: [StackElementRef],
-      nullable: true,
-    }),
-  }),
-})
-
-export interface IStackElement extends DB.StackElement {
-  questionInstance?: IQuestionInstance | null
-}
-export const StackElementRef = builder.objectRef<IStackElement>('StackElement')
-export const StackElement = StackElementRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    order: t.exposeInt('order', { nullable: true }),
-
-    mdContent: t.exposeString('mdContent', { nullable: true }),
-    questionInstance: t.expose('questionInstance', {
-      type: QuestionInstanceRef,
-      nullable: true,
-    }),
-  }),
-})
-
 export interface ILearningElement extends DB.LearningElement {
   previouslyAnswered?: number
   previousScore?: number
@@ -75,7 +19,6 @@ export interface ILearningElement extends DB.LearningElement {
   totalTrials?: number
   stacksWithQuestions?: number
   numOfQuestions?: number
-  stacks?: IQuestionStack[]
   course?: ICourse | null
 }
 export const LearningElementRef =
@@ -101,11 +44,6 @@ export const LearningElement = LearningElementRef.implement({
       nullable: true,
     }),
     numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
-
-    stacks: t.expose('stacks', {
-      type: [QuestionStackRef],
-      nullable: true,
-    }),
 
     course: t.expose('course', {
       type: CourseRef,
