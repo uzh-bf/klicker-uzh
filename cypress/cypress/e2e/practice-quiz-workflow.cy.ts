@@ -72,10 +72,9 @@ describe('Different practice quiz workflows', () => {
     cy.get(
       `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
     ).click()
-    cy.get('[data-cy="insert-reset-time-days"]').click() // TODO: workaround to click outside of select
-    cy.get('[data-cy="select-order"]').contains(
-      messages.manage.sessionForms.learningElementSEQUENTIAL
-    )
+    cy.get('[data-cy="select-order"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
@@ -209,10 +208,9 @@ describe('Different practice quiz workflows', () => {
     cy.get(
       `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
     ).click()
-    cy.get('[data-cy="insert-reset-time-days"]').click() // TODO: workaround to click outside of select
-    cy.get('[data-cy="select-order"]').contains(
-      messages.manage.sessionForms.learningElementSEQUENTIAL
-    )
+    cy.get('[data-cy="select-order"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
@@ -264,14 +262,9 @@ describe('Different practice quiz workflows', () => {
       .should('have.value', '4')
       .clear()
       .type('10')
-    cy.get('[data-cy="select-order"]').click()
-    cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
-    ).click()
-    cy.get('[data-cy="insert-reset-time-days"]').click() // TODO: workaround to click outside of select
-    cy.get('[data-cy="select-order"]').contains(
-      messages.manage.sessionForms.learningElementSEQUENTIAL
-    )
+    cy.get('[data-cy="select-order"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // add the question two further times
