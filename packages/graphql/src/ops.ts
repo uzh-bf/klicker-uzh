@@ -544,7 +544,7 @@ export type LearningElement = {
   id: Scalars['String']['output'];
   name: Scalars['String']['output'];
   numOfQuestions?: Maybe<Scalars['Int']['output']>;
-  orderType: LearningElementOrderType;
+  orderType: PracticeQuizOrderType;
   pointsMultiplier: Scalars['Int']['output'];
   previousPointsAwarded?: Maybe<Scalars['Float']['output']>;
   previousScore?: Maybe<Scalars['Float']['output']>;
@@ -555,12 +555,6 @@ export type LearningElement = {
   status: LearningElementStatus;
   totalTrials?: Maybe<Scalars['Int']['output']>;
 };
-
-export enum LearningElementOrderType {
-  LastResponse = 'LAST_RESPONSE',
-  Sequential = 'SEQUENTIAL',
-  Shuffled = 'SHUFFLED'
-}
 
 export enum LearningElementStatus {
   Draft = 'DRAFT',
@@ -819,7 +813,7 @@ export type MutationCreateLearningElementArgs = {
   displayName: Scalars['String']['input'];
   multiplier: Scalars['Int']['input'];
   name: Scalars['String']['input'];
-  order: LearningElementOrderType;
+  order: PracticeQuizOrderType;
   resetTimeDays: Scalars['Int']['input'];
   stacks: Array<StackInput>;
 };
@@ -938,7 +932,7 @@ export type MutationEditLearningElementArgs = {
   id: Scalars['String']['input'];
   multiplier: Scalars['Int']['input'];
   name: Scalars['String']['input'];
-  order: LearningElementOrderType;
+  order: PracticeQuizOrderType;
   resetTimeDays: Scalars['Int']['input'];
   stacks: Array<StackInput>;
 };
@@ -1431,6 +1425,12 @@ export type PracticeQuiz = {
   stacks?: Maybe<Array<ElementStack>>;
   status: PublicationStatus;
 };
+
+export enum PracticeQuizOrderType {
+  LastResponse = 'LAST_RESPONSE',
+  Sequential = 'SEQUENTIAL',
+  Shuffled = 'SHUFFLED'
+}
 
 export enum PublicationStatus {
   Draft = 'DRAFT',
@@ -2779,7 +2779,7 @@ export type GetLearningElementQueryVariables = Exact<{
 }>;
 
 
-export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays?: number | null, orderType: LearningElementOrderType, previouslyAnswered?: number | null, previousScore?: number | null, previousPointsAwarded?: number | null, totalTrials?: number | null, stacksWithQuestions?: number | null, numOfQuestions?: number | null, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null } | null, stacks?: Array<{ __typename?: 'QuestionStack', id: number, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'StackElement', id: number, order?: number | null, mdContent?: string | null, questionInstance?: { __typename?: 'QuestionInstance', id: number, pointsMultiplier: number, evaluation?: { __typename?: 'InstanceEvaluationOLD', choices?: any | null, answers?: any | null, score: number, pointsAwarded?: number | null, percentile?: number | null, newPointsFrom?: any | null, xpAwarded?: number | null, newXpFrom?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix: number, feedback?: string | null, correct?: boolean | null, value: string }> | null } | null, questionData?: { __typename?: 'ChoicesQuestionData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'ChoiceQuestionOptions', hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'ContentElementQData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null } | { __typename?: 'FlashcardElementQData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null } | { __typename?: 'FreeTextQuestionData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'FreeTextQuestionOptions', hasSampleSolution: boolean, solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalQuestionData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'NumericalQuestionOptions', hasSampleSolution: boolean, accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } | null } | null }> | null }> | null } | null };
+export type GetLearningElementQuery = { __typename?: 'Query', learningElement?: { __typename?: 'LearningElement', id: string, name: string, displayName: string, description?: string | null, pointsMultiplier: number, resetTimeDays?: number | null, orderType: PracticeQuizOrderType, previouslyAnswered?: number | null, previousScore?: number | null, previousPointsAwarded?: number | null, totalTrials?: number | null, stacksWithQuestions?: number | null, numOfQuestions?: number | null, course?: { __typename?: 'Course', id: string, displayName: string, color?: string | null } | null, stacks?: Array<{ __typename?: 'QuestionStack', id: number, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'StackElement', id: number, order?: number | null, mdContent?: string | null, questionInstance?: { __typename?: 'QuestionInstance', id: number, pointsMultiplier: number, evaluation?: { __typename?: 'InstanceEvaluationOLD', choices?: any | null, answers?: any | null, score: number, pointsAwarded?: number | null, percentile?: number | null, newPointsFrom?: any | null, xpAwarded?: number | null, newXpFrom?: any | null, feedbacks?: Array<{ __typename?: 'QuestionFeedback', ix: number, feedback?: string | null, correct?: boolean | null, value: string }> | null } | null, questionData?: { __typename?: 'ChoicesQuestionData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'ChoiceQuestionOptions', hasSampleSolution: boolean, hasAnswerFeedbacks: boolean, displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, correct?: boolean | null, feedback?: string | null, value: string }> } } | { __typename?: 'ContentElementQData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null } | { __typename?: 'FlashcardElementQData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null } | { __typename?: 'FreeTextQuestionData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'FreeTextQuestionOptions', hasSampleSolution: boolean, solutions?: Array<string> | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename?: 'NumericalQuestionData', id: string, questionId?: number | null, name: string, type: ElementType, content: string, explanation?: string | null, pointsMultiplier?: number | null, options: { __typename?: 'NumericalQuestionOptions', hasSampleSolution: boolean, accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null, solutionRanges?: Array<{ __typename?: 'NumericalSolutionRange', min?: number | null, max?: number | null }> | null } } | null } | null }> | null }> | null } | null };
 
 export type GetLoginTokenQueryVariables = Exact<{ [key: string]: never; }>;
 

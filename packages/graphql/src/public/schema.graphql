@@ -494,7 +494,7 @@ type LearningElement {
   id: String!
   name: String!
   numOfQuestions: Int
-  orderType: LearningElementOrderType!
+  orderType: PracticeQuizOrderType!
   pointsMultiplier: Int!
   previousPointsAwarded: Float
   previousScore: Float
@@ -504,12 +504,6 @@ type LearningElement {
   stacksWithQuestions: Int
   status: LearningElementStatus!
   totalTrials: Int
-}
-
-enum LearningElementOrderType {
-  LAST_RESPONSE
-  SEQUENTIAL
-  SHUFFLED
 }
 
 enum LearningElementStatus {
@@ -581,7 +575,7 @@ type Mutation {
   changeUserLocale(locale: LocaleType!): User
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date, isGamificationEnabled: Boolean!, name: String!, notificationEmail: String, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
-  createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
+  createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: PracticeQuizOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
   createMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
   createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
@@ -598,7 +592,7 @@ type Mutation {
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
-  editLearningElement(courseId: String, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
+  editLearningElement(courseId: String, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: PracticeQuizOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
   editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
@@ -816,6 +810,12 @@ type PracticeQuiz {
   resetTimeDays: Int!
   stacks: [ElementStack!]
   status: PublicationStatus!
+}
+
+enum PracticeQuizOrderType {
+  LAST_RESPONSE
+  SEQUENTIAL
+  SHUFFLED
 }
 
 enum PublicationStatus {

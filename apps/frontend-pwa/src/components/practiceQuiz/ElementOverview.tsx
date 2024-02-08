@@ -6,7 +6,7 @@ import {
 import { faCheck, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  LearningElementOrderType,
+  PracticeQuizOrderType,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
@@ -18,7 +18,7 @@ interface ElementOverviewProps {
   displayName: string
   description?: string
   numOfQuestions?: number
-  orderType: LearningElementOrderType
+  orderType: PracticeQuizOrderType
   resetTimeDays?: number
   previouslyAnswered?: number
   stacksWithQuestions?: number

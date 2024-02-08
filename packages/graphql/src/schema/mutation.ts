@@ -21,7 +21,7 @@ import {
 } from './groupActivity'
 import {
   LearningElement,
-  LearningElementOrderType,
+  PracticeQuizOrderType,
   QuestionStack,
   StackInput,
 } from './learningElements'
@@ -1027,7 +1027,7 @@ export const Mutation = builder.mutationType({
             courseId: t.arg.string({ required: false }),
             multiplier: t.arg.int({ required: true }),
             order: t.arg({
-              type: LearningElementOrderType,
+              type: PracticeQuizOrderType,
               required: true,
             }),
             resetTimeDays: t.arg.int({ required: true }),
@@ -1054,7 +1054,7 @@ export const Mutation = builder.mutationType({
             courseId: t.arg.string({ required: false }),
             multiplier: t.arg.int({ required: true }),
             order: t.arg({
-              type: LearningElementOrderType,
+              type: PracticeQuizOrderType,
               required: true,
             }),
             resetTimeDays: t.arg.int({ required: true }),

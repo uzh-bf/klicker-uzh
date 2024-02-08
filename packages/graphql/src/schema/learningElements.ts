@@ -6,12 +6,9 @@ import { CourseRef } from './course'
 import type { IQuestionInstance } from './question'
 import { QuestionInstanceRef } from './question'
 
-export const LearningElementOrderType = builder.enumType(
-  'LearningElementOrderType',
-  {
-    values: Object.values(DB.OrderType),
-  }
-)
+export const PracticeQuizOrderType = builder.enumType('PracticeQuizOrderType', {
+  values: Object.values(DB.OrderType),
+})
 
 export const LearningElementStatus = builder.enumType('LearningElementStatus', {
   values: Object.values(DB.LearningElementStatus),
@@ -93,7 +90,7 @@ export const LearningElement = LearningElementRef.implement({
     description: t.exposeString('description', { nullable: true }),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     resetTimeDays: t.exposeInt('resetTimeDays', { nullable: true }),
-    orderType: t.expose('orderType', { type: LearningElementOrderType }),
+    orderType: t.expose('orderType', { type: PracticeQuizOrderType }),
     previouslyAnswered: t.exposeInt('previouslyAnswered', { nullable: true }),
     previousScore: t.exposeFloat('previousScore', { nullable: true }),
     previousPointsAwarded: t.exposeFloat('previousPointsAwarded', {

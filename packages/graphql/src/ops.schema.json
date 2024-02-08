@@ -5346,7 +5346,7 @@
               "name": null,
               "ofType": {
                 "kind": "ENUM",
-                "name": "LearningElementOrderType",
+                "name": "PracticeQuizOrderType",
                 "ofType": null
               }
             },
@@ -5481,35 +5481,6 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "ENUM",
-        "name": "LearningElementOrderType",
-        "description": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": [
-          {
-            "name": "LAST_RESPONSE",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "SEQUENTIAL",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "SHUFFLED",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
         "possibleTypes": null
       },
       {
@@ -6950,7 +6921,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "LearningElementOrderType",
+                    "name": "PracticeQuizOrderType",
                     "ofType": null
                   }
                 },
@@ -8050,7 +8021,7 @@
                   "name": null,
                   "ofType": {
                     "kind": "ENUM",
-                    "name": "LearningElementOrderType",
+                    "name": "PracticeQuizOrderType",
                     "ofType": null
                   }
                 },
@@ -12614,6 +12585,35 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "ENUM",
+        "name": "PracticeQuizOrderType",
+        "description": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "LAST_RESPONSE",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "SEQUENTIAL",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "SHUFFLED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
         "possibleTypes": null
       },
       {
