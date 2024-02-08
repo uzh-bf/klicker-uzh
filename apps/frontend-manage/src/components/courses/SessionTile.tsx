@@ -1,4 +1,5 @@
 import { useMutation } from '@apollo/client'
+import { WizardMode } from '@components/sessions/creation/SessionCreation'
 import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowUpRightFromSquare,
@@ -79,7 +80,10 @@ function SessionTile({ session }: SessionTileProps) {
               onClick={() =>
                 router.push({
                   pathname: '/',
-                  query: { sessionId: session.id, editMode: 'liveSession' },
+                  query: {
+                    sessionId: session.id,
+                    editMode: WizardMode.LiveSession,
+                  },
                 })
               }
               data={{ cy: `edit-live-quiz-${session.name}` }}

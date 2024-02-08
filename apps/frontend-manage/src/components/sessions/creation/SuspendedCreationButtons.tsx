@@ -9,11 +9,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useTranslations } from 'next-intl'
 import CreationButton from '../../sessions/creation/CreationButton'
+import { WizardMode } from './SessionCreation'
 
 interface CreationButtonsProps {
-  setCreationMode: (
-    mode: 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
-  ) => void
+  setCreationMode: (mode: WizardMode) => void
 }
 
 function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
@@ -27,7 +26,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         icon={faUsersLine}
         text={t('manage.questionPool.createLiveQuiz')}
         onClick={() => {
-          setCreationMode('liveSession')
+          setCreationMode(WizardMode.LiveSession)
         }}
         data={{ cy: 'create-live-quiz' }}
       />
@@ -37,7 +36,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         icon={faChalkboardUser}
         text={t('manage.questionPool.createMicrolearning')}
         onClick={() => {
-          setCreationMode('microSession')
+          setCreationMode(WizardMode.Microlearning)
         }}
         data={{ cy: 'create-microlearning' }}
       />
@@ -47,7 +46,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         icon={faGraduationCap}
         text={t('manage.questionPool.createPracticeQuiz')}
         onClick={() => {
-          setCreationMode('learningElement')
+          setCreationMode(WizardMode.PracticeQuiz)
         }}
         data={{ cy: 'create-practice-quiz' }}
       />
@@ -58,7 +57,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         icon={faUserGroup}
         text={t('manage.questionPool.createGroupTask')}
         onClick={() => {
-          setCreationMode('groupTask')
+          setCreationMode(WizardMode.GroupActivity)
         }}
         data={{ cy: 'create-group-task' }}
       />

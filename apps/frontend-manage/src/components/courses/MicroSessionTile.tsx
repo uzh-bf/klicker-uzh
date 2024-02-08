@@ -1,4 +1,5 @@
 import { useMutation } from '@apollo/client'
+import { WizardMode } from '@components/sessions/creation/SessionCreation'
 import { faClock, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
@@ -138,7 +139,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
               pathname: '/',
               query: {
                 sessionId: microSession.id,
-                editMode: 'microSession',
+                editMode: WizardMode.Microlearning,
               },
             })
           }

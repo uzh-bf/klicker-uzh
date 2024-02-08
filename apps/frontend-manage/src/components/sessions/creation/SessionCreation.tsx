@@ -12,12 +12,19 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import LearningElementWizard from './LearningElementWizard'
 import LiveSessionWizard from './LiveSessionWizard'
 import MicroSessionWizard from './MicroSessionWizard'
+import PracticeQuizWizard from './PracticeQuizWizard'
+
+export enum WizardMode {
+  LiveSession = 'liveSession',
+  Microlearning = 'microlearning',
+  PracticeQuiz = 'practiceQuiz',
+  GroupActivity = 'groupActivity',
+}
 
 interface SessionCreationProps {
-  creationMode: 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
+  creationMode: WizardMode
   closeWizard: () => void
   sessionId?: string
   editMode?: string
@@ -42,21 +49,22 @@ function SessionCreation({
       variables: { sessionId: sessionId || '' },
       skip:
         !sessionId ||
-        (editMode !== 'liveSession' && duplicationMode !== 'liveSession'),
+        (editMode !== WizardMode.LiveSession &&
+          duplicationMode !== WizardMode.LiveSession),
     }
   )
   const { data: dataMicroSession, loading: microLoading } = useQuery(
     GetSingleMicroSessionDocument,
     {
       variables: { id: sessionId || '' },
-      skip: !sessionId || editMode !== 'microSession',
+      skip: !sessionId || editMode !== WizardMode.Microlearning,
     }
   )
-  const { data: dataLearningElement, loading: learningLoading } = useQuery(
+  const { data: dataPracticeQuiz, loading: learningLoading } = useQuery(
     GetPracticeQuizDocument,
     {
       variables: { id: sessionId || '' },
-      skip: !sessionId || editMode !== 'learningElement',
+      skip: !sessionId || editMode !== WizardMode.PracticeQuiz,
     }
   )
 
@@ -78,10 +86,11 @@ function SessionCreation({
   if (
     (!errorCourses && loadingCourses) ||
     (sessionId &&
-      (editMode === 'liveSession' || duplicationMode === 'liveSession') &&
+      (editMode === WizardMode.LiveSession ||
+        duplicationMode === WizardMode.LiveSession) &&
       liveLoading) ||
-    (sessionId && editMode === 'microSession' && microLoading) ||
-    (sessionId && editMode === 'learningElement' && learningLoading)
+    (sessionId && editMode === WizardMode.Microlearning && microLoading) ||
+    (sessionId && editMode === WizardMode.PracticeQuiz && learningLoading)
   ) {
     return <Loader />
   }
@@ -89,14 +98,14 @@ function SessionCreation({
   return (
     <div className="flex flex-col justify-center print-hidden">
       <div className="w-full h-full rounded-lg">
-        {creationMode === 'liveSession' && (
+        {creationMode === WizardMode.LiveSession && (
           <LiveSessionWizard
             title={t('shared.generic.liveQuiz')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               dataLiveSession?.liveSession
-                ? duplicationMode === 'liveSession'
+                ? duplicationMode === WizardMode.LiveSession
                   ? ({
                       ...dataLiveSession?.liveSession,
                       name: `${dataLiveSession.liveSession.name} (Copy)`,
@@ -107,10 +116,10 @@ function SessionCreation({
             }
             selection={selection}
             resetSelection={resetSelection}
-            editMode={editMode === 'liveSession'}
+            editMode={editMode === WizardMode.LiveSession}
           />
         )}
-        {creationMode === 'microSession' && (
+        {creationMode === WizardMode.Microlearning && (
           <MicroSessionWizard
             title={t('shared.generic.microlearning')}
             closeWizard={closeWizard}
@@ -121,12 +130,12 @@ function SessionCreation({
             }
           />
         )}
-        {creationMode === 'learningElement' && (
-          <LearningElementWizard
+        {creationMode === WizardMode.PracticeQuiz && (
+          <PracticeQuizWizard
             title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
-            initialValues={dataLearningElement?.practiceQuiz ?? undefined}
+            initialValues={dataPracticeQuiz?.practiceQuiz ?? undefined}
           />
         )}
       </div>

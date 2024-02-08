@@ -1,3 +1,4 @@
+import { WizardMode } from '@components/sessions/creation/SessionCreation'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faCopy,
@@ -107,7 +108,7 @@ function PracticeQuizTile({ courseId, practiceQuiz }: PracticeQuizTileProps) {
                 pathname: '/',
                 query: {
                   sessionId: practiceQuiz.id,
-                  editMode: 'learningElement',
+                  editMode: WizardMode.PracticeQuiz,
                 },
               })
             }

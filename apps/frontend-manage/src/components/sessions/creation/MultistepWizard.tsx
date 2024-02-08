@@ -65,7 +65,7 @@ export interface MicroSessionFormValues extends CommonFormValues {
   resetTimeDays: string
 }
 
-export interface LearningElementFormValues extends CommonFormValues {
+export interface PracticeQuizFormValues extends CommonFormValues {
   questions: {
     id: number
     title: string
@@ -114,7 +114,7 @@ function MultistepWizard({
     values:
       | LiveSessionFormValues
       | MicroSessionFormValues
-      | LearningElementFormValues,
+      | PracticeQuizFormValues,
     bag: any
   ) => {
     if (step.props.onSubmit) {

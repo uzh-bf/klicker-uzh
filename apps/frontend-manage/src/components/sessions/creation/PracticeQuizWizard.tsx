@@ -22,9 +22,9 @@ import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
-import MultistepWizard, { LearningElementFormValues } from './MultistepWizard'
+import MultistepWizard, { PracticeQuizFormValues } from './MultistepWizard'
 
-interface LearningElementWizardProps {
+interface PracticeQuizWizardProps {
   title: string
   closeWizard: () => void
   courses: {
@@ -34,17 +34,17 @@ interface LearningElementWizardProps {
   initialValues?: PracticeQuiz
 }
 
-function LearningElementWizard({
+function PracticeQuizWizard({
   title,
   closeWizard,
   courses,
   initialValues,
-}: LearningElementWizardProps) {
+}: PracticeQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
-  const [createLearningElement] = useMutation(CreatePracticeQuizDocument)
-  const [editLearningElement] = useMutation(EditPracticeQuizDocument)
+  const [createPracticeQuiz] = useMutation(CreatePracticeQuizDocument)
+  const [editPracticeQuiz] = useMutation(EditPracticeQuizDocument)
   const [errorToastOpen, setErrorToastOpen] = useState(false)
   const [editMode, setEditMode] = useState(!!initialValues)
   const [selectedCourseId, setSelectedCourseId] = useState('')
@@ -105,10 +105,10 @@ function LearningElementWizard({
       .min(1),
   })
 
-  const onSubmit = async (values: LearningElementFormValues) => {
+  const onSubmit = async (values: PracticeQuizFormValues) => {
     try {
       if (initialValues) {
-        const result = await editLearningElement({
+        const result = await editPracticeQuiz({
           variables: {
             id: initialValues.id,
             name: values.name,
@@ -137,7 +137,7 @@ function LearningElementWizard({
         }
         setSelectedCourseId(values.courseId)
       } else {
-        const result = await createLearningElement({
+        const result = await createPracticeQuiz({
           variables: {
             name: values.name,
             displayName: values.displayName,
@@ -255,7 +255,7 @@ function LearningElementWizard({
   )
 }
 
-export default LearningElementWizard
+export default PracticeQuizWizard
 
 interface StepProps {
   onSubmit?: () => void
