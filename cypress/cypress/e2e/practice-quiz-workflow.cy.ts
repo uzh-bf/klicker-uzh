@@ -67,14 +67,14 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSPACED_REPETITION)
+      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
+      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSEQUENTIAL}"]`
     ).click()
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
+      .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
@@ -203,14 +203,14 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSPACED_REPETITION)
+      .contains(messages.manage.sessionForms.practiceQuizSPACED_REPETITION)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
+      `[data-cy="select-order-${messages.manage.sessionForms.practiceQuizSEQUENTIAL}"]`
     ).click()
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
+      .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
@@ -264,7 +264,7 @@ describe('Different practice quiz workflows', () => {
       .type('10')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
+      .contains(messages.manage.sessionForms.practiceQuizSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // add the question two further times

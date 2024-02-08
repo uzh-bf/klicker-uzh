@@ -357,8 +357,8 @@ function CourseOverviewPage() {
               <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
                 {course.groupActivities.map((groupActivity) => (
                   <GroupActivityTile
-                    groupActivity={groupActivity}
                     key={groupActivity.id}
+                    groupActivity={groupActivity}
                   />
                 ))}
               </div>

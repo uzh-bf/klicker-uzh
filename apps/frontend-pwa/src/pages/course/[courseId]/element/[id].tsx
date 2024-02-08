@@ -12,7 +12,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import Layout from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
-import LearningElement from '../../../../components/learningElements/LearningElement'
+import LearningElement from '../../../../components/practiceQuiz/LearningElement'
 
 interface Props {
   courseId: string

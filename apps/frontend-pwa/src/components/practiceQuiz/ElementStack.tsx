@@ -16,7 +16,7 @@ import { Button, H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
-import DynamicMarkdown from 'src/components/learningElements/DynamicMarkdown'
+import DynamicMarkdown from 'src/components/practiceQuiz/DynamicMarkdown'
 import Bookmark from './Bookmark'
 import InstanceHeader from './InstanceHeader'
 

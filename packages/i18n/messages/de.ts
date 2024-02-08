@@ -963,8 +963,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizOrder:
         'Wählen Sie eine Reihenfolge in welcher die Fragen für die Studierenden zu lösen sind.',
       practiceQuizSelectOrder: 'Reihenfolge wählen',
-      learningElementSEQUENTIAL: 'Sequenziell',
-      learningElementSPACED_REPETITION: 'Spaced Repetition',
+      practiceQuizSEQUENTIAL: 'Sequenziell',
+      practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
     },

@@ -455,10 +455,10 @@ function StepTwo(props: StepProps) {
           items={Object.values(ElementOrderType).map((order) => {
             return {
               value: order,
-              label: t(`manage.sessionForms.learningElement${order}`),
+              label: t(`manage.sessionForms.practiceQuiz${order}`),
               data: {
                 cy: `select-order-${t(
-                  `manage.sessionForms.learningElement${order}`
+                  `manage.sessionForms.practiceQuiz${order}`
                 )}`,
               },
             }
