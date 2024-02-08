@@ -65,7 +65,7 @@ function LearningElementWizard({
       .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
     courseId: yup
       .string()
-      .required(t('manage.sessionForms.learningElementCourse')),
+      .required(t('manage.sessionForms.practiceQuizSelectCourse')),
     order: yup.string(),
     resetTimeDays: yup
       .string()

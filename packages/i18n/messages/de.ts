@@ -970,8 +970,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSelectOrder: 'Reihenfolge wählen',
       learningElementSEQUENTIAL: 'Sequenziell',
       learningElementSPACED_REPETITION: 'Spaced Repetition',
-      learningElementCourse:
-        'Bitte erstellen Sie einen Kurs, um ein Übungs-Quiz zu erstellen.',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
     },
@@ -998,6 +996,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es muss mindestens eine Antwortmöglichkeit gegeben werden',
       NumberQuestionsRequiredKPRIM:
         'Bei Kprim-Fragen müssen genau vier Antwortmöglichkeiten gegeben werden',
+      explanationRequired:
+        'Bitte geben Sie eine Erklärung ein. Auf Flashcards wird diese Erklärung den Studierenden als Antwort auf die Frage angezeigt.',
     },
     sessions: {
       runningSessions: 'Laufende Sessionen',

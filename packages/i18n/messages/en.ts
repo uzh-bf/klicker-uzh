@@ -966,8 +966,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizSelectOrder: 'Select order',
       learningElementSEQUENTIAL: 'Sequential',
       learningElementSPACED_REPETITION: 'Spaced Repetition',
-      learningElementCourse:
-        'Please create a course to be able to create practice quizzes.',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
     },
@@ -992,6 +990,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       NumberQuestionsRequired: 'At least one answer option must be given',
       NumberQuestionsRequiredKPRIM:
         'There must be exactly four answer options for Kprim questions',
+      explanationRequired:
+        'Please enter an explanation. On flashcards, this explanation will be displayed to students as an answer to the question.',
     },
     sessions: {
       runningSessions: 'Running Live Quizzes',
