@@ -11,7 +11,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import DynamicMarkdown from '../practiceQuiz/DynamicMarkdown'
 
-interface ElementOverviewProps {
+interface PracticeQuizOverviewProps {
   displayName: string
   description?: string
   numOfQuestions?: number
@@ -33,7 +33,7 @@ function PracticeQuizOverview({
   //   stacksWithQuestions,
   pointsMultiplier,
   setCurrentIx,
-}: ElementOverviewProps) {
+}: PracticeQuizOverviewProps) {
   const t = useTranslations()
   const router = useRouter()
   const { data } = useQuery(SelfDocument)
