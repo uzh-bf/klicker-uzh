@@ -8,27 +8,17 @@ import {
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
 import {
-  Element,
   ElementType,
   LearningElementStatus,
-  OrderType,
   QuestionResponse as PrismaQuestionResponse,
   QuestionInstance,
-  QuestionInstanceType,
   QuestionStack,
-  QuestionStackType,
   UserRole,
 } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
-import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
 import { ResponseInput } from 'src/ops'
-import { v4 as uuidv4 } from 'uuid'
 import { Context, ContextWithUser } from '../lib/context'
-import {
-  prepareInitialInstanceResults,
-  processQuestionData,
-} from '../lib/questions'
 import {
   AllElementTypeData,
   AllQuestionInstanceTypeData,
@@ -794,219 +784,6 @@ export async function getLearningElementData(
     ...element,
     ...stacksWithStatistics,
   }
-}
-
-interface StackInput {
-  // TODO: add missing stack input data (optional displayname and description)
-  elements: {
-    questionId?: number | null
-    mdContent?: string | null
-  }[]
-}
-
-interface ManipulateLearningElementArgs {
-  id?: string
-  name: string
-  displayName: string
-  description?: string | null
-  stacks: StackInput[]
-  courseId?: string | null
-  multiplier: number
-  order: OrderType
-  resetTimeDays: number
-}
-
-export async function manipulateLearningElement(
-  {
-    id,
-    name,
-    displayName,
-    description,
-    stacks,
-    courseId,
-    multiplier,
-    order,
-    resetTimeDays,
-  }: ManipulateLearningElementArgs,
-  ctx: ContextWithUser
-) {
-  if (id) {
-    // find all instances belonging to the old session and delete them as the content of the questions might have changed
-    const oldElement = await ctx.prisma.learningElement.findUnique({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-      },
-      include: {
-        stacks: {
-          include: {
-            elements: {
-              include: {
-                questionInstance: true,
-              },
-            },
-          },
-        },
-      },
-    })
-
-    if (!oldElement) {
-      throw new GraphQLError('Practice quiz not found')
-    }
-    if (oldElement.status === LearningElementStatus.PUBLISHED) {
-      throw new GraphQLError('Cannot edit a published practice quiz')
-    }
-
-    const oldQuestionInstances = oldElement.stacks.reduce<QuestionInstance[]>(
-      (acc, stack) => [
-        ...acc,
-        ...(stack.elements
-          .map((element) => element.questionInstance)
-          .filter((instance) => instance !== null) as QuestionInstance[]),
-      ],
-      []
-    )
-
-    await ctx.prisma.questionInstance.deleteMany({
-      where: {
-        id: { in: oldQuestionInstances.map(({ id }) => id) },
-      },
-    })
-    await ctx.prisma.learningElement.update({
-      where: { id },
-      data: {
-        stacks: {
-          deleteMany: {},
-        },
-        course: {
-          disconnect: true,
-        },
-      },
-    })
-  }
-
-  const questions = stacks
-    .flatMap((stack) => stack.elements)
-    .map((stackElem) => stackElem.questionId)
-    .filter(
-      (stackElem) => stackElem !== null && typeof stackElem !== undefined
-    ) as number[]
-
-  const dbQuestions = await ctx.prisma.element.findMany({
-    where: {
-      id: { in: questions },
-      ownerId: ctx.user.sub,
-    },
-  })
-
-  const uniqueQuestions = new Set(dbQuestions.map((q) => q.id))
-  if (dbQuestions.length !== uniqueQuestions.size) {
-    throw new GraphQLError('Not all questions could be found')
-  }
-
-  const questionMap = dbQuestions.reduce<Record<number, Element>>(
-    (acc, question) => ({ ...acc, [question.id]: question }),
-    {}
-  )
-
-  const createOrUpdateJSON = {
-    name,
-    displayName: displayName ?? name,
-    description,
-    pointsMultiplier: multiplier,
-    orderType: order,
-    resetTimeDays: resetTimeDays,
-    stacks: {
-      create: await Promise.all(
-        stacks.map(async (stack, ix) => {
-          // TODO: add optional attributes on stack level next to elements
-          return {
-            type: QuestionStackType.LEARNING_ELEMENT,
-            order: ix,
-            elements: {
-              create: await Promise.all(
-                stack.elements.map(async (element, ixInner) => {
-                  if (typeof element.mdContent === 'string') {
-                    // create text stack element
-                    return {
-                      order: ixInner,
-                      mdContent: element.mdContent,
-                    }
-                  } else if (typeof element.questionId === 'number') {
-                    // create stack element with question instance
-                    const question = questionMap[element.questionId]
-
-                    const processedQuestionData = processQuestionData(question)
-
-                    return {
-                      order: ixInner,
-                      questionInstance: {
-                        create: {
-                          order: ix,
-                          type: QuestionInstanceType.LEARNING_ELEMENT,
-                          pointsMultiplier:
-                            multiplier * question.pointsMultiplier,
-                          questionData: processedQuestionData,
-                          results: prepareInitialInstanceResults(
-                            processedQuestionData
-                          ),
-                          question: {
-                            connect: { id: element.questionId },
-                          },
-                          owner: {
-                            connect: { id: ctx.user.sub },
-                          },
-                        },
-                      },
-                    }
-                  }
-                })
-              ),
-            },
-          }
-        })
-      ),
-    },
-    owner: {
-      connect: { id: ctx.user.sub },
-    },
-    course: courseId
-      ? {
-          connect: { id: courseId },
-        }
-      : undefined,
-  }
-
-  const element = await ctx.prisma.learningElement.upsert({
-    where: { id: id ?? uuidv4() },
-    create: createOrUpdateJSON,
-    update: createOrUpdateJSON,
-    include: {
-      course: true,
-      stacks: {
-        include: {
-          elements: {
-            include: {
-              questionInstance: true,
-            },
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-        orderBy: {
-          order: 'asc',
-        },
-      },
-    },
-  })
-
-  ctx.emitter.emit('invalidate', {
-    typename: 'LearningElement',
-    id,
-  })
-
-  return element
 }
 
 // TODO: remove this after migration to practice quiz

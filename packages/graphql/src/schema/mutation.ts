@@ -19,12 +19,7 @@ import {
   GroupActivityDetails,
   GroupActivityInstance,
 } from './groupActivity'
-import {
-  LearningElement,
-  PracticeQuizOrderType,
-  QuestionStack,
-  StackInput,
-} from './learningElements'
+import { QuestionStack } from './learningElements'
 import { MicroSession } from './microSession'
 import {
   AvatarSettingsInput,
@@ -1011,59 +1006,6 @@ export const Mutation = builder.mutationType({
 
       // ----- USER WITH CATALYST -----
       // #region
-      createLearningElement: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          nullable: true,
-          type: LearningElement,
-          args: {
-            name: t.arg.string({ required: true }),
-            displayName: t.arg.string({ required: true }),
-            description: t.arg.string({ required: false }),
-            stacks: t.arg({
-              type: [StackInput],
-              required: true,
-            }),
-            courseId: t.arg.string({ required: false }),
-            multiplier: t.arg.int({ required: true }),
-            order: t.arg({
-              type: PracticeQuizOrderType,
-              required: true,
-            }),
-            resetTimeDays: t.arg.int({ required: true }),
-          },
-          resolve(_, args, ctx) {
-            return LearningElementService.manipulateLearningElement(args, ctx)
-          },
-        }),
-
-      editLearningElement: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          nullable: true,
-          type: LearningElement,
-          args: {
-            id: t.arg.string({ required: true }),
-            name: t.arg.string({ required: true }),
-            displayName: t.arg.string({ required: true }),
-            description: t.arg.string({ required: false }),
-            stacks: t.arg({
-              type: [StackInput],
-              required: true,
-            }),
-            courseId: t.arg.string({ required: false }),
-            multiplier: t.arg.int({ required: true }),
-            order: t.arg({
-              type: PracticeQuizOrderType,
-              required: true,
-            }),
-            resetTimeDays: t.arg.int({ required: true }),
-          },
-          resolve(_, args, ctx) {
-            return LearningElementService.manipulateLearningElement(args, ctx)
-          },
-        }),
-
       createPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({

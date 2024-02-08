@@ -630,7 +630,6 @@ export type Mutation = {
   changeUserLocale?: Maybe<User>;
   createCourse?: Maybe<Course>;
   createFeedback?: Maybe<Feedback>;
-  createLearningElement?: Maybe<LearningElement>;
   createMicroSession?: Maybe<MicroSession>;
   createParticipantAccount?: Maybe<ParticipantTokenData>;
   createParticipantGroup?: Maybe<ParticipantGroup>;
@@ -647,7 +646,6 @@ export type Mutation = {
   deleteSession?: Maybe<Session>;
   deleteTag?: Maybe<Tag>;
   deleteUserLogin?: Maybe<UserLogin>;
-  editLearningElement?: Maybe<LearningElement>;
   editMicroSession?: Maybe<MicroSession>;
   editPracticeQuiz?: Maybe<PracticeQuiz>;
   editSession?: Maybe<Session>;
@@ -807,18 +805,6 @@ export type MutationCreateFeedbackArgs = {
 };
 
 
-export type MutationCreateLearningElementArgs = {
-  courseId?: InputMaybe<Scalars['String']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  displayName: Scalars['String']['input'];
-  multiplier: Scalars['Int']['input'];
-  name: Scalars['String']['input'];
-  order: PracticeQuizOrderType;
-  resetTimeDays: Scalars['Int']['input'];
-  stacks: Array<StackInput>;
-};
-
-
 export type MutationCreateMicroSessionArgs = {
   courseId?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
@@ -922,19 +908,6 @@ export type MutationDeleteTagArgs = {
 
 export type MutationDeleteUserLoginArgs = {
   id: Scalars['String']['input'];
-};
-
-
-export type MutationEditLearningElementArgs = {
-  courseId?: InputMaybe<Scalars['String']['input']>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  displayName: Scalars['String']['input'];
-  id: Scalars['String']['input'];
-  multiplier: Scalars['Int']['input'];
-  name: Scalars['String']['input'];
-  order: PracticeQuizOrderType;
-  resetTimeDays: Scalars['Int']['input'];
-  stacks: Array<StackInput>;
 };
 
 
