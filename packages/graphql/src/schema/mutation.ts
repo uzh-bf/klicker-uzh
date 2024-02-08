@@ -5,7 +5,6 @@ import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
-import * as LearningElementService from '../services/learningElements'
 import * as MicroLearningService from '../services/microLearning'
 import * as MigrationService from '../services/migration'
 import * as NotificationService from '../services/notifications'
@@ -199,7 +198,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve: (_, args, ctx) => {
-          return LearningElementService.respondToQuestionInstance(args, ctx)
+          return MicroLearningService.respondToQuestionInstance(args, ctx)
         },
       }),
 
