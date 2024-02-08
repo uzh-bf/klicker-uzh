@@ -487,18 +487,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      getBookmarksLearningElement: t.field({
-        nullable: true,
-        type: [QuestionStack],
-        args: {
-          elementId: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.getBookmarksLearningElement(args, ctx)
-        },
-      }),
-
       questionStack: asParticipant.field({
         nullable: true,
         type: QuestionStack,

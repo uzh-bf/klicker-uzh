@@ -1,6 +1,6 @@
 import {
-  LearningElementStatus,
   MicroSessionStatus,
+  PublicationStatus,
   SessionStatus,
 } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
@@ -541,19 +541,6 @@ export async function flagQuestion(
       id: args.questionInstanceId,
     },
     include: {
-      stackElement: {
-        include: {
-          stack: {
-            include: {
-              learningElement: {
-                include: {
-                  course: true,
-                },
-              },
-            },
-          },
-        },
-      },
       microSession: {
         include: {
           course: true,
@@ -562,12 +549,7 @@ export async function flagQuestion(
     },
   })
 
-  if (
-    !questionInstance?.stackElement?.stack?.learningElement?.course
-      ?.notificationEmail &&
-    !questionInstance?.microSession?.course?.notificationEmail
-  )
-    return null
+  if (!questionInstance?.microSession?.course?.notificationEmail) return null
 
   await fetch(process.env.NOTIFICATION_URL as string, {
     method: 'POST',
@@ -576,23 +558,15 @@ export async function flagQuestion(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      elementType: questionInstance?.stackElement?.stack.learningElement
-        ? 'Practice Quiz'
-        : 'Microlearning',
-      elementId:
-        questionInstance?.stackElement?.stack?.learningElement?.id ||
-        questionInstance?.microSession?.id,
-      elementName:
-        questionInstance?.stackElement?.stack?.learningElement?.name ||
-        questionInstance?.microSession?.name,
+      elementType: 'Microlearning',
+      elementId: questionInstance?.microSession?.id,
+      elementName: questionInstance?.microSession?.name,
       questionId: questionInstance.questionId,
       questionName: questionInstance.questionData.name,
       content: args.content,
       participantId: ctx.user?.sub,
       secret: process.env.NOTIFICATION_SECRET,
       notificationEmail:
-        questionInstance.stackElement?.stack?.learningElement?.course
-          ?.notificationEmail ||
         questionInstance.microSession?.course?.notificationEmail,
     }),
   })
@@ -758,14 +732,9 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
     include: {
       course: {
         include: {
-          learningElements: {
-            where: {
-              status: LearningElementStatus.PUBLISHED,
-            },
-          },
           practiceQuizzes: {
             where: {
-              status: LearningElementStatus.PUBLISHED,
+              status: PublicationStatus.PUBLISHED,
             },
           },
         },
@@ -778,11 +747,7 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
   const courses = participations
     .map((p) => p.course)
     .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))
-    .filter(
-      (course) =>
-        course.practiceQuizzes.length !== 0 ||
-        course.learningElements.length !== 0
-    )
+    .filter((course) => course.practiceQuizzes.length !== 0)
 
   return courses
 }

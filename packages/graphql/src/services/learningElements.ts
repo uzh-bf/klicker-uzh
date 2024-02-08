@@ -786,40 +786,6 @@ export async function getLearningElementData(
   }
 }
 
-// TODO: remove this after migration to practice quiz
-interface GetBookMarksLearningElement {
-  elementId: string
-  courseId: string
-}
-
-// TODO: remove this function after migration to practice quiz
-export async function getBookmarksLearningElement(
-  { elementId, courseId }: GetBookMarksLearningElement,
-  ctx: Context
-) {
-  if (!ctx.user?.sub) {
-    return null
-  }
-
-  const participation = await ctx.prisma.participation.findUnique({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
-    },
-    include: {
-      bookmarkedStacks: {
-        where: {
-          learningElementId: elementId,
-        },
-      },
-    },
-  })
-
-  return participation?.bookmarkedStacks
-}
-
 interface GetQuestionStackArgs {
   id: number
 }
