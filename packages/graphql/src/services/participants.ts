@@ -433,39 +433,6 @@ export async function bookmarkElementStack(
   return participation.bookmarkedElementStacks.map((stack) => stack.id)
 }
 
-// TODO: remove after migration
-interface GetBookmarkedQuestionsArgs {
-  courseId: string
-}
-
-// TODO: remove after migration
-export async function getBookmarkedQuestions(
-  { courseId }: GetBookmarkedQuestionsArgs,
-  ctx: ContextWithUser
-) {
-  const participation = await ctx.prisma.participation.findUnique({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
-    },
-    include: {
-      bookmarkedStacks: {
-        include: {
-          elements: {
-            include: {
-              questionInstance: true,
-            },
-          },
-        },
-      },
-    },
-  })
-
-  return participation?.bookmarkedStacks ?? []
-}
-
 interface GetBookmarkedElementStacksArgs {
   courseId: string
 }

@@ -11,7 +11,6 @@ import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
 import { GroupActivityDetails } from './groupActivity'
-import { QuestionStack } from './learningElements'
 import { MicroSession } from './microSession'
 import {
   Participant,
@@ -442,17 +441,6 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ParticipantGroupService.getGroupActivityDetails(args, ctx)
-        },
-      }),
-
-      getBookmarkedQuestions: asParticipant.field({
-        nullable: true,
-        type: [QuestionStack],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.getBookmarkedQuestions(args, ctx)
         },
       }),
 

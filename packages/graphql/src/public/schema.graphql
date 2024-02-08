@@ -784,7 +784,6 @@ type ParticipantWithAchievements {
 }
 
 type Participation {
-  bookmarkedStacks: [QuestionStack!]
   completedMicroSessions: [String!]!
   course: Course
   id: Int!
@@ -837,7 +836,6 @@ type Query {
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(id: String!): [Feedback!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
-  getBookmarkedQuestions(courseId: String!): [QuestionStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
