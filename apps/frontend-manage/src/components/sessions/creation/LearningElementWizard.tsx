@@ -421,7 +421,7 @@ function StepTwo(props: StepProps) {
           label={t('shared.generic.repetitionInterval')}
           tooltip={t('manage.sessionForms.practiceQuizRepetition')}
           className={{
-            root: 'w-[100px]',
+            root: '!w-80',
             tooltip: 'z-20',
           }}
           required
