@@ -47,6 +47,10 @@ function processElementOptions(elementType: DB.ElementType, options: any) {
       return {
         hasSampleSolution: options?.hasSampleSolution ?? false,
         solutions: options?.solutions ?? undefined,
+        restrictions: {
+          ...options?.restrictions,
+          maxLength: options?.restrictions?.maxLength ?? undefined,
+        },
       }
     }
 

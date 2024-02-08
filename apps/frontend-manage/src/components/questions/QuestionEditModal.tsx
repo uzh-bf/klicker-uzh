@@ -255,20 +255,13 @@ function QuestionEditModal({
     }),
   })
 
-  const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
-    inputValue: '',
-    inputValid: false,
-    inputEmpty: true,
-  })
-
-  const {
-    loading: loadingQuestion,
-    error: errorQuestion,
-    data: dataQuestion,
-  } = useQuery(GetSingleQuestionDocument, {
-    variables: { id: questionId! },
-    skip: typeof questionId === 'undefined',
-  })
+  const { loading: loadingQuestion, data: dataQuestion } = useQuery(
+    GetSingleQuestionDocument,
+    {
+      variables: { id: questionId! },
+      skip: typeof questionId === 'undefined',
+    }
+  )
 
   const [manipulateContentElement] = useMutation(
     ManipulateContentElementDocument
@@ -524,9 +517,11 @@ function QuestionEditModal({
                   hasSampleSolution: values.options?.hasSampleSolution,
                   placeholder: values.options?.placeholder,
                   restrictions: {
-                    maxLength: parseInt(
-                      values.options?.restrictions?.maxLength
-                    ),
+                    maxLength:
+                      !values.options?.restrictions?.maxLength ||
+                      values.options?.restrictions?.maxLength === ''
+                        ? undefined
+                        : parseInt(values.options?.restrictions?.maxLength),
                   },
                   solutions: values.options?.solutions,
                 },
