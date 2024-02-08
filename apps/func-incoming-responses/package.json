@@ -18,7 +18,7 @@
     "@tsconfig/recommended": "^1.0.2",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^18.17.4",
-    "@uzh-bf/design-system": "2.4.9",
+    "@uzh-bf/design-system": "2.4.10",
     "azure-functions-core-tools": "4.0.5455",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",
