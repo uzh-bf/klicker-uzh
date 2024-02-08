@@ -12,7 +12,7 @@ import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
 import { GroupActivityDetails } from './groupActivity'
-import { LearningElement, QuestionStack } from './learningElements'
+import { QuestionStack } from './learningElements'
 import { MicroSession } from './microSession'
 import {
   Participant,
@@ -254,17 +254,6 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return SessionService.getControlSession(args, ctx)
-        },
-      }),
-
-      learningElement: t.field({
-        nullable: true,
-        type: LearningElement,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.getLearningElementData(args, ctx)
         },
       }),
 

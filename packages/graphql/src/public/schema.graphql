@@ -847,7 +847,6 @@ type Query {
   getPracticeCourses: [Course!]
   getPracticeQuizList: [Course!]
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
-  learningElement(id: String!): LearningElement
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
