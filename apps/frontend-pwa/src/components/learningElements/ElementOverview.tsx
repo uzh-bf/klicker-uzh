@@ -82,7 +82,7 @@ function ElementOverview({
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
-              {t('pwa.learningElement.numOfQuestions', {
+              {t('pwa.practiceQuiz.numOfQuestions', {
                 number: numOfQuestions,
               })}
             </div>
@@ -90,17 +90,17 @@ function ElementOverview({
           {typeof orderType !== 'undefined' && (
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faShuffle} />
-              <div>{t(`pwa.learningElement.order${orderType}`)}</div>
+              <div>{t(`pwa.practiceQuiz.order${orderType}`)}</div>
             </div>
           )}
           {typeof resetTimeDays !== 'undefined' && (
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faRepeat} />
               {resetTimeDays === 1 ? (
-                <>{t('pwa.learningElement.repetitionDaily')}</>
+                <>{t('pwa.practiceQuiz.repetitionDaily')}</>
               ) : (
                 <>
-                  {t('pwa.learningElement.repetitionXDays', {
+                  {t('pwa.practiceQuiz.repetitionXDays', {
                     days: resetTimeDays,
                   })}
                 </>
@@ -125,7 +125,7 @@ function ElementOverview({
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faCheck} />
               <div>
-                {t('pwa.learningElement.answeredMinOnce', {
+                {t('pwa.practiceQuiz.answeredMinOnce', {
                   answered: previouslyAnswered,
                   total: stacksWithQuestions,
                 })}
@@ -140,7 +140,7 @@ function ElementOverview({
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faTimesCircle} />
               <div>
-                {t('pwa.learningElement.multiplicatorPoints', {
+                {t('pwa.practiceQuiz.multiplicatorPoints', {
                   mult: pointsMultiplier,
                 })}
               </div>

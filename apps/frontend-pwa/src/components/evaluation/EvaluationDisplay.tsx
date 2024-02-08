@@ -36,7 +36,7 @@ function EvaluationDisplay({
       return (
         <div className="space-y-2">
           <div className="font-bold">
-            {t('pwa.learningElement.othersAnswered')}
+            {t('pwa.practiceQuiz.othersAnswered')}
           </div>
           {Object.entries(evaluation.choices as Record<string, number>).map(
             ([ix, value]) => (
@@ -77,7 +77,7 @@ function EvaluationDisplay({
       return (
         <div className="space-y-2">
           <div className="font-bold">
-            {t('pwa.learningElement.othersAnswered')}
+            {t('pwa.practiceQuiz.othersAnswered')}
           </div>
           {Object.entries(evaluation.choices as Record<string, number>).map(
             ([ix, value]) => (
@@ -118,7 +118,7 @@ function EvaluationDisplay({
         <div>
           <div className="mb-4">
             <div className="font-bold">
-              {t('pwa.learningElement.othersAnswered')}
+              {t('pwa.practiceQuiz.othersAnswered')}
             </div>
             <div>
               {Object.keys(answers)
@@ -146,7 +146,7 @@ function EvaluationDisplay({
       return (
         <div className="h-40 space-y-2">
           <div className="font-bold">
-            {t('pwa.learningElement.othersAnswered')}
+            {t('pwa.practiceQuiz.othersAnswered')}
           </div>
           <Histogram
             data={{

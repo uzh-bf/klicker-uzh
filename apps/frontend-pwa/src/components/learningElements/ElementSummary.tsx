@@ -139,7 +139,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
       <div>
         <H3>{t('shared.generic.congrats')}</H3>
         <p>
-          {t.rich('pwa.learningElement.solvedPracticeQuiz', {
+          {t.rich('pwa.practiceQuiz.solvedPracticeQuiz', {
             name: displayName,
             it: (text) => <span className="italic">{text}</span>,
           })}
@@ -186,7 +186,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
         )}
         {participant?.self && (
           <div className="text-center">
-            {t('pwa.learningElement.totalXp', {
+            {t('pwa.practiceQuiz.totalXp', {
               xp: totalXpAwarded,
             })}
           </div>
@@ -198,8 +198,8 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
           <H3 className={{ root: 'text-base' }}>
             {typeof participation?.getParticipation?.isActive === 'boolean' &&
             participation?.getParticipation?.isActive
-              ? t('pwa.learningElement.pointsCollectedPossible')
-              : t('pwa.learningElement.pointsComputedAvailable')}
+              ? t('pwa.practiceQuiz.pointsCollectedPossible')
+              : t('pwa.practiceQuiz.pointsComputedAvailable')}
           </H3>
         </div>
         <div>
@@ -219,7 +219,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
                   {stack.score} / {stack.pointsPossible}
                 </div>
               ) : (
-                <div>{t('pwa.learningElement.notAttempted')}</div>
+                <div>{t('pwa.practiceQuiz.notAttempted')}</div>
               )}
             </div>
           ))}
@@ -228,7 +228,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
         {typeof participation?.getParticipation?.isActive === 'boolean' &&
           participation?.getParticipation?.isActive && (
             <H3 className={{ root: 'mt-4 text-right text-base' }}>
-              {t('pwa.learningElement.totalPoints', {
+              {t('pwa.practiceQuiz.totalPoints', {
                 points: totalPointsAwarded,
               })}
             </H3>
@@ -236,7 +236,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
         {typeof participation?.getParticipation?.isActive === 'boolean' &&
           !participation?.getParticipation?.isActive && (
             <UserNotification className={{ root: 'mt-5' }} type="info">
-              {t.rich('pwa.learningElement.inactiveParticipation', {
+              {t.rich('pwa.practiceQuiz.inactiveParticipation', {
                 it: (text) => <span className="italic">{text}</span>,
                 name: displayName,
               })}
@@ -244,7 +244,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
           )}
         {participant?.self && !participation?.getParticipation && (
           <UserNotification className={{ root: 'mt-5' }} type="info">
-            {t.rich('pwa.learningElement.missingParticipation', {
+            {t.rich('pwa.practiceQuiz.missingParticipation', {
               it: (text) => <span className="italic">{text}</span>,
               name: displayName,
             })}

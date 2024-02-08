@@ -72,8 +72,8 @@ function Evaluation() {
             </H3>
             <H3>
               {participation?.getParticipation?.isActive
-                ? t('pwa.learningElement.pointsCollectedPossible')
-                : t('pwa.learningElement.pointsComputedAvailable')}
+                ? t('pwa.practiceQuiz.pointsCollectedPossible')
+                : t('pwa.practiceQuiz.pointsComputedAvailable')}
             </H3>
           </div>
           <div>
@@ -93,7 +93,7 @@ function Evaluation() {
 
           {participation?.getParticipation?.isActive && (
             <H3 className={{ root: 'mt-4 text-right' }}>
-              {t('pwa.learningElement.totalPoints', {
+              {t('pwa.practiceQuiz.totalPoints', {
                 points: totalPointsAwarded,
               })}
             </H3>

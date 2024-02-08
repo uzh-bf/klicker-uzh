@@ -286,11 +286,11 @@ function CourseOverviewPage() {
             </H3>
             {course.practiceQuizzes && course.practiceQuizzes.length > 0 ? (
               <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                {course.practiceQuizzes.map((learningElement) => (
+                {course.practiceQuizzes.map((quiz) => (
                   <PracticeQuizTile
                     courseId={course.id}
-                    learningElement={learningElement}
-                    key={learningElement.id}
+                    practiceQuiz={quiz}
+                    key={quiz.id}
                   />
                 ))}
               </div>

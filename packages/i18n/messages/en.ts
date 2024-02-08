@@ -423,7 +423,22 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       coursePinNumerical: 'Please enter a numerical course PIN.',
       coursePinRequired: 'Please enter the course PIN.',
     },
-    learningElement: {
+    practiceQuiz: {
+      flashcardClick: 'Click to turn card',
+      studentFlashcardResponse: 'Did you know the answer?',
+      flashcardNoResponse: 'No',
+      flashcardPartialResponse: 'Partially',
+      flashcardYesResponse: 'Yes',
+      resetAnswers: 'Reset answers',
+      markAllAsRead: 'Mark all as read',
+      read: 'Read',
+      feedbackTransmitted: 'Your feedback has been transmitted successfully.',
+      feedbackRequired: 'Please add a text to your feedback.',
+      flagElement: 'Report element',
+      flagElementText:
+        'This feedback form is intended to allow you to make a direct comment on the individual elements of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
+      addFeedback: 'Add feedback',
+      submitFeedback: 'Submit feedback',
       notFound:
         'The corresponding practice quiz is either not available or not yet published.',
       repetitionTitle: 'Repetition practice quizzes',
@@ -453,32 +468,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       flagQuestion: 'Report question',
       flagQuestionText:
         'This feedback form is intended to allow you to make a direct comment on the individual questions of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
-      addFeedback: 'Add feedback',
-      feedbackRequired: 'Please add a text to your feedback.',
-      submitFeedback: 'Submit feedback',
-      feedbackTransmitted: 'Your feedback has been transmitted successfully.',
       infoStack: 'Information element',
       inactiveParticipation:
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
       missingParticipation:
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
-    },
-    practiceQuiz: {
-      flashcardClick: 'Click to turn card',
-      studentFlashcardResponse: 'Did you know the answer?',
-      flashcardNoResponse: 'No',
-      flashcardPartialResponse: 'Partially',
-      flashcardYesResponse: 'Yes',
-      resetAnswers: 'Reset answers',
-      markAllAsRead: 'Mark all as read',
-      read: 'Read',
-      feedbackTransmitted: 'Your feedback has been transmitted successfully.',
-      feedbackRequired: 'Please add a text to your feedback.',
-      flagElement: 'Report element',
-      flagElementText:
-        'This feedback form is intended to allow you to make a direct comment on the individual elements of a practice quiz / microlearning, should an error have crept in. The lecturer will receive a message with your feedback. Therefore, please try to describe the error as accurately as possible.',
-      addFeedback: 'Add feedback',
-      submitFeedback: 'Submit feedback',
     },
     microSession: {
       notFound:

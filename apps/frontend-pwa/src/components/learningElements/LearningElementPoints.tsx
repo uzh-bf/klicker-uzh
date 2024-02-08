@@ -17,7 +17,7 @@ function LearningElementPoints({
     <div className="block">
       {typeof pointsMultiplier === 'number' && (
         <div className="mb-2">
-          {t.rich('pwa.learningElement.multiplicatorEval', {
+          {t.rich('pwa.practiceQuiz.multiplicatorEval', {
             mult: pointsMultiplier,
             b: (text) => <span className="font-bold">{text}</span>,
           })}
@@ -50,9 +50,7 @@ function LearningElementPoints({
 
       {(evaluation.newPointsFrom !== null || evaluation.newXpFrom !== null) && (
         <div>
-          <div className="font-bold">
-            {t('pwa.learningElement.newPointsFrom')}
-          </div>
+          <div className="font-bold">{t('pwa.practiceQuiz.newPointsFrom')}</div>
           {evaluation.newPointsFrom !== null && (
             <div className="text-lg">
               {dayjs(evaluation.newPointsFrom).format('DD.MM.YYYY HH:mm')}
