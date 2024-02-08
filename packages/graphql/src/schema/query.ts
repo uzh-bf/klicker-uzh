@@ -4,7 +4,6 @@ import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
-import * as LearningElementService from '../services/learningElements'
 import * as MicroSessionService from '../services/microLearning'
 import * as ParticipantService from '../services/participants'
 import * as PracticeQuizService from '../services/practiceQuizzes'
@@ -473,17 +472,6 @@ export const Query = builder.queryType({
         type: [Course],
         resolve(_, __, ctx) {
           return ParticipantService.getPracticeQuizList(ctx)
-        },
-      }),
-
-      questionStack: asParticipant.field({
-        nullable: true,
-        type: QuestionStack,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.getQuestionStack(args, ctx)
         },
       }),
 

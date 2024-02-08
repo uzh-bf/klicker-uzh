@@ -11,7 +11,7 @@ import { ElementType, UserRole } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
 import { ResponseInput } from 'src/ops'
-import { Context, ContextWithUser } from '../lib/context'
+import { Context } from '../lib/context'
 import {
   AllElementTypeData,
   AllQuestionInstanceTypeData,
@@ -570,32 +570,4 @@ export async function respondToQuestionInstance(
         }
       : undefined,
   }
-}
-
-interface GetQuestionStackArgs {
-  id: number
-}
-
-export async function getQuestionStack(
-  { id }: GetQuestionStackArgs,
-  ctx: ContextWithUser
-) {
-  if (id === -1) {
-    return null
-  }
-
-  const stack = await ctx.prisma.questionStack.findUnique({
-    where: {
-      id,
-    },
-    include: {
-      elements: {
-        include: {
-          questionInstance: true,
-        },
-      },
-    },
-  })
-
-  return stack
 }
