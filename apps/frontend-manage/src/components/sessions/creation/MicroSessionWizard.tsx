@@ -71,7 +71,9 @@ function MicroSessionWizard({
     multiplier: yup
       .string()
       .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
-    courseId: yup.string(),
+    courseId: yup
+      .string()
+      .required(t('manage.sessionForms.microlearningCourse')),
   })
 
   const stepThreeValidationSchema = yup.object().shape({
