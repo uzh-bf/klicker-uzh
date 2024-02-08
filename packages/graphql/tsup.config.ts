@@ -3,8 +3,8 @@ import { defineConfig } from 'tsup'
 export default defineConfig({
   entry:
     process.env.NODE_ENV === 'test'
-      ? ['instrumented/index.ts', 'instrumented/ops.ts', 'instrumented/util.ts']
-      : ['src/index.ts', 'src/ops.ts', 'src/util.ts'],
+      ? ['instrumented/index.ts', 'instrumented/ops.ts']
+      : ['src/index.ts', 'src/ops.ts'],
   clean: false,
   dts: true,
   publicDir: 'src/public',

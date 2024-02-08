@@ -97,7 +97,7 @@ function QuestionArea({
     if (typeof inputValue !== 'undefined') {
       answerQuestion(inputValue, type, instanceId)
     } else {
-      push(['trackEvent', 'Live Session', 'Question Skipped'])
+      push(['trackEvent', 'Live Quiz', 'Question Skipped'])
     }
 
     // update the stored responses
@@ -135,7 +135,7 @@ function QuestionArea({
       inputValue: undefined,
     })
     setRemainingQuestions([])
-    push(['trackEvent', 'Live Session', 'Time expired'])
+    push(['trackEvent', 'Live Quiz', 'Time expired'])
   }
 
   // use the handleNewResponse function to add a response to the question instance

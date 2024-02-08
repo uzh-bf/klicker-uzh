@@ -3,6 +3,7 @@ import * as R from 'ramda'
 import {
   AllElementTypeData,
   BaseElementDataKeys,
+  FlashcardCorrectness,
   QuestionResults,
   QuestionResultsChoices,
 } from '../types/app'
@@ -38,11 +39,24 @@ export function prepareInitialInstanceResults(
         (acc, _, ix) => ({ ...acc, [ix]: 0 }),
         {}
       )
-      return { choices } as QuestionResultsChoices
+      return { choices, total: 0 } as QuestionResultsChoices
     }
 
     case ElementType.NUMERICAL:
     case ElementType.FREE_TEXT: {
+      return { responses: {}, total: 0 }
+    }
+
+    case ElementType.FLASHCARD: {
+      return {
+        [FlashcardCorrectness.CORRECT]: 0,
+        [FlashcardCorrectness.PARTIAL]: 0,
+        [FlashcardCorrectness.INCORRECT]: 0,
+        total: 0,
+      }
+    }
+
+    case ElementType.CONTENT: {
       return {}
     }
 

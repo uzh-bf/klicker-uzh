@@ -71,16 +71,6 @@ export enum StackFeedbackStatus {
   PARTIAL = 'partial',
 }
 
-// TODO: merge this with QuestionResults (ElementResults)
-export type AggregatedResponseFlashcard = {
-  [FlashcardCorrectness.INCORRECT]: number
-  [FlashcardCorrectness.PARTIAL]: number
-  [FlashcardCorrectness.CORRECT]: number
-  total: number
-}
-
-export type AggregatedResponse = AggregatedResponseFlashcard
-
 export type QuestionResponseFlashcard = {
   correctness: FlashcardCorrectness
 }
@@ -95,20 +85,19 @@ export type QuestionResponse =
   | QuestionResponseFlashcard
   | QuestionResponseContent
 
-// TODO: results should also include the participants count (instead of storing it on the top-level)
 export type QuestionResultsChoices = {
   choices: Record<string, number>
   total: number
 }
 
-// TODO: to be consistent with choices results, the real results should be nested inside an e.g., values object, and participants should be included as a property
 export type QuestionResultsOpen = {
-  [x: string]: {
-    count: number
-    value: string
-    correct?: boolean
+  responses: {
+    [x: string]: {
+      count: number
+      value: string
+      correct?: boolean
+    }
   }
-} & {
   total: number
 }
 
@@ -183,7 +172,7 @@ export interface BaseElementData {
 
   id: string
   elementId: number | null // TODO - remove nullability
-  questionId: number | null // TODO - remove questionId after migration
+  questionId?: number | null // TODO - remove questionId after migration
   name: string
   content: string
   pointsMultiplier: number
@@ -200,7 +189,7 @@ interface IElementData<Type extends ElementType, Options extends ElementOptions>
   options: Options
   id: string
   elementId: number | null // TODO - remove nullability
-  questionId: number | null // TODO - remove questionId after migration
+  questionId?: number | null // TODO - remove questionId after migration
 }
 
 // export type FlashcardElementData = IElementData<'FLASHCARD', null>
@@ -274,7 +263,7 @@ export type FlashcardInstanceResults = {
 }
 
 export type ContentInstanceResults = {
-  viewed: number
+  total: number
 }
 
 export type ElementInstanceResults =
@@ -290,7 +279,6 @@ declare global {
     type PrismaElementData = AllElementTypeData
     type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaElementInstanceResults = ElementInstanceResults
-    type PrismaAggregatedResponse = AggregatedResponse
   }
 }
 // #endregion

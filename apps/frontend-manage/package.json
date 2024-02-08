@@ -25,6 +25,7 @@
     "formik": "2.4.3",
     "generate-password": "1.7.0",
     "graphql": "16.7.1",
+    "graphql-codegen-persisted-query-ids": "0.1.2",
     "graphql-ws": "5.13.1",
     "html-to-image": "1.11.11",
     "is-hotkey": "0.2.0",

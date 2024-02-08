@@ -1,7 +1,7 @@
 import { faSquare } from '@fortawesome/free-regular-svg-icons'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import type { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import * as R from 'ramda'
@@ -22,7 +22,13 @@ function AddBlockButton({
   const t = useTranslations()
   const [{ isOver }, drop] = useDrop(
     () => ({
-      accept: 'question',
+      accept: [
+        ElementType.Sc,
+        ElementType.Mc,
+        ElementType.Kprim,
+        ElementType.FreeText,
+        ElementType.Numerical,
+      ],
       drop: (item: {
         id: number
         questionType: ElementType

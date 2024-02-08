@@ -38,6 +38,10 @@ export const QuestionData = QuestionDataRef.implement({
         return 'NumericalQuestionData'
       case DB.ElementType.FREE_TEXT:
         return 'FreeTextQuestionData'
+      case DB.ElementType.CONTENT:
+        return 'ContentElementQData'
+      case DB.ElementType.FLASHCARD:
+        return 'FlashcardElementQData'
       default:
         return null
     }
@@ -130,7 +134,9 @@ export const NumericalQuestionOptions = builder
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
-      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
+        nullable: true,
+      }),
       accuracy: t.exposeInt('accuracy', { nullable: true }),
       placeholder: t.exposeString('placeholder', { nullable: true }),
       unit: t.exposeString('unit', { nullable: true }),
@@ -180,7 +186,9 @@ export const FreeTextQuestionOptions = builder
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
-      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
+        nullable: true,
+      }),
       restrictions: t.expose('restrictions', {
         type: FreeTextRestrictions,
         nullable: true,
@@ -199,4 +207,22 @@ export const FreeTextQuestionData = builder
     fields: (t) => ({
       options: t.expose('options', { type: FreeTextQuestionOptions }),
     }),
+  })
+
+// ----- CONTENT ELEMENTS -----
+export interface IContentElementQData extends BaseElementData {}
+export const ContentElementQData = builder
+  .objectRef<IContentElementQData>('ContentElementQData')
+  .implement({
+    interfaces: [QuestionDataRef],
+    fields: (t) => ({}),
+  })
+
+// ----- FLASHCARD ELEMENTS -----
+export interface IFlashcardElementQData extends BaseElementData {}
+export const FlashcardElementQData = builder
+  .objectRef<IFlashcardElementQData>('FlashcardElementQData')
+  .implement({
+    interfaces: [QuestionDataRef],
+    fields: (t) => ({}),
   })

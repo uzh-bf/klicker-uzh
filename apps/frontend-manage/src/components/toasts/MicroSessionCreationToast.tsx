@@ -28,9 +28,9 @@ function MicroSessionCreationToast({
     >
       <div>
         {editMode ? (
-          <div>{t('manage.toasts.microSessionEdit')}</div>
+          <div>{t('manage.toasts.microlearningEdit')}</div>
         ) : (
-          <div>{t('manage.toasts.microSessionCreate')}</div>
+          <div>{t('manage.toasts.microlearningCreate')}</div>
         )}
         <div className="flex flex-row items-center">
           <FontAwesomeIcon icon={faArrowRight} className="mr-2" />

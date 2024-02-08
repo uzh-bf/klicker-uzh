@@ -5,6 +5,37 @@ describe('Create questions', () => {
     cy.loginLecturer()
   })
 
+  it('creates a content element', () => {
+    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const questionTitle = 'A Content ' + randomQuestionNumber
+    const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
+  })
+
+  it('creates a flashcard element', () => {
+    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const questionTitle = 'A Flashcard ' + randomQuestionNumber
+    const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="insert-question-title"]').type(questionTitle)
+    cy.get('[data-cy="insert-question-text"]').click().type(question)
+    cy.get('[data-cy="insert-question-explanation"]').click().type(question)
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
+  })
+
   it('creates a single choice question', () => {
     const randomQuestionNumber = Math.round(Math.random() * 1000)
     const questionTitle = 'A Single Choice ' + randomQuestionNumber
@@ -20,14 +51,9 @@ describe('Create questions', () => {
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
-      messages.shared.SC.short + ' - ' + questionTitle
-    )
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .find('[data-cy="question-title"]')
-      .contains(messages.shared.SC.short)
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
-    cy.get('[data-cy="sc-answer-options"]').should('have.length', 2)
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('exist')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('exist')
   })
 
   it('creates a multiple choice question', () => {
@@ -55,14 +81,9 @@ describe('Create questions', () => {
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
-      messages.shared.MC.short + ' - ' + questionTitle
-    )
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .find('[data-cy="question-title"]')
-      .contains(messages.shared.MC.short)
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
-    cy.get('[data-cy="sc-answer-options"]').should('have.length', 2)
+    cy.get('[data-cy="mc-1-answer-option-1"]').should('exist')
+    cy.get('[data-cy="mc-1-answer-option-2"]').should('exist')
   })
 
   it('creates a KPRIM question', () => {
@@ -94,12 +115,6 @@ describe('Create questions', () => {
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
-      messages.shared.KPRIM.short + ' - ' + questionTitle
-    )
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .find('[data-cy="question-title"]')
-      .contains(messages.shared.KPRIM.short)
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
     cy.get('[data-cy="kp-answer-options"]').should('have.length', 4)
   })
@@ -128,12 +143,6 @@ describe('Create questions', () => {
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
-      messages.shared.NUMERICAL.short + ' - ' + questionTitle
-    )
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .find('[data-cy="question-title"]')
-      .contains(messages.shared.NUMERICAL.short)
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
     cy.get('[data-cy="input-numerical-minimum"]').contains('Min: 0')
     cy.get('[data-cy="input-numerical-maximum"]').contains('Max: 100')
@@ -162,14 +171,8 @@ describe('Create questions', () => {
 
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
     cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
-      messages.shared.FREE_TEXT.short + ' - ' + questionTitle
-    )
-    cy.get(`[data-cy="question-item-${questionTitle}"]`)
-      .find('[data-cy="question-title"]')
-      .contains(messages.shared.FREE_TEXT.short)
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
-    cy.get('[data-cy="free-text-response-input"]').should('exist')
+    cy.get('[data-cy="free-text-input-1"]').should('exist')
   })
 
   it('creates a new question, duplicates it and then deletes the duplicate again', () => {

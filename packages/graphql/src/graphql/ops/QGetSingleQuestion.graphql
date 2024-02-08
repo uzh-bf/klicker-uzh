@@ -28,7 +28,6 @@ query GetSingleQuestion($id: Int!) {
       ... on NumericalQuestionData {
         options {
           hasSampleSolution
-          hasAnswerFeedbacks
           unit
           accuracy
           placeholder
@@ -46,7 +45,6 @@ query GetSingleQuestion($id: Int!) {
       ... on FreeTextQuestionData {
         options {
           hasSampleSolution
-          hasAnswerFeedbacks
           restrictions {
             maxLength
           }

@@ -3,12 +3,12 @@ import messages from '../../../packages/i18n/messages/en'
 const randomNumber = Math.round(Math.random() * 1000)
 const questionTitle = 'A Single Choice with solution' + randomNumber
 const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-const practiceQuizName = 'Test Lernelement ' + randomNumber
+const practiceQuizName = 'Test Übungs-Quiz ' + randomNumber
 const practiceQuizDisplayName = 'Displayed Name ' + randomNumber
 const description = 'This is the official descriptioin of ' + randomNumber
 
 const randomNumber2 = Math.round(Math.random() * 1000)
-const practiceQuizName2 = 'Test Lernelement ' + randomNumber2
+const practiceQuizName2 = 'Test Übungs-Quiz ' + randomNumber2
 const practiceQuizDisplayName2 = 'Displayed Name ' + randomNumber2
 const description2 = 'This is the official descriptioin of ' + randomNumber2
 const courseName = 'Testkurs'
@@ -67,14 +67,14 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
+      .contains(messages.manage.sessionForms.learningElementSPACED_REPETITION)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSHUFFLED}"]`
+      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
     ).click()
-    cy.get('[data-cy="select-order"]').contains(
-      messages.manage.sessionForms.learningElementSHUFFLED
-    )
+    cy.get('[data-cy="select-order"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
@@ -123,34 +123,30 @@ describe('Different practice quiz workflows', () => {
       .contains(practiceQuizDisplayName)
       .click()
     cy.get('[data-cy="start-practice-quiz"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').should('be.disabled')
     cy.findByText('50%').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]')
+      .should('not.be.disabled')
+      .click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
 
     // sign in as student on mobile and answer practice quiz again
-    cy.clearAllCookies()
-    cy.visit(Cypress.env('URL_STUDENT'))
     cy.viewport('iphone-x')
-    cy.get('[data-cy="username-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]')
-      .click()
-      .type(Cypress.env('STUDENT_PASSWORD'))
-    cy.get('[data-cy="submit-login"]').click()
-
     cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizDisplayName}"]`)
       .contains(practiceQuizDisplayName)
       .click()
     cy.get('[data-cy="start-practice-quiz"]').click()
+    cy.get('[data-cy="practice-quiz-reset"]').click()
+
+    cy.get('[data-cy="start-practice-quiz"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
 
@@ -162,7 +158,7 @@ describe('Different practice quiz workflows', () => {
       .click()
     cy.get('[data-cy="practice-quiz-progress"]').children().eq(1).click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.get('[data-cy="mobile-menu-home"]').click()
@@ -207,14 +203,14 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="insert-reset-time-days"]').clear().type('4')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
+      .contains(messages.manage.sessionForms.learningElementSPACED_REPETITION)
     cy.get('[data-cy="select-order"]').click()
     cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSHUFFLED}"]`
+      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
     ).click()
-    cy.get('[data-cy="select-order"]').contains(
-      messages.manage.sessionForms.learningElementSHUFFLED
-    )
+    cy.get('[data-cy="select-order"]')
+      .should('exist')
+      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 3
@@ -246,7 +242,7 @@ describe('Different practice quiz workflows', () => {
 
     // start editing the practice quiz
     cy.get(`[data-cy="edit-practice-quiz-${practiceQuizName2}"]`).click()
-    cy.findByText('Edit ' + messages.shared.generic.learningElement).should(
+    cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -268,14 +264,7 @@ describe('Different practice quiz workflows', () => {
       .type('10')
     cy.get('[data-cy="select-order"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.learningElementSHUFFLED)
-    cy.get('[data-cy="select-order"]').click()
-    cy.get(
-      `[data-cy="select-order-${messages.manage.sessionForms.learningElementSEQUENTIAL}"]`
-    ).click()
-    cy.get('[data-cy="select-order"]').contains(
-      messages.manage.sessionForms.learningElementSEQUENTIAL
-    )
+      .contains(messages.manage.sessionForms.learningElementSEQUENTIAL)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // add the question two further times
@@ -329,19 +318,19 @@ describe('Different practice quiz workflows', () => {
       .click()
     cy.get('[data-cy="start-practice-quiz"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.findByText('50%').click()
-    cy.get('[data-cy="practice-quiz-continue"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
     cy.get('[data-cy="practice-quiz-continue"]').click()
   })

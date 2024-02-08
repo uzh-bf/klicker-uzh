@@ -9,7 +9,7 @@ describe('Tests the avilability of certain functionalities to catalyst users onl
     cy.loginInstitutionalCatalyst()
   })
 
-  it('Test that the creation buttons for learning elements and micro learnings are only available to catalyst users', () => {
+  it('Test that the creation buttons for practice quizzes and micro learnings are only available to catalyst users', () => {
     cy.loginLecturer()
     cy.wait(1000)
     cy.get('[data-cy="create-practice-quiz"]').should('not.be.disabled')

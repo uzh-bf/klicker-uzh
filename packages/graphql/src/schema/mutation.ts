@@ -36,7 +36,13 @@ import {
   Participation,
   SubscriptionObjectInput,
 } from './participant'
-import { StackFeedback, StackResponseInput } from './practiceQuizzes'
+import {
+  ElementOrderType,
+  ElementStackInput,
+  PracticeQuiz,
+  StackFeedback,
+  StackResponseInput,
+} from './practiceQuizzes'
 import {
   Element,
   OptionsChoicesInput,
@@ -772,6 +778,43 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      manipulateContentElement: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Element,
+        args: {
+          id: t.arg.int({ required: false }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
+          tags: t.arg.stringList({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.manipulateQuestion(
+            { ...args, type: DB.ElementType.CONTENT },
+            ctx
+          )
+        },
+      }),
+
+      manipulateFlashcardElement: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Element,
+        args: {
+          id: t.arg.int({ required: false }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          explanation: t.arg.string({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
+          tags: t.arg.stringList({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.manipulateQuestion(
+            { ...args, type: DB.ElementType.FLASHCARD },
+            ctx
+          )
+        },
+      }),
+
       manipulateChoicesQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -797,7 +840,6 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -808,7 +850,10 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.manipulateQuestion(args, ctx)
+          return QuestionService.manipulateQuestion(
+            { ...args, type: DB.ElementType.NUMERICAL },
+            ctx
+          )
         },
       }),
 
@@ -817,7 +862,6 @@ export const Mutation = builder.mutationType({
         type: Element,
         args: {
           id: t.arg.int({ required: false }),
-          type: t.arg({ required: true, type: ElementType }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
@@ -828,7 +872,10 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, args, ctx) {
-          return QuestionService.manipulateQuestion(args, ctx)
+          return QuestionService.manipulateQuestion(
+            { ...args, type: DB.ElementType.FREE_TEXT },
+            ctx
+          )
         },
       }),
 
@@ -1017,6 +1064,59 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      createPracticeQuiz: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: PracticeQuiz,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({
+              type: [ElementStackInput],
+              required: true,
+            }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            order: t.arg({
+              type: ElementOrderType,
+              required: true,
+            }),
+            resetTimeDays: t.arg.int({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return PracticeQuizService.manipulatePracticeQuiz(args, ctx)
+          },
+        }),
+
+      editPracticeQuiz: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: PracticeQuiz,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({
+              type: [ElementStackInput],
+              required: true,
+            }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            order: t.arg({
+              type: ElementOrderType,
+              required: true,
+            }),
+            resetTimeDays: t.arg.int({ required: true }),
+          },
+          resolve(_, args, ctx) {
+            return PracticeQuizService.manipulatePracticeQuiz(args, ctx)
+          },
+        }),
+
       createMicroSession: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1058,16 +1158,16 @@ export const Mutation = builder.mutationType({
           },
         }),
 
-      publishLearningElement: t
+      publishPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: LearningElement,
+          type: PracticeQuiz,
           args: {
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
-            return LearningElementService.publishLearningElement(args, ctx)
+            return PracticeQuizService.publishPracticeQuiz(args, ctx)
           },
         }),
 
@@ -1098,16 +1198,16 @@ export const Mutation = builder.mutationType({
         }),
 
       // TODO: delete operations only as owner?
-      deleteLearningElement: t
+      deletePracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: LearningElement,
+          type: PracticeQuiz,
           args: {
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
-            return LearningElementService.deleteLearningElement(args, ctx)
+            return PracticeQuizService.deletePracticeQuiz(args, ctx)
           },
         }),
       deleteMicroSession: t

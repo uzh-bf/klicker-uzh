@@ -58,13 +58,13 @@ function LearningElementDeletionModal({
       className={{ content: 'w-[40rem] h-max self-center pt-0' }}
     >
       <div>
-        <H2>{t('manage.course.deleteLearningElement')}</H2>
-        <div>{t('manage.course.confirmDeletionLearningElement')}</div>
+        <H2>{t('manage.course.deletePracticeQuiz')}</H2>
+        <div>{t('manage.course.confirmDeletionPracticeQuiz')}</div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{title}</H3>
         </div>
         <div className="mt-6 mb-2 text-sm italic">
-          {t('manage.course.hintDeletionLearningElement')}
+          {t('manage.course.hintDeletionPracticeQuiz')}
         </div>
       </div>
     </Modal>

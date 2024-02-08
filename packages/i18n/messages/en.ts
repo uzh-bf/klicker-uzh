@@ -92,10 +92,10 @@ export default {
       leaderboard: 'Leaderboard',
       repetition: 'Repetition',
       evaluation: 'Evaluation',
-      liveSession: 'Live Quiz',
-      learningElement: 'Practice Quiz',
-      learningElements: 'Practice Quizzes',
-      microSessions: 'Microlearning',
+      liveQuiz: 'Live Quiz',
+      practiceQuiz: 'Practice Quiz',
+      practiceQuizzes: 'Practice Quizzes',
+      microlearnings: 'Microlearning',
       microlearning: 'Microlearning',
       activeSessions: 'Active Quizzes',
       characters: 'characters',
@@ -153,7 +153,6 @@ export default {
       german: 'German',
       practicePool: 'Practice',
       practiceTitle: 'Practice Pool',
-      practiceQuizzes: 'Quizzes',
       practice: 'Practice Activities',
     },
     contentInput: {
@@ -440,7 +439,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       answeredMinOnce: 'Min. answered once: {answered}/{total}',
       multiplicatorPoints: 'Multiplicator: {mult}x points',
       multiplicatorEval: '<b>Multiplicator</b> {mult}x',
-      solvedLearningElement:
+      solvedPracticeQuiz:
         'You have successfully completed the practice quiz <it>{name}</it>.',
       pointsCollectedPossible: 'Points (collected/computed/available)',
       pointsComputedAvailable: 'Points (computed/available)',
@@ -712,7 +711,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       passwordTooltip:
         'The password is automatically generated. Please write it down before creating the login, it will not be visible anymore afterwards. If you want to change it, you can generate a new one using the button on the right.',
       shortnameRequirements:
-        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other learning elements in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
+        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other practice quizzes in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
       shortnameRequired: 'Please enter a shortname.',
       shortnameMin: 'The shortname must be at least 5 characters long.',
       shortnameMax: 'The shortname must be at most 8 characters long.',
@@ -752,9 +751,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please note that the migration may take some time. You can close the page once the migration is started. You will receive an email to {email} once the migration is complete. In case of issues with the migration, please contact us at klicker@bf.uzh.ch.',
     },
     questionPool: {
-      createLiveSession: 'Create live quiz',
-      createMicroSession: 'Create microlearning',
-      createLearningElement: 'Create practice quiz',
+      createLiveQuiz: 'Create live quiz',
+      createMicrolearning: 'Create microlearning',
+      createPracticeQuiz: 'Create practice quiz',
       createGroupTask: 'Create group activity',
       createQuestionCaps: 'CREATE QUESTION',
       resetFilters: 'Reset filters',
@@ -870,101 +869,105 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pasteSingleQuestions: 'Add {count} blocks with 1 question',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
-      microSessionTypes:
+      microlearningTypes:
         'A microlearning can only contain single choice, multiple choice, kprim and numerical questions.',
-      microSessionCreated:
+      microlearningCreated:
         'Your microlearning <b>{name}</b> has been created successfully.',
-      microSessionEdited:
+      microlearningEdited:
         'Your microlearning <b>{name}</b> has been edited successfully.',
-      microSessionDescription:
+      microlearningDescription:
         'In this step, enter the name and description of the microlearning.',
-      microSessionSettings:
+      microlearningSettings:
         'In this step, select the start and end date and make further settings.',
-      microSessionQuestions:
+      microlearningQuestions:
         'In this step, select the questions for the microlearning.',
-      microSessionEditingFailed: 'Editing the Microlearning failed...',
-      microSessionCreationFailed: 'Creating the Microlearning failed...',
-      microSessionName:
+      microlearningEditingFailed: 'Editing the Microlearning failed...',
+      microlearningCreationFailed: 'Creating the Microlearning failed...',
+      microlearningName:
         'This name should allow you to distinguish this microlearning from others. It will not be shown to the participants, please use the display name (next field) for this.',
-      microSessionDescField:
+      microlearningDescField:
         'Add a description to your microlearning that will be displayed to participants at the beginning.',
-      microSessionCourse:
+      microlearningCourse:
         'For the creation of a microlearning, the selection of the corresponding course is required.',
-      microSessionStartDate:
+      microlearningStartDate:
         'Please choose the start date of the microlearning. The microlearning will be displayed to the participants from this point in time.',
-      microSessionEndDate:
+      microlearningEndDate:
         'Please choose the end date of the microlearning. The microlearning will no longer be displayed to the participants after this point in time.',
-      microSessionMultiplier:
+      microlearningMultiplier:
         'The multiplier is a factor with which the points of the participants are multiplied in a gamified microlearning.',
-      liveSessionGamified:
+      microlearningUseCase:
+        '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
+      liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
-      liveSessionTypes:
-        'Live quizzes can only contain single choice, multiple choice, numerical and free text questions.',
-      liveSessionTimeRestriction: 'Please enter a valid time restriction.',
-      liveSessionMinQuestions: 'Block must contain at least one question.',
-      liveSessionCreated: 'Live quiz <b>{name}</b> successfully created.',
-      liveSessionUpdated: 'Live quiz <b>{name}</b> successfully updated.',
-      liveSessionDescription:
+      liveQuizTypes:
+        'Live quizzes can only contain single choice, multiple choice, kprim, numerical and free text questions.',
+      liveQuizTimeRestriction: 'Please enter a valid time restriction.',
+      liveQuizMinQuestions: 'Block must contain at least one question.',
+      liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
+      liveQuizUpdated: 'Live quiz <b>{name}</b> successfully updated.',
+      liveQuizDescription:
         'In this step, enter the name and description of the live quiz.',
-      liveSessionSettings:
+      liveQuizSettings:
         'In this step, you can make settings for the live quiz.',
-      liveSessionBlocks: 'Questions & Blocks',
-      liveSessionDragDrop:
+      liveQuizBlocks: 'Questions & Blocks',
+      liveQuizDragDrop:
         'Use drag&drop on the plus icon to add questions to your blocks. New blocks can be created either by drag&drop on the corresponding field or by clicking on the button.',
-      liveSessionCreationFailed: 'Creating the live quiz failed...',
-      liveSessionEditingFailed: 'Editing the live quiz failed...',
-      liveSessionName:
+      liveQuizCreationFailed: 'Creating the live quiz failed...',
+      liveQuizEditingFailed: 'Editing the live quiz failed...',
+      liveQuizName:
         'The name should allow you to distinguish this live quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
-      liveSessionDescField:
+      liveQuizDescField:
         'Here you can enter an optional description of the live quiz. This will be displayed to the students at the beginning of the quiz.',
-      liveSessionCourse: 'You can assign your live quiz to a course.',
-      liveSessionSelectCourse: 'Select course',
-      liveSessionNoCourse: 'No course',
-      liveSessionMultiplier:
+      liveQuizDescCourse: 'You can assign your live quiz to a course.',
+      liveQuizSelectCourse: 'Select course',
+      liveQuizNoCourse: 'No course',
+      liveQuizMultiplier:
         'The multiplier is a factor with which the points are multiplied when a question is answered. The factor is only used if gamification is activated.',
-      liveSessionGamification:
+      liveQuizGamification:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
-      liveSessionLiveQA:
+      liveQuizLiveQA:
         'This setting specifies whether the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
-      liveSessionModeration:
+      liveQuizModeration:
         'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
-      liveSessionFeedbackChannel:
+      liveQuizFeedbackChannel:
         'This setting specifies whether the feedback channel should be activated at the beginning of the session. It can be changed at any time during the session.',
-      learningElementResetDays:
+      liveQuizUseCase:
+        '<link>Live quizzes</link> can be used to promote interactivity in lectures, seminars and workshops. While participants answer the questions in real time, the results are displayed on an evaluation view.',
+      practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
-      learningElementValidResetDays:
+      practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
-      learningElementTypes:
-        'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions.',
-      learningElementSolutionReq: 'Please only add questions with solution.',
-      learningElementCreated:
-        'Learning element <b>{name}</b> successfully created.',
-      learningElementUpdated:
-        'Learning element <b>{name}</b> successfully modified.',
-      learningElementDescription:
+      practiceQuizElementTypes:
+        'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions as well as content elements and flashcards.',
+      practiceQuizSolutionReq: 'Please only add questions with solution.',
+      practiceQuizCreated: 'Practice quiz <b>{name}</b> successfully created.',
+      practiceQuizUpdated: 'Practice quiz <b>{name}</b> successfully modified.',
+      practiceQuizDescription:
         'In this step, enter the name and description of the practice quiz.',
-      learningElementSettings:
+      practiceQuizSettings:
         'In this step, make settings for your practice quiz.',
-      learningElementContent:
+      practiceQuizContent:
         'In this step, add questions and text elements to your practice quiz.',
-      learningElementCreationFailed: 'Creating the practice quiz failed...',
-      learningElementEditingFailed: 'Editing the practice quiz failed...',
-      learningElementName:
+      practiceQuizCoursePlaceholder: 'Select course...',
+      practiceQuizCreationFailed: 'Creating the practice quiz failed...',
+      practiceQuizEditingFailed: 'Editing the practice quiz failed...',
+      practiceQuizName:
         'The name should allow you to distinguish this practice quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
-      learningElementDescField:
+      practiceQuizDescField:
         'Add a description to your practice quiz that will be displayed to participants at the beginning.',
-      learningElementSelectCourse:
+      practiceQuizSelectCourse:
         'For the creation of a practice quiz, the selection of the corresponding course is required.',
-      learningElementMultiplier:
+      practiceQuizMultiplier:
         'Select a multiplier. All points that students collect in this practice quiz will be multiplied by the multiplier.',
-      learningElementRepetition:
+      practiceQuizRepetition:
         'Select a period after which students can repeat the practice quiz.',
-      learningElementOrder:
+      practiceQuizOrder:
         'Select an order in which the questions are to be solved by the students.',
-      learningElemenSelectOrder: 'Select order',
+      practiceQuizSelectOrder: 'Select order',
       learningElementSEQUENTIAL: 'Sequential',
-      learningElementSHUFFLED: 'Shuffled',
-      learningElementLAST_RESPONSE: 'Last response first',
+      learningElementSPACED_REPETITION: 'Spaced Repetition',
+      practiceQuizUseCase:
+        '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
     },
     formErrors: {
       resolveErrors:
@@ -987,6 +990,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       NumberQuestionsRequired: 'At least one answer option must be given',
       NumberQuestionsRequiredKPRIM:
         'There must be exactly four answer options for Kprim questions',
+      explanationRequired:
+        'Please enter an explanation. On flashcards, this explanation will be displayed to students as an answer to the question.',
     },
     sessions: {
       runningSessions: 'Running Live Quizzes',
@@ -1002,10 +1007,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deleteSession: 'Delete Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
-      deleteLiveSession: 'Delete Quiz',
-      confirmLiveSessionDeletion:
+      deleteLiveQuiz: 'Delete Quiz',
+      confirmLiveQuizDeletion:
         'Are you sure you want to delete the following live quiz?',
-      liveSessionDeletionHint:
+      liveQuizDeletionHint:
         'Deleting a live quiz is only possible as long as it has not been started. Deleted live quizzes cannot be restored at a later date.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noSessions: 'No live quizzes available',
@@ -1167,8 +1172,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       dateChangeFailed:
         'An error occurred while adjusting the date. Please check the input.',
       noSessions: 'No live quizzes available',
-      noLearningElements: 'No practice quizzes available',
-      noMicroSessions: 'No microlearning available',
+      noPracticeQuizzes: 'No practice quizzes available',
+      noMicrolearnings: 'No microlearning available',
+      noGroupActivities: 'No group activities available',
       courseLeaderboard: 'Course Leaderboard',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
@@ -1179,41 +1185,42 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endAt: 'End: {time}',
       nQuestions: '{number} questions',
       copyAccessLink: 'Copy access link',
-      linkMicroSessionCopied:
+      linkMicrolearningCopied:
         'The link to the microlearning has been successfully copied to the clipboard.',
-      linkLearningElementCopied:
+      linkPracticeQuizCopied:
         'The link to the practice quiz has been successfully copied to the clipboard.',
-      editMicroSession: 'Edit microlearning',
-      publishMicroSession: 'Publish microlearning',
-      unpublishMicroSession: 'Unpublish microlearning',
-      deleteMicroSession: 'Delete microlearning',
-      publishItem: 'Publish {name}',
+      editMicrolearning: 'Edit microlearning',
+      publishMicrolearning: 'Publish microlearning',
+      unpublishMicrolearning: 'Unpublish microlearning',
+      deleteMicrolearning: 'Delete microlearning',
+      publishItemPRACTICE_QUIZ: 'Publish practice quiz',
+      publishItemMICROLEARNING: 'Publish microlearning',
       confirmPublishing: 'Are you sure you want to publish the following item?',
       publishingHint:
         'Publishing a practice quiz or microlearning makes the item visible to all participants. This process can only be undone later, if the element has not yet started and/or has not received any answers. Changes to the content of an item cannot be made after publishing.',
       microPublishingHint:
         'Microlearnings are additionally only visible within the specified date range.',
-      confirmDeletionMicroSession:
+      confirmDeletionMicrolearning:
         'Are you sure you want to delete the following microlearing?',
-      hintDeletionMicroSession:
+      hintDeletionMicrolearning:
         'Deleting a microlearning is only possible as long as it is not running and is not used in a course. A deleted microlearning cannot be restored at a later date.',
-      editLearningElement: 'Edit practice quiz',
-      publishLearningElement: 'Publish practice quiz',
-      deleteLearningElement: 'Delete practice quiz',
-      confirmDeletionLearningElement:
+      editPracticeQuiz: 'Edit practice quiz',
+      publishPracticeQuiz: 'Publish practice quiz',
+      deletePracticeQuiz: 'Delete practice quiz',
+      confirmDeletionPracticeQuiz:
         'Are you sure you want to delete the following practice quiz?',
-      hintDeletionLearningElement:
+      hintDeletionPracticeQuiz:
         'Deleting a practice quiz is only possible as long as it is not used in an active course. Deleted practice quizzes cannot be restored at a later date.',
     },
     toasts: {
-      learningElementEdit: 'Practice quiz successfully edited!',
-      learningElementCreate: 'Practice quiz successfully created!',
+      practiceQuizEdit: 'Practice quiz successfully edited!',
+      practiceQuizCreate: 'Practice quiz successfully created!',
       toCourseOverview: 'To <link>course overview</link>',
-      liveSessionEdit: 'Live quiz successfully edited!',
-      liveSessionCreate: 'Live quiz successfully created!',
+      liveQuizEdit: 'Live quiz successfully edited!',
+      liveQuizCreate: 'Live quiz successfully created!',
       toSessionList: 'To <link>quiz overview</link>',
-      microSessionEdit: 'Microlearning successfully edited!',
-      microSessionCreate: 'Microlearning successfully created!',
+      microlearningEdit: 'Microlearning successfully edited!',
+      microlearningCreate: 'Microlearning successfully created!',
     },
   },
   control: {
@@ -1222,7 +1229,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       installAndroid:
         'Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.',
       installIOS:
-        "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live sessions directly.",
+        "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live quizzes directly.",
       shortnameRequired: 'Please enter your shortname.',
       tokenRequired:
         'Enter a valid token. Please note the validity displayed during token generation.',

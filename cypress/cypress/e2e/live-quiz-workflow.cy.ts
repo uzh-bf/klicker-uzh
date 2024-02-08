@@ -135,7 +135,7 @@ describe('Different live-quiz workflows', () => {
     // step 2
     cy.get('[data-cy="select-course"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.liveSessionNoCourse)
+      .contains(messages.manage.sessionForms.liveQuizNoCourse)
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseName)
@@ -278,8 +278,8 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="insert-answer-field"]').eq(1).click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
-    // create a live session with a single question
-    // TODO - once this is possible, create an empty live session here
+    // create a live quiz with a single question
+    // TODO - once this is possible, create an empty live quiz here
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="insert-live-quiz-name"]').type(sessionName)
     cy.get('[data-cy="insert-live-display-name"]').type(sessionName)
@@ -287,7 +287,7 @@ describe('Different live-quiz workflows', () => {
 
     cy.get('[data-cy="select-course"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.liveSessionNoCourse)
+      .contains(messages.manage.sessionForms.liveQuizNoCourse)
     cy.get('[data-cy="select-course"]').click()
     cy.get(`[data-cy="select-course-${courseName}"]`).click()
     cy.get('[data-cy="select-course"]').contains(courseName)

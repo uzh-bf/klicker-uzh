@@ -9,8 +9,7 @@
     "moduleTypes": {
       "src/seed/*": "esm",
       "src/data/*": "esm",
-      "src/scripts/*": "esm",
-      "src/util.ts": "esm"
+      "src/scripts/*": "esm"
     }
   }
 }

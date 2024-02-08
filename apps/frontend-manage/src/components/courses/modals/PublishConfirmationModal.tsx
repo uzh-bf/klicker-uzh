@@ -1,17 +1,16 @@
 import { useMutation } from '@apollo/client'
 import {
+  ElementInstanceType,
   PublishLearningElementDocument,
   PublishMicroSessionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-const LABELS = {
-  LEARNING_ELEMENT: 'Lernelement',
-  MICRO_SESSION: 'Micro-Session',
-}
 interface PublishConfirmationModalProps {
-  elementType: 'LEARNING_ELEMENT' | 'MICRO_SESSION'
+  elementType:
+    | ElementInstanceType.Microlearning
+    | ElementInstanceType.PracticeQuiz
   elementId: string
   title: string
   open: boolean
@@ -42,9 +41,9 @@ function PublishConfirmationModal({
       onPrimaryAction={
         <Button
           onClick={async () => {
-            if (elementType === 'MICRO_SESSION') {
+            if (elementType === ElementInstanceType.Microlearning) {
               await publishMicroSession()
-            } else if (elementType === 'LEARNING_ELEMENT') {
+            } else if (elementType === ElementInstanceType.PracticeQuiz) {
               await publishLearningElement()
             }
             setOpen(false)
@@ -71,14 +70,14 @@ function PublishConfirmationModal({
       className={{ content: 'w-[40rem] h-max self-center pt-0' }}
     >
       <div>
-        <H2>{t('manage.course.publishItem', { name: LABELS[elementType] })}</H2>
+        <H2>{t(`manage.course.publishItem${elementType}`)}</H2>
         <div>{t('manage.course.confirmPublishing')}</div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{title}</H3>
         </div>
         <div className="mt-6 mb-2 text-sm italic">
           {t('manage.course.publishingHint')}
-          {elementType === 'MICRO_SESSION' &&
+          {elementType === ElementInstanceType.Microlearning &&
             t('manage.course.microPublishingHint')}
         </div>
       </div>

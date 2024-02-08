@@ -26,6 +26,7 @@ module.exports = {
     'packages/shared-components',
     'packages/next-config',
     'packages/i18n',
+    'packages/util',
   ].reduce(
     (acc, path) => {
       return acc.concat({

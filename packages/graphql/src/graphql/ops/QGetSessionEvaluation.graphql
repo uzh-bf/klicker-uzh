@@ -43,7 +43,6 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
         ... on NumericalQuestionData {
           options {
             hasSampleSolution
-            hasAnswerFeedbacks
             restrictions {
               min
               max
@@ -58,7 +57,6 @@ query GetSessionEvaluation($id: String!, $hmac: String) {
         ... on FreeTextQuestionData {
           options {
             hasSampleSolution
-            hasAnswerFeedbacks
             restrictions {
               maxLength
             }

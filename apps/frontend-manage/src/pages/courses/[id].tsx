@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import GroupActivityTile from '@components/courses/GroupActivityTile'
 import { faCrown, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -278,14 +279,14 @@ function CourseOverviewPage() {
           </div>
           <div className="mb-4">
             <H3 className={{ root: 'flex flex-row gap-3' }}>
-              <div>{t('shared.generic.learningElements')}</div>
+              <div>{t('shared.generic.practiceQuizzes')}</div>
               <Button.Icon className={{ root: 'text-orange-400' }}>
                 <FontAwesomeIcon icon={faCrown} size="sm" />
               </Button.Icon>
             </H3>
-            {course.learningElements && course.learningElements.length > 0 ? (
+            {course.practiceQuizzes && course.practiceQuizzes.length > 0 ? (
               <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                {course.learningElements.map((learningElement) => (
+                {course.practiceQuizzes.map((learningElement) => (
                   <LearningElementTile
                     courseId={course.id}
                     learningElement={learningElement}
@@ -294,7 +295,7 @@ function CourseOverviewPage() {
                 ))}
               </div>
             ) : user?.userProfile?.catalyst ? (
-              <div>{t('manage.course.noLearningElements')}</div>
+              <div>{t('manage.course.noPracticeQuizzes')}</div>
             ) : (
               <UserNotification className={{ root: 'mr-3' }}>
                 {t.rich('manage.general.catalystRequired', {
@@ -313,7 +314,7 @@ function CourseOverviewPage() {
           </div>
           <div className="mb-4">
             <H3 className={{ root: 'flex flex-row gap-3' }}>
-              <div>{t('shared.generic.microSessions')}</div>
+              <div>{t('shared.generic.microlearnings')}</div>
               <Button.Icon className={{ root: 'text-orange-400' }}>
                 <FontAwesomeIcon icon={faCrown} size="sm" />
               </Button.Icon>
@@ -328,7 +329,7 @@ function CourseOverviewPage() {
                 ))}
               </div>
             ) : user?.userProfile?.catalyst ? (
-              <div>{t('manage.course.noMicroSessions')}</div>
+              <div>{t('manage.course.noMicrolearnings')}</div>
             ) : (
               <UserNotification className={{ root: 'mr-3' }}>
                 {t.rich('manage.general.catalystRequired', {
@@ -352,7 +353,32 @@ function CourseOverviewPage() {
                 <FontAwesomeIcon icon={faCrown} size="sm" />
               </Button.Icon>
             </H3>
-            Coming Soon
+            {course.groupActivities && course.groupActivities.length > 0 ? (
+              <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
+                {course.groupActivities.map((groupActivity) => (
+                  <GroupActivityTile
+                    groupActivity={groupActivity}
+                    key={groupActivity.id}
+                  />
+                ))}
+              </div>
+            ) : user?.userProfile?.catalyst ? (
+              <div>{t('manage.course.noGroupActivities')}</div>
+            ) : (
+              <UserNotification className={{ root: 'mr-3' }}>
+                {t.rich('manage.general.catalystRequired', {
+                  link: () => (
+                    <a
+                      target="_blank"
+                      href="https://www.klicker.uzh.ch/catalyst"
+                      className="underline"
+                    >
+                      www.klicker.uzh.ch/catalyst
+                    </a>
+                  ),
+                })}
+              </UserNotification>
+            )}
           </div>
         </div>
         {data?.course?.isGamificationEnabled && (

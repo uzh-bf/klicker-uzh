@@ -1,4 +1,6 @@
 import { useMutation } from '@apollo/client'
+import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateMicroSessionDocument,
   EditMicroSessionDocument,
@@ -69,7 +71,9 @@ function MicroSessionWizard({
     multiplier: yup
       .string()
       .matches(/^[0-9]+$/, t('manage.sessionForms.validMultiplicator')),
-    courseId: yup.string(),
+    courseId: yup
+      .string()
+      .required(t('manage.sessionForms.microlearningCourse')),
   })
 
   const stepThreeValidationSchema = yup.object().shape({
@@ -79,20 +83,20 @@ function MicroSessionWizard({
         yup.object().shape({
           id: yup.string(),
           title: yup.string(),
-          type: yup
-            .string()
-            .oneOf(
-              [
-                ElementType.Sc,
-                ElementType.Mc,
-                ElementType.Kprim,
-                ElementType.Numerical,
-              ],
-              t('manage.sessionForms.microSessionTypes')
-            ),
+          type: yup.string().oneOf(
+            [
+              ElementType.Sc,
+              ElementType.Mc,
+              ElementType.Kprim,
+              ElementType.Numerical,
+              // ElementType.Flashcard,
+              // ElementType.Content,
+            ],
+            t('manage.sessionForms.microlearningTypes')
+          ),
           hasSampleSolution: yup
             .boolean()
-            .isTrue(t('manage.sessionForms.learningElementSolutionReq')),
+            .isTrue(t('manage.sessionForms.practiceQuizSolutionReq')),
         })
       )
       .min(1),
@@ -169,11 +173,11 @@ function MicroSessionWizard({
         completionSuccessMessage={(elementName) => (
           <div>
             {editMode
-              ? t.rich('manage.sessionForms.microSessionCreated', {
+              ? t.rich('manage.sessionForms.microlearningCreated', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })
-              : t.rich('manage.sessionForms.microSessionEdited', {
+              : t.rich('manage.sessionForms.microlearningEdited', {
                   b: (text) => <strong>{text}</strong>,
                   name: elementName,
                 })}
@@ -228,16 +232,16 @@ function MicroSessionWizard({
         workflowItems={[
           {
             title: t('shared.generic.description'),
-            tooltip: t('manage.sessionForms.microSessionDescription'),
+            tooltip: t('manage.sessionForms.microlearningDescription'),
           },
           {
             title: t('shared.generic.settings'),
-            tooltip: t('manage.sessionForms.microSessionSettings'),
+            tooltip: t('manage.sessionForms.microlearningSettings'),
             tooltipDisabled: t('manage.sessionForms.checkValues'),
           },
           {
             title: t('shared.generic.questions'),
-            tooltip: t('manage.sessionForms.microSessionQuestions'),
+            tooltip: t('manage.sessionForms.microlearningQuestions'),
             tooltipDisabled: t('manage.sessionForms.checkValues'),
           },
         ]}
@@ -251,8 +255,8 @@ function MicroSessionWizard({
         setOpen={setErrorToastOpen}
         error={
           editMode
-            ? t('manage.sessionForms.microSessionEditingFailed')
-            : t('manage.sessionForms.microSessionCreationFailed')
+            ? t('manage.sessionForms.microlearningEditingFailed')
+            : t('manage.sessionForms.microlearningCreationFailed')
         }
       />
     </div>
@@ -274,44 +278,71 @@ function StepOne(_: StepProps) {
   const t = useTranslations()
 
   return (
-    <>
-      <div className="flex flex-col w-full gap-4 md:flex-row">
-        <FormikTextField
-          required
-          autoComplete="off"
-          name="name"
-          label={t('manage.sessionForms.name')}
-          tooltip={t('manage.sessionForms.microSessionName')}
-          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-microlearning-name"
-        />
-        <FormikTextField
-          required
-          autoComplete="off"
-          name="displayName"
-          label={t('manage.sessionForms.displayName')}
-          tooltip={t('manage.sessionForms.displayNameTooltip')}
-          className={{ root: 'mb-1 w-full md:w-1/2', tooltip: 'z-20' }}
-          data-cy="insert-microlearning-display-name"
-        />
-      </div>
+    <div className="flex flex-row gap-6">
+      <div className="flex-1">
+        <div className="flex flex-col w-full gap-4 md:flex-row">
+          <FormikTextField
+            required
+            autoComplete="off"
+            name="name"
+            label={t('manage.sessionForms.name')}
+            tooltip={t('manage.sessionForms.microlearningName')}
+            className={{
+              root: 'mb-2 w-full md:w-1/2',
+              tooltip: 'z-20',
+              label: 'w-36',
+            }}
+            data-cy="insert-microlearning-name"
+          />
+          <FormikTextField
+            required
+            autoComplete="off"
+            name="displayName"
+            label={t('manage.sessionForms.displayName')}
+            tooltip={t('manage.sessionForms.displayNameTooltip')}
+            className={{
+              root: 'mb-2 w-full md:w-1/2',
+              tooltip: 'z-20',
+              label: 'w-36',
+            }}
+            data-cy="insert-microlearning-display-name"
+          />
+        </div>
 
-      <EditorField
-        label={t('shared.generic.description')}
-        tooltip={t('manage.sessionForms.microSessionDescField')}
-        fieldName="description"
-        data_cy="insert-microlearning-description"
-        showToolbarOnFocus={false}
-      />
-
-      <div className="w-full text-right">
-        <ErrorMessage
-          name="description"
-          component="div"
-          className="text-sm text-red-400"
+        <EditorField
+          label={t('shared.generic.description')}
+          tooltip={t('manage.sessionForms.microlearningDescField')}
+          fieldName="description"
+          data_cy="insert-microlearning-description"
+          showToolbarOnFocus={false}
         />
+
+        <div className="w-full text-right">
+          <ErrorMessage
+            name="description"
+            component="div"
+            className="text-sm text-red-400"
+          />
+        </div>
       </div>
-    </>
+      <div className="hidden md:block flex-initial w-[350px] border bg-slate-50 p-4 rounded prose prose-sm">
+        <FontAwesomeIcon
+          icon={faLightbulb}
+          className="mr-2 text-orange-400"
+          size="lg"
+        />
+        {t.rich('manage.sessionForms.microlearningUseCase', {
+          link: (text) => (
+            <a
+              href="https://www.klicker.uzh.ch/use_cases/microlearning/"
+              target="_blank"
+            >
+              {text}
+            </a>
+          ),
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -332,10 +363,11 @@ function StepTwo(props: StepProps) {
             }) || []
           }
           required
-          tooltip={t('manage.sessionForms.microSessionCourse')}
+          tooltip={t('manage.sessionForms.microlearningCourse')}
           label={t('shared.generic.course')}
           data={{ cy: 'select-course' }}
           className={{ tooltip: 'z-20' }}
+          hideError
         />
         <ErrorMessage
           name="courseId"
@@ -346,7 +378,7 @@ function StepTwo(props: StepProps) {
       <FormikDateField
         label={t('shared.generic.startDate')}
         name="startDate"
-        tooltip={t('manage.sessionForms.microSessionStartDate')}
+        tooltip={t('manage.sessionForms.microlearningStartDate')}
         required
         className={{
           root: 'w-[24rem]',
@@ -358,7 +390,7 @@ function StepTwo(props: StepProps) {
       <FormikDateField
         label={t('shared.generic.endDate')}
         name="endDate"
-        tooltip={t('manage.sessionForms.microSessionEndDate')}
+        tooltip={t('manage.sessionForms.microlearningEndDate')}
         required
         className={{
           root: 'w-[24rem]',
@@ -372,7 +404,7 @@ function StepTwo(props: StepProps) {
           name="multiplier"
           placeholder={t('manage.sessionForms.multiplierDefault')}
           label={t('shared.generic.multiplier')}
-          tooltip={t('manage.sessionForms.microSessionMultiplier')}
+          tooltip={t('manage.sessionForms.microlearningMultiplier')}
           required
           items={[
             {

@@ -9,7 +9,6 @@ mutation ManipulateFreeTextQuestion(
 ) {
   manipulateFreeTextQuestion(
     id: $id
-    type: FREE_TEXT
     name: $name
     content: $content
     explanation: $explanation
@@ -28,7 +27,6 @@ mutation ManipulateFreeTextQuestion(
       ... on FreeTextQuestionData {
         options {
           hasSampleSolution
-          hasAnswerFeedbacks
           restrictions {
             maxLength
           }

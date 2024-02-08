@@ -5,10 +5,11 @@ import {
   LearningElementStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
+import { levelFromXp } from '@klicker-uzh/util/dist/pure'
 import * as R from 'ramda'
 import { GroupLeaderboardEntry } from 'src/ops'
 import { Context, ContextWithUser } from '../lib/context'
-import { levelFromXp, orderStacks } from '../lib/util'
+import { orderStacks } from '../lib/util'
 
 export async function getBasicCourseInformation(
   { courseId }: { courseId: string },
@@ -502,17 +503,21 @@ export async function getCourseData(
           updatedAt: 'desc',
         },
       },
-      learningElements: {
+      practiceQuizzes: {
         include: {
           stacks: {
             include: {
-              elements: {
-                include: {
-                  questionInstance: true,
-                },
-              },
+              elements: true,
             },
           },
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      },
+      groupActivities: {
+        include: {
+          instances: true,
         },
         orderBy: {
           updatedAt: 'desc',
@@ -598,30 +603,18 @@ export async function getCourseData(
       }
     ) ?? {}
 
-  const totalCount = course?.participations.length || 0
   const averageActiveScore = activeCount > 0 ? activeSum / activeCount : 0
 
-  const reducedLearningElements = course?.learningElements.map((element) => {
+  const reducedPracticeQuizzes = course?.practiceQuizzes.map((quiz) => {
     return {
-      ...element,
-      ...element.stacks.reduce(
+      ...quiz,
+      ...quiz.stacks.reduce(
         (acc, stack) => {
-          const stackQuestions = stack.elements.reduce((acc, stackElem) => {
-            if (stackElem.questionInstance) {
-              return acc + 1
-            }
-            return acc
-          }, 0)
-
-          if (stackQuestions > 0) {
-            return {
-              stacksWithQuestions: acc.stacksWithQuestions + 1,
-              numOfQuestions: acc.numOfQuestions + stackQuestions,
-            }
+          return {
+            numOfQuestions: acc.numOfQuestions + stack.elements.length,
           }
-          return acc
         },
-        { stacksWithQuestions: 0, numOfQuestions: 0 }
+        { numOfQuestions: 0 }
       ),
     }
   })
@@ -629,7 +622,8 @@ export async function getCourseData(
   return {
     ...course,
     sessions: reducedSessions,
-    learningElements: reducedLearningElements,
+    practiceQuizzes: reducedPracticeQuizzes,
+    groupActivities: course?.groupActivities,
     microSessions: reducedMicroSessions,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries.length,

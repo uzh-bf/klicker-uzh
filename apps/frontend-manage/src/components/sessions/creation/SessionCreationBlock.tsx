@@ -49,7 +49,13 @@ function SessionCreationBlock({
 
   const [{ isOver }, drop] = useDrop(
     () => ({
-      accept: 'question',
+      accept: [
+        ElementType.Sc,
+        ElementType.Mc,
+        ElementType.Kprim,
+        ElementType.FreeText,
+        ElementType.Numerical,
+      ],
       drop: (item: {
         id: number
         type: string
