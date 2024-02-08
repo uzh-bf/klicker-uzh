@@ -1220,16 +1220,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hintDeletionPracticeQuiz:
         'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
     },
-    toasts: {
-      practiceQuizEdit: 'Übungs-Quiz erfolgreich angepasst!',
-      practiceQuizCreate: 'Übungs-Quiz erfolgreich erstellt!',
-      toCourseOverview: 'Zur <link>Kursübersicht</link>',
-      liveQuizEdit: 'Session erfolgreich angepasst!',
-      liveQuizCreate: 'Session erfolgreich erstellt!',
-      toSessionList: 'Zur <link>Session-Liste</link>',
-      microlearningEdit: 'Microlearning erfolgreich angepasst!',
-      microlearningCreate: 'Microlearning erfolgreich erstellt!',
-    },
   },
   control: {
     login: {
