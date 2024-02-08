@@ -900,7 +900,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       liveQuizTypes:
-        'Live Quizzes können nur Single-Choice, Multiple-Choice, Numerische und Freitext-Fragen enthalten.',
+        'Live Quizzes können nur Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
       liveQuizTimeRestriction:
         'Bitte geben Sie eine gültige Zeitbegrenzung ein.',
       liveQuizMinQuestions:
@@ -940,7 +940,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
-        'Übungs-Quizzes können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.',
+        'Übungs-Quizzes können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen sowie Inhaltselemente und Flashcards enthalten.',
       practiceQuizSolutionReq: 'Bitte fügen Sie nur Fragen mit Lösung hinzu.',
       practiceQuizCreated: 'Übungs-Quiz <b>{name}</b> erfolgreich erstellt.',
       practiceQuizUpdated: 'Übungs-Quiz <b>{name}</b> erfolgreich modifiziert.',
@@ -969,6 +969,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSelectOrder: 'Reihenfolge wählen',
       learningElementSEQUENTIAL: 'Sequenziell',
       learningElementSPACED_REPETITION: 'Spaced Repetition',
+      learningElementCourse:
+        'Bitte erstellen Sie einen Kurs, um ein Übungs-Quiz zu erstellen.',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
     },

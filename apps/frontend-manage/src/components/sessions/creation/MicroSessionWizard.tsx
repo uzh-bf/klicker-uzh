@@ -81,19 +81,17 @@ function MicroSessionWizard({
         yup.object().shape({
           id: yup.string(),
           title: yup.string(),
-          type: yup
-            .string()
-            .oneOf(
-              [
-                ElementType.Sc,
-                ElementType.Mc,
-                ElementType.Kprim,
-                ElementType.Numerical,
-                ElementType.Flashcard,
-                ElementType.Content,
-              ],
-              t('manage.sessionForms.microlearningTypes')
-            ),
+          type: yup.string().oneOf(
+            [
+              ElementType.Sc,
+              ElementType.Mc,
+              ElementType.Kprim,
+              ElementType.Numerical,
+              // ElementType.Flashcard,
+              // ElementType.Content,
+            ],
+            t('manage.sessionForms.microlearningTypes')
+          ),
           hasSampleSolution: yup
             .boolean()
             .isTrue(t('manage.sessionForms.practiceQuizSolutionReq')),

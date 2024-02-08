@@ -900,7 +900,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:
-        'Live quizzes can only contain single choice, multiple choice, numerical and free text questions.',
+        'Live quizzes can only contain single choice, multiple choice, kprim, numerical and free text questions.',
       liveQuizTimeRestriction: 'Please enter a valid time restriction.',
       liveQuizMinQuestions: 'Block must contain at least one question.',
       liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
@@ -938,7 +938,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
-        'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions.',
+        'Practice quizzes can only contain single choice, multiple choice, Kprim and numerical questions as well as content elements and flashcards.',
       practiceQuizSolutionReq: 'Please only add questions with solution.',
       practiceQuizCreated: 'Practice quiz <b>{name}</b> successfully created.',
       practiceQuizUpdated: 'Practice quiz <b>{name}</b> successfully modified.',
@@ -965,6 +965,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizSelectOrder: 'Select order',
       learningElementSEQUENTIAL: 'Sequential',
       learningElementSPACED_REPETITION: 'Spaced Repetition',
+      learningElementCourse:
+        'Please create a course to be able to create practice quizzes.',
       practiceQuizUseCase:
         '<link>Practice quizzes</link> can be used to prepare for exams and to review learning content. As part of a compact evaluation, students receive feedback on their answers.',
     },
