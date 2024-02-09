@@ -93,10 +93,12 @@ const EduIDProvider: Provider | null =
             email: profile.email,
             shortname: generateRandomString(8),
             lastLoginAt: new Date(),
-            catalystInstitutional: profile.swissEduIDLinkedAffiliation?.reduce(
-              reduceCatalyst,
-              false
-            ),
+            catalystInstitutional:
+              profile.email?.endsWith('uzh.ch') ||
+              profile.swissEduIDLinkedAffiliation?.reduce(
+                reduceCatalyst,
+                false
+              ),
           }
         },
       }
@@ -222,10 +224,12 @@ export const authOptions: NextAuthOptions = {
               email: profile.email,
               lastLoginAt: new Date(),
               catalystInstitutional:
-                profile.swissEduIDLinkedAffiliation?.reduce<boolean>(
-                  reduceCatalyst,
-                  false
-                ) ?? false,
+                (profile.email?.endsWith('uzh.ch') ||
+                  profile.swissEduIDLinkedAffiliation?.reduce<boolean>(
+                    reduceCatalyst,
+                    false
+                  )) ??
+                false,
             },
           })
 
