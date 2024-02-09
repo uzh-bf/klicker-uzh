@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.1...v3.1.0-rc.2) (2024-02-09)
+
+
+### Bug Fixes
+
+* **apps/auth:** award catalystInstitutional to addresses under the uzh.ch domain ([8bc34de](https://github.com/uzh-bf/klicker-uzh/commit/8bc34de342049b6cb65e068d9b1c5b029d9a463f))
+
 ## [3.1.0-rc.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.0...v3.1.0-rc.1) (2024-02-08)
 
 
