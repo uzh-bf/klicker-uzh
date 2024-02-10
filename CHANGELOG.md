@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.2...v3.1.0-rc.3) (2024-02-10)
+
+
+### Bug Fixes
+
+* **packages/graphql:** add failure message if old account not found in migration ([a8b3552](https://github.com/uzh-bf/klicker-uzh/commit/a8b35528d453e690a57ce7d5902786e68e2f34d5))
+
 ## [3.1.0-rc.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.1...v3.1.0-rc.2) (2024-02-09)
 
 
