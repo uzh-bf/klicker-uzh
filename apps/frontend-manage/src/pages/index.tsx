@@ -373,7 +373,7 @@ function Index() {
                     })
                   }}
                   tagfilter={filters.tags}
-                  handleTagClick={handleTagClick}
+                  handleTagClick={(tag: string) => handleTagClick(tag, false)}
                   unsetDeletedQuestion={(questionId: number) => {
                     setSelectedQuestions((prev) => {
                       if (prev[questionId]) {

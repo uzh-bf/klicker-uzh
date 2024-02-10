@@ -6,7 +6,7 @@ import { twMerge } from 'tailwind-merge'
 interface QuestionTagsProps {
   tags: Tag[]
   tagfilter?: string[]
-  handleTagClick: (value: string, selected?: boolean) => void
+  handleTagClick: (tagName: string) => void
 }
 
 function QuestionTags({
