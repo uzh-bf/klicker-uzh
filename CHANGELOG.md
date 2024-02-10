@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.5...v3.1.0-rc.6) (2024-02-10)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure external link goes to quiz and not element ([357fa76](https://github.com/uzh-bf/klicker-uzh/commit/357fa76d165051fff96777849dd6cc9f3f4df8f2))
+
 ## [3.1.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.4...v3.1.0-rc.5) (2024-02-10)
 
 
