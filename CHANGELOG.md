@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.4...v3.1.0-rc.5) (2024-02-10)
+
+
+### Enhancements
+
+* add typing to sorting and filtering logic of lecturer question pool ([#4041](https://github.com/uzh-bf/klicker-uzh/issues/4041)) ([ce9a4f4](https://github.com/uzh-bf/klicker-uzh/commit/ce9a4f430cc8d88a22973603b73bf494d84cc517))
+
 ## [3.1.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.3...v3.1.0-rc.4) (2024-02-10)
 
 
