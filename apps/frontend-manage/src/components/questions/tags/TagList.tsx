@@ -33,8 +33,8 @@ interface Props {
   answerFeedbacks: boolean
   handleReset: () => void
   handleTagClick: (tagName: string, isQuestionTag: boolean) => void
-  handleSampleSolutionClick: (selected: boolean) => void
-  handleAnswerFeedbacksClick: (selected: boolean) => void
+  toggleSampleSolutionFilter: () => void
+  toggleAnswerFeedbackFilter: () => void
   handleToggleArchive: () => void
 }
 
@@ -47,8 +47,8 @@ function TagList({
   answerFeedbacks,
   handleTagClick,
   handleReset,
-  handleSampleSolutionClick,
-  handleAnswerFeedbacksClick,
+  toggleSampleSolutionFilter,
+  toggleAnswerFeedbackFilter,
   handleToggleArchive,
 }: Props): React.ReactElement {
   const t = useTranslations()
@@ -144,15 +144,13 @@ function TagList({
             text={t('shared.generic.sampleSolution')}
             icon={faCheckCircle}
             active={sampleSolution}
-            onClick={(): void => handleSampleSolutionClick(!sampleSolution)}
+            onClick={toggleSampleSolutionFilter}
           />
           <TagItem
             text={t('manage.questionPool.answerFeedbacks')}
             icon={faCommentDots}
             active={answerFeedbacks}
-            onClick={(): void => {
-              handleAnswerFeedbacksClick(!answerFeedbacks)
-            }}
+            onClick={toggleAnswerFeedbackFilter}
           />
         </ul>
       )}

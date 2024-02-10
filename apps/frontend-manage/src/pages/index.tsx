@@ -77,8 +77,8 @@ function Index() {
     handleTagClick,
     handleReset,
     handleToggleArchive,
-    handleSampleSolutionClick,
-    handleAnswerFeedbacksClick,
+    toggleSampleSolutionFilter,
+    toggleAnswerFeedbackFilter,
   } = useSortingAndFiltering()
 
   useEffect((): void => {
@@ -105,7 +105,7 @@ function Index() {
   const processedQuestions = useMemo(() => {
     if (dataQuestions?.userQuestions) {
       const items = processItems(
-        dataQuestions?.userQuestions as any, // TODO: fix typing
+        dataQuestions?.userQuestions,
         filters,
         sort,
         index
@@ -167,8 +167,8 @@ function Index() {
                 answerFeedbacks={filters.answerFeedbacks}
                 handleReset={handleReset}
                 handleTagClick={handleTagClick}
-                handleSampleSolutionClick={handleSampleSolutionClick}
-                handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
+                toggleSampleSolutionFilter={toggleSampleSolutionFilter}
+                toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
                 handleToggleArchive={handleToggleArchive}
                 isArchiveActive={filters.archive}
               />
@@ -183,8 +183,8 @@ function Index() {
                 answerFeedbacks={filters.answerFeedbacks}
                 handleReset={handleReset}
                 handleTagClick={handleTagClick}
-                handleSampleSolutionClick={handleSampleSolutionClick}
-                handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
+                toggleSampleSolutionFilter={toggleSampleSolutionFilter}
+                toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
                 handleToggleArchive={handleToggleArchive}
                 isArchiveActive={filters.archive}
               />

@@ -197,15 +197,15 @@ function useSortingAndFiltering() {
         tagName,
         isQuestionTag,
       }),
-    handleSampleSolutionClick: (newValue: boolean): void =>
+    toggleSampleSolutionFilter: (): void =>
       dispatch({
         type: QuestionPoolReducerActionType.SAMPLE_SOLUTION,
-        newValue,
+        newValue: !state.filters.sampleSolution,
       }),
-    handleAnswerFeedbacksClick: (newValue: boolean): void =>
+    toggleAnswerFeedbackFilter: (): void =>
       dispatch({
         type: QuestionPoolReducerActionType.ANSWER_FEEDBACKS,
-        newValue,
+        newValue: !state.filters.answerFeedbacks,
       }),
   }
 }
