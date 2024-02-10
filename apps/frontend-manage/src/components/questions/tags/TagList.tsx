@@ -16,9 +16,10 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { QuestionPoolReducerActionType } from '@lib/hooks/useSortingAndFiltering'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { Suspense, useState } from 'react'
+import React, { Suspense, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SuspendedTags from './SuspendedTags'
 import TagHeader from './TagHeader'
@@ -28,7 +29,7 @@ interface Props {
   compact: boolean
   isArchiveActive: boolean
   activeTags: string[]
-  activeType: string
+  activeType: QuestionPoolReducerActionType
   sampleSolution: boolean
   answerFeedbacks: boolean
   handleReset: () => void
@@ -69,27 +70,28 @@ function TagList({
     NUMERICAL: [faQuestionRegular, faQuestionSolid],
   }
 
+  const resetDisabled = useMemo(
+    () =>
+      !(
+        activeTags.length > 0 ||
+        (activeType &&
+          activeType !== QuestionPoolReducerActionType.UNDEFINED) ||
+        sampleSolution ||
+        answerFeedbacks
+      ),
+    [activeTags, activeType, sampleSolution, answerFeedbacks]
+  )
+
   return (
     <div className="flex flex-col flex-1 h-max max-h-full p-4 md:w-[18rem] border border-uzh-grey-60 border-solid rounded-md text-[0.9rem] overflow-y-auto">
       <Button
         className={{
           root: twMerge(
             'w-full text-base bg-white sm:hover:bg-grey-40 !py-[0.2rem] mb-1.5 flex flex-row items-center justify-center',
-            (activeTags.length > 0 ||
-              activeType ||
-              sampleSolution ||
-              answerFeedbacks) &&
-              'text-primary'
+            !resetDisabled && 'text-primary'
           ),
         }}
-        disabled={
-          !(
-            activeTags.length > 0 ||
-            activeType ||
-            sampleSolution ||
-            answerFeedbacks
-          )
-        }
+        disabled={resetDisabled}
         onClick={(): void => handleReset()}
         data={{ cy: 'reset-question-pool-filters' }}
       >
