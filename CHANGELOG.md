@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.3...v3.1.0-rc.4) (2024-02-10)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that filtering for sample solution and answer feedbacks still works ([#4040](https://github.com/uzh-bf/klicker-uzh/issues/4040)) ([c25ba0e](https://github.com/uzh-bf/klicker-uzh/commit/c25ba0edd8b02294da4267214c00e39b88db0081))
+* **apps/frontend-pwa:** ensure that anonymous participation in practice quiz is possible ([#4039](https://github.com/uzh-bf/klicker-uzh/issues/4039)) ([4d0900d](https://github.com/uzh-bf/klicker-uzh/commit/4d0900d67f15a95b761746881d67b850bad67d1b))
+* **apps/frontend-pwa:** fix arrows on step progress in practice quiz ([#4038](https://github.com/uzh-bf/klicker-uzh/issues/4038)) ([326003d](https://github.com/uzh-bf/klicker-uzh/commit/326003dba6d784e86ecc7ec49f737c4344f6a4e3))
+
 ## [3.1.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.2...v3.1.0-rc.3) (2024-02-10)
 
 
