@@ -92,7 +92,7 @@ function Index() {
 
   const index = useMemo(() => {
     if (dataQuestions?.userQuestions) {
-      return buildIndex('questions', dataQuestions.userQuestions, [
+      return buildIndex('questions', dataQuestions.userQuestions as Element[], [
         'name',
         'createdAt',
       ])

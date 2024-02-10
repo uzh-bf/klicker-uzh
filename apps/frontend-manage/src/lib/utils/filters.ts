@@ -6,13 +6,11 @@ import _every from 'lodash/every'
 // import Fuse from 'fuse.js'
 import { Element } from '@klicker-uzh/graphql/dist/ops'
 import {
-  QuestionPoolReducerActionType,
+  QuestionPoolFilters,
   QuestionPoolSortType,
   SortyByType,
 } from '@lib/hooks/useSortingAndFiltering'
 import * as JsSearch from 'js-search'
-
-const indices = {}
 
 /* const INDEX_CONFIGS = {
   questions: {
@@ -32,9 +30,9 @@ const indices = {}
 
 export function buildIndex(
   name: string,
-  items: any[],
-  searchIndices: any[]
-): any[] {
+  items: Element[],
+  searchIndices: string[]
+): JsSearch.Search {
   // build a new js-search index
   const search = new JsSearch.Search('id')
 
@@ -57,17 +55,15 @@ export function buildIndex(
   // build the index based on the items
   search.addDocuments(items)
 
-  // store the index and return it (singleton)
-  indices[name] = search
   return search
 }
 
 // TODO: optimize for one pass instead of stacked passes
 export function filterQuestions(
   questions: Partial<Element>[],
-  filters: any,
-  index: any
-): any[] {
+  filters: QuestionPoolFilters,
+  index: JsSearch.Search | null
+): Partial<Element>[] {
   let results = [...questions]
 
   // if a title (query) was given, search the index with it
@@ -102,11 +98,7 @@ export function filterQuestions(
   if (filters.type || filters.tags) {
     results = results.filter(({ type, tags }): boolean => {
       // compare the type selected and the type of each question
-      if (
-        filters.type &&
-        filters.type !== QuestionPoolReducerActionType.UNDEFINED &&
-        type !== filters.type
-      ) {
+      if (filters.type && type !== filters.type) {
         return false
       }
 
@@ -145,7 +137,7 @@ export function subtractDates(date1: any, date2: any): any {
 }
 
 export function sortQuestions(
-  questions: any[],
+  questions: Element[],
   sort: QuestionPoolSortType
 ): any[] {
   const factor = sort.asc ? 1 : -1
@@ -169,36 +161,37 @@ export function sortQuestions(
     )
   }
 
-  if (sort.by === SortyByType.USED) {
-    return questions.sort((a, b): number => {
-      if (a.instances.length === 0 || b.instances.length === 0) {
-        if (a.instances.length === 0 && b.instances.length === 0) {
-          return 0
-        }
+  // TODO: if desired, fetch instances / number of instances as well and re-introduce this option
+  // if (sort.by === SortyByType.USED) {
+  //   return questions.sort((a, b): number => {
+  //     if (a.instances.length === 0 || b.instances.length === 0) {
+  //       if (a.instances.length === 0 && b.instances.length === 0) {
+  //         return 0
+  //       }
 
-        return factor * 1
-      }
+  //       return factor * 1
+  //     }
 
-      // compare the dates of the latest created instances
-      // this allows us to sort by "last usage"
-      return (
-        factor *
-        subtractDates(
-          dayjs(a.instances[a.instances.length - 1].createdAt),
-          dayjs(b.instances[b.instances.length - 1].createdAt)
-        )
-      )
-    })
-  }
+  //     // compare the dates of the latest created instances
+  //     // this allows us to sort by "last usage"
+  //     return (
+  //       factor *
+  //       subtractDates(
+  //         dayjs(a.instances[a.instances.length - 1].createdAt),
+  //         dayjs(b.instances[b.instances.length - 1].createdAt)
+  //       )
+  //     )
+  //   })
+  // }
 
   return questions
 }
 
 export function processItems(
   items: Partial<Element>[],
-  filters,
+  filters: QuestionPoolFilters,
   sort: QuestionPoolSortType,
-  index
+  index: JsSearch.Search | null
 ): Partial<Element>[] {
   let processed = items
 
