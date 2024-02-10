@@ -1,6 +1,3 @@
-/* eslint-disable no-unused-vars */
-// TODO: typing
-
 import dayjs from 'dayjs'
 import _every from 'lodash/every'
 // import Fuse from 'fuse.js'
@@ -11,22 +8,6 @@ import {
   SortyByType,
 } from '@lib/hooks/useSortingAndFiltering'
 import * as JsSearch from 'js-search'
-
-/* const INDEX_CONFIGS = {
-  questions: {
-    location: 0,
-    distance: 100,
-    threshold: 0.5,
-    maxPatternLength: 32,
-    minMatchCharLength: 1,
-    tokenize: true,
-    matchAllTokens: true,
-    includeScore: true,
-    includeMatches: true,
-    // TODO: add description to search keys?
-    keys: ['title', 'tags.name', 'type'],
-  },
-} */
 
 export function buildIndex(
   name: string,
@@ -121,25 +102,10 @@ export function filterQuestions(
   return results
 }
 
-// both used for sessions and users
-export function filterByTitle(objects: any[], filters: any, index: any): any[] {
-  let results = objects
-
-  if (filters.title) {
-    results = index.search(filters.title)
-  }
-
-  return results
-}
-
-export function subtractDates(date1: any, date2: any): any {
-  return date1 - date2
-}
-
 export function sortQuestions(
   questions: Element[],
   sort: QuestionPoolSortType
-): any[] {
+): Element[] {
   const factor = sort.asc ? 1 : -1
 
   if (sort.by === SortyByType.TITLE) {
@@ -156,8 +122,7 @@ export function sortQuestions(
 
   if (sort.by === SortyByType.CREATED) {
     return questions.sort(
-      (a, b): number =>
-        factor * subtractDates(dayjs(a.createdAt), dayjs(b.createdAt))
+      (a, b): number => factor * dayjs(a.createdAt).diff(dayjs(b.createdAt))
     )
   }
 

@@ -6,8 +6,8 @@ export type QuestionPoolFilters = {
   tags: string[]
   name: string | null
   type?: ElementType
-  sampleSolution: boolean | null
-  answerFeedbacks: boolean | null
+  sampleSolution: boolean
+  answerFeedbacks: boolean
 }
 
 export type QuestionPoolSortType = {
@@ -55,8 +55,8 @@ const INITIAL_STATE: FilterSortType = {
     archive: false,
     tags: [],
     name: null,
-    sampleSolution: null,
-    answerFeedbacks: null,
+    sampleSolution: false,
+    answerFeedbacks: false,
   },
   sort: {
     asc: false,
