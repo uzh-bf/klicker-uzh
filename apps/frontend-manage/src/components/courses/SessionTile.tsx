@@ -82,7 +82,7 @@ function SessionTile({ session }: SessionTileProps) {
                   pathname: '/',
                   query: {
                     sessionId: session.id,
-                    editMode: WizardMode.LiveSession,
+                    editMode: WizardMode.LiveQuiz,
                   },
                 })
               }

@@ -26,7 +26,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         icon={faUsersLine}
         text={t('manage.questionPool.createLiveQuiz')}
         onClick={() => {
-          setCreationMode(WizardMode.LiveSession)
+          setCreationMode(WizardMode.LiveQuiz)
         }}
         data={{ cy: 'create-live-quiz' }}
       />

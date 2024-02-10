@@ -174,6 +174,7 @@ export type Course = {
   isGamificationEnabled: Scalars['Boolean']['output'];
   isGroupDeadlinePassed?: Maybe<Scalars['Boolean']['output']>;
   leaderboard?: Maybe<Array<LeaderboardEntry>>;
+  learningElements?: Maybe<Array<LearningElement>>;
   microSessions?: Maybe<Array<MicroSession>>;
   name: Scalars['String']['output'];
   notificationEmail?: Maybe<Scalars['String']['output']>;
@@ -534,6 +535,38 @@ export type LeaderboardStatistics = {
   participantCount: Scalars['Int']['output'];
 };
 
+export type LearningElement = {
+  __typename?: 'LearningElement';
+  course?: Maybe<Course>;
+  courseId?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  displayName: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  numOfQuestions?: Maybe<Scalars['Int']['output']>;
+  orderType: LearningElementOrderType;
+  pointsMultiplier: Scalars['Int']['output'];
+  previousPointsAwarded?: Maybe<Scalars['Float']['output']>;
+  previousScore?: Maybe<Scalars['Float']['output']>;
+  previouslyAnswered?: Maybe<Scalars['Int']['output']>;
+  resetTimeDays?: Maybe<Scalars['Int']['output']>;
+  stacks?: Maybe<Array<QuestionStack>>;
+  stacksWithQuestions?: Maybe<Scalars['Int']['output']>;
+  status: LearningElementStatus;
+  totalTrials?: Maybe<Scalars['Int']['output']>;
+};
+
+export enum LearningElementOrderType {
+  LastResponse = 'LAST_RESPONSE',
+  Sequential = 'SEQUENTIAL',
+  Shuffled = 'SHUFFLED'
+}
+
+export enum LearningElementStatus {
+  Draft = 'DRAFT',
+  Published = 'PUBLISHED'
+}
+
 export type LeaveCourseParticipation = {
   __typename?: 'LeaveCourseParticipation';
   id: Scalars['String']['output'];
@@ -590,6 +623,7 @@ export type Mutation = {
   activateSessionBlock?: Maybe<Session>;
   addConfusionTimestep?: Maybe<ConfusionTimestep>;
   bookmarkElementStack?: Maybe<Array<Scalars['Int']['output']>>;
+  bookmarkQuestion?: Maybe<Array<QuestionStack>>;
   cancelSession?: Maybe<Session>;
   changeCourseColor?: Maybe<Course>;
   changeCourseDates?: Maybe<Course>;
@@ -602,6 +636,7 @@ export type Mutation = {
   changeUserLocale?: Maybe<User>;
   createCourse?: Maybe<Course>;
   createFeedback?: Maybe<Feedback>;
+  createLearningElement?: Maybe<LearningElement>;
   createMicroSession?: Maybe<MicroSession>;
   createParticipantAccount?: Maybe<ParticipantTokenData>;
   createParticipantGroup?: Maybe<ParticipantGroup>;
@@ -618,6 +653,7 @@ export type Mutation = {
   deleteSession?: Maybe<Session>;
   deleteTag?: Maybe<Tag>;
   deleteUserLogin?: Maybe<UserLogin>;
+  editLearningElement?: Maybe<LearningElement>;
   editMicroSession?: Maybe<MicroSession>;
   editPracticeQuiz?: Maybe<PracticeQuiz>;
   editSession?: Maybe<Session>;
@@ -685,6 +721,13 @@ export type MutationAddConfusionTimestepArgs = {
 
 
 export type MutationBookmarkElementStackArgs = {
+  bookmarked: Scalars['Boolean']['input'];
+  courseId: Scalars['String']['input'];
+  stackId: Scalars['Int']['input'];
+};
+
+
+export type MutationBookmarkQuestionArgs = {
   bookmarked: Scalars['Boolean']['input'];
   courseId: Scalars['String']['input'];
   stackId: Scalars['Int']['input'];
@@ -767,6 +810,18 @@ export type MutationCreateCourseArgs = {
 export type MutationCreateFeedbackArgs = {
   content: Scalars['String']['input'];
   sessionId: Scalars['String']['input'];
+};
+
+
+export type MutationCreateLearningElementArgs = {
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  order: LearningElementOrderType;
+  resetTimeDays: Scalars['Int']['input'];
+  stacks: Array<StackInput>;
 };
 
 
@@ -873,6 +928,19 @@ export type MutationDeleteTagArgs = {
 
 export type MutationDeleteUserLoginArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type MutationEditLearningElementArgs = {
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  displayName: Scalars['String']['input'];
+  id: Scalars['String']['input'];
+  multiplier: Scalars['Int']['input'];
+  name: Scalars['String']['input'];
+  order: LearningElementOrderType;
+  resetTimeDays: Scalars['Int']['input'];
+  stacks: Array<StackInput>;
 };
 
 
@@ -1339,6 +1407,7 @@ export type ParticipantWithAchievements = {
 
 export type Participation = {
   __typename?: 'Participation';
+  bookmarkedStacks?: Maybe<Array<QuestionStack>>;
   completedMicroSessions: Array<Scalars['String']['output']>;
   course?: Maybe<Course>;
   id: Scalars['Int']['output'];
@@ -1362,12 +1431,6 @@ export type PracticeQuiz = {
   stacks?: Maybe<Array<ElementStack>>;
   status: PublicationStatus;
 };
-
-export enum PracticeQuizOrderType {
-  LastResponse = 'LAST_RESPONSE',
-  Sequential = 'SEQUENTIAL',
-  Shuffled = 'SHUFFLED'
-}
 
 export enum PublicationStatus {
   Draft = 'DRAFT',
@@ -1394,6 +1457,8 @@ export type Query = {
   coursePracticeQuiz?: Maybe<PracticeQuiz>;
   feedbacks?: Maybe<Array<Feedback>>;
   getBookmarkedElementStacks?: Maybe<Array<ElementStack>>;
+  getBookmarkedQuestions?: Maybe<Array<QuestionStack>>;
+  getBookmarksLearningElement?: Maybe<Array<QuestionStack>>;
   getBookmarksPracticeQuiz?: Maybe<Array<Scalars['Int']['output']>>;
   getCourseOverviewData?: Maybe<ParticipantLearningData>;
   getLoginToken?: Maybe<User>;
@@ -1401,6 +1466,7 @@ export type Query = {
   getPracticeCourses?: Maybe<Array<Course>>;
   getPracticeQuizList?: Maybe<Array<Course>>;
   groupActivityDetails?: Maybe<GroupActivityDetails>;
+  learningElement?: Maybe<LearningElement>;
   liveSession?: Maybe<Session>;
   microSession?: Maybe<MicroSession>;
   participantCourses?: Maybe<Array<Course>>;
@@ -1410,6 +1476,7 @@ export type Query = {
   practiceQuiz?: Maybe<PracticeQuiz>;
   publicParticipantProfile?: Maybe<Participant>;
   question?: Maybe<Element>;
+  questionStack?: Maybe<QuestionStack>;
   runningSessions?: Maybe<Array<Session>>;
   self?: Maybe<Participant>;
   selfWithAchievements?: Maybe<ParticipantWithAchievements>;
@@ -1486,6 +1553,17 @@ export type QueryGetBookmarkedElementStacksArgs = {
 };
 
 
+export type QueryGetBookmarkedQuestionsArgs = {
+  courseId: Scalars['String']['input'];
+};
+
+
+export type QueryGetBookmarksLearningElementArgs = {
+  courseId: Scalars['String']['input'];
+  elementId: Scalars['String']['input'];
+};
+
+
 export type QueryGetBookmarksPracticeQuizArgs = {
   courseId: Scalars['String']['input'];
   quizId?: InputMaybe<Scalars['String']['input']>;
@@ -1505,6 +1583,11 @@ export type QueryGetParticipationArgs = {
 export type QueryGroupActivityDetailsArgs = {
   activityId: Scalars['String']['input'];
   groupId: Scalars['String']['input'];
+};
+
+
+export type QueryLearningElementArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -1544,6 +1627,11 @@ export type QueryPublicParticipantProfileArgs = {
 
 
 export type QueryQuestionArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QueryQuestionStackArgs = {
   id: Scalars['Int']['input'];
 };
 
@@ -1614,6 +1702,23 @@ export type QuestionResponseDetail = {
   __typename?: 'QuestionResponseDetail';
   id: Scalars['Int']['output'];
 };
+
+export type QuestionStack = {
+  __typename?: 'QuestionStack';
+  description?: Maybe<Scalars['String']['output']>;
+  displayName?: Maybe<Scalars['String']['output']>;
+  elements?: Maybe<Array<StackElement>>;
+  id: Scalars['Int']['output'];
+  order?: Maybe<Scalars['Int']['output']>;
+  type: QuestionStackType;
+};
+
+export enum QuestionStackType {
+  GroupActivity = 'GROUP_ACTIVITY',
+  LearningElement = 'LEARNING_ELEMENT',
+  LiveSession = 'LIVE_SESSION',
+  MicroSession = 'MICRO_SESSION'
+}
 
 export type ResponseInput = {
   choices?: InputMaybe<Array<Scalars['Int']['input']>>;
@@ -1698,6 +1803,19 @@ export type SolutionRangeInput = {
   min?: InputMaybe<Scalars['Float']['input']>;
 };
 
+export type StackElement = {
+  __typename?: 'StackElement';
+  id: Scalars['Int']['output'];
+  mdContent?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<Scalars['Int']['output']>;
+  questionInstance?: Maybe<QuestionInstance>;
+};
+
+export type StackElementInput = {
+  mdContent?: InputMaybe<Scalars['String']['input']>;
+  questionId?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type StackElementsInput = {
   elementId: Scalars['Int']['input'];
   order: Scalars['Int']['input'];
@@ -1718,6 +1836,10 @@ export enum StackFeedbackStatus {
   Partial = 'partial',
   Unanswered = 'unanswered'
 }
+
+export type StackInput = {
+  elements: Array<StackElementInput>;
+};
 
 export type StackResponseInput = {
   choicesResponse?: InputMaybe<Array<Scalars['Int']['input']>>;

@@ -17,7 +17,7 @@ import MicroSessionWizard from './MicroSessionWizard'
 import PracticeQuizWizard from './PracticeQuizWizard'
 
 export enum WizardMode {
-  LiveSession = 'liveSession',
+  LiveQuiz = 'liveQuiz',
   Microlearning = 'microlearning',
   PracticeQuiz = 'practiceQuiz',
   GroupActivity = 'groupActivity',
@@ -49,8 +49,8 @@ function SessionCreation({
       variables: { sessionId: sessionId || '' },
       skip:
         !sessionId ||
-        (editMode !== WizardMode.LiveSession &&
-          duplicationMode !== WizardMode.LiveSession),
+        (editMode !== WizardMode.LiveQuiz &&
+          duplicationMode !== WizardMode.LiveQuiz),
     }
   )
   const { data: dataMicroSession, loading: microLoading } = useQuery(
@@ -86,8 +86,8 @@ function SessionCreation({
   if (
     (!errorCourses && loadingCourses) ||
     (sessionId &&
-      (editMode === WizardMode.LiveSession ||
-        duplicationMode === WizardMode.LiveSession) &&
+      (editMode === WizardMode.LiveQuiz ||
+        duplicationMode === WizardMode.LiveQuiz) &&
       liveLoading) ||
     (sessionId && editMode === WizardMode.Microlearning && microLoading) ||
     (sessionId && editMode === WizardMode.PracticeQuiz && learningLoading)
@@ -98,14 +98,14 @@ function SessionCreation({
   return (
     <div className="flex flex-col justify-center print-hidden">
       <div className="w-full h-full rounded-lg">
-        {creationMode === WizardMode.LiveSession && (
+        {creationMode === WizardMode.LiveQuiz && (
           <LiveSessionWizard
             title={t('shared.generic.liveQuiz')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
               dataLiveSession?.liveSession
-                ? duplicationMode === WizardMode.LiveSession
+                ? duplicationMode === WizardMode.LiveQuiz
                   ? ({
                       ...dataLiveSession?.liveSession,
                       name: `${dataLiveSession.liveSession.name} (Copy)`,
@@ -116,7 +116,7 @@ function SessionCreation({
             }
             selection={selection}
             resetSelection={resetSelection}
-            editMode={editMode === WizardMode.LiveSession}
+            editMode={editMode === WizardMode.LiveQuiz}
           />
         )}
         {creationMode === WizardMode.Microlearning && (

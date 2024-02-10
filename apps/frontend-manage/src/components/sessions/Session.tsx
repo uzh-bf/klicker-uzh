@@ -195,7 +195,7 @@ function Session({ session }: SessionProps) {
                     pathname: '/',
                     query: {
                       sessionId: session.id,
-                      duplicationMode: WizardMode.LiveSession,
+                      duplicationMode: WizardMode.LiveQuiz,
                     },
                   })
                 }
@@ -218,7 +218,7 @@ function Session({ session }: SessionProps) {
                         pathname: '/',
                         query: {
                           sessionId: session.id,
-                          editMode: WizardMode.LiveSession,
+                          editMode: WizardMode.LiveQuiz,
                         },
                       })
                     }
