@@ -41,15 +41,15 @@ export function buildIndex(
 
 // TODO: optimize for one pass instead of stacked passes
 export function filterQuestions(
-  questions: Partial<Element>[],
+  questions: Element[],
   filters: QuestionPoolFilters,
   index: JsSearch.Search | null
-): Partial<Element>[] {
+): Element[] {
   let results = [...questions]
 
   // if a title (query) was given, search the index with it
   if (index && filters.name) {
-    results = index.search(filters.name)
+    results = index.search(filters.name) as Element[]
   }
 
   // only reduce the shown questions to the non-archived ones, if the archive filter is not active
@@ -153,11 +153,11 @@ export function sortQuestions(
 }
 
 export function processItems(
-  items: Partial<Element>[],
+  items: Element[],
   filters: QuestionPoolFilters,
   sort: QuestionPoolSortType,
   index: JsSearch.Search | null
-): Partial<Element>[] {
+): Element[] {
   let processed = items
 
   if (filters) {
