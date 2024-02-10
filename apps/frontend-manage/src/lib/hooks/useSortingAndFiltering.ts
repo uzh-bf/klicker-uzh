@@ -1,13 +1,52 @@
-// TODO: typing
-
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useReducer } from 'react'
 
-const INITIAL_STATE = {
+export type QuestionPoolFilterType = {
+  archive: boolean
+  tags: string[]
+  name: string | null
+  type?: string | null
+  sampleSolution: boolean | null
+  answerFeedbacks: boolean | null
+}
+
+type SortType = {
+  asc: boolean
+  by: string
+}
+
+type FilterSortType = {
+  filters: QuestionPoolFilterType
+  sort: SortType
+}
+
+type ReducerAction = {
+  type: QuestionPoolReducerActionType
+  tagName?: string
+  questionType?: ElementType
+  newValue?: boolean
+  name?: string
+  by?: string
+}
+
+export enum QuestionPoolReducerActionType {
+  TAG_CLICK = 'TAG_CLICK',
+  TOGGLE_ARCHIVE = 'TOGGLE_ARCHIVE',
+  SORT_ORDER = 'SORT_ORDER',
+  SORT_BY = 'SORT_BY',
+  SEARCH = 'SEARCH',
+  SAMPLE_SOLUTION = 'SAMPLE_SOLUTION',
+  ANSWER_FEEDBACKS = 'ANSWER_FEEDBACKS',
+  RESET = 'RESET',
+  UNDEFINED = 'UNDEFINED',
+}
+
+const INITIAL_STATE: FilterSortType = {
   filters: {
+    type: QuestionPoolReducerActionType.UNDEFINED,
     archive: false,
     tags: [],
     name: null,
-    type: null,
     sampleSolution: null,
     answerFeedbacks: null,
   },
@@ -17,9 +56,9 @@ const INITIAL_STATE = {
   },
 }
 
-function reducer(state, action): any {
+function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
   switch (action.type) {
-    case 'TAG_CLICK':
+    case QuestionPoolReducerActionType.TAG_CLICK:
       // if the changed tag is a question type tag
       if (action.questionType) {
         if (state.filters.type === action.tagName) {
@@ -31,7 +70,7 @@ function reducer(state, action): any {
       }
 
       // remove the tag from active tags
-      if (state.filters.tags.includes(action.tagName)) {
+      if (action.tagName && state.filters.tags.includes(action.tagName)) {
         return {
           ...state,
           filters: {
@@ -48,11 +87,11 @@ function reducer(state, action): any {
         ...state,
         filters: {
           ...state.filters,
-          tags: [...state.filters.tags, action.tagName],
+          tags: [...state.filters.tags, action.tagName!],
         },
       }
 
-    case 'TOGGLE_ARCHIVE':
+    case QuestionPoolReducerActionType.TOGGLE_ARCHIVE:
       return {
         ...state,
         filters: {
@@ -64,7 +103,7 @@ function reducer(state, action): any {
         },
       }
 
-    case 'SORT_ORDER':
+    case QuestionPoolReducerActionType.SORT_ORDER:
       return {
         ...state,
         sort: {
@@ -73,25 +112,25 @@ function reducer(state, action): any {
         },
       }
 
-    case 'SORT_BY':
+    case QuestionPoolReducerActionType.SORT_BY:
       return {
         ...state,
         sort: {
           ...state.sort,
-          by: action.by,
+          by: action.by!,
         },
       }
 
-    case 'SEARCH':
+    case QuestionPoolReducerActionType.SEARCH:
       return {
         ...state,
         filters: {
           ...state.filters,
-          name: action.name,
+          name: action.name!,
         },
       }
 
-    case 'SAMPLE_SOLUTION':
+    case QuestionPoolReducerActionType.SAMPLE_SOLUTION:
       return {
         ...state,
         filters: {
@@ -103,7 +142,7 @@ function reducer(state, action): any {
         },
       }
 
-    case 'ANSWER_FEEDBACKS':
+    case QuestionPoolReducerActionType.ANSWER_FEEDBACKS:
       return {
         ...state,
         filters: {
@@ -115,7 +154,7 @@ function reducer(state, action): any {
         },
       }
 
-    case 'RESET':
+    case QuestionPoolReducerActionType.RESET:
       return { ...state, filters: INITIAL_STATE.filters }
 
     default:
@@ -123,23 +162,40 @@ function reducer(state, action): any {
   }
 }
 
-function useSortingAndFiltering(): any {
+function useSortingAndFiltering() {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE)
 
   return {
     ...state,
-    handleReset: (): void => dispatch({ type: 'RESET' }),
-    handleSearch: (name: string): void => dispatch({ type: 'SEARCH', name }),
-    handleSortByChange: (by): void => dispatch({ type: 'SORT_BY', by }),
-    handleSortOrderToggle: (): void => dispatch({ type: 'SORT_ORDER' }),
+    handleReset: (): void =>
+      dispatch({ type: QuestionPoolReducerActionType.RESET }),
+    handleSearch: (name: string): void =>
+      dispatch({ type: QuestionPoolReducerActionType.SEARCH, name }),
+    handleSortByChange: (by: string): void =>
+      dispatch({ type: QuestionPoolReducerActionType.SORT_BY, by }),
+    handleSortOrderToggle: (): void =>
+      dispatch({ type: QuestionPoolReducerActionType.SORT_ORDER }),
     handleToggleArchive: (newValue: boolean): void =>
-      dispatch({ type: 'TOGGLE_ARCHIVE', newValue }),
-    handleTagClick: (tagName: string, questionType): void =>
-      dispatch({ type: 'TAG_CLICK', tagName, questionType }),
+      dispatch({
+        type: QuestionPoolReducerActionType.TOGGLE_ARCHIVE,
+        newValue,
+      }),
+    handleTagClick: (tagName: string, questionType: ElementType): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.TAG_CLICK,
+        tagName,
+        questionType,
+      }),
     handleSampleSolutionClick: (newValue: boolean): void =>
-      dispatch({ type: 'SAMPLE_SOLUTION', newValue }),
+      dispatch({
+        type: QuestionPoolReducerActionType.SAMPLE_SOLUTION,
+        newValue,
+      }),
     handleAnswerFeedbacksClick: (newValue: boolean): void =>
-      dispatch({ type: 'ANSWER_FEEDBACKS', newValue }),
+      dispatch({
+        type: QuestionPoolReducerActionType.ANSWER_FEEDBACKS,
+        newValue,
+      }),
   }
 }
 

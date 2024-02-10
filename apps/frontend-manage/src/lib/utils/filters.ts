@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import _every from 'lodash/every'
 // import Fuse from 'fuse.js'
 import { Element } from '@klicker-uzh/graphql/dist/ops'
+import { QuestionPoolReducerActionType } from '@lib/hooks/useSortingAndFiltering'
 import * as JsSearch from 'js-search'
 
 const indices = {}
@@ -34,7 +35,7 @@ export function buildIndex(
   const search = new JsSearch.Search('id')
 
   // use the TF-IDF strategy
-  search.searchIndex = new JsSearch.TfIdfSearchIndex()
+  search.searchIndex = new JsSearch.TfIdfSearchIndex('id')
 
   // look for all substrings, not only prefixed
   search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
@@ -59,7 +60,7 @@ export function buildIndex(
 
 // TODO: optimize for one pass instead of stacked passes
 export function filterQuestions(
-  questions: any[],
+  questions: Partial<Element>[],
   filters: any,
   index: any
 ): any[] {
@@ -97,15 +98,21 @@ export function filterQuestions(
   if (filters.type || filters.tags) {
     results = results.filter(({ type, tags }): boolean => {
       // compare the type selected and the type of each question
-      if (filters.type && type !== filters.type) {
+      if (
+        filters.type &&
+        filters.type !== QuestionPoolReducerActionType.UNDEFINED &&
+        type !== filters.type
+      ) {
         return false
       }
 
       // compare the tags selected and check whether the question fulfills all of them
       if (
         filters.tags &&
-        !_every(filters.tags, (tag): boolean =>
-          tags.map((t): string => t.name).includes(tag)
+        !_every(
+          filters.tags,
+          (tag): boolean =>
+            tags?.map((t): string => t.name).includes(tag) ?? false
         )
       ) {
         return false
@@ -180,7 +187,12 @@ export function sortQuestions(questions: any[], sort: any): any[] {
   return questions
 }
 
-export function processItems(items, filters, sort, index): Element[] {
+export function processItems(
+  items: Partial<Element>[],
+  filters,
+  sort,
+  index
+): Partial<Element>[] {
   let processed = items
 
   if (filters) {
