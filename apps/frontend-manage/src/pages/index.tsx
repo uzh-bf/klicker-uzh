@@ -7,7 +7,9 @@ import {
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
 import { Suspense, useEffect, useMemo, useState } from 'react'
-import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
+import useSortingAndFiltering, {
+  SortyByType,
+} from '../lib/hooks/useSortingAndFiltering'
 
 import {
   faArchive,
@@ -283,19 +285,19 @@ function Index() {
                       placeholder={t('manage.general.sortBy')}
                       items={[
                         {
-                          value: 'CREATED',
+                          value: SortyByType.CREATED,
                           label: t('manage.general.date'),
                           data: { cy: 'sort-by-question-pool-created' },
                         },
                         {
-                          value: 'TITLE',
+                          value: SortyByType.TITLE,
                           label: t('manage.general.title'),
                           data: { cy: 'sort-by-question-pool-title' },
                         },
                       ]}
                       onChange={(newSortBy: string) => {
                         setSortBy(newSortBy)
-                        handleSortByChange(newSortBy)
+                        handleSortByChange(newSortBy as SortyByType)
                       }}
                       data={{ cy: 'sort-by-question-pool' }}
                     />
