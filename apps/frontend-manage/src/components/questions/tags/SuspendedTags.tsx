@@ -10,7 +10,7 @@ import UserTag from './UserTag'
 
 interface Props {
   activeTags: string[]
-  handleTagClick: (value: string, selected?: boolean) => void
+  handleTagClick: (tagName: string, isQuestionTag: boolean) => void
 }
 
 function SuspendedTags({ activeTags, handleTagClick }: Props) {
@@ -39,7 +39,7 @@ function SuspendedTags({ activeTags, handleTagClick }: Props) {
           <UserTag
             key={tag.id}
             tag={tag}
-            handleTagClick={handleTagClick}
+            handleTagClick={(tag: string) => handleTagClick(tag, false)}
             active={activeTags.includes(tag.name)}
             onMoveDown={
               ix < data.userTags!.length - 1

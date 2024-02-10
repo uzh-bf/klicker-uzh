@@ -43,7 +43,7 @@ type FilterSortType = {
 type ReducerAction = {
   type: QuestionPoolReducerActionType
   tagName?: ElementType | string
-  questionType?: ElementType
+  isQuestionTag?: boolean
   newValue?: boolean
   name?: string
   by?: SortyByType
@@ -68,7 +68,7 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
   switch (action.type) {
     case QuestionPoolReducerActionType.TAG_CLICK:
       // if the changed tag is a question type tag
-      if (action.questionType) {
+      if (action.isQuestionTag) {
         if (state.filters.type === action.tagName) {
           return { ...state, filters: { ...state.filters, type: undefined } }
         }
@@ -191,11 +191,11 @@ function useSortingAndFiltering() {
         type: QuestionPoolReducerActionType.TOGGLE_ARCHIVE,
         newValue,
       }),
-    handleTagClick: (tagName: string, questionType: ElementType): void =>
+    handleTagClick: (tagName: string, isQuestionTag: boolean): void =>
       dispatch({
         type: QuestionPoolReducerActionType.TAG_CLICK,
         tagName,
-        questionType,
+        isQuestionTag,
       }),
     handleSampleSolutionClick: (newValue: boolean): void =>
       dispatch({
