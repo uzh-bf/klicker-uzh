@@ -67,7 +67,7 @@ function PracticeQuizPage({ courseId, id }: Props) {
         showResetLocalStorage
       />
       <Footer
-        browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/element/${id}`}
+        browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${id}`}
       />
     </Layout>
   )
