@@ -1136,7 +1136,8 @@ export async function processQuizInfo(fileName: string) {
 export async function prepareFlashcardsFromFile(
   prismaClient: Prisma.PrismaClient,
   fileName: string,
-  userId: string
+  userId: string,
+  tagId?: number
 ) {
   const quizInfo = await processQuizInfo(fileName)
 
@@ -1148,6 +1149,14 @@ export async function prepareFlashcardsFromFile(
         },
         create: {
           ...data,
+          tags:
+            typeof tagId === 'number'
+              ? {
+                  connect: {
+                    id: tagId,
+                  },
+                }
+              : undefined,
           owner: {
             connect: {
               id: userId,
@@ -1156,6 +1165,14 @@ export async function prepareFlashcardsFromFile(
         },
         update: {
           ...data,
+          tags:
+            typeof tagId === 'number'
+              ? {
+                  connect: {
+                    id: tagId,
+                  },
+                }
+              : undefined,
           owner: {
             connect: {
               id: userId,
