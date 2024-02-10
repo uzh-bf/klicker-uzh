@@ -43,9 +43,7 @@ function StepProgressWithScoring({
         displayOffsetRight={(items.length ?? 0) > 5 ? 1 : undefined}
         value={currentIx === -1 ? undefined : currentIx}
         items={items}
-        onItemClick={(ix: number) =>
-          currentIx === -1 ? setCurrentIx(0) : setCurrentIx(ix)
-        }
+        onItemClick={(ix: number) => setCurrentIx(ix)}
         data={{ cy: 'practice-quiz-progress' }}
         className={{ root: 'w-full' }}
         formatter={({ element, ix }) => {
