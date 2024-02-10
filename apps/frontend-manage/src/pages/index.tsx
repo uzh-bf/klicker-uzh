@@ -103,7 +103,7 @@ function Index() {
   const processedQuestions = useMemo(() => {
     if (dataQuestions?.userQuestions) {
       const items = processItems(
-        dataQuestions?.userQuestions,
+        dataQuestions?.userQuestions as any, // TODO: fix typing
         filters,
         sort,
         index

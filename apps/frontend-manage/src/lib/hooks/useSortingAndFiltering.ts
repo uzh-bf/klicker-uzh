@@ -17,7 +17,7 @@ type SortType = {
 
 type FilterSortType = {
   filters: QuestionPoolFilterType
-  sort: SortType
+  sort: QuestionPoolSortType
 }
 
 type ReducerAction = {
@@ -26,7 +26,20 @@ type ReducerAction = {
   questionType?: ElementType
   newValue?: boolean
   name?: string
-  by?: string
+  by?: SortyByType
+}
+
+export type QuestionPoolSortType = {
+  asc: boolean
+  by: SortyByType
+}
+
+export enum SortyByType {
+  TITLE = 'TITLE',
+  TYPE = 'TYPE',
+  CREATED = 'CREATED',
+  USED = 'USED',
+  UNDEFINED = 'UNDEFINED',
 }
 
 export enum QuestionPoolReducerActionType {
@@ -52,7 +65,7 @@ const INITIAL_STATE: FilterSortType = {
   },
   sort: {
     asc: false,
-    by: '',
+    by: SortyByType.UNDEFINED,
   },
 }
 
@@ -171,7 +184,7 @@ function useSortingAndFiltering() {
       dispatch({ type: QuestionPoolReducerActionType.RESET }),
     handleSearch: (name: string): void =>
       dispatch({ type: QuestionPoolReducerActionType.SEARCH, name }),
-    handleSortByChange: (by: string): void =>
+    handleSortByChange: (by: SortyByType): void =>
       dispatch({ type: QuestionPoolReducerActionType.SORT_BY, by }),
     handleSortOrderToggle: (): void =>
       dispatch({ type: QuestionPoolReducerActionType.SORT_ORDER }),

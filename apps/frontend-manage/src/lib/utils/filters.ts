@@ -5,7 +5,11 @@ import dayjs from 'dayjs'
 import _every from 'lodash/every'
 // import Fuse from 'fuse.js'
 import { Element } from '@klicker-uzh/graphql/dist/ops'
-import { QuestionPoolReducerActionType } from '@lib/hooks/useSortingAndFiltering'
+import {
+  QuestionPoolReducerActionType,
+  QuestionPoolSortType,
+  SortyByType,
+} from '@lib/hooks/useSortingAndFiltering'
 import * as JsSearch from 'js-search'
 
 const indices = {}
@@ -140,29 +144,32 @@ export function subtractDates(date1: any, date2: any): any {
   return date1 - date2
 }
 
-export function sortQuestions(questions: any[], sort: any): any[] {
+export function sortQuestions(
+  questions: any[],
+  sort: QuestionPoolSortType
+): any[] {
   const factor = sort.asc ? 1 : -1
 
-  if (sort.by === 'TITLE') {
+  if (sort.by === SortyByType.TITLE) {
     return questions.sort(
       (a, b): number => factor * a.name.localeCompare(b.name)
     )
   }
 
-  if (sort.by === 'TYPE') {
+  if (sort.by === SortyByType.TYPE) {
     return questions.sort(
       (a, b): number => factor * a.type.localeCompare(b.type)
     )
   }
 
-  if (sort.by === 'CREATED') {
+  if (sort.by === SortyByType.CREATED) {
     return questions.sort(
       (a, b): number =>
         factor * subtractDates(dayjs(a.createdAt), dayjs(b.createdAt))
     )
   }
 
-  if (sort.by === 'USED') {
+  if (sort.by === SortyByType.USED) {
     return questions.sort((a, b): number => {
       if (a.instances.length === 0 || b.instances.length === 0) {
         if (a.instances.length === 0 && b.instances.length === 0) {
@@ -190,7 +197,7 @@ export function sortQuestions(questions: any[], sort: any): any[] {
 export function processItems(
   items: Partial<Element>[],
   filters,
-  sort,
+  sort: QuestionPoolSortType,
   index
 ): Partial<Element>[] {
   let processed = items
