@@ -5,6 +5,9 @@ query GetUserQuestions {
     type
     content
 
+    pointsMultiplier
+    version
+
     isArchived
     isDeleted
     createdAt
@@ -15,6 +18,7 @@ query GetUserQuestions {
     tags {
       id
       name
+      order
     }
   }
 }

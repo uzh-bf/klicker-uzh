@@ -43,7 +43,7 @@ interface Props {
   id: number
   isArchived?: boolean
   tags?: Tag[]
-  handleTagClick: (value: string, selected?: boolean) => void
+  handleTagClick: (tagName: string) => void
   title: string
   type: ElementType
   content: string
@@ -113,7 +113,7 @@ function Question({
           <div className="flex flex-col flex-1 gap-1">
             <div className="flex flex-row items-center flex-none gap-2 text-lg">
               <a
-                className="flex-1 text-xl font-bold cursor-pointer text-primary-strong sm:hover:text-uzh-blue-100 inline-flex items-center"
+                className="inline-flex items-center flex-1 text-xl font-bold cursor-pointer text-primary-strong sm:hover:text-uzh-blue-100"
                 role="button"
                 tabIndex={0}
                 type="button"
