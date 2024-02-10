@@ -16,7 +16,6 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { QuestionPoolReducerActionType } from '@lib/hooks/useSortingAndFiltering'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { Suspense, useMemo, useState } from 'react'
@@ -29,7 +28,7 @@ interface Props {
   compact: boolean
   isArchiveActive: boolean
   activeTags: string[]
-  activeType: QuestionPoolReducerActionType
+  activeType?: ElementType
   sampleSolution: boolean
   answerFeedbacks: boolean
   handleReset: () => void
@@ -74,8 +73,7 @@ function TagList({
     () =>
       !(
         activeTags.length > 0 ||
-        (activeType &&
-          activeType !== QuestionPoolReducerActionType.UNDEFINED) ||
+        activeType ||
         sampleSolution ||
         answerFeedbacks
       ),

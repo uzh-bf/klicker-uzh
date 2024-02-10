@@ -1,32 +1,13 @@
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useReducer } from 'react'
 
-export type QuestionPoolFilterType = {
+export type QuestionPoolFilters = {
   archive: boolean
   tags: string[]
   name: string | null
-  type?: string | null
+  type?: ElementType
   sampleSolution: boolean | null
   answerFeedbacks: boolean | null
-}
-
-type SortType = {
-  asc: boolean
-  by: string
-}
-
-type FilterSortType = {
-  filters: QuestionPoolFilterType
-  sort: QuestionPoolSortType
-}
-
-type ReducerAction = {
-  type: QuestionPoolReducerActionType
-  tagName?: string
-  questionType?: ElementType
-  newValue?: boolean
-  name?: string
-  by?: SortyByType
 }
 
 export type QuestionPoolSortType = {
@@ -54,9 +35,23 @@ export enum QuestionPoolReducerActionType {
   UNDEFINED = 'UNDEFINED',
 }
 
+type FilterSortType = {
+  filters: QuestionPoolFilters
+  sort: QuestionPoolSortType
+}
+
+type ReducerAction = {
+  type: QuestionPoolReducerActionType
+  tagName?: ElementType | string
+  questionType?: ElementType
+  newValue?: boolean
+  name?: string
+  by?: SortyByType
+}
+
 const INITIAL_STATE: FilterSortType = {
   filters: {
-    type: QuestionPoolReducerActionType.UNDEFINED,
+    type: undefined,
     archive: false,
     tags: [],
     name: null,
@@ -75,11 +70,14 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
       // if the changed tag is a question type tag
       if (action.questionType) {
         if (state.filters.type === action.tagName) {
-          return { ...state, filters: { ...state.filters, type: null } }
+          return { ...state, filters: { ...state.filters, type: undefined } }
         }
 
         // add the tag to active tags
-        return { ...state, filters: { ...state.filters, type: action.tagName } }
+        return {
+          ...state,
+          filters: { ...state.filters, type: action.tagName as ElementType },
+        }
       }
 
       // remove the tag from active tags
