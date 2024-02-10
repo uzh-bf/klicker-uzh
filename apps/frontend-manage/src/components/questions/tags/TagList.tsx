@@ -33,8 +33,8 @@ interface Props {
   answerFeedbacks: boolean
   handleReset: () => void
   handleTagClick: (tagName: string, isQuestionTag: boolean) => void
-  handleSampleSolutionClick: (selected?: boolean) => void
-  handleAnswerFeedbacksClick: (selected?: boolean) => void
+  handleSampleSolutionClick: (selected: boolean) => void
+  handleAnswerFeedbacksClick: (selected: boolean) => void
   handleToggleArchive: () => void
 }
 

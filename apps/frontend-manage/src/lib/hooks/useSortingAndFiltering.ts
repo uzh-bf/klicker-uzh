@@ -186,10 +186,10 @@ function useSortingAndFiltering() {
       dispatch({ type: QuestionPoolReducerActionType.SORT_BY, by }),
     handleSortOrderToggle: (): void =>
       dispatch({ type: QuestionPoolReducerActionType.SORT_ORDER }),
-    handleToggleArchive: (newValue: boolean): void =>
+    handleToggleArchive: (): void =>
       dispatch({
         type: QuestionPoolReducerActionType.TOGGLE_ARCHIVE,
-        newValue,
+        newValue: !state.filters.archive,
       }),
     handleTagClick: (tagName: string, isQuestionTag: boolean): void =>
       dispatch({
