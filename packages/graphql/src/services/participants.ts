@@ -577,8 +577,8 @@ export async function flagQuestion(
     },
     body: JSON.stringify({
       elementType: questionInstance?.stackElement?.stack.learningElement
-        ? 'Learning Element'
-        : 'Micro-Session',
+        ? 'Practice Quiz'
+        : 'Microlearning',
       elementId:
         questionInstance?.stackElement?.stack?.learningElement?.id ||
         questionInstance?.microSession?.id,

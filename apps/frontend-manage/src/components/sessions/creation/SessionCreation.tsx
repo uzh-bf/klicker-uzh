@@ -2,11 +2,10 @@ import { useQuery } from '@apollo/client'
 import {
   Course,
   Element,
-  GetLearningElementDocument,
+  GetPracticeQuizDocument,
   GetSingleLiveSessionDocument,
   GetSingleMicroSessionDocument,
   GetUserCoursesDocument,
-  LearningElement,
   MicroSession,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -54,7 +53,7 @@ function SessionCreation({
     }
   )
   const { data: dataLearningElement, loading: learningLoading } = useQuery(
-    GetLearningElementDocument,
+    GetPracticeQuizDocument,
     {
       variables: { id: sessionId || '' },
       skip: !sessionId || editMode !== 'learningElement',
@@ -92,7 +91,7 @@ function SessionCreation({
       <div className="w-full h-full rounded-lg">
         {creationMode === 'liveSession' && (
           <LiveSessionWizard
-            title={t('shared.generic.liveSession')}
+            title={t('shared.generic.liveQuiz')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
@@ -124,13 +123,10 @@ function SessionCreation({
         )}
         {creationMode === 'learningElement' && (
           <LearningElementWizard
-            title={t('shared.generic.learningElement')}
+            title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
-            initialValues={
-              (dataLearningElement?.learningElement as LearningElement) ??
-              undefined
-            }
+            initialValues={dataLearningElement?.practiceQuiz ?? undefined}
           />
         )}
       </div>

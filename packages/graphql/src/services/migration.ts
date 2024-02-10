@@ -48,6 +48,10 @@ export async function requestMigrationToken(
       userData.email,
       process.env.LISTMONK_TEMPLATE_MIGRATION_EMAIL_NOT_AVAILABLE as string
     )
+    await sendTeamsNotifications(
+      'graphql/migration',
+      `[${process.env.NODE_ENV}] Migration Failed for E-Mail ${args.email} in v2 with Edu-ID ${userData.email} (v3). V2 account not found.`
+    )
 
     throw new Error(`No matching V2 user found for ${args.email}`)
   }

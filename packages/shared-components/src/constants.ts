@@ -36,6 +36,13 @@ export const QUESTION_GROUPS: Record<string, string[]> = {
   FREE_TEXT: [ElementType.FreeText],
   NUMERICAL: [ElementType.Numerical],
   FREE: [ElementType.FreeText, ElementType.Numerical],
+  ALL: [
+    ElementType.Sc,
+    ElementType.Mc,
+    ElementType.Kprim,
+    ElementType.FreeText,
+    ElementType.Numerical,
+  ],
   WITH_PERCENTAGES: [
     ElementType.Sc,
     ElementType.Mc,

@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.1.0-beta.36",
+  "version": "3.1.0-rc.3",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,6 +12,7 @@
     "@azure/storage-blob": "12.15.0",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/util": "workspace:*",
     "@pothos/core": "3.38.0",
     "@pothos/plugin-directives": "3.10.2",
     "@pothos/plugin-prisma": "3.60.0",

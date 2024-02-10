@@ -5,7 +5,7 @@ import {
   SelfDocument,
   StackElement,
 } from '@klicker-uzh/graphql/dist/ops'
-import { levelFromXp } from '@klicker-uzh/graphql/dist/util'
+import { levelFromXp } from '@klicker-uzh/util/dist/pure'
 import { H3, Progress, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -139,7 +139,7 @@ function ElementSummary({ displayName, stacks }: ElementSummaryProps) {
       <div>
         <H3>{t('shared.generic.congrats')}</H3>
         <p>
-          {t.rich('pwa.learningElement.solvedLearningElement', {
+          {t.rich('pwa.learningElement.solvedPracticeQuiz', {
             name: displayName,
             it: (text) => <span className="italic">{text}</span>,
           })}

@@ -130,7 +130,7 @@ describe('Question bookmarking and flagging workflow', () => {
       messages.shared.generic.published
     )
     cy.get(`[data-cy="publish-microlearning-${microlearningName}"]`)
-      .contains(messages.manage.course.publishMicroSession)
+      .contains(messages.manage.course.publishMicrolearning)
       .click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="microlearning-${microlearningName}"]`).contains(

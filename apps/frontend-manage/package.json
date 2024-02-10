@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.1.0-beta.36",
+  "version": "3.1.0-rc.3",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.8.3",
@@ -25,6 +25,7 @@
     "formik": "2.4.3",
     "generate-password": "1.7.0",
     "graphql": "16.7.1",
+    "graphql-codegen-persisted-query-ids": "0.1.2",
     "graphql-ws": "5.13.1",
     "html-to-image": "1.11.11",
     "is-hotkey": "0.2.0",

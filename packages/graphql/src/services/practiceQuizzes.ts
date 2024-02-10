@@ -7,18 +7,30 @@ import {
   gradeQuestionNumerical,
   gradeQuestionSC,
 } from '@klicker-uzh/grading'
-import { ElementType, UserRole } from '@klicker-uzh/prisma'
+import {
+  Element,
+  ElementInstanceType,
+  ElementOrderType,
+  ElementStackType,
+  ElementType,
+  PublicationStatus,
+  UserRole,
+} from '@klicker-uzh/prisma'
+import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
+import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
+import { v4 as uuidv4 } from 'uuid'
+import { Context, ContextWithUser } from '../lib/context'
+import { orderStacks } from '../lib/util'
 import {
   ChoiceQuestionOptions,
   FreeTextQuestionOptions,
   NumericalQuestionOptions,
   ResponseInput,
-} from 'src/ops'
-import { IInstanceEvaluation } from 'src/schema/question'
-import { Context } from '../lib/context'
-import { orderStacks } from '../lib/util'
+} from '../ops'
+import { IInstanceEvaluation } from '../schema/question'
 import {
   AllElementTypeData,
   AllQuestionInstanceTypeData,
@@ -41,6 +53,14 @@ export async function getPracticeQuizData(
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
+      OR: [
+        {
+          status: PublicationStatus.PUBLISHED,
+        },
+        {
+          ownerId: ctx.user?.sub,
+        },
+      ],
     },
     include: {
       course: true,
@@ -314,8 +334,6 @@ async function respondToContent(
     },
   })
 
-  const temp = (existingInstance?.results as ContentInstanceResults).viewed
-
   // check if the instance exists and the response is valid
   if (!existingInstance) {
     return null
@@ -335,7 +353,7 @@ async function respondToContent(
     },
     data: {
       results: {
-        viewed: existingResults.viewed + 1,
+        total: existingResults.total + 1,
       },
     },
   })
@@ -543,7 +561,7 @@ function evaluateQuestionResponse(
       // TODO: add feedbacks here once they are implemented for specified solution ranges
       return {
         feedbacks: [],
-        answers: results ?? [],
+        answers: results?.responses ?? {},
         score: correct ? correct * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
           pointsPercentage: correct,
@@ -565,7 +583,7 @@ function evaluateQuestionResponse(
 
       return {
         feedbacks: [],
-        answers: results ?? [],
+        answers: results.responses ?? {},
         score: correct ? correct * 10 * (multiplier ?? 1) : 0,
         xp: computeAwardedXp({
           pointsPercentage: correct,
@@ -662,7 +680,8 @@ export async function respondToQuestion(
 
       let updatedResults:
         | {
-            choices?: Record<string, number>
+            choices: Record<string, number>
+            total: number
           }
         | Record<string, number> = {}
 
@@ -679,6 +698,7 @@ export async function respondToQuestion(
             }),
             results.choices as Record<string, number>
           )
+          updatedResults.total = results.total + 1
           break
         }
 
@@ -704,14 +724,15 @@ export async function respondToQuestion(
 
           const value = String(parsedValue)
 
-          if (Object.keys(results).includes(value)) {
-            updatedResults = {
-              ...results,
-              [value]: results[value] + 1,
+          if (Object.keys(results.responses).includes(value)) {
+            updatedResults.responses = {
+              ...results.responses,
+              [value]: results.responses[value] + 1,
             }
           } else {
-            updatedResults = { ...results, [value]: 1 }
+            updatedResults.responses = { ...results.responses, [value]: 1 }
           }
+          updatedResults.total = results.total + 1
           break
         }
 
@@ -729,14 +750,15 @@ export async function respondToQuestion(
 
           const value = R.toLower(R.trim(response.value))
 
-          if (Object.keys(results).includes(value)) {
-            updatedResults = {
-              ...results,
-              [value]: results[value] + 1,
+          if (Object.keys(results.responses).includes(value)) {
+            updatedResults.responses = {
+              ...results.responses,
+              [value]: results.responses[value] + 1,
             }
           } else {
-            updatedResults = { ...results, [value]: 1 }
+            updatedResults.responses = { ...results.responses, [value]: 1 }
           }
+          updatedResults.total = results.total + 1
           break
         }
 
@@ -748,10 +770,6 @@ export async function respondToQuestion(
         where: { id },
         data: {
           results: updatedResults,
-          // TODO: re-introduce participants count as part of options / results
-          // participants: {
-          //   increment: 1,
-          // },
         },
       })
 
@@ -1221,6 +1239,188 @@ export async function respondToPracticeQuizStack(
   }
 }
 
+interface PracticeQuizStackInput {
+  displayName?: string | null
+  description?: string | null
+  order: number
+  elements: {
+    elementId: number
+    order: number
+  }[]
+}
+
+interface ManipulatePracticeQuizArgs {
+  id?: string
+  name: string
+  displayName: string
+  description?: string | null
+  stacks: PracticeQuizStackInput[]
+  courseId: string
+  multiplier: number
+  order: ElementOrderType
+  resetTimeDays: number
+}
+
+export async function manipulatePracticeQuiz(
+  {
+    id,
+    name,
+    displayName,
+    description,
+    stacks,
+    courseId,
+    multiplier,
+    order,
+    resetTimeDays,
+  }: ManipulatePracticeQuizArgs,
+  ctx: ContextWithUser
+) {
+  if (id) {
+    // find all instances belonging to the old session and delete them as the content of the questions might have changed
+    const oldElement = await ctx.prisma.practiceQuiz.findUnique({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!oldElement) {
+      throw new GraphQLError('Practice quiz not found')
+    }
+    if (oldElement.status === PublicationStatus.PUBLISHED) {
+      throw new GraphQLError('Cannot edit a published practice quiz')
+    }
+
+    const oldInstances = oldElement.stacks.flatMap((stack) => stack.elements)
+
+    await ctx.prisma.elementInstance.deleteMany({
+      where: {
+        id: { in: oldInstances.map(({ id }) => id) },
+      },
+    })
+
+    await ctx.prisma.practiceQuiz.update({
+      where: { id },
+      data: {
+        stacks: {
+          deleteMany: {},
+        },
+      },
+    })
+  }
+
+  const elements = stacks
+    .flatMap((stack) => stack.elements)
+    .map((stackElem) => stackElem.elementId)
+    .filter(
+      (stackElem) => stackElem !== null && typeof stackElem !== undefined
+    ) as number[]
+
+  const dbElements = await ctx.prisma.element.findMany({
+    where: {
+      id: { in: elements },
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  const uniqueElements = new Set(dbElements.map((q) => q.id))
+  if (dbElements.length !== uniqueElements.size) {
+    throw new GraphQLError('Not all elements could be found')
+  }
+
+  const elementMap = dbElements.reduce<Record<number, Element>>(
+    (acc, elem) => ({ ...acc, [elem.id]: elem }),
+    {}
+  )
+
+  const createOrUpdateJSON = {
+    name,
+    displayName: displayName ?? name,
+    description,
+    pointsMultiplier: multiplier,
+    orderType: order,
+    resetTimeDays: resetTimeDays,
+    stacks: {
+      create: stacks.map((stack) => {
+        return {
+          type: ElementStackType.PRACTICE_QUIZ,
+          order: stack.order,
+          displayName: stack.displayName ?? '',
+          description: stack.description ?? '',
+          options: {},
+          elements: {
+            create: stack.elements.map((elem) => {
+              const element = elementMap[elem.elementId]
+
+              const processedElementData = processElementData(element)
+
+              return {
+                elementType: element.type,
+                migrationId: uuidv4(),
+                order: elem.order,
+                type: ElementInstanceType.PRACTICE_QUIZ,
+                elementData: processedElementData,
+                options: {
+                  pointsMultiplier: multiplier * element.pointsMultiplier,
+                  resetTimeDays,
+                },
+                results: getInitialElementResults(processedElementData),
+                element: {
+                  connect: { id: element.id },
+                },
+                owner: {
+                  connect: { id: ctx.user.sub },
+                },
+              }
+            }),
+          },
+        }
+      }),
+    },
+    owner: {
+      connect: { id: ctx.user.sub },
+    },
+    course: {
+      connect: { id: courseId },
+    },
+  }
+
+  const element = await ctx.prisma.practiceQuiz.upsert({
+    where: { id: id ?? uuidv4() },
+    create: createOrUpdateJSON,
+    update: createOrUpdateJSON,
+    include: {
+      course: true,
+      stacks: {
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          order: 'asc',
+        },
+      },
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'PracticeQuiz',
+    id,
+  })
+
+  return element
+}
+
 interface GetBookmarksPracticeQuizArgs {
   quizId?: string | null
   courseId: string
@@ -1251,4 +1451,60 @@ export async function getBookmarksPracticeQuiz(
   })
 
   return participation?.bookmarkedElementStacks.map((stack) => stack.id)
+}
+
+interface DeletePracticeQuizArgs {
+  id: string
+}
+
+export async function deletePracticeQuiz(
+  { id }: DeletePracticeQuizArgs,
+  ctx: ContextWithUser
+) {
+  try {
+    const deletedItem = await ctx.prisma.practiceQuiz.delete({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+        status: PublicationStatus.DRAFT,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id,
+    })
+
+    return deletedItem
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e?.code === 'P2025') {
+      console.log(
+        'The practice quiz is not in draft status and cannot be deleted.'
+      )
+      return null
+    }
+
+    throw e
+  }
+}
+
+interface PublishPracticeQuizArgs {
+  id: string
+}
+
+export async function publishPracticeQuiz(
+  { id }: PublishPracticeQuizArgs,
+  ctx: ContextWithUser
+) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+    data: {
+      status: PublicationStatus.PUBLISHED,
+    },
+  })
+
+  return practiceQuiz
 }

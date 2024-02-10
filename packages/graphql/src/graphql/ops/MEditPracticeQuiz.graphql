@@ -1,17 +1,17 @@
-#import "./FQuestionData.graphql"
+#import "./FElementData.graphql"
 
-mutation EditLearningElement(
+mutation EditPracticeQuiz(
   $id: String!
   $name: String!
   $displayName: String!
   $description: String
-  $stacks: [StackInput!]!
-  $courseId: String
+  $stacks: [ElementStackInput!]!
+  $courseId: String!
   $multiplier: Int!
-  $order: LearningElementOrderType!
+  $order: ElementOrderType!
   $resetTimeDays: Int!
 ) {
-  editLearningElement(
+  editPracticeQuiz(
     id: $id
     name: $name
     displayName: $displayName
@@ -29,8 +29,6 @@ mutation EditLearningElement(
     pointsMultiplier
     resetTimeDays
     orderType
-    stacksWithQuestions
-    numOfQuestions
 
     course {
       id
@@ -43,12 +41,7 @@ mutation EditLearningElement(
       order
       elements {
         id
-        order
-        mdContent
-        questionInstance {
-          id
-          ...QuestionData
-        }
+        ...ElementData
       }
     }
   }

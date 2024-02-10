@@ -269,17 +269,11 @@ model ElementInstance {
   originalId String? @unique
 
   // TODO: remove after migration to new data structure
-  migrationId Int
+  migrationId String
 
   type        ElementInstanceType
   elementType ElementType
   order       Int
-
-  // TODO: moved to options Json
-  // resetTimeDays    Int?
-  // pointsMultiplier Int                      @default(1)
-  // TODO: moved to results Json
-  // participants    Int                      @default(0)
 
   /// [PrismaElementInstanceOptions]
   options Json // contains element type specific settings (resetTimeDays for LE instances, pointsMultiplier where relevant)
@@ -295,7 +289,7 @@ model ElementInstance {
 
   element        Element?     @relation(fields: [elementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   elementId      Int?
-  elementStack   ElementStack @relation(fields: [elementStackId], references: [id])
+  elementStack   ElementStack @relation(fields: [elementStackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementStackId Int
   owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId        String       @db.Uuid
@@ -323,7 +317,7 @@ model ElementStack {
   type  ElementStackType
   order Int?
 
-  // TODO: we needed the two below for the stacked learning elements (Excel) as a top-level title and description. maybe we could drop them if we add a content element before the questions and the name of the content element is the top-level title, though it would be the same "size" as the other titles. however, this would add a lot of content elements to the question pool that cannot "stand on their own", and we might want to use content elements primarily for short snippets of content to repeat, not for some intro text to an element stack. this would mean we keep displayName and description here and as optional fields.
+  // TODO: we needed the two below for the stacked practice quizzes (Excel) as a top-level title and description. maybe we could drop them if we add a content element before the questions and the name of the content element is the top-level title, though it would be the same "size" as the other titles. however, this would add a lot of content elements to the question pool that cannot "stand on their own", and we might want to use content elements primarily for short snippets of content to repeat, not for some intro text to an element stack. this would mean we keep displayName and description here and as optional fields.
   displayName String?
   description String?
 
@@ -672,7 +666,7 @@ model LiveQuiz {
 
 // #endregion
 
-// ----- LEARNING ELEMENTS -----
+// ----- PRACTICE QUIZZES -----
 // #region
 enum OrderType {
   SEQUENTIAL

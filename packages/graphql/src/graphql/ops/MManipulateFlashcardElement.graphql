@@ -1,0 +1,29 @@
+mutation ManipulateFlashcardElement(
+  $id: Int
+  $name: String
+  $content: String
+  $explanation: String
+  $pointsMultiplier: Int
+  $tags: [String!]
+) {
+  manipulateFlashcardElement(
+    id: $id
+    name: $name
+    content: $content
+    explanation: $explanation
+    pointsMultiplier: $pointsMultiplier
+    tags: $tags
+  ) {
+    id
+    name
+    type
+    content
+    explanation
+    pointsMultiplier
+
+    tags {
+      id
+      name
+    }
+  }
+}

@@ -19,7 +19,6 @@ import {
   QuestionStackType,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { PrismaClientKnownRequestError } from '@klicker-uzh/prisma/dist/runtime/library'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import * as R from 'ramda'
@@ -37,7 +36,7 @@ import {
   QuestionResponseChoices,
 } from '../types/app'
 
-// TODO: delete entire file, once learning elements have been replaced through practice quiz
+// TODO: delete entire file, once practice quizzes have been replaced through practice quiz
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
@@ -797,16 +796,6 @@ export async function getLearningElementData(
   }
 }
 
-// TODO: think about refactor how to enforce either questionId or mdContent on type level
-// interface StackInputQuestion {
-//   questionId?: number
-//   mdContent?: never | null
-// }
-// interface StackInputMdContent {
-//   questionId?: never | null
-//   mdContent?: string
-// }
-
 interface StackInput {
   // TODO: add missing stack input data (optional displayname and description)
   elements: {
@@ -862,10 +851,10 @@ export async function manipulateLearningElement(
     })
 
     if (!oldElement) {
-      throw new GraphQLError('Learning element not found')
+      throw new GraphQLError('Practice quiz not found')
     }
     if (oldElement.status === LearningElementStatus.PUBLISHED) {
-      throw new GraphQLError('Cannot edit a published learning element')
+      throw new GraphQLError('Cannot edit a published practice quiz')
     }
 
     const oldQuestionInstances = oldElement.stacks.reduce<QuestionInstance[]>(
@@ -1052,62 +1041,6 @@ export async function getBookmarksLearningElement(
   })
 
   return participation?.bookmarkedStacks
-}
-
-interface PublishLearningElementArgs {
-  id: string
-}
-
-export async function publishLearningElement(
-  { id }: PublishLearningElementArgs,
-  ctx: ContextWithUser
-) {
-  const learningElement = await ctx.prisma.learningElement.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      status: LearningElementStatus.PUBLISHED,
-    },
-  })
-
-  return learningElement
-}
-
-interface DeleteLearningElementArgs {
-  id: string
-}
-
-export async function deleteLearningElement(
-  { id }: DeleteLearningElementArgs,
-  ctx: ContextWithUser
-) {
-  try {
-    const deletedItem = await ctx.prisma.learningElement.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        status: LearningElementStatus.DRAFT,
-      },
-    })
-
-    ctx.emitter.emit('invalidate', {
-      typename: 'LearningElement',
-      id,
-    })
-
-    return deletedItem
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e?.code === 'P2025') {
-      console.log(
-        'The learning element is not in draft status and cannot be deleted.'
-      )
-      return null
-    }
-
-    throw e
-  }
 }
 
 interface GetQuestionStackArgs {

@@ -174,9 +174,9 @@ export const QUESTIONS = [
 export const LEARNING_ELEMENTS = [
   {
     id: '4968ad33-c15c-4b24-9e1f-c31f2d5578f1',
-    name: 'Test Lernelement',
-    displayName: 'Test Lernelement',
-    description: 'Welcome to this **learning element**.',
+    name: 'Test Übungs-Quiz',
+    displayName: 'Test Übungs-Quiz',
+    description: 'Welcome to this **practice quiz**.',
     orderType: OrderType.SHUFFLED,
     status: LearningElementStatus.PUBLISHED,
     stacks: [
@@ -201,11 +201,11 @@ export const LEARNING_ELEMENTS = [
   },
   {
     id: '011b1f9e-1b45-4447-8b88-b76fce089389',
-    name: 'Test Lernelement x2',
-    displayName: 'Test Lernelement x2',
+    name: 'Test Übungs-Quiz x2',
+    displayName: 'Test Übungs-Quiz x2',
     description: `
-  Welcome to this **learning element**.
-  This learning element yields 2x the points.
+  Welcome to this **practice quiz**.
+  This practice quiz yields 2x the points.
   And it can be done everyday!
   `,
     pointsMultiplier: 2,
@@ -377,7 +377,7 @@ export const Achievements: {
     nameDE: 'Busy Bee',
     nameEN: 'Busy Bee',
     descriptionDE:
-      'Du hast alle verfügbaren Microlearnings und Lernelemente gelöst.',
+      'Du hast alle verfügbaren Microlearnings und Übungs-Quizzes gelöst.',
     descriptionEN:
       'You have solved all available microlearnings and practice quizzes.',
     icon: '/achievements/Fleisspreis.svg',
@@ -388,8 +388,8 @@ export const Achievements: {
     id: AchievementIds.Champion,
     nameDE: 'Champion',
     nameEN: 'Champion',
-    descriptionDE: 'Du hast einen ersten Platz in einer Live-Session erreicht.',
-    descriptionEN: 'You have reached first place in a live session.',
+    descriptionDE: 'Du hast einen ersten Platz in einer Live Quiz erreicht.',
+    descriptionEN: 'You have reached first place in a live quiz.',
     icon: '/achievements/Champ.svg',
     rewardedPoints: 100,
     rewardedXP: 200,
@@ -400,9 +400,8 @@ export const Achievements: {
     id: AchievementIds['Vice-Champion'],
     nameDE: 'Vize-Champion',
     nameEN: 'Vice-Champion',
-    descriptionDE:
-      'Du hast einen zweiten Platz in einer Live-Session erreicht.',
-    descriptionEN: 'You have reached second place in a live session.',
+    descriptionDE: 'Du hast einen zweiten Platz in einer Live Quiz erreicht.',
+    descriptionEN: 'You have reached second place in a live quiz.',
     icon: '/achievements/VizeChamp.svg',
     rewardedPoints: 50,
     rewardedXP: 100,
@@ -413,9 +412,8 @@ export const Achievements: {
     id: AchievementIds['Vice-Vice-Champion'],
     nameDE: 'Vize-Vize-Champion',
     nameEN: 'Vice-Vice-Champion',
-    descriptionDE:
-      'Du hast einen dritten Platz in einer Live-Session erreicht.',
-    descriptionEN: 'You have reached third place in a live session.',
+    descriptionDE: 'Du hast einen dritten Platz in einer Live Quiz erreicht.',
+    descriptionEN: 'You have reached third place in a live quiz.',
     icon: '/achievements/VizevizeChamp.svg',
     rewardedPoints: 25,
     rewardedXP: 50,
@@ -427,8 +425,8 @@ export const Achievements: {
   //   id: 4,
   //   nameDE: 'Trostpreis',
   //   nameEN: 'Consolation Prize',
-  //   descriptionDE: 'Dabei sein ist alles (letzer Platz in einer Live-Session).',
-  //   descriptionEN: 'Being there is everything (last place in a live session).',
+  //   descriptionDE: 'Dabei sein ist alles (letzer Platz in einer Live Quiz).',
+  //   descriptionEN: 'Being there is everything (last place in a live quiz).',
   //   icon: '/achievements/Trostpreis.svg',
   //   type: 'PARTICIPANT',
   // },
@@ -475,8 +473,8 @@ export const Achievements: {
     id: AchievementIds['Creative Mastermind'],
     nameDE: 'Creative Mastermind',
     nameEN: 'Creative Mastermind',
-    descriptionDE: 'Du hast ein eigenes Lernelement erstellt.',
-    descriptionEN: 'You have created your own learning element.',
+    descriptionDE: 'Du hast ein eigenes Übungs-Quizzes erstellt.',
+    descriptionEN: 'You have created your own practice quiz.',
     icon: '/achievements/CreativeMastermind.svg',
     type: 'PARTICIPANT',
   },

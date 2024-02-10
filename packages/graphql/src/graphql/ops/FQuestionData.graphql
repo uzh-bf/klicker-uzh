@@ -25,7 +25,6 @@ fragment QuestionData on QuestionInstance {
     ... on NumericalQuestionData {
       options {
         hasSampleSolution
-        hasAnswerFeedbacks
         accuracy
         placeholder
         unit
@@ -43,7 +42,6 @@ fragment QuestionData on QuestionInstance {
     ... on FreeTextQuestionData {
       options {
         hasSampleSolution
-        hasAnswerFeedbacks
         restrictions {
           maxLength
         }

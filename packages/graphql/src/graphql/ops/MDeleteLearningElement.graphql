@@ -1,5 +1,5 @@
 mutation DeleteLearningElement($id: String!) {
-  deleteLearningElement(id: $id) {
+  deletePracticeQuiz(id: $id) {
     id
   }
 }

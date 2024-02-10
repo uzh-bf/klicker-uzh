@@ -16,7 +16,7 @@ export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
 })
 
-export const PracticeQuizStatus = builder.enumType('PracticeQuizStatus', {
+export const PublicationStatus = builder.enumType('PublicationStatus', {
   values: Object.values(DB.PublicationStatus),
 })
 
@@ -33,6 +33,22 @@ export const FlashcardCorrectnessType = builder.enumType(
 
 export const StackFeedbackStatus = builder.enumType('StackFeedbackStatus', {
   values: Object.values(StackFeedbackStatusType),
+})
+
+export const ElementStackInput = builder.inputType('ElementStackInput', {
+  fields: (t) => ({
+    order: t.int({ required: true }),
+    displayName: t.string({ required: false }),
+    description: t.string({ required: false }),
+    elements: t.field({ type: [StackElementsInput], required: true }),
+  }),
+})
+
+export const StackElementsInput = builder.inputType('StackElementsInput', {
+  fields: (t) => ({
+    elementId: t.int({ required: true }),
+    order: t.int({ required: true }),
+  }),
 })
 
 export const StackResponseInput = builder.inputType('StackResponseInput', {
@@ -91,6 +107,7 @@ export const ElementStack = ElementStackRef.implement({
 export interface IPracticeQuiz extends DB.PracticeQuiz {
   course?: ICourse
   stacks?: IElementStack[]
+  numOfQuestions?: number
 }
 export const PracticeQuizRef = builder.objectRef<IPracticeQuiz>('PracticeQuiz')
 export const PracticeQuiz = PracticeQuizRef.implement({
@@ -102,9 +119,10 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     resetTimeDays: t.exposeInt('resetTimeDays'),
     orderType: t.expose('orderType', { type: ElementOrderType }),
-    status: t.expose('status', { type: PracticeQuizStatus }),
+    status: t.expose('status', { type: PublicationStatus }),
     stacks: t.expose('stacks', { type: [ElementStackRef], nullable: true }),
     course: t.expose('course', { type: CourseRef, nullable: true }),
     courseId: t.exposeString('courseId', { nullable: true }),
+    numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
   }),
 })

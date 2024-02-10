@@ -1,14 +1,16 @@
-mutation CreateLearningElement(
+#import "./FElementData.graphql"
+
+mutation CreatePracticeQuiz(
   $name: String!
   $displayName: String!
   $description: String
-  $stacks: [StackInput!]!
-  $courseId: String
+  $stacks: [ElementStackInput!]!
+  $courseId: String!
   $multiplier: Int!
-  $order: LearningElementOrderType!
+  $order: ElementOrderType!
   $resetTimeDays: Int!
 ) {
-  createLearningElement(
+  createPracticeQuiz(
     name: $name
     displayName: $displayName
     description: $description
@@ -25,8 +27,6 @@ mutation CreateLearningElement(
     pointsMultiplier
     resetTimeDays
     orderType
-    stacksWithQuestions
-    numOfQuestions
 
     course {
       id
@@ -36,15 +36,9 @@ mutation CreateLearningElement(
       id
       displayName
       description
-      order
       elements {
         id
-        order
-        mdContent
-        questionInstance {
-          id
-          ...QuestionData
-        }
+        ...ElementData
       }
     }
   }

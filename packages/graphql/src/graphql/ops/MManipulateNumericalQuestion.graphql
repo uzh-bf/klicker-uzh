@@ -9,7 +9,6 @@ mutation ManipulateNumericalQuestion(
 ) {
   manipulateNumericalQuestion(
     id: $id
-    type: NUMERICAL
     name: $name
     content: $content
     explanation: $explanation
@@ -28,7 +27,6 @@ mutation ManipulateNumericalQuestion(
       ... on NumericalQuestionData {
         options {
           hasSampleSolution
-          hasAnswerFeedbacks
           accuracy
           placeholder
           unit

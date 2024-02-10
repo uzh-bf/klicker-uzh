@@ -1,3 +1,8 @@
+import {
+  getInitialElementResults,
+  processElementData,
+  processQuestionData,
+} from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
 import path from 'path'
@@ -13,107 +18,6 @@ import {
   QuestionStackType,
   UserLoginScope,
 } from '../client'
-
-const RELEVANT_KEYS = [
-  'id',
-  'name',
-  'content',
-  'explanation',
-  'pointsMultiplier',
-  'type',
-  'options',
-]
-
-export function processQuestionData(question: Prisma.Element) {
-  const extractRelevantKeys = R.pick(RELEVANT_KEYS)
-
-  return {
-    ...extractRelevantKeys(question),
-    id: `${question.id}-v${question.version}`,
-    questionId: question.id,
-  }
-}
-
-const CONTENT_KEYS = ['name', 'content', 'type']
-const FLASHCARD_KEYS = ['name', 'content', 'explanation', 'type']
-const QUESTION_KEYS = [
-  'name',
-  'content',
-  'explanation',
-  'pointsMultiplier',
-  'type',
-  'options',
-]
-
-export function processElementData(element: Element) {
-  const extractContentKeys = R.pick(CONTENT_KEYS)
-  const extractFlashcardKeys = R.pick(FLASHCARD_KEYS)
-  const extractQuestionKeys = R.pick(QUESTION_KEYS)
-
-  if (element.type === ElementType.FLASHCARD) {
-    return {
-      ...extractFlashcardKeys(element),
-      id: `${element.id}-v${element.version}`,
-      elementId: element.id,
-    }
-  } else if (
-    element.type === ElementType.SC ||
-    element.type === ElementType.MC ||
-    element.type === ElementType.KPRIM ||
-    element.type === ElementType.NUMERICAL ||
-    element.type === ElementType.FREE_TEXT
-  ) {
-    return {
-      ...extractQuestionKeys(element),
-      id: `${element.id}-v${element.version}`,
-      elementId: element.id,
-    }
-  } else if (element.type === ElementType.CONTENT) {
-    return {
-      ...extractContentKeys(element),
-      id: `${element.id}-v${element.version}`,
-      elementId: element.id,
-    }
-  } else {
-    throw new Error(
-      'Invalid element type encountered during element data processing'
-    )
-  }
-}
-
-export function getInitialElementResults(element: Element) {
-  if (element.type === ElementType.FLASHCARD) {
-    return {
-      INCORRECT: 0,
-      PARTIAL: 0,
-      CORRECT: 0,
-      total: 0,
-    }
-  } else if (
-    element.type === ElementType.SC ||
-    element.type === ElementType.MC ||
-    element.type === ElementType.KPRIM
-  ) {
-    const choices = element.options.choices.reduce(
-      (acc, _, ix) => ({ ...acc, [ix]: 0 }),
-      {}
-    )
-    return { choices }
-  } else if (
-    element.type === ElementType.NUMERICAL ||
-    element.type === ElementType.FREE_TEXT
-  ) {
-    return {}
-  } else if (element.type === ElementType.CONTENT) {
-    return {
-      viewed: 0,
-    }
-  } else {
-    throw new Error(
-      'Invalid element type encountered during result initialization'
-    )
-  }
-}
 
 export async function prepareUser({
   name,
@@ -481,120 +385,6 @@ export async function prepareLearningElement({
   }
 }
 
-export async function preparePracticeQuiz({
-  stacks,
-  ...args
-}: {
-  id: string
-  name: string
-  displayName: string
-  description?: string
-  pointsMultiplier?: number
-  resetTimeDays?: number
-  orderType?: Prisma.OrderType
-  ownerId: string
-  courseId: string
-  stacks: StackData[]
-  status?: Prisma.LearningElementStatus
-}) {
-  return {
-    where: {
-      id: args.id,
-    },
-    create: {
-      id: args.id,
-      name: args.name,
-      displayName: args.displayName,
-      description: args.description,
-      pointsMultiplier: args.pointsMultiplier,
-      resetTimeDays: args.resetTimeDays,
-      status: args.status,
-      orderType: args.orderType,
-      owner: {
-        connect: {
-          id: args.ownerId,
-        },
-      },
-      course: {
-        connect: {
-          id: args.courseId,
-        },
-      },
-      stacks: {
-        create: await Promise.all(
-          stacks.map(async (stack, ix) => ({
-            type: QuestionStackType.LEARNING_ELEMENT,
-            order: ix,
-            displayName: stack.displayName,
-            description: stack.description,
-            elements: {
-              create: stack.elements.map((element, ixInner) => {
-                if (typeof element === 'string') {
-                  return { order: ixInner, mdContent: element }
-                }
-                return {
-                  order: ixInner,
-                  questionInstance: {
-                    create: prepareQuestionInstance({
-                      order: 0,
-                      question: element,
-                      pointsMultiplier: args.pointsMultiplier
-                        ? args.pointsMultiplier * element.pointsMultiplier
-                        : undefined,
-                      resetTimeDays: args.resetTimeDays,
-                      type: QuestionInstanceType.LEARNING_ELEMENT,
-                    }),
-                  },
-                }
-              }),
-            },
-          }))
-        ),
-      },
-    },
-    update: {
-      name: args.name,
-      displayName: args.displayName,
-      description: args.description,
-      pointsMultiplier: args.pointsMultiplier,
-      resetTimeDays: args.resetTimeDays,
-      status: args.status,
-      orderType: args.orderType,
-      stacks: {
-        create: await Promise.all(
-          stacks.map(async (stack, ix) => ({
-            type: QuestionStackType.LEARNING_ELEMENT,
-            order: ix,
-            displayName: stack.displayName,
-            description: stack.description,
-            elements: {
-              create: stack.elements.map((element, ixInner) => {
-                if (typeof element === 'string') {
-                  return { order: ixInner, mdContent: element }
-                }
-                return {
-                  order: ixInner,
-                  questionInstance: {
-                    create: prepareQuestionInstance({
-                      order: 0,
-                      question: element,
-                      pointsMultiplier: args.pointsMultiplier
-                        ? args.pointsMultiplier * element.pointsMultiplier
-                        : undefined,
-                      resetTimeDays: args.resetTimeDays,
-                      type: QuestionInstanceType.LEARNING_ELEMENT,
-                    }),
-                  },
-                }
-              }),
-            },
-          }))
-        ),
-      },
-    },
-  }
-}
-
 export async function prepareSession({
   blocks,
   ...args
@@ -721,7 +511,7 @@ export function prepareGroupActivityStack({
       createMany: {
         data: [
           ...flashcards.slice(0, 2).map((el, ix) => ({
-            migrationId: migrationIdOffset + ix,
+            migrationId: String(migrationIdOffset + ix),
             order: ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
@@ -732,7 +522,7 @@ export function prepareGroupActivityStack({
             elementId: el.id,
           })),
           ...questions.map((el, ix) => ({
-            migrationId: migrationIdOffset + 2 + ix,
+            migrationId: String(migrationIdOffset + 2 + ix),
             order: 2 + ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
@@ -743,7 +533,7 @@ export function prepareGroupActivityStack({
             elementId: el.id,
           })),
           ...contentElements.slice(0, 2).map((el, ix) => ({
-            migrationId: migrationIdOffset + questions.length + 2 + ix,
+            migrationId: String(migrationIdOffset + questions.length + 2 + ix),
             order: questions.length + 2 + ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
@@ -797,7 +587,7 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
-              migrationId: migrationIdOffset + ix,
+              migrationId: String(migrationIdOffset + ix),
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -828,7 +618,7 @@ export function prepareStackVariety({
       elements: {
         createMany: {
           data: flashcards.map((el, ix) => ({
-            migrationId: migrationIdOffset + flashcards.length + ix,
+            migrationId: String(migrationIdOffset + flashcards.length + ix),
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -859,7 +649,9 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
-              migrationId: migrationIdOffset + 2 * flashcards.length + ix,
+              migrationId: String(
+                migrationIdOffset + 2 * flashcards.length + ix
+              ),
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -890,8 +682,9 @@ export function prepareStackVariety({
       elements: {
         createMany: {
           data: questions.map((el, ix) => ({
-            migrationId:
-              migrationIdOffset + 2 * flashcards.length + questions.length + ix,
+            migrationId: String(
+              migrationIdOffset + 2 * flashcards.length + questions.length + ix
+            ),
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -922,11 +715,12 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
-              migrationId:
+              migrationId: String(
                 migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                ix,
+                  2 * flashcards.length +
+                  2 * questions.length +
+                  ix
+              ),
               order: ix,
               type: elementInstanceType,
               elementType: el.type,
@@ -962,13 +756,14 @@ export function prepareStackVariety({
       elements: {
         createMany: {
           data: contentElements.map((el, ix) => ({
-            migrationId:
+            migrationId: String(
               migrationIdOffset +
-              2 * flashcards.length +
-              2 * questions.length +
-              contentElements.length +
-              outer_ix * contentElements.length +
-              ix,
+                2 * flashcards.length +
+                2 * questions.length +
+                contentElements.length +
+                outer_ix * contentElements.length +
+                ix
+            ),
             order: ix,
             type: elementInstanceType,
             elementType: el.type,
@@ -1001,12 +796,13 @@ export function prepareStackVariety({
         createMany: {
           data: [
             {
-              migrationId:
+              migrationId: String(
                 migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                3 * contentElements.length +
-                ix * 5,
+                  2 * flashcards.length +
+                  2 * questions.length +
+                  3 * contentElements.length +
+                  ix * 5
+              ),
               order: 0,
               type: elementInstanceType,
               elementType: flashcards[0].type,
@@ -1017,13 +813,14 @@ export function prepareStackVariety({
               elementId: flashcards[0].id,
             },
             {
-              migrationId:
+              migrationId: String(
                 migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                3 * contentElements.length +
-                ix * 5 +
-                1,
+                  2 * flashcards.length +
+                  2 * questions.length +
+                  3 * contentElements.length +
+                  ix * 5 +
+                  1
+              ),
               order: 1,
               type: elementInstanceType,
               elementType: questions[0].type,
@@ -1034,13 +831,14 @@ export function prepareStackVariety({
               elementId: questions[0].id,
             },
             {
-              migrationId:
+              migrationId: String(
                 migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                3 * contentElements.length +
-                ix * 5 +
-                2,
+                  2 * flashcards.length +
+                  2 * questions.length +
+                  3 * contentElements.length +
+                  ix * 5 +
+                  2
+              ),
               order: 2,
               type: elementInstanceType,
               elementType: contentElements[0].type,

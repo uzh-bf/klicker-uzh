@@ -8,7 +8,11 @@ function getNextBaseConfig({ BLOB_STORAGE_ACCOUNT_URL, NODE_ENV }) {
     output: NODE_ENV !== 'test' ? 'standalone' : undefined,
     reactStrictMode: true,
     swcMinify: true,
-    transpilePackages: ['@klicker-uzh/shared-components', '@klicker-uzh/i18n'],
+    transpilePackages: [
+      '@klicker-uzh/shared-components',
+      '@klicker-uzh/i18n',
+      '@klicker-uzh/util',
+    ],
     eslint: {
       ignoreDuringBuilds: true,
     },

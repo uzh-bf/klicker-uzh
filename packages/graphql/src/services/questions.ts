@@ -16,6 +16,50 @@ import {
 } from '../lib/questions'
 import { DisplayMode } from '../types/app'
 
+function processElementOptions(elementType: DB.ElementType, options: any) {
+  switch (elementType) {
+    case DB.ElementType.SC:
+    case DB.ElementType.MC:
+    case DB.ElementType.KPRIM: {
+      return {
+        displayMode: options.displayMode ?? DisplayMode.LIST,
+        hasSampleSolution: options.hasSampleSolution ?? false,
+        hasAnswerFeedbacks: options.hasAnswerFeedbacks ?? false,
+        choices: options.choices,
+      }
+    }
+
+    case DB.ElementType.NUMERICAL: {
+      return {
+        hasSampleSolution: options?.hasSampleSolution ?? false,
+        accuracy: options?.accuracy ?? undefined,
+        placeholder: options?.placeholder ?? undefined,
+        restrictions: {
+          ...options?.restrictions,
+          min: options?.restrictions?.min ?? undefined,
+          max: options?.restrictions?.max ?? undefined,
+        },
+        solutionRanges: options?.solutionRanges ?? undefined,
+      }
+    }
+
+    case DB.ElementType.FREE_TEXT: {
+      return {
+        hasSampleSolution: options?.hasSampleSolution ?? false,
+        solutions: options?.solutions ?? undefined,
+        restrictions: {
+          ...options?.restrictions,
+          maxLength: options?.restrictions?.maxLength ?? undefined,
+        },
+      }
+    }
+
+    default: {
+      return {}
+    }
+  }
+}
+
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
     where: {
@@ -25,15 +69,15 @@ export async function getUserQuestions(ctx: ContextWithUser) {
       questions: {
         where: {
           isDeleted: false,
-          type: {
-            in: [
-              DB.ElementType.SC,
-              DB.ElementType.MC,
-              DB.ElementType.KPRIM,
-              DB.ElementType.FREE_TEXT,
-              DB.ElementType.NUMERICAL,
-            ],
-          },
+          // type: {
+          //   in: [
+          //     DB.ElementType.SC,
+          //     DB.ElementType.MC,
+          //     DB.ElementType.KPRIM,
+          //     DB.ElementType.FREE_TEXT,
+          //     DB.ElementType.NUMERICAL,
+          //   ],
+          // },
         },
         orderBy: [
           {
@@ -166,26 +210,12 @@ export async function manipulateQuestion(
       id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
     create: {
-      type: type,
+      type,
       name: name ?? 'Missing Question Title',
       content: content ?? 'Missing Question Content',
       explanation: explanation ?? undefined,
       pointsMultiplier: pointsMultiplier ?? 1,
-      options: {
-        ...options,
-        displayMode: options?.displayMode ?? DisplayMode.LIST,
-        hasSampleSolution: options?.hasSampleSolution ?? false,
-        hasAnswerFeedbacks: options?.hasAnswerFeedbacks ?? false,
-        accuracy: options?.accuracy ?? undefined,
-        placeholder: options?.placeholder ?? undefined,
-        restrictions: {
-          ...options?.restrictions,
-          min: options?.restrictions?.min ?? undefined,
-          max: options?.restrictions?.max ?? undefined,
-        },
-        solutionRanges: options?.solutionRanges ?? undefined,
-        solutions: options?.solutions ?? undefined,
-      },
+      options: processElementOptions(type, options),
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -214,23 +244,7 @@ export async function manipulateQuestion(
       version: {
         increment: 1,
       },
-      options: options
-        ? {
-            ...options,
-            displayMode: options?.displayMode ?? DisplayMode.LIST,
-            hasSampleSolution: options?.hasSampleSolution ?? false,
-            hasAnswerFeedbacks: options?.hasAnswerFeedbacks ?? false,
-            accuracy: options?.accuracy ?? undefined,
-            placeholder: options?.placeholder ?? undefined,
-            restrictions: {
-              ...options?.restrictions,
-              min: options?.restrictions?.min ?? undefined,
-              max: options?.restrictions?.max ?? undefined,
-            },
-            solutionRanges: options?.solutionRanges ?? undefined,
-            solutions: options?.solutions ?? undefined,
-          }
-        : undefined,
+      options: options ? processElementOptions(type, options) : undefined,
       tags: {
         connectOrCreate: tags
           ?.filter((tag: string) => tag !== '')

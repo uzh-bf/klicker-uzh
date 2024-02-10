@@ -92,10 +92,10 @@ export default {
       leaderboard: 'Leaderboard',
       repetition: 'Repetition',
       evaluation: 'Auswertung',
-      liveSession: 'Live-Session',
-      learningElement: 'Lernelement',
-      learningElements: 'Lernelemente',
-      microSessions: 'Micro-Sessions',
+      liveQuiz: 'Live Quiz',
+      practiceQuiz: 'Übungs-Quiz',
+      practiceQuizzes: 'Übungs-Quizzes',
+      microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeSessions: 'Aktive Sessions',
       characters: 'Zeichen',
@@ -153,8 +153,7 @@ export default {
       german: 'Deutsch',
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
-      practiceQuizzes: 'Quizzes',
-      practice: 'Übungsaktivitäten',
+      practice: 'Übungs-Quiz',
     },
     contentInput: {
       boldStyle:
@@ -402,7 +401,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       totalScore: 'Total Punkte',
       bookmarkedQuestionsTitle: 'Bookmarks in {courseName}',
       bookmarkedQuestionsDesc:
-        'Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie einem gewöhnlichen Lernelement dargestellt.',
+        'Diese Seite erlaubt, alle Fragen mit Bookmarks aus dem Kurs {courseName} zu wiederholen. Sie werden dabei alle hintereinander wie in einem gewöhnlichen Übungs-Quiz dargestellt.',
       noBookmarksSet:
         'Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage.',
       awards: 'Auszeichnungen',
@@ -427,9 +426,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     learningElement: {
       notFound:
-        'Unter diesem Link existiert kein Lernelement oder dieses ist noch nicht publiziert.',
-      repetitionTitle: 'Repetition Lernelemente',
-      noRepetition: 'Aktuell sind keine Lernelemente zur Repetition verfügbar.',
+        'Unter diesem Link existiert kein Übungs-Quiz oder dieses ist noch nicht publiziert.',
+      repetitionTitle: 'Repetition Übungs-Quizzes',
+      noRepetition:
+        'Aktuell sind keine Übungs-Quizzes zur Repetition verfügbar.',
       numOfQuestions: 'Anzahl Fragen: {number}',
       orderLAST_RESPONSE: 'Reihenfolge: zuletzt beantwortete Fragen am Ende',
       orderSHUFFLED: 'Reihenfolge: zufällige Reihenfolge',
@@ -440,29 +440,29 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answeredMinOnce: 'Min. 1x beantwortet: {answered}/{total}',
       multiplicatorPoints: 'Multiplikator: {mult}x Punkte',
       multiplicatorEval: '<b>Multiplikator</b> {mult}x',
-      solvedLearningElement:
-        'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert.',
+      solvedPracticeQuiz:
+        'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert.',
       pointsCollectedPossible: 'Punkte (gesammelt/berechnet/möglich)',
       pointsComputedAvailable: 'Punkte (berechnet/möglich)',
       notAttempted: 'Nicht gelöst',
       totalPoints: 'Total Punkte (gesammelt): {points}',
       totalXp: '{xp} XP gesammelt',
       questionTypeNotSupported:
-        'Dieser Fragetyp ist aktuell für Lernelemente nicht verfügbar.',
+        'Dieser Fragetyp ist aktuell für Übungs-Quizzes nicht verfügbar.',
       newPointsFrom: 'Erneute Punkte/XP ab:',
       othersAnswered: 'So haben andere geantwortet',
       flagQuestion: 'Frage melden',
       flagQuestionText:
-        'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen eines Lernelements / einer Micro-Session eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
+        'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen eines Übungs-Quizzes / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
       addFeedback: 'Feedback hinzufügen',
       feedbackRequired: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
       submitFeedback: 'Feedback abschicken',
       feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
       infoStack: 'Informationselement',
       inactiveParticipation:
-        'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
+        'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
       missingParticipation:
-        'Du hast das Lernelement <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
+        'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
     practiceQuiz: {
       flashcardClick: 'Klicken Sie, um die Antwort zu sehen',
@@ -483,7 +483,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     microSession: {
       notFound:
-        'Unter diesem Link existiert keine Micro-Session oder diese ist noch nicht aktiv.',
+        'Unter diesem Link existiert kein Microlearning oder diese ist noch nicht aktiv.',
       solvedMicrolearning:
         'Du hast das Microlearning <it>{name}</it> erfolgreich absolviert.',
       inactiveParticipation:
@@ -708,7 +708,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       passwordTooltip:
         'Das Passwort wird automatisch generiert. Notieren Sie es sich vor dem Erstellen des Logins, es ist später nicht mehr sichtbar. Sollten Sie ein anderes Passwort wünschen, können Sie dieses über den Knopf rechts rechts neu generieren lassen.',
       shortnameRequirements:
-        'Der Kurzname hat im KlickerUZH eine wichtige Bedeutung, da er an vielen Stellen einen einfachen Zugriff auf Kurse und Lernelemente ermöglicht. Bitte beachten Sie daher folgende Regeln bei der Wahl des Kurznamens: <ul><li>Der Kurzname muss mindestens 5 und maximal 8 Zeichen lang sein.</li><li>Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.</li></ul>',
+        'Der Kurzname hat im KlickerUZH eine wichtige Bedeutung, da er an vielen Stellen einen einfachen Zugriff auf Kurse und Übungs-Quizzes ermöglicht. Bitte beachten Sie daher folgende Regeln bei der Wahl des Kurznamens: <ul><li>Der Kurzname muss mindestens 5 und maximal 8 Zeichen lang sein.</li><li>Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.</li></ul>',
       shortnameRequired: 'Geben Sie einen Kurznamen ein.',
       shortnameMin: 'Der Kurzname muss mindestens 5 Zeichen lang sein.',
       shortnameMax: 'Der Kurzname darf maximal 8 Zeichen lang sein.',
@@ -748,9 +748,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte beachten Sie, dass die Migration einige Zeit dauern kann. Sie können die Seite schließen, sobald die Migration gestartet ist. Sie erhalten eine E-Mail auf {email}, sobald die Migration abgeschlossen ist. Bei Problemen mit der Migration kontaktieren Sie uns bitte unter klicker@bf.uzh.ch.',
     },
     questionPool: {
-      createLiveSession: 'Live-Session erstellen',
-      createMicroSession: 'Micro-Session erstellen',
-      createLearningElement: 'Lernelement erstellen',
+      createLiveQuiz: 'Live Quiz erstellen',
+      createMicrolearning: 'Microlearning erstellen',
+      createPracticeQuiz: 'Übungs-Quiz erstellen',
       createGroupTask: 'Gruppenaufgabe erstellen',
       createQuestionCaps: 'FRAGE ERSTELLEN',
       resetFilters: 'Filter zurücksetzen',
@@ -798,7 +798,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen.',
       questionPlaceholder: 'Fragetext hier eingeben…',
       explanationTooltip:
-        'Geben Sie hier eine generische Erklärung zu Ihrer Frage ein, welche den Studierenden unabhängig von Ihrer Antwort in Lernelementen und Micro-Sessions als Erklärung der Lösung angezeigt wird.',
+        'Geben Sie hier eine generische Erklärung zu Ihrer Frage ein, welche den Studierenden unabhängig von Ihrer Antwort in Übungs-Quizzen und Microlearnings als Erklärung der Lösung angezeigt wird.',
       explanationPlaceholder: 'Erklärung hier eingeben…',
       answerOptions: 'Antwortmöglichkeiten',
       answerOption: 'Antwortmöglichkeit',
@@ -868,105 +868,110 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pasteSingleQuestions: '{count} Blocks mit 1 Frage anfügen',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
-      microSessionTypes:
-        'Micro-Sessions können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.',
-      microSessionCreated: 'Micro-Session <b>{name}</b> erfolgreich erstellt.',
-      microSessionEdited:
-        'Micro-Session <b>{name}</b> erfolgreich modifiziert.',
-      microSessionDescription:
-        'Geben Sie in diesem Schritt den Namen und die Beschreibung der Micro-Session ein.',
-      microSessionSettings:
+      microlearningTypes:
+        'Microlearnings können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.',
+      microlearningCreated: 'Microlearning <b>{name}</b> erfolgreich erstellt.',
+      microlearningEdited:
+        'Microlearning <b>{name}</b> erfolgreich modifiziert.',
+      microlearningDescription:
+        'Geben Sie in diesem Schritt den Namen und die Beschreibung des Microlearnings ein.',
+      microlearningSettings:
         'Wählen Sie in diesem Schritt das Start- und Enddatum und nehmen Sie weitere Einstellungen vor.',
-      microSessionQuestions:
-        'Wählen Sie in diesem Schritt die Fragen für die Micro-Session aus.',
-      microSessionEditingFailed: 'Anpassen der Micro-Session fehlgeschlagen...',
-      microSessionCreationFailed:
-        'Erstellen der Micro-Session fehlgeschlagen...',
-      microSessionName:
-        'Der Name soll Ihnen ermöglichen, diese Micro-Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
-      microSessionDescField:
-        'Fügen Sie eine Beschreibung zu Ihrer Micro-Session hinzu, welche den Teilnehmern zu Beginn angezeigt wird.',
-      microSessionCourse:
-        'Für die Erstellung einer Micro-Session ist die Auswahl des zugehörigen Kurses erforderlich.',
-      microSessionStartDate:
-        'Wählen Sie das Startdatum der Micro-Session aus. Die Session wird den Teilnehmenden ab diesem Zeitpunkt angezeigt.',
-      microSessionEndDate:
-        'Wählen Sie das Enddatum der Micro-Session aus. Die Session wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
-      microSessionMultiplier:
-        'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einer gamifizierten Micro-Session multipliziert werden.',
-      liveSessionGamified:
+      microlearningQuestions:
+        'Wählen Sie in diesem Schritt die Fragen für das Microlearning aus.',
+      microlearningEditingFailed:
+        'Anpassen des Microlearnings fehlgeschlagen...',
+      microlearningCreationFailed:
+        'Erstellen des Microlearnings fehlgeschlagen...',
+      microlearningName:
+        'Der Name soll Ihnen ermöglichen, dieses Microlearning von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
+      microlearningDescField:
+        'Fügen Sie eine Beschreibung zu Ihrem Microlearning hinzu, welche den Teilnehmern zu Beginn angezeigt wird.',
+      microlearningCourse:
+        'Für die Erstellung eines Microlearnings ist die Auswahl des zugehörigen Kurses erforderlich.',
+      microlearningStartDate:
+        'Wählen Sie das Startdatum des Microlearnings aus. Die Session wird den Teilnehmenden ab diesem Zeitpunkt angezeigt.',
+      microlearningEndDate:
+        'Wählen Sie das Enddatum des Microlearnings aus. Die Session wird den Teilnehmenden nach diesem Zeitpunkt nicht mehr angezeigt.',
+      microlearningMultiplier:
+        'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
+      microlearningUseCase:
+        '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
+      liveQuizGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
-      liveSessionTypes:
-        'Live-Sessions können nur Single-Choice, Multiple-Choice, Numerische und Freitext-Fragen enthalten.',
-      liveSessionTimeRestriction:
+      liveQuizTypes:
+        'Live Quizzes können nur Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
+      liveQuizTimeRestriction:
         'Bitte geben Sie eine gültige Zeitbegrenzung ein.',
-      liveSessionMinQuestions:
+      liveQuizMinQuestions:
         'Der Frageblock muss mindestens eine Frage enthalten.',
-      liveSessionCreated: 'Live-Session <b>{name}</b> erfolgreich erstellt.',
-      liveSessionUpdated: 'Live-Session <b>{name}</b> erfolgreich modifiziert.',
-      liveSessionDescription:
-        'Geben Sie in diesem Schritt den Namen und die Beschreibung der Live-Session ein.',
-      liveSessionSettings:
+      liveQuizCreated: 'Live Quiz <b>{name}</b> erfolgreich erstellt.',
+      liveQuizUpdated: 'Live Quiz <b>{name}</b> erfolgreich modifiziert.',
+      liveQuizDescription:
+        'Geben Sie in diesem Schritt den Namen und die Beschreibung des Live Quizzes ein.',
+      liveQuizSettings:
         'In diesem Schritt können Sie Einstellungen zur Session vornehmen.',
-      liveSessionBlocks: 'Fragen & Blöcke',
-      liveSessionDragDrop:
+      liveQuizBlocks: 'Fragen & Blöcke',
+      liveQuizDragDrop:
         'Fügen Sie mittels Drag&Drop auf das Plus-Icon Fragen zu Ihren Blöcken hinzu. Neue Blöcke können entweder ebenfalls durch Drag&Drop auf das entsprechende Feld oder durch Klicken auf den Button erstellt werden.',
-      liveSessionCreationFailed: 'Anpassen der Live-Session fehlgeschlagen...',
-      liveSessionEditingFailed: 'Erstellen der Live-Session fehlgeschlagen...',
-      liveSessionName:
+      liveQuizCreationFailed: 'Anpassen des Live Quizzes fehlgeschlagen...',
+      liveQuizEditingFailed: 'Erstellen des Live Quizzes fehlgeschlagen...',
+      liveQuizName:
         'Der Name soll Ihnen ermöglichen, diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
-      liveSessionDescField:
-        'Hier können Sie eine optionale Beschreibung der Live-Session eingeben. Diese wird in den Studierenden zu Beginn der Session angezeigt.',
-      liveSessionCourse: 'Sie können Ihre Session einem Kurs zuordnen.',
-      liveSessionSelectCourse: 'Kurs auswählen',
-      liveSessionNoCourse: 'Kein Kurs',
-      liveSessionMultiplier:
+      liveQuizDescField:
+        'Hier können Sie eine optionale Beschreibung des Live Quizzes eingeben. Diese wird in den Studierenden zu Beginn der Session angezeigt.',
+      liveQuizDescCourse: 'Sie können Ihre Session einem Kurs zuordnen.',
+      liveQuizSelectCourse: 'Kurs auswählen',
+      liveQuizNoCourse: 'Kein Kurs',
+      liveQuizMultiplier:
         'Beim Multiplier handelt es sich um einen Faktor, mit welchem die Punkte bei einer beantworteten Frage multipliziert werden. Der Faktor findet nur Verwendung, wenn Gamification aktiviert ist.',
-      liveSessionGamification:
+      liveQuizGamification:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
-      liveSessionLiveQA:
+      liveQuizLiveQA:
         'Diese Einstellung spezifiziert, ob der Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
-      liveSessionModeration:
+      liveQuizModeration:
         'Diese Einstellung spezifiziert, ob die Moderation im Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
-      liveSessionFeedbackChannel:
+      liveQuizFeedbackChannel:
         'Diese Einstellung spezifiziert, ob der Feedback-Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
-      learningElementResetDays:
-        'Bitte geben Sie eine Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.',
-      learningElementValidResetDays:
-        'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Lernelement wiederholt werden kann.',
-      learningElementTypes:
-        'Lernelemente können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen enthalten.',
-      learningElementSolutionReq:
-        'Bitte fügen Sie nur Fragen mit Lösung hinzu.',
-      learningElementCreated: 'Lernelement <b>{name}</b> erfolgreich erstellt.',
-      learningElementUpdated:
-        'Lernelement <b>{name}</b> erfolgreich modifiziert.',
-      learningElementDescription:
-        'Geben Sie in diesem Schritt den Namen und die Beschreibung des Lernelements ein.',
-      learningElementSettings:
-        'Nehmen Sie in diesem Schritt Einstellungen für Ihr Lernelement vor.',
-      learningElementContent:
-        'Fügen Sie in diesem Schritt Fragen und Text-Elemente zu Ihrem Lernelement hinzu.',
-      learningElementCreationFailed:
-        'Anpassen des Lernelements fehlgeschlagen...',
-      learningElementEditingFailed:
-        'Erstellen des Lernelements fehlgeschlagen...',
-      learningElementName:
-        'Der Name soll Ihnen ermöglichen, dieses Lernelement von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
-      learningElementDescField:
-        'Fügen Sie eine Beschreibung zu Ihrer Lernelement hinzu, welche den Teilnehmern zu Beginn angezeigt wird.',
-      learningElementSelectCourse:
-        'Für die Erstellung einer Lernelement ist die Auswahl des zugehörigen Kurses erforderlich.',
-      learningElementMultiplier:
-        'Wählen Sie einen Multiplier aus. Alle Punkte, welche Studierenden in diesem Lernelement sammeln, werden mit dem Multiplier multipliziert.',
-      learningElementRepetition:
-        'Wählen Sie einen Zeitraum nach welchem die Studierenden die Lernelement wiederholen können.',
-      learningElementOrder:
+      liveQuizUseCase:
+        '<link>Live Quizzes</link> können zur Förderung der Interaktivität in Vorlesungen, Seminaren und Workshops eingesetzt werden. Während die Teilnehmenden die Fragen beantworten, werden die Resultate auf einer Evaluationsansicht dargestellt.',
+      practiceQuizResetDays:
+        'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
+      practiceQuizValidResetDays:
+        'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
+      practiceQuizElementTypes:
+        'Übungs-Quizzes können nur Single-Choice, Multiple-Choice, Kprim und Numerische Fragen sowie Inhaltselemente und Flashcards enthalten.',
+      practiceQuizSolutionReq: 'Bitte fügen Sie nur Fragen mit Lösung hinzu.',
+      practiceQuizCreated: 'Übungs-Quiz <b>{name}</b> erfolgreich erstellt.',
+      practiceQuizUpdated: 'Übungs-Quiz <b>{name}</b> erfolgreich modifiziert.',
+      practiceQuizDescription:
+        'Geben Sie in diesem Schritt den Namen und die Beschreibung des Übungs-Quizzes ein.',
+      practiceQuizSettings:
+        'Nehmen Sie in diesem Schritt Einstellungen für Ihr Übungs-Quiz vor.',
+      practiceQuizContent:
+        'Fügen Sie in diesem Schritt Fragen und Text-Elemente zu Ihrem Übungs-Quiz hinzu.',
+      practiceQuizCreationFailed:
+        'Anpassen des Übungs-Quizzes fehlgeschlagen...',
+      practiceQuizEditingFailed:
+        'Erstellen des Übungs-Quizzes fehlgeschlagen...',
+      practiceQuizCoursePlaceholder: 'Kurs auswählen...',
+      practiceQuizName:
+        'Der Name soll Ihnen ermöglichen, dieses Übungs-Quiz von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
+      practiceQuizDescField:
+        'Fügen Sie eine Beschreibung zu Ihrem Übungs-Quiz hinzu, welche den Teilnehmern zu Beginn angezeigt wird.',
+      practiceQuizSelectCourse:
+        'Für die Erstellung eines Übungs-Quizzes ist die Auswahl des zugehörigen Kurses erforderlich.',
+      practiceQuizMultiplier:
+        'Wählen Sie einen Multiplier aus. Alle Punkte, welche Studierenden in diesem Übungs-Quiz sammeln, werden mit dem Multiplier multipliziert.',
+      practiceQuizRepetition:
+        'Wählen Sie einen Zeitraum nach welchem die Studierenden das Übungs-Quiz wiederholen können.',
+      practiceQuizOrder:
         'Wählen Sie eine Reihenfolge in welcher die Fragen für die Studierenden zu lösen sind.',
-      learningElemenSelectOrder: 'Reihenfolge wählen',
+      practiceQuizSelectOrder: 'Reihenfolge wählen',
       learningElementSEQUENTIAL: 'Sequenziell',
-      learningElementSHUFFLED: 'Zufällig',
-      learningElementLAST_RESPONSE: 'Letzte Antwort zuletzt',
+      learningElementSPACED_REPETITION: 'Spaced Repetition',
+      practiceQuizUseCase:
+        '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
     },
     formErrors: {
       resolveErrors:
@@ -991,6 +996,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es muss mindestens eine Antwortmöglichkeit gegeben werden',
       NumberQuestionsRequiredKPRIM:
         'Bei Kprim-Fragen müssen genau vier Antwortmöglichkeiten gegeben werden',
+      explanationRequired:
+        'Bitte geben Sie eine Erklärung ein. Auf Flashcards wird diese Erklärung den Studierenden als Antwort auf die Frage angezeigt.',
     },
     sessions: {
       runningSessions: 'Laufende Sessionen',
@@ -1006,11 +1013,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deleteSession: 'Session löschen',
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
-      deleteLiveSession: 'Live-Session löschen',
-      confirmLiveSessionDeletion:
-        'Sind Sie sich sicher, dass Sie die folgende Live-Session löschen möchten?',
-      liveSessionDeletionHint:
-        'Das Löschen einer Live-Session ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live-Sessions können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      deleteLiveQuiz: 'Live Quiz löschen',
+      confirmLiveQuizDeletion:
+        'Sind Sie sich sicher, dass Sie die folgendes Live Quiz löschen möchten?',
+      liveQuizDeletionHint:
+        'Das Löschen eines Live Quizzes ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
       noSessions: 'Keine Sessionen gefunden',
       creationExplanation:
@@ -1172,8 +1179,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       dateChangeFailed:
         'Beim Anpassen des Datums ist ein Fehler aufgetreten. Bitte überprüfen Sie die Eingabe.',
       noSessions: 'Keine Sessionen vorhanden',
-      noLearningElements: 'Keine Lernelemente vorhanden',
-      noMicroSessions: 'Keine Micro-Sessions vorhanden',
+      noPracticeQuizzes: 'Keine Übungs-Quizzes vorhanden',
+      noMicrolearnings: 'Keine Microlearnings vorhanden',
+      noGroupActivities: 'Keine Gruppenaktivitäten vorhanden',
       courseLeaderboard: 'Kurs Leaderboard',
       participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',
@@ -1184,42 +1192,43 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endAt: 'Ende: {time}',
       nQuestions: '{number} Fragen',
       copyAccessLink: 'Zugriffslink kopieren',
-      linkMicroSessionCopied:
-        'Der Link zur Micro-Session wurde erfolgreich in die Zwischenablage kopiert.',
-      linkLearningElementCopied:
-        'Der Link zum Lernelement wurde erfolgreich in die Zwischenablage kopiert.',
-      editMicroSession: 'Micro-Session bearbeiten',
-      publishMicroSession: 'Micro-Session veröffentlichen',
-      unpublishMicroSession: 'Veröffentlichung aufheben',
-      deleteMicroSession: 'Micro-Session löschen',
-      publishItem: '{name} publizieren',
+      linkMicrolearningCopied:
+        'Der Link zum Microlearning wurde erfolgreich in die Zwischenablage kopiert.',
+      linkPracticeQuizCopied:
+        'Der Link zum Übungs-Quiz wurde erfolgreich in die Zwischenablage kopiert.',
+      editMicrolearning: 'Microlearning bearbeiten',
+      publishMicrolearning: 'Microlearning veröffentlichen',
+      unpublishMicrolearning: 'Veröffentlichung aufheben',
+      deleteMicrolearning: 'Microlearning löschen',
+      publishItemPRACTICE_QUIZ: 'Übungs-Quiz veröffentlichen',
+      publishItemMICROLEARNING: 'Microlearning veröffentlichen',
       confirmPublishing:
         'Sind Sie sich sicher, dass Sie das folgende Element publizieren möchten?',
       publishingHint:
-        'Das Publizieren eines Lernelements oder einer Micro-Session macht das Element für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn das Element noch nicht läuft und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
+        'Das Publizieren eines Übungs-Quizzes oder eines Microlearnings macht das Element für alle Teilnehmenden sichtbar. Dieser Prozess kann nur rückgängig gemacht werden, wenn das Element noch nicht läuft und/oder keine Antworten abgegeben wurden. Änderungen am Inhalt eines Elements können nach dem Publizieren nicht mehr vorgenommen werden.',
       microPublishingHint:
-        'Micro-Sessions sind ausserdem nur innerhalb des spezifizierten Datumsbereichs sichtbar.',
-      confirmDeletionMicroSession:
-        'Sind Sie sich sicher, dass Sie die folgende Micro-Session löschen möchten?',
-      hintDeletionMicroSession:
-        'Das Löschen einer Micro-Session ist nur möglich, solange sie noch nicht läuft und in einem Kurs genutzt wird. Gelöschte Micro-Sessions können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
-      editLearningElement: 'Lernelement bearbeiten',
-      publishLearningElement: 'Lernelement veröffentlichen',
-      deleteLearningElement: 'Lernelement löschen',
-      confirmDeletionLearningElement:
-        'Sind Sie sich sicher, dass Sie das folgende Lernelement löschen möchten?',
-      hintDeletionLearningElement:
-        'Das Löschen eines Lernelements ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Lernelemente können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+        'Microlearnings sind ausserdem nur innerhalb des spezifizierten Datumsbereichs sichtbar.',
+      confirmDeletionMicrolearning:
+        'Sind Sie sich sicher, dass Sie das folgende Microlearning löschen möchten?',
+      hintDeletionMicrolearning:
+        'Das Löschen eines Microlearnings ist nur möglich, solange sie noch nicht läuft und in einem Kurs genutzt wird. Gelöschte Microlearnings können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      editPracticeQuiz: 'Übungs-Quiz bearbeiten',
+      publishPracticeQuiz: 'Übungs-Quiz veröffentlichen',
+      deletePracticeQuiz: 'Übungs-Quiz löschen',
+      confirmDeletionPracticeQuiz:
+        'Sind Sie sich sicher, dass Sie das folgende Übungs-Quiz löschen möchten?',
+      hintDeletionPracticeQuiz:
+        'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
     },
     toasts: {
-      learningElementEdit: 'Lernelement erfolgreich angepasst!',
-      learningElementCreate: 'Lernelement erfolgreich erstellt!',
+      practiceQuizEdit: 'Übungs-Quiz erfolgreich angepasst!',
+      practiceQuizCreate: 'Übungs-Quiz erfolgreich erstellt!',
       toCourseOverview: 'Zur <link>Kursübersicht</link>',
-      liveSessionEdit: 'Session erfolgreich angepasst!',
-      liveSessionCreate: 'Session erfolgreich erstellt!',
+      liveQuizEdit: 'Session erfolgreich angepasst!',
+      liveQuizCreate: 'Session erfolgreich erstellt!',
       toSessionList: 'Zur <link>Session-Liste</link>',
-      microSessionEdit: 'Micro-Session erfolgreich angepasst!',
-      microSessionCreate: 'Micro-Session erfolgreich erstellt!',
+      microlearningEdit: 'Microlearning erfolgreich angepasst!',
+      microlearningCreate: 'Microlearning erfolgreich erstellt!',
     },
   },
   control: {
@@ -1228,7 +1237,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       installAndroid:
         'Installieren Sie die KlickerUZH Controller-App auf Ihrem Handy, um Ihre Sessionen während der Vorlesungen direkt vom Handy aus zu steuern.',
       installIOS:
-        "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Controller-App auf Ihrem Handy zu installieren und Live-Sessionen direkt zu bedienen.",
+        "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Controller-App auf Ihrem Handy zu installieren und Live Quizzes direkt zu bedienen.",
       shortnameRequired: 'Bitte geben Sie Ihren Kurznamen ein.',
       tokenRequired:
         'Geben Sie einen gültigen Token ein. Bitte beachten Sie die bei der Token Generierung angezeigte Gültigkeit.',
@@ -1261,7 +1270,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmStartSession:
         'Sind Sie sich sicher, dass sie die folgende Session starten möchten?',
       explanationStartSession:
-        'Bitte beachten Sie, dass eine gestartete Live-Session grundsätzlich öffentlich zugänglich ist. Laufende Sessionen können über die KlickerUZH Management-App abgebrochen oder gestoppt werden.',
+        'Bitte beachten Sie, dass ein gestartetes Live Quiz grundsätzlich öffentlich zugänglich ist. Laufende Sessionen können über die KlickerUZH Management-App abgebrochen oder gestoppt werden.',
     },
     session: {
       sessionControl: 'Session-Steuerung',

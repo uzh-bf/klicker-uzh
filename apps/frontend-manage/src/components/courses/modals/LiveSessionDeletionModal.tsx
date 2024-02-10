@@ -29,7 +29,7 @@ function LiveSessionDeletionModal({
           className={{
             root: twMerge('bg-red-600 font-bold text-white'),
           }}
-          data={{ cy: 'confirm-delete-live-session' }}
+          data={{ cy: 'confirm-delete-live-quiz' }}
         >
           {t('shared.generic.confirm')}
         </Button>
@@ -37,7 +37,7 @@ function LiveSessionDeletionModal({
       onSecondaryAction={
         <Button
           onClick={(): void => setOpen(false)}
-          data={{ cy: 'cancel-delete-live-session' }}
+          data={{ cy: 'cancel-delete-live-quiz' }}
         >
           {t('shared.generic.cancel')}
         </Button>
@@ -48,13 +48,13 @@ function LiveSessionDeletionModal({
       className={{ content: 'w-[40rem] h-max self-center pt-0' }}
     >
       <div>
-        <H2>{t('manage.sessions.deleteLiveSession')}</H2>
-        <div>{t('manage.sessions.confirmLiveSessionDeletion')}</div>
+        <H2>{t('manage.sessions.deleteLiveQuiz')}</H2>
+        <div>{t('manage.sessions.confirmLiveQuizDeletion')}</div>
         <div className="p-2 mt-1 border border-solid rounded border-uzh-grey-40">
           <H3>{title}</H3>
         </div>
         <div className="mt-6 mb-2 text-sm italic">
-          {t('manage.sessions.liveSessionDeletionHint')}
+          {t('manage.sessions.liveQuizDeletionHint')}
         </div>
       </div>
     </Modal>

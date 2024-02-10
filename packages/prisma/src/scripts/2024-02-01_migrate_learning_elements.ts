@@ -43,13 +43,69 @@ function preparePracticeQuizInstanceResults(
   learningElement: LearningElement,
   questionInstance: QuestionInstance
 ) {
-  return {
-    ...questionInstance.results,
+  if (
+    questionInstance.questionData.type === ElementType.SC ||
+    questionInstance.questionData.type === ElementType.MC ||
+    questionInstance.questionData.type === ElementType.KPRIM
+  ) {
+    return {
+      choices:
+        questionInstance.results.choices ??
+        questionInstance.questionData.options.choices.map(
+          (_: any, ix: number) => ({
+            [`${ix}`]: 0,
+          })
+        ),
+      total: questionInstance.participants ?? 0,
+    }
+  }
+
+  if (
+    questionInstance.questionData.type === ElementType.NUMERICAL ||
+    questionInstance.questionData.type === ElementType.FREE_TEXT
+  ) {
+    return {
+      responses: questionInstance.results ?? {},
+      total: questionInstance.participants ?? 0,
+    }
+  }
+
+  if (questionInstance.questionData.type === ElementType.FLASHCARD) {
+    return {
+      CORRECT: questionInstance.results?.['2'] ?? 0,
+      PARTIAL: questionInstance.results?.['1'] ?? 0,
+      INCORRECT: questionInstance.results?.['0'] ?? 0,
+      total: questionInstance.participants ?? 0,
+    }
   }
 }
 
 async function migrate() {
   const prisma = new PrismaClient()
+
+  const elementInstances = await prisma.elementInstance.findMany({})
+
+  for (const instance of elementInstances) {
+    if (
+      instance.elementData.type === ElementType.FLASHCARD &&
+      Object.keys(instance.results).includes('0')
+    ) {
+      console.log(instance.id, instance.results)
+      await prisma.elementInstance.update({
+        where: {
+          id: instance.id,
+        },
+        data: {
+          results: {
+            CORRECT: instance.results['2'],
+            PARTIAL: instance.results['1'],
+            INCORRECT: instance.results['0'],
+            total: instance.results.total ?? 0,
+          },
+        },
+      })
+    }
+  }
 
   const learningElements = await prisma.learningElement.findMany({
     include: {
@@ -171,11 +227,11 @@ async function migrate() {
                       where: {
                         type_migrationId: {
                           type: ElementInstanceType.PRACTICE_QUIZ,
-                          migrationId: stackElement.questionInstance.id,
+                          migrationId: String(stackElement.questionInstance.id),
                         },
                       },
                       create: {
-                        migrationId: stackElement.questionInstance.id,
+                        migrationId: String(stackElement.questionInstance.id),
                         type: ElementInstanceType.PRACTICE_QUIZ,
                         elementType:
                           stackElement.questionInstance.question?.type ??
@@ -184,6 +240,13 @@ async function migrate() {
                         createdAt: stackElement.questionInstance.createdAt,
                         updatedAt: stackElement.questionInstance.updatedAt,
 
+                        element: stackElement.questionInstance.questionId
+                          ? {
+                              connect: {
+                                id: stackElement.questionInstance.questionId,
+                              },
+                            }
+                          : undefined,
                         owner: {
                           connect: {
                             id: elem.owner.id,

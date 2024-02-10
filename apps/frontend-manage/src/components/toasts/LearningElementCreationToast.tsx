@@ -28,9 +28,9 @@ function LearningElementCreationToast({
     >
       <div>
         {editMode ? (
-          <div>{t('manage.toasts.learningElementEdit')}</div>
+          <div>{t('manage.toasts.practiceQuizEdit')}</div>
         ) : (
-          <div>{t('manage.toasts.learningElementCreate')}</div>
+          <div>{t('manage.toasts.practiceQuizCreate')}</div>
         )}
         <div className="flex flex-row items-center">
           <FontAwesomeIcon icon={faArrowRight} className="mr-2" />

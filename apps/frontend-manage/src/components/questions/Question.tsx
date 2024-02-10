@@ -1,14 +1,19 @@
+import {
+  faComment as faCommentRegular,
+  faRectangleList as faListRegular,
+  faCircleQuestion as faQuestionRegular,
+} from '@fortawesome/free-regular-svg-icons'
+import { IconDefinition, faArchive } from '@fortawesome/free-solid-svg-icons'
 import { Button, Checkbox, H2, H3, Modal } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
-
 // TODO: readd modals and tags
 // import QuestionDetailsModal from './QuestionDetailsModal'
 // import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { useMutation } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
-import { faArchive, faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
@@ -22,6 +27,16 @@ import { useTranslations } from 'next-intl'
 import QuestionEditModal from './QuestionEditModal'
 import QuestionTags from './QuestionTags'
 // import QuestionTags from './QuestionTags'
+
+const ElementIcons: Record<ElementType, IconDefinition> = {
+  FLASHCARD: faListRegular,
+  CONTENT: faCommentRegular,
+  SC: faQuestionRegular,
+  MC: faQuestionRegular,
+  KPRIM: faQuestionRegular,
+  FREE_TEXT: faQuestionRegular,
+  NUMERICAL: faQuestionRegular,
+}
 
 interface Props {
   checked: boolean
@@ -67,7 +82,7 @@ function Question({
   const [collectedProps, drag] = useDrag({
     item: {
       id,
-      type: 'question',
+      type,
       questionType: type,
       title,
       content,
@@ -77,7 +92,7 @@ function Question({
     collect: (monitor): any => ({
       isDragging: monitor.isDragging(),
     }),
-    type: 'question',
+    type,
   })
 
   return (
@@ -97,12 +112,8 @@ function Question({
         <div className="flex flex-row flex-1">
           <div className="flex flex-col flex-1 gap-1">
             <div className="flex flex-row items-center flex-none gap-2 text-lg">
-              {isArchived && (
-                <FontAwesomeIcon title="ARCHIVE" icon={faArchive} />
-              )}
-
               <a
-                className="flex-1 text-xl font-bold cursor-pointer text-primary-strong sm:hover:text-uzh-blue-100"
+                className="flex-1 text-xl font-bold cursor-pointer text-primary-strong sm:hover:text-uzh-blue-100 inline-flex items-center"
                 role="button"
                 tabIndex={0}
                 type="button"
@@ -110,8 +121,13 @@ function Question({
                 onKeyDown={() => setIsModificationModalOpen(true)}
                 data-cy="question-title"
               >
-                {t(`shared.${type}.short`)} - {title}
+                <FontAwesomeIcon icon={ElementIcons[type]} className="mr-2" />
+                {title}
               </a>
+
+              {isArchived && (
+                <FontAwesomeIcon title="ARCHIVE" icon={faArchive} />
+              )}
             </div>
 
             <div className="flex-1">
@@ -123,7 +139,7 @@ function Question({
               </Ellipsis>
             </div>
 
-            <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-4 text-slate-600">
+            <div className="flex flex-col flex-none gap-1 text-sm md:flex-row md:gap-6 text-slate-600">
               <div>
                 {t('shared.generic.createdAt', {
                   date: dayjs(createdAt).format('DD.MM.YYYY HH:mm'),
@@ -134,6 +150,7 @@ function Question({
                   date: dayjs(updatedAt).format('DD.MM.YYYY HH:mm'),
                 })}
               </div>
+              <div>{t(`shared.${type}.typeLabel`)}</div>
             </div>
           </div>
           <div className="hidden mr-6 w-max md:block">

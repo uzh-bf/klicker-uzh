@@ -12,15 +12,16 @@ import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
 import { RetryLink } from '@apollo/client/link/retry'
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
-import { usePregeneratedHashes } from '@klicker-uzh/graphql/dist/util'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
+import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'
 import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
 import { equals } from 'ramda'
 import { useMemo } from 'react'
 import util from 'util'
+
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
   props?: Record<string, any>
