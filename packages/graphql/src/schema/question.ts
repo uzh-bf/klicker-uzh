@@ -234,6 +234,7 @@ export const Element = ElementRef.implement({
     questionData: t.field({
       type: QuestionDataRef,
       resolve: (q) => q as unknown as BaseElementData,
+      nullable: true,
     }),
 
     isArchived: t.exposeBoolean('isArchived'),
@@ -288,14 +289,13 @@ export const ElementInstance = ElementInstanceRef.implement({
   }),
 })
 
-export interface ITag extends Omit<DB.Tag, 'originalId' | 'ownerId'> {}
+export interface ITag
+  extends Omit<DB.Tag, 'originalId' | 'ownerId' | 'createdAt' | 'updatedAt'> {}
 export const TagRef = builder.objectRef<ITag>('Tag')
 export const Tag = TagRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     name: t.exposeString('name'),
     order: t.exposeInt('order'),
-    createdAt: t.expose('createdAt', { type: 'Date' }),
-    updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })
