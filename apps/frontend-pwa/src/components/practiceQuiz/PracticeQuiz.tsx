@@ -67,7 +67,7 @@ function PracticeQuiz({
       courseId: router.query.courseId as string,
       quizId: quiz.id === 'bookmarks' ? undefined : quiz.id,
     },
-    skip: !router.query.courseId,
+    skip: !router.query.courseId || !dataParticipant?.self,
   })
 
   return (
