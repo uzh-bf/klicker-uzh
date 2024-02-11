@@ -1150,7 +1150,7 @@ model QuestionResponse {
   participationId Int
 
   // TODO: for now, a response can be associated with either a questionInstance or elementInstance, but in the future only elementInstance will remain and be required
-  questionInstance   QuestionInstance? @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstance   QuestionInstance? @relation(fields: [questionInstanceId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   questionInstanceId Int?
   elementInstance    ElementInstance?  @relation(fields: [elementInstanceId], references: [id])
   elementInstanceId  Int?
@@ -1179,7 +1179,7 @@ model QuestionResponseDetail {
   participationId Int
 
   // TODO: for now, a response can be associated with either a questionInstance or elementInstance, but in the future only elementInstance will remain and be required
-  questionInstance   QuestionInstance? @relation(fields: [questionInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionInstance   QuestionInstance? @relation(fields: [questionInstanceId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   questionInstanceId Int?
   elementInstance    ElementInstance?  @relation(fields: [elementInstanceId], references: [id])
   elementInstanceId  Int?
