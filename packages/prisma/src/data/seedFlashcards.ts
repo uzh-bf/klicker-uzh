@@ -84,10 +84,31 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
   const USER_ID = USER_ID_TEST
   const COURSE_ID = COURSE_ID_TEST
 
+  const formulaTag = await prismaClient.tag.upsert({
+    where: {
+      ownerId_name: {
+        ownerId: USER_ID,
+        name: 'Formula',
+      },
+    },
+    create: {
+      name: 'Formula',
+      owner: {
+        connect: {
+          id: USER_ID,
+        },
+      },
+    },
+    update: {},
+  })
+
+  const FORMULA_TAG_ID = formulaTag.id
+
   const flashcards1 = await prepareFlashcardsFromFile(
     prismaClient,
     'data/BF2_FC_Modul_1.xml',
-    USER_ID
+    USER_ID,
+    FORMULA_TAG_ID
   )
   await seedFlashcardSet(
     prismaClient,
@@ -101,7 +122,8 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
   const flashcards2 = await prepareFlashcardsFromFile(
     prismaClient,
     'data/BF2_FC_Modul_2.xml',
-    USER_ID
+    USER_ID,
+    FORMULA_TAG_ID
   )
   await seedFlashcardSet(
     prismaClient,
@@ -115,7 +137,8 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
   const flashcards3 = await prepareFlashcardsFromFile(
     prismaClient,
     'data/BF2_FC_Modul_3.xml',
-    USER_ID
+    USER_ID,
+    FORMULA_TAG_ID
   )
   await seedFlashcardSet(
     prismaClient,
@@ -129,7 +152,8 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
   const flashcards4 = await prepareFlashcardsFromFile(
     prismaClient,
     'data/BF2_FC_Modul_4.xml',
-    USER_ID
+    USER_ID,
+    FORMULA_TAG_ID
   )
   await seedFlashcardSet(
     prismaClient,
@@ -143,7 +167,8 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
   const flashcards5 = await prepareFlashcardsFromFile(
     prismaClient,
     'data/BF2_FC_Modul_5.xml',
-    USER_ID
+    USER_ID,
+    FORMULA_TAG_ID
   )
   await seedFlashcardSet(
     prismaClient,

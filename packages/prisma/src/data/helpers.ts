@@ -979,25 +979,75 @@ export async function prepareMicroSession({
   }
 }
 
-export function extractQuizInfo(doc: typeof xmlDoc) {
+export function extractQuizInfo(doc: typeof xmlDoc, formulaTagId?: number) {
   const turndown = Turndown()
 
   return {
     title: doc.box.title[0],
     description: doc.box.description[0],
-    elements: doc.box.cards[0].card.map((card) => ({
-      originalId: card['$'].id,
-      name: `FC ${card['$'].id}`,
-      content: turndown.turndown(card.question[0].text[0].trim()),
-      explanation: turndown.turndown(card.answer[0].text[0].trim()),
-      type: ElementType.FLASHCARD,
-      options: {},
-    })),
+    elements: doc.box.cards[0].card.map((card) => {
+      const hasFormula =
+        card.question[0].text[0].includes('\\(') ||
+        card.answer[0].text[0].includes('\\(')
+
+      if (hasFormula) {
+        console.log(
+          card.question[0].text[0].trim(),
+          card.answer[0].text[0].trim()
+        )
+      }
+
+      return {
+        originalId: card['$'].id,
+        name: `FC ${card['$'].id}`,
+        content: turndown
+          .turndown(card.question[0].text[0].trim())
+          .replaceAll('\\(', '$$$$')
+          .replaceAll('\\)', '$$$$')
+          .replaceAll('\\$', '$$')
+          .replaceAll('\\*', '*')
+          .replaceAll('\\_', '_')
+          .replaceAll('\\[', '[')
+          .replaceAll('\\]', ']')
+          .replaceAll('\\\\%', '\\%')
+          .replaceAll('\\\\frac', '\\frac')
+          .replaceAll('\\\\infty', '\\infty')
+          .replaceAll('\\\\sigma', '\\sigma')
+          .replaceAll('\\\\rho', '\\rho')
+          .replaceAll('\\\\pi', '\\pi')
+          .replaceAll('\\\\sum', '\\sum'),
+        explanation: turndown
+          .turndown(card.answer[0].text[0].trim())
+          .replaceAll('\\(', '$$$$')
+          .replaceAll('\\)', '$$$$')
+          .replaceAll('\\$', '$$')
+          .replaceAll('\\*', '*')
+          .replaceAll('\\_', '_')
+          .replaceAll('\\[', '[')
+          .replaceAll('\\]', ']')
+          .replaceAll('\\\\%', '\\%')
+          .replaceAll('\\\\frac', '\\frac')
+          .replaceAll('\\\\infty', '\\infty')
+          .replaceAll('\\\\sigma', '\\sigma')
+          .replaceAll('\\\\rho', '\\rho')
+          .replaceAll('\\\\pi', '\\pi')
+          .replaceAll('\\\\sum', '\\sum'),
+        type: ElementType.FLASHCARD,
+        options: {},
+        tags: hasFormula
+          ? {
+              connect: {
+                id: formulaTagId,
+              },
+            }
+          : undefined,
+      }
+    }),
     // ... other practice quiz properties
   }
 }
 
-export async function processQuizInfo(fileName: string) {
+export async function processQuizInfo(fileName: string, formulaTagId?: number) {
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
 
@@ -1005,9 +1055,7 @@ export async function processQuizInfo(fileName: string) {
 
   const xmlDoc = await parseStringPromise(xmlData)
 
-  // console.log(xmlDoc, xmlDoc.box.cards[0])
-
-  const quizInfo = extractQuizInfo(xmlDoc)
+  const quizInfo = extractQuizInfo(xmlDoc, formulaTagId)
 
   return quizInfo
 }
@@ -1016,9 +1064,9 @@ export async function prepareFlashcardsFromFile(
   prismaClient: Prisma.PrismaClient,
   fileName: string,
   userId: string,
-  tagId?: number
+  formulaTagId?: number
 ) {
-  const quizInfo = await processQuizInfo(fileName)
+  const quizInfo = await processQuizInfo(fileName, formulaTagId)
 
   const elementsFC = await Promise.allSettled(
     quizInfo.elements.map(async (data) => {
@@ -1028,14 +1076,6 @@ export async function prepareFlashcardsFromFile(
         },
         create: {
           ...data,
-          tags:
-            typeof tagId === 'number'
-              ? {
-                  connect: {
-                    id: tagId,
-                  },
-                }
-              : undefined,
           owner: {
             connect: {
               id: userId,
@@ -1044,14 +1084,6 @@ export async function prepareFlashcardsFromFile(
         },
         update: {
           ...data,
-          tags:
-            typeof tagId === 'number'
-              ? {
-                  connect: {
-                    id: tagId,
-                  },
-                }
-              : undefined,
           owner: {
             connect: {
               id: userId,
