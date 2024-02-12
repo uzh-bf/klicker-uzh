@@ -3,6 +3,18 @@ import { PrismaClient } from '../client'
 async function migrate() {
   const prisma = new PrismaClient()
 
+  await prisma.questionResponse.deleteMany({
+    where: {
+      questionInstanceId: 3745,
+    },
+  })
+
+  await prisma.questionResponseDetail.deleteMany({
+    where: {
+      questionInstanceId: 3745,
+    },
+  })
+
   const questionInstances = await prisma.questionInstance.findMany({
     where: {
       type: 'LEARNING_ELEMENT',
