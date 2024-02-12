@@ -7,12 +7,28 @@ async function migrate() {
     where: {
       type: 'LEARNING_ELEMENT',
     },
+    include: {
+      stackElement: {
+        include: {
+          stack: {
+            include: {
+              learningElement: {
+                include: {
+                  course: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   console.log('questionInstances', questionInstances.length)
 
   let counter = 1
   let counter2 = 1
+  let counter3 = 1
 
   for (const elem of questionInstances) {
     const matchingElementInstance = await prisma.elementInstance.findFirst({
@@ -21,10 +37,7 @@ async function migrate() {
       },
     })
 
-    if (
-      !matchingElementInstance ||
-      elem.questionData.name !== matchingElementInstance.elementData.name
-    ) {
+    if (!matchingElementInstance) {
       console.log(
         `${elem.id};${matchingElementInstance?.id};${elem.questionData.name};${matchingElementInstance?.elementData.name}`
       )
@@ -32,24 +45,37 @@ async function migrate() {
       continue
     }
 
-    await prisma.questionResponse.updateMany({
-      where: { questionInstanceId: elem.id },
-      data: {
-        elementInstanceId: matchingElementInstance?.id,
-      },
-    })
+    if (elem.questionData.name !== matchingElementInstance.elementData.name) {
+      console.log(
+        `${elem.id};${matchingElementInstance?.id};${elem.questionData.name};${matchingElementInstance?.elementData.name};${elem.stackElement?.stack.learningElement?.course?.name}`
+      )
+      counter3++
+      continue
+    }
 
-    await prisma.questionResponseDetail.updateMany({
-      where: { questionInstanceId: elem.id },
-      data: {
-        elementInstanceId: matchingElementInstance?.id,
-      },
-    })
+    try {
+      await prisma.questionResponse.updateMany({
+        where: { questionInstanceId: elem.id },
+        data: {
+          elementInstanceId: matchingElementInstance?.id,
+        },
+      })
+
+      await prisma.questionResponseDetail.updateMany({
+        where: { questionInstanceId: elem.id },
+        data: {
+          elementInstanceId: matchingElementInstance?.id,
+        },
+      })
+    } catch (e) {
+      console.log('Error', e, elem.id, matchingElementInstance?.id)
+      throw e
+    }
 
     counter++
   }
 
-  console.log(counter, counter2)
+  console.log(counter, counter2, counter3)
 }
 
 await migrate()
