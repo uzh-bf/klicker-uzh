@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.6...v3.1.0-rc.7) (2024-02-12)
+
+
+### Refactors
+
+* remove or rename code related to learning elements and add scripts to fix db inconsistencies ([#4037](https://github.com/uzh-bf/klicker-uzh/issues/4037)) ([b25feb1](https://github.com/uzh-bf/klicker-uzh/commit/b25feb14679a4e91639b25a17e5193c64027a978))
+
 ## [3.1.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.5...v3.1.0-rc.6) (2024-02-10)
 
 
