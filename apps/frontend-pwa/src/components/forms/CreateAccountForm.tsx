@@ -19,7 +19,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
-import DynamicMarkdown from '../learningElements/DynamicMarkdown'
+import DynamicMarkdown from '../practiceQuiz/DynamicMarkdown'
 
 interface Props {
   initialUsername?: string

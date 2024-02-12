@@ -24,9 +24,7 @@ function FTEvaluation({ options, evaluation }: Props) {
   return (
     <div>
       <div className="mb-4">
-        <div className="font-bold">
-          {t('pwa.learningElement.othersAnswered')}
-        </div>
+        <div className="font-bold">{t('pwa.practiceQuiz.othersAnswered')}</div>
         <div>
           {Object.keys(answers)
             .map((key) => `${key} (${answers[key].count})`)

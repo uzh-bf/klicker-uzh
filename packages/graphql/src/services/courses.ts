@@ -2,7 +2,7 @@ import {
   ElementOrderType,
   GroupActivityStatus,
   LeaderboardEntry,
-  LearningElementStatus,
+  PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure'
@@ -776,7 +776,7 @@ export async function getCoursePracticeQuiz(
     pointsMultiplier: 1,
     resetTimeDays: 6,
     orderType: ElementOrderType.SPACED_REPETITION,
-    status: LearningElementStatus.PUBLISHED,
+    status: PublicationStatus.PUBLISHED,
     stacks: orderedStacks.slice(0, 25),
     course,
     courseId,

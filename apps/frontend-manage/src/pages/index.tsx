@@ -35,7 +35,9 @@ import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
-import SessionCreation from '../components/sessions/creation/SessionCreation'
+import SessionCreation, {
+  WizardMode,
+} from '../components/sessions/creation/SessionCreation'
 import SuspendedCreationButtons from '../components/sessions/creation/SuspendedCreationButtons'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 
@@ -46,9 +48,9 @@ function Index() {
   const [toggleIsArchived] = useMutation(ToggleIsArchivedDocument)
 
   const [searchInput, setSearchInput] = useState('')
-  const [creationMode, setCreationMode] = useState<
-    undefined | 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
-  >(undefined)
+  const [creationMode, setCreationMode] = useState<undefined | WizardMode>(
+    undefined
+  )
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
   const [sortBy, setSortBy] = useState('')

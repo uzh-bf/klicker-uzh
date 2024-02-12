@@ -14,7 +14,6 @@ import {
   prepareFlashcardsFromFile,
   prepareGroupActivityClues,
   prepareGroupActivityStack,
-  prepareLearningElement,
   prepareMicroSession,
   prepareParticipant,
   prepareQuestion,
@@ -233,31 +232,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   // })
 
   // ----- LEGACY SEED -----
-  const learningElementsTest = await Promise.all(
-    DATA_TEST.LEARNING_ELEMENTS.map(async (data) =>
-      prisma.learningElement.upsert(
-        await prepareLearningElement({
-          ...data,
-          ownerId: USER_ID_TEST,
-          courseId: COURSE_ID_TEST,
-          stacks: data.stacks.map((stack) => {
-            return {
-              ...stack,
-              elements: stack.elements.map((element) => {
-                if (typeof element !== 'string') {
-                  return questionsTest.find(
-                    (q) => parseInt(q.originalId!) === element
-                  ) as Element
-                }
-                return element
-              }),
-            }
-          }),
-        })
-      )
-    )
-  )
-
   const sessionsTest = await Promise.all(
     DATA_TEST.SESSIONS.map(async (data) =>
       prisma.liveSession.upsert(

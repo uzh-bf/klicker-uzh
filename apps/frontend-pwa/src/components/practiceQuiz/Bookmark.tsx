@@ -30,7 +30,7 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
     return bookmarks.includes(stackId)
   }, [bookmarks, stackId])
 
-  const [bookmarkQuestion] = useMutation(BookmarkElementStackDocument, {
+  const [bookmarkElementStack] = useMutation(BookmarkElementStackDocument, {
     variables: {
       stackId: stackId,
       courseId: router.query.courseId as string,
@@ -73,7 +73,7 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
       <div>{t('shared.generic.bookmark')}</div>
       <Button
         basic
-        onClick={() => bookmarkQuestion()}
+        onClick={() => bookmarkElementStack()}
         data={{ cy: 'bookmark-element-stack' }}
       >
         {isBookmarked ? (

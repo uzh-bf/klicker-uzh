@@ -118,7 +118,7 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
       //   // ttlPerType: {
       //   //   Participant: 60000,
       //   //   Course: 60000,
-      //   //   LearningElement: 60000,
+      //   //   PracticeQuiz: 60000,
       //   //   MicroSession: 60000,
       //   //   QuestionInstance: 60000,
       //   //   Participation: 0,

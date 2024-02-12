@@ -142,7 +142,6 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
   leaderboard: [LeaderboardEntry!]
-  learningElements: [LearningElement!]
   microSessions: [MicroSession!]
   name: String!
   notificationEmail: String
@@ -486,37 +485,6 @@ type LeaderboardStatistics {
   participantCount: Int!
 }
 
-type LearningElement {
-  course: Course
-  courseId: String
-  description: String
-  displayName: String!
-  id: String!
-  name: String!
-  numOfQuestions: Int
-  orderType: LearningElementOrderType!
-  pointsMultiplier: Int!
-  previousPointsAwarded: Float
-  previousScore: Float
-  previouslyAnswered: Int
-  resetTimeDays: Int
-  stacks: [QuestionStack!]
-  stacksWithQuestions: Int
-  status: LearningElementStatus!
-  totalTrials: Int
-}
-
-enum LearningElementOrderType {
-  LAST_RESPONSE
-  SEQUENTIAL
-  SHUFFLED
-}
-
-enum LearningElementStatus {
-  DRAFT
-  PUBLISHED
-}
-
 type LeaveCourseParticipation {
   id: String!
   participation: Participation!
@@ -568,7 +536,6 @@ type Mutation {
   activateSessionBlock(sessionBlockId: Int!, sessionId: String!): Session
   addConfusionTimestep(difficulty: Int!, sessionId: String!, speed: Int!): ConfusionTimestep
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
-  bookmarkQuestion(bookmarked: Boolean!, courseId: String!, stackId: Int!): [QuestionStack!]
   cancelSession(id: String!): Session
   changeCourseColor(color: String!, courseId: String!): Course
   changeCourseDates(courseId: String!, endDate: Date, startDate: Date): Course
@@ -581,7 +548,6 @@ type Mutation {
   changeUserLocale(locale: LocaleType!): User
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date, isGamificationEnabled: Boolean!, name: String!, notificationEmail: String, startDate: Date!): Course
   createFeedback(content: String!, sessionId: String!): Feedback
-  createLearningElement(courseId: String, description: String, displayName: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
   createMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
   createParticipantAccount(email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
@@ -598,7 +564,6 @@ type Mutation {
   deleteSession(id: String!): Session
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
-  editLearningElement(courseId: String, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: LearningElementOrderType!, resetTimeDays: Int!, stacks: [StackInput!]!): LearningElement
   editMicroSession(courseId: String, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, questions: [Int!]!, startDate: Date!): MicroSession
   editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editSession(blocks: [BlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, multiplier: Int!, name: String!): Session
@@ -794,7 +759,6 @@ type ParticipantWithAchievements {
 }
 
 type Participation {
-  bookmarkedStacks: [QuestionStack!]
   completedMicroSessions: [String!]!
   course: Course
   id: Int!
@@ -816,6 +780,12 @@ type PracticeQuiz {
   resetTimeDays: Int!
   stacks: [ElementStack!]
   status: PublicationStatus!
+}
+
+enum PracticeQuizOrderType {
+  LAST_RESPONSE
+  SEQUENTIAL
+  SHUFFLED
 }
 
 enum PublicationStatus {
@@ -841,8 +811,6 @@ type Query {
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(id: String!): [Feedback!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
-  getBookmarkedQuestions(courseId: String!): [QuestionStack!]
-  getBookmarksLearningElement(courseId: String!, elementId: String!): [QuestionStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getLoginToken: User
@@ -850,7 +818,6 @@ type Query {
   getPracticeCourses: [Course!]
   getPracticeQuizList: [Course!]
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
-  learningElement(id: String!): LearningElement
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
   participantCourses: [Course!]
@@ -860,7 +827,6 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   publicParticipantProfile(participantId: String!): Participant
   question(id: Int!): Element
-  questionStack(id: Int!): QuestionStack
   runningSessions(shortname: String!): [Session!]
   self: Participant
   selfWithAchievements: ParticipantWithAchievements
@@ -912,22 +878,6 @@ type QuestionResponse {
 
 type QuestionResponseDetail {
   id: Int!
-}
-
-type QuestionStack {
-  description: String
-  displayName: String
-  elements: [StackElement!]
-  id: Int!
-  order: Int
-  type: QuestionStackType!
-}
-
-enum QuestionStackType {
-  GROUP_ACTIVITY
-  LEARNING_ELEMENT
-  LIVE_SESSION
-  MICRO_SESSION
 }
 
 input ResponseInput {
@@ -1010,18 +960,6 @@ input SolutionRangeInput {
   min: Float
 }
 
-type StackElement {
-  id: Int!
-  mdContent: String
-  order: Int
-  questionInstance: QuestionInstance
-}
-
-input StackElementInput {
-  mdContent: String
-  questionId: Int
-}
-
 input StackElementsInput {
   elementId: Int!
   order: Int!
@@ -1040,10 +978,6 @@ enum StackFeedbackStatus {
   manuallyGraded
   partial
   unanswered
-}
-
-input StackInput {
-  elements: [StackElementInput!]!
 }
 
 input StackResponseInput {

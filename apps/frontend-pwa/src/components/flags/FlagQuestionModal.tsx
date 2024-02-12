@@ -46,7 +46,7 @@ function FlagSuccessToast({ open, setOpen }: FlagSuccessToastProps) {
       setOpenExternal={setOpen}
     >
       <H4>{t('shared.generic.thanks')}</H4>
-      <div>{t('pwa.learningElement.feedbackTransmitted')}</div>
+      <div>{t('pwa.practiceQuiz.feedbackTransmitted')}</div>
     </Toast>
   )
 }
@@ -71,7 +71,7 @@ function FlagQuestionModal({
 
   const flagQuestionSchema = Yup.object().shape({
     description: Yup.string().test({
-      message: t('pwa.learningElement.feedbackRequired'),
+      message: t('pwa.practiceQuiz.feedbackRequired'),
       test: (content) => !content?.match(/^(<br>(\n)*)$/g) && content !== '',
     }),
   })
@@ -101,7 +101,7 @@ function FlagQuestionModal({
   return (
     <div>
       <Modal
-        title={t('pwa.learningElement.flagQuestion')}
+        title={t('pwa.practiceQuiz.flagQuestion')}
         className={{
           content: 'z-20 max-w-lg h-max',
           overlay: 'z-10',
@@ -126,7 +126,7 @@ function FlagQuestionModal({
         escapeDisabled
       >
         <div className="mb-4 prose max-w-none">
-          {t('pwa.learningElement.flagQuestionText')}
+          {t('pwa.practiceQuiz.flagQuestionText')}
         </div>
         <Formik
           initialValues={{ feedback: '' }}
@@ -141,7 +141,7 @@ function FlagQuestionModal({
               <Form>
                 <textarea
                   className="w-full h-24 rounded-md"
-                  placeholder={t('pwa.learningElement.addFeedback')}
+                  placeholder={t('pwa.practiceQuiz.addFeedback')}
                   value={values.feedback}
                   onChange={(e) => setFieldValue('feedback', e.target.value)}
                   data-cy="flag-question-textarea"
@@ -178,7 +178,7 @@ function FlagQuestionModal({
                       <FontAwesomeIcon icon={faEnvelope} />
                     </Button.Icon>
                     <Button.Label>
-                      {t('pwa.learningElement.submitFeedback')}
+                      {t('pwa.practiceQuiz.submitFeedback')}
                     </Button.Label>
                   </Button>
                 </div>

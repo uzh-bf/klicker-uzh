@@ -17,7 +17,7 @@ function Repetition() {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
-        displayName={t('pwa.learningElement.repetitionTitle')}
+        displayName={t('pwa.practiceQuiz.repetitionTitle')}
       >
         <Loader />
       </Layout>
@@ -29,29 +29,21 @@ function Repetition() {
     return {
       id: course.id,
       displayName: course.displayName,
-      elements: [
-        ...(course.learningElements?.map((element) => {
-          return {
-            id: element.id,
-            displayName: element.displayName,
-            type: RepetitionElementType.LEARNING_ELEMENT,
-          }
-        }) || []),
-        ...(course.practiceQuizzes?.map((element) => {
+      elements:
+        course.practiceQuizzes?.map((element) => {
           return {
             id: element.id,
             displayName: element.displayName,
             type: RepetitionElementType.PRACTICE_QUIZ,
           }
-        }) || []),
-      ],
+        }) || [],
     }
   })
 
   return (
     <Layout
       course={{ displayName: 'KlickerUZH' }}
-      displayName={t('pwa.learningElement.repetitionTitle')}
+      displayName={t('pwa.practiceQuiz.repetitionTitle')}
     >
       <div className="flex flex-col gap-4 md:w-full md:max-w-xl md:p-8 md:mx-auto md:border md:rounded">
         <H1 className={{ root: 'text-xl' }}>
@@ -71,7 +63,7 @@ function Repetition() {
           <UserNotification
             type="info"
             // TODO: change message to no courses available
-            message={t('pwa.learningElement.noRepetition')}
+            message={t('pwa.practiceQuiz.noRepetition')}
           />
         )}
       </div>

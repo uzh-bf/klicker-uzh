@@ -23,7 +23,7 @@ function MCKPRIMEvaluation({ evaluation }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="font-bold">{t('pwa.learningElement.othersAnswered')}</div>
+      <div className="font-bold">{t('pwa.practiceQuiz.othersAnswered')}</div>
       {Object.entries(evaluation.choices as Record<string, number>).map(
         ([ix, value]) => (
           <Progress

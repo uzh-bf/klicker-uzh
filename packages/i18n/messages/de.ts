@@ -424,7 +424,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       coursePinNumerical: 'Bitte geben Sie einen numerischen PIN ein.',
       coursePinRequired: 'Bitte geben Sie den Kurs-PIN ein.',
     },
-    learningElement: {
+
+    practiceQuiz: {
+      flashcardClick: 'Klicken Sie, um die Antwort zu sehen',
+      studentFlashcardResponse: 'Haben Sie die Antwort gewusst?',
+      flashcardNoResponse: 'Nein',
+      flashcardPartialResponse: 'Teilweise',
+      flashcardYesResponse: 'Ja',
+      resetAnswers: 'Antworten zurücksetzen',
+      markAllAsRead: 'Alle als gelesen markieren',
+      read: 'Gelesen',
+      feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
+      feedbackRequired: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
+      flagElement: 'Fehler melden',
+      flagElementText:
+        'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Elementen eines Practice Quiz / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
+      addFeedback: 'Feedback hinzufügen',
+      submitFeedback: 'Feedback abschicken',
       notFound:
         'Unter diesem Link existiert kein Übungs-Quiz oder dieses ist noch nicht publiziert.',
       repetitionTitle: 'Repetition Übungs-Quizzes',
@@ -454,32 +470,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       flagQuestion: 'Frage melden',
       flagQuestionText:
         'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Fragen eines Übungs-Quizzes / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
-      addFeedback: 'Feedback hinzufügen',
-      feedbackRequired: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
-      submitFeedback: 'Feedback abschicken',
-      feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
       infoStack: 'Informationselement',
       inactiveParticipation:
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
       missingParticipation:
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
-    },
-    practiceQuiz: {
-      flashcardClick: 'Klicken Sie, um die Antwort zu sehen',
-      studentFlashcardResponse: 'Haben Sie die Antwort gewusst?',
-      flashcardNoResponse: 'Nein',
-      flashcardPartialResponse: 'Teilweise',
-      flashcardYesResponse: 'Ja',
-      resetAnswers: 'Antworten zurücksetzen',
-      markAllAsRead: 'Alle als gelesen markieren',
-      read: 'Gelesen',
-      feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
-      feedbackRequired: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
-      flagElement: 'Fehler melden',
-      flagElementText:
-        'Dieses Feedback-Formular soll ermöglichen, zu den einzelnen Elementen eines Practice Quiz / eines Microlearnings eine direkte Anmerkung abgeben zu können, sollte sich ein Fehler eingeschlichen haben. Der Dozierende wird eine Nachricht mit Ihrem Feedback erhalten. Bitte versuchen Sie daher, den Fehler so genau wie möglich zu beschreiben.',
-      addFeedback: 'Feedback hinzufügen',
-      submitFeedback: 'Feedback abschicken',
     },
     microSession: {
       notFound:
@@ -968,8 +963,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizOrder:
         'Wählen Sie eine Reihenfolge in welcher die Fragen für die Studierenden zu lösen sind.',
       practiceQuizSelectOrder: 'Reihenfolge wählen',
-      learningElementSEQUENTIAL: 'Sequenziell',
-      learningElementSPACED_REPETITION: 'Spaced Repetition',
+      practiceQuizSEQUENTIAL: 'Sequenziell',
+      practiceQuizSPACED_REPETITION: 'Spaced Repetition',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
     },
@@ -1219,16 +1214,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sind Sie sich sicher, dass Sie das folgende Übungs-Quiz löschen möchten?',
       hintDeletionPracticeQuiz:
         'Das Löschen eines Übungs-Quizzes ist nur möglich, solange es nicht in einem aktiven Kurs verwendet wird. Gelöschte Übungs-Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
-    },
-    toasts: {
-      practiceQuizEdit: 'Übungs-Quiz erfolgreich angepasst!',
-      practiceQuizCreate: 'Übungs-Quiz erfolgreich erstellt!',
-      toCourseOverview: 'Zur <link>Kursübersicht</link>',
-      liveQuizEdit: 'Session erfolgreich angepasst!',
-      liveQuizCreate: 'Session erfolgreich erstellt!',
-      toSessionList: 'Zur <link>Session-Liste</link>',
-      microlearningEdit: 'Microlearning erfolgreich angepasst!',
-      microlearningCreate: 'Microlearning erfolgreich erstellt!',
     },
   },
   control: {

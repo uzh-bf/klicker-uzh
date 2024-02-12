@@ -373,7 +373,7 @@ export function Options({
       )
 
     default:
-      return <div>{t('pwa.learningElement.questionTypeNotSupported')}</div>
+      return <div>{t('pwa.practiceQuiz.questionTypeNotSupported')}</div>
   }
 }
 

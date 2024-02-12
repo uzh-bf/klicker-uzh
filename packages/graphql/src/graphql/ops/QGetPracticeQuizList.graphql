@@ -2,10 +2,6 @@ query GetPracticeQuizList {
   getPracticeQuizList {
     id
     displayName
-    learningElements {
-      id
-      displayName
-    }
     practiceQuizzes {
       id
       displayName

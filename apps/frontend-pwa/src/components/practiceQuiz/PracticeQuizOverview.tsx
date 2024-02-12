@@ -9,9 +9,9 @@ import { ElementOrderType, SelfDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import DynamicMarkdown from '../learningElements/DynamicMarkdown'
+import DynamicMarkdown from '../practiceQuiz/DynamicMarkdown'
 
-interface ElementOverviewProps {
+interface PracticeQuizOverviewProps {
   displayName: string
   description?: string
   numOfQuestions?: number
@@ -33,7 +33,7 @@ function PracticeQuizOverview({
   //   stacksWithQuestions,
   pointsMultiplier,
   setCurrentIx,
-}: ElementOverviewProps) {
+}: PracticeQuizOverviewProps) {
   const t = useTranslations()
   const router = useRouter()
   const { data } = useQuery(SelfDocument)
@@ -79,7 +79,7 @@ function PracticeQuizOverview({
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
-              {t('pwa.learningElement.numOfQuestions', {
+              {t('pwa.practiceQuiz.numOfQuestions', {
                 number: numOfQuestions,
               })}
             </div>
@@ -87,7 +87,7 @@ function PracticeQuizOverview({
           {typeof orderType !== 'undefined' && (
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faShuffle} />
-              <div>{t(`pwa.learningElement.order${orderType}`)}</div>
+              <div>{t(`pwa.practiceQuiz.order${orderType}`)}</div>
             </div>
           )}
         </div>
@@ -97,10 +97,10 @@ function PracticeQuizOverview({
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faRepeat} />
               {resetTimeDays === 1 ? (
-                <>{t('pwa.learningElement.repetitionDaily')}</>
+                <>{t('pwa.practiceQuiz.repetitionDaily')}</>
               ) : (
                 <>
-                  {t('pwa.learningElement.repetitionXDays', {
+                  {t('pwa.practiceQuiz.repetitionXDays', {
                     days: resetTimeDays,
                   })}
                 </>
@@ -109,20 +109,20 @@ function PracticeQuizOverview({
           )}
           {/* <div className="flex flex-row items-center gap-2">
         <div>
-          Punkte (berechnet): {data.learningElement.previousScore}
+          Punkte (berechnet): {previousScore}
         </div>
       </div>
       <div className="flex flex-row items-center gap-2">
         <div>
           Punkte (gesammelt):{' '}
-          {data.learningElement.previousPointsAwarded}
+          {previousPointsAwarded}
         </div>
       </div> */}
           {/* {typeof previouslyAnswered !== 'undefined' && (
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faCheck} />
               <div>
-                {t('pwa.learningElement.answeredMinOnce', {
+                {t('pwa.practiceQuiz.answeredMinOnce', {
                   answered: previouslyAnswered,
                   total: stacksWithQuestions,
                 })}
@@ -131,13 +131,13 @@ function PracticeQuizOverview({
           )} */}
           {/* <div className="flex flex-row items-center gap-2">
         Anzahl Antworten:{' '}
-        <div>{data.learningElement.totalTrials}</div>
+        <div>{totalTrials}</div>
       </div> */}
           {typeof pointsMultiplier !== 'undefined' && (
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faTimesCircle} />
               <div>
-                {t('pwa.learningElement.multiplicatorPoints', {
+                {t('pwa.practiceQuiz.multiplicatorPoints', {
                   mult: pointsMultiplier,
                 })}
               </div>

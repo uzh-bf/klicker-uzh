@@ -83,6 +83,24 @@ function preparePracticeQuizInstanceResults(
 async function migrate() {
   const prisma = new PrismaClient()
 
+  const initialElementInstances = await prisma.elementInstance.findMany({
+    where: {
+      id: {
+        lte: 263,
+      },
+    },
+  })
+  for (const instance of initialElementInstances) {
+    await prisma.elementInstance.update({
+      where: {
+        id: instance.id,
+      },
+      data: {
+        migrationId: String(instance.id) + 'FC',
+      },
+    })
+  }
+
   const elementInstances = await prisma.elementInstance.findMany({})
 
   for (const instance of elementInstances) {
@@ -132,8 +150,6 @@ async function migrate() {
   let counter = 1
 
   for (const elem of learningElements) {
-    console.log(counter, elem.id, elem)
-
     if (elem.courseId === null) {
       continue
     }
@@ -198,8 +214,6 @@ async function migrate() {
 
               elements: {
                 connectOrCreate: stack.elements.flatMap((stackElement) => {
-                  console.log(stack.id, stackElement.order)
-
                   // there are no stackElement with mdContent in the PROD db, so that case can be safely ignored
                   if (stackElement.questionInstance === null) {
                     console.warn('stackElement.questionInstance is null')
@@ -265,19 +279,6 @@ async function migrate() {
                           elem,
                           stackElement.questionInstance
                         ),
-
-                        // both links will be set (to element instance and question instance) until we remove question instances completely
-                        responses: {
-                          connect: stackElement.questionInstance.responses.map(
-                            (response) => ({ id: response.id })
-                          ),
-                        },
-                        detailResponses: {
-                          connect:
-                            stackElement.questionInstance.detailResponses.map(
-                              (response) => ({ id: response.id })
-                            ),
-                        },
                       },
                     },
                   ]
@@ -297,7 +298,7 @@ async function migrate() {
       },
     })
 
-    console.log(counter, quiz)
+    console.log(counter)
 
     counter++
   }

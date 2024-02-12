@@ -22,7 +22,7 @@ function NREvaluation({ options, evaluation, reference }: Props) {
 
   return (
     <div className="h-40 space-y-2">
-      <div className="font-bold">{t('pwa.learningElement.othersAnswered')}</div>
+      <div className="font-bold">{t('pwa.practiceQuiz.othersAnswered')}</div>
       <Histogram
         data={{
           results: results,

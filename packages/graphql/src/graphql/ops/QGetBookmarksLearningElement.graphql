@@ -1,5 +1,0 @@
-query GetBookmarksLearningElement($elementId: String!, $courseId: String!) {
-  getBookmarksLearningElement(elementId: $elementId, courseId: $courseId) {
-    id
-  }
-}

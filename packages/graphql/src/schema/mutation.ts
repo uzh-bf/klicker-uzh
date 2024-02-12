@@ -5,7 +5,6 @@ import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
-import * as LearningElementService from '../services/learningElements'
 import * as MicroLearningService from '../services/microLearning'
 import * as MigrationService from '../services/migration'
 import * as NotificationService from '../services/notifications'
@@ -19,12 +18,6 @@ import {
   GroupActivityDetails,
   GroupActivityInstance,
 } from './groupActivity'
-import {
-  LearningElement,
-  LearningElementOrderType,
-  QuestionStack,
-  StackInput,
-} from './learningElements'
 import { MicroSession } from './microSession'
 import {
   AvatarSettingsInput,
@@ -205,7 +198,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve: (_, args, ctx) => {
-          return LearningElementService.respondToQuestionInstance(args, ctx)
+          return MicroLearningService.respondToQuestionInstance(args, ctx)
         },
       }),
 
@@ -444,19 +437,6 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ParticipantGroupService.createParticipantGroup(args, ctx)
-        },
-      }),
-
-      bookmarkQuestion: t.withAuth(asParticipant).field({
-        nullable: true,
-        type: [QuestionStack],
-        args: {
-          courseId: t.arg.string({ required: true }),
-          stackId: t.arg.int({ required: true }),
-          bookmarked: t.arg.boolean({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.bookmarkQuestion(args, ctx)
         },
       }),
 
@@ -1011,59 +991,6 @@ export const Mutation = builder.mutationType({
 
       // ----- USER WITH CATALYST -----
       // #region
-      createLearningElement: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          nullable: true,
-          type: LearningElement,
-          args: {
-            name: t.arg.string({ required: true }),
-            displayName: t.arg.string({ required: true }),
-            description: t.arg.string({ required: false }),
-            stacks: t.arg({
-              type: [StackInput],
-              required: true,
-            }),
-            courseId: t.arg.string({ required: false }),
-            multiplier: t.arg.int({ required: true }),
-            order: t.arg({
-              type: LearningElementOrderType,
-              required: true,
-            }),
-            resetTimeDays: t.arg.int({ required: true }),
-          },
-          resolve(_, args, ctx) {
-            return LearningElementService.manipulateLearningElement(args, ctx)
-          },
-        }),
-
-      editLearningElement: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
-        .field({
-          nullable: true,
-          type: LearningElement,
-          args: {
-            id: t.arg.string({ required: true }),
-            name: t.arg.string({ required: true }),
-            displayName: t.arg.string({ required: true }),
-            description: t.arg.string({ required: false }),
-            stacks: t.arg({
-              type: [StackInput],
-              required: true,
-            }),
-            courseId: t.arg.string({ required: false }),
-            multiplier: t.arg.int({ required: true }),
-            order: t.arg({
-              type: LearningElementOrderType,
-              required: true,
-            }),
-            resetTimeDays: t.arg.int({ required: true }),
-          },
-          resolve(_, args, ctx) {
-            return LearningElementService.manipulateLearningElement(args, ctx)
-          },
-        }),
-
       createPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({

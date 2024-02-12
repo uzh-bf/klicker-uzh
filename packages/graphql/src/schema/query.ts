@@ -4,7 +4,6 @@ import * as AccountService from '../services/accounts'
 import * as CourseService from '../services/courses'
 import * as FeedbackService from '../services/feedbacks'
 import * as ParticipantGroupService from '../services/groups'
-import * as LearningElementService from '../services/learningElements'
 import * as MicroSessionService from '../services/microLearning'
 import * as ParticipantService from '../services/participants'
 import * as PracticeQuizService from '../services/practiceQuizzes'
@@ -12,7 +11,6 @@ import * as QuestionService from '../services/questions'
 import * as SessionService from '../services/sessions'
 import { Course, LeaderboardEntry } from './course'
 import { GroupActivityDetails } from './groupActivity'
-import { LearningElement, QuestionStack } from './learningElements'
 import { MicroSession } from './microSession'
 import {
   Participant,
@@ -257,17 +255,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      learningElement: t.field({
-        nullable: true,
-        type: LearningElement,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.getLearningElementData(args, ctx)
-        },
-      }),
-
       practiceQuiz: t.field({
         nullable: true,
         type: PracticeQuiz,
@@ -457,17 +444,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      getBookmarkedQuestions: asParticipant.field({
-        nullable: true,
-        type: [QuestionStack],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ParticipantService.getBookmarkedQuestions(args, ctx)
-        },
-      }),
-
       getBookmarkedElementStacks: asParticipant.field({
         nullable: true,
         type: [ElementStack],
@@ -484,29 +460,6 @@ export const Query = builder.queryType({
         type: [Course],
         resolve(_, __, ctx) {
           return ParticipantService.getPracticeQuizList(ctx)
-        },
-      }),
-
-      getBookmarksLearningElement: t.field({
-        nullable: true,
-        type: [QuestionStack],
-        args: {
-          elementId: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.getBookmarksLearningElement(args, ctx)
-        },
-      }),
-
-      questionStack: asParticipant.field({
-        nullable: true,
-        type: QuestionStack,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return LearningElementService.getQuestionStack(args, ctx)
         },
       }),
 
