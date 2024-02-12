@@ -267,17 +267,17 @@ async function migrate() {
                         ),
 
                         // both links will be set (to element instance and question instance) until we remove question instances completely
-                        responses: {
-                          connect: stackElement.questionInstance.responses.map(
-                            (response) => ({ id: response.id })
-                          ),
-                        },
-                        detailResponses: {
-                          connect:
-                            stackElement.questionInstance.detailResponses.map(
-                              (response) => ({ id: response.id })
-                            ),
-                        },
+                        // responses: {
+                        //   connect: stackElement.questionInstance.responses.map(
+                        //     (response) => ({ id: response.id })
+                        //   ),
+                        // },
+                        // detailResponses: {
+                        //   connect:
+                        //     stackElement.questionInstance.detailResponses.map(
+                        //       (response) => ({ id: response.id })
+                        //     ),
+                        // },
                       },
                     },
                   ]

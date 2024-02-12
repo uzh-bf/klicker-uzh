@@ -3,131 +3,48 @@ import { PrismaClient } from '../client'
 async function migrate() {
   const prisma = new PrismaClient()
 
-  const questionResponses = await prisma.questionResponse.findMany({
+  const questionInstances = await prisma.questionInstance.findMany({
     where: {
-      questionInstanceId: {
-        not: null,
-      },
-      elementInstanceId: {
-        equals: null,
-      },
-    },
-    include: {
-      questionInstance: true,
+      type: 'LEARNING_ELEMENT',
     },
   })
+
+  console.log('questionInstances', questionInstances.length)
 
   let counter = 1
   let counter2 = 1
 
-  for (const elem of questionResponses) {
-    if (typeof elem.questionInstanceId !== 'number') {
-      continue
-    }
-
+  for (const elem of questionInstances) {
     const matchingElementInstance = await prisma.elementInstance.findFirst({
       where: {
-        migrationId: String(elem.questionInstanceId),
+        migrationId: String(elem.id),
       },
     })
 
-    if (!matchingElementInstance) {
+    if (
+      !matchingElementInstance ||
+      elem.questionData.name !== matchingElementInstance.elementData.name
+    ) {
+      console.log(
+        `${elem.id};${matchingElementInstance?.id};${elem.questionData.name};${matchingElementInstance?.elementData.name}`
+      )
+      counter2++
       continue
     }
 
-    const matchingQuestionResponse = await prisma.questionResponse.findFirst({
-      where: {
+    await prisma.questionResponse.updateMany({
+      where: { questionInstanceId: elem.id },
+      data: {
         elementInstanceId: matchingElementInstance?.id,
       },
-      include: {
-        participant: true,
-      },
     })
 
-    if (matchingQuestionResponse) {
-      // there is already a question response for this element instance but not the current one
-      counter2++
-      continue
-    }
-
-    console.log(counter, elem.id, elem)
-
-    try {
-      await prisma.questionResponse.update({
-        where: { id: elem.id },
-        data: {
-          elementInstanceId: matchingElementInstance?.id,
-        },
-      })
-    } catch (e) {
-      console.error(e)
-    }
-
-    counter++
-  }
-
-  console.log(counter, counter2)
-
-  const questionResponsesDetail = await prisma.questionResponseDetail.findMany({
-    where: {
-      questionInstanceId: {
-        not: null,
-      },
-      elementInstanceId: {
-        equals: null,
-      },
-    },
-    include: {
-      questionInstance: true,
-    },
-  })
-
-  counter = 1
-  counter2 = 1
-
-  for (const elem of questionResponsesDetail) {
-    if (typeof elem.questionInstanceId !== 'number') {
-      continue
-    }
-
-    const matchingElementInstance = await prisma.elementInstance.findFirst({
-      where: {
-        migrationId: String(elem.questionInstanceId),
+    await prisma.questionResponseDetail.updateMany({
+      where: { questionInstanceId: elem.id },
+      data: {
+        elementInstanceId: matchingElementInstance?.id,
       },
     })
-
-    if (!matchingElementInstance) {
-      continue
-    }
-
-    const matchingQuestionResponse =
-      await prisma.questionResponseDetail.findFirst({
-        where: {
-          elementInstanceId: matchingElementInstance?.id,
-        },
-        include: {
-          participant: true,
-        },
-      })
-
-    if (matchingQuestionResponse) {
-      // there is already a question response for this element instance but not the current one
-      counter2++
-      continue
-    }
-
-    console.log(counter, elem.id, elem)
-
-    try {
-      await prisma.questionResponseDetail.update({
-        where: { id: elem.id },
-        data: {
-          elementInstanceId: matchingElementInstance?.id,
-        },
-      })
-    } catch (e) {
-      console.error(e)
-    }
 
     counter++
   }
