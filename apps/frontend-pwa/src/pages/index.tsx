@@ -10,6 +10,7 @@ import {
   faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
 import {
+  MicroLearning,
   MicroSession,
   ParticipationsDocument,
   Session,
@@ -40,6 +41,10 @@ type LocalCourseType = {
 type LocalLiveSessionType = Partial<Session> & { courseName: string }
 
 type LocalMicroSessionType = Partial<MicroSession> & {
+  courseName: string
+  isCompleted: boolean
+}
+type LocalMicroLearningType = Partial<MicroLearning> & {
   courseName: string
   isCompleted: boolean
 }
@@ -107,17 +112,20 @@ const Index = function () {
     oldCourses,
     activeSessions,
     activeMicrosession,
+    activeMicrolearning,
   }: {
     courses: LocalCourseType[]
     oldCourses: LocalCourseType[]
     activeSessions: LocalLiveSessionType[]
     activeMicrosession: LocalMicroSessionType[]
+    activeMicrolearning: LocalMicroLearningType[]
   } = useMemo(() => {
     const obj = {
       courses: [] as LocalCourseType[],
       oldCourses: [] as LocalCourseType[],
       activeSessions: [] as LocalLiveSessionType[],
       activeMicrosession: [] as LocalMicroSessionType[],
+      activeMicrolearning: [] as LocalMicroLearningType[],
     }
     if (!data?.participations) return obj
     return data.participations.reduce((acc, participation) => {
@@ -175,6 +183,16 @@ const Index = function () {
             ...session,
             courseName: course.displayName,
             isCompleted: participation.completedMicroSessions?.includes(
+              session.id
+            ),
+          })) ?? []),
+        ],
+        activeMicrolearning: [
+          ...acc.activeMicrolearning,
+          ...(course.microLearnings?.map((session) => ({
+            ...session,
+            courseName: course.displayName,
+            isCompleted: participation.completedMicroLearnings?.includes(
               session.id
             ),
           })) ?? []),

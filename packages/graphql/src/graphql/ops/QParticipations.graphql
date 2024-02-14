@@ -2,6 +2,7 @@ query Participations($endpoint: String) {
   participations(endpoint: $endpoint) {
     id
     completedMicroSessions
+    completedMicroLearnings
     subscriptions {
       id
       endpoint

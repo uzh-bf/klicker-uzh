@@ -1061,6 +1061,7 @@ model Participation {
   detailResponses         QuestionResponseDetail[]
   subscriptions           PushSubscription[]
   completedMicroSessions  String[]
+  completedMicroLearnings String[]
   bookmarkedQuestions     QuestionInstance[] // TODO: remove after migration - not used anymore
   bookmarkedStacks        QuestionStack[] // TODO: remove after migration - new element stack bookmarks
   bookmarkedElementStacks ElementStack[]

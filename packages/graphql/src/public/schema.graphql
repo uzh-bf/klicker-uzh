@@ -779,6 +779,7 @@ type ParticipantWithAchievements {
 }
 
 type Participation {
+  completedMicroLearnings: [String!]!
   completedMicroSessions: [String!]!
   course: Course
   id: Int!
