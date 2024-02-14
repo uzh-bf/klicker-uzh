@@ -96,6 +96,7 @@ export const Course = builder.objectType(CourseRef, {
       type: [PracticeQuizRef],
       nullable: true,
     }),
+    // TODO: remove after migration
     microSessions: t.expose('microSessions', {
       type: [MicroSessionRef],
       nullable: true,

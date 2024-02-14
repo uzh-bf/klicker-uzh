@@ -117,6 +117,7 @@ const Index = function () {
     courses: LocalCourseType[]
     oldCourses: LocalCourseType[]
     activeSessions: LocalLiveSessionType[]
+    // TODO: remove after migration
     activeMicrosession: LocalMicroSessionType[]
     activeMicrolearning: LocalMicroLearningType[]
   } = useMemo(() => {
@@ -177,6 +178,7 @@ const Index = function () {
             courseName: course.displayName,
           })) ?? []),
         ],
+        // TODO: remove after migration
         activeMicrosession: [
           ...acc.activeMicrosession,
           ...(course.microSessions?.map((session) => ({
@@ -200,6 +202,8 @@ const Index = function () {
       }
     }, obj)
   }, [data])
+
+  console.log(activeMicrolearning)
 
   if (loading || !data) {
     return (
@@ -282,6 +286,7 @@ const Index = function () {
             </LinkButton>
           </div>
         </div>
+        {/* // TODO: remove microsession code after migration */}
         {activeMicrosession.length > 0 && (
           <div data-cy="microlearnings">
             <H1 className={{ root: 'text-xl mb-2' }}>
@@ -308,6 +313,38 @@ const Index = function () {
                       - {dayjs(micro.scheduledEndAt).format('DD.MM.YYYY HH:mm')}
                     </div>
                     <div className="text-xs">{micro.courseName}</div>
+                  </div>
+                </LinkButton>
+              ))}
+            </div>
+          </div>
+        )}
+        {activeMicrolearning.length > 0 && (
+          <div data-cy="microlearnings">
+            <H1 className={{ root: 'text-xl mb-2' }}>
+              {t('shared.generic.microlearning')}
+            </H1>
+            <div className="flex flex-col gap-2">
+              {activeMicrolearning.map((micro) => (
+                <LinkButton
+                  icon={micro.isCompleted ? faCheck : faBookOpenReader}
+                  href={micro.isCompleted ? '' : `/microlearning/${micro.id}/`}
+                  key={micro.id}
+                  disabled={micro.isCompleted}
+                  className={{
+                    root: micro.isCompleted
+                      ? 'hover:bg-unset cursor-not-allowed'
+                      : '',
+                  }}
+                  data={{ cy: `microlearning-${micro.displayName}` }}
+                >
+                  <div>{micro.displayName}</div>
+                  <div className="flex flex-row items-end justify-between text-xs">
+                    <div>
+                      {dayjs(micro.scheduledStartAt).format('DD.MM.YYYY HH:mm')}{' '}
+                      - {dayjs(micro.scheduledEndAt).format('DD.MM.YYYY HH:mm')}
+                    </div>
+                    <div>{micro.courseName}</div>
                   </div>
                 </LinkButton>
               ))}

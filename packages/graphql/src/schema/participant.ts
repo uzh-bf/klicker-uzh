@@ -184,6 +184,7 @@ export const Participation = ParticipationRef.implement({
       nullable: true,
     }),
 
+    // TODO: remove after migration
     completedMicroSessions: t.exposeStringList('completedMicroSessions'),
     completedMicroLearnings: t.exposeStringList('completedMicroLearnings'),
 
