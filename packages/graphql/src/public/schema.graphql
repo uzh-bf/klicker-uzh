@@ -142,6 +142,7 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
   leaderboard: [LeaderboardEntry!]
+  microLearnings: [MicroLearning!]
   microSessions: [MicroSession!]
   name: String!
   notificationEmail: String
@@ -510,6 +511,25 @@ type MediaFile {
   id: ID!
   name: String!
   type: String!
+}
+
+type MicroLearning {
+  arePushNotificationsSent: Boolean!
+  course: Course
+  description: String
+  displayName: String!
+  id: ID!
+  name: String!
+  pointsMultiplier: Float!
+  scheduledEndAt: Date!
+  scheduledStartAt: Date!
+  stacks: [ElementStack!]
+  status: MicroLearningStatus!
+}
+
+enum MicroLearningStatus {
+  DRAFT
+  PUBLISHED
 }
 
 type MicroSession {

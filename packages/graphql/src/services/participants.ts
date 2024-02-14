@@ -120,6 +120,17 @@ export async function getParticipations(
                   status: MicroSessionStatus.PUBLISHED,
                 },
               },
+              microLearnings: {
+                where: {
+                  scheduledStartAt: {
+                    lt: new Date(),
+                  },
+                  scheduledEndAt: {
+                    gt: new Date(),
+                  },
+                  status: PublicationStatus.PUBLISHED,
+                },
+              },
               sessions: {
                 where: { status: SessionStatus.RUNNING },
               },

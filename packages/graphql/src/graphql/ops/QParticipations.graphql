@@ -19,6 +19,12 @@ query Participations($endpoint: String) {
         scheduledStartAt
         scheduledEndAt
       }
+      microLearnings {
+        id
+        displayName
+        scheduledStartAt
+        scheduledEndAt
+      }
       sessions {
         id
         displayName
