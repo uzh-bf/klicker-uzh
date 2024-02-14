@@ -191,11 +191,11 @@ const Index = function () {
         ],
         activeMicrolearning: [
           ...acc.activeMicrolearning,
-          ...(course.microLearnings?.map((session) => ({
-            ...session,
+          ...(course.microLearnings?.map((micro) => ({
+            ...micro,
             courseName: course.displayName,
             isCompleted: participation.completedMicroLearnings?.includes(
-              session.id
+              micro.id
             ),
           })) ?? []),
         ],
