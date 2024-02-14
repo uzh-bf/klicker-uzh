@@ -841,6 +841,7 @@ type Query {
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   liveSession(id: String!): Session
   microSession(id: String!): MicroSession
+  microlearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(endpoint: String): [Participation!]
