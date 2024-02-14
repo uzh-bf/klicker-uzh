@@ -10,6 +10,7 @@ import {
 import {
   Element,
   ElementType,
+  MicroLearningStatus,
   MicroSessionStatus,
   QuestionInstanceType,
   UserRole,
@@ -121,6 +122,7 @@ export async function getMicroSessionData(
   }
 }
 
+// TODO: remove after migration
 export async function getSingleMicroSession(
   { id }: GetMicroSessionDataArgs,
   ctx: Context
@@ -156,6 +158,54 @@ export async function getSingleMicroSession(
   if (!microSession) return null
 
   return microSession
+}
+
+interface GetMicrolearningArgs {
+  id: string
+}
+
+export async function getSingleMicrolearning(
+  { id }: GetMicrolearningArgs,
+  ctx: Context
+) {
+  const microlearning = await ctx.prisma.microLearning.findUnique({
+    where: {
+      id,
+      OR: [
+        {
+          AND: {
+            scheduledStartAt: { lte: new Date() },
+            scheduledEndAt: { gte: new Date() },
+            status: MicroLearningStatus.PUBLISHED,
+          },
+        },
+        {
+          ownerId: ctx.user?.sub,
+        },
+      ],
+    },
+    include: {
+      course: true,
+      stacks: {
+        orderBy: {
+          order: 'asc',
+        },
+        include: {
+          elements: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // TODO: handle here if already responded to the element? goal with micro = one try
+
+  if (!microlearning) return null
+
+  return microlearning
 }
 
 interface MarkMicroSessionCompletedArgs {

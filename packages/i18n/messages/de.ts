@@ -477,6 +477,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
     },
     microSession: {
+      numOfQuestionSets: 'Anzahl Fragesets: {number}',
       notFound:
         'Unter diesem Link existiert kein Microlearning oder diese ist noch nicht aktiv.',
       solvedMicrolearning:

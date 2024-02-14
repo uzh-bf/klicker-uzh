@@ -94,6 +94,7 @@
    "GetFeedbacks": "1d236fd6221cee06f7e1dd3c11090513c9f61d5ce95f4072fdaea9be75f41a15",
    "GetLoginToken": "491946fc1fcbd066ea481c564313f4e50b7cc98ea16ab16a7a2146d75ec8cf00",
    "GetMicroSession": "a0e400a572ad617a36eb820c8396d15ddecaf199173a4dd60310db5baa9c99b0",
+   "GetMicrolearning": "72be73a2fd9f87acb663a81db046b9fd065b559fba93a688ecaa8a546f3d91b8",
    "GetParticipantCourses": "bb82d68f51f9b46767e9f6a8c9c66ef2642b487c8f8a84473ce10f1b44eaf7fe",
    "GetParticipantGroups": "ed00e7291d2ce97456fd3d3549fbb0ac68e86573da564d38c6798e9bfb439e4d",
    "GetParticipation": "022c93b46aabd3a5f5376fc5870bb427343c98211d7d38364cee97e5016896a5",
