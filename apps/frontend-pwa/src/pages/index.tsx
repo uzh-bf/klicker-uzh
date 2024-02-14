@@ -203,8 +203,6 @@ const Index = function () {
     }, obj)
   }, [data])
 
-  console.log(activeMicrolearning)
-
   if (loading || !data) {
     return (
       <Layout displayName={t('shared.generic.title')}>
