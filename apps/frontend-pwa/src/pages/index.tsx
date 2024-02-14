@@ -10,6 +10,7 @@ import {
   faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
 import {
+  MicroLearning,
   MicroSession,
   ParticipationsDocument,
   Session,
@@ -26,6 +27,27 @@ import { useMemo } from 'react'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
+
+type LocalCourseType = {
+  id: string
+  displayName: string
+  description?: string
+  isSubscribed: boolean
+  startDate: string
+  endDate: string
+  isGamificationEnabled: boolean
+}
+
+type LocalLiveSessionType = Partial<Session> & { courseName: string }
+
+type LocalMicroSessionType = Partial<MicroSession> & {
+  courseName: string
+  isCompleted: boolean
+}
+type LocalMicroLearningType = Partial<MicroLearning> & {
+  courseName: string
+  isCompleted: boolean
+}
 
 const Index = function () {
   const t = useTranslations()
@@ -89,37 +111,28 @@ const Index = function () {
     courses,
     oldCourses,
     activeSessions,
+    activeMicrosession,
     activeMicrolearning,
   }: {
-    courses: {
-      id: string
-      displayName: string
-      isSubscribed: boolean
-      startDate: string
-      endDate: string
-      isGamificationEnabled: boolean
-    }[]
-    oldCourses: {
-      id: string
-      displayName: string
-      isSubscribed: boolean
-      startDate: string
-      endDate: string
-    }[]
-    activeSessions: (Session & { courseName: string })[]
-    activeMicrolearning: (MicroSession & {
-      courseName: string
-      isCompleted: boolean
-    })[]
+    courses: LocalCourseType[]
+    oldCourses: LocalCourseType[]
+    activeSessions: LocalLiveSessionType[]
+    // TODO: remove after migration
+    activeMicrosession: LocalMicroSessionType[]
+    activeMicrolearning: LocalMicroLearningType[]
   } = useMemo(() => {
     const obj = {
-      courses: [],
-      oldCourses: [],
-      activeSessions: [],
-      activeMicrolearning: [],
+      courses: [] as LocalCourseType[],
+      oldCourses: [] as LocalCourseType[],
+      activeSessions: [] as LocalLiveSessionType[],
+      activeMicrosession: [] as LocalMicroSessionType[],
+      activeMicrolearning: [] as LocalMicroLearningType[],
     }
     if (!data?.participations) return obj
     return data.participations.reduce((acc, participation) => {
+      if (!participation.course) return acc
+      const course = participation.course
+
       return {
         courses:
           // check if endDate of course is before today or today
@@ -135,8 +148,9 @@ const Index = function () {
                   isGamificationEnabled:
                     participation.course?.isGamificationEnabled,
                   isSubscribed:
-                    participation.subscriptions &&
-                    participation.subscriptions.length > 0,
+                    (participation.subscriptions &&
+                      participation.subscriptions.length > 0) ??
+                    false,
                 },
               ]
             : acc.courses,
@@ -148,28 +162,42 @@ const Index = function () {
                 displayName: participation.course?.displayName,
                 startDate: participation.course?.startDate,
                 endDate: participation.course?.endDate,
+                isGamificationEnabled:
+                  participation.course?.isGamificationEnabled,
                 isSubscribed:
-                  participation.subscriptions &&
-                  participation.subscriptions.length > 0,
+                  (participation.subscriptions &&
+                    participation.subscriptions.length > 0) ??
+                  false,
               },
             ]
           : acc.oldCourses,
         activeSessions: [
           ...acc.activeSessions,
-          ...participation.course.sessions?.map((session) => ({
+          ...(course.sessions?.map((session) => ({
             ...session,
-            courseName: participation.course.displayName,
-          })),
+            courseName: course.displayName,
+          })) ?? []),
         ],
-        activeMicrolearning: [
-          ...acc.activeMicrolearning,
-          ...participation.course?.microSessions?.map((session) => ({
+        // TODO: remove after migration
+        activeMicrosession: [
+          ...acc.activeMicrosession,
+          ...(course.microSessions?.map((session) => ({
             ...session,
-            courseName: participation.course.displayName,
+            courseName: course.displayName,
             isCompleted: participation.completedMicroSessions?.includes(
               session.id
             ),
-          })),
+          })) ?? []),
+        ],
+        activeMicrolearning: [
+          ...acc.activeMicrolearning,
+          ...(course.microLearnings?.map((micro) => ({
+            ...micro,
+            courseName: course.displayName,
+            isCompleted: participation.completedMicroLearnings?.includes(
+              micro.id
+            ),
+          })) ?? []),
         ],
       }
     }, obj)
@@ -256,13 +284,14 @@ const Index = function () {
             </LinkButton>
           </div>
         </div>
-        {activeMicrolearning.length > 0 && (
+        {/* // TODO: remove microsession code after migration */}
+        {activeMicrosession.length > 0 && (
           <div data-cy="microlearnings">
             <H1 className={{ root: 'text-xl mb-2' }}>
               {t('shared.generic.microlearning')}
             </H1>
             <div className="flex flex-col gap-2">
-              {activeMicrolearning.map((micro) => (
+              {activeMicrosession.map((micro) => (
                 <LinkButton
                   icon={micro.isCompleted ? faCheck : faBookOpenReader}
                   href={micro.isCompleted ? '' : `/micro/${micro.id}/`}
@@ -282,6 +311,38 @@ const Index = function () {
                       - {dayjs(micro.scheduledEndAt).format('DD.MM.YYYY HH:mm')}
                     </div>
                     <div className="text-xs">{micro.courseName}</div>
+                  </div>
+                </LinkButton>
+              ))}
+            </div>
+          </div>
+        )}
+        {activeMicrolearning.length > 0 && (
+          <div data-cy="microlearnings">
+            <H1 className={{ root: 'text-xl mb-2' }}>
+              {t('shared.generic.microlearning')}
+            </H1>
+            <div className="flex flex-col gap-2">
+              {activeMicrolearning.map((micro) => (
+                <LinkButton
+                  icon={micro.isCompleted ? faCheck : faBookOpenReader}
+                  href={micro.isCompleted ? '' : `/microlearning/${micro.id}/`}
+                  key={micro.id}
+                  disabled={micro.isCompleted}
+                  className={{
+                    root: micro.isCompleted
+                      ? 'hover:bg-unset cursor-not-allowed'
+                      : '',
+                  }}
+                  data={{ cy: `microlearning-${micro.displayName}` }}
+                >
+                  <div>{micro.displayName}</div>
+                  <div className="flex flex-row items-end justify-between text-xs">
+                    <div>
+                      {dayjs(micro.scheduledStartAt).format('DD.MM.YYYY HH:mm')}{' '}
+                      - {dayjs(micro.scheduledEndAt).format('DD.MM.YYYY HH:mm')}
+                    </div>
+                    <div>{micro.courseName}</div>
                   </div>
                 </LinkButton>
               ))}
