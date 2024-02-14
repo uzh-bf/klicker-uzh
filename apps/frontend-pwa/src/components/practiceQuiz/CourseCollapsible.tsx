@@ -11,15 +11,10 @@ import { twMerge } from 'tailwind-merge'
 import LinkButton from '../common/LinkButton'
 import { resetPracticeQuizLocalStorage } from './PracticeQuiz'
 
-export enum RepetitionElementType {
-  LEARNING_ELEMENT,
-  PRACTICE_QUIZ,
-}
-
 interface CourseCollapsibleProps {
   courseId: string
   courseName: string
-  elements: { id: string; displayName: string; type: RepetitionElementType }[]
+  elements: { id: string; displayName: string }[]
 }
 
 function CourseCollapsible({
@@ -60,11 +55,7 @@ function CourseCollapsible({
               <LinkButton
                 key={element.id}
                 icon={faBookOpenReader}
-                href={
-                  element.type === RepetitionElementType.LEARNING_ELEMENT
-                    ? `/course/${courseId}/element/${element.id}`
-                    : `/course/${courseId}/quiz/${element.id}`
-                }
+                href={`/course/${courseId}/quiz/${element.id}`}
                 data={{ cy: `practice-quiz-${element.displayName}` }}
                 onClick={() => {
                   resetPracticeQuizLocalStorage(element.id)

@@ -5,9 +5,7 @@ import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
-import CourseCollapsible, {
-  RepetitionElementType,
-} from '../components/practiceQuiz/CourseCollapsible'
+import CourseCollapsible from '../components/practiceQuiz/CourseCollapsible'
 
 function Repetition() {
   const t = useTranslations()
@@ -34,7 +32,6 @@ function Repetition() {
           return {
             id: element.id,
             displayName: element.displayName,
-            type: RepetitionElementType.PRACTICE_QUIZ,
           }
         }) || [],
     }
