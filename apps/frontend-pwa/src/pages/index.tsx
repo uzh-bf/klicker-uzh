@@ -27,6 +27,23 @@ import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
 
+type LocalCourseType = {
+  id: string
+  displayName: string
+  description?: string
+  isSubscribed: boolean
+  startDate: string
+  endDate: string
+  isGamificationEnabled: boolean
+}
+
+type LocalLiveSessionType = Partial<Session> & { courseName: string }
+
+type LocalMicroSessionType = Partial<MicroSession> & {
+  courseName: string
+  isCompleted: boolean
+}
+
 const Index = function () {
   const t = useTranslations()
 
@@ -89,37 +106,24 @@ const Index = function () {
     courses,
     oldCourses,
     activeSessions,
-    activeMicrolearning,
+    activeMicrosession,
   }: {
-    courses: {
-      id: string
-      displayName: string
-      isSubscribed: boolean
-      startDate: string
-      endDate: string
-      isGamificationEnabled: boolean
-    }[]
-    oldCourses: {
-      id: string
-      displayName: string
-      isSubscribed: boolean
-      startDate: string
-      endDate: string
-    }[]
-    activeSessions: (Session & { courseName: string })[]
-    activeMicrolearning: (MicroSession & {
-      courseName: string
-      isCompleted: boolean
-    })[]
+    courses: LocalCourseType[]
+    oldCourses: LocalCourseType[]
+    activeSessions: LocalLiveSessionType[]
+    activeMicrosession: LocalMicroSessionType[]
   } = useMemo(() => {
     const obj = {
-      courses: [],
-      oldCourses: [],
-      activeSessions: [],
-      activeMicrolearning: [],
+      courses: [] as LocalCourseType[],
+      oldCourses: [] as LocalCourseType[],
+      activeSessions: [] as LocalLiveSessionType[],
+      activeMicrosession: [] as LocalMicroSessionType[],
     }
     if (!data?.participations) return obj
     return data.participations.reduce((acc, participation) => {
+      if (!participation.course) return acc
+      const course = participation.course
+
       return {
         courses:
           // check if endDate of course is before today or today
@@ -135,8 +139,9 @@ const Index = function () {
                   isGamificationEnabled:
                     participation.course?.isGamificationEnabled,
                   isSubscribed:
-                    participation.subscriptions &&
-                    participation.subscriptions.length > 0,
+                    (participation.subscriptions &&
+                      participation.subscriptions.length > 0) ??
+                    false,
                 },
               ]
             : acc.courses,
@@ -148,28 +153,31 @@ const Index = function () {
                 displayName: participation.course?.displayName,
                 startDate: participation.course?.startDate,
                 endDate: participation.course?.endDate,
+                isGamificationEnabled:
+                  participation.course?.isGamificationEnabled,
                 isSubscribed:
-                  participation.subscriptions &&
-                  participation.subscriptions.length > 0,
+                  (participation.subscriptions &&
+                    participation.subscriptions.length > 0) ??
+                  false,
               },
             ]
           : acc.oldCourses,
         activeSessions: [
           ...acc.activeSessions,
-          ...participation.course.sessions?.map((session) => ({
+          ...(course.sessions?.map((session) => ({
             ...session,
-            courseName: participation.course.displayName,
-          })),
+            courseName: course.displayName,
+          })) ?? []),
         ],
-        activeMicrolearning: [
-          ...acc.activeMicrolearning,
-          ...participation.course?.microSessions?.map((session) => ({
+        activeMicrosession: [
+          ...acc.activeMicrosession,
+          ...(course.microSessions?.map((session) => ({
             ...session,
-            courseName: participation.course.displayName,
+            courseName: course.displayName,
             isCompleted: participation.completedMicroSessions?.includes(
               session.id
             ),
-          })),
+          })) ?? []),
         ],
       }
     }, obj)
@@ -256,13 +264,13 @@ const Index = function () {
             </LinkButton>
           </div>
         </div>
-        {activeMicrolearning.length > 0 && (
+        {activeMicrosession.length > 0 && (
           <div data-cy="microlearnings">
             <H1 className={{ root: 'text-xl mb-2' }}>
               {t('shared.generic.microlearning')}
             </H1>
             <div className="flex flex-col gap-2">
-              {activeMicrolearning.map((micro) => (
+              {activeMicrosession.map((micro) => (
                 <LinkButton
                   icon={micro.isCompleted ? faCheck : faBookOpenReader}
                   href={micro.isCompleted ? '' : `/micro/${micro.id}/`}
