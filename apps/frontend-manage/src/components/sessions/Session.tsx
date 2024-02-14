@@ -27,6 +27,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import LiveSessionDeletionModal from '../courses/modals/LiveSessionDeletionModal'
 import EmbeddingModal from './EmbeddingModal'
+import { WizardMode } from './creation/SessionCreation'
 
 interface SessionProps {
   session: SessionType
@@ -194,7 +195,7 @@ function Session({ session }: SessionProps) {
                     pathname: '/',
                     query: {
                       sessionId: session.id,
-                      duplicationMode: 'liveSession',
+                      duplicationMode: WizardMode.LiveQuiz,
                     },
                   })
                 }
@@ -217,7 +218,7 @@ function Session({ session }: SessionProps) {
                         pathname: '/',
                         query: {
                           sessionId: session.id,
-                          editMode: 'liveSession',
+                          editMode: WizardMode.LiveQuiz,
                         },
                       })
                     }

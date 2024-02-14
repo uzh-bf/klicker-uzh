@@ -1,37 +1,87 @@
-// TODO: typing
-
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useReducer } from 'react'
 
-const INITIAL_STATE = {
+export type QuestionPoolFilters = {
+  archive: boolean
+  tags: string[]
+  name: string | null
+  type?: ElementType
+  sampleSolution: boolean
+  answerFeedbacks: boolean
+}
+
+export type QuestionPoolSortType = {
+  asc: boolean
+  by: SortyByType
+}
+
+export enum SortyByType {
+  TITLE = 'TITLE',
+  TYPE = 'TYPE',
+  CREATED = 'CREATED',
+  USED = 'USED',
+  UNDEFINED = 'UNDEFINED',
+}
+
+export enum QuestionPoolReducerActionType {
+  TAG_CLICK = 'TAG_CLICK',
+  TOGGLE_ARCHIVE = 'TOGGLE_ARCHIVE',
+  SORT_ORDER = 'SORT_ORDER',
+  SORT_BY = 'SORT_BY',
+  SEARCH = 'SEARCH',
+  SAMPLE_SOLUTION = 'SAMPLE_SOLUTION',
+  ANSWER_FEEDBACKS = 'ANSWER_FEEDBACKS',
+  RESET = 'RESET',
+  UNDEFINED = 'UNDEFINED',
+}
+
+type FilterSortType = {
+  filters: QuestionPoolFilters
+  sort: QuestionPoolSortType
+}
+
+type ReducerAction = {
+  type: QuestionPoolReducerActionType
+  tagName?: ElementType | string
+  isQuestionTag?: boolean
+  newValue?: boolean
+  name?: string
+  by?: SortyByType
+}
+
+const INITIAL_STATE: FilterSortType = {
   filters: {
+    type: undefined,
     archive: false,
     tags: [],
     name: null,
-    type: null,
-    sampleSolution: null,
-    answerFeedbacks: null,
+    sampleSolution: false,
+    answerFeedbacks: false,
   },
   sort: {
     asc: false,
-    by: '',
+    by: SortyByType.UNDEFINED,
   },
 }
 
-function reducer(state, action): any {
+function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
   switch (action.type) {
-    case 'TAG_CLICK':
+    case QuestionPoolReducerActionType.TAG_CLICK:
       // if the changed tag is a question type tag
-      if (action.questionType) {
+      if (action.isQuestionTag) {
         if (state.filters.type === action.tagName) {
-          return { ...state, filters: { ...state.filters, type: null } }
+          return { ...state, filters: { ...state.filters, type: undefined } }
         }
 
         // add the tag to active tags
-        return { ...state, filters: { ...state.filters, type: action.tagName } }
+        return {
+          ...state,
+          filters: { ...state.filters, type: action.tagName as ElementType },
+        }
       }
 
       // remove the tag from active tags
-      if (state.filters.tags.includes(action.tagName)) {
+      if (action.tagName && state.filters.tags.includes(action.tagName)) {
         return {
           ...state,
           filters: {
@@ -48,11 +98,11 @@ function reducer(state, action): any {
         ...state,
         filters: {
           ...state.filters,
-          tags: [...state.filters.tags, action.tagName],
+          tags: [...state.filters.tags, action.tagName!],
         },
       }
 
-    case 'TOGGLE_ARCHIVE':
+    case QuestionPoolReducerActionType.TOGGLE_ARCHIVE:
       return {
         ...state,
         filters: {
@@ -64,7 +114,7 @@ function reducer(state, action): any {
         },
       }
 
-    case 'SORT_ORDER':
+    case QuestionPoolReducerActionType.SORT_ORDER:
       return {
         ...state,
         sort: {
@@ -73,25 +123,25 @@ function reducer(state, action): any {
         },
       }
 
-    case 'SORT_BY':
+    case QuestionPoolReducerActionType.SORT_BY:
       return {
         ...state,
         sort: {
           ...state.sort,
-          by: action.by,
+          by: action.by!,
         },
       }
 
-    case 'SEARCH':
+    case QuestionPoolReducerActionType.SEARCH:
       return {
         ...state,
         filters: {
           ...state.filters,
-          name: action.name,
+          name: action.name!,
         },
       }
 
-    case 'SAMPLE_SOLUTION':
+    case QuestionPoolReducerActionType.SAMPLE_SOLUTION:
       return {
         ...state,
         filters: {
@@ -103,7 +153,7 @@ function reducer(state, action): any {
         },
       }
 
-    case 'ANSWER_FEEDBACKS':
+    case QuestionPoolReducerActionType.ANSWER_FEEDBACKS:
       return {
         ...state,
         filters: {
@@ -115,7 +165,7 @@ function reducer(state, action): any {
         },
       }
 
-    case 'RESET':
+    case QuestionPoolReducerActionType.RESET:
       return { ...state, filters: INITIAL_STATE.filters }
 
     default:
@@ -123,23 +173,40 @@ function reducer(state, action): any {
   }
 }
 
-function useSortingAndFiltering(): any {
+function useSortingAndFiltering() {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE)
 
   return {
     ...state,
-    handleReset: (): void => dispatch({ type: 'RESET' }),
-    handleSearch: (name: string): void => dispatch({ type: 'SEARCH', name }),
-    handleSortByChange: (by): void => dispatch({ type: 'SORT_BY', by }),
-    handleSortOrderToggle: (): void => dispatch({ type: 'SORT_ORDER' }),
-    handleToggleArchive: (newValue: boolean): void =>
-      dispatch({ type: 'TOGGLE_ARCHIVE', newValue }),
-    handleTagClick: (tagName: string, questionType): void =>
-      dispatch({ type: 'TAG_CLICK', tagName, questionType }),
-    handleSampleSolutionClick: (newValue: boolean): void =>
-      dispatch({ type: 'SAMPLE_SOLUTION', newValue }),
-    handleAnswerFeedbacksClick: (newValue: boolean): void =>
-      dispatch({ type: 'ANSWER_FEEDBACKS', newValue }),
+    handleReset: (): void =>
+      dispatch({ type: QuestionPoolReducerActionType.RESET }),
+    handleSearch: (name: string): void =>
+      dispatch({ type: QuestionPoolReducerActionType.SEARCH, name }),
+    handleSortByChange: (by: SortyByType): void =>
+      dispatch({ type: QuestionPoolReducerActionType.SORT_BY, by }),
+    handleSortOrderToggle: (): void =>
+      dispatch({ type: QuestionPoolReducerActionType.SORT_ORDER }),
+    handleToggleArchive: (): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.TOGGLE_ARCHIVE,
+        newValue: !state.filters.archive,
+      }),
+    handleTagClick: (tagName: string, isQuestionTag: boolean): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.TAG_CLICK,
+        tagName,
+        isQuestionTag,
+      }),
+    toggleSampleSolutionFilter: (): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.SAMPLE_SOLUTION,
+        newValue: !state.filters.sampleSolution,
+      }),
+    toggleAnswerFeedbackFilter: (): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.ANSWER_FEEDBACKS,
+        newValue: !state.filters.answerFeedbacks,
+      }),
   }
 }
 

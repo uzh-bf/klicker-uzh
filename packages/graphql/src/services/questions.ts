@@ -500,19 +500,7 @@ export async function updateQuestionInstances(
               session: true,
             },
           },
-          stackElement: {
-            include: {
-              stack: {
-                include: {
-                  learningElement: {
-                    where: {
-                      status: DB.LearningElementStatus.DRAFT,
-                    },
-                  },
-                },
-              },
-            },
-          },
+          // TODO: update all instances in element stacks for practice quizzes
           microSession: {
             where: {
               status: DB.MicroSessionStatus.DRAFT,
@@ -558,24 +546,9 @@ export async function updateQuestionInstances(
             microlearningId: undefined,
           },
         ]
-      } else if (
-        instance.stackElement?.stack?.learningElement?.status ===
-        DB.LearningElementStatus.DRAFT
-      ) {
-        return [
-          ...acc,
-          {
-            instanceId: instance.id,
-            multiplier:
-              instance.stackElement.stack.learningElement.pointsMultiplier,
-            sessionId: undefined,
-            practiceQuizId: instance.stackElement.stack.learningElement.id,
-            microlearningId: undefined,
-          },
-        ]
-      } else if (
-        instance.microSession?.status === DB.MicroSessionStatus.DRAFT
-      ) {
+      }
+      // TODO: return instanceId, multiplier, sessionId, practiceQuizId and microlearningId for practice quiz
+      else if (instance.microSession?.status === DB.MicroSessionStatus.DRAFT) {
         return [
           ...acc,
           {
@@ -628,7 +601,7 @@ export async function updateQuestionInstances(
             })
           } else if (typeof practiceQuizId !== 'undefined') {
             ctx.emitter.emit('invalidate', {
-              typename: 'LearningElement',
+              typename: 'PracticeQuiz',
               id: practiceQuizId,
             })
           } else if (typeof microlearningId !== 'undefined') {

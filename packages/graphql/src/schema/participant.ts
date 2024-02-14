@@ -21,8 +21,6 @@ import {
 } from './course'
 import type { IGroupActivityInstance } from './groupActivity'
 import { GroupActivityInstanceRef } from './groupActivity'
-import type { IQuestionStack } from './learningElements'
-import { QuestionStackRef } from './learningElements'
 import { LocaleType } from './user'
 
 export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
@@ -172,7 +170,6 @@ export interface IParticipation extends DB.Participation {
   subscriptions?: DB.PushSubscription[]
   course?: ICourse
   participant?: IParticipant
-  bookmarkedStacks?: IQuestionStack[]
 }
 export const ParticipationRef =
   builder.objectRef<IParticipation>('Participation')
@@ -196,11 +193,6 @@ export const Participation = ParticipationRef.implement({
 
     participant: t.expose('participant', {
       type: ParticipantRef,
-      nullable: true,
-    }),
-
-    bookmarkedStacks: t.expose('bookmarkedStacks', {
-      type: [QuestionStackRef],
       nullable: true,
     }),
   }),

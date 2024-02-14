@@ -10,7 +10,7 @@ interface QuestionListProps {
   selectedQuestions: Record<number, Element>
   questions?: Element[]
   tagfilter?: string[]
-  handleTagClick: (value: string, selected?: boolean) => void
+  handleTagClick: (tagName: string) => void
   unsetDeletedQuestion: (questionId: number) => void
 }
 

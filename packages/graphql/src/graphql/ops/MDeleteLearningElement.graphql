@@ -1,5 +1,0 @@
-mutation DeleteLearningElement($id: String!) {
-  deletePracticeQuiz(id: $id) {
-    id
-  }
-}

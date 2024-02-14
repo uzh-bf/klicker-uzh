@@ -43,7 +43,7 @@ function Practice() {
           data.getPracticeCourses.length === 0) && (
           <UserNotification
             type="info"
-            message={t('pwa.learningElement.noRepetition')}
+            message={t('pwa.practiceQuiz.noRepetition')}
           />
         )}
       </div>

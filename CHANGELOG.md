@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.6...v3.1.0-rc.7) (2024-02-12)
+
+
+### Refactors
+
+* remove or rename code related to learning elements and add scripts to fix db inconsistencies ([#4037](https://github.com/uzh-bf/klicker-uzh/issues/4037)) ([b25feb1](https://github.com/uzh-bf/klicker-uzh/commit/b25feb14679a4e91639b25a17e5193c64027a978))
+
+## [3.1.0-rc.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.5...v3.1.0-rc.6) (2024-02-10)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure external link goes to quiz and not element ([357fa76](https://github.com/uzh-bf/klicker-uzh/commit/357fa76d165051fff96777849dd6cc9f3f4df8f2))
+
+## [3.1.0-rc.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.4...v3.1.0-rc.5) (2024-02-10)
+
+
+### Enhancements
+
+* add typing to sorting and filtering logic of lecturer question pool ([#4041](https://github.com/uzh-bf/klicker-uzh/issues/4041)) ([ce9a4f4](https://github.com/uzh-bf/klicker-uzh/commit/ce9a4f430cc8d88a22973603b73bf494d84cc517))
+
+## [3.1.0-rc.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.3...v3.1.0-rc.4) (2024-02-10)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that filtering for sample solution and answer feedbacks still works ([#4040](https://github.com/uzh-bf/klicker-uzh/issues/4040)) ([c25ba0e](https://github.com/uzh-bf/klicker-uzh/commit/c25ba0edd8b02294da4267214c00e39b88db0081))
+* **apps/frontend-pwa:** ensure that anonymous participation in practice quiz is possible ([#4039](https://github.com/uzh-bf/klicker-uzh/issues/4039)) ([4d0900d](https://github.com/uzh-bf/klicker-uzh/commit/4d0900d67f15a95b761746881d67b850bad67d1b))
+* **apps/frontend-pwa:** fix arrows on step progress in practice quiz ([#4038](https://github.com/uzh-bf/klicker-uzh/issues/4038)) ([326003d](https://github.com/uzh-bf/klicker-uzh/commit/326003dba6d784e86ecc7ec49f737c4344f6a4e3))
+
 ## [3.1.0-rc.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.2...v3.1.0-rc.3) (2024-02-10)
 
 

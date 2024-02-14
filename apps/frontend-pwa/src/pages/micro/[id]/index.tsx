@@ -111,7 +111,7 @@ function MicroSessionIntroduction({ id }: Props) {
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
-              {t('pwa.learningElement.numOfQuestions', {
+              {t('pwa.practiceQuiz.numOfQuestions', {
                 number: data.microSession.instances?.length,
               })}
             </div>
@@ -119,7 +119,7 @@ function MicroSessionIntroduction({ id }: Props) {
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faTimesCircle} />
             <div>
-              {t('pwa.learningElement.multiplicatorPoints', {
+              {t('pwa.practiceQuiz.multiplicatorPoints', {
                 mult: data.microSession.pointsMultiplier,
               })}
             </div>

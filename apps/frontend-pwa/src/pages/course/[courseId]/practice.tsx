@@ -36,7 +36,7 @@ function PracticePool({ courseId }: Props) {
       <Layout>
         <UserNotification
           type="error"
-          message={t('pwa.learningElement.notFound')}
+          message={t('pwa.practiceQuiz.notFound')}
         />
       </Layout>
     )

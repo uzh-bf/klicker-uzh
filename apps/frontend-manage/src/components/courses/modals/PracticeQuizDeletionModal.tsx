@@ -1,29 +1,29 @@
 import { useMutation } from '@apollo/client'
 import {
-  DeleteLearningElementDocument,
+  DeletePracticeQuizDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
-interface LearningElementDeletionModalProps {
+interface PracticeQuizDeletionModalProps {
   elementId: string
   title: string
   open: boolean
   setOpen: (value: boolean) => void
 }
 
-function LearningElementDeletionModal({
+function PracticeQuizDeletionModal({
   elementId,
   title,
   open,
   setOpen,
-}: LearningElementDeletionModalProps) {
+}: PracticeQuizDeletionModalProps) {
   const t = useTranslations()
 
   // TODO: implement more efficiently with working update instead of expensive refetch
-  const [deleteLearningElement] = useMutation(DeleteLearningElementDocument, {
+  const [deletePracticeQuiz] = useMutation(DeletePracticeQuizDocument, {
     variables: { id: elementId },
     refetchQueries: [GetSingleCourseDocument],
   })
@@ -33,7 +33,7 @@ function LearningElementDeletionModal({
       onPrimaryAction={
         <Button
           onClick={async () => {
-            await deleteLearningElement()
+            await deletePracticeQuiz()
             setOpen(false)
           }}
           className={{
@@ -71,4 +71,4 @@ function LearningElementDeletionModal({
   )
 }
 
-export default LearningElementDeletionModal
+export default PracticeQuizDeletionModal

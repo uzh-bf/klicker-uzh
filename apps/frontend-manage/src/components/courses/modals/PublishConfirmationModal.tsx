@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   ElementInstanceType,
-  PublishLearningElementDocument,
   PublishMicroSessionDocument,
+  PublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -25,7 +25,7 @@ function PublishConfirmationModal({
   setOpen,
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
-  const [publishLearningElement] = useMutation(PublishLearningElementDocument, {
+  const [publishPracticeQuiz] = useMutation(PublishPracticeQuizDocument, {
     variables: {
       id: elementId,
     },
@@ -44,7 +44,7 @@ function PublishConfirmationModal({
             if (elementType === ElementInstanceType.Microlearning) {
               await publishMicroSession()
             } else if (elementType === ElementInstanceType.PracticeQuiz) {
-              await publishLearningElement()
+              await publishPracticeQuiz()
             }
             setOpen(false)
           }}

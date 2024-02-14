@@ -27,14 +27,6 @@ query GetSingleCourse($courseId: String!) {
       numOfBlocks
       numOfQuestions
     }
-    learningElements {
-      id
-      name
-      displayName
-      status
-      stacksWithQuestions
-      numOfQuestions
-    }
     practiceQuizzes {
       id
       name

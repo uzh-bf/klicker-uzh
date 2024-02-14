@@ -4,7 +4,7 @@ import {
   faSave,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { LearningElementOrderType } from '@klicker-uzh/graphql/dist/ops'
+import { PracticeQuizOrderType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Workflow } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -61,11 +61,11 @@ export interface MicroSessionFormValues extends CommonFormValues {
   }[]
   startDate: string
   endDate: string
-  order: LearningElementOrderType
+  order: PracticeQuizOrderType
   resetTimeDays: string
 }
 
-export interface LearningElementFormValues extends CommonFormValues {
+export interface PracticeQuizFormValues extends CommonFormValues {
   questions: {
     id: number
     title: string
@@ -114,7 +114,7 @@ function MultistepWizard({
     values:
       | LiveSessionFormValues
       | MicroSessionFormValues
-      | LearningElementFormValues,
+      | PracticeQuizFormValues,
     bag: any
   ) => {
     if (step.props.onSubmit) {
@@ -140,7 +140,7 @@ function MultistepWizard({
       {({ values, isSubmitting, isValid, resetForm, validateForm }) => (
         <Form className="border-b h-76 border-uzh-grey-60">
           <Validator stepNumber={stepNumber} validateForm={validateForm} />
-          <div className="flex flex-row gap-8 items-end">
+          <div className="flex flex-row items-end gap-8">
             <H2 className={{ root: 'flex flex-none m-0 items-end' }}>
               {editMode
                 ? t('manage.questionForms.editElement', { element: title })

@@ -7,7 +7,9 @@ import {
 import { useRouter } from 'next/router'
 import * as R from 'ramda'
 import { Suspense, useEffect, useMemo, useState } from 'react'
-import useSortingAndFiltering from '../lib/hooks/useSortingAndFiltering'
+import useSortingAndFiltering, {
+  SortyByType,
+} from '../lib/hooks/useSortingAndFiltering'
 
 import {
   faArchive,
@@ -33,7 +35,9 @@ import Layout from '../components/Layout'
 import QuestionEditModal from '../components/questions/QuestionEditModal'
 import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
-import SessionCreation from '../components/sessions/creation/SessionCreation'
+import SessionCreation, {
+  WizardMode,
+} from '../components/sessions/creation/SessionCreation'
 import SuspendedCreationButtons from '../components/sessions/creation/SuspendedCreationButtons'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 
@@ -44,9 +48,9 @@ function Index() {
   const [toggleIsArchived] = useMutation(ToggleIsArchivedDocument)
 
   const [searchInput, setSearchInput] = useState('')
-  const [creationMode, setCreationMode] = useState<
-    undefined | 'liveSession' | 'microSession' | 'learningElement' | 'groupTask'
-  >(undefined)
+  const [creationMode, setCreationMode] = useState<undefined | WizardMode>(
+    undefined
+  )
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
   const [sortBy, setSortBy] = useState('')
@@ -75,8 +79,8 @@ function Index() {
     handleTagClick,
     handleReset,
     handleToggleArchive,
-    handleSampleSolutionClick,
-    handleAnswerFeedbacksClick,
+    toggleSampleSolutionFilter,
+    toggleAnswerFeedbackFilter,
   } = useSortingAndFiltering()
 
   useEffect((): void => {
@@ -92,7 +96,7 @@ function Index() {
 
   const index = useMemo(() => {
     if (dataQuestions?.userQuestions) {
-      return buildIndex('questions', dataQuestions.userQuestions, [
+      return buildIndex('questions', dataQuestions.userQuestions as Element[], [
         'name',
         'createdAt',
       ])
@@ -165,8 +169,8 @@ function Index() {
                 answerFeedbacks={filters.answerFeedbacks}
                 handleReset={handleReset}
                 handleTagClick={handleTagClick}
-                handleSampleSolutionClick={handleSampleSolutionClick}
-                handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
+                toggleSampleSolutionFilter={toggleSampleSolutionFilter}
+                toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
                 handleToggleArchive={handleToggleArchive}
                 isArchiveActive={filters.archive}
               />
@@ -181,8 +185,8 @@ function Index() {
                 answerFeedbacks={filters.answerFeedbacks}
                 handleReset={handleReset}
                 handleTagClick={handleTagClick}
-                handleSampleSolutionClick={handleSampleSolutionClick}
-                handleAnswerFeedbacksClick={handleAnswerFeedbacksClick}
+                toggleSampleSolutionFilter={toggleSampleSolutionFilter}
+                toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
                 handleToggleArchive={handleToggleArchive}
                 isArchiveActive={filters.archive}
               />
@@ -283,19 +287,19 @@ function Index() {
                       placeholder={t('manage.general.sortBy')}
                       items={[
                         {
-                          value: 'CREATED',
+                          value: SortyByType.CREATED,
                           label: t('manage.general.date'),
                           data: { cy: 'sort-by-question-pool-created' },
                         },
                         {
-                          value: 'TITLE',
+                          value: SortyByType.TITLE,
                           label: t('manage.general.title'),
                           data: { cy: 'sort-by-question-pool-title' },
                         },
                       ]}
                       onChange={(newSortBy: string) => {
                         setSortBy(newSortBy)
-                        handleSortByChange(newSortBy)
+                        handleSortByChange(newSortBy as SortyByType)
                       }}
                       data={{ cy: 'sort-by-question-pool' }}
                     />
@@ -371,7 +375,7 @@ function Index() {
                     })
                   }}
                   tagfilter={filters.tags}
-                  handleTagClick={handleTagClick}
+                  handleTagClick={(tag: string) => handleTagClick(tag, false)}
                   unsetDeletedQuestion={(questionId: number) => {
                     setSelectedQuestions((prev) => {
                       if (prev[questionId]) {

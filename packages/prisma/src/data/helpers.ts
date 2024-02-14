@@ -15,7 +15,6 @@ import {
   Element,
   ElementType,
   QuestionInstanceType,
-  QuestionStackType,
   UserLoginScope,
 } from '../client'
 
@@ -263,126 +262,6 @@ interface BaseQuestionData {
   content: string
   type: Prisma.ElementType
   options?: any
-}
-
-interface StackData {
-  displayName?: string
-  description?: string
-  elements: (BaseQuestionData | String)[]
-}
-
-export async function prepareLearningElement({
-  stacks,
-  ...args
-}: {
-  id: string
-  name: string
-  displayName: string
-  description?: string
-  pointsMultiplier?: number
-  resetTimeDays?: number
-  orderType?: Prisma.OrderType
-  ownerId: string
-  courseId: string
-  stacks: StackData[]
-  status?: Prisma.LearningElementStatus
-}) {
-  return {
-    where: {
-      id: args.id,
-    },
-    create: {
-      id: args.id,
-      name: args.name,
-      displayName: args.displayName,
-      description: args.description,
-      pointsMultiplier: args.pointsMultiplier,
-      resetTimeDays: args.resetTimeDays,
-      status: args.status,
-      orderType: args.orderType,
-      owner: {
-        connect: {
-          id: args.ownerId,
-        },
-      },
-      course: {
-        connect: {
-          id: args.courseId,
-        },
-      },
-      stacks: {
-        create: await Promise.all(
-          stacks.map(async (stack, ix) => ({
-            type: QuestionStackType.LEARNING_ELEMENT,
-            order: ix,
-            displayName: stack.displayName,
-            description: stack.description,
-            elements: {
-              create: stack.elements.map((element, ixInner) => {
-                if (typeof element === 'string') {
-                  return { order: ixInner, mdContent: element }
-                }
-                return {
-                  order: ixInner,
-                  questionInstance: {
-                    create: prepareQuestionInstance({
-                      order: 0,
-                      question: element,
-                      pointsMultiplier: args.pointsMultiplier
-                        ? args.pointsMultiplier * element.pointsMultiplier
-                        : undefined,
-                      resetTimeDays: args.resetTimeDays,
-                      type: QuestionInstanceType.LEARNING_ELEMENT,
-                    }),
-                  },
-                }
-              }),
-            },
-          }))
-        ),
-      },
-    },
-    update: {
-      name: args.name,
-      displayName: args.displayName,
-      description: args.description,
-      pointsMultiplier: args.pointsMultiplier,
-      resetTimeDays: args.resetTimeDays,
-      status: args.status,
-      orderType: args.orderType,
-      stacks: {
-        create: await Promise.all(
-          stacks.map(async (stack, ix) => ({
-            type: QuestionStackType.LEARNING_ELEMENT,
-            order: ix,
-            displayName: stack.displayName,
-            description: stack.description,
-            elements: {
-              create: stack.elements.map((element, ixInner) => {
-                if (typeof element === 'string') {
-                  return { order: ixInner, mdContent: element }
-                }
-                return {
-                  order: ixInner,
-                  questionInstance: {
-                    create: prepareQuestionInstance({
-                      order: 0,
-                      question: element,
-                      pointsMultiplier: args.pointsMultiplier
-                        ? args.pointsMultiplier * element.pointsMultiplier
-                        : undefined,
-                      resetTimeDays: args.resetTimeDays,
-                      type: QuestionInstanceType.LEARNING_ELEMENT,
-                    }),
-                  },
-                }
-              }),
-            },
-          }))
-        ),
-      },
-    },
-  }
 }
 
 export async function prepareSession({
@@ -1100,25 +979,75 @@ export async function prepareMicroSession({
   }
 }
 
-export function extractQuizInfo(doc: typeof xmlDoc) {
+export function extractQuizInfo(doc: typeof xmlDoc, formulaTagId?: number) {
   const turndown = Turndown()
 
   return {
     title: doc.box.title[0],
     description: doc.box.description[0],
-    elements: doc.box.cards[0].card.map((card) => ({
-      originalId: card['$'].id,
-      name: `FC ${card['$'].id}`,
-      content: turndown.turndown(card.question[0].text[0].trim()),
-      explanation: turndown.turndown(card.answer[0].text[0].trim()),
-      type: ElementType.FLASHCARD,
-      options: {},
-    })),
+    elements: doc.box.cards[0].card.map((card) => {
+      const hasFormula =
+        card.question[0].text[0].includes('\\(') ||
+        card.answer[0].text[0].includes('\\(')
+
+      if (hasFormula) {
+        console.log(
+          card.question[0].text[0].trim(),
+          card.answer[0].text[0].trim()
+        )
+      }
+
+      return {
+        originalId: card['$'].id,
+        name: `FC ${card['$'].id}`,
+        content: turndown
+          .turndown(card.question[0].text[0].trim())
+          .replaceAll('\\(', '$$$$')
+          .replaceAll('\\)', '$$$$')
+          .replaceAll('\\$', '$$')
+          .replaceAll('\\*', '*')
+          .replaceAll('\\_', '_')
+          .replaceAll('\\[', '[')
+          .replaceAll('\\]', ']')
+          .replaceAll('\\\\%', '\\%')
+          .replaceAll('\\\\frac', '\\frac')
+          .replaceAll('\\\\infty', '\\infty')
+          .replaceAll('\\\\sigma', '\\sigma')
+          .replaceAll('\\\\rho', '\\rho')
+          .replaceAll('\\\\pi', '\\pi')
+          .replaceAll('\\\\sum', '\\sum'),
+        explanation: turndown
+          .turndown(card.answer[0].text[0].trim())
+          .replaceAll('\\(', '$$$$')
+          .replaceAll('\\)', '$$$$')
+          .replaceAll('\\$', '$$')
+          .replaceAll('\\*', '*')
+          .replaceAll('\\_', '_')
+          .replaceAll('\\[', '[')
+          .replaceAll('\\]', ']')
+          .replaceAll('\\\\%', '\\%')
+          .replaceAll('\\\\frac', '\\frac')
+          .replaceAll('\\\\infty', '\\infty')
+          .replaceAll('\\\\sigma', '\\sigma')
+          .replaceAll('\\\\rho', '\\rho')
+          .replaceAll('\\\\pi', '\\pi')
+          .replaceAll('\\\\sum', '\\sum'),
+        type: ElementType.FLASHCARD,
+        options: {},
+        tags: hasFormula
+          ? {
+              connect: {
+                id: formulaTagId,
+              },
+            }
+          : undefined,
+      }
+    }),
     // ... other practice quiz properties
   }
 }
 
-export async function processQuizInfo(fileName: string) {
+export async function processQuizInfo(fileName: string, formulaTagId?: number) {
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
 
@@ -1126,9 +1055,7 @@ export async function processQuizInfo(fileName: string) {
 
   const xmlDoc = await parseStringPromise(xmlData)
 
-  // console.log(xmlDoc, xmlDoc.box.cards[0])
-
-  const quizInfo = extractQuizInfo(xmlDoc)
+  const quizInfo = extractQuizInfo(xmlDoc, formulaTagId)
 
   return quizInfo
 }
@@ -1136,9 +1063,10 @@ export async function processQuizInfo(fileName: string) {
 export async function prepareFlashcardsFromFile(
   prismaClient: Prisma.PrismaClient,
   fileName: string,
-  userId: string
+  userId: string,
+  formulaTagId?: number
 ) {
-  const quizInfo = await processQuizInfo(fileName)
+  const quizInfo = await processQuizInfo(fileName, formulaTagId)
 
   const elementsFC = await Promise.allSettled(
     quizInfo.elements.map(async (data) => {
