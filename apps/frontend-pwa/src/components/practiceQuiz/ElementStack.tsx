@@ -34,6 +34,7 @@ interface ElementStackProps {
     score?: number | null
   }) => void
   handleNextElement: () => void
+  onAllStacksCompletion: () => void
   withParticipant?: boolean
   bookmarks?: number[] | null
   hideBookmark?: boolean
@@ -47,6 +48,7 @@ function ElementStack({
   totalSteps,
   setStepStatus,
   handleNextElement,
+  onAllStacksCompletion,
   withParticipant = false,
   bookmarks,
   hideBookmark = false,
@@ -142,8 +144,7 @@ function ElementStack({
             setStudentResponse({})
 
             if (currentStep === totalSteps) {
-              // TODO: re-introduce summary page for practice quiz
-              router.push(`/`)
+              onAllStacksCompletion()
             }
             handleNextElement()
           }}
@@ -298,8 +299,7 @@ function ElementStack({
               )
             ) {
               if (currentStep === totalSteps) {
-                // TODO: re-introduce summary page for practice quiz
-                router.push(`/`)
+                onAllStacksCompletion()
               }
               handleNextElement()
             }

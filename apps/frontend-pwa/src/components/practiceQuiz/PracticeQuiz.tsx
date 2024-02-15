@@ -125,6 +125,10 @@ function PracticeQuiz({
             }}
             handleNextElement={handleNextElement}
             withParticipant={!!dataParticipant?.self}
+            onAllStacksCompletion={() =>
+              // TODO: re-introduce summary page for practice quiz
+              router.push(`/`)
+            }
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
           />
         )}
