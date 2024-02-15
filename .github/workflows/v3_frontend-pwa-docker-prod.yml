@@ -3,8 +3,7 @@ name: Build Docker image for frontend-pwa (Production)
 on:
   push:
     tags: ['v*.*.*']
-    branches:
-      - 'switch*'
+    branches: ['v3', 'v3*', 'switch*']
     paths:
       - 'apps/frontend-pwa/**'
       - '.github/workflows/v3_frontend-pwa**'
