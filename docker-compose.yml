@@ -14,6 +14,8 @@ services:
       - './util/traefik/rules.yaml:/etc/traefik/rules.yaml'
     networks:
       - klicker
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
 
   reverse_proxy_docker:
     image: docker.io/library/traefik:v2.10
@@ -30,6 +32,8 @@ services:
       - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
     networks:
       - klicker
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
 
   auth:
     profiles:
@@ -44,6 +48,8 @@ services:
       - 3010:3000
     networks:
       - klicker
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
 
   frontend_pwa:
     profiles:
@@ -55,6 +61,8 @@ services:
       - 3001:3000
     networks:
       - klicker
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
 
   frontend_manage:
     profiles:
@@ -64,6 +72,8 @@ services:
       - 3002:3000
     networks:
       - klicker
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
 
   frontend_control:
     profiles:
@@ -73,6 +83,8 @@ services:
       - 3003:3000
     networks:
       - klicker
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
 
   backend:
     profiles:
@@ -107,6 +119,8 @@ services:
       - 3000:3000
     networks:
       - klicker
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
 
   # main database
   postgres:
@@ -121,6 +135,8 @@ services:
       - klicker
     volumes:
       - klicker_data:/var/lib/postgresql/data
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
 
     # redis instance to support session execution
   redis_exec:
