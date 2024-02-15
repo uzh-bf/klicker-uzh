@@ -1,0 +1,6 @@
+mutation MarkMicrolearningCompleted($courseId: String!, $id: String!) {
+  markMicrolearningCompleted(courseId: $courseId, id: $id) {
+    id
+    completedMicroLearnings
+  }
+}

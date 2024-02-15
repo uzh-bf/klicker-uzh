@@ -208,11 +208,13 @@ export async function getSingleMicrolearning(
   return microlearning
 }
 
+// TODO: remove after migration
 interface MarkMicroSessionCompletedArgs {
   courseId: string
   id: string
 }
 
+// TODO: remove after migration
 export async function markMicroSessionCompleted(
   { courseId, id }: MarkMicroSessionCompletedArgs,
   ctx: ContextWithUser
@@ -226,6 +228,30 @@ export async function markMicroSessionCompleted(
     },
     data: {
       completedMicroSessions: {
+        push: id,
+      },
+    },
+  })
+}
+
+interface MarkMicrolearningCompletedArgs {
+  courseId: string
+  id: string
+}
+
+export async function markMicrolearningCompleted(
+  { courseId, id }: MarkMicrolearningCompletedArgs,
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.participation.update({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    data: {
+      completedMicroLearnings: {
         push: id,
       },
     },

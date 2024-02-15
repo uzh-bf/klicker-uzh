@@ -10,6 +10,7 @@ interface LinkButtonProps {
   children: string | React.ReactNode
   onClick?: () => void
   data?: { cy?: string; test?: string }
+  disabled?: boolean
   className?: {
     root?: string
   }
@@ -21,6 +22,7 @@ function LinkButton({
   children,
   icon,
   onClick,
+  disabled,
   data,
   className,
   ...props
@@ -33,11 +35,13 @@ function LinkButton({
         className={{
           root: twMerge(
             'gap-5 px-4 py-2 text-lg shadow bg-slate-200 sm:hover:bg-slate-300 border-slate-300',
+            disabled && 'cursor-not-allowed sm:hover:bg-slate-200',
             className?.root
           ),
         }}
         onClick={onClick}
         data={data}
+        disabled={disabled}
       >
         {icon && (
           <Button.Icon>

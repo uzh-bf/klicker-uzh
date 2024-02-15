@@ -486,6 +486,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You have successfully completed the microlearning <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
       availableFrom: 'Available from {date}',
       availableUntil: 'Available until {date}',
+      questionSetN: 'Question set {number}',
     },
     session: {
       noActiveQuestion: 'No question active.',

@@ -6,13 +6,11 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Progress } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import ElementStack from '../../../components/practiceQuiz/ElementStack'
 
 function MicrolearningInstance() {
-  const t = useTranslations()
   const router = useRouter()
   const ix = parseInt(router.query.ix as string)
   const id = router.query.id as string
@@ -61,8 +59,11 @@ function MicrolearningInstance() {
           currentStep={ix + 1}
           totalSteps={microlearning.stacks?.length ?? 0}
           handleNextElement={() =>
-            // TODO: go to evaluation view after completion of all stacks
             router.push(`/microlearning/${id}/${ix + 1}`)
+          }
+          onAllStacksCompletion={() =>
+            // TODO: also mark the microlearning as completed with this action already?
+            router.push(`/microlearning/${id}/evaluation`)
           }
           withParticipant={!!selfData?.self}
           hideBookmark
