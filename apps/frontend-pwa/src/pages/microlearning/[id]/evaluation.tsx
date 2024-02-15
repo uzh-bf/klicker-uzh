@@ -87,11 +87,15 @@ function MicrolearningEvaluation() {
                       t('pwa.microSession.questionSetN', { number: ix + 1 })}
                   </div>
                   <div>
-                    {`${
-                      aggregatedResults.evaluation[stack.id]?.pointsAwarded
-                    }/${aggregatedResults.evaluation[stack.id]?.score}/${
-                      aggregatedResults.evaluation[stack.id]?.maxPoints
-                    }`}
+                    {typeof aggregatedResults.evaluation[stack.id]
+                      ?.pointsAwarded !== 'undefined' &&
+                      aggregatedResults.evaluation[stack.id]?.pointsAwarded !==
+                        null &&
+                      `${
+                        aggregatedResults.evaluation[stack.id]?.pointsAwarded
+                      }/`}
+                    {aggregatedResults.evaluation[stack.id]?.score}
+                    {`/${aggregatedResults.evaluation[stack.id]?.maxPoints}`}
                   </div>
                 </div>
               ))}
