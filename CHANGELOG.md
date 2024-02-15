@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.7...v3.1.0-rc.8) (2024-02-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** remove frontend filtering between learning elements and practice quizzes ([#4042](https://github.com/uzh-bf/klicker-uzh/issues/4042)) ([c5756bb](https://github.com/uzh-bf/klicker-uzh/commit/c5756bb50481611fcc375fac046e9f4bde514e80))
+
 ## [3.1.0-rc.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.6...v3.1.0-rc.7) (2024-02-12)
 
 
