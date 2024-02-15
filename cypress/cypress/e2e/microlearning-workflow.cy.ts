@@ -578,6 +578,7 @@ describe('Different microlearning workflows', () => {
   it('Respond to the seeded instance of the redesigned microlearning', () => {
     const seedMicrolearningDisplayName = 'Test Microlearning'
 
+    cy.visit(Cypress.env('URL_STUDENT'))
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
     cy.clearAllSessionStorage()
