@@ -428,6 +428,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      markMicrolearningCompleted: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: Participation,
+        args: {
+          id: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.markMicrolearningCompleted(args, ctx)
+        },
+      }),
+
       createParticipantGroup: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantGroup,

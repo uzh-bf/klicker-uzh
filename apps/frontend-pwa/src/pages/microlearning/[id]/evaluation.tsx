@@ -1,9 +1,10 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import Layout from '@components/Layout'
 import {
   ElementType,
   GetMicrolearningDocument,
   GetParticipationDocument,
+  MarkMicrolearningCompletedDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -19,7 +20,7 @@ function MicrolearningEvaluation() {
   const router = useRouter()
   const id = router.query.id as string
 
-  const { loading, error, data } = useQuery(GetMicrolearningDocument, {
+  const { loading, data } = useQuery(GetMicrolearningDocument, {
     variables: { id },
     skip: !id,
   })
@@ -28,6 +29,10 @@ function MicrolearningEvaluation() {
     variables: { courseId: data?.microlearning?.course?.id ?? '' },
     skip: !data?.microlearning?.course?.id,
   })
+
+  const [markMicrolearningCompleted] = useMutation(
+    MarkMicrolearningCompletedDocument
+  )
 
   const microlearning = data?.microlearning
 
@@ -174,7 +179,7 @@ function MicrolearningEvaluation() {
           <div className="text-right">
             <Button
               onClick={async () => {
-                await markMicroSessionCompleted({
+                await markMicrolearningCompleted({
                   variables: {
                     courseId: microlearning.course!.id,
                     id,
