@@ -38,9 +38,9 @@ async function migrate() {
 
   console.log('questionInstances', questionInstances.length)
 
-  let counter = 1
-  let counter2 = 1
-  let counter3 = 1
+  let counter = 0
+  let counter2 = 0
+  let counter3 = 0
 
   for (const elem of questionInstances) {
     const matchingElementInstance = await prisma.elementInstance.findFirst({
