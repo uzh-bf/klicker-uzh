@@ -615,8 +615,8 @@ type Mutation {
   publishPracticeQuiz(id: String!): PracticeQuiz
   requestMigrationToken(email: String!): Boolean
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
+  respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
-  respondToPracticeQuizStack(courseId: String!, responses: [StackResponseInput!]!, stackId: Int!): StackFeedback
   respondToQuestionInstance(courseId: String!, id: Int!, response: ResponseInput!): QuestionInstance
   sendPushNotifications: Boolean!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails

@@ -3,7 +3,7 @@ import {
   ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectnessType,
-  RespondToPracticeQuizStackDocument,
+  RespondToElementStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
@@ -26,7 +26,7 @@ interface ElementStackProps {
   stack: ElementStackType
   currentStep: number
   totalSteps: number
-  setStepStatus: ({
+  setStepStatus?: ({
     status,
     score,
   }: {
@@ -36,6 +36,7 @@ interface ElementStackProps {
   handleNextElement: () => void
   withParticipant?: boolean
   bookmarks?: number[] | null
+  hideBookmark?: boolean
 }
 
 function ElementStack({
@@ -48,13 +49,12 @@ function ElementStack({
   handleNextElement,
   withParticipant = false,
   bookmarks,
+  hideBookmark = false,
 }: ElementStackProps) {
   const t = useTranslations()
   const router = useRouter()
 
-  const [respondToPracticeQuizStack] = useMutation(
-    RespondToPracticeQuizStackDocument
-  )
+  const [respondToElementStack] = useMutation(RespondToElementStackDocument)
 
   const [stackStorage, setStackStorage] = useLocalStorage<StudentResponseType>(
     `qi-${parentId}-${stack.id}`,
@@ -89,14 +89,16 @@ function ElementStack({
   return (
     <div className="pb-12">
       <div className="w-full">
-        <div className="flex flex-row items-center justify-between">
-          <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
-          <Bookmark
-            bookmarks={bookmarks}
-            quizId={parentId === 'bookmarks' ? undefined : parentId}
-            stackId={stack.id}
-          />
-        </div>
+        {!hideBookmark && (
+          <div className="flex flex-row items-center justify-between">
+            <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
+            <Bookmark
+              bookmarks={bookmarks}
+              quizId={parentId === 'bookmarks' ? undefined : parentId}
+              stackId={stack.id}
+            />
+          </div>
+        )}
 
         {stack.description && (
           <div className="mb-4">
@@ -194,7 +196,7 @@ function ElementStack({
             (response) => !response.valid
           )}
           onClick={async () => {
-            const result = await respondToPracticeQuizStack({
+            const result = await respondToElementStack({
               variables: {
                 stackId: stack.id,
                 courseId: courseId,
@@ -263,7 +265,7 @@ function ElementStack({
                   [key]: {
                     ...value,
                     evaluation:
-                      result.data?.respondToPracticeQuizStack?.evaluations?.find(
+                      result.data?.respondToElementStack?.evaluations?.find(
                         (evaluation) => evaluation.instanceId === parseInt(key)
                       ),
                   },
@@ -271,18 +273,21 @@ function ElementStack({
               }, {} as StudentResponseType)
             )
 
-            if (!result.data?.respondToPracticeQuizStack) {
+            if (!result.data?.respondToElementStack) {
               console.error('Error submitting response')
               return
             }
 
             // set status and score according to returned correctness
-            const grading = result.data?.respondToPracticeQuizStack
-            setStepStatus({
-              status: grading.status,
-              score: grading.score,
-            })
+            const grading = result.data?.respondToElementStack
             setStudentResponse({})
+
+            if (typeof setStepStatus !== 'undefined') {
+              setStepStatus({
+                status: grading.status,
+                score: grading.score,
+              })
+            }
 
             // continue if stack only included content elements and/or flashcards, otherwise show evaluation
             if (
