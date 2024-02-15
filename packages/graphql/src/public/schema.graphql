@@ -803,12 +803,6 @@ type PracticeQuiz {
   status: PublicationStatus!
 }
 
-enum PracticeQuizOrderType {
-  LAST_RESPONSE
-  SEQUENTIAL
-  SHUFFLED
-}
-
 enum PublicationStatus {
   DRAFT
   PUBLISHED

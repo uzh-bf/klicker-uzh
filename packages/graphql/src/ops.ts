@@ -1385,12 +1385,6 @@ export type PracticeQuiz = {
   status: PublicationStatus;
 };
 
-export enum PracticeQuizOrderType {
-  LastResponse = 'LAST_RESPONSE',
-  Sequential = 'SEQUENTIAL',
-  Shuffled = 'SHUFFLED'
-}
-
 export enum PublicationStatus {
   Draft = 'DRAFT',
   Published = 'PUBLISHED'
