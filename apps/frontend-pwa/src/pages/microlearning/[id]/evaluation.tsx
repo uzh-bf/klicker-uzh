@@ -146,8 +146,10 @@ function MicrolearningEvaluation() {
               aggregatedResults.evaluation &&
               data.microlearning?.stacks?.map((stack, ix) => (
                 <div className="flex flex-row justify-between" key={stack.id}>
-                  {/* // TODO: translation */}
-                  <div>{stack.displayName || `Question set ${ix + 1}`}</div>
+                  <div>
+                    {stack.displayName ||
+                      t('pwa.microSession.questionSetN', { number: ix + 1 })}
+                  </div>
                   <div>
                     {`${
                       aggregatedResults.evaluation[stack.id]?.pointsAwarded
