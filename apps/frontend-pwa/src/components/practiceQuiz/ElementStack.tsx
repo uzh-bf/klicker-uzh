@@ -145,8 +145,9 @@ function ElementStack({
 
             if (currentStep === totalSteps) {
               onAllStacksCompletion()
+            } else {
+              handleNextElement()
             }
-            handleNextElement()
           }}
           data={{ cy: 'practice-quiz-continue' }}
         >
@@ -300,8 +301,9 @@ function ElementStack({
             ) {
               if (currentStep === totalSteps) {
                 onAllStacksCompletion()
+              } else {
+                handleNextElement()
               }
-              handleNextElement()
             }
           }}
           data={{ cy: 'practice-quiz-stack-submit' }}
