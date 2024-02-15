@@ -1071,7 +1071,7 @@ function combineStackStatus({
   return prevStatus
 }
 
-interface RespondToPracticeQuizStackInput {
+interface RespondToElementStackInput {
   stackId: number
   courseId: string
   responses: {
@@ -1085,8 +1085,8 @@ interface RespondToPracticeQuizStackInput {
   }[]
 }
 
-export async function respondToPracticeQuizStack(
-  { stackId, courseId, responses }: RespondToPracticeQuizStackInput,
+export async function respondToElementStack(
+  { stackId, courseId, responses }: RespondToElementStackInput,
   ctx: Context
 ) {
   let stackScore: number | undefined = undefined

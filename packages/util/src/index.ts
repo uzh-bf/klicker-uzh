@@ -21,8 +21,14 @@ export function processQuestionData(question: Element) {
   }
 }
 
-const CONTENT_KEYS = ['name', 'content', 'type']
-const FLASHCARD_KEYS = ['name', 'content', 'explanation', 'type']
+const CONTENT_KEYS = ['name', 'content', 'type', 'pointsMultiplier']
+const FLASHCARD_KEYS = [
+  'name',
+  'content',
+  'explanation',
+  'type',
+  'pointsMultiplier',
+]
 const QUESTION_KEYS = [
   'name',
   'content',

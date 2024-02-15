@@ -27,6 +27,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
 
   const { loading, error, data } = useQuery(GetMicrolearningDocument, {
     variables: { id },
+    skip: !id,
   })
   const { data: selfData } = useQuery(SelfDocument)
 

@@ -202,7 +202,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      respondToPracticeQuizStack: t.field({
+      respondToElementStack: t.field({
         nullable: true,
         type: StackFeedback,
         args: {
@@ -214,7 +214,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve: (_, args, ctx) => {
-          return PracticeQuizService.respondToPracticeQuizStack(args, ctx)
+          return PracticeQuizService.respondToElementStack(args, ctx)
         },
       }),
 

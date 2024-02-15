@@ -1,9 +1,9 @@
-mutation RespondToPracticeQuizStack(
+mutation RespondToElementStack(
   $stackId: Int!
   $courseId: String!
   $responses: [StackResponseInput!]!
 ) {
-  respondToPracticeQuizStack(
+  respondToElementStack(
     stackId: $stackId
     courseId: $courseId
     responses: $responses
