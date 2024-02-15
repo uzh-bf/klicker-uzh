@@ -1,6 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import Layout from '@components/Layout'
 import useStackEvaluationAggregation from '@components/hooks/useStackEvaluationAggregation'
+import { faCheckCircle } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetMicrolearningDocument,
   GetParticipationDocument,
@@ -49,21 +51,27 @@ function MicrolearningEvaluation() {
       course={microlearning.course ?? undefined}
     >
       <div className="flex flex-col gap-3 md:max-w-5xl md:mx-auto md:w-full md:mb-4 md:p-8 md:pt-6 md:border md:rounded">
-        <div>
-          <H3>{t('shared.generic.congrats')}</H3>
-          <p>
-            {t.rich('pwa.microSession.solvedMicrolearning', {
-              name: microlearning.displayName,
-              it: (text) => <span className="italic">{text}</span>,
-            })}
-          </p>
+        <div className="flex flex-row items-center gap-4">
+          <FontAwesomeIcon
+            icon={faCheckCircle}
+            className="text-green-600 w-14 h-14"
+          />
+          <div>
+            <H3>{t('shared.generic.congrats')}</H3>
+            <p>
+              {t.rich('pwa.microSession.solvedMicrolearning', {
+                name: microlearning.displayName,
+                it: (text) => <span className="italic">{text}</span>,
+              })}
+            </p>
+          </div>
         </div>
         <div>
-          <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-col items-center justify-between mt-3 md:flex-row md:mt-0">
             <H3 className={{ root: 'flex flex-row justify-between' }}>
               {t('shared.generic.evaluation')}
             </H3>
-            <H3>
+            <H3 className={{ root: 'self-end text-base md:text-lg' }}>
               {participation?.getParticipation?.isActive
                 ? t('pwa.practiceQuiz.pointsCollectedPossible')
                 : t('pwa.practiceQuiz.pointsComputedAvailable')}
