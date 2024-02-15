@@ -62,6 +62,7 @@ function MicrolearningInstance() {
             router.push(`/microlearning/${id}/${ix + 1}`)
           }
           onAllStacksCompletion={() =>
+            // TODO: also mark the microlearning as completed with this action already?
             router.push(`/microlearning/${id}/evaluation`)
           }
           withParticipant={!!selfData?.self}
