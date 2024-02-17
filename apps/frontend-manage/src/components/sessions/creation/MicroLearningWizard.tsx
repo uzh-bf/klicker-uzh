@@ -262,7 +262,7 @@ function MicroLearningWizard({
   )
 }
 
-export default MicroSessionWizard
+export default MicroLearningWizard
 
 interface StepProps {
   onSubmit?: () => void
