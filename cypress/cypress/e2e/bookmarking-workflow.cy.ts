@@ -159,7 +159,7 @@ describe('Question bookmarking and flagging workflow', () => {
     // TODO - actually submit the flagging once adding notification emails is available
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
     cy.get('[data-cy="cancel-flag-element"]').click()
-    cy.get(':nth-child(1) > [data-cy="choice-option"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="send-answer"]').click()
     cy.wait(1000)
     cy.get('[data-cy="send-answer"]').click()
