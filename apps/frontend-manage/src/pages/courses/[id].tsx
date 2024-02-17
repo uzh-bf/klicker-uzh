@@ -1,25 +1,22 @@
 import { useQuery } from '@apollo/client'
+import GroupActivityList from '@components/courses/GroupActivityList'
 import MicroLearningList from '@components/courses/MicroLearningList'
 import PracticeQuizList from '@components/courses/PracticeQuizList'
-import { faCrown } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H2, H3, Tabs } from '@uzh-bf/design-system'
+import { H2, H3, Tabs } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
-import CatalystNotification from '../../components/courses/CatalystNotification'
 import CourseOverviewHeader from '../../components/courses/CourseOverviewHeader'
 import CourseSettings from '../../components/courses/CourseSettings'
-import GroupActivityTile from '../../components/courses/GroupActivityTile'
 import LiveSessionList from '../../components/courses/LiveSessionList'
 
 function CourseOverviewPage() {
@@ -170,33 +167,12 @@ function CourseOverviewPage() {
                 value="groupActivities"
                 className={{ root: 'px-2 py-2' }}
               >
-                GROUP ACTIVITIES
+                <GroupActivityList
+                  groupActivities={course.groupActivities ?? []}
+                  userCatalyst={user?.userProfile?.catalyst}
+                />
               </Tabs.TabContent>
             </Tabs>
-          </div>
-          <div>
-            <div className="mb-4">
-              <H3 className={{ root: 'flex flex-row gap-3' }}>
-                <div>{t('shared.generic.groupActivities')}</div>
-                <Button.Icon className={{ root: 'text-orange-400' }}>
-                  <FontAwesomeIcon icon={faCrown} size="sm" />
-                </Button.Icon>
-              </H3>
-              {course.groupActivities && course.groupActivities.length > 0 ? (
-                <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                  {course.groupActivities.map((groupActivity) => (
-                    <GroupActivityTile
-                      key={groupActivity.id}
-                      groupActivity={groupActivity}
-                    />
-                  ))}
-                </div>
-              ) : user?.userProfile?.catalyst ? (
-                <div>{t('manage.course.noGroupActivities')}</div>
-              ) : (
-                <CatalystNotification />
-              )}
-            </div>
           </div>
         </div>
         {data?.course?.isGamificationEnabled && (
