@@ -662,19 +662,14 @@ model LiveQuiz {
 
 // ----- MICROLEARNING -----
 // #region
-enum MicroLearningStatus {
-  DRAFT
-  PUBLISHED
-}
-
 model MicroLearning {
   id String @id @default(uuid()) @db.Uuid
 
   name             String
   displayName      String
-  pointsMultiplier Int                 @default(1)
+  pointsMultiplier Int               @default(1)
   description      String?
-  status           MicroLearningStatus @default(DRAFT)
+  status           PublicationStatus @default(DRAFT)
 
   scheduledStartAt DateTime
   scheduledEndAt   DateTime
