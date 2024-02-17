@@ -30,11 +30,11 @@ import { useState } from 'react'
 import StatusTag from './StatusTag'
 import LiveSessionDeletionModal from './modals/LiveSessionDeletionModal'
 
-interface LiveSessionElementProps {
+interface LiveQuizElementProps {
   session: Partial<Session>
 }
 
-function LiveSessionElement({ session }: LiveSessionElementProps) {
+function LiveQuizElement({ session }: LiveQuizElementProps) {
   const t = useTranslations()
   const [startSession] = useMutation(StartSessionDocument)
   const [deleteSession] = useMutation(DeleteSessionDocument, {
@@ -200,4 +200,4 @@ function LiveSessionElement({ session }: LiveSessionElementProps) {
   )
 }
 
-export default LiveSessionElement
+export default LiveQuizElement

@@ -19,7 +19,7 @@ import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
 import CourseOverviewHeader from '../../components/courses/CourseOverviewHeader'
 import CourseSettings from '../../components/courses/CourseSettings'
-import LiveSessionList from '../../components/courses/LiveSessionList'
+import LiveQuizList from '../../components/courses/LiveQuizList'
 
 function CourseOverviewPage() {
   const t = useTranslations()
@@ -155,7 +155,7 @@ function CourseOverviewPage() {
                 value="liveSessions"
                 className={{ root: 'px-0 py-2' }}
               >
-                <LiveSessionList sessions={course.sessions ?? []} />
+                <LiveQuizList sessions={course.sessions ?? []} />
               </Tabs.TabContent>
               <Tabs.TabContent
                 key="content-practiceQuizzes"

@@ -1,13 +1,13 @@
 import { Session, SessionStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { sort } from 'ramda'
-import LiveSessionElement from './LiveSessionElement'
+import LiveQuizElement from './LiveQuizElement'
 
-interface LiveSessionListProps {
+interface LiveQuizListProps {
   sessions: Partial<Session>[]
 }
 
-function LiveSessionList({ sessions }: LiveSessionListProps) {
+function LiveQuizList({ sessions }: LiveQuizListProps) {
   const t = useTranslations()
 
   const sortingOrderSessions: Record<string, number> = {
@@ -28,7 +28,7 @@ function LiveSessionList({ sessions }: LiveSessionListProps) {
               sortingOrderSessions[a.status] - sortingOrderSessions[b.status]
             )
           }, sessions).map((session) => (
-            <LiveSessionElement session={session} key={session.id} />
+            <LiveQuizElement session={session} key={session.id} />
           ))}
         </div>
       ) : (
@@ -38,4 +38,4 @@ function LiveSessionList({ sessions }: LiveSessionListProps) {
   )
 }
 
-export default LiveSessionList
+export default LiveQuizList
