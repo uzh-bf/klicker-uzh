@@ -533,6 +533,16 @@ export async function getCourseData(
           scheduledStartAt: 'desc',
         },
       },
+      microLearnings: {
+        include: {
+          _count: {
+            select: { stacks: true },
+          },
+        },
+        orderBy: {
+          scheduledStartAt: 'desc',
+        },
+      },
       leaderboard: {
         include: {
           participation: {
@@ -571,6 +581,13 @@ export async function getCourseData(
     return {
       ...microSession,
       numOfInstances: microSession._count.instances,
+    }
+  })
+
+  const reducedMicrolearnings = course?.microLearnings.map((microLearning) => {
+    return {
+      ...microLearning,
+      numOfStacks: microLearning._count.stacks,
     }
   })
 
@@ -625,6 +642,7 @@ export async function getCourseData(
     practiceQuizzes: reducedPracticeQuizzes,
     groupActivities: course?.groupActivities,
     microSessions: reducedMicroSessions,
+    microLearnings: reducedMicrolearnings,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries.length,
     leaderboard: activeLBEntries,

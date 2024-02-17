@@ -520,6 +520,7 @@ type MicroLearning {
   displayName: String!
   id: ID!
   name: String!
+  numOfStacks: Int
   pointsMultiplier: Float!
   scheduledEndAt: Date!
   scheduledStartAt: Date!

@@ -7,6 +7,7 @@ import { ElementStackRef, IElementStack } from './practiceQuizzes'
 export interface IMicroLearning extends DB.MicroLearning {
   course?: ICourse | null
   stacks?: IElementStack[]
+  numOfStacks?: number
 }
 
 export const MicroLearningStatus = builder.enumType('MicroLearningStatus', {
@@ -28,6 +29,7 @@ export const MicroLearning = MicroLearningRef.implement({
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
     arePushNotificationsSent: t.exposeBoolean('arePushNotificationsSent'),
+    numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
 
     course: t.expose('course', {
       type: CourseRef,

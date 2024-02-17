@@ -48,6 +48,15 @@ query GetSingleCourse($courseId: String!) {
       scheduledEndAt
       numOfInstances
     }
+    microLearnings {
+      id
+      name
+      displayName
+      status
+      scheduledStartAt
+      scheduledEndAt
+      numOfStacks
+    }
     leaderboard {
       id
       score

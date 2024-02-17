@@ -109,7 +109,7 @@
    "GetSessionEvaluation": "501c94ebe98c52b2ecf1c7feccf6c58612c599a034aa1a4a71724b8670752559",
    "GetSessionHMAC": "4db837cd1133fbd15929e0e13cef25dc30c6283f9e2d74505fc750e5493c5613",
    "GetSessionLeaderboard": "09404af10f91c8da107743b4ba18a43e35507163176a8cd8ac6542feaa08bb91",
-   "GetSingleCourse": "a0518896a763c6a04dc0976eff87fb6ca08579e340e78216c7060da0f3392d5c",
+   "GetSingleCourse": "5c87ced0cc0fc9d3d5e114a4be67083509b82a60a78f5e529c599de521ec9911",
    "GetSingleLiveSession": "4c8a1a7a933c2b6508d39a3a104d1c1b708266cd3ed5a52de5606206f6da3775",
    "GetSingleMicroSession": "9713c436f00c5911a6db7f885d17d81d858c860942c18f15f604c19b614d5151",
    "GetSingleQuestion": "3057b8efa7cded8bb4c7e2f0119bcc6ea67b94b9857945841e238327bd03fea6",
