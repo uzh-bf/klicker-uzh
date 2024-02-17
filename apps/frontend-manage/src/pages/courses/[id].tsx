@@ -1,24 +1,23 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import CourseOverviewHeader from '@components/course/CourseOverviewHeader'
 import CourseSettings from '@components/course/CourseSettings'
 import GroupActivityTile from '@components/courses/GroupActivityTile'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChangeCourseColorDocument,
-  ChangeCourseDatesDocument,
   GetSingleCourseDocument,
   SessionStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { Button, H2, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { sort } from 'ramda'
 import { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
 import MicroSessionTile from '../../components/courses/MicroSessionTile'
 import PracticeQuizTile from '../../components/courses/PracticeQuizTile'
@@ -27,21 +26,13 @@ import SessionTile from '../../components/courses/SessionTile'
 function CourseOverviewPage() {
   const t = useTranslations()
   const router = useRouter()
-
-  const [descriptionEditMode, setDescriptionEditMode] = useState(false)
-  const [editStartDate, setEditStartDate] = useState(false)
-  const [editEndDate, setEditEndDate] = useState(false)
-  const [dateToastSuccess, setDateToastSuccess] = useState(false)
-  const [dateToastError, setDateToastError] = useState(false)
+  const [tabValue, setTabValue] = useState('liveSessions')
 
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
   })
   const { data: user } = useQuery(UserProfileDocument)
-
-  const [changeCourseColor] = useMutation(ChangeCourseColorDocument)
-  const [changeCourseDates] = useMutation(ChangeCourseDatesDocument)
 
   useEffect(() => {
     if (data && !data.course) {
@@ -89,125 +80,186 @@ function CourseOverviewPage() {
       </div>
       <div className="flex flex-col md:flex-row">
         <div className="w-full md:w-2/3">
-          <div className="mb-4">
-            <H3>{t('manage.general.sessions')}</H3>
-            {course.sessions && course.sessions.length > 0 ? (
-              <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                {sort((a, b) => {
-                  return (
-                    sortingOrderSessions[a.status] -
-                    sortingOrderSessions[b.status]
-                  )
-                }, course.sessions).map((session) => (
-                  <SessionTile session={session} key={session.id} />
-                ))}
-              </div>
-            ) : (
-              <div>{t('manage.course.noSessions')}</div>
-            )}
+          <div className="md:mr-2">
+            {/* // TODO: translate */}
+            <H2>Course Elements</H2>
+            <Tabs
+              defaultValue="liveSessions"
+              value={tabValue}
+              onValueChange={(newValue) => setTabValue(newValue)}
+              className={{
+                root: 'border border-solid rounded-t-md ',
+              }}
+            >
+              <Tabs.TabList>
+                <Tabs.Tab
+                  key="tab-liveSessions"
+                  value="liveSessions"
+                  label={t('manage.general.sessions')}
+                  className={{
+                    label: twMerge(
+                      'text-base',
+                      tabValue === 'liveSessions' && 'font-bold'
+                    ),
+                  }}
+                />
+                <Tabs.Tab
+                  key="tab-practiceQuizzes"
+                  value="practiceQuizzes"
+                  label={t('shared.generic.practiceQuizzes')}
+                  className={{
+                    label: twMerge(
+                      'text-base',
+                      tabValue === 'practiceQuizzes' && 'font-bold'
+                    ),
+                  }}
+                />
+                <Tabs.Tab
+                  key="tab-microlearnings"
+                  value="microlearnings"
+                  label={t('shared.generic.microlearnings')}
+                  className={{
+                    label: twMerge(
+                      'text-base',
+                      tabValue === 'microlearnings' && 'font-bold'
+                    ),
+                  }}
+                />
+                <Tabs.Tab
+                  key="tab-groupActivities"
+                  value="groupActivities"
+                  label={t('shared.generic.groupActivities')}
+                  className={{
+                    label: twMerge(
+                      'text-base',
+                      tabValue === 'groupActivities' && 'font-bold'
+                    ),
+                  }}
+                />
+              </Tabs.TabList>
+            </Tabs>
           </div>
-          <div className="mb-4">
-            <H3 className={{ root: 'flex flex-row gap-3' }}>
-              <div>{t('shared.generic.practiceQuizzes')}</div>
-              <Button.Icon className={{ root: 'text-orange-400' }}>
-                <FontAwesomeIcon icon={faCrown} size="sm" />
-              </Button.Icon>
-            </H3>
-            {course.practiceQuizzes && course.practiceQuizzes.length > 0 ? (
-              <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                {course.practiceQuizzes.map((quiz) => (
-                  <PracticeQuizTile
-                    courseId={course.id}
-                    practiceQuiz={quiz}
-                    key={quiz.id}
-                  />
-                ))}
-              </div>
-            ) : user?.userProfile?.catalyst ? (
-              <div>{t('manage.course.noPracticeQuizzes')}</div>
-            ) : (
-              <UserNotification className={{ root: 'mr-3' }}>
-                {t.rich('manage.general.catalystRequired', {
-                  link: () => (
-                    <a
-                      target="_blank"
-                      href="https://www.klicker.uzh.ch/catalyst"
-                      className="underline"
-                    >
-                      www.klicker.uzh.ch/catalyst
-                    </a>
-                  ),
-                })}
-              </UserNotification>
-            )}
-          </div>
-          <div className="mb-4">
-            <H3 className={{ root: 'flex flex-row gap-3' }}>
-              <div>{t('shared.generic.microlearnings')}</div>
-              <Button.Icon className={{ root: 'text-orange-400' }}>
-                <FontAwesomeIcon icon={faCrown} size="sm" />
-              </Button.Icon>
-            </H3>
-            {course.microSessions && course.microSessions.length > 0 ? (
-              <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                {course.microSessions.map((microSession) => (
-                  <MicroSessionTile
-                    microSession={microSession}
-                    key={microSession.id}
-                  />
-                ))}
-              </div>
-            ) : user?.userProfile?.catalyst ? (
-              <div>{t('manage.course.noMicrolearnings')}</div>
-            ) : (
-              <UserNotification className={{ root: 'mr-3' }}>
-                {t.rich('manage.general.catalystRequired', {
-                  link: () => (
-                    <a
-                      target="_blank"
-                      href="https://www.klicker.uzh.ch/catalyst"
-                      className="underline"
-                    >
-                      www.klicker.uzh.ch/catalyst
-                    </a>
-                  ),
-                })}
-              </UserNotification>
-            )}
-          </div>
-          <div className="mb-4">
-            <H3 className={{ root: 'flex flex-row gap-3' }}>
-              <div>{t('shared.generic.groupActivities')}</div>
-              <Button.Icon className={{ root: 'text-orange-400' }}>
-                <FontAwesomeIcon icon={faCrown} size="sm" />
-              </Button.Icon>
-            </H3>
-            {course.groupActivities && course.groupActivities.length > 0 ? (
-              <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                {course.groupActivities.map((groupActivity) => (
-                  <GroupActivityTile
-                    key={groupActivity.id}
-                    groupActivity={groupActivity}
-                  />
-                ))}
-              </div>
-            ) : user?.userProfile?.catalyst ? (
-              <div>{t('manage.course.noGroupActivities')}</div>
-            ) : (
-              <UserNotification className={{ root: 'mr-3' }}>
-                {t.rich('manage.general.catalystRequired', {
-                  link: () => (
-                    <a
-                      target="_blank"
-                      href="https://www.klicker.uzh.ch/catalyst"
-                      className="underline"
-                    >
-                      www.klicker.uzh.ch/catalyst
-                    </a>
-                  ),
-                })}
-              </UserNotification>
-            )}
+          <div>
+            <div className="mb-4">
+              <H3>{t('manage.general.sessions')}</H3>
+              {course.sessions && course.sessions.length > 0 ? (
+                <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
+                  {sort((a, b) => {
+                    return (
+                      sortingOrderSessions[a.status] -
+                      sortingOrderSessions[b.status]
+                    )
+                  }, course.sessions).map((session) => (
+                    <SessionTile session={session} key={session.id} />
+                  ))}
+                </div>
+              ) : (
+                <div>{t('manage.course.noSessions')}</div>
+              )}
+            </div>
+            <div className="mb-4">
+              <H3 className={{ root: 'flex flex-row gap-3' }}>
+                <div>{t('shared.generic.practiceQuizzes')}</div>
+                <Button.Icon className={{ root: 'text-orange-400' }}>
+                  <FontAwesomeIcon icon={faCrown} size="sm" />
+                </Button.Icon>
+              </H3>
+              {course.practiceQuizzes && course.practiceQuizzes.length > 0 ? (
+                <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
+                  {course.practiceQuizzes.map((quiz) => (
+                    <PracticeQuizTile
+                      courseId={course.id}
+                      practiceQuiz={quiz}
+                      key={quiz.id}
+                    />
+                  ))}
+                </div>
+              ) : user?.userProfile?.catalyst ? (
+                <div>{t('manage.course.noPracticeQuizzes')}</div>
+              ) : (
+                <UserNotification className={{ root: 'mr-3' }}>
+                  {t.rich('manage.general.catalystRequired', {
+                    link: () => (
+                      <a
+                        target="_blank"
+                        href="https://www.klicker.uzh.ch/catalyst"
+                        className="underline"
+                      >
+                        www.klicker.uzh.ch/catalyst
+                      </a>
+                    ),
+                  })}
+                </UserNotification>
+              )}
+            </div>
+            <div className="mb-4">
+              <H3 className={{ root: 'flex flex-row gap-3' }}>
+                <div>{t('shared.generic.microlearnings')}</div>
+                <Button.Icon className={{ root: 'text-orange-400' }}>
+                  <FontAwesomeIcon icon={faCrown} size="sm" />
+                </Button.Icon>
+              </H3>
+              {course.microSessions && course.microSessions.length > 0 ? (
+                <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
+                  {course.microSessions.map((microSession) => (
+                    <MicroSessionTile
+                      microSession={microSession}
+                      key={microSession.id}
+                    />
+                  ))}
+                </div>
+              ) : user?.userProfile?.catalyst ? (
+                <div>{t('manage.course.noMicrolearnings')}</div>
+              ) : (
+                <UserNotification className={{ root: 'mr-3' }}>
+                  {t.rich('manage.general.catalystRequired', {
+                    link: () => (
+                      <a
+                        target="_blank"
+                        href="https://www.klicker.uzh.ch/catalyst"
+                        className="underline"
+                      >
+                        www.klicker.uzh.ch/catalyst
+                      </a>
+                    ),
+                  })}
+                </UserNotification>
+              )}
+            </div>
+            <div className="mb-4">
+              <H3 className={{ root: 'flex flex-row gap-3' }}>
+                <div>{t('shared.generic.groupActivities')}</div>
+                <Button.Icon className={{ root: 'text-orange-400' }}>
+                  <FontAwesomeIcon icon={faCrown} size="sm" />
+                </Button.Icon>
+              </H3>
+              {course.groupActivities && course.groupActivities.length > 0 ? (
+                <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
+                  {course.groupActivities.map((groupActivity) => (
+                    <GroupActivityTile
+                      key={groupActivity.id}
+                      groupActivity={groupActivity}
+                    />
+                  ))}
+                </div>
+              ) : user?.userProfile?.catalyst ? (
+                <div>{t('manage.course.noGroupActivities')}</div>
+              ) : (
+                <UserNotification className={{ root: 'mr-3' }}>
+                  {t.rich('manage.general.catalystRequired', {
+                    link: () => (
+                      <a
+                        target="_blank"
+                        href="https://www.klicker.uzh.ch/catalyst"
+                        className="underline"
+                      >
+                        www.klicker.uzh.ch/catalyst
+                      </a>
+                    ),
+                  })}
+                </UserNotification>
+              )}
+            </div>
           </div>
         </div>
         {data?.course?.isGamificationEnabled && (
