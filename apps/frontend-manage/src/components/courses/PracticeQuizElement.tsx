@@ -1,25 +1,18 @@
-import { WizardMode } from '@components/sessions/creation/SessionCreation'
-import { faCopy, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
-  faExternalLink,
+  faHandPointer,
   faPencil,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementInstanceType,
-  PracticeQuiz,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { PracticeQuiz, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Button, Toast } from '@uzh-bf/design-system'
+import { Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
-import { useState } from 'react'
 import StatusTag from './StatusTag'
-import PracticeQuizDeletionModal from './modals/PracticeQuizDeletionModal'
-import PublishConfirmationModal from './modals/PublishConfirmationModal'
+import DeletePracticeQuizButton from './actions/DeletePracticeQuizButton'
+import EditPracticeQuizButton from './actions/EditPracticeQuizButton'
+import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
+import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
+import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
 
 interface PracticeQuizElementProps {
   practiceQuiz: Partial<PracticeQuiz>
@@ -31,10 +24,6 @@ function PracticeQuizElement({
   courseId,
 }: PracticeQuizElementProps) {
   const t = useTranslations()
-  const [copyToast, setCopyToast] = useState(false)
-  const [publishModal, setPublishModal] = useState(false)
-  const [deletionModal, setDeletionModal] = useState(false)
-  const router = useRouter()
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${practiceQuiz.id}/`
 
@@ -49,93 +38,73 @@ function PracticeQuizElement({
             {practiceQuiz.name || ''}
           </Ellipsis>
           <div className="flex flex-row items-center gap-3 text-sm">
-            <Button
-              basic
-              onClick={() => {
-                try {
-                  navigator.clipboard.writeText(href)
-                  setCopyToast(true)
-                } catch (e) {}
-              }}
-              className={{
-                root: 'flex flex-row items-center gap-1 text-primary',
-              }}
-              data={{ cy: `copy-practice-quiz-link-${practiceQuiz.name}` }}
-            >
-              <FontAwesomeIcon icon={faCopy} size="sm" className="w-4" />
-              <div>{t('manage.course.copyAccessLink')}</div>
-            </Button>
-            <Link href={href} target="_blank">
-              <Button
-                basic
-                className={{
-                  root: 'flex flex-row items-center gap-1 text-primary',
-                }}
-                data={{ cy: `open-practice-quiz-${practiceQuiz.name}` }}
-              >
-                <FontAwesomeIcon
-                  icon={faExternalLink}
-                  size="sm"
-                  className="w-4"
-                />
-                <div>{t('shared.generic.open')}</div>
-              </Button>
-            </Link>
-
             {practiceQuiz.status === PublicationStatus.Draft && (
-              <Button
-                basic
-                className={{ root: 'text-primary' }}
-                onClick={() =>
-                  router.push({
-                    pathname: '/',
-                    query: {
-                      sessionId: practiceQuiz.id,
-                      editMode: WizardMode.PracticeQuiz,
+              <>
+                <PublishPracticeQuizButton practiceQuiz={practiceQuiz} />
+                <Dropdown
+                  className={{ item: 'p-1', viewport: 'bg-white' }}
+                  trigger={t('manage.course.otherActions')}
+                  items={[
+                    {
+                      label: (
+                        <PracticeQuizAccessLink
+                          practiceQuiz={practiceQuiz}
+                          href={href}
+                        />
+                      ),
+                      onClick: () => null,
                     },
-                  })
-                }
-                data={{ cy: `edit-practice-quiz-${practiceQuiz.name}` }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faPencil} />
-                </Button.Icon>
-                <Button.Label>
-                  {t('manage.course.editPracticeQuiz')}
-                </Button.Label>
-              </Button>
+                    {
+                      label: (
+                        <PracticeQuizPreviewLink
+                          practiceQuiz={practiceQuiz}
+                          href={href}
+                        />
+                      ),
+                      onClick: () => null,
+                    },
+                    {
+                      label: (
+                        <EditPracticeQuizButton practiceQuiz={practiceQuiz} />
+                      ),
+                      onClick: () => null,
+                    },
+
+                    {
+                      label: (
+                        <DeletePracticeQuizButton practiceQuiz={practiceQuiz} />
+                      ),
+                      onClick: () => null,
+                    },
+                  ]}
+                  triggerIcon={faHandPointer}
+                />
+              </>
             )}
 
-            {practiceQuiz.status === PublicationStatus.Draft && (
-              <Button
-                basic
-                className={{ root: 'text-primary' }}
-                onClick={() => setPublishModal(true)}
-                data={{ cy: `publish-practice-quiz-${practiceQuiz.name}` }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
-                </Button.Icon>
-                <Button.Label>
-                  {t('manage.course.publishPracticeQuiz')}
-                </Button.Label>
-              </Button>
-            )}
-
-            {practiceQuiz.status === PublicationStatus.Draft && (
-              <Button
-                basic
-                className={{ root: 'text-red-600' }}
-                onClick={() => setDeletionModal(true)}
-                data={{ cy: `delete-practice-quiz-${practiceQuiz.name}` }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
-                </Button.Icon>
-                <Button.Label>
-                  {t('manage.course.deletePracticeQuiz')}
-                </Button.Label>
-              </Button>
+            {practiceQuiz.status === PublicationStatus.Published && (
+              <>
+                <PracticeQuizAccessLink
+                  practiceQuiz={practiceQuiz}
+                  href={href}
+                />
+                <Dropdown
+                  className={{ item: 'p-1', viewport: 'bg-white' }}
+                  trigger={t('manage.course.otherActions')}
+                  items={[
+                    {
+                      label: (
+                        <PracticeQuizPreviewLink
+                          practiceQuiz={practiceQuiz}
+                          href={href}
+                        />
+                      ),
+                      onClick: () => null,
+                    },
+                  ]}
+                  triggerIcon={faHandPointer}
+                />
+              </>
             )}
 
             {practiceQuiz.status === PublicationStatus.Draft && (
@@ -162,28 +131,6 @@ function PracticeQuizElement({
             number: practiceQuiz.numOfQuestions || '0',
           })}
         </div>
-
-        <Toast
-          openExternal={copyToast}
-          setOpenExternal={setCopyToast}
-          type="success"
-          className={{ root: 'w-[24rem]' }}
-        >
-          {t('manage.course.linkPracticeQuizCopied')}
-        </Toast>
-        <PublishConfirmationModal
-          elementType={ElementInstanceType.PracticeQuiz}
-          elementId={practiceQuiz.id!}
-          title={practiceQuiz.name!}
-          open={publishModal}
-          setOpen={setPublishModal}
-        />
-        <PracticeQuizDeletionModal
-          elementId={practiceQuiz.id!}
-          title={practiceQuiz.name!}
-          open={deletionModal}
-          setOpen={setDeletionModal}
-        />
       </div>
     </div>
   )
