@@ -16,13 +16,11 @@ import { Button, H2, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { sort } from 'ramda'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
 import MicroSessionTile from '../../components/courses/MicroSessionTile'
 import PracticeQuizTile from '../../components/courses/PracticeQuizTile'
-import SessionTile from '../../components/courses/SessionTile'
 
 function CourseOverviewPage() {
   const t = useTranslations()
@@ -165,23 +163,6 @@ function CourseOverviewPage() {
             </Tabs>
           </div>
           <div>
-            <div className="mb-4">
-              <H3>{t('manage.general.sessions')}</H3>
-              {course.sessions && course.sessions.length > 0 ? (
-                <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                  {sort((a, b) => {
-                    return (
-                      sortingOrderSessions[a.status] -
-                      sortingOrderSessions[b.status]
-                    )
-                  }, course.sessions).map((session) => (
-                    <SessionTile session={session} key={session.id} />
-                  ))}
-                </div>
-              ) : (
-                <div>{t('manage.course.noSessions')}</div>
-              )}
-            </div>
             <div className="mb-4">
               <H3 className={{ root: 'flex flex-row gap-3' }}>
                 <div>{t('shared.generic.practiceQuizzes')}</div>
