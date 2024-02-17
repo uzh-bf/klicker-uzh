@@ -99,7 +99,6 @@ describe('Different microlearning workflows', () => {
       messages.shared.generic.published
     )
 
-    // TODO: replace by new response workflows
     // sign in as student on a laptop and respond to one question
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT'))
@@ -119,9 +118,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
-    // TODO: replace by new response workflows
     // sign in as a student on a mobile device and respond to the first question
     cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.clearAllSessionStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
     cy.viewport('iphone-x')
     cy.get('[data-cy="username-field"]')
@@ -546,9 +546,10 @@ describe('Different microlearning workflows', () => {
       messages.shared.generic.published
     )
 
-    // TODO: replace by new response workflows
     // sign in as student on a laptop and respond to both
     cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.clearAllSessionStorage()
     cy.visit(Cypress.env('URL_STUDENT'))
     cy.get('[data-cy="username-field"]')
       .click()
