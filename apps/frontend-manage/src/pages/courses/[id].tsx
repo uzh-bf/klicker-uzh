@@ -2,13 +2,15 @@ import { useQuery } from '@apollo/client'
 import GroupActivityList from '@components/courses/GroupActivityList'
 import MicroLearningList from '@components/courses/MicroLearningList'
 import PracticeQuizList from '@components/courses/PracticeQuizList'
+import { faCrown } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H2, H3, Tabs } from '@uzh-bf/design-system'
+import { Button, H2, H3, Tabs } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -49,10 +51,11 @@ function CourseOverviewPage() {
 
   const { course } = data
 
-  // TODO: re-add crown icon to catalyst features (once design system allows for complex tab content)
-  // <Button.Icon className={{ root: 'text-orange-400' }}>
-  //    <FontAwesomeIcon icon={faCrown} size="sm" />
-  // </Button.Icon>
+  const CrownIcon = () => (
+    <Button.Icon className={{ root: 'text-orange-400' }}>
+      <FontAwesomeIcon icon={faCrown} size="sm" />
+    </Button.Icon>
+  )
 
   return (
     <Layout>
@@ -79,7 +82,7 @@ function CourseOverviewPage() {
             <Tabs
               defaultValue="liveSessions"
               value={tabValue}
-              onValueChange={(newValue) => setTabValue(newValue)}
+              onValueChange={(newValue: string) => setTabValue(newValue)}
             >
               <Tabs.TabList>
                 <Tabs.Tab
@@ -98,7 +101,6 @@ function CourseOverviewPage() {
                 <Tabs.Tab
                   key="tab-practiceQuizzes"
                   value="practiceQuizzes"
-                  label={t('shared.generic.practiceQuizzes')}
                   className={{
                     root: 'border border-solid',
                     label: twMerge(
@@ -107,11 +109,15 @@ function CourseOverviewPage() {
                     ),
                   }}
                   data={{ cy: 'tab-practiceQuizzes' }}
-                />
+                >
+                  <div className="flex flex-row items-center justify-center gap-2">
+                    <div>{t('shared.generic.practiceQuizzes')}</div>
+                    <CrownIcon />
+                  </div>
+                </Tabs.Tab>
                 <Tabs.Tab
                   key="tab-microLearnings"
                   value="microLearnings"
-                  label={t('shared.generic.microlearnings')}
                   className={{
                     root: 'border border-solid',
                     label: twMerge(
@@ -120,11 +126,15 @@ function CourseOverviewPage() {
                     ),
                   }}
                   data={{ cy: 'tab-microLearnings' }}
-                />
+                >
+                  <div className="flex flex-row items-center justify-center gap-2">
+                    <div>{t('shared.generic.microlearnings')}</div>
+                    <CrownIcon />
+                  </div>
+                </Tabs.Tab>
                 <Tabs.Tab
                   key="tab-groupActivities"
                   value="groupActivities"
-                  label={t('shared.generic.groupActivities')}
                   className={{
                     root: 'border border-solid',
                     label: twMerge(
@@ -133,7 +143,12 @@ function CourseOverviewPage() {
                     ),
                   }}
                   data={{ cy: 'tab-groupActivities' }}
-                />
+                >
+                  <div className="flex flex-row items-center justify-center gap-2">
+                    <div>{t('shared.generic.groupActivities')}</div>
+                    <CrownIcon />
+                  </div>
+                </Tabs.Tab>
               </Tabs.TabList>
               <Tabs.TabContent
                 key="content-liveSessions"
