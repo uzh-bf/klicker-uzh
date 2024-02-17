@@ -117,7 +117,7 @@ describe('Different microlearning workflows', () => {
     cy.findByText(microSessionDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
-    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
 
     // TODO: replace by new response workflows
     // sign in as a student on a mobile device and respond to the first question
@@ -139,7 +139,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
 
-    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.viewport('macbook-16')
   })
 
@@ -566,14 +566,14 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
 
     cy.wait(500)
-    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(500)
-    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]')
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
 
-    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(500)
-    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]')
     cy.wait(500)
     cy.get('[data-cy="finish-microlearning"]').click()
   })
