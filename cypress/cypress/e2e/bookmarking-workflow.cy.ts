@@ -160,9 +160,9 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
     cy.get('[data-cy="cancel-flag-element"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
-    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]')
     cy.get('[data-cy="finish-microlearning"]').click()
 
     // test bookmarking and flagging for practice quizzes
