@@ -100,6 +100,7 @@ function CourseOverviewPage() {
                       tabValue === 'liveSessions' && 'font-bold'
                     ),
                   }}
+                  data={{ cy: 'tab-liveSessions' }}
                 />
                 <Tabs.Tab
                   key="tab-practiceQuizzes"
@@ -111,9 +112,10 @@ function CourseOverviewPage() {
                       tabValue === 'practiceQuizzes' && 'font-bold'
                     ),
                   }}
+                  data={{ cy: 'tab-practiceQuizzes' }}
                 />
                 <Tabs.Tab
-                  key="tab-microlearnings"
+                  key="tab-microLearnings"
                   value="microLearnings"
                   label={t('shared.generic.microlearnings')}
                   className={{
@@ -122,6 +124,7 @@ function CourseOverviewPage() {
                       tabValue === 'microLearnings' && 'font-bold'
                     ),
                   }}
+                  data={{ cy: 'tab-microLearnings' }}
                 />
                 <Tabs.Tab
                   key="tab-groupActivities"
@@ -133,6 +136,7 @@ function CourseOverviewPage() {
                       tabValue === 'groupActivities' && 'font-bold'
                     ),
                   }}
+                  data={{ cy: 'tab-groupActivities' }}
                 />
               </Tabs.TabList>
               <Tabs.TabContent
