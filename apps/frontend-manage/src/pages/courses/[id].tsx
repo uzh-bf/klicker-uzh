@@ -81,7 +81,7 @@ function CourseOverviewPage() {
               value={tabValue}
               onValueChange={(newValue) => setTabValue(newValue)}
               className={{
-                root: 'border border-solid rounded-t-md ',
+                root: '',
               }}
             >
               <Tabs.TabList>
@@ -90,6 +90,7 @@ function CourseOverviewPage() {
                   value="liveSessions"
                   label={t('manage.general.sessions')}
                   className={{
+                    root: 'border border-solid',
                     label: twMerge(
                       'text-base',
                       tabValue === 'liveSessions' && 'font-bold'
@@ -102,6 +103,7 @@ function CourseOverviewPage() {
                   value="practiceQuizzes"
                   label={t('shared.generic.practiceQuizzes')}
                   className={{
+                    root: 'border border-solid',
                     label: twMerge(
                       'text-base',
                       tabValue === 'practiceQuizzes' && 'font-bold'
@@ -114,6 +116,7 @@ function CourseOverviewPage() {
                   value="microLearnings"
                   label={t('shared.generic.microlearnings')}
                   className={{
+                    root: 'border border-solid',
                     label: twMerge(
                       'text-base',
                       tabValue === 'microLearnings' && 'font-bold'
@@ -126,6 +129,7 @@ function CourseOverviewPage() {
                   value="groupActivities"
                   label={t('shared.generic.groupActivities')}
                   className={{
+                    root: 'border border-solid',
                     label: twMerge(
                       'text-base',
                       tabValue === 'groupActivities' && 'font-bold'
@@ -137,14 +141,14 @@ function CourseOverviewPage() {
               <Tabs.TabContent
                 key="content-liveSessions"
                 value="liveSessions"
-                className={{ root: 'px-2 py-2' }}
+                className={{ root: 'px-0 py-2' }}
               >
                 <LiveSessionList sessions={course.sessions ?? []} />
               </Tabs.TabContent>
               <Tabs.TabContent
                 key="content-practiceQuizzes"
                 value="practiceQuizzes"
-                className={{ root: 'px-2 py-2' }}
+                className={{ root: 'px-0 py-2' }}
               >
                 <PracticeQuizList
                   practiceQuizzes={course.practiceQuizzes ?? []}
@@ -155,7 +159,7 @@ function CourseOverviewPage() {
               <Tabs.TabContent
                 key="content-microlearnings"
                 value="microLearnings"
-                className={{ root: 'px-2 py-2' }}
+                className={{ root: 'px-0 py-2' }}
               >
                 <MicroLearningList
                   microLearnings={course.microLearnings ?? []}
@@ -165,7 +169,7 @@ function CourseOverviewPage() {
               <Tabs.TabContent
                 key="content-groupActivities"
                 value="groupActivities"
-                className={{ root: 'px-2 py-2' }}
+                className={{ root: 'px-0 py-2' }}
               >
                 <GroupActivityList
                   groupActivities={course.groupActivities ?? []}
