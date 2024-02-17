@@ -1,18 +1,23 @@
+import { WizardMode } from '@components/sessions/creation/SessionCreation'
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
+  faCopy,
   faHandPointer,
   faPencil,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { PracticeQuiz, PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
-import { Dropdown } from '@uzh-bf/design-system'
+import { Dropdown, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
 import StatusTag from './StatusTag'
-import DeletePracticeQuizButton from './actions/DeletePracticeQuizButton'
-import EditPracticeQuizButton from './actions/EditPracticeQuizButton'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
 import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
 import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
+import PracticeQuizDeletionModal from './modals/PracticeQuizDeletionModal'
 
 interface PracticeQuizElementProps {
   practiceQuiz: Partial<PracticeQuiz>
@@ -24,6 +29,9 @@ function PracticeQuizElement({
   courseId,
 }: PracticeQuizElementProps) {
   const t = useTranslations()
+  const router = useRouter()
+  const [copyToast, setCopyToast] = useState(false)
+  const [deletionModal, setDeletionModal] = useState(false)
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/quiz/${practiceQuiz.id}/`
 
@@ -47,12 +55,24 @@ function PracticeQuizElement({
                   items={[
                     {
                       label: (
-                        <PracticeQuizAccessLink
-                          practiceQuiz={practiceQuiz}
-                          href={href}
-                        />
+                        <div className="flex flex-row text-primary items-center gap-1 cursor-pointer">
+                          <FontAwesomeIcon
+                            icon={faCopy}
+                            size="sm"
+                            className="w-4"
+                          />
+                          <div>{t('manage.course.copyAccessLink')}</div>
+                        </div>
                       ),
-                      onClick: () => null,
+                      onClick: () => {
+                        try {
+                          navigator.clipboard.writeText(href)
+                          setCopyToast(true)
+                        } catch (e) {}
+                      },
+                      data: {
+                        cy: `copy-practice-quiz-link-${practiceQuiz.name}`,
+                      },
                     },
                     {
                       label: (
@@ -65,19 +85,42 @@ function PracticeQuizElement({
                     },
                     {
                       label: (
-                        <EditPracticeQuizButton practiceQuiz={practiceQuiz} />
+                        <div className="flex flex-row items-center text-primary gap-1 cursor-pointer">
+                          <FontAwesomeIcon icon={faPencil} />
+                          <div>{t('manage.course.editPracticeQuiz')}</div>
+                        </div>
                       ),
-                      onClick: () => null,
+                      onClick: () =>
+                        router.push({
+                          pathname: '/',
+                          query: {
+                            sessionId: practiceQuiz.id,
+                            editMode: WizardMode.PracticeQuiz,
+                          },
+                        }),
+                      data: { cy: `edit-practice-quiz-${practiceQuiz.name}` },
                     },
 
                     {
                       label: (
-                        <DeletePracticeQuizButton practiceQuiz={practiceQuiz} />
+                        <div className="flex flex-row items-center text-red-600 gap-1 cursor-pointer">
+                          <FontAwesomeIcon
+                            icon={faTrashCan}
+                            className="w-[1.1rem]"
+                          />
+                          <div>{t('manage.course.deletePracticeQuiz')}</div>
+                        </div>
                       ),
-                      onClick: () => null,
+                      onClick: () => setDeletionModal(true),
+                      data: { cy: `delete-practice-quiz-${practiceQuiz.name}` },
                     },
                   ]}
                   triggerIcon={faHandPointer}
+                />
+                <StatusTag
+                  color="bg-gray-200"
+                  status={t('shared.generic.draft')}
+                  icon={faPencil}
                 />
               </>
             )}
@@ -104,22 +147,12 @@ function PracticeQuizElement({
                   ]}
                   triggerIcon={faHandPointer}
                 />
+                <StatusTag
+                  color="bg-green-300"
+                  status={t('shared.generic.published')}
+                  icon={faUserGroup}
+                />
               </>
-            )}
-
-            {practiceQuiz.status === PublicationStatus.Draft && (
-              <StatusTag
-                color="bg-gray-200"
-                status={t('shared.generic.draft')}
-                icon={faPencil}
-              />
-            )}
-            {practiceQuiz.status === PublicationStatus.Published && (
-              <StatusTag
-                color="bg-green-300"
-                status={t('shared.generic.published')}
-                icon={faUserGroup}
-              />
             )}
           </div>
         </div>
@@ -132,6 +165,20 @@ function PracticeQuizElement({
           })}
         </div>
       </div>
+      <Toast
+        openExternal={copyToast}
+        setOpenExternal={setCopyToast}
+        type="success"
+        className={{ root: 'w-[24rem]' }}
+      >
+        {t('manage.course.linkPracticeQuizCopied')}
+      </Toast>
+      <PracticeQuizDeletionModal
+        elementId={practiceQuiz.id!}
+        title={practiceQuiz.name!}
+        open={deletionModal}
+        setOpen={setDeletionModal}
+      />
     </div>
   )
 }
