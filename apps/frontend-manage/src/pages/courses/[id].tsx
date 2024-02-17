@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import CourseOverviewHeader from '@components/course/CourseOverviewHeader'
+import CourseSettings from '@components/course/CourseSettings'
 import GroupActivityTile from '@components/courses/GroupActivityTile'
-import { faCrown, faPencil } from '@fortawesome/free-solid-svg-icons'
+import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeCourseColorDocument,
@@ -10,26 +11,15 @@ import {
   SessionStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import {
-  Button,
-  ColorPicker,
-  DateChanger,
-  H3,
-  Switch,
-  Toast,
-  UserNotification,
-} from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { sort } from 'ramda'
 import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
-import CourseDescription from '../../components/courses/CourseDescription'
 import MicroSessionTile from '../../components/courses/MicroSessionTile'
 import PracticeQuizTile from '../../components/courses/PracticeQuizTile'
 import SessionTile from '../../components/courses/SessionTile'
@@ -88,131 +78,14 @@ function CourseOverviewPage() {
           pinCode={course.pinCode ?? 0}
           numOfParticipants={course.numOfParticipants ?? 0}
         />
-        {course.description ? (
-          descriptionEditMode ? (
-            <CourseDescription
-              description={course.description}
-              courseId={router.query.id as string}
-              submitText={t('manage.course.saveDescription')}
-              setDescriptionEditMode={setDescriptionEditMode}
-            />
-          ) : (
-            <div className="flex flex-row gap-2 border border-solid rounded border-uzh-grey-80 prose-p:mb-2 last:prose-p:mb-0 prose-p:mt-0 prose prose-sm leading-6 prose-blockquote:text-gray-500 max-w-none focus:!outline-none">
-              <Markdown
-                withProse
-                content={course.description}
-                className={{
-                  root: 'w-full p-2 rounded prose-p:mt-0 prose-headings:mt-0',
-                }}
-                data={{ cy: 'course-description' }}
-              />
-              <Button
-                onClick={() => setDescriptionEditMode(true)}
-                className={{ root: 'h-10' }}
-                data={{ cy: 'course-description-edit-button' }}
-              >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faPencil} />
-                </Button.Icon>
-              </Button>
-            </div>
-          )
-        ) : (
-          <CourseDescription
-            description={course.description ?? '<br>'}
-            courseId={router.query.id as string}
-            submitText={t('manage.courseList.addDescription')}
-            setDescriptionEditMode={setDescriptionEditMode}
-          />
-        )}
-        <div className="flex flex-row items-center gap-8 pt-1 h-11">
-          <div>
-            <Switch
-              disabled
-              label="Gamification"
-              checked={data?.course?.isGamificationEnabled}
-              onCheckedChange={() => null}
-            />
-          </div>
-          <div className="flex flex-row">
-            <div className="pr-3">{t('manage.courseList.courseColor')}</div>
-            <ColorPicker
-              color={course.color ?? '#0028A5'}
-              onSubmit={(color) =>
-                changeCourseColor({ variables: { color, courseId: course.id } })
-              }
-              abortText={t('shared.generic.cancel')}
-              submitText={t('shared.generic.save')}
-              dataTrigger={{ cy: 'course-color-trigger' }}
-              dataHexInput={{ cy: 'course-color-hex-input' }}
-              dataSubmit={{ cy: 'course-color-submit' }}
-            />
-          </div>
-          <DateChanger
-            label={`${t('shared.generic.startDate')}:`}
-            date={course.startDate}
-            edit={editStartDate}
-            onEdit={() => setEditStartDate(true)}
-            onSave={async (date: string) => {
-              if (dayjs(date).isBefore(course.endDate)) {
-                const { data } = await changeCourseDates({
-                  variables: {
-                    courseId: course.id,
-                    startDate: date + 'T00:00:00.000Z',
-                  },
-                })
-                if (data?.changeCourseDates?.id) {
-                  setDateToastSuccess(true)
-                  setEditStartDate(false)
-                }
-              } else {
-                setDateToastError(true)
-              }
-            }}
-            data={{ cy: 'course-start-date' }}
-            dataButton={{ cy: 'course-start-date-button' }}
-          />
-          <DateChanger
-            label={`${t('shared.generic.endDate')}:`}
-            date={course.endDate}
-            edit={editEndDate}
-            onEdit={() => setEditEndDate(true)}
-            onSave={async (date: string) => {
-              if (dayjs(date).isAfter(course.startDate)) {
-                const { data } = await changeCourseDates({
-                  variables: {
-                    courseId: course.id,
-                    endDate: date + 'T23:59:59.999Z',
-                  },
-                })
-                if (data?.changeCourseDates?.id) {
-                  setDateToastSuccess(true)
-                  setEditEndDate(false)
-                }
-              } else {
-                setDateToastError(true)
-              }
-            }}
-            data={{ cy: 'course-end-date' }}
-            dataButton={{ cy: 'course-end-date-button' }}
-          />
-          <Toast
-            duration={4000}
-            openExternal={dateToastSuccess}
-            setOpenExternal={setDateToastSuccess}
-            type="success"
-          >
-            {t('manage.course.changedDate')}
-          </Toast>
-          <Toast
-            duration={4000}
-            openExternal={dateToastError}
-            setOpenExternal={setDateToastError}
-            type="error"
-          >
-            {t('manage.course.dateChangeFailed')}
-          </Toast>
-        </div>
+        <CourseSettings
+          id={course.id}
+          description={course.description}
+          isGamificationEnabled={course.isGamificationEnabled}
+          courseColor={course.color}
+          startDate={course.startDate}
+          endDate={course.endDate}
+        />
       </div>
       <div className="flex flex-col md:flex-row">
         <div className="w-full md:w-2/3">
