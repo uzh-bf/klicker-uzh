@@ -81,8 +81,7 @@ function CourseOverviewPage() {
       <div className="flex flex-col md:flex-row">
         <div className="w-full md:w-2/3">
           <div className="md:mr-2">
-            {/* // TODO: translate */}
-            <H2>Course Elements</H2>
+            <H2>{t('manage.course.courseElements')}</H2>
             <Tabs
               defaultValue="liveSessions"
               value={tabValue}
