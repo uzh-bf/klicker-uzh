@@ -1,9 +1,9 @@
 import { useQuery } from '@apollo/client'
+import PracticeQuizList from '@components/courses/PracticeQuizList'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
-  SessionStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
@@ -21,7 +21,6 @@ import CourseSettings from '../../components/courses/CourseSettings'
 import GroupActivityTile from '../../components/courses/GroupActivityTile'
 import LiveSessionList from '../../components/courses/LiveSessionList'
 import MicroSessionTile from '../../components/courses/MicroSessionTile'
-import PracticeQuizTile from '../../components/courses/PracticeQuizTile'
 
 function CourseOverviewPage() {
   const t = useTranslations()
@@ -53,12 +52,10 @@ function CourseOverviewPage() {
 
   const { course } = data
 
-  const sortingOrderSessions: Record<string, number> = {
-    [SessionStatus.Running]: 0,
-    [SessionStatus.Scheduled]: 1,
-    [SessionStatus.Prepared]: 2,
-    [SessionStatus.Completed]: 3,
-  }
+  // TODO: re-add crown icon to catalyst features (once design system allows for complex tab content)
+  // <Button.Icon className={{ root: 'text-orange-400' }}>
+  //    <FontAwesomeIcon icon={faCrown} size="sm" />
+  // </Button.Icon>
 
   return (
     <Layout>
@@ -150,8 +147,13 @@ function CourseOverviewPage() {
               <Tabs.TabContent
                 key="content-practiceQuizzes"
                 value="practiceQuizzes"
+                className={{ root: 'px-2 py-2' }}
               >
-                PRACTICE QUIZZES
+                <PracticeQuizList
+                  practiceQuizzes={course.practiceQuizzes ?? []}
+                  courseId={course.id}
+                  userCatalyst={user?.userProfile?.catalyst}
+                />
               </Tabs.TabContent>
               <Tabs.TabContent
                 key="content-microlearnings"
@@ -168,29 +170,6 @@ function CourseOverviewPage() {
             </Tabs>
           </div>
           <div>
-            <div className="mb-4">
-              <H3 className={{ root: 'flex flex-row gap-3' }}>
-                <div>{t('shared.generic.practiceQuizzes')}</div>
-                <Button.Icon className={{ root: 'text-orange-400' }}>
-                  <FontAwesomeIcon icon={faCrown} size="sm" />
-                </Button.Icon>
-              </H3>
-              {course.practiceQuizzes && course.practiceQuizzes.length > 0 ? (
-                <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                  {course.practiceQuizzes.map((quiz) => (
-                    <PracticeQuizTile
-                      courseId={course.id}
-                      practiceQuiz={quiz}
-                      key={quiz.id}
-                    />
-                  ))}
-                </div>
-              ) : user?.userProfile?.catalyst ? (
-                <div>{t('manage.course.noPracticeQuizzes')}</div>
-              ) : (
-                <CatalystNotification />
-              )}
-            </div>
             <div className="mb-4">
               <H3 className={{ root: 'flex flex-row gap-3' }}>
                 <div>{t('shared.generic.microlearnings')}</div>

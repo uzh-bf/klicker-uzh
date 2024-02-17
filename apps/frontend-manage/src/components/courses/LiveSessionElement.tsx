@@ -54,7 +54,6 @@ function LiveSessionElement({ session }: LiveSessionElementProps) {
 
   return (
     <div
-      key={session.id}
       className="w-full p-2 border border-solid rounded border-uzh-grey-80"
       data-cy={`session-${session.name}`}
     >
