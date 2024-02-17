@@ -155,7 +155,7 @@ function PracticeQuizElement({
           </div>
         </div>
         <div
-          className="mb-1 italic"
+          className="mb-1 text-sm italic"
           data-cy={`practice-quiz-num-of-questions-${practiceQuiz.name}`}
         >
           {t('manage.course.nQuestions', {
