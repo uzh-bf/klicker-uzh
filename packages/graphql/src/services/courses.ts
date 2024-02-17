@@ -523,10 +523,12 @@ export async function getCourseData(
           updatedAt: 'desc',
         },
       },
-      microSessions: {
+      microLearnings: {
         include: {
-          _count: {
-            select: { instances: true },
+          stacks: {
+            include: {
+              elements: true,
+            },
           },
         },
         orderBy: {
@@ -567,13 +569,6 @@ export async function getCourseData(
     }
   })
 
-  const reducedMicroSessions = course?.microSessions.map((microSession) => {
-    return {
-      ...microSession,
-      numOfInstances: microSession._count.instances,
-    }
-  })
-
   // FIXME: rework typing on this reduce
   const { activeLBEntries, activeSum, activeCount } =
     course?.leaderboard.reduce(
@@ -611,10 +606,24 @@ export async function getCourseData(
       ...quiz.stacks.reduce(
         (acc, stack) => {
           return {
-            numOfQuestions: acc.numOfQuestions + stack.elements.length,
+            numOfInstances: acc.numOfInstances + stack.elements.length,
           }
         },
-        { numOfQuestions: 0 }
+        { numOfInstances: 0 }
+      ),
+    }
+  })
+
+  const reducedMicroLearnings = course?.microLearnings.map((quiz) => {
+    return {
+      ...quiz,
+      ...quiz.stacks.reduce(
+        (acc, stack) => {
+          return {
+            numOfInstances: acc.numOfInstances + stack.elements.length,
+          }
+        },
+        { numOfInstances: 0 }
       ),
     }
   })
@@ -624,7 +633,7 @@ export async function getCourseData(
     sessions: reducedSessions,
     practiceQuizzes: reducedPracticeQuizzes,
     groupActivities: course?.groupActivities,
-    microSessions: reducedMicroSessions,
+    microLearnings: reducedMicroLearnings,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries.length,
     leaderboard: activeLBEntries,

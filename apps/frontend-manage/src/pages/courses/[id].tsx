@@ -32,7 +32,7 @@ import { sort } from 'ramda'
 import { useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
 import CourseDescription from '../../components/courses/CourseDescription'
-import MicroSessionTile from '../../components/courses/MicroSessionTile'
+import MicroLearningTile from '../../components/courses/MicroLearningTile'
 import PracticeQuizTile from '../../components/courses/PracticeQuizTile'
 import SessionTile from '../../components/courses/SessionTile'
 import CourseQRModal from '../../components/sessions/cockpit/CourseQRModal'
@@ -319,12 +319,12 @@ function CourseOverviewPage() {
                 <FontAwesomeIcon icon={faCrown} size="sm" />
               </Button.Icon>
             </H3>
-            {course.microSessions && course.microSessions.length > 0 ? (
+            {course.microLearnings && course.microLearnings.length > 0 ? (
               <div className="flex flex-col gap-2 pr-4 overflow-x-auto sm:flex-row">
-                {course.microSessions.map((microSession) => (
-                  <MicroSessionTile
-                    microSession={microSession}
-                    key={microSession.id}
+                {course.microLearnings.map((microLearning) => (
+                  <MicroLearningTile
+                    microLearning={microLearning}
+                    key={microLearning.id}
                   />
                 ))}
               </div>

@@ -11,7 +11,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import {
   MicroLearning,
-  MicroSession,
   ParticipationsDocument,
   Session,
   SubscribeToPushDocument,
@@ -40,10 +39,6 @@ type LocalCourseType = {
 
 type LocalLiveSessionType = Partial<Session> & { courseName: string }
 
-type LocalMicroSessionType = Partial<MicroSession> & {
-  courseName: string
-  isCompleted: boolean
-}
 type LocalMicroLearningType = Partial<MicroLearning> & {
   courseName: string
   isCompleted: boolean
@@ -111,21 +106,17 @@ const Index = function () {
     courses,
     oldCourses,
     activeSessions,
-    activeMicrosession,
     activeMicrolearning,
   }: {
     courses: LocalCourseType[]
     oldCourses: LocalCourseType[]
     activeSessions: LocalLiveSessionType[]
-    // TODO: remove after migration
-    activeMicrosession: LocalMicroSessionType[]
     activeMicrolearning: LocalMicroLearningType[]
   } = useMemo(() => {
     const obj = {
       courses: [] as LocalCourseType[],
       oldCourses: [] as LocalCourseType[],
       activeSessions: [] as LocalLiveSessionType[],
-      activeMicrosession: [] as LocalMicroSessionType[],
       activeMicrolearning: [] as LocalMicroLearningType[],
     }
     if (!data?.participations) return obj
@@ -176,17 +167,6 @@ const Index = function () {
           ...(course.sessions?.map((session) => ({
             ...session,
             courseName: course.displayName,
-          })) ?? []),
-        ],
-        // TODO: remove after migration
-        activeMicrosession: [
-          ...acc.activeMicrosession,
-          ...(course.microSessions?.map((session) => ({
-            ...session,
-            courseName: course.displayName,
-            isCompleted: participation.completedMicroSessions?.includes(
-              session.id
-            ),
           })) ?? []),
         ],
         activeMicrolearning: [
@@ -284,39 +264,6 @@ const Index = function () {
             </LinkButton>
           </div>
         </div>
-        {/* // TODO: remove microsession code after migration */}
-        {activeMicrosession.length > 0 && (
-          <div data-cy="microlearnings">
-            <H1 className={{ root: 'text-xl mb-2' }}>
-              {t('shared.generic.microlearning')}
-            </H1>
-            <div className="flex flex-col gap-2">
-              {activeMicrosession.map((micro) => (
-                <LinkButton
-                  icon={micro.isCompleted ? faCheck : faBookOpenReader}
-                  href={micro.isCompleted ? '' : `/micro/${micro.id}/`}
-                  key={micro.id}
-                  disabled={micro.isCompleted}
-                  className={{
-                    root: micro.isCompleted
-                      ? 'hover:bg-unset cursor-not-allowed'
-                      : '',
-                  }}
-                  data={{ cy: `microlearning-${micro.displayName}` }}
-                >
-                  <div>{micro.displayName}</div>
-                  <div className="flex flex-row items-end justify-between">
-                    <div className="text-xs">
-                      {dayjs(micro.scheduledStartAt).format('DD.MM.YYYY HH:mm')}{' '}
-                      - {dayjs(micro.scheduledEndAt).format('DD.MM.YYYY HH:mm')}
-                    </div>
-                    <div className="text-xs">{micro.courseName}</div>
-                  </div>
-                </LinkButton>
-              ))}
-            </div>
-          </div>
-        )}
         {activeMicrolearning.length > 0 && (
           <div data-cy="microlearnings">
             <H1 className={{ root: 'text-xl mb-2' }}>

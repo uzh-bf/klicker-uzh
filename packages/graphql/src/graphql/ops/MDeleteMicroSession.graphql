@@ -1,5 +1,0 @@
-mutation DeleteMicroSession($id: String!) {
-  deleteMicroSession(id: $id) {
-    id
-  }
-}

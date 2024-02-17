@@ -18,7 +18,7 @@ import {
   GroupActivityDetails,
   GroupActivityInstance,
 } from './groupActivity'
-import { MicroSession } from './microSession'
+import { MicroLearning } from './microLearning'
 import {
   AvatarSettingsInput,
   LeaveCourseParticipation,
@@ -42,7 +42,6 @@ import {
   OptionsFreeTextInput,
   OptionsNumericalInput,
   QuestionInstance,
-  ResponseInput,
   Tag,
 } from './question'
 import { ElementType } from './questionData'
@@ -185,22 +184,6 @@ export const Mutation = builder.mutationType({
       //     return ParticipantService.registerParticipantFromLTI(args, ctx)
       //   },
       // }),
-
-      respondToQuestionInstance: t.field({
-        nullable: true,
-        type: QuestionInstance,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          id: t.arg.int({ required: true }),
-          response: t.arg({
-            type: ResponseInput,
-            required: true,
-          }),
-        },
-        resolve: (_, args, ctx) => {
-          return MicroLearningService.respondToQuestionInstance(args, ctx)
-        },
-      }),
 
       respondToElementStack: t.field({
         nullable: true,
@@ -416,7 +399,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      markMicroSessionCompleted: t.withAuth(asParticipant).field({
+      markMicroLearningCompleted: t.withAuth(asParticipant).field({
         nullable: true,
         type: Participation,
         args: {
@@ -424,19 +407,7 @@ export const Mutation = builder.mutationType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return MicroLearningService.markMicroSessionCompleted(args, ctx)
-        },
-      }),
-
-      markMicrolearningCompleted: t.withAuth(asParticipant).field({
-        nullable: true,
-        type: Participation,
-        args: {
-          id: t.arg.string({ required: true }),
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return MicroLearningService.markMicrolearningCompleted(args, ctx)
+          return MicroLearningService.markMicroLearningCompleted(args, ctx)
         },
       }),
 
@@ -1056,44 +1027,44 @@ export const Mutation = builder.mutationType({
           },
         }),
 
-      createMicroSession: t
+      createMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: MicroSession,
+          type: MicroLearning,
           args: {
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
             description: t.arg.string({ required: false }),
-            questions: t.arg.intList({ required: true }),
+            stacks: t.arg({ required: true, type: [ElementStackInput] }),
             courseId: t.arg.string({ required: false }),
             multiplier: t.arg.int({ required: true }),
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
           },
           resolve(_, args, ctx) {
-            return MicroLearningService.createMicroSession(args, ctx)
+            return MicroLearningService.manipulateMicroLearning(args, ctx)
           },
         }),
 
-      editMicroSession: t
+      editMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: MicroSession,
+          type: MicroLearning,
           args: {
             id: t.arg.string({ required: true }),
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
             description: t.arg.string({ required: false }),
-            questions: t.arg.intList({ required: true }),
+            stacks: t.arg({ required: true, type: [ElementStackInput] }),
             courseId: t.arg.string({ required: false }),
             multiplier: t.arg.int({ required: true }),
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
           },
           resolve(_, args, ctx) {
-            return MicroLearningService.editMicroSession(args, ctx)
+            return MicroLearningService.manipulateMicroLearning(args, ctx)
           },
         }),
 
@@ -1110,29 +1081,29 @@ export const Mutation = builder.mutationType({
           },
         }),
 
-      publishMicroSession: t
+      publishMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: MicroSession,
+          type: MicroLearning,
           args: {
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
-            return MicroLearningService.publishMicroSession(args, ctx)
+            return MicroLearningService.publishMicroLearning(args, ctx)
           },
         }),
 
-      unpublishMicroSession: t
+      unpublishMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: MicroSession,
+          type: MicroLearning,
           args: {
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
-            return MicroLearningService.unpublishMicroSession(args, ctx)
+            return MicroLearningService.unpublishMicroLearning(args, ctx)
           },
         }),
 
@@ -1149,16 +1120,16 @@ export const Mutation = builder.mutationType({
             return PracticeQuizService.deletePracticeQuiz(args, ctx)
           },
         }),
-      deleteMicroSession: t
+      deleteMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: MicroSession,
+          type: MicroLearning,
           args: {
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
-            return MicroLearningService.deleteMicroSession(args, ctx)
+            return MicroLearningService.deleteMicroLearning(args, ctx)
           },
         }),
       // #endregion

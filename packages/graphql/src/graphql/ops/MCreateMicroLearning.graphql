@@ -1,18 +1,20 @@
-mutation CreateMicroSession(
+#import "./FElementData.graphql"
+
+mutation CreateMicroLearning(
   $name: String!
   $displayName: String!
   $description: String
-  $questions: [Int!]!
+  $stacks: [ElementStackInput!]!
   $courseId: String
   $multiplier: Int!
   $startDate: Date!
   $endDate: Date!
 ) {
-  createMicroSession(
+  createMicroLearning(
     name: $name
     displayName: $displayName
     description: $description
-    questions: $questions
+    stacks: $stacks
     courseId: $courseId
     multiplier: $multiplier
     startDate: $startDate
@@ -25,14 +27,18 @@ mutation CreateMicroSession(
     scheduledStartAt
     scheduledEndAt
     pointsMultiplier
+
     course {
       id
     }
-    instances {
+
+    stacks {
       id
-      questionData {
+      displayName
+      description
+      elements {
         id
-        name
+        ...ElementData
       }
     }
   }

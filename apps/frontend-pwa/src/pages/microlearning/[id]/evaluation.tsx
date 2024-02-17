@@ -4,9 +4,9 @@ import useStackEvaluationAggregation from '@components/hooks/useStackEvaluationA
 import { faCheckCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetMicrolearningDocument,
+  GetMicroLearningDocument,
   GetParticipationDocument,
-  MarkMicrolearningCompletedDocument,
+  MarkMicroLearningCompletedDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -20,21 +20,21 @@ function MicrolearningEvaluation() {
   const router = useRouter()
   const id = router.query.id as string
 
-  const { loading, data } = useQuery(GetMicrolearningDocument, {
+  const { loading, data } = useQuery(GetMicroLearningDocument, {
     variables: { id },
     skip: !id,
   })
   const { data: participant } = useQuery(SelfDocument)
   const { data: participation } = useQuery(GetParticipationDocument, {
-    variables: { courseId: data?.microlearning?.course?.id ?? '' },
-    skip: !data?.microlearning?.course?.id,
+    variables: { courseId: data?.microLearning?.course?.id ?? '' },
+    skip: !data?.microLearning?.course?.id,
   })
 
   const [markMicrolearningCompleted] = useMutation(
-    MarkMicrolearningCompletedDocument
+    MarkMicroLearningCompletedDocument
   )
 
-  const microlearning = data?.microlearning
+  const microlearning = data?.microLearning
   const aggregatedResults = useStackEvaluationAggregation({ microlearning })
 
   if (loading || !microlearning) {
@@ -80,7 +80,7 @@ function MicrolearningEvaluation() {
           <div>
             {aggregatedResults &&
               aggregatedResults.evaluation &&
-              data.microlearning?.stacks?.map((stack, ix) => (
+              data.microLearning?.stacks?.map((stack, ix) => (
                 <div className="flex flex-row justify-between" key={stack.id}>
                   <div>
                     {stack.displayName ||

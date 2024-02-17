@@ -1,7 +1,7 @@
 import {
   Course,
-  MicroSession,
-  MicroSessionStatus,
+  MicroLearning,
+  PublicationStatus,
   PushSubscription,
 } from '@klicker-uzh/prisma'
 import { GraphQLError } from 'graphql'
@@ -103,9 +103,9 @@ export async function sendPushNotifications(ctx: Context) {
     process.env.VAPID_PRIVATE_KEY as string
   )
 
-  const microSessions = await ctx.prisma.microSession.findMany({
+  const microLearnings = await ctx.prisma.microLearning.findMany({
     where: {
-      status: MicroSessionStatus.PUBLISHED,
+      status: PublicationStatus.PUBLISHED,
       scheduledStartAt: {
         lte: new Date(),
       },
@@ -129,14 +129,14 @@ export async function sendPushNotifications(ctx: Context) {
   // 1. Investigate implementing this method as a background process to reduce the load on the main thread.
   // 2. Investigate implementing this method in Azure
   await Promise.all(
-    microSessions.map(async (microSession) => {
+    microLearnings.map(async (microLearning) => {
       try {
-        await sendPushNotificationsToSubscribers(microSession, ctx)
+        await sendPushNotificationsToSubscribers(microLearning, ctx)
 
         //update microSession to prevent sending push notifications multiple times
-        await ctx.prisma.microSession.update({
+        await ctx.prisma.microLearning.update({
           where: {
-            id: microSession.id,
+            id: microLearning.id,
           },
           data: {
             arePushNotificationsSent: true,
@@ -159,14 +159,14 @@ export async function sendPushNotifications(ctx: Context) {
 //E.g., store the language on the course entity and use it here to translate the message or
 // store the language on the user subscription entity and use this language when sending to the specific user?
 async function sendPushNotificationsToSubscribers(
-  microSession: MicroSession & {
+  microLearning: MicroLearning & {
     course: null | (Course & { subscriptions: PushSubscription[] })
   },
   ctx: Context
 ) {
-  for (let sub of microSession.course?.subscriptions ?? []) {
+  for (let sub of microLearning.course?.subscriptions ?? []) {
     try {
-      const formattedDate = formatDate(microSession.scheduledEndAt)
+      const formattedDate = formatDate(microLearning.scheduledEndAt)
       await webpush.sendNotification(
         {
           endpoint: sub.endpoint,
@@ -176,11 +176,11 @@ async function sendPushNotificationsToSubscribers(
           },
         },
         JSON.stringify({
-          message: `Microlearning ${microSession.displayName} for ${
-            microSession.course?.displayName ?? ''
+          message: `Microlearning ${microLearning.displayName} for ${
+            microLearning.course?.displayName ?? ''
           } is available until ${formattedDate.date} at ${formattedDate.time}.`,
           title: `KlickerUZH - New Microlearning available for the course ${
-            microSession.course?.name ?? ''
+            microLearning.course?.name ?? ''
           }`,
         })
       )

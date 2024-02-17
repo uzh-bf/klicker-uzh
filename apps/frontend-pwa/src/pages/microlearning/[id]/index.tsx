@@ -6,8 +6,7 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetMicroSessionDocument,
-  GetMicrolearningDocument,
+  GetMicroLearningDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -25,7 +24,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
   const t = useTranslations()
   const router = useRouter()
 
-  const { loading, error, data } = useQuery(GetMicrolearningDocument, {
+  const { loading, error, data } = useQuery(GetMicroLearningDocument, {
     variables: { id },
     skip: !id,
   })
@@ -39,7 +38,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
     )
   }
 
-  if (!data?.microlearning) {
+  if (!data?.microLearning) {
     return (
       <Layout>
         <UserNotification
@@ -55,8 +54,8 @@ function MicrolearningIntroduction({ id }: { id: string }) {
 
   return (
     <Layout
-      displayName={data.microlearning.displayName}
-      course={data.microlearning.course ?? undefined}
+      displayName={data.microLearning.displayName}
+      course={data.microLearning.course ?? undefined}
     >
       <div className="flex flex-col w-full md:p-8 md:pt-6 md:w-full md:border md:rounded md:max-w-3xl md:mx-auto">
         {!selfData?.self && (
@@ -86,14 +85,14 @@ function MicrolearningIntroduction({ id }: { id: string }) {
             })}
           </UserNotification>
         )}
-        <H3>{data.microlearning.displayName}</H3>
+        <H3>{data.microLearning.displayName}</H3>
         <Prose
           className={{
             root: 'max-w-none prose-p:mt-0 prose-headings:mt-0 prose-img:my-0 sm:hover:text-current',
           }}
         >
           <DynamicMarkdown
-            content={data.microlearning.description ?? undefined}
+            content={data.microLearning.description ?? undefined}
           />
         </Prose>
 
@@ -102,7 +101,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
               {t('pwa.microSession.numOfQuestionSets', {
-                number: data.microlearning.stacks?.length,
+                number: data.microLearning.stacks?.length,
               })}
             </div>
           </div>
@@ -110,7 +109,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
             <FontAwesomeIcon icon={faTimesCircle} />
             <div>
               {t('pwa.practiceQuiz.multiplicatorPoints', {
-                mult: data.microlearning.pointsMultiplier,
+                mult: data.microLearning.pointsMultiplier,
               })}
             </div>
           </div>
@@ -118,7 +117,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
             <FontAwesomeIcon icon={faClock} />
             <div>
               {t('pwa.microSession.availableFrom', {
-                date: dayjs(data.microlearning.scheduledStartAt).format(
+                date: dayjs(data.microLearning.scheduledStartAt).format(
                   'DD.MM.YYYY HH:mm'
                 ),
               })}
@@ -128,7 +127,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
             <FontAwesomeIcon icon={faClock} />
             <div>
               {t('pwa.microSession.availableUntil', {
-                date: dayjs(data.microlearning.scheduledEndAt).format(
+                date: dayjs(data.microLearning.scheduledEndAt).format(
                   'DD.MM.YYYY HH:mm'
                 ),
               })}
@@ -136,7 +135,7 @@ function MicrolearningIntroduction({ id }: { id: string }) {
           </div>
         </div>
 
-        <Link href={`/microlearning/${data.microlearning.id}/0`} legacyBehavior>
+        <Link href={`/microlearning/${data.microLearning.id}/0`} legacyBehavior>
           <Button
             className={{
               root: 'justify-center w-full text-lg md:w-auto md:self-end',
@@ -165,7 +164,7 @@ export async function getStaticProps(ctx: GetStaticPropsContext) {
 
   try {
     await apolloClient.query({
-      query: GetMicroSessionDocument,
+      query: GetMicroLearningDocument,
       variables: { id: ctx.params.id },
     })
   } catch (e) {

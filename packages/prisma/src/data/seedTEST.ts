@@ -14,7 +14,6 @@ import {
   prepareFlashcardsFromFile,
   prepareGroupActivityClues,
   prepareGroupActivityStack,
-  prepareMicroSession,
   prepareParticipant,
   prepareQuestion,
   prepareQuestionInstance,
@@ -246,23 +245,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           })),
           ownerId: USER_ID_TEST,
           courseId: COURSE_ID_TEST,
-        })
-      )
-    )
-  )
-
-  // TODO: remove after migration to new data structure
-  const microSessionsTest = await Promise.all(
-    DATA_TEST.MICRO_SESSIONS.map(async (data) =>
-      prisma.microSession.upsert(
-        await prepareMicroSession({
-          ...data,
-          ownerId: USER_ID_TEST,
-          courseId: COURSE_ID_TEST,
-          status: Prisma.MicroSessionStatus.PUBLISHED,
-          questions: questionsTest
-            .filter((q) => data.questions.includes(parseInt(q.originalId!)))
-            .map(async (q) => q),
         })
       )
     )

@@ -2,11 +2,12 @@ import { useQuery } from '@apollo/client'
 import {
   Course,
   Element,
+  GetMicroLearningDocument,
   GetPracticeQuizDocument,
   GetSingleLiveSessionDocument,
-  GetSingleMicroSessionDocument,
   GetUserCoursesDocument,
-  MicroSession,
+  MicroLearning,
+  PracticeQuiz,
   Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -54,7 +55,7 @@ function SessionCreation({
     }
   )
   const { data: dataMicroSession, loading: microLoading } = useQuery(
-    GetSingleMicroSessionDocument,
+    GetMicroLearningDocument,
     {
       variables: { id: sessionId || '' },
       skip: !sessionId || editMode !== WizardMode.Microlearning,
@@ -125,8 +126,7 @@ function SessionCreation({
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
             initialValues={
-              (dataMicroSession?.singleMicroSession as MicroSession) ??
-              undefined
+              (dataMicroSession?.microLearning as MicroLearning) ?? undefined
             }
           />
         )}
@@ -135,7 +135,9 @@ function SessionCreation({
             title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}
-            initialValues={dataPracticeQuiz?.practiceQuiz ?? undefined}
+            initialValues={
+              (dataPracticeQuiz?.practiceQuiz as PracticeQuiz) ?? undefined
+            }
           />
         )}
       </div>
