@@ -25,7 +25,7 @@ import BlockField from './BlockField'
 import EditorField from './EditorField'
 import MultistepWizard, { MicroSessionFormValues } from './MultistepWizard'
 
-interface MicroSessionWizardProps {
+interface MicroLearningWizardProps {
   title: string
   closeWizard: () => void
   courses?: {
@@ -35,12 +35,12 @@ interface MicroSessionWizardProps {
   initialValues?: MicroLearning
 }
 
-function MicroSessionWizard({
+function MicroLearningWizard({
   title,
   closeWizard,
   courses,
   initialValues,
-}: MicroSessionWizardProps) {
+}: MicroLearningWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 

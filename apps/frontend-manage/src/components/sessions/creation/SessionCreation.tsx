@@ -14,7 +14,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import LiveSessionWizard from './LiveSessionWizard'
-import MicroSessionWizard from './MicroSessionWizard'
+import MicroLearningWizard from './MicroLearningWizard'
 import PracticeQuizWizard from './PracticeQuizWizard'
 
 export enum WizardMode {
@@ -121,7 +121,7 @@ function SessionCreation({
           />
         )}
         {creationMode === WizardMode.Microlearning && (
-          <MicroSessionWizard
+          <MicroLearningWizard
             title={t('shared.generic.microlearning')}
             closeWizard={closeWizard}
             courses={courseSelection || [{ label: '', value: '' }]}

@@ -1,9 +1,9 @@
 name: Klicker automated testing with cypress
 on:
   push:
-    branches: ['v3', 'v3*']
+    branches: ['v3', 'v3*', 'Microlearning*']
   pull_request:
-    branches: ['v3', 'v3*']
+    branches: ['v3', 'v3*', 'Microlearning*']
     types: [opened, synchronize, reopened]
   # workflow_dispatch:
 
