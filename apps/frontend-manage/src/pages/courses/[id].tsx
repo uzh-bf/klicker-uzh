@@ -80,9 +80,6 @@ function CourseOverviewPage() {
               defaultValue="liveSessions"
               value={tabValue}
               onValueChange={(newValue) => setTabValue(newValue)}
-              className={{
-                root: '',
-              }}
             >
               <Tabs.TabList>
                 <Tabs.Tab
