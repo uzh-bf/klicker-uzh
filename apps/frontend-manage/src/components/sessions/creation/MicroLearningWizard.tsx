@@ -23,7 +23,7 @@ import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
-import MultistepWizard, { MicroSessionFormValues } from './MultistepWizard'
+import MultistepWizard, { MicroLearningFormValues } from './MultistepWizard'
 
 interface MicroLearningWizardProps {
   title: string
@@ -104,7 +104,7 @@ function MicroLearningWizard({
       .min(1),
   })
 
-  const onSubmit = async (values: MicroSessionFormValues) => {
+  const onSubmit = async (values: MicroLearningFormValues) => {
     try {
       let success = false
 

@@ -578,7 +578,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="finish-microlearning"]').click()
   })
 
-  it('Respond to the seeded instance of the redesigned microlearning', () => {
+  it('respond to a microlearning with all element types', () => {
     const seedMicrolearningDisplayName = 'Test Microlearning'
 
     cy.visit(Cypress.env('URL_STUDENT'))

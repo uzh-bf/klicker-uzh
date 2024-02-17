@@ -152,7 +152,7 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get(`[data-cy="microlearning-${microlearningName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="flag-element-button"]').click()
-    cy.get('[data-cy="submit-flag-question"').should('be.disabled')
+    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
     cy.get('[data-cy="flag-element-textarea"').type(
       `Test flagging question on microlearning ${microlearningName}`
     )
