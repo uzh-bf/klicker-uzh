@@ -17,7 +17,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import CourseDescription from '../courses/CourseDescription'
+import CourseDescription from './CourseDescription'
 
 interface CourseSettingsProps {
   id: string

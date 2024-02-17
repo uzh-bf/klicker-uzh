@@ -616,7 +616,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',
       questionPool: 'Question Pool',
-      sessions: 'Quizzes',
+      sessions: 'Live Quizzes',
       courses: 'Courses',
       migration: 'Migration',
       generateToken: 'Generate login token',

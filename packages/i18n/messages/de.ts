@@ -614,7 +614,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       qrCode: 'QR Code',
       presentQrCode: 'QR-Code präsentieren',
       questionPool: 'Fragepool',
-      sessions: 'Sessionen',
+      sessions: 'Live-Quizzes',
       courses: 'Kurse',
       migration: 'Migration',
       generateToken: 'Login-Token generieren',

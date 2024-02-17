@@ -1,7 +1,8 @@
 import { useQuery } from '@apollo/client'
-import CourseOverviewHeader from '@components/course/CourseOverviewHeader'
-import CourseSettings from '@components/course/CourseSettings'
+import CourseOverviewHeader from '@components/courses/CourseOverviewHeader'
+import CourseSettings from '@components/courses/CourseSettings'
 import GroupActivityTile from '@components/courses/GroupActivityTile'
+import LiveSessionList from '@components/courses/LiveSessionList'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -115,12 +116,12 @@ function CourseOverviewPage() {
                 />
                 <Tabs.Tab
                   key="tab-microlearnings"
-                  value="microlearnings"
+                  value="microLearnings"
                   label={t('shared.generic.microlearnings')}
                   className={{
                     label: twMerge(
                       'text-base',
-                      tabValue === 'microlearnings' && 'font-bold'
+                      tabValue === 'microLearnings' && 'font-bold'
                     ),
                   }}
                 />
@@ -136,6 +137,31 @@ function CourseOverviewPage() {
                   }}
                 />
               </Tabs.TabList>
+              <Tabs.TabContent
+                key="content-liveSessions"
+                value="liveSessions"
+                className={{ root: 'px-2 py-2' }}
+              >
+                <LiveSessionList sessions={course.sessions ?? []} />
+              </Tabs.TabContent>
+              <Tabs.TabContent
+                key="content-practiceQuizzes"
+                value="practiceQuizzes"
+              >
+                PRACTICE QUIZZES
+              </Tabs.TabContent>
+              <Tabs.TabContent
+                key="content-microlearnings"
+                value="microLearnings"
+              >
+                MICROLEARNINGS
+              </Tabs.TabContent>
+              <Tabs.TabContent
+                key="content-groupActivities"
+                value="groupActivities"
+              >
+                GROUP ACTIVITIES
+              </Tabs.TabContent>
             </Tabs>
           </div>
           <div>
