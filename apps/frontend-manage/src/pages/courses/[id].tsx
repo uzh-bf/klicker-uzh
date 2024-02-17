@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import CourseOverviewHeader from '@components/course/CourseOverviewHeader'
 import GroupActivityTile from '@components/courses/GroupActivityTile'
 import { faCrown, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -16,8 +17,6 @@ import {
   Button,
   ColorPicker,
   DateChanger,
-  H1,
-  H2,
   H3,
   Switch,
   Toast,
@@ -26,7 +25,6 @@ import {
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { sort } from 'ramda'
 import { useEffect, useState } from 'react'
@@ -35,7 +33,6 @@ import CourseDescription from '../../components/courses/CourseDescription'
 import MicroSessionTile from '../../components/courses/MicroSessionTile'
 import PracticeQuizTile from '../../components/courses/PracticeQuizTile'
 import SessionTile from '../../components/courses/SessionTile'
-import CourseQRModal from '../../components/sessions/cockpit/CourseQRModal'
 
 function CourseOverviewPage() {
   const t = useTranslations()
@@ -85,53 +82,12 @@ function CourseOverviewPage() {
   return (
     <Layout>
       <div className="w-full mb-4">
-        <div className="flex flex-row items-center justify-between">
-          <H1 data={{ cy: 'course-name-with-pin' }}>
-            {t('manage.course.nameWithPin', {
-              name: course.name,
-              pin: String(course.pinCode)
-                .match(/.{1,3}/g)
-                ?.join(' '),
-            })}
-          </H1>
-          <div className="flex flex-row items-center gap-4 mb-2">
-            <CourseQRModal
-              relativeLink={`/course/${course.id}/join?pin=${course.pinCode}`}
-              triggerText={t('manage.course.joinCourse')}
-              className={{ modal: 'w-[40rem]' }}
-              dataTrigger={{ cy: 'course-join-button' }}
-              dataModal={{ cy: 'course-join-modal' }}
-              dataCloseButton={{ cy: 'course-join-modal-close' }}
-            >
-              <H2>{t('manage.course.joinCourse')}</H2>
-              <Link
-                href={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}
-                target="_blank"
-                className="text-primary"
-                legacyBehavior
-                passHref
-              >
-                <a data-cy="link-to-pwa-course-join-page">
-                  {`${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/join?pin=${course.pinCode}`}
-                </a>
-              </Link>
-
-              <div className="mt-4">
-                {t.rich('manage.course.requiredPin', {
-                  b: (text) => <strong>{text}</strong>,
-                  pin: String(course.pinCode)
-                    .match(/.{1,3}/g)
-                    ?.join(' '),
-                })}
-              </div>
-            </CourseQRModal>
-            <div className="italic">
-              {t('manage.course.nParticipants', {
-                number: course.numOfParticipants,
-              })}
-            </div>
-          </div>
-        </div>
+        <CourseOverviewHeader
+          id={course.id}
+          name={course.name}
+          pinCode={course.pinCode ?? 0}
+          numOfParticipants={course.numOfParticipants ?? 0}
+        />
         {course.description ? (
           descriptionEditMode ? (
             <CourseDescription
