@@ -606,10 +606,10 @@ export async function getCourseData(
       ...quiz.stacks.reduce(
         (acc, stack) => {
           return {
-            numOfInstances: acc.numOfInstances + stack.elements.length,
+            numOfQuestions: acc.numOfQuestions + stack.elements.length,
           }
         },
-        { numOfInstances: 0 }
+        { numOfQuestions: 0 }
       ),
     }
   })
