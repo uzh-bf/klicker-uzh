@@ -162,7 +162,7 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="practice-quiz-continue"]')
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.get('[data-cy="finish-microlearning"]').click()
 
     // test bookmarking and flagging for practice quizzes
