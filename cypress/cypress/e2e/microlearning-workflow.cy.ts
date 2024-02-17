@@ -116,7 +116,7 @@ describe('Different microlearning workflows', () => {
     )
     cy.findByText(microSessionDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="choice-option"]').eq(0).click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="send-answer"]').click()
 
     // TODO: replace by new response workflows
@@ -137,7 +137,8 @@ describe('Different microlearning workflows', () => {
     )
     cy.findByText(microSessionDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="choice-option"]').eq(0).click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+
     cy.get('[data-cy="send-answer"]').click()
     cy.viewport('macbook-16')
   })
@@ -562,12 +563,14 @@ describe('Different microlearning workflows', () => {
     )
     cy.findByText(microSessionDisplayName).click()
     cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="choice-option"]').eq(0).click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+
     cy.wait(500)
     cy.get('[data-cy="send-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="send-answer"]').click()
-    cy.get('[data-cy="choice-option"]').eq(0).click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+
     cy.get('[data-cy="send-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="send-answer"]').click()

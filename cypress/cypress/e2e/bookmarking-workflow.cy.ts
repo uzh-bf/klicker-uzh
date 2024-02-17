@@ -151,21 +151,21 @@ describe('Question bookmarking and flagging workflow', () => {
     // test flagging for microlearnings
     cy.get(`[data-cy="microlearning-${microlearningName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="flag-question-button"]').click()
+    cy.get('[data-cy="flag-element-button"]').click()
     cy.get('[data-cy="submit-flag-question"').should('be.disabled')
-    cy.get('[data-cy="flag-question-textarea"').type(
+    cy.get('[data-cy="flag-element-textarea"').type(
       `Test flagging question on microlearning ${microlearningName}`
     )
     // TODO - actually submit the flagging once adding notification emails is available
-    cy.get('[data-cy="submit-flag-question"]').should('not.be.disabled')
-    cy.get('[data-cy="cancel-flag-question"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
+    cy.get('[data-cy="cancel-flag-element"]').click()
     cy.get(':nth-child(1) > [data-cy="choice-option"]').click()
     cy.get('[data-cy="send-answer"]').click()
     cy.wait(1000)
     cy.get('[data-cy="send-answer"]').click()
     cy.get('[data-cy="finish-microlearning"]').click()
 
-    // test bookmarking and flagging for microlearnings
+    // test bookmarking and flagging for practice quizzes
     // TODO: adapt bookmarking to custom created practice quiz instead of seed-based solution
     const quizNameTestSeed = 'Practice Quiz Demo Student Title'
     cy.get('[data-cy="quizzes"]').click()
