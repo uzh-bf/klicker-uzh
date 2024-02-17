@@ -1,8 +1,4 @@
 import { useQuery } from '@apollo/client'
-import CourseOverviewHeader from '@components/courses/CourseOverviewHeader'
-import CourseSettings from '@components/courses/CourseSettings'
-import GroupActivityTile from '@components/courses/GroupActivityTile'
-import LiveSessionList from '@components/courses/LiveSessionList'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -12,13 +8,18 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, H2, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
+import { Button, H2, H3, Tabs } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
+import CatalystNotification from '../../components/courses/CatalystNotification'
+import CourseOverviewHeader from '../../components/courses/CourseOverviewHeader'
+import CourseSettings from '../../components/courses/CourseSettings'
+import GroupActivityTile from '../../components/courses/GroupActivityTile'
+import LiveSessionList from '../../components/courses/LiveSessionList'
 import MicroSessionTile from '../../components/courses/MicroSessionTile'
 import PracticeQuizTile from '../../components/courses/PracticeQuizTile'
 
@@ -187,19 +188,7 @@ function CourseOverviewPage() {
               ) : user?.userProfile?.catalyst ? (
                 <div>{t('manage.course.noPracticeQuizzes')}</div>
               ) : (
-                <UserNotification className={{ root: 'mr-3' }}>
-                  {t.rich('manage.general.catalystRequired', {
-                    link: () => (
-                      <a
-                        target="_blank"
-                        href="https://www.klicker.uzh.ch/catalyst"
-                        className="underline"
-                      >
-                        www.klicker.uzh.ch/catalyst
-                      </a>
-                    ),
-                  })}
-                </UserNotification>
+                <CatalystNotification />
               )}
             </div>
             <div className="mb-4">
@@ -221,19 +210,7 @@ function CourseOverviewPage() {
               ) : user?.userProfile?.catalyst ? (
                 <div>{t('manage.course.noMicrolearnings')}</div>
               ) : (
-                <UserNotification className={{ root: 'mr-3' }}>
-                  {t.rich('manage.general.catalystRequired', {
-                    link: () => (
-                      <a
-                        target="_blank"
-                        href="https://www.klicker.uzh.ch/catalyst"
-                        className="underline"
-                      >
-                        www.klicker.uzh.ch/catalyst
-                      </a>
-                    ),
-                  })}
-                </UserNotification>
+                <CatalystNotification />
               )}
             </div>
             <div className="mb-4">
@@ -255,19 +232,7 @@ function CourseOverviewPage() {
               ) : user?.userProfile?.catalyst ? (
                 <div>{t('manage.course.noGroupActivities')}</div>
               ) : (
-                <UserNotification className={{ root: 'mr-3' }}>
-                  {t.rich('manage.general.catalystRequired', {
-                    link: () => (
-                      <a
-                        target="_blank"
-                        href="https://www.klicker.uzh.ch/catalyst"
-                        className="underline"
-                      >
-                        www.klicker.uzh.ch/catalyst
-                      </a>
-                    ),
-                  })}
-                </UserNotification>
+                <CatalystNotification />
               )}
             </div>
           </div>
