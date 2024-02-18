@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import Layout from '@components/Layout'
 import {
   GetMicroLearningDocument,
   SelfDocument,
@@ -39,37 +40,42 @@ function MicrolearningInstance() {
   }
 
   return (
-    <div className="flex-1">
-      <div
-        className={twMerge(
-          'space-y-4 md:max-w-6xl md:mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded w-full'
-        )}
-      >
-        <Progress
-          isMaxVisible
-          formatter={(v) => v}
-          value={ix + 1}
-          max={(microlearning?.stacks?.length ?? -1) + 1}
-        />
-        <ElementStack
-          parentId={microlearning.id}
-          courseId={microlearning.course!.id}
-          // TODO: fix this issue where pointsMultiplier might not be defined on flashcards and content elements
-          stack={currentStack}
-          currentStep={ix + 1}
-          totalSteps={microlearning.stacks?.length ?? 0}
-          handleNextElement={() =>
-            router.push(`/microlearning/${id}/${ix + 1}`)
-          }
-          onAllStacksCompletion={() =>
-            // TODO: also mark the microlearning as completed with this action already?
-            router.push(`/microlearning/${id}/evaluation`)
-          }
-          withParticipant={!!selfData?.self}
-          hideBookmark
-        />
+    <Layout
+      displayName={microlearning.displayName}
+      course={microlearning.course ?? undefined}
+    >
+      <div className="flex-1">
+        <div
+          className={twMerge(
+            'space-y-4 md:max-w-6xl md:mx-auto md:mb-4 md:p-8 md:pt-6 md:border md:rounded w-full'
+          )}
+        >
+          <Progress
+            isMaxVisible
+            formatter={(v) => v}
+            value={ix + 1}
+            max={(microlearning?.stacks?.length ?? -1) + 1}
+          />
+          <ElementStack
+            parentId={microlearning.id}
+            courseId={microlearning.course!.id}
+            // TODO: fix this issue where pointsMultiplier might not be defined on flashcards and content elements
+            stack={currentStack}
+            currentStep={ix + 1}
+            totalSteps={microlearning.stacks?.length ?? 0}
+            handleNextElement={() =>
+              router.push(`/microlearning/${id}/${ix + 1}`)
+            }
+            onAllStacksCompletion={() =>
+              // TODO: also mark the microlearning as completed with this action already?
+              router.push(`/microlearning/${id}/evaluation`)
+            }
+            withParticipant={!!selfData?.self}
+            hideBookmark
+          />
+        </div>
       </div>
-    </div>
+    </Layout>
   )
 }
 
