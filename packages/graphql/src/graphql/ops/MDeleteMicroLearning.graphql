@@ -1,0 +1,5 @@
+mutation DeleteMicroLearning($id: String!) {
+  deleteMicroLearning(id: $id) {
+    id
+  }
+}

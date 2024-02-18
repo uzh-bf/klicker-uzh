@@ -38,6 +38,7 @@ const QUESTION_KEYS = [
   'options',
 ]
 
+// TODO: add union type for return value as pick removes the properties
 export function processElementData(element: Element) {
   const extractContentKeys = R.pick(CONTENT_KEYS)
   const extractFlashcardKeys = R.pick(FLASHCARD_KEYS)

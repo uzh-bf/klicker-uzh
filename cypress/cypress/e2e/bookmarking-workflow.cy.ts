@@ -1,3 +1,5 @@
+import { v4 as uuid } from 'uuid'
+
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Question bookmarking and flagging workflow', () => {
@@ -6,15 +8,13 @@ describe('Question bookmarking and flagging workflow', () => {
   })
 
   it('creates two new questions, adds them to a practice quiz and microlearning and bookmarks them', () => {
-    const randomQuestionNumber = Math.round(Math.random() * 1000)
-    const randomQuestionNumber2 = Math.round(Math.random() * 1000)
-    const randomQuizNumber = Math.round(Math.random() * 1000)
-    const randomMicroNumber = Math.round(Math.random() * 1000)
-    const questionTitle = 'A Single Choice ' + randomQuestionNumber
-    const questionTitle2 = 'A Single Choice ' + randomQuestionNumber2
-    const question = 'Question to be bookmarked ' + randomQuestionNumber
-    const question2 = 'Question to be bookmarked ' + randomQuestionNumber2
+    const questionTitle = uuid()
+    const questionTitle2 = uuid()
+    const question = uuid()
+    const question2 = uuid()
     const courseName = 'Testkurs'
+    const quizName = uuid()
+    const microlearningName = uuid()
 
     // create first question in question pool
     cy.get('[data-cy="create-question"]').click()
@@ -28,7 +28,6 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="save-new-question"]').click({ force: true })
 
     // create second question in question pool
-    const quizName = 'Bookmarking practice quiz ' + randomQuizNumber
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle2)
     cy.get('[data-cy="insert-question-text"]').click().type(question2)
@@ -67,7 +66,6 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="cancel-session-creation"] > div').click()
 
     // create microlearning with second question
-    const microlearningName = 'Bookmarking microlearning ' + randomMicroNumber
     const currentYear = new Date().getFullYear()
     cy.get('[data-cy="create-microlearning"]').click()
 
@@ -151,21 +149,21 @@ describe('Question bookmarking and flagging workflow', () => {
     // test flagging for microlearnings
     cy.get(`[data-cy="microlearning-${microlearningName}"]`).click()
     cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="flag-question-button"]').click()
-    cy.get('[data-cy="submit-flag-question"').should('be.disabled')
-    cy.get('[data-cy="flag-question-textarea"').type(
+    cy.get('[data-cy="flag-element-button"]').click()
+    cy.get('[data-cy="submit-flag-element"').should('be.disabled')
+    cy.get('[data-cy="flag-element-textarea"').type(
       `Test flagging question on microlearning ${microlearningName}`
     )
     // TODO - actually submit the flagging once adding notification emails is available
-    cy.get('[data-cy="submit-flag-question"]').should('not.be.disabled')
-    cy.get('[data-cy="cancel-flag-question"]').click()
-    cy.get(':nth-child(1) > [data-cy="choice-option"]').click()
-    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
+    cy.get('[data-cy="cancel-flag-element"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="practice-quiz-stack-submit"]').click()
     cy.wait(1000)
-    cy.get('[data-cy="send-answer"]').click()
+    cy.get('[data-cy="practice-quiz-continue"]').click()
     cy.get('[data-cy="finish-microlearning"]').click()
 
-    // test bookmarking and flagging for microlearnings
+    // test bookmarking and flagging for practice quizzes
     // TODO: adapt bookmarking to custom created practice quiz instead of seed-based solution
     const quizNameTestSeed = 'Practice Quiz Demo Student Title'
     cy.get('[data-cy="quizzes"]').click()
@@ -184,6 +182,7 @@ describe('Question bookmarking and flagging workflow', () => {
     // open the bookmarks of the test course and check if the marked questions appear
     cy.get('[data-cy="header-home"]').click()
     cy.get('[data-cy="bookmarks"]').click()
+    cy.wait(1000)
     cy.get(`[data-cy="bookmarks-course-${courseName}"]`).click()
     cy.findByText('Number of questions: 1').should('exist')
     cy.get('[data-cy="start-practice-quiz"]').click()

@@ -918,67 +918,6 @@ export function prepareGroupActivityClues({
   ]
 }
 
-export async function prepareMicroSession({
-  questions,
-  ...args
-}: {
-  id: string
-  name: string
-  displayName: string
-  scheduledStartAt: Date
-  scheduledEndAt: Date
-  arePushNotificationsSent: boolean
-  description: string
-  courseId: string
-  ownerId: string
-  questions: BaseQuestionData[]
-  status: Prisma.MicroSessionStatus
-}) {
-  const questionData = await Promise.all(questions)
-
-  if (R.any(R.isNil, questionData)) {
-    throw new Error('Invalid question data')
-  }
-
-  const preparedInstances = questionData.map((question, ix) =>
-    prepareQuestionInstance({
-      order: ix,
-      question,
-      type: QuestionInstanceType.MICRO_SESSION,
-    })
-  )
-
-  return {
-    where: {
-      id: args.id,
-    },
-    create: {
-      ...args,
-      instances: {
-        create: preparedInstances,
-      },
-    },
-    update: {
-      ...args,
-      instances: {
-        upsert: preparedInstances.map((instance) => ({
-          where: {
-            type_microSessionId_order: {
-              type: QuestionInstanceType.MICRO_SESSION,
-              microSessionId: args.id,
-              order: instance.order,
-            },
-          },
-          create: instance,
-          update: {
-            ...R.pick([], instance),
-          },
-        })),
-      },
-    },
-  }
-}
-
 export function extractQuizInfo(doc: typeof xmlDoc, formulaTagId?: number) {
   const turndown = Turndown()
 

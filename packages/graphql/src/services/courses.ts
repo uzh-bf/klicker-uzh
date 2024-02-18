@@ -523,10 +523,12 @@ export async function getCourseData(
           updatedAt: 'desc',
         },
       },
-      microSessions: {
+      microLearnings: {
         include: {
-          _count: {
-            select: { instances: true },
+          stacks: {
+            include: {
+              elements: true,
+            },
           },
         },
         orderBy: {
@@ -564,13 +566,6 @@ export async function getCourseData(
         (acc, block) => acc + block._count.instances,
         0
       ),
-    }
-  })
-
-  const reducedMicroSessions = course?.microSessions.map((microSession) => {
-    return {
-      ...microSession,
-      numOfInstances: microSession._count.instances,
     }
   })
 
@@ -619,12 +614,26 @@ export async function getCourseData(
     }
   })
 
+  const reducedMicroLearnings = course?.microLearnings.map((quiz) => {
+    return {
+      ...quiz,
+      ...quiz.stacks.reduce(
+        (acc, stack) => {
+          return {
+            numOfInstances: acc.numOfInstances + stack.elements.length,
+          }
+        },
+        { numOfInstances: 0 }
+      ),
+    }
+  })
+
   return {
     ...course,
     sessions: reducedSessions,
     practiceQuizzes: reducedPracticeQuizzes,
     groupActivities: course?.groupActivities,
-    microSessions: reducedMicroSessions,
+    microLearnings: reducedMicroLearnings,
     numOfParticipants: course?.participations.length,
     numOfActiveParticipants: activeLBEntries.length,
     leaderboard: activeLBEntries,

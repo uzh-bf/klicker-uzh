@@ -3,8 +3,6 @@ import dayjs from 'dayjs'
 import builder from '../builder'
 import { GroupActivityRef, IGroupActivity } from './groupActivity'
 import { IMicroLearning, MicroLearningRef } from './microLearning'
-import type { IMicroSession } from './microSession'
-import { MicroSessionRef } from './microSession'
 import type {
   IParticipant,
   IParticipantGroup,
@@ -29,7 +27,6 @@ export interface ICourse extends DB.Course {
 
   sessions?: ISession[]
   practiceQuizzes?: IPracticeQuiz[]
-  microSessions?: IMicroSession[]
   microLearnings?: IMicroLearning[]
   groupActivities?: IGroupActivity[]
   leaderboard?: ILeaderboardEntry[]
@@ -94,11 +91,6 @@ export const Course = builder.objectType(CourseRef, {
     }),
     practiceQuizzes: t.expose('practiceQuizzes', {
       type: [PracticeQuizRef],
-      nullable: true,
-    }),
-    // TODO: remove after migration
-    microSessions: t.expose('microSessions', {
-      type: [MicroSessionRef],
       nullable: true,
     }),
     microLearnings: t.expose('microLearnings', {

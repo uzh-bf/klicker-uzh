@@ -14,7 +14,6 @@ import {
   prepareFlashcardsFromFile,
   prepareGroupActivityClues,
   prepareGroupActivityStack,
-  prepareMicroSession,
   prepareParticipant,
   prepareQuestion,
   prepareQuestionInstance,
@@ -149,7 +148,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   //     description: 'Test Microlearning',
   //     ownerId: USER_ID_TEST,
   //     courseId: COURSE_ID_TEST,
-  //     status: Prisma.MicroLearningStatus.PUBLISHED,
+  //     status: Prisma.PublicationStatus.PUBLISHED,
   //     scheduledEndAt: new Date('2025-03-17T11:00:00.000Z'),
   //     scheduledStartAt: new Date('2020-03-10T11:00:00.000Z'),
   //     stacks: {
@@ -246,23 +245,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           })),
           ownerId: USER_ID_TEST,
           courseId: COURSE_ID_TEST,
-        })
-      )
-    )
-  )
-
-  // TODO: remove after migration to new data structure
-  const microSessionsTest = await Promise.all(
-    DATA_TEST.MICRO_SESSIONS.map(async (data) =>
-      prisma.microSession.upsert(
-        await prepareMicroSession({
-          ...data,
-          ownerId: USER_ID_TEST,
-          courseId: COURSE_ID_TEST,
-          status: Prisma.MicroSessionStatus.PUBLISHED,
-          questions: questionsTest
-            .filter((q) => data.questions.includes(parseInt(q.originalId!)))
-            .map(async (q) => q),
         })
       )
     )
@@ -692,7 +674,7 @@ Mehr bla bla...
         },
       },
       pointsMultiplier: 4,
-      status: Prisma.MicroLearningStatus.PUBLISHED,
+      status: Prisma.PublicationStatus.PUBLISHED,
       scheduledEndAt: new Date('2030-01-01T11:00:00.000Z'),
       scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
       stacks: {
@@ -737,7 +719,7 @@ Mehr bla bla...
         },
       },
       pointsMultiplier: 1,
-      status: Prisma.MicroLearningStatus.DRAFT,
+      status: Prisma.PublicationStatus.DRAFT,
       scheduledEndAt: new Date('2040-01-01T11:00:00.000Z'),
       scheduledStartAt: new Date('2030-01-01T11:00:00.000Z'),
       stacks: {

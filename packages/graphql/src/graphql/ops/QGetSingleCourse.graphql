@@ -39,7 +39,7 @@ query GetSingleCourse($courseId: String!) {
       name
       displayName
     }
-    microSessions {
+    microLearnings {
       id
       name
       displayName

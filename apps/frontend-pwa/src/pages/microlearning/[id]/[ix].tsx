@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
-  GetMicrolearningDocument,
+  GetMicroLearningDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -15,17 +15,17 @@ function MicrolearningInstance() {
   const ix = parseInt(router.query.ix as string)
   const id = router.query.id as string
 
-  const { loading, error, data } = useQuery(GetMicrolearningDocument, {
+  const { loading, error, data } = useQuery(GetMicroLearningDocument, {
     variables: { id },
     skip: !id,
   })
   const { data: selfData } = useQuery(SelfDocument)
 
-  if (loading || !data?.microlearning) {
+  if (loading || !data?.microLearning) {
     return <Loader />
   }
 
-  const microlearning = data.microlearning
+  const microlearning = data.microLearning
 
   // throw error if length of stacks is smaller than number
   if (!microlearning.stacks || !(ix <= (microlearning.stacks.length || -1))) {
@@ -49,7 +49,7 @@ function MicrolearningInstance() {
           isMaxVisible
           formatter={(v) => v}
           value={ix + 1}
-          max={(data.microlearning?.stacks?.length ?? -1) + 1}
+          max={(microlearning?.stacks?.length ?? -1) + 1}
         />
         <ElementStack
           parentId={microlearning.id}

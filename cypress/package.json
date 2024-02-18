@@ -6,9 +6,11 @@
     "@testing-library/cypress": "10.0.1",
     "@types/jsonwebtoken": "^8.0.0",
     "@types/node": "^20.10.6",
+    "@types/uuid": "^9.0.2",
     "cypress": "13.6.2",
     "jsonwebtoken": "8.5.1",
-    "typescript": "5.2.2"
+    "typescript": "5.2.2",
+    "uuid": "9.0.0"
   },
   "scripts": {
     "test": "cypress open",

@@ -1,20 +1,22 @@
-mutation EditMicroSession(
+#import "./FElementData.graphql"
+
+mutation EditMicroLearning(
   $id: String!
   $name: String!
   $displayName: String!
   $description: String
-  $questions: [Int!]!
+  $stacks: [ElementStackInput!]!
   $courseId: String
   $multiplier: Int!
   $startDate: Date!
   $endDate: Date!
 ) {
-  editMicroSession(
+  editMicroLearning(
     id: $id
     name: $name
     displayName: $displayName
     description: $description
-    questions: $questions
+    stacks: $stacks
     courseId: $courseId
     multiplier: $multiplier
     startDate: $startDate
@@ -27,14 +29,18 @@ mutation EditMicroSession(
     scheduledStartAt
     scheduledEndAt
     pointsMultiplier
+
     course {
       id
     }
-    instances {
+
+    stacks {
       id
-      questionData {
+      displayName
+      description
+      elements {
         id
-        name
+        ...ElementData
       }
     }
   }

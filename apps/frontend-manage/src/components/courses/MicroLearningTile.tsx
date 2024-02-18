@@ -15,9 +15,9 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceType,
-  MicroSession,
-  MicroSessionStatus,
-  UnpublishMicroSessionDocument,
+  MicroLearning,
+  PublicationStatus,
+  UnpublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button, Toast } from '@uzh-bf/design-system'
@@ -28,14 +28,14 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import StatusTag from './StatusTag'
-import MicroSessionDeletionModal from './modals/MicroSessionDeletionModal'
+import MicroLearningDeletionModal from './modals/MicroLearningDeletionModal'
 import PublishConfirmationModal from './modals/PublishConfirmationModal'
 
-interface MicroSessionProps {
-  microSession: Partial<MicroSession> & Pick<MicroSession, 'id' | 'name'>
+interface MicroLearningProps {
+  microLearning: Partial<MicroLearning> & Pick<MicroLearning, 'id' | 'name'>
 }
 
-function MicroSessionTile({ microSession }: MicroSessionProps) {
+function MicroLearningTile({ microLearning }: MicroLearningProps) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -43,33 +43,33 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
 
-  const [unpublishMicroSession] = useMutation(UnpublishMicroSessionDocument, {
-    variables: { id: microSession.id },
+  const [unpublishMicroLearning] = useMutation(UnpublishMicroLearningDocument, {
+    variables: { id: microLearning.id },
   })
 
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/micro/${microSession.id}/`
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/microlearning/${microLearning.id}/`
 
-  const isFuture = dayjs(microSession.scheduledStartAt).isAfter(dayjs())
-  const isPast = dayjs(microSession.scheduledEndAt).isBefore(dayjs())
+  const isFuture = dayjs(microLearning.scheduledStartAt).isAfter(dayjs())
+  const isPast = dayjs(microLearning.scheduledEndAt).isBefore(dayjs())
 
   return (
     <div
       className="p-2 border border-solid rounded w-full sm:min-w-[18rem] sm:max-w-[18rem] border-uzh-grey-80"
-      data-cy={`microlearning-${microSession.name}`}
+      data-cy={`microlearning-${microLearning.name}`}
     >
       <div className="flex flex-row items-center justify-between">
         <Ellipsis maxLength={25} className={{ markdown: 'font-bold' }}>
-          {microSession.name || ''}
+          {microLearning.name || ''}
         </Ellipsis>
 
-        {microSession.status === MicroSessionStatus.Draft && (
+        {microLearning.status === PublicationStatus.Draft && (
           <StatusTag
             color="bg-gray-200"
             status={t('shared.generic.draft')}
             icon={faPencil}
           />
         )}
-        {microSession.status === MicroSessionStatus.Published && (
+        {microLearning.status === PublicationStatus.Published && (
           <StatusTag
             color="bg-green-300"
             status={t('shared.generic.published')}
@@ -79,14 +79,14 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
       </div>
       <div className="mb-1 italic">
         {t('manage.course.nQuestions', {
-          number: microSession.numOfInstances || '0',
+          number: microLearning.numOfInstances || '0',
         })}
       </div>
       <div className="flex flex-row items-center gap-2">
         <FontAwesomeIcon icon={faHourglassStart} />
         <div>
           {t('manage.course.startAt', {
-            time: dayjs(microSession.scheduledStartAt)
+            time: dayjs(microLearning.scheduledStartAt)
               .local()
               .format('DD.MM.YYYY, HH:mm'),
           })}
@@ -96,7 +96,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         <FontAwesomeIcon icon={faHourglassEnd} />
         <div>
           {t('manage.course.endAt', {
-            time: dayjs(microSession.scheduledEndAt)
+            time: dayjs(microLearning.scheduledEndAt)
               .local()
               .format('DD.MM.YYYY, HH:mm'),
           })}
@@ -113,7 +113,7 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         className={{
           root: twMerge('flex flex-row items-center gap-1 text-primary'),
         }}
-        data={{ cy: `copy-microlearning-link-${microSession.name}` }}
+        data={{ cy: `copy-microlearning-link-${microLearning.name}` }}
       >
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
         <div>{t('manage.course.copyAccessLink')}</div>
@@ -124,13 +124,13 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
           className={{
             root: 'flex flex-row items-center gap-1 text-primary',
           }}
-          data={{ cy: `open-microlearning-${microSession.name}` }}
+          data={{ cy: `open-microlearning-${microLearning.name}` }}
         >
           <FontAwesomeIcon icon={faExternalLink} size="sm" className="w-4" />
           <div>{t('shared.generic.open')}</div>
         </Button>
       </Link>
-      {microSession.status === MicroSessionStatus.Draft && (
+      {microLearning.status === PublicationStatus.Draft && (
         <Button
           basic
           className={{ root: 'text-primary' }}
@@ -138,12 +138,12 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
             router.push({
               pathname: '/',
               query: {
-                sessionId: microSession.id,
+                sessionId: microLearning.id,
                 editMode: WizardMode.Microlearning,
               },
             })
           }
-          data={{ cy: `edit-microlearning-${microSession.name}` }}
+          data={{ cy: `edit-microlearning-${microLearning.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faPencil} />
@@ -152,12 +152,12 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         </Button>
       )}
 
-      {microSession.status === MicroSessionStatus.Draft && (
+      {microLearning.status === PublicationStatus.Draft && (
         <Button
           basic
           className={{ root: 'text-primary' }}
           onClick={() => setPublishModal(true)}
-          data={{ cy: `publish-microlearning-${microSession.name}` }}
+          data={{ cy: `publish-microlearning-${microLearning.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faUserGroup} className="w-[1.1rem]" />
@@ -166,12 +166,12 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         </Button>
       )}
 
-      {microSession.status === MicroSessionStatus.Draft && (
+      {microLearning.status === PublicationStatus.Draft && (
         <Button
           basic
           className={{ root: 'text-red-600' }}
           onClick={() => setDeletionModal(true)}
-          data={{ cy: `delete-microlearning-${microSession.name}` }}
+          data={{ cy: `delete-microlearning-${microLearning.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faTrashCan} className="w-[1.1rem]" />
@@ -180,12 +180,12 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
         </Button>
       )}
 
-      {microSession.status === MicroSessionStatus.Published && isFuture && (
+      {microLearning.status === PublicationStatus.Published && isFuture && (
         <Button
           basic
           className={{ root: 'text-primary' }}
-          onClick={async () => await unpublishMicroSession()}
-          data={{ cy: `unpublish-microlearning-${microSession.name}` }}
+          onClick={async () => await unpublishMicroLearning()}
+          data={{ cy: `unpublish-microlearning-${microLearning.name}` }}
         >
           <Button.Icon>
             <FontAwesomeIcon icon={faLock} className="w-[1.1rem]" />
@@ -206,14 +206,14 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
       </Toast>
       <PublishConfirmationModal
         elementType={ElementInstanceType.Microlearning}
-        elementId={microSession.id}
-        title={microSession.name}
+        elementId={microLearning.id}
+        title={microLearning.name}
         open={publishModal}
         setOpen={setPublishModal}
       />
-      <MicroSessionDeletionModal
-        sessionId={microSession.id}
-        title={microSession.name}
+      <MicroLearningDeletionModal
+        sessionId={microLearning.id}
+        title={microLearning.name}
         open={deletionModal}
         setOpen={setDeletionModal}
       />
@@ -221,4 +221,4 @@ function MicroSessionTile({ microSession }: MicroSessionProps) {
   )
 }
 
-export default MicroSessionTile
+export default MicroLearningTile
