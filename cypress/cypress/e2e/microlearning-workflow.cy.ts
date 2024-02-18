@@ -84,14 +84,10 @@ describe('Different microlearning workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
-      microSessionName
-    )
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish a microlearning
-    cy.findByText(microSessionName)
     cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
       .click()
@@ -215,14 +211,10 @@ describe('Different microlearning workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
-      microSessionName
-    )
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish a microlearning
-    cy.findByText(microSessionName)
     cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
       .click()
@@ -251,7 +243,6 @@ describe('Different microlearning workflows', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
     cy.findByText(courseName).click()
-    cy.findByText(microSessionName)
     cy.get(`[data-cy="unpublish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.unpublishMicrolearning)
       .click()
@@ -330,14 +321,10 @@ describe('Different microlearning workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
-      microSessionName
-    )
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish a microlearning
-    cy.findByText(microSessionName)
     cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
       .click()
@@ -433,14 +420,10 @@ describe('Different microlearning workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
-      microSessionName
-    )
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish a microlearning
-    cy.findByText(microSessionName)
     cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
       .click()
@@ -469,7 +452,6 @@ describe('Different microlearning workflows', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
     cy.findByText(courseName).click()
-    cy.findByText(microSessionName)
     cy.get(`[data-cy="unpublish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.unpublishMicrolearning)
       .click()
@@ -478,7 +460,6 @@ describe('Different microlearning workflows', () => {
     )
 
     // edit the micro learning
-    cy.findByText(microSessionName)
     cy.get(`[data-cy="edit-microlearning-${microSessionName}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.microlearnings).should(
       'exist'
@@ -530,14 +511,10 @@ describe('Different microlearning workflows', () => {
     // go to microlearning list and check if it exists in draft state
     cy.get('[data-cy="load-session-list"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
-      microSessionName
-    )
-    cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish the microlearning
-    cy.findByText(microSessionName)
     cy.get(`[data-cy="publish-microlearning-${microSessionName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
       .click()

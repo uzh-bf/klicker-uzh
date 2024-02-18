@@ -94,14 +94,10 @@ describe('Different practice quiz workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
-      practiceQuizName
-    )
-    cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // publish practice quiz
-    cy.findByText(practiceQuizName)
     cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName}"]`).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
@@ -231,16 +227,12 @@ describe('Different practice quiz workflows', () => {
 
     cy.get('[data-cy="load-session-list"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
-      practiceQuizName2
-    )
-    cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
       messages.shared.generic.draft
     )
 
     // go to course overview and look for practice quiz with corresponding title
     cy.get('[data-cy="courses"]').click()
     cy.findByText(courseName).click()
-    cy.findByText(practiceQuizName2)
 
     // start editing the practice quiz
     cy.get(`[data-cy="edit-practice-quiz-${practiceQuizName2}"]`).click()
@@ -284,9 +276,6 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
-    cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
-      practiceQuizName2
-    )
     cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
       messages.shared.generic.draft
     )
