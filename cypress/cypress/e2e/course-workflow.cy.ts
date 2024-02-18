@@ -3,8 +3,8 @@ import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test course creation and editing functionalities', () => {
-  const name = uuid()
-  const displayName = uuid()
+  const name = 'Z' + uuid()
+  const displayName = name
   const description = uuid()
   const testCourseName = 'Testkurs'
 

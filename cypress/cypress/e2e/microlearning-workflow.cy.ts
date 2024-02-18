@@ -14,7 +14,7 @@ describe('Different microlearning workflows', () => {
     const questionTitle = uuid()
     const question = uuid()
     const microSessionName = uuid()
-    const microSessionDisplayName = uuid()
+    const microSessionDisplayName = microSessionName
     const description = uuid()
 
     // set up question
@@ -144,7 +144,7 @@ describe('Different microlearning workflows', () => {
     const questionTitle = uuid()
     const question = uuid()
     const microSessionName = uuid()
-    const microSessionDisplayName = uuid()
+    const microSessionDisplayName = microSessionName
     const description = uuid()
     const courseName = 'Testkurs'
 
@@ -255,7 +255,7 @@ describe('Different microlearning workflows', () => {
     const questionTitle = uuid()
     const question = uuid()
     const microSessionName = uuid()
-    const microSessionDisplayName = uuid()
+    const microSessionDisplayName = microSessionName
     const description = uuid()
 
     // set up question
@@ -353,7 +353,7 @@ describe('Different microlearning workflows', () => {
     const questionTitle = uuid()
     const question = uuid()
     const microSessionName = uuid()
-    const microSessionDisplayName = uuid()
+    const microSessionDisplayName = microSessionName
     const description = uuid()
     const courseName = 'Testkurs'
 

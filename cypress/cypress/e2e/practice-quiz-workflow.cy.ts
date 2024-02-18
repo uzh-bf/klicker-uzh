@@ -5,11 +5,11 @@ import messages from '../../../packages/i18n/messages/en'
 const questionTitle = uuid()
 const question = uuid()
 const practiceQuizName = uuid()
-const practiceQuizDisplayName = uuid()
+const practiceQuizDisplayName = practiceQuizName
 const description = uuid()
 
 const practiceQuizName2 = uuid()
-const practiceQuizDisplayName2 = uuid()
+const practiceQuizDisplayName2 = practiceQuizName2
 const description2 = uuid()
 const courseName = 'Testkurs'
 
