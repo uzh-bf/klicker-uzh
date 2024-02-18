@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.8...v3.1.0-rc.9) (2024-02-18)
+
+
+### Features
+
+* add new microlearning summary view and corresponding logic ([#4048](https://github.com/uzh-bf/klicker-uzh/issues/4048)) ([902a819](https://github.com/uzh-bf/klicker-uzh/commit/902a81979c559f8e03b72dbe4cf70266027277ce))
+* **apps/frontend-pwa:** add element stacks for microlearning ([#4047](https://github.com/uzh-bf/klicker-uzh/issues/4047)) ([3f18981](https://github.com/uzh-bf/klicker-uzh/commit/3f18981dbef6f1d04b4fb067884badce24b837ff))
+* implement creation and editing of microlearnings, remove and reorganize old code related to micro session ([#4050](https://github.com/uzh-bf/klicker-uzh/issues/4050)) ([61bf02c](https://github.com/uzh-bf/klicker-uzh/commit/61bf02c4928bb1076aa62a137a8252f78a001088))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** add wrapping Layout component for microlearning ([e264ac4](https://github.com/uzh-bf/klicker-uzh/commit/e264ac4806ea1c41615209aa10ee678d5fb33a32))
+* **cypress:** ensure that student cookies and local storage are reset in microlearning test ([912c798](https://github.com/uzh-bf/klicker-uzh/commit/912c79800e90d08de1e3c318ed82ae66faf3eb35))
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add introduction page for microlearning on student app ([#4045](https://github.com/uzh-bf/klicker-uzh/issues/4045)) ([c0e8360](https://github.com/uzh-bf/klicker-uzh/commit/c0e836077e91964543c859f036b58d0b7563456d))
+* **apps/frontend-pwa:** show microlearnings on student home ([#4043](https://github.com/uzh-bf/klicker-uzh/issues/4043)) ([12cc7a4](https://github.com/uzh-bf/klicker-uzh/commit/12cc7a42cc66084fad251e13455cf471d270b110))
+* **cypress:** extend test suite for new student frontend ([3ddc5d5](https://github.com/uzh-bf/klicker-uzh/commit/3ddc5d5d2067f10915c2e6270be65921664b084f))
+* restructure course element overview with tabs ([#4049](https://github.com/uzh-bf/klicker-uzh/issues/4049)) ([71ab5e7](https://github.com/uzh-bf/klicker-uzh/commit/71ab5e79a96846865b71992f153955d7ce02c48c))
+
 ## [3.1.0-rc.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.7...v3.1.0-rc.8) (2024-02-15)
 
 
