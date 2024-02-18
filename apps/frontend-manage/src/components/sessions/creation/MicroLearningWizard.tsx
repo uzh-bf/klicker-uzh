@@ -2,11 +2,11 @@ import { useMutation } from '@apollo/client'
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  CreateMicroSessionDocument,
-  EditMicroSessionDocument,
+  CreateMicroLearningDocument,
+  EditMicroLearningDocument,
   ElementType,
   GetSingleCourseDocument,
-  MicroSession,
+  MicroLearning,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   FormikDateField,
@@ -23,24 +23,24 @@ import * as yup from 'yup'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import BlockField from './BlockField'
 import EditorField from './EditorField'
-import MultistepWizard from './MultistepWizard'
+import MultistepWizard, { MicroLearningFormValues } from './MultistepWizard'
 
-interface MicroSessionWizardProps {
+interface MicroLearningWizardProps {
   title: string
   closeWizard: () => void
   courses?: {
     label: string
     value: string
   }[]
-  initialValues?: MicroSession
+  initialValues?: MicroLearning
 }
 
-function MicroSessionWizard({
+function MicroLearningWizard({
   title,
   closeWizard,
   courses,
   initialValues,
-}: MicroSessionWizardProps) {
+}: MicroLearningWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
@@ -48,8 +48,8 @@ function MicroSessionWizard({
   const [editMode, setEditMode] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
-  const [createMicroSession] = useMutation(CreateMicroSessionDocument)
-  const [editMicroSession] = useMutation(EditMicroSessionDocument)
+  const [createMicroSession] = useMutation(CreateMicroLearningDocument)
+  const [editMicroSession] = useMutation(EditMicroLearningDocument)
   dayjs.extend(utc)
 
   const [selectedCourseId, setSelectedCourseId] = useState('')
@@ -83,17 +83,19 @@ function MicroSessionWizard({
         yup.object().shape({
           id: yup.string(),
           title: yup.string(),
-          type: yup.string().oneOf(
-            [
-              ElementType.Sc,
-              ElementType.Mc,
-              ElementType.Kprim,
-              ElementType.Numerical,
-              // ElementType.Flashcard,
-              // ElementType.Content,
-            ],
-            t('manage.sessionForms.microlearningTypes')
-          ),
+          type: yup
+            .string()
+            .oneOf(
+              [
+                ElementType.Sc,
+                ElementType.Mc,
+                ElementType.Kprim,
+                ElementType.Numerical,
+                ElementType.Flashcard,
+                ElementType.Content,
+              ],
+              t('manage.sessionForms.microlearningTypes')
+            ),
           hasSampleSolution: yup
             .boolean()
             .isTrue(t('manage.sessionForms.practiceQuizSolutionReq')),
@@ -102,7 +104,7 @@ function MicroSessionWizard({
       .min(1),
   })
 
-  const onSubmit = async (values) => {
+  const onSubmit = async (values: MicroLearningFormValues) => {
     try {
       let success = false
 
@@ -113,7 +115,9 @@ function MicroSessionWizard({
             name: values.name,
             displayName: values.displayName,
             description: values.description,
-            questions: values.questions.map((q: any) => q.id),
+            stacks: values.questions.map((q: any, ix) => {
+              return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
+            }),
             startDate: dayjs(values.startDate).utc().format(),
             endDate: dayjs(values.endDate).utc().format(),
             multiplier: parseInt(values.multiplier),
@@ -128,14 +132,16 @@ function MicroSessionWizard({
             },
           ],
         })
-        success = Boolean(result.data?.editMicroSession)
+        success = Boolean(result.data?.editMicroLearning)
       } else {
         const result = await createMicroSession({
           variables: {
             name: values.name,
             displayName: values.displayName,
             description: values.description,
-            questions: values.questions.map((q: any) => q.id),
+            stacks: values.questions.map((q: any, ix) => {
+              return { order: ix, elements: [{ elementId: q.id, order: 0 }] }
+            }),
             startDate: dayjs(values.startDate).utc().format(),
             endDate: dayjs(values.endDate).utc().format(),
             multiplier: parseInt(values.multiplier),
@@ -150,7 +156,7 @@ function MicroSessionWizard({
             },
           ],
         })
-        success = Boolean(result.data?.createMicroSession)
+        success = Boolean(result.data?.createMicroLearning)
       }
 
       if (success) {
@@ -187,23 +193,16 @@ function MicroSessionWizard({
           name: initialValues?.name || '',
           displayName: initialValues?.displayName || '',
           description: initialValues?.description || '',
-          questions:
-            initialValues?.instances?.flatMap((instance) => {
-              if (!instance.questionData) {
-                return []
-              }
-
-              return [
-                {
-                  id: instance.questionData.questionId,
-                  title: instance.questionData.name,
-                  hasAnswerFeedbacks:
-                    instance.questionData?.options.hasAnswerFeedbacks,
-                  hasSampleSolution:
-                    instance.questionData.options.hasSampleSolution,
-                },
-              ]
-            }) || [],
+          questions: initialValues?.stacks
+            ? initialValues.stacks.map((stack) => {
+                return {
+                  id: stack.elements![0].elementData.elementId,
+                  title: stack.elements![0].elementData.name,
+                  hasAnswerFeedbacks: true, // TODO - based on questionData options
+                  hasSampleSolution: true, // TODO - based on questionData options
+                }
+              })
+            : [],
           startDate: initialValues?.scheduledStartAt
             ? dayjs(initialValues?.scheduledStartAt)
                 .local()
@@ -263,7 +262,7 @@ function MicroSessionWizard({
   )
 }
 
-export default MicroSessionWizard
+export default MicroLearningWizard
 
 interface StepProps {
   onSubmit?: () => void

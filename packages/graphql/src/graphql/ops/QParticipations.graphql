@@ -1,7 +1,6 @@
 query Participations($endpoint: String) {
   participations(endpoint: $endpoint) {
     id
-    completedMicroSessions
     completedMicroLearnings
     subscriptions {
       id
@@ -14,12 +13,6 @@ query Participations($endpoint: String) {
       endDate
       description
       isGamificationEnabled
-      microSessions {
-        id
-        displayName
-        scheduledStartAt
-        scheduledEndAt
-      }
       microLearnings {
         id
         displayName

@@ -14,8 +14,8 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   MicroLearning,
-  MicroLearningStatus,
-  UnpublishMicroSessionDocument,
+  PublicationStatus,
+  UnpublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Dropdown, Toast } from '@uzh-bf/design-system'
@@ -27,7 +27,7 @@ import StatusTag from './StatusTag'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
-import MicroSessionDeletionModal from './modals/MicroSessionDeletionModal'
+import MicroLearningDeletionModal from './modals/MicroLearningDeletionModal'
 
 interface MicroLearningElementProps {
   microLearning: Partial<MicroLearning> & Pick<MicroLearning, 'id' | 'name'>
@@ -43,7 +43,7 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
   const isFuture = dayjs(microLearning.scheduledStartAt).isAfter(dayjs())
   const isPast = dayjs(microLearning.scheduledEndAt).isBefore(dayjs())
 
-  const [unpublishMicroSession] = useMutation(UnpublishMicroSessionDocument, {
+  const [unpublishMicroLearning] = useMutation(UnpublishMicroLearningDocument, {
     variables: { id: microLearning.id },
   })
 
@@ -58,7 +58,7 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
         </Ellipsis>
 
         <div className="flex flex-row items-center gap-3 text-sm">
-          {microLearning.status === MicroLearningStatus.Draft && (
+          {microLearning.status === PublicationStatus.Draft && (
             <>
               <PublishMicroLearningButton microLearning={microLearning} />
               <Dropdown
@@ -139,7 +139,7 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
             </>
           )}
 
-          {microLearning.status === MicroLearningStatus.Published && (
+          {microLearning.status === PublicationStatus.Published && (
             <>
               <MicroLearningAccessLink
                 microLearning={microLearning}
@@ -176,7 +176,7 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
                               </div>
                             </div>
                           ),
-                          onClick: async () => await unpublishMicroSession(),
+                          onClick: async () => await unpublishMicroLearning(),
                           data: {
                             cy: `unpublish-microlearning-${microLearning.name}`,
                           },
@@ -231,7 +231,7 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
       >
         {t('manage.course.linkMicrolearningCopied')}
       </Toast>
-      <MicroSessionDeletionModal
+      <MicroLearningDeletionModal
         sessionId={microLearning.id}
         title={microLearning.name}
         open={deletionModal}

@@ -83,6 +83,8 @@ function preparePracticeQuizInstanceResults(
 async function migrate() {
   const prisma = new PrismaClient()
 
+  throw new Error('already applied to PROD')
+
   const initialElementInstances = await prisma.elementInstance.findMany({
     where: {
       id: {

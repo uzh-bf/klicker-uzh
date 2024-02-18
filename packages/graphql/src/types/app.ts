@@ -21,6 +21,16 @@ export enum QuestionType {
   FREE_TEXT = 'FREE_TEXT',
 }
 
+export type StackInput = {
+  displayName?: string | null
+  description?: string | null
+  order: number
+  elements: {
+    elementId: number
+    order: number
+  }[]
+}
+
 export type PrismaMigrationClient = Omit<
   PrismaClient<Prisma.PrismaClientOptions, never>,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'

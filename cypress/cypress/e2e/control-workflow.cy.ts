@@ -1,14 +1,16 @@
+import { v4 as uuid } from 'uuid'
+
 describe('Test functionalities of frontend-control application', () => {
   it('Test the basic functionalities of the control application: login and session management', () => {
     // log into frontend-manage
     cy.loginLecturer()
 
     // create a new session with one question for testing
-    const randomNumber = Math.round(Math.random() * 1000)
-    const questionTitle = 'A Single Choice ' + randomNumber
-    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const sessionTitle = 'Test Session ' + randomNumber
-    const session = 'Displayed Test Session Name ' + randomNumber
+
+    const questionTitle = uuid()
+    const question = uuid()
+    const sessionTitle = uuid()
+    const session = uuid()
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)

@@ -1,0 +1,9 @@
+mutation PublishMicroLearning($id: String!) {
+  publishMicroLearning(id: $id) {
+    id
+    name
+    displayName
+    status
+    numOfStacks
+  }
+}

@@ -107,7 +107,7 @@ export const ElementStack = ElementStackRef.implement({
 export interface IPracticeQuiz extends DB.PracticeQuiz {
   course?: ICourse
   stacks?: IElementStack[]
-  numOfQuestions?: number
+  numOfStacks?: number
 }
 export const PracticeQuizRef = builder.objectRef<IPracticeQuiz>('PracticeQuiz')
 export const PracticeQuiz = PracticeQuizRef.implement({
@@ -123,6 +123,6 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     stacks: t.expose('stacks', { type: [ElementStackRef], nullable: true }),
     course: t.expose('course', { type: CourseRef, nullable: true }),
     courseId: t.exposeString('courseId', { nullable: true }),
-    numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
+    numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
   }),
 })

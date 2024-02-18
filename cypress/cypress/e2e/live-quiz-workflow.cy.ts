@@ -1,3 +1,5 @@
+import { v4 as uuid } from 'uuid'
+
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Different live-quiz workflows', () => {
@@ -6,9 +8,8 @@ describe('Different live-quiz workflows', () => {
   })
 
   it('adds and then deletes a second question block', () => {
-    const randomNumber = Math.round(Math.random() * 1000)
-    const sessionName = 'Test Session ' + randomNumber
-    const session = 'Displayed Test Session Name ' + randomNumber
+    const sessionName = uuid()
+    const session = uuid()
 
     cy.get('[data-cy="create-live-quiz"]').click()
     cy.get('[data-cy="cancel-session-creation"]').click()
@@ -26,11 +27,10 @@ describe('Different live-quiz workflows', () => {
   })
 
   it('creates a session with one block', () => {
-    const randomNumber = Math.round(Math.random() * 1000)
-    const questionTitle = 'A Single Choice ' + randomNumber
-    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const sessionName = 'Test Session ' + randomNumber
-    const session = 'Displayed Test Session Name ' + randomNumber
+    const questionTitle = uuid()
+    const question = uuid()
+    const sessionName = uuid()
+    const session = uuid()
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
@@ -62,11 +62,10 @@ describe('Different live-quiz workflows', () => {
   })
 
   it('creates a session, starts it and aborts it and then restarts it', () => {
-    const randomNumber = Math.round(Math.random() * 1000)
-    const questionTitle = 'A Single Choice ' + randomNumber
-    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const sessionName = 'Test Session ' + randomNumber
-    const session = 'Displayed Test Session Name ' + randomNumber
+    const questionTitle = uuid()
+    const question = uuid()
+    const sessionName = uuid()
+    const session = uuid()
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
@@ -111,11 +110,10 @@ describe('Different live-quiz workflows', () => {
   })
 
   it('shows a possible workflow of running a session and answering questions', () => {
-    const randomNumber = Math.round(Math.random() * 1000)
-    const session = 'Displayed Name ' + randomNumber
-    const sessionName = 'Test Session ' + randomNumber
-    const questionTitle = 'A Single Choice ' + randomNumber
-    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
+    const session = uuid()
+    const sessionName = uuid()
+    const questionTitle = uuid()
+    const question = uuid()
     const courseName = 'Testkurs'
 
     cy.get('[data-cy="create-question"]').click()
@@ -264,10 +262,9 @@ describe('Different live-quiz workflows', () => {
 
   it('creates a live quiz without questions and tests the feedback mechanisms', () => {
     const courseName = 'Testkurs'
-    const randomNumber = Math.round(Math.random() * 1000)
-    const questionTitle = 'A Single Choice ' + randomNumber
-    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const sessionName = 'Empty live quiz ' + randomNumber
+    const questionTitle = uuid()
+    const question = uuid()
+    const sessionName = uuid()
 
     // create a question
     cy.get('[data-cy="create-question"]').click()

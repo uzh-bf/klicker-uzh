@@ -1,8 +1,9 @@
 #import "./FElementDataWithoutSolutions.graphql"
 
-query GetMicrolearning($id: String!) {
-  microlearning(id: $id) {
+query GetMicroLearning($id: String!) {
+  microLearning(id: $id) {
     id
+    name
     displayName
     description
     pointsMultiplier

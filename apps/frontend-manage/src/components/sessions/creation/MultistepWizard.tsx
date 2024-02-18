@@ -52,7 +52,7 @@ export interface LiveSessionFormValues extends CommonFormValues {
   isModerationEnabled: boolean
 }
 
-export interface MicroSessionFormValues extends CommonFormValues {
+export interface MicroLearningFormValues extends CommonFormValues {
   questions: {
     id: number
     title: string
@@ -113,7 +113,7 @@ function MultistepWizard({
   const handleSubmit = async (
     values:
       | LiveSessionFormValues
-      | MicroSessionFormValues
+      | MicroLearningFormValues
       | PracticeQuizFormValues,
     bag: any
   ) => {

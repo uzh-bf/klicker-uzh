@@ -163,8 +163,8 @@ function PracticeQuizElement({
           className="mb-1 text-sm italic"
           data-cy={`practice-quiz-num-of-questions-${practiceQuiz.name}`}
         >
-          {t('manage.course.nQuestions', {
-            number: practiceQuiz.numOfQuestions || '0',
+          {t('pwa.microSession.numOfQuestionSets', {
+            number: practiceQuiz.numOfStacks || '0',
           })}
         </div>
       </div>

@@ -32,21 +32,12 @@ query GetSingleCourse($courseId: String!) {
       name
       displayName
       status
-      numOfQuestions
+      numOfStacks
     }
     groupActivities {
       id
       name
       displayName
-    }
-    microSessions {
-      id
-      name
-      displayName
-      status
-      scheduledStartAt
-      scheduledEndAt
-      numOfInstances
     }
     microLearnings {
       id

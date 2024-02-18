@@ -1,9 +1,0 @@
-mutation UnpublishMicroSession($id: String!) {
-  unpublishMicroSession(id: $id) {
-    id
-    name
-    displayName
-    status
-    numOfInstances
-  }
-}

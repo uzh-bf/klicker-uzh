@@ -7,6 +7,7 @@ import {
   PublicationStatus,
   QuestionInstance,
 } from 'dist'
+import * as R from 'ramda'
 import { PrismaClient } from '../client'
 
 function prepareMicrolearningInstanceOptions(
@@ -33,7 +34,8 @@ function prepareMicrolearningElementData(
   questionInstance: QuestionInstance
 ) {
   return {
-    ...questionInstance.questionData,
+    ...R.omit(['questionId'], questionInstance.questionData),
+    elementId: questionInstance.questionId,
   }
 }
 
@@ -140,11 +142,11 @@ async function migrate() {
                     where: {
                       type_migrationId: {
                         type: ElementInstanceType.MICROLEARNING,
-                        migrationId: instance.id,
+                        migrationId: String(instance.id),
                       },
                     },
                     create: {
-                      migrationId: instance.id,
+                      migrationId: String(instance.id),
                       type: ElementInstanceType.MICROLEARNING,
                       elementType:
                         instance.question?.type ?? instance.questionData.type,
@@ -152,6 +154,13 @@ async function migrate() {
                       createdAt: instance.createdAt,
                       updatedAt: instance.updatedAt,
 
+                      element: instance.questionId
+                        ? {
+                            connect: {
+                              id: instance.questionId,
+                            },
+                          }
+                        : undefined,
                       owner: {
                         connect: {
                           id: elem.owner.id,
@@ -170,18 +179,6 @@ async function migrate() {
                         elem,
                         instance
                       ),
-
-                      // both links will be set (to element instance and question instance) until we remove question instances completely
-                      responses: {
-                        connect: instance.responses.map((response) => ({
-                          id: response.id,
-                        })),
-                      },
-                      detailResponses: {
-                        connect: instance.detailResponses.map((response) => ({
-                          id: response.id,
-                        })),
-                      },
                     },
                   },
                 },
@@ -206,6 +203,72 @@ async function migrate() {
   }
 
   console.log(counter)
+
+  const questionInstances = await prisma.questionInstance.findMany({
+    where: {
+      type: 'MICRO_SESSION',
+    },
+    include: {
+      microSession: {
+        include: {
+          course: true,
+        },
+      },
+    },
+  })
+
+  console.log('questionInstances', questionInstances.length)
+
+  counter = 0
+  let counter2 = 0
+  let counter3 = 0
+
+  for (const elem of questionInstances) {
+    const matchingElementInstance = await prisma.elementInstance.findFirst({
+      where: {
+        migrationId: String(elem.id),
+      },
+    })
+
+    if (!matchingElementInstance) {
+      console.log(
+        `${elem.id};${matchingElementInstance?.id};${elem.questionData.name};${matchingElementInstance?.elementData.name}`
+      )
+      counter2++
+      continue
+    }
+
+    if (elem.questionData.name !== matchingElementInstance.elementData.name) {
+      console.log(
+        `${elem.id};${matchingElementInstance?.id};${elem.questionData.name};${matchingElementInstance?.elementData.name};${elem.microSession?.course?.name}`
+      )
+      counter3++
+      continue
+    }
+
+    try {
+      await prisma.questionResponse.updateMany({
+        where: { questionInstanceId: elem.id },
+        data: {
+          elementInstanceId: matchingElementInstance?.id,
+        },
+      })
+
+      await prisma.questionResponseDetail.updateMany({
+        where: { questionInstanceId: elem.id },
+        data: {
+          elementInstanceId: matchingElementInstance?.id,
+        },
+      })
+    } catch (e) {
+      console.log('Error', e, elem.id, matchingElementInstance?.id)
+      throw e
+    }
+
+    counter++
+  }
+
+  console.log(counter, counter2, counter3)
 }
 
 await migrate()

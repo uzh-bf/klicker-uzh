@@ -2,17 +2,17 @@ import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder'
 import type { ICourse } from './course'
 import { CourseRef } from './course'
-import { ElementStackRef, IElementStack } from './practiceQuizzes'
+import {
+  ElementStackRef,
+  IElementStack,
+  PublicationStatus,
+} from './practiceQuizzes'
 
 export interface IMicroLearning extends DB.MicroLearning {
   course?: ICourse | null
   stacks?: IElementStack[]
   numOfStacks?: number
 }
-
-export const MicroLearningStatus = builder.enumType('MicroLearningStatus', {
-  values: Object.values(DB.MicroLearningStatus),
-})
 
 export const MicroLearningRef =
   builder.objectRef<IMicroLearning>('MicroLearning')
@@ -22,7 +22,7 @@ export const MicroLearning = MicroLearningRef.implement({
 
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
-    status: t.expose('status', { type: MicroLearningStatus }),
+    status: t.expose('status', { type: PublicationStatus }),
     description: t.exposeString('description', { nullable: true }),
     pointsMultiplier: t.exposeFloat('pointsMultiplier'),
 

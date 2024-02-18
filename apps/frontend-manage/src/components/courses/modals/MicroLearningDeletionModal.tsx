@@ -1,29 +1,29 @@
 import { useMutation } from '@apollo/client'
 import {
-  DeleteMicroSessionDocument,
+  DeleteMicroLearningDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
-interface MicroSessionDeletionModalProps {
+interface MicroLearningDeletionModalProps {
   sessionId: string
   title: string
   open: boolean
   setOpen: (value: boolean) => void
 }
 
-function MicroSessionDeletionModal({
+function MicroLearningDeletionModal({
   sessionId,
   title,
   open,
   setOpen,
-}: MicroSessionDeletionModalProps) {
+}: MicroLearningDeletionModalProps) {
   const t = useTranslations()
 
   // TODO: implement more efficiently with working update instead of expensive refetch
-  const [deleteMicroSession] = useMutation(DeleteMicroSessionDocument, {
+  const [deleteMicroLearning] = useMutation(DeleteMicroLearningDocument, {
     variables: { id: sessionId },
     refetchQueries: [GetSingleCourseDocument],
   })
@@ -33,7 +33,7 @@ function MicroSessionDeletionModal({
       onPrimaryAction={
         <Button
           onClick={async () => {
-            await deleteMicroSession()
+            await deleteMicroLearning()
             setOpen(false)
           }}
           className={{
@@ -71,4 +71,4 @@ function MicroSessionDeletionModal({
   )
 }
 
-export default MicroSessionDeletionModal
+export default MicroLearningDeletionModal
