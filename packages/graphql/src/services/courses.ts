@@ -505,10 +505,8 @@ export async function getCourseData(
       },
       practiceQuizzes: {
         include: {
-          stacks: {
-            include: {
-              elements: true,
-            },
+          _count: {
+            select: { stacks: true },
           },
         },
         orderBy: {
@@ -525,10 +523,8 @@ export async function getCourseData(
       },
       microLearnings: {
         include: {
-          stacks: {
-            include: {
-              elements: true,
-            },
+          _count: {
+            select: { stacks: true },
           },
         },
         orderBy: {
@@ -603,28 +599,14 @@ export async function getCourseData(
   const reducedPracticeQuizzes = course?.practiceQuizzes.map((quiz) => {
     return {
       ...quiz,
-      ...quiz.stacks.reduce(
-        (acc, stack) => {
-          return {
-            numOfQuestions: acc.numOfQuestions + stack.elements.length,
-          }
-        },
-        { numOfQuestions: 0 }
-      ),
+      numOfStacks: quiz._count.stacks,
     }
   })
 
-  const reducedMicroLearnings = course?.microLearnings.map((quiz) => {
+  const reducedMicroLearnings = course?.microLearnings.map((microLearning) => {
     return {
-      ...quiz,
-      ...quiz.stacks.reduce(
-        (acc, stack) => {
-          return {
-            numOfInstances: acc.numOfInstances + stack.elements.length,
-          }
-        },
-        { numOfInstances: 0 }
-      ),
+      ...microLearning,
+      numOfStacks: microLearning._count.stacks,
     }
   })
 

@@ -281,11 +281,7 @@ export async function publishMicroLearning(
     },
   })
 
-  return {
-    ...microLearning,
-    numOfInstances: microLearning.stacks.flatMap((stack) => stack.elements)
-      .length,
-  }
+  return microLearning
 }
 
 interface UnpublishMicroLearningArgs {
@@ -313,11 +309,7 @@ export async function unpublishMicroLearning(
     },
   })
 
-  return {
-    ...microLearning,
-    numOfInstances: microLearning.stacks.flatMap((stack) => stack.elements)
-      .length,
-  }
+  return microLearning
 }
 
 interface DeleteMicroLearningArgs {

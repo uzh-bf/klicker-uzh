@@ -114,10 +114,8 @@ describe('Question bookmarking and flagging workflow', () => {
 
     // publish both practice quiz and microlearning
     cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${quizName}"]`).contains(
-      messages.shared.generic.draft
-    )
-    cy.get(`[data-cy="microlearning-${microlearningName}"]`).contains(
       messages.shared.generic.draft
     )
 
@@ -126,6 +124,11 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="confirm-publish-action"]').click()
     cy.get(`[data-cy="practice-quiz-${quizName}"]`).contains(
       messages.shared.generic.published
+    )
+
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-${microlearningName}"]`).contains(
+      messages.shared.generic.draft
     )
     cy.get(`[data-cy="publish-microlearning-${microlearningName}"]`)
       .contains(messages.manage.course.publishMicrolearning)
@@ -184,7 +187,6 @@ describe('Question bookmarking and flagging workflow', () => {
     cy.get('[data-cy="bookmarks"]').click()
     cy.wait(1000)
     cy.get(`[data-cy="bookmarks-course-${courseName}"]`).click()
-    cy.findByText('Number of questions: 1').should('exist')
     cy.get('[data-cy="start-practice-quiz"]').click()
     // TODO: reintroduce once test-seed dependency is resolved
     // cy.get(`[data-cy="element-instance-header-${questionTitle}"]`).should(

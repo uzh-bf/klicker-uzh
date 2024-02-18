@@ -14,7 +14,7 @@ import DynamicMarkdown from '../practiceQuiz/DynamicMarkdown'
 interface PracticeQuizOverviewProps {
   displayName: string
   description?: string
-  numOfQuestions?: number
+  numOfStacks?: number
   orderType: ElementOrderType
   resetTimeDays?: number
   //   previouslyAnswered?: number
@@ -26,7 +26,7 @@ interface PracticeQuizOverviewProps {
 function PracticeQuizOverview({
   displayName,
   description,
-  numOfQuestions,
+  numOfStacks,
   orderType,
   resetTimeDays,
   //   previouslyAnswered,
@@ -79,8 +79,8 @@ function PracticeQuizOverview({
           <div className="flex flex-row items-center gap-2">
             <FontAwesomeIcon icon={faQuestionCircle} />
             <div>
-              {t('pwa.practiceQuiz.numOfQuestions', {
-                number: numOfQuestions,
+              {t('pwa.microSession.numOfQuestionSets', {
+                number: numOfStacks,
               })}
             </div>
           </div>

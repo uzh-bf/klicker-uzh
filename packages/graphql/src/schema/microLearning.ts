@@ -11,8 +11,7 @@ import {
 export interface IMicroLearning extends DB.MicroLearning {
   course?: ICourse | null
   stacks?: IElementStack[]
-
-  numOfInstances?: number | null
+  numOfStacks?: number
 }
 
 export const MicroLearningRef =
@@ -30,6 +29,7 @@ export const MicroLearning = MicroLearningRef.implement({
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),
     scheduledEndAt: t.expose('scheduledEndAt', { type: 'Date' }),
     arePushNotificationsSent: t.exposeBoolean('arePushNotificationsSent'),
+    numOfStacks: t.exposeInt('numOfStacks', { nullable: true }),
 
     course: t.expose('course', {
       type: CourseRef,
@@ -39,7 +39,5 @@ export const MicroLearning = MicroLearningRef.implement({
       type: [ElementStackRef],
       nullable: true,
     }),
-
-    numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),
   }),
 })

@@ -9,6 +9,7 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
   pointsMultiplier
   resetTimeDays
   orderType
+  numOfStacks
   # previouslyAnswered
   # previousScore
   # previousPointsAwarded

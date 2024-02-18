@@ -32,7 +32,7 @@ query GetSingleCourse($courseId: String!) {
       name
       displayName
       status
-      numOfQuestions
+      numOfStacks
     }
     groupActivities {
       id
@@ -46,7 +46,7 @@ query GetSingleCourse($courseId: String!) {
       status
       scheduledStartAt
       scheduledEndAt
-      numOfInstances
+      numOfStacks
     }
     leaderboard {
       id

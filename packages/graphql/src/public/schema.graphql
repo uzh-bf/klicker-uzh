@@ -519,7 +519,7 @@ type MicroLearning {
   displayName: String!
   id: ID!
   name: String!
-  numOfInstances: Int
+  numOfStacks: Int
   pointsMultiplier: Float!
   scheduledEndAt: Date!
   scheduledStartAt: Date!
@@ -768,7 +768,7 @@ type PracticeQuiz {
   displayName: String!
   id: String!
   name: String!
-  numOfQuestions: Int
+  numOfStacks: Int
   orderType: ElementOrderType!
   pointsMultiplier: Int!
   resetTimeDays: Int!

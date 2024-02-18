@@ -5558,7 +5558,7 @@
             "deprecationReason": null
           },
           {
-            "name": "numOfInstances",
+            "name": "numOfStacks",
             "description": null,
             "args": [],
             "type": {
@@ -11721,7 +11721,7 @@
             "deprecationReason": null
           },
           {
-            "name": "numOfQuestions",
+            "name": "numOfStacks",
             "description": null,
             "args": [],
             "type": {

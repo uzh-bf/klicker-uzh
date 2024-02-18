@@ -23,7 +23,7 @@
     "@types/md5": "2.3.2",
     "@types/node": "^18.17.4",
     "@types/ramda": "^0.29.3",
-    "@uzh-bf/design-system": "2.4.10",
+    "@uzh-bf/design-system": "2.5.1",
     "azure-functions-core-tools": "4.0.5455",
     "cross-env": "7.0.3",
     "dotenv": "16.0.3",

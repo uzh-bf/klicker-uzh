@@ -101,6 +101,7 @@ export async function getPracticeQuizData(
     return {
       ...quiz,
       stacks: orderedStacks,
+      numOfStacks: orderedStacks.length,
     }
   }
 

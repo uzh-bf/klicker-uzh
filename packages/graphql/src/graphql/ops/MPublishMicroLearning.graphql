@@ -4,6 +4,6 @@ mutation PublishMicroLearning($id: String!) {
     name
     displayName
     status
-    numOfInstances
+    numOfStacks
   }
 }

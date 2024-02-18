@@ -51,10 +51,9 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    // TODO: fix course selection with select issue
-    // cy.get('[data-cy="select-course"]').click()
-    // cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    // cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
@@ -93,6 +92,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName}"]`).contains(
       messages.shared.generic.draft
     )
@@ -184,10 +184,9 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    // TODO: fix course selection with select issue
-    // cy.get('[data-cy="select-course"]').click()
-    // cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    // cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.sessionForms.multiplier1)
@@ -226,6 +225,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
       messages.shared.generic.draft
     )
@@ -235,6 +235,8 @@ describe('Different practice quiz workflows', () => {
     cy.findByText(courseName).click()
 
     // start editing the practice quiz
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-actions-${practiceQuizName2}"]`).click()
     cy.get(`[data-cy="edit-practice-quiz-${practiceQuizName2}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
@@ -276,14 +278,10 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${practiceQuizName2}"]`).contains(
       messages.shared.generic.draft
     )
-
-    // check if the practice quiz contains the correct number of questions
-    cy.get(
-      `[data-cy="practice-quiz-num-of-questions-${practiceQuizName2}"]`
-    ).should('contain', '4 questions')
 
     // publish practice quiz
     cy.get(`[data-cy="publish-practice-quiz-${practiceQuizName2}"]`).click()
