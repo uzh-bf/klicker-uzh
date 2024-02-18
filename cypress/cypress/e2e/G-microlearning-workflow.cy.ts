@@ -11,6 +11,7 @@ describe('Different microlearning workflows', () => {
   const currentYear = new Date().getFullYear()
 
   it('creates and publishes a micro learning that should be visible to students', () => {
+    const courseName = 'Testkurs'
     const questionTitle = uuid()
     const question = uuid()
     const microSessionName = uuid()
@@ -46,10 +47,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    // TODO: fix course selection with select issue
-    // cy.get('[data-cy="select-course"]').click()
-    // cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    // cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .type(`${currentYear}-01-01T02:00`)
@@ -83,6 +83,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
@@ -175,10 +176,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    // TODO: fix course selection with select issue
-    // cy.get('[data-cy="select-course"]').click()
-    // cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    // cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .type(`${currentYear + 1}-01-01T02:00`)
@@ -210,6 +210,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
@@ -243,9 +244,9 @@ describe('Different microlearning workflows', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
     cy.findByText(courseName).click()
-    cy.get(`[data-cy="unpublish-microlearning-${microSessionName}"]`)
-      .contains(messages.manage.course.unpublishMicrolearning)
-      .click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-actions-${microSessionName}"]`).click()
+    cy.get(`[data-cy="unpublish-microlearning-${microSessionName}"]`).click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
@@ -257,6 +258,7 @@ describe('Different microlearning workflows', () => {
     const microSessionName = uuid()
     const microSessionDisplayName = microSessionName
     const description = uuid()
+    const courseName = 'Testkurs'
 
     // set up question
     cy.get('[data-cy="create-question"]').click()
@@ -285,10 +287,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    // TODO: fix course selection with select issue
-    // cy.get('[data-cy="select-course"]').click()
-    // cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    // cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .type(`${currentYear - 1}-01-01T02:00`)
@@ -320,6 +321,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
@@ -384,10 +386,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // step 2
-    // TODO: fix course selection with select issue
-    // cy.get('[data-cy="select-course"]').click()
-    // cy.get(`[data-cy="select-course-${courseName}"]`).click()
-    // cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
+    cy.get('[data-cy="select-course"]').click()
+    cy.get(`[data-cy="select-course-${courseName}"]`).click()
+    cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
     cy.get('[data-cy="select-start-date"]')
       .click()
       .type(`${currentYear + 1}-01-01T02:00`)
@@ -419,6 +420,8 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-session-list"]').click()
+
+    cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
@@ -452,14 +455,15 @@ describe('Different microlearning workflows', () => {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
     cy.findByText(courseName).click()
-    cy.get(`[data-cy="unpublish-microlearning-${microSessionName}"]`)
-      .contains(messages.manage.course.unpublishMicrolearning)
-      .click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
+    cy.get(`[data-cy="microlearning-actions-${microSessionName}"]`).click()
+    cy.get(`[data-cy="unpublish-microlearning-${microSessionName}"]`).click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )
 
     // edit the micro learning
+    cy.get(`[data-cy="microlearning-actions-${microSessionName}"]`).click()
     cy.get(`[data-cy="edit-microlearning-${microSessionName}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.microlearnings).should(
       'exist'
@@ -510,6 +514,7 @@ describe('Different microlearning workflows', () => {
 
     // go to microlearning list and check if it exists in draft state
     cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${microSessionName}"]`).contains(
       messages.shared.generic.draft
     )

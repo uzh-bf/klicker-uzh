@@ -39,7 +39,7 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
 
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/micro/${microLearning.id}/`
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/microlearning/${microLearning.id}/`
   const isFuture = dayjs(microLearning.scheduledStartAt).isAfter(dayjs())
   const isPast = dayjs(microLearning.scheduledEndAt).isBefore(dayjs())
 
@@ -62,6 +62,7 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
             <>
               <PublishMicroLearningButton microLearning={microLearning} />
               <Dropdown
+                data={{ cy: `microlearning-actions-${microLearning.name}` }}
                 className={{
                   item: 'p-1 hover:bg-gray-200',
                   viewport: 'bg-white',
@@ -146,6 +147,7 @@ function MicroSessionTile({ microLearning }: MicroLearningElementProps) {
                 href={href}
               />
               <Dropdown
+                data={{ cy: `microlearning-actions-${microLearning.name}` }}
                 className={{
                   item: 'p-1 hover:bg-gray-200',
                   viewport: 'bg-white',

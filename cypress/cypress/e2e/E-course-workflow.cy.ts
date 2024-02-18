@@ -117,15 +117,13 @@ describe('Test course creation and editing functionalities', () => {
     cy.wait(1000)
 
     // check for the existince of the test course
-    // TODO: find out why the button is not found by text
-    // cy.findByText(testCourseName).should('exist').click()
     cy.get(`[data-cy="course-button-${testCourseName}"]`).click()
-    // TODO: find out why find by text does not work here
-    // cy.findByText(messages.shared.generic.leaderboard).should('exist')
     cy.get('[data-cy="student-course-leaderboard-tab"]').should('exist')
 
     // check if the leaderboards exist
     cy.findByText(messages.pwa.courses.individualLeaderboard).should('exist')
     cy.findByText(messages.pwa.courses.groupLeaderboard).should('exist')
+
+    // TODO: join the course created above (extract the pin after generation)
   })
 })

@@ -70,6 +70,7 @@ function LiveQuizElement({ session }: LiveQuizElementProps) {
               <>
                 <StartLiveQuizButton liveQuiz={session} />
                 <Dropdown
+                  data={{ cy: `live-quiz-actions-${session.name}` }}
                   className={{
                     item: 'p-1 hover:bg-gray-200',
                     viewport: 'bg-white',
