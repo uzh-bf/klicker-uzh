@@ -1,6 +1,0 @@
-mutation PauseSession($id: ID!) {
-  pauseSession(id: $id) {
-    id
-    status
-  }
-}

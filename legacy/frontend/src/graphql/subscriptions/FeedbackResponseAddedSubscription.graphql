@@ -1,8 +1,0 @@
-subscription FeedbackResponseAdded($sessionId: ID!) {
-  feedbackResponseAdded(sessionId: $sessionId) {
-    feedbackId
-    id
-    content
-    createdAt
-  }
-}

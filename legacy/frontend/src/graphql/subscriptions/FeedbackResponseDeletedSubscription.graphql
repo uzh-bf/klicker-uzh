@@ -1,6 +1,0 @@
-subscription FeedbackResponseDeleted($sessionId: ID!) {
-  feedbackResponseDeleted(sessionId: $sessionId) {
-    id
-    feedbackId
-  }
-}
