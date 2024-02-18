@@ -1,16 +1,16 @@
+import { v4 as uuid } from 'uuid'
+
 import messages from '../../../packages/i18n/messages/en'
 
-const randomNumber = Math.round(Math.random() * 1000)
-const questionTitle = 'A Single Choice with solution' + randomNumber
-const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-const practiceQuizName = 'Test Übungs-Quiz ' + randomNumber
-const practiceQuizDisplayName = 'Displayed Name ' + randomNumber
-const description = 'This is the official descriptioin of ' + randomNumber
+const questionTitle = uuid()
+const question = uuid()
+const practiceQuizName = uuid()
+const practiceQuizDisplayName = uuid()
+const description = uuid()
 
-const randomNumber2 = Math.round(Math.random() * 1000)
-const practiceQuizName2 = 'Test Übungs-Quiz ' + randomNumber2
-const practiceQuizDisplayName2 = 'Displayed Name ' + randomNumber2
-const description2 = 'This is the official descriptioin of ' + randomNumber2
+const practiceQuizName2 = uuid()
+const practiceQuizDisplayName2 = uuid()
+const description2 = uuid()
 const courseName = 'Testkurs'
 
 describe('Different practice quiz workflows', () => {

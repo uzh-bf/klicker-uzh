@@ -1,3 +1,5 @@
+import { v4 as uuid } from 'uuid'
+
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Different microlearning workflows', () => {
@@ -9,13 +11,11 @@ describe('Different microlearning workflows', () => {
   const currentYear = new Date().getFullYear()
 
   it('creates and publishes a micro learning that should be visible to students', () => {
-    const randomNumber = Math.round(Math.random() * 1000)
-    const questionTitle = 'A Single Choice with solution' + randomNumber
-    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const microSessionName = 'Test Microlearning ' + randomNumber
-    const microSessionDisplayName = 'Displayed Name ' + randomNumber
-    const description = 'This is the official descriptioin of ' + randomNumber
-    const courseName = 'Testkurs'
+    const questionTitle = uuid()
+    const question = uuid()
+    const microSessionName = uuid()
+    const microSessionDisplayName = uuid()
+    const description = uuid()
 
     // set up question
     cy.get('[data-cy="create-question"]').click()
@@ -145,12 +145,11 @@ describe('Different microlearning workflows', () => {
   })
 
   it('creates and publishes a future micro learning that should not be visible to students and tests unpublishing it', () => {
-    const randomNumber = Math.round(Math.random() * 1000)
-    const questionTitle = 'A Single Choice with solution' + randomNumber
-    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const microSessionName = 'Test Microlearning ' + randomNumber
-    const microSessionDisplayName = 'Displayed Name ' + randomNumber
-    const description = 'This is the official descriptioin of ' + randomNumber
+    const questionTitle = uuid()
+    const question = uuid()
+    const microSessionName = uuid()
+    const microSessionDisplayName = uuid()
+    const description = uuid()
     const courseName = 'Testkurs'
 
     // set up question
@@ -262,13 +261,11 @@ describe('Different microlearning workflows', () => {
   })
 
   it('creates and publishes a past micro learning that should not be visible to students', () => {
-    const randomNumber = Math.round(Math.random() * 1000)
-    const questionTitle = 'A Single Choice with solution' + randomNumber
-    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const microSessionName = 'Test Microlearning ' + randomNumber
-    const microSessionDisplayName = 'Displayed Name ' + randomNumber
-    const description = 'This is the official descriptioin of ' + randomNumber
-    const courseName = 'Testkurs'
+    const questionTitle = uuid()
+    const question = uuid()
+    const microSessionName = uuid()
+    const microSessionDisplayName = uuid()
+    const description = uuid()
 
     // set up question
     cy.get('[data-cy="create-question"]').click()
@@ -366,12 +363,11 @@ describe('Different microlearning workflows', () => {
   })
 
   it('creates and edits a micro learning, which should then be accessible by students', () => {
-    const randomNumber = Math.round(Math.random() * 1000)
-    const questionTitle = 'A Single Choice with solution' + randomNumber
-    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
-    const microSessionName = 'Test Microlearning ' + randomNumber
-    const microSessionDisplayName = 'Displayed Name ' + randomNumber
-    const description = 'This is the official descriptioin of ' + randomNumber
+    const questionTitle = uuid()
+    const question = uuid()
+    const microSessionName = uuid()
+    const microSessionDisplayName = uuid()
+    const description = uuid()
     const courseName = 'Testkurs'
 
     // set up question

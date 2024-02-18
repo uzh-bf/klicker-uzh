@@ -1,10 +1,11 @@
+import { v4 as uuid } from 'uuid'
+
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test course creation and editing functionalities', () => {
-  const randomNumber = Math.round(Math.random() * 1000)
-  const name = 'New Course ' + randomNumber
-  const displayName = 'New Course Display ' + randomNumber
-  const description = 'Lorem ipsum dolor sit amet ... '
+  const name = uuid()
+  const displayName = uuid()
+  const description = uuid()
   const testCourseName = 'Testkurs'
 
   it('Test the creation of a new course', () => {

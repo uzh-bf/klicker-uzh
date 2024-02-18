@@ -1,3 +1,5 @@
+import { v4 as uuid } from 'uuid'
+
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create questions', () => {
@@ -6,7 +8,7 @@ describe('Create questions', () => {
   })
 
   it('creates a content element', () => {
-    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const randomQuestionNumber = uuid()
     const questionTitle = 'A Content ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
@@ -21,7 +23,7 @@ describe('Create questions', () => {
   })
 
   it('creates a flashcard element', () => {
-    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const randomQuestionNumber = uuid()
     const questionTitle = 'A Flashcard ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
@@ -37,7 +39,7 @@ describe('Create questions', () => {
   })
 
   it('creates a single choice question', () => {
-    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const randomQuestionNumber = uuid()
     const questionTitle = 'A Single Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
@@ -57,7 +59,7 @@ describe('Create questions', () => {
   })
 
   it('creates a multiple choice question', () => {
-    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const randomQuestionNumber = uuid()
     const questionTitle = 'A Multiple Choice ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
@@ -87,7 +89,7 @@ describe('Create questions', () => {
   })
 
   it('creates a KPRIM question', () => {
-    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const randomQuestionNumber = uuid()
     const questionTitle = 'A KPRIM ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
@@ -120,7 +122,7 @@ describe('Create questions', () => {
   })
 
   it('creates a Numeric question', () => {
-    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const randomQuestionNumber = uuid()
     const questionTitle = 'A Numeric ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
@@ -149,7 +151,7 @@ describe('Create questions', () => {
   })
 
   it('creates a Free Text question', () => {
-    const randomQuestionNumber = Math.round(Math.random() * 1000)
+    const randomQuestionNumber = uuid()
     const questionTitle = 'A Free Text ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
 
@@ -176,7 +178,7 @@ describe('Create questions', () => {
   })
 
   it('creates a new question, duplicates it and then deletes the duplicate again', () => {
-    const randomNumber = Math.round(Math.random() * 1000)
+    const randomNumber = uuid()
     const questionTitle = 'A Single Choice ' + randomNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
 
