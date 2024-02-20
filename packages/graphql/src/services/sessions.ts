@@ -715,9 +715,12 @@ export async function endSession({ id }: EndSessionArgs, ctx: ContextWithUser) {
     // the session update later on should never fail, but we need the return value (keep separate)
     await ctx.prisma.$transaction(promises)
 
-    ctx.redisExec.unlink(`s:${id}:meta`)
-    ctx.redisExec.unlink(`s:${id}:lb`)
-    ctx.redisExec.unlink(`s:${id}:xp`)
+    const keys = await ctx.redisExec.keys(`s:${id}:*`)
+    const pipe = ctx.redisExec.multi()
+    for (const key of keys) {
+      pipe.unlink(key)
+    }
+    await pipe.exec()
 
     const stoppedSession = await ctx.prisma.liveSession.update({
       where: {
@@ -2105,9 +2108,12 @@ export async function cancelSession(
       ),
     ])
 
-    ctx.redisExec.unlink(`s:${id}:meta`)
-    ctx.redisExec.unlink(`s:${id}:lb`)
-    ctx.redisExec.unlink(`s:${id}:xp`)
+    const keys = await ctx.redisExec.keys(`s:${id}:*`)
+    const pipe = ctx.redisExec.multi()
+    for (const key of keys) {
+      pipe.unlink(key)
+    }
+    await pipe.exec()
 
     await sendTeamsNotifications(
       'graphql/cancelSession',
