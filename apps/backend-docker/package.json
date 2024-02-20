@@ -81,7 +81,8 @@
     "format:check": "prettier --check .",
     "start": "node -r dotenv/config dist/index.js",
     "start:test": "nyc --silent node -r dotenv/config dist/index.js",
-    "exec:prod": "doppler run --config prd -- bun run"
+    "script": "doppler run --config dev -- bun run",
+    "script:prod": "doppler run --config prd -- bun run"
   },
   "engines": {
     "node": "=20"
