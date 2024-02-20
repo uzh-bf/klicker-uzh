@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.9...v3.1.0-rc.10) (2024-02-20)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** remove need to have questions in a live quiz (for feedback sessions) ([22eef9d](https://github.com/uzh-bf/klicker-uzh/commit/22eef9d0ca053cfea8dc73c5042bc85f952c381b))
+
 ## [3.1.0-rc.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.8...v3.1.0-rc.9) (2024-02-18)
 
 
