@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.10...v3.1.0-rc.11) (2024-02-20)
+
+
+### Bug Fixes
+
+* **packages/graphql:** purge redis entries if quiz is cancelled or ended ([1e45d60](https://github.com/uzh-bf/klicker-uzh/commit/1e45d6054da7c73920c5fa0fec287c559210a40a))
+
 ## [3.1.0-rc.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.9...v3.1.0-rc.10) (2024-02-20)
 
 
