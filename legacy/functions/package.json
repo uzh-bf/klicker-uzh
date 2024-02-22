@@ -10,7 +10,7 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "axios": "0.27.2",
+    "axios": "0.28.0",
     "ioredis": "4.27.9",
     "lodash": "4.17.21",
     "md5": "2.3.0",
