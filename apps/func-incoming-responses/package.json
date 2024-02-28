@@ -10,7 +10,7 @@
   "dependencies": {
     "@azure/functions": "4.1.0",
     "@azure/service-bus": "7.9.0",
-    "@sentry/node": "7.52.1",
+    "@sentry/node": "7.103.0",
     "jsonwebtoken": "9.0.1"
   },
   "devDependencies": {
