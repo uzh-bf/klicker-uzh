@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.11...v3.1.0-rc.12) (2024-02-28)
+
+
+### Bug Fixes
+
+* **apps/func-*:** upgrade sentry in azure functions ([956e9a1](https://github.com/uzh-bf/klicker-uzh/commit/956e9a1f830756674e794029682c8f4cbd82df43))
+
 ## [3.1.0-rc.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.10...v3.1.0-rc.11) (2024-02-20)
 
 
