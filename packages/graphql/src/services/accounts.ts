@@ -16,7 +16,7 @@ const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
   path: '/',
   httpOnly: true,
-  maxAge: 1000 * 60 * 60 * 24 * 13,
+  maxAge: 1000 * 60 * 60 * 24 * 30,
   secure:
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1',
@@ -71,7 +71,7 @@ export async function loginUserToken(
 
   ctx.res.cookie('next-auth.session-token', jwt, {
     ...COOKIE_SETTINGS,
-    maxAge: 1000 * 60 * 60 * 24 * 27,
+    maxAge: 1000 * 60 * 60 * 24 * 30,
   })
 
   ctx.res.cookie('NEXT_LOCALE', user.locale, COOKIE_SETTINGS)
