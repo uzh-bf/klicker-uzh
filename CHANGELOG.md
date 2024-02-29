@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.12...v3.1.0-rc.13) (2024-02-29)
+
+
+### Bug Fixes
+
+* **packages/graphql:** increase maxAge of student token to 30 days ([f779119](https://github.com/uzh-bf/klicker-uzh/commit/f77911901273711265b740c4de9d65871ec45676))
+
 ## [3.1.0-rc.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.11...v3.1.0-rc.12) (2024-02-28)
 
 
