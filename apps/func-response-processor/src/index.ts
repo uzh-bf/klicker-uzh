@@ -88,15 +88,17 @@ const serviceBusTrigger = async function (
             return acc
           }, {})
 
-        participantData = JWT.verify(
-          parsedCookies['participant_token'],
-          process.env.APP_SECRET
-        ) as any
+        if (parsedCookies['participant_token'] !== undefined) {
+          participantData = JWT.verify(
+            parsedCookies['participant_token'],
+            process.env.APP_SECRET
+          ) as any
 
-        if (participantData.role !== 'PARTICIPANT') {
-          participantData = null
-        } else {
-          context.log("Participant's JWT verified", participantData)
+          if (participantData.role !== 'PARTICIPANT') {
+            participantData = null
+          } else {
+            context.log("Participant's JWT verified", participantData)
+          }
         }
       } catch (e) {
         context.error('JWT verification failed', e, queueItem.cookie)
