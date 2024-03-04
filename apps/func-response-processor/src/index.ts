@@ -63,7 +63,8 @@ const serviceBusTrigger = async function (
   }
 
   let redisMulti: ChainableCommander
-  redisMulti = redisExec.multi()
+  // redisMulti = redisExec.multi() -> transaction
+  redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
 
   try {
     const sessionKey = `s:${queueItem.sessionId}`
