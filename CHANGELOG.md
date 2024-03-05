@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.13...v3.1.0-rc.14) (2024-03-05)
+
+
+### Bug Fixes
+
+* **apps/func-response-processor:** use pipeline instead of multi in response processor ([8110673](https://github.com/uzh-bf/klicker-uzh/commit/8110673b39d68fd6ccfb2264483aadd0ce5421a3))
+* **apps/func-response*:** only verify JWT if not undefined ([b300d6d](https://github.com/uzh-bf/klicker-uzh/commit/b300d6dae098f925c4b69064a280a02ad3932c64))
+
 ## [3.1.0-rc.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.12...v3.1.0-rc.13) (2024-02-29)
 
 
