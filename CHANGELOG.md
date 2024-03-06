@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.1.0-rc.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.14...v3.1.0-rc.15) (2024-03-06)
+
+
+### Bug Fixes
+
+* ensure updateQuestionInstances works on old session and new practice quiz and microlearning, remove MicroSession ([#4059](https://github.com/uzh-bf/klicker-uzh/issues/4059)) ([913051e](https://github.com/uzh-bf/klicker-uzh/commit/913051eb490864c78c9af63bb76e9f214fa43b0e))
+
 ## [3.1.0-rc.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.1.0-rc.13...v3.1.0-rc.14) (2024-03-05)
 
 
