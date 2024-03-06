@@ -9,12 +9,12 @@ import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import * as R from 'ramda'
+import { Tag } from 'src/ops'
+import { ContextWithUser } from '../lib/context'
 import {
   prepareInitialInstanceResults,
   processQuestionData,
-} from 'src/lib/questions'
-import { Tag } from 'src/ops'
-import { ContextWithUser } from '../lib/context'
+} from '../lib/questions'
 import { DisplayMode } from '../types/app'
 
 function processElementOptions(elementType: DB.ElementType, options: any) {
