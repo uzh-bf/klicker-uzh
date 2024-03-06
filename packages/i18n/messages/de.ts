@@ -971,35 +971,37 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
       groupActivityTypes:
-        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical , and free-text questions.',
+        'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
       groupActivityCreated:
-        'Your group activity <b>{name}</b> has been created successfully.',
+        'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich erstellt.',
       groupActivityEdited:
-        'Your group activity <b>{name}</b> has been edited successfully.',
+        'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich bearbeitet.',
       groupActivityDescription:
-        'In this step, enter the name and description of the group activity.',
+        'In diesem Schritt geben Sie den Namen und die Beschreibung der Gruppenaktivität ein.',
       groupActivitySettings:
-        'In this step, select the start and end date and define clues that are distributed to the group members.',
+        'In diesem Schritt können Sie Einstellungen für Ihre Gruppenaktivität vornehmen und Hinweise definieren, die an Teilnehmende verteilt werden.',
       groupActivityQuestions:
-        'In this step, select the questions for the group activity.',
-      groupActivityEditingFailed: 'Editing the group activity failed...',
-      groupActivityCreationFailed: 'Creating the group activity failed...',
+        'In diesem Schritt wählen Sie die Fragen für die Gruppenaktivität aus.',
+      groupActivityEditingFailed:
+        'Bearbeiten der Gruppenaktivität fehlgeschlagen...',
+      groupActivityCreationFailed:
+        'Erstellen der Gruppenaktivität fehlgeschlagen...',
       groupActivityName:
         'This name should allow you to distinguish this group activity from others. It will not be shown to the participants, please use the display name (next field) for this.',
       groupActivityDescField:
-        'Add a description to your group activity that will be displayed to participants at the beginning.',
+        'Fügen Sie eine Beschreibung zu Ihrer Gruppenaktivität hinzu, die den Teilnehmenden zu Beginn angezeigt wird.',
       groupActivityCourse:
-        'For the creation of a group activity, the selection of the corresponding course is required.',
+        'Um eine Gruppenaktivität zu erstellen, ist die Auswahl des zugehörigen Kurses erforderlich.',
       groupActivityStartDate:
-        'Please choose the start date of the group activity. The group activity will be available to participants from this point in time.',
+        'Bitte wählen Sie das Startdatum der Gruppenaktivität. Die Gruppenaktivität wird ab diesem Zeitpunkt für die Teilnehmenden verfügbar sein.',
       groupActivityEndDate:
-        'Please choose the end date of the group activity. The group activity will no longer be available for submission to the participants after this point in time.',
+        'Bitte wählen Sie das Enddatum der Gruppenaktivität. Die Gruppenaktivität wird nach diesem Zeitpunkt nicht mehr für die Teilnehmenden zur Verfügung stehen.',
       groupActivityMultiplier:
-        'The multiplier is a factor with which the points of the participants are multiplied in a gamified group activity.',
+        'Der Multiplikator ist ein Faktor, mit dem die Punkte der Teilnehmenden in einer gamifizierten Gruppenaktivität multipliziert werden.',
       groupActivityUseCase:
-        '<link>Group activities</link> can be solved once per group and require collaboration to gather information from a set of clues and to respond to a set of questions.',
+        '<link>Gruppenaktivitäten</link> können nur einmal pro Gruppe gelöst werden und erfordern Zusammenarbeit, um Informationen aus einer Reihe von Hinweisen zu sammeln und auf eine Reihe von Fragen zu antworten.',
       groupActivityCluesDescription:
-        'Clues are distributed among group members and should be required to solve the questions added to the group activity in the next step.',
+        'Hinweise werden unter den Gruppenteilnehmenden verteilt und sollten benötigt werden, um die Fragen, die im nächsten Schritt zur Gruppenaktivität hinzugefügt werden, zu lösen.',
     },
     formErrors: {
       resolveErrors:
