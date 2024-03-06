@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import GroupActivityClue from '@components/groupActivity/GroupActivityClue'
 import {
   ElementType,
   GroupActivityDetailsDocument,
@@ -15,7 +16,6 @@ import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { twMerge } from 'tailwind-merge'
 import { array, number, object, string } from 'yup'
 import Layout from '../../../../components/Layout'
 import { Options } from '../../../../components/common/OptionsDisplay'
@@ -79,6 +79,8 @@ function GroupActivityDetails() {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
+  console.log(data.groupActivityDetails)
+
   return (
     <Layout
       course={data.groupActivityDetails.course}
@@ -120,55 +122,7 @@ function GroupActivityDetails() {
               {data.groupActivityDetails.activityInstance &&
                 data.groupActivityDetails.activityInstance.clues?.map(
                   (clue) => {
-                    return (
-                      <div
-                        className={twMerge(
-                          'flex flex-row items-center gap-2 py-2 border rounded shadow',
-                          clue.participant.isSelf && 'border-primary-40'
-                        )}
-                        key={clue.participant.id}
-                      >
-                        <div className="flex flex-col items-center flex-none w-24 px-4">
-                          <Image
-                            src={
-                              clue.participant.avatar
-                                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${clue.participant.avatar}.svg`
-                                : '/user-solid.svg'
-                            }
-                            alt=""
-                            height={25}
-                            width={30}
-                          />
-                          <div
-                            className={twMerge(
-                              clue.participant.isSelf && 'font-bold'
-                            )}
-                          >
-                            {clue.participant.username}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="font-bold">{clue.displayName}</div>
-                          {typeof clue.value === 'string' && (
-                            <div>
-                              {clue.type === 'NUMBER' ? (
-                                `${Number(
-                                  clue.unit === '%'
-                                    ? parseFloat(clue.value) * 100
-                                    : clue.value
-                                ).toLocaleString()} ${clue.unit}`
-                              ) : (
-                                <Markdown
-                                  withProse
-                                  content={clue.value}
-                                  className={{ root: 'prose-sm' }}
-                                />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )
+                    return <GroupActivityClue clue={clue} key={clue.id} />
                   }
                 )}
             </div>
@@ -238,48 +192,46 @@ function GroupActivityDetails() {
               <H1>{t('pwa.groupActivity.yourTasks')}</H1>
               <Formik
                 isInitialValid={false}
-                initialValues={data.groupActivityDetails.instances.reduce(
-                  (acc, instance) => {
+                initialValues={data.groupActivityDetails.stacks[0].elements?.reduce(
+                  (acc, element) => {
                     if (
-                      instance.questionData.type === ElementType.Numerical ||
-                      instance.questionData.type === ElementType.FreeText
+                      element.elementData.type === ElementType.Numerical ||
+                      element.elementData.type === ElementType.FreeText
                     ) {
                       const previousDecision =
-                        data.groupActivityDetails?.activityInstance.decisions?.find(
-                          (decision) => decision.id === instance.id
+                        data.groupActivityDetails?.activityInstance?.decisions?.find(
+                          (decision) => decision.id === element.id
                         )
 
                       return {
                         ...acc,
-                        [instance.id]: previousDecision?.response ?? '',
+                        [element.id]: previousDecision?.response ?? '',
                       }
                     }
 
                     const previousDecision =
-                      data.groupActivityDetails?.activityInstance.decisions?.find(
-                        (decision) => decision.id === instance.id
+                      data.groupActivityDetails?.activityInstance?.decisions?.find(
+                        (decision) => decision.id === element.id
                       )
 
                     return {
                       ...acc,
-                      [instance.id]: previousDecision?.selectedOptions ?? [],
+                      [element.id]: previousDecision?.selectedOptions ?? [],
                     }
                   },
                   {}
                 )}
                 validationSchema={object().shape(
-                  data.groupActivityDetails.instances.reduce(
+                  data.groupActivityDetails.stacks[0].elements.reduce(
                     (acc, instance) => {
-                      if (
-                        instance.questionData.type === ElementType.Numerical
-                      ) {
+                      if (instance.elementData.type === ElementType.Numerical) {
                         return {
                           ...acc,
                           [instance.id]: number().required(),
                         }
                       }
 
-                      if (instance.questionData.type === ElementType.FreeText) {
+                      if (instance.elementData.type === ElementType.FreeText) {
                         return {
                           ...acc,
                           [instance.id]: string().required().min(1),
@@ -329,30 +281,32 @@ function GroupActivityDetails() {
                 }) => (
                   <Form className="flex flex-col">
                     <div className="flex-1">
-                      {data.groupActivityDetails?.instances.map((instance) => (
-                        <div
-                          key={instance.id}
-                          className="py-4 space-y-2 border-b last:border-b-0 first:lg:pt-0"
-                        >
-                          <Markdown content={instance.questionData.content} />
-                          <Options
-                            disabled={
-                              !!data.groupActivityDetails.activityInstance
-                                .decisions
-                            }
-                            isCompact
-                            isResponseValid={
-                              touched[instance.id] && !errors[instance.id]
-                            }
-                            questionType={instance.questionData.type}
-                            options={instance.questionData.options}
-                            response={values[instance.id] ?? ''}
-                            onChangeResponse={(response) => {
-                              setFieldValue(instance.id, response, true)
-                            }}
-                          />
-                        </div>
-                      ))}
+                      {data.groupActivityDetails?.stacks[0].elements?.map(
+                        (element) => (
+                          <div
+                            key={element.id}
+                            className="py-4 space-y-2 border-b last:border-b-0 first:lg:pt-0"
+                          >
+                            <Markdown content={element.elementData.content} />
+                            <Options
+                              isCompact
+                              disabled={
+                                !!data.groupActivityDetails.activityInstance
+                                  .decisions
+                              }
+                              isResponseValid={
+                                touched[element.id] && !errors[element.id]
+                              }
+                              questionType={element.elementData.type}
+                              options={element.elementData.options}
+                              response={values[element.id] ?? ''}
+                              onChangeResponse={(response) => {
+                                setFieldValue(element.id, response, true)
+                              }}
+                            />
+                          </div>
+                        )
+                      )}
                     </div>
 
                     {!data.groupActivityDetails?.activityInstance?.decisions ? (
