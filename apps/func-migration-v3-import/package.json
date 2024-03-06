@@ -12,7 +12,7 @@
     "@azure/storage-blob": "12.15.0",
     "@klicker-uzh/prisma": "workspace:*",
     "axios": "1.4.0",
-    "jsonwebtoken": "9.0.1",
+    "jsonwebtoken": "9.0.0",
     "mongoose": "7.3.3",
     "uuid": "9.0.0"
   },

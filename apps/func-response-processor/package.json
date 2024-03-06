@@ -12,7 +12,7 @@
     "@klicker-uzh/grading": "workspace:*",
     "@sentry/node": "7.103.0",
     "ioredis": "5.3.2",
-    "jsonwebtoken": "9.0.1",
+    "jsonwebtoken": "9.0.0",
     "md5": "2.3.0",
     "ramda": "0.29.0"
   },
